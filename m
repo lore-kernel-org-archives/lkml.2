@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab2FPJRz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 05:17:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32710 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab2FPJRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 05:17:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="166387837"
-Date: Sat, 16 Jun 2012 17:17:44 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Josh Triplett <josh@freedesktop.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: Re: automated warning notifications
-Message-ID: <20120616091744.GB10332@localhost>
-References: <20120614172523.GB4400@mwanda>
- <20120615014835.GA5695@localhost>
- <20120615071222.GZ13539@mwanda>
- <20120615075810.GA13206@localhost>
- <20120615083100.GA29692@leaf>
- <20120615085405.GB13933@localhost>
- <4FDB675A.7040808@xenotime.net>
+	id S932128Ab2FPJRu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 05:17:50 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:48526 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab2FPJRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 05:17:48 -0400
+X-Originating-IP: 217.70.178.148
+X-Originating-IP: 50.43.46.74
+Date: Sat, 16 Jun 2012 02:17:33 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 02/15] rcu: Size rcu_node tree from
+ nr_cpu_ids rather than NR_CPUS
+Message-ID: <20120616091733.GD8252@leaf>
+References: <20120615210550.GA27506@linux.vnet.ibm.com>
+ <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339794370-28119-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120615214726.GT31184@leaf>
+ <20120616003714.GS2389@linux.vnet.ibm.com>
+ <20120616051712.GA8252@leaf>
+ <20120616063848.GB2420@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FDB675A.7040808@xenotime.net>
+In-Reply-To: <20120616063848.GB2420@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 09:48:26AM -0700, Randy Dunlap wrote:
-> On 06/15/2012 01:54 AM, Fengguang Wu wrote:
-> 
-> > On Fri, Jun 15, 2012 at 01:31:00AM -0700, Josh Triplett wrote:
-> >> On Fri, Jun 15, 2012 at 03:58:10PM +0800, Fengguang Wu wrote:
-> >>> On Fri, Jun 15, 2012 at 10:12:22AM +0300, Dan Carpenter wrote:
-> >>>> On Fri, Jun 15, 2012 at 09:48:35AM +0800, Fengguang Wu wrote:
-> >>>>> In an average working day, 1-2 build errors will be caught and email
-> >>>>> notified. I guess there will be more sparse warnings if it's turned
-> >>>>> on.
-> >>>>>
-> >>>>> Perhaps the sparse warnings can be enabled, but only sent to the patch
-> >>>>> author. If you and anyone else are interested, they could be sent to
-> >>>>> some mailing list, too. One thing I'm sure is, we probably never want
-> >>>>> to disturb the busy maintainers with these warnings.
-> >>>>
-> >>>> Eventually I think we will want to set up a mailing list for this or
-> >>>> we will start sending duplicate messages.
-> >>>
-> >>> Fair enough. How can we setup the mailing list? Once the list up, it
-> >>> would be trivial for me to send sparse warnings out there.
-> >>
-> >> Rather than a mailing list, how about something like test.kernel.org for
-> >> sparse warnings?
+On Fri, Jun 15, 2012 at 11:38:48PM -0700, Paul E. McKenney wrote:
+> On Fri, Jun 15, 2012 at 10:17:12PM -0700, Josh Triplett wrote:
+> > On Fri, Jun 15, 2012 at 05:37:14PM -0700, Paul E. McKenney wrote:
+> > > On Fri, Jun 15, 2012 at 02:47:26PM -0700, Josh Triplett wrote:
+> > > > On Fri, Jun 15, 2012 at 02:05:57PM -0700, Paul E. McKenney wrote:
+> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > > 
+> > > > > The rcu_node tree array is sized based on compile-time constants,
+> > > > > including NR_CPUS.  Although this approach has worked well in the past,
+> > > > > the recent trend by many distros to define NR_CPUS=4096 results in
+> > > > > excessive grace-period-initialization latencies.
+> > > > > 
+> > > > > This commit therefore substitutes the run-time computed nr_cpu_ids for
+> > > > > the compile-time NR_CPUS when building the tree.  This can result in
+> > > > > much of the compile-time-allocated rcu_node array being unused.  If
+> > > > > this is a major problem, you are in a specialized situation anyway,
+> > > > > so you can manually adjust the NR_CPUS, RCU_FANOUT, and RCU_FANOUT_LEAF
+> > > > > kernel config parameters.
+> > > > > 
+> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > > ---
+> > > > >  kernel/rcutree.c        |    2 +-
+> > > > >  kernel/rcutree_plugin.h |    2 ++
+> > > > >  2 files changed, 3 insertions(+), 1 deletions(-)
+> > > > > 
+> > > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > > > index a151184..9098910 100644
+> > > > > --- a/kernel/rcutree.c
+> > > > > +++ b/kernel/rcutree.c
+> > > > > @@ -2672,7 +2672,7 @@ static void __init rcu_init_geometry(void)
+> > > > >  {
+> > > > >  	int i;
+> > > > >  	int j;
+> > > > > -	int n = NR_CPUS;
+> > > > > +	int n = nr_cpu_ids;
+> > > > 
+> > > > Same question as before: why have this as a variable when it never
+> > > > changes?
+> > > 
+> > > Ah, that explains why.  This prevented me from forgetting the random
+> > > NR_CPUS.
 > > 
-> > It's much more trivial to send new build/sparse errors/warnings to a
-> > list than to setup a website :-) As the errors come and go every day,
-> > and they are mostly unstructured, it seems the mailing list would be a
-> > more natural fit. People can search for known errors there and/or CC
-> > fixes there.
-> > 
-> > Anyway, we just sent an request for creating
-> > 
-> >         automated-warnings@vger.kernel.org
+> > Does that mean it can go away now that you've written the patches?
 > 
-> 
-> and you will let us know when it has been created??
+> If I don't have to change from nr_cpu_ids to yet another thing over
+> the next while, then it might be worth changing.
 
-Well, the request has been rejected anyway..
+That sounds like an argument for a #define or a static const, rather
+than a local variable. :)
 
-> Although I had just as soon use an existing list, like
-> kernel-janitors or kernel-testers.
-
->From http://kernelnewbies.org/KernelJanitors :
-
-Some suggestions to kernel newbies:
-
-        avoid fixing compiler warnings  because the goal is to fix the
-        CAUSE of the warnings (which is usually not obvious), not just
-        to make the warnings go away 
-
-Does that suggest the commit author be the best people to fix
-warnings? The typical situation may be, the author is not aware of the
-warnings at all: they are buried in the tedious output of make...
-
-Thanks,
-Fengguang
+- Josh Triplett
