@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab2FPNPI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 09:15:08 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63587 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab2FPNPF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 09:15:05 -0400
-From: Eldad Zack <eldad@fogrefinery.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eldad Zack <eldad@fogrefinery.com>
-Subject: [PATCH] include/net/dst.h: neaten asterisk placement
-Date: Sat, 16 Jun 2012 15:14:49 +0200
-Message-Id: <1339852489-10632-1-git-send-email-eldad@fogrefinery.com>
-X-Mailer: git-send-email 1.7.10
+	id S1757012Ab2FPNVB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 09:21:01 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55373 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930Ab2FPNVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 09:21:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="166435935"
+Date: Sat, 16 Jun 2012 21:20:52 +0800
+From: Fengguang Wu <wfg@linux.intel.com>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/2] printk: use logbuf_mutex_lock to stop syslog_seq
+ from going wild
+Message-ID: <20120616132052.GA12272@localhost>
+References: <1339821655-14059-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1339850558.905.10.camel@foo>
+ <20120616125922.GE2231@yliu-dev.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120616125922.GE2231@yliu-dev.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix code style - place the asterisk where it belongs.
+On Sat, Jun 16, 2012 at 08:59:22PM +0800, Yuanhan Liu wrote:
+> On Sat, Jun 16, 2012 at 02:42:38PM +0200, Kay Sievers wrote:
+> > On Sat, 2012-06-16 at 12:40 +0800, Yuanhan Liu wrote:
+> > > Although syslog_seq and log_next_seq stuff are protected by logbuf_lock
+> > > spin log, it's not enough. Say we have two processes A and B, and let
+> > > syslog_seq = N, while log_next_seq = N + 1, and the two processes both
+> > > come to syslog_print at almost the same time. And No matter which
+> > > process get the spin lock first, it will increase syslog_seq by one,
+> > > then release spin lock; thus later, another process increase syslog_seq
+> > > by one again. In this case, syslog_seq is bigger than syslog_next_seq.
+> > > And latter, it would make:
+> > >    wait_event_interruptiable(log_wait, syslog != log_next_seq)
+> > > don't wait any more even there is no new write comes. Thus it introduce
+> > > a infinite loop reading.
+> > 
+> > Oh, multiple readers on the same shared file descriptor are not useful,
+> > but sure, that needs fixing. Thanks for tracking that down!
+> > 
+> > Looks like the same issue existed in the original code already, it's
+> > just that it was granular at a single character level, and not a line,
+> > and the seqnum which icreases one-by-one, so the issue was hard to
+> > trigger.
+> 
+> Yes,  I think so, too.
+> 
+> > 
+> > We better make the mutexes interruptible, right?
+> 
+> Yes, you are right.
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
----
- include/net/dst.h |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+It might be better to do them in two standalone patches?
+One is a bug fix, the other improves user responsiveness.
 
-diff --git a/include/net/dst.h b/include/net/dst.h
-index 8197ead..f0bf3b8 100644
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -48,8 +48,8 @@ struct dst_entry {
- #else
- 	void			*__pad1;
- #endif
--	int			(*input)(struct sk_buff*);
--	int			(*output)(struct sk_buff*);
-+	int			(*input)(struct sk_buff *);
-+	int			(*output)(struct sk_buff *);
- 
- 	int			flags;
- #define DST_HOST		0x0001
-@@ -241,7 +241,7 @@ dst_metric_locked(const struct dst_entry *dst, int metric)
- 	return dst_metric(dst, RTAX_LOCK) & (1<<metric);
- }
- 
--static inline void dst_hold(struct dst_entry * dst)
-+static inline void dst_hold(struct dst_entry *dst)
- {
- 	/*
- 	 * If your kernel compilation stops here, please check
-@@ -264,8 +264,7 @@ static inline void dst_use_noref(struct dst_entry *dst, unsigned long time)
- 	dst->lastuse = time;
- }
- 
--static inline
--struct dst_entry * dst_clone(struct dst_entry * dst)
-+static inline struct dst_entry *dst_clone(struct dst_entry *dst)
- {
- 	if (dst)
- 		atomic_inc(&dst->__refcnt);
-@@ -371,12 +370,12 @@ static inline struct dst_entry *skb_dst_pop(struct sk_buff *skb)
- }
- 
- extern int dst_discard(struct sk_buff *skb);
--extern void *dst_alloc(struct dst_ops * ops, struct net_device *dev,
-+extern void *dst_alloc(struct dst_ops *ops, struct net_device *dev,
- 		       int initial_ref, int initial_obsolete, int flags);
--extern void __dst_free(struct dst_entry * dst);
--extern struct dst_entry *dst_destroy(struct dst_entry * dst);
-+extern void __dst_free(struct dst_entry *dst);
-+extern struct dst_entry *dst_destroy(struct dst_entry *dst);
- 
--static inline void dst_free(struct dst_entry * dst)
-+static inline void dst_free(struct dst_entry *dst)
- {
- 	if (dst->obsolete > 1)
- 		return;
--- 
-1.7.10
+Either way, you may add my superficial
 
+Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+
+Thanks,
+Fengguang
