@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2FPGg3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 02:36:29 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60600 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab2FPGg1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 02:36:27 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FDC28F0.8050805@jp.fujitsu.com>
-Date: Sat, 16 Jun 2012 15:34:24 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755470Ab2FPGhV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 02:37:21 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:47882 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754035Ab2FPGhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 02:37:19 -0400
+Date: Fri, 15 Jun 2012 23:36:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 13/15] rcu: Introduce for_each_rcu_flavor()
+ and use it
+Message-ID: <20120616063655.GA2420@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120615210550.GA27506@linux.vnet.ibm.com>
+ <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339794370-28119-13-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120615235239.GE7613@leaf>
+ <20120616010149.GW2389@linux.vnet.ibm.com>
+ <20120616053500.GC8252@leaf>
 MIME-Version: 1.0
-To: Greg Thelen <gthelen@google.com>
-CC: Sha Zhengju <handai.szj@gmail.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, yinghan@google.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH 2/2] memcg: add per cgroup dirty pages accounting
-References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com> <1339761717-29070-1-git-send-email-handai.szj@taobao.com> <xr93k3z8twtg.fsf@gthelen.mtv.corp.google.com>
-In-Reply-To: <xr93k3z8twtg.fsf@gthelen.mtv.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120616053500.GC8252@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061606-1976-0000-0000-00000E33C669
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/16 0:32), Greg Thelen wrote:
-> On Fri, Jun 15 2012, Sha Zhengju wrote:
->
->> This patch adds memcg routines to count dirty pages. I notice that
->> the list has talked about per-cgroup dirty page limiting
->> (http://lwn.net/Articles/455341/) before, but it did not get merged.
->
-> Good timing, I was just about to make another effort to get some of
-> these patches upstream.  Like you, I was going to start with some basic
-> counters.
->
-> Your approach is similar to what I have in mind.  While it is good to
-> use the existing PageDirty flag, rather than introducing a new
-> page_cgroup flag, there are locking complications (see below) to handle
-> races between moving pages between memcg and the pages being {un}marked
-> dirty.
->
->> I've no idea how is this going now, but maybe we can add per cgroup
->> dirty pages accounting first. This allows the memory controller to
->> maintain an accurate view of the amount of its memory that is dirty
->> and can provide some infomation while group's direct reclaim is working.
->>
->> After commit 89c06bd5 (memcg: use new logic for page stat accounting),
->> we do not need per page_cgroup flag anymore and can directly use
->> struct page flag.
->>
->>
->> Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
->> ---
->>   include/linux/memcontrol.h |    1 +
->>   mm/filemap.c               |    1 +
->>   mm/memcontrol.c            |   32 +++++++++++++++++++++++++-------
->>   mm/page-writeback.c        |    2 ++
->>   mm/truncate.c              |    1 +
->>   5 files changed, 30 insertions(+), 7 deletions(-)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index a337c2e..8154ade 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
->>   	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->>   	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
->>   	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
->> +	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
->>   	MEM_CGROUP_STAT_NSTATS,
->>   };
->>
->> diff --git a/mm/filemap.c b/mm/filemap.c
->> index 79c4b2b..5b5c121 100644
->> --- a/mm/filemap.c
->> +++ b/mm/filemap.c
->> @@ -141,6 +141,7 @@ void __delete_from_page_cache(struct page *page)
->>   	 * having removed the page entirely.
->>   	 */
->>   	if (PageDirty(page)&&  mapping_cap_account_dirty(mapping)) {
->> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
->
-> You need to use mem_cgroup_{begin,end}_update_page_stat around critical
-> sections that:
-> 1) check PageDirty
-> 2) update MEM_CGROUP_STAT_FILE_DIRTY counter
->
-> This protects against the page from being moved between memcg while
-> accounting.  Same comment applies to all of your new calls to
-> mem_cgroup_{dec,inc}_page_stat.  For usage pattern, see
-> page_add_file_rmap.
->
+On Fri, Jun 15, 2012 at 10:35:00PM -0700, Josh Triplett wrote:
+> On Fri, Jun 15, 2012 at 06:01:49PM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 15, 2012 at 04:52:40PM -0700, Josh Triplett wrote:
+> > > On Fri, Jun 15, 2012 at 02:06:08PM -0700, Paul E. McKenney wrote:
+> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > > index bd4e41c..75ad92a 100644
+> > > > --- a/kernel/rcutree.c
+> > > > +++ b/kernel/rcutree.c
+> > > > @@ -84,6 +84,7 @@ struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
+> > > >  DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+> > > >  
+> > > >  static struct rcu_state *rcu_state;
+> > > > +LIST_HEAD(rcu_struct_flavors);
+> > > 
+> > > Does any means exist to turn this into a constant array known at compile
+> > > time rather than a runtime linked list?  Having this as a compile-time
+> > > constant may allow the compiler to unroll for_each_rcu_flavor and
+> > > potentially inline the calls inside it.
+> > 
+> > I could do that, but none of the traversals is anywhere near performance
+> > critical, and all the ways I can think of to do this are uglier than
+> > the list.
+> 
+> All of the struct rcu_state instances exist at compile time, so you can
+> just create an array of pointers to them:
+> 
+> static struct rcu_state *const rcu_struct_flavors[] = {
+>     &rcu_data,
+>     &rcu_bh_data,
+> #ifdef CONFIG_TREE_PREEMPT_RCU
+>     &rcu_preempt_data,
+> #endif
+> };
+> 
+> Then just define for_each_rcu_flavor to iterate over that compile-time
+> constant array.  Any reason that wouldn't work?
 
-If you feel some difficulty with mem_cgroup_{begin,end}_update_page_stat(),
-please let me know...I hope they should work enough....
+It could work, but I like the automated response of the current system.
+Your array would add one more thing that would need to be manually
+kept consistent.  Now, if any of the traversals were on a fastpath,
+that would be different.
 
-Thanks,
--Kame
-
-
+							Thanx, Paul
 
