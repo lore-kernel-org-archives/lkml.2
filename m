@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758864Ab2FPA20 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 20:28:26 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:18052 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758118Ab2FPA2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 20:28:25 -0400
-From: Greg Pearson <greg.pearson@hp.com>
-To: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
-        shangw@linux.vnet.ibm.com, mingo@elte.hu
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, greg.pearson@hp.com
-Subject: [PATCH v2] mm/memblock: fix overlapping allocation when doubling reserved array
-Date: Fri, 15 Jun 2012 18:28:16 -0600
-Message-Id: <1339806496-17435-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1758935Ab2FPAdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 20:33:22 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:48151 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758478Ab2FPAdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 20:33:21 -0400
+X-Greylist: delayed 719 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 20:33:21 EDT
+X-ASG-Debug-ID: 1339806081-0421b53abf07010001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Fri, 15 Jun 2012 20:21:19 -0400
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs updates
+Message-ID: <20120616002119.GI19150@shiny>
+X-ASG-Orig-Subj: Re: [GIT PULL] Btrfs updates
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20120615180957.GE19150@shiny>
+ <CA+55aFzD3P=DxzqhtRC6jRi9kwHiWRJo=yvyY=WnhYnhXvFi0w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFzD3P=DxzqhtRC6jRi9kwHiWRJo=yvyY=WnhYnhXvFi0w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1339806081
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.99966
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __alloc_memory_core_early() routine will ask memblock for a range
-of memory then try to reserve it. If the reserved region array lacks
-space for the new range, memblock_double_array() is called to allocate
-more space for the array. If memblock is used to allocate memory for
-the new array it can end up using a range that overlaps with the range
-originally allocated in __alloc_memory_core_early(), leading to possible
-data corruption.
+On Fri, Jun 15, 2012 at 05:57:42PM -0600, Linus Torvalds wrote:
+> On Fri, Jun 15, 2012 at 11:09 AM, Chris Mason <chris.mason@fusionio.com> wrote:
+> >
+> > Please pull my for-linus branch:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+> 
+> This seems to introduce a new warning:
+> 
+>   In file included from fs/btrfs/ctree.c:22:0:
+>   fs/btrfs/ctree.c: In function ‘btrfs_search_old_slot’:
+>   fs/btrfs/ctree.h:2117:240: warning: ‘old_generation’ may be used
+> uninitialized in this function [-Wmaybe-uninitialized]
+>   fs/btrfs/ctree.c:1178:6: note: ‘old_generation’ was declared here
+> 
+> which looks like just gcc being unable to see that it is only used
+> when set, but it's still annoying. I'd suggest initializing it to 0
+> just to shut up the compiler. Ok?
+> 
 
-With this patch memblock_double_array() now calls memblock_find_in_range()
-with a narrowed candidate range so any memory allocated will not overlap
-with the original range that was being reserved. The range is narrowed by
-passing in both the starting and ending address of the previously allocated
-range. Then the range above the ending address is searched and if a candidate
-is not found, the range below the starting address is searched.
+Yes, this does look like noise.  It is only used when old_root is set,
+but it'll be really easy to add bugs there later.
 
-Changes from v1: (based on comments from Yinghai Lu)
-- use obase instead of base in memblock_add_region() for exclude start address
-- pass in both the starting and ending address of the exclude range to
-  memblock_double_array()
-- have memblock_double_array() search above the exclude ending address
-  and below the exclude starting address for a free range
+I've pushed two commits out, the second one is a printk cast on 32 bit
+machines.  Neither of these are fatal but they are in for-linus:
 
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
----
- mm/memblock.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 952123e..fee3ad9 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -184,7 +184,8 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 	}
- }
- 
--static int __init_memblock memblock_double_array(struct memblock_type *type)
-+static int __init_memblock memblock_double_array(struct memblock_type *type,
-+			phys_addr_t exclude_start, phys_addr_t exclude_end)
- {
- 	struct memblock_region *new_array, *old_array;
- 	phys_addr_t old_size, new_size, addr;
-@@ -222,7 +223,12 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 		new_array = kmalloc(new_size, GFP_KERNEL);
- 		addr = new_array ? __pa(new_array) : 0;
- 	} else {
--		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
-+		addr = memblock_find_in_range(exclude_end,
-+			MEMBLOCK_ALLOC_ACCESSIBLE,
-+			new_size, sizeof(phys_addr_t));
-+		if (!addr)
-+			addr = memblock_find_in_range(0, exclude_start,
-+				new_size, sizeof(phys_addr_t));
- 		new_array = addr ? __va(addr) : 0;
- 	}
- 	if (!addr) {
-@@ -399,7 +405,8 @@ repeat:
- 	 */
- 	if (!insert) {
- 		while (type->cnt + nr_new > type->max)
--			if (memblock_double_array(type) < 0)
-+			/* Avoid possible overlap if range is being reserved */
-+			if (memblock_double_array(type, obase, obase+size) < 0)
- 				return -ENOMEM;
- 		insert = true;
- 		goto repeat;
-@@ -450,7 +457,7 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 
- 	/* we'll create at most two more regions */
- 	while (type->cnt + 2 > type->max)
--		if (memblock_double_array(type) < 0)
-+		if (memblock_double_array(type, 0, MEMBLOCK_ALLOC_ACCESSIBLE) < 0)
- 			return -ENOMEM;
- 
- 	for (i = 0; i < type->cnt; i++) {
--- 
-1.7.5.4
+Chris Mason (2) commits (+3/-2):
+    Btrfs: cast devid to unsigned long long for printk %llu (+2/-1)
+    Btrfs: init old_generation in get_old_root (+1/-1)
 
+Total: (2) commits (+3/-2)
+
+ fs/btrfs/ctree.c |    2 +-
+ fs/btrfs/ioctl.c |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
