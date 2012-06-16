@@ -1,33 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab2FPWWo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 18:22:44 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58267 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757133Ab2FPWWI (ORCPT
+	id S1757279Ab2FPWbr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 18:31:47 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60876 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952Ab2FPWbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 18:22:08 -0400
-Date: Sat, 16 Jun 2012 15:22:07 -0700 (PDT)
-Message-Id: <20120616.152207.525674221334066255.davem@davemloft.net>
-To: eldad@fogrefinery.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] include/net/dst.h: neaten asterisk placement
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1339852489-10632-1-git-send-email-eldad@fogrefinery.com>
-References: <1339852489-10632-1-git-send-email-eldad@fogrefinery.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	Sat, 16 Jun 2012 18:31:45 -0400
+Date: Sat, 16 Jun 2012 23:35:26 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: linux-serial@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 04/10] fblog: implement fblog_redraw()
+Message-ID: <20120616233526.7f830890@pyramind.ukuu.org.uk>
+In-Reply-To: <1339884266-9201-5-git-send-email-dh.herrmann@googlemail.com>
+References: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
+	<1339884266-9201-5-git-send-email-dh.herrmann@googlemail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eldad Zack <eldad@fogrefinery.com>
-Date: Sat, 16 Jun 2012 15:14:49 +0200
+On Sun, 17 Jun 2012 00:04:20 +0200
+David Herrmann <dh.herrmann@googlemail.com> wrote:
 
-> Fix code style - place the asterisk where it belongs.
+> This mostly copies the functionality from drivers/video/console/bitblit.c
+> so we can draw the console content on all available framebuffers.
 > 
-> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+> All speed optimizations have been removed for simplicity. The original
+> code depends heavily on CONFIG_VT so we cannot share the codebase here.
 
-Applied.
+No. That means we've got two sets of code to maintain not one. Fix the
+dependancy.
+
+Pull the relevant subset of struct vc_data into another struct
+Make struct vc_data be
+
+struct vc_data {
+	struct vc_whatever
+	rest
+}
+
+Alan
