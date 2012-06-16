@@ -1,72 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758478Ab2FPDG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 23:06:26 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51586 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab2FPDGZ (ORCPT
+	id S1758776Ab2FPDGe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 23:06:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65372 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758574Ab2FPDGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 23:06:25 -0400
-From: Filipe Brandenburger <filbranden@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Filipe Brandenburger <filbranden@gmail.com>
-Subject: [PATCH 0/1] locks: prevent side-effects of locks_release_private before file_lock is initialized
-Date: Fri, 15 Jun 2012 23:06:04 -0400
-Message-Id: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 15 Jun 2012 23:06:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1339806496-17435-1-git-send-email-greg.pearson@hp.com>
+References: <1339806496-17435-1-git-send-email-greg.pearson@hp.com>
+Date: Fri, 15 Jun 2012 20:06:31 -0700
+X-Google-Sender-Auth: xgjK7kU6Mfn054AXWgWpV1UaEMI
+Message-ID: <CAE9FiQUn0cO6XfZpb+QCG3L7fW7Z3eO0w2x9kJH9N05sUM=-vQ@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/memblock: fix overlapping allocation when doubling
+ reserved array
+From: Yinghai Lu <yinghai@kernel.org>
+To: Greg Pearson <greg.pearson@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
+        shangw@linux.vnet.ibm.com, mingo@elte.hu, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b2ee03f3a2ebc04c28e3856
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--047d7b2ee03f3a2ebc04c28e3856
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-There seems to be a regression in kernel 2.6.37 regarding the behavior of
-fcntl(F_SETLEASE) when called for the second or third time. If fcntl(F_SETOWN)
-or fcntl(F_SETSIG) was called before it, the second fcntl(F_SETLEASE) would undo
-those settings.
+On Fri, Jun 15, 2012 at 5:28 PM, Greg Pearson <greg.pearson@hp.com> wrote:
+> The __alloc_memory_core_early() routine will ask memblock for a range
+> of memory then try to reserve it. If the reserved region array lacks
+> space for the new range, memblock_double_array() is called to allocate
+> more space for the array. If memblock is used to allocate memory for
+> the new array it can end up using a range that overlaps with the range
+> originally allocated in __alloc_memory_core_early(), leading to possible
+> data corruption.
+>
+> With this patch memblock_double_array() now calls memblock_find_in_range(=
+)
+> with a narrowed candidate range so any memory allocated will not overlap
+> with the original range that was being reserved. The range is narrowed by
+> passing in both the starting and ending address of the previously allocat=
+ed
+> range. Then the range above the ending address is searched and if a candi=
+date
+> is not found, the range below the starting address is searched.
+>
+> Changes from v1: (based on comments from Yinghai Lu)
+> - use obase instead of base in memblock_add_region() for exclude start ad=
+dress
+> - pass in both the starting and ending address of the exclude range to
+> =A0memblock_double_array()
+> - have memblock_double_array() search above the exclude ending address
+> =A0and below the exclude starting address for a free range
+>
+> Signed-off-by: Greg Pearson <greg.pearson@hp.com>
 
-It seems that the regression was introduced by these two commits which were
-fixing a leak in a file_lock struct:
-* 3df057ac9afe83c4af84016df3baf3a0eb1d3d33
-* 8896b93f42459b18b145c69d399b62870df48061
+found more problem, please check -v3
 
-To prevent the leak, a call to locks_free_lock() was added to free the file_lock
-struct that was allocated but not used because the old one was reused. The
-problem is that the allocated file_lock was already partially initialized with a
-pointer to the file descriptor and that locks_free_lock() will then call
-locks_release_private() which will call lease_release_private_callback() which
-will call f_delown() and set f_owner.signum to 0, effectively undoing the
-effects of fcntl(F_SETOWN) and fcntl(F_SETSIG) on that same file descriptor.
+also add cc to Ben.
 
-I thought of a solution in the lines of having lease_init() set fl_lmops = NULL
-and have it set back to point to lease_manager_ops inside do_fcntl_add_lease()
-only after it is valid, but I didn't manage to make that work... I also thought
-of changing locks_free_lock() somehow to decide whether locks_release_private()
-should be called or not (maybe an extra __locks_free_lock() function that would
-not call locks_release_private() and could be inlined into locks_free_lock()?)
-but in the end I decided to just replace the calls to locks_free_lock(fl) with
-kmem_cache_free(filelock_cache, fl) directly on the places where the file_lock
-struct was not yet fully initialized.
+Thanks
 
-This issue was found on Samba and reported to their bugzilla at:
-https://bugzilla.samba.org/show_bug.cgi?id=8974
+Yinghai
 
-A more detailed description and discussion including a test case is at:
-https://bugzilla.kernel.org/show_bug.cgi?id=43336
+--047d7b2ee03f3a2ebc04c28e3856
+Content-Type: application/octet-stream; 
+	name="memblock_double_array_fix.patch"
+Content-Disposition: attachment; filename="memblock_double_array_fix.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h3i3t02n0
 
-Thanks,
-Filipe
-
-
-Filipe Brandenburger (1):
-  locks: prevent side-effects of locks_release_private before file_lock
-    is initialized
-
- fs/locks.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
--- 
-1.7.7.6
-
+RnJvbToJR3JlZyBQZWFyc29uIDxncmVnLnBlYXJzb25AaHAuY29tPgpTdWJqZWN0OiBbUEFUQ0hd
+IG1lbWJsb2NrOiBmaXggb3ZlcmxhcHBpbmcgYWxsb2NhdGlvbiB3aGVuIGRvdWJsaW5nIHJlc2Vy
+dmVkIGFycmF5CgpUaGUgX19hbGxvY19tZW1vcnlfY29yZV9lYXJseSgpIHJvdXRpbmUgd2lsbCBh
+c2sgbWVtYmxvY2sgZm9yIGEgcmFuZ2UKb2YgbWVtb3J5IHRoZW4gdHJ5IHRvIHJlc2VydmUgaXQu
+IElmIHRoZSByZXNlcnZlZCByZWdpb24gYXJyYXkgbGFja3MKc3BhY2UgZm9yIHRoZSBuZXcgcmFu
+Z2UsIG1lbWJsb2NrX2RvdWJsZV9hcnJheSgpIGlzIGNhbGxlZCB0byBhbGxvY2F0ZQptb3JlIHNw
+YWNlIGZvciB0aGUgYXJyYXkuIElmIG1lbWJsb2NrIGlzIHVzZWQgdG8gYWxsb2NhdGUgbWVtb3J5
+IGZvcgp0aGUgbmV3IGFycmF5IGl0IGNhbiBlbmQgdXAgdXNpbmcgYSByYW5nZSB0aGF0IG92ZXJs
+YXBzIHdpdGggdGhlIHJhbmdlCm9yaWdpbmFsbHkgYWxsb2NhdGVkIGluIF9fYWxsb2NfbWVtb3J5
+X2NvcmVfZWFybHkoKSwgbGVhZGluZyB0byBwb3NzaWJsZQpkYXRhIGNvcnJ1cHRpb24uCgpXaXRo
+IHRoaXMgcGF0Y2ggbWVtYmxvY2tfZG91YmxlX2FycmF5KCkgbm93IGNhbGxzIG1lbWJsb2NrX2Zp
+bmRfaW5fcmFuZ2UoKQp3aXRoIGEgbmFycm93ZWQgY2FuZGlkYXRlIHJhbmdlIHNvIGFueSBtZW1v
+cnkgYWxsb2NhdGVkIHdpbGwgbm90IG92ZXJsYXAKd2l0aCB0aGUgb3JpZ2luYWwgcmFuZ2UgdGhh
+dCB3YXMgYmVpbmcgcmVzZXJ2ZWQuIFRoZSByYW5nZSBpcyBuYXJyb3dlZCBieQpwYXNzaW5nIGlu
+IHRoZSBzdGFydGluZyBhZGRyZXNzIG9mIHRoZSBwcmV2aW91c2x5IGFsbG9jYXRlZCByYW5nZSBh
+cyB0aGUKZW5kIG9mIHRoZSBjYW5kaWRhdGUgcmFuZ2UuIFNpbmNlIG1lbWJsb2NrX2ZpbmRfaW5f
+cmFuZ2Vfbm9kZSgpIGxvb2tzIGZvcgphIGZyZWUgcmFuZ2UgYnkgd2Fsa2luZyB0aGUgZnJlZSBt
+ZW1vcnkgbGlzdCBpbiByZXZlcnNlIG9yZGVyIChoaWdoZXN0Cm1lbW9yeSBhZGRyZXNzIHRvIGxv
+d2VzdCBhZGRyZXNzKSB0aGlzIGNoYW5nZSBzaG91bGQgbm90IHVubmVjZXNzYXJpbHkKZXhjbHVk
+ZSBjaHVua3Mgb2YgbWVtb3J5IHRoYXQgY291bGQgb3RoZXJ3aXNlIGJlIHVzZWQgdG8gc2F0aXNm
+eSB0aGUKcmVxdWVzdC4KCi12MzogYS4gbmVlZCB0byB1c2Ugb2Jhc2UgaW5zdGVhZCBmb3IgZXhj
+bHVkZV9zdGFydCwgYmVjYXVzZSBiYXNlIGlzIGNoYW5nZWQuCiAgICAgYi4gY2hhbmdlIHRvIHBh
+c3MgZXhjbHVkZV9zdGFydC9zaXplLgogICAgIGMuIHNlYXJjaGluZyB3aWxsIGJlIHRyeSBoaWdo
+IHRoZW4gbG93LgogICAgIGQuCWNvdWxkIG1ha2Ugc3VyZSB0aGUgcmFuZ2UgaXMgYWNjZXNzaWJs
+ZSwgc28gbmVlZCB0byBjaGVjayB3aXRoIGN1cnJlbnRfbGltaXQKICAgICBlLiBvbmx5IG5lZWQg
+dG8gZXhjbHVkZSB3aGVuIGRvdWJsZSByZXNlcnZlZC5yZWdpb25zLgogICAgIGYuIGZvciBsZXNz
+IGNvbmZ1c2luZywgZXZlbiBtZW1ibG9ja19pc29sYXRlX3JhbmdlIHBhc3MgZXhjbHVkZSBzdGFy
+dC9zaXplIHRvby4KICAgICBnLiByZW1vdmUgbm90IG5lZWRlZCBjb21tZW50IGJldHdlZW4gd2hp
+bGUgYW5kIG9uZSBsaW5lIGxvb3AgYm9keS4KClNpZ25lZC1vZmYtYnk6IEdyZWcgUGVhcnNvbiA8
+Z3JlZy5wZWFyc29uQGhwLmNvbT4KQ2M6IFRlanVuIEhlbyA8dGpAa2VybmVsLm9yZz4KQ2M6IEJl
+bmphbWluIEhlcnJlbnNjaG1pZHQgPGJlbmhAa2VybmVsLmNyYXNoaW5nLm9yZz4KQ2M6IEFuZHJl
+dyBNb3J0b24gPGFrcG1AbGludXgtZm91bmRhdGlvbi5vcmc+ClNpZ25lZC1vZmYtYnk6IFlpbmdo
+YWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogbW0vbWVtYmxvY2suYyB8ICAgMjEgKysr
+KysrKysrKysrKysrKystLS0tCiAxIGZpbGUgY2hhbmdlZCwgMTcgaW5zZXJ0aW9ucygrKSwgNCBk
+ZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvbW0vbWVtYmxvY2suYwo9PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0t
+LSBsaW51eC0yLjYub3JpZy9tbS9tZW1ibG9jay5jCisrKyBsaW51eC0yLjYvbW0vbWVtYmxvY2su
+YwpAQCAtMTg0LDcgKzE4NCw5IEBAIHN0YXRpYyB2b2lkIF9faW5pdF9tZW1ibG9jayBtZW1ibG9j
+a19yZW0KIAl9CiB9CiAKLXN0YXRpYyBpbnQgX19pbml0X21lbWJsb2NrIG1lbWJsb2NrX2RvdWJs
+ZV9hcnJheShzdHJ1Y3QgbWVtYmxvY2tfdHlwZSAqdHlwZSkKK3N0YXRpYyBpbnQgX19pbml0X21l
+bWJsb2NrIG1lbWJsb2NrX2RvdWJsZV9hcnJheShzdHJ1Y3QgbWVtYmxvY2tfdHlwZSAqdHlwZSwK
+KwkJCQkJCSBwaHlzX2FkZHJfdCBleGNsdWRlX3N0YXJ0LAorCQkJCQkJIHBoeXNfYWRkcl90IGV4
+Y2x1ZGVfc2l6ZSkKIHsKIAlzdHJ1Y3QgbWVtYmxvY2tfcmVnaW9uICpuZXdfYXJyYXksICpvbGRf
+YXJyYXk7CiAJcGh5c19hZGRyX3Qgb2xkX3NpemUsIG5ld19zaXplLCBhZGRyOwpAQCAtMjIyLDcg
+KzIyNCwxOCBAQCBzdGF0aWMgaW50IF9faW5pdF9tZW1ibG9jayBtZW1ibG9ja19kb3ViCiAJCW5l
+d19hcnJheSA9IGttYWxsb2MobmV3X3NpemUsIEdGUF9LRVJORUwpOwogCQlhZGRyID0gbmV3X2Fy
+cmF5ID8gX19wYShuZXdfYXJyYXkpIDogMDsKIAl9IGVsc2UgewotCQlhZGRyID0gbWVtYmxvY2tf
+ZmluZF9pbl9yYW5nZSgwLCBNRU1CTE9DS19BTExPQ19BQ0NFU1NJQkxFLCBuZXdfc2l6ZSwgc2l6
+ZW9mKHBoeXNfYWRkcl90KSk7CisJCS8qIG9ubHkgZXhjbHVkZSByYW5nZSB3aGVuIHRyeWluZyB0
+byBkb3VibGUgcmVzZXJ2ZWQucmVnaW9ucyAqLworCQlpZiAodHlwZSAhPSAmbWVtYmxvY2sucmVz
+ZXJ2ZWQpCisJCQlleGNsdWRlX3N0YXJ0ID0gZXhjbHVkZV9zaXplID0gMDsKKworCQlhZGRyID0g
+bWVtYmxvY2tfZmluZF9pbl9yYW5nZShleGNsdWRlX3N0YXJ0ICsgZXhjbHVkZV9zaXplLAorCQkJ
+CQkJbWVtYmxvY2suY3VycmVudF9saW1pdCwKKwkJCQkJCW5ld19zaXplLCBzaXplb2YocGh5c19h
+ZGRyX3QpKTsKKwkJaWYgKCFhZGRyICYmIGV4Y2x1ZGVfc2l6ZSkKKwkJCWFkZHIgPSBtZW1ibG9j
+a19maW5kX2luX3JhbmdlKDAsCisJCQkJICAgIG1pbihleGNsdWRlX3N0YXJ0LCBtZW1ibG9jay5j
+dXJyZW50X2xpbWl0KSwKKwkJCQkgICAgbmV3X3NpemUsIHNpemVvZihwaHlzX2FkZHJfdCkpOwor
+CiAJCW5ld19hcnJheSA9IGFkZHIgPyBfX3ZhKGFkZHIpIDogMDsKIAl9CiAJaWYgKCFhZGRyKSB7
+CkBAIC0zOTksNyArNDEyLDcgQEAgcmVwZWF0OgogCSAqLwogCWlmICghaW5zZXJ0KSB7CiAJCXdo
+aWxlICh0eXBlLT5jbnQgKyBucl9uZXcgPiB0eXBlLT5tYXgpCi0JCQlpZiAobWVtYmxvY2tfZG91
+YmxlX2FycmF5KHR5cGUpIDwgMCkKKwkJCWlmIChtZW1ibG9ja19kb3VibGVfYXJyYXkodHlwZSwg
+b2Jhc2UsIHNpemUpIDwgMCkKIAkJCQlyZXR1cm4gLUVOT01FTTsKIAkJaW5zZXJ0ID0gdHJ1ZTsK
+IAkJZ290byByZXBlYXQ7CkBAIC00NTAsNyArNDYzLDcgQEAgc3RhdGljIGludCBfX2luaXRfbWVt
+YmxvY2sgbWVtYmxvY2tfaXNvbAogCiAJLyogd2UnbGwgY3JlYXRlIGF0IG1vc3QgdHdvIG1vcmUg
+cmVnaW9ucyAqLwogCXdoaWxlICh0eXBlLT5jbnQgKyAyID4gdHlwZS0+bWF4KQotCQlpZiAobWVt
+YmxvY2tfZG91YmxlX2FycmF5KHR5cGUpIDwgMCkKKwkJaWYgKG1lbWJsb2NrX2RvdWJsZV9hcnJh
+eSh0eXBlLCBiYXNlLCBzaXplKSA8IDApCiAJCQlyZXR1cm4gLUVOT01FTTsKIAogCWZvciAoaSA9
+IDA7IGkgPCB0eXBlLT5jbnQ7IGkrKykgewo=
+--047d7b2ee03f3a2ebc04c28e3856--
