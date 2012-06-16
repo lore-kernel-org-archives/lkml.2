@@ -1,111 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab2FPVO7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 17:14:59 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:54980 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756222Ab2FPVO5 (ORCPT
+	id S1757178Ab2FPV4x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 17:56:53 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56115 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756911Ab2FPV4v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 17:14:57 -0400
-Date: Sat, 16 Jun 2012 17:14:55 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: tiwg@multicore-association.org, lttng-dev@lists.lttng.org,
-        linux-kernel@vger.kernel.org
-Cc: Dominique Toupin <dominique.toupin@ericsson.com>
-Subject: LPC2012 Tracing Summit, August 30th, 2012 (was: [CFP] Tracing
-	Micro-conference at LPC2012 (August 28-30, San Diego))
-Message-ID: <20120616211455.GA10257@Krystal>
-References: <20120515234826.GA10967@Krystal>
+	Sat, 16 Jun 2012 17:56:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515234826.GA10967@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
+References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
+ <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 16 Jun 2012 15:56:28 -0600
+Message-ID: <CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
+Subject: Re: SNB PCI root information
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ulrich Drepper <drepper@gmail.com>, jbarnes@virtuousgeek.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jun 15, 2012 at 9:03 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Jun 15, 2012 at 6:57 PM, Ulrich Drepper <drepper@gmail.com> wrote:
+>> The PCI roots in multi-socket SNB are part of specific sockets.  This
+>> means optimization will need to know which socket the root is part of
+>> and therefore which cores have direct access as opposed to over one or
+>> more QPI links.
+>>
+>> I tried to find this information in the /sys filesystem in kernels up
+>> to the current upstream kernel.  It seems there is actually nothing
+>> like this.
+>>
+>> There are the files /sys/devices/pci*/*/local_cpus which should
+>> contain this information.  For each device we would be able to get the
+>> information about the local CPUs.
+>>
+>> The SPARC OF handling seems to set the field, some Intel drivers seem
+>> to try to do it in a different way.
+>>
+>> The problem I have seen (at least on a Dell R620) is that the
+>> dev_to_code() function returns -1 which indicates that no node
+>> information is stored.
+>>
+>> If I understand the code correctly, the numa_node field can be set
+>> explicitly but is mostly inherited from the underlying device (bus
+>> etc).  Does this mean that the locality information should come from
+>> the same place where the PCI root data structure is initialized?
+>>
+>> This happens, if I'm not mistaken, in the ACPI table parsing.  I've
+>> disassembled the DSDT table and didn't find anything like this type of
+>> information.  At least I didn't see it.  I also couldn't find anything
+>> in the ACPI 5.0 spec.
+>
+> yes, you should have _PXM for root bus in DSDT.
+>
+>>
+>>
+>> The questions are:
+>> a) am I missing something?
+>> b) do BIOSes (perhaps from other manufacturers) provide the information?
+>> c) can we get this fixed?
+>
+> get updated BIOS.
+>
+>> d) can we interpolate the information for platforms where the BIOSes
+>> don't have the information?
+>
+> in arch/x86/pci/acpi.c::pci_acpi_scan_root(), we have
+>
+>        node = -1;
+> #ifdef CONFIG_ACPI_NUMA
+>        pxm = acpi_get_pxm(device->handle);
+>        if (pxm >= 0)
+>                node = pxm_to_node(pxm);
+>        if (node != -1)
+>                set_mp_bus_to_node(busnum, node);
+>        else
+> #endif
+>                node = get_mp_bus_to_node(busnum);
+>
+>        if (node != -1 && !node_online(node))
+>                node = -1;
+>
+>        info = kzalloc(sizeof(*info), GFP_KERNEL);
+>        if (!info) {
+>                printk(KERN_WARNING "pci_bus %04x:%02x: "
+>                       "ignored (out of memory)\n", domain, busnum);
+>                return NULL;
+>        }
+>
+>        sd = &info->sd;
+>        sd->domain = domain;
+>        sd->node = node;
+>
+> So kernel will check _PXM at first, or will use pre-probe host bridge info.
+> Now we only have that for amd k8 cpu.
+>
+> We used to have same for intel IOH nehalem,  and get bless from intel.
+> but that get removed at some point.
+> I have one local internal similar patch for SNB iio for crossing check
+> if BIOS set correctly.
+> but I don't think i will try to get blessing from intel to publish it.
+>
+> So please get one updated bios from your vendor.
 
-Due to the high interest shown in the event, the Linux Plumbers Tracing
-Micro-Conference will be held as a full day Tracing Summit on August
-30th. Please refer to the
-
-  http://tracingsummit.org/wiki/TracingSummit2012
-
-page for details.
-
-There has been some back and forth recently on the exact date (28th or
-30th), and between co-location with either LinuxCon or Plumbers (for
-full day room availability). We have been trying to avoid major schedule
-conflicts with co-located events. Sorry about that. So just to clear
-things up: the Tracing Summit will be held within the Linux Plumbers
-Conference 2012. Registration to Linux Plumbers Conference is required
-for attendees and speakers. It will be possible to cancel LinuxCon
-registration if some of you only registered to LinuxCon for the Tracing
-Summit add-on. If you wish to do so, please contact the Linux
-Foundation.
-
-Thanks!
-
-Mathieu
-
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Hi,
-> 
-> We are organizing a tracing micro-conference taking place in San Diego,
-> within Linux Plumbers Conference 2012. The micro-conference is planned
-> to be held somewhere between August 28 and 30, in San Diego, CA.
-> 
-> If you are interested to present, please don't hesitate to get in touch
-> with us quickly (ideally within this week, or next week), since
-> deadlines are approaching.
-> 
-> Our intent is to gather people involved in development and users of
-> tracing tools and trace analysis tools to allow discussing the latest
-> developments, allow users to express their needs, and generally ensure
-> that developers and end users understand each other.
-> 
-> We are welcoming presentations from both end users and developers, on
-> topics covering, but not limited to:
-> 
-> - Trace collection and extraction,
-> - Trace filtering,
-> - Trace aggregation,
-> - Trace formats,
-> - Tracing multi-core systems,
-> - Trace abstraction,
-> - Trace modeling,
-> - Automated trace analysis (e.g. dependency analysis),
-> - Tracing large clusters and distributed systems,
-> - Hardware-level tracing (e.g. DSP, GPU, bare-metal),
-> - Trace visualisation,
-> - Interaction between debugging and tracing,
-> - Tracing remote control,
-> - Analysis of large trace datasets.
-> 
-> It can cover both recently available technologies and ongoing work.
-> 
-> If you are interested to present, please get in touch with Dominique
-> Toupin or myself. The micro-conference wiki can be accessed at:
-> http://wiki.linuxplumbersconf.org/2012:tracing
-> 
-> Feedback is welcome!
-> 
-> Thank you,
-> 
-> Dominique Toupin & Mathieu Desnoyers
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+If ACPI provides a perfectly usable generic way to describe this
+topology and the vendor BIOS doesn't bother to use it, I'm not very
+interested in trying to compensate for that BIOS deficiency by adding
+a bunch of non-portable CPU-specific gunk to Linux.
