@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab2FPFtb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 01:49:31 -0400
-Received: from fed1rmfepi107.cox.net ([68.230.241.138]:45978 "EHLO
-	fed1rmfepi107.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab2FPFta (ORCPT
+	id S1752781Ab2FPFu3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 01:50:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60432 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab2FPFuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 01:49:30 -0400
-X-Greylist: delayed 1085 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Jun 2012 01:49:30 EDT
-X-CT-Class: Bulk
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020206.4FDC177C.0048,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=KX+v5h4Bo19/wPa7BIMoXY6ArU991IQkCVNWm470N+4=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=4v8FNQQxYrwA:10 a=IkcTkHD0fZMA:10
- a=tH7qOUB9aSzgps5IJY+qkQ==:17 a=glCL4q5AAAAA:8 a=o5B6wLhRvKZv1x0DCOQA:9
- a=QEXdDO2ut3YA:10 a=tH7qOUB9aSzgps5IJY+qkQ==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20120616013125.5R4WZ.87259.imail@fed1rmwml213>
-Date: Fri, 15 Jun 2012 22:31:25 -0700
-From: <frjfr6@cox.net>
-Subject: INVESTMENT PROPOSAL !
+	Sat, 16 Jun 2012 01:50:18 -0400
+Date: Sat, 16 Jun 2012 07:50:09 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Dave Jones <davej@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: missing leap second patches in stable.
+Message-ID: <20120616055007.GA5808@netboy.at.omicron.at>
+References: <20120615152007.GA11793@redhat.com>
+ <4FDB8382.8090501@linaro.org>
+ <20120615190958.GA9864@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120615190958.GA9864@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear friend,
-               Greetings to you, I have an investment proposal of $23,500,000.00 for you. If you are interested ? contact me via my email for better understanding                                           carthygood@yahoo.com.hk
+On Fri, Jun 15, 2012 at 03:09:59PM -0400, Dave Jones wrote:
+> On Fri, Jun 15, 2012 at 11:48:34AM -0700, John Stultz wrote:
+>  > On 06/15/2012 08:20 AM, Dave Jones wrote:
+>  > > Should these be in -stable ? Looks like all the other recent changes
+>  > > in that area are present.  With the leap second just two weeks away,
+>  > > it seems like they should be.
+>  > >
+>  > > Looks like 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d is in 3.4-stable,
+>  > > (haven't checked earlier -stable trees).
+>  > 
+>  > So the second patch has been sent out for stable review as of yesterday. 
+>  > So it should be on its way, but you're right that I forgot to CC stable 
+>  > on the first TAI offset fix.
+>  > 
+>  > I'll generate the patch and send it to Greg.  Thanks for the close 
+>  > review here!
+> 
+> fwiw, I did a test on 3.5rc2 yesterday where I forced a fake leap second at midnight.
+> Nothing untoward happened, unlike the previous ones :-)
 
-Regards,
+Out of curiosity, how do you test that? Do you have any programs
+specifically for testing the leap second issue?
 
-Cathy Goodhue.
+Thanks,
+Richard
+
+
