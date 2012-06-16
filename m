@@ -1,98 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab2FPFCA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 01:02:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43906 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2FPFB7 (ORCPT
+	id S1753053Ab2FPFCM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 01:02:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45321 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab2FPFCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 01:01:59 -0400
+	Sat, 16 Jun 2012 01:02:06 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org
-Cc: Milton Miller <miltonm@bga.com>
-Subject: [PATCH 00/12] irqdomain cleanup and refactoring
-Date: Fri, 15 Jun 2012 23:01:25 -0600
-Message-Id: <1339822897-15840-1-git-send-email-grant.likely@secretlab.ca>
+Cc: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 04/12] irqdomain: Eliminate dedicated radix lookup functions
+Date: Fri, 15 Jun 2012 23:01:29 -0600
+Message-Id: <1339822897-15840-5-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1339822897-15840-1-git-send-email-grant.likely@secretlab.ca>
+References: <1339822897-15840-1-git-send-email-grant.likely@secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey folks,
+In preparation to remove the slow revmap path, eliminate the public
+radix revmap lookup functions.  This simplifies the code and makes the
+slowpath removal patch a lot simpler.
 
-This is some of the refactoring that I've been wanting to do for
-irqdomains.  Lots of patches here, but the major changes are:
-- eliminate the legacy mapping by replacing it with a pre-populated linear map,
-- Get rid of the slow-path setup for mapping, and
-- to merge the linear and tree mapping into a single domain type.
-
-The last change still needs some investigation and review, I'm not as
-confident that this is correct and it hasn't been tested much.
-
-Milton, the last version of these patches that I posted broke one of
-your powerpc machines.  Can you please retest?  I've pushed this
-series out into my irqdomain/test branch (see below)
-
-For further work, I'd like to find a way to eliminate the nomap revmap
-too so I can get rid of the irqdomain type entirely and simplify the
-code even further.  I've not applied many brain cells towards doing
-this yet though.  This is an area for further research.
-
-Also, Paul tells me that there are some platforms that want to use
-something like a linear mapping, but there are large holes in the
-ranges of hwirq numbers which is a little wasteful of memory.  Another
-area of investigation is to figure out how to be more memory-efficient
-here without slowing down the linear revmap path.
-
-g.
-
-The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
-
-  Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 irqdomain/test
-
-for you to fetch changes up to ca2f744b40214645e0274e8681023ee6d2387f9d:
-
-  irqdomain: merge linear and tree reverse mappings. (2012-06-15 22:36:24 -0600)
-
-Grant Likely (13):
-      devicetree: add helper inline for retrieving a node's full name
-      irqdomain: Remove unnecessary test for IRQ_DOMAIN_MAP_LEGACY
-      irqdomain: Split disassociating code into separate function
-      irqdomain: Always update revmap when setting up a virq
-      irqdomain: Eliminate dedicated radix lookup functions
-      irqdomain: Fix irq_create_direct_mapping() to test irq_domain type.
-      irqdomain: eliminate slow-path revmap lookups
-      irqdomain: Make ops->map hook optional
-      irqdomain: Replace LEGACY mapping with LINEAR
-      irqdomain: Reserve IRQs for legacy domain
-      irqdomain: Add debugging message
-      irqdomain: reorganize revmap data.
-      irqdomain: merge linear and tree reverse mappings.
-
-Paul Mundt (2):
-      irqdomain: Simple NUMA awareness.
-      irqdomain: Support for static IRQ mapping and association.
-
- arch/arm/plat-versatile/fpga-irq.c     |    2 +-
- arch/microblaze/pci/pci-common.c       |    6 +-
- arch/powerpc/kernel/pci-common.c       |    6 +-
- arch/powerpc/kernel/vio.c              |    5 +-
- arch/powerpc/platforms/cell/iommu.c    |    3 +-
- arch/powerpc/platforms/pseries/iommu.c |    2 +-
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rob Herring <rob.herring@calxeda.com>
+---
  arch/powerpc/sysdev/xics/icp-hv.c      |    2 +-
  arch/powerpc/sysdev/xics/icp-native.c  |    2 +-
- arch/powerpc/sysdev/xics/xics-common.c |    3 -
- arch/sparc/kernel/of_device_64.c       |    2 +-
- drivers/of/base.c                      |    2 +-
- drivers/of/irq.c                       |    2 +-
- drivers/pinctrl/pinctrl-nomadik.c      |    4 +-
- include/linux/irqdomain.h              |   55 ++--
- include/linux/of.h                     |   23 +-
- kernel/irq/irqdomain.c                 |  472 +++++++++++++-------------------
- 16 files changed, 251 insertions(+), 340 deletions(-)
+ arch/powerpc/sysdev/xics/xics-common.c |    3 --
+ include/linux/irqdomain.h              |    4 ---
+ kernel/irq/irqdomain.c                 |   62 ++------------------------------
+ 5 files changed, 5 insertions(+), 68 deletions(-)
 
+diff --git a/arch/powerpc/sysdev/xics/icp-hv.c b/arch/powerpc/sysdev/xics/icp-hv.c
+index 253dce9..14469cf 100644
+--- a/arch/powerpc/sysdev/xics/icp-hv.c
++++ b/arch/powerpc/sysdev/xics/icp-hv.c
+@@ -111,7 +111,7 @@ static unsigned int icp_hv_get_irq(void)
+ 	if (vec == XICS_IRQ_SPURIOUS)
+ 		return NO_IRQ;
+ 
+-	irq = irq_radix_revmap_lookup(xics_host, vec);
++	irq = irq_find_mapping(xics_host, vec);
+ 	if (likely(irq != NO_IRQ)) {
+ 		xics_push_cppr(vec);
+ 		return irq;
+diff --git a/arch/powerpc/sysdev/xics/icp-native.c b/arch/powerpc/sysdev/xics/icp-native.c
+index 4c79b6f..48861d3 100644
+--- a/arch/powerpc/sysdev/xics/icp-native.c
++++ b/arch/powerpc/sysdev/xics/icp-native.c
+@@ -119,7 +119,7 @@ static unsigned int icp_native_get_irq(void)
+ 	if (vec == XICS_IRQ_SPURIOUS)
+ 		return NO_IRQ;
+ 
+-	irq = irq_radix_revmap_lookup(xics_host, vec);
++	irq = irq_find_mapping(xics_host, vec);
+ 	if (likely(irq != NO_IRQ)) {
+ 		xics_push_cppr(vec);
+ 		return irq;
+diff --git a/arch/powerpc/sysdev/xics/xics-common.c b/arch/powerpc/sysdev/xics/xics-common.c
+index cd1d18d..9049d9f 100644
+--- a/arch/powerpc/sysdev/xics/xics-common.c
++++ b/arch/powerpc/sysdev/xics/xics-common.c
+@@ -329,9 +329,6 @@ static int xics_host_map(struct irq_domain *h, unsigned int virq,
+ 
+ 	pr_devel("xics: map virq %d, hwirq 0x%lx\n", virq, hw);
+ 
+-	/* Insert the interrupt mapping into the radix tree for fast lookup */
+-	irq_radix_revmap_insert(xics_host, virq, hw);
+-
+ 	/* They aren't all level sensitive but we just don't really know */
+ 	irq_set_status_flags(virq, IRQ_LEVEL);
+ 
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 3425631..d8b88c5 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -169,10 +169,6 @@ static inline int irq_create_identity_mapping(struct irq_domain *host,
+ 	return irq_create_strict_mappings(host, hwirq, hwirq, 1);
+ }
+ 
+-extern void irq_radix_revmap_insert(struct irq_domain *host, unsigned int virq,
+-				    irq_hw_number_t hwirq);
+-extern unsigned int irq_radix_revmap_lookup(struct irq_domain *host,
+-					    irq_hw_number_t hwirq);
+ extern unsigned int irq_linear_revmap(struct irq_domain *host,
+ 				      irq_hw_number_t hwirq);
+ 
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 1a8f3d2..79a7711 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -415,7 +415,9 @@ int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
+ 				domain->revmap_data.linear.revmap[hwirq] = virq;
+ 			break;
+ 		case IRQ_DOMAIN_MAP_TREE:
+-			irq_radix_revmap_insert(domain, virq, hwirq);
++			mutex_lock(&revmap_trees_mutex);
++			radix_tree_insert(&domain->revmap_data.tree, hwirq, irq_data);
++			mutex_unlock(&revmap_trees_mutex);
+ 			break;
+ 		}
+ 
+@@ -688,64 +690,6 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
+ EXPORT_SYMBOL_GPL(irq_find_mapping);
+ 
+ /**
+- * irq_radix_revmap_lookup() - Find a linux irq from a hw irq number.
+- * @domain: domain owning this hardware interrupt
+- * @hwirq: hardware irq number in that domain space
+- *
+- * This is a fast path, for use by irq controller code that uses radix tree
+- * revmaps
+- */
+-unsigned int irq_radix_revmap_lookup(struct irq_domain *domain,
+-				     irq_hw_number_t hwirq)
+-{
+-	struct irq_data *irq_data;
+-
+-	if (WARN_ON_ONCE(domain->revmap_type != IRQ_DOMAIN_MAP_TREE))
+-		return irq_find_mapping(domain, hwirq);
+-
+-	/*
+-	 * Freeing an irq can delete nodes along the path to
+-	 * do the lookup via call_rcu.
+-	 */
+-	rcu_read_lock();
+-	irq_data = radix_tree_lookup(&domain->revmap_data.tree, hwirq);
+-	rcu_read_unlock();
+-
+-	/*
+-	 * If found in radix tree, then fine.
+-	 * Else fallback to linear lookup - this should not happen in practice
+-	 * as it means that we failed to insert the node in the radix tree.
+-	 */
+-	return irq_data ? irq_data->irq : irq_find_mapping(domain, hwirq);
+-}
+-EXPORT_SYMBOL_GPL(irq_radix_revmap_lookup);
+-
+-/**
+- * irq_radix_revmap_insert() - Insert a hw irq to linux irq number mapping.
+- * @domain: domain owning this hardware interrupt
+- * @virq: linux irq number
+- * @hwirq: hardware irq number in that domain space
+- *
+- * This is for use by irq controllers that use a radix tree reverse
+- * mapping for fast lookup.
+- */
+-void irq_radix_revmap_insert(struct irq_domain *domain, unsigned int virq,
+-			     irq_hw_number_t hwirq)
+-{
+-	struct irq_data *irq_data = irq_get_irq_data(virq);
+-
+-	if (WARN_ON(domain->revmap_type != IRQ_DOMAIN_MAP_TREE))
+-		return;
+-
+-	if (virq) {
+-		mutex_lock(&revmap_trees_mutex);
+-		radix_tree_insert(&domain->revmap_data.tree, hwirq, irq_data);
+-		mutex_unlock(&revmap_trees_mutex);
+-	}
+-}
+-EXPORT_SYMBOL_GPL(irq_radix_revmap_insert);
+-
+-/**
+  * irq_linear_revmap() - Find a linux irq from a hw irq number.
+  * @domain: domain owning this hardware interrupt
+  * @hwirq: hardware irq number in that domain space
+-- 
+1.7.9.5
 
