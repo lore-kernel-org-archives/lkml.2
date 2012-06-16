@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759028Ab2FPBFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 21:05:16 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:53353 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758960Ab2FPBFO (ORCPT
+	id S1755743Ab2FPB5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 21:57:50 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:57530 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab2FPB5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 21:05:14 -0400
-Date: Fri, 15 Jun 2012 18:04:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 15/15] rcu: RCU_SAVE_DYNTICK code no longer
- ever dead
-Message-ID: <20120616010436.GX2389@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120615210550.GA27506@linux.vnet.ibm.com>
- <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339794370-28119-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120616000238.GG7613@leaf>
- <20120616000449.GH7613@leaf>
+	Fri, 15 Jun 2012 21:57:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120616000449.GH7613@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061601-5518-0000-0000-00000535DCDC
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Fri, 15 Jun 2012 21:57:27 -0400
+Message-ID: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
+Subject: SNB PCI root information
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lenb@kernel.org,
+        x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 05:04:49PM -0700, Josh Triplett wrote:
-> On Fri, Jun 15, 2012 at 05:02:38PM -0700, Josh Triplett wrote:
-> > On Fri, Jun 15, 2012 at 02:06:10PM -0700, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > Before RCU had unified idle, the RCU_SAVE_DYNTICK leg of the switch
-> > > statement in force_quiescent_state() was dead code for CONFIG_NO_HZ=n
-> > > kernel builds.  With unified idle, the code is never dead.  This commit
-> > > therefore removes the "if" statement designed to make gcc aware of when
-> > > the code was and was not dead.
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > One comment below; with that change:
-> > 
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > 
-> > >  kernel/rcutree.c |    2 --
-> > >  1 files changed, 0 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > index 75ad92a..0b0c9cc 100644
-> > > --- a/kernel/rcutree.c
-> > > +++ b/kernel/rcutree.c
-> > > @@ -1744,8 +1744,6 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
-> > >  		break; /* grace period idle or initializing, ignore. */
-> > >  
-> > >  	case RCU_SAVE_DYNTICK:
-> > > -		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
-> > > -			break; /* So gcc recognizes the dead code. */
-> > >  
-> > >  		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
-> > 
-> > Drop the blank line too?
-> 
-> Actually, I just realized a larger concern with what this change
-> implies: does this mean that whatever change made this code no longer
-> dead introduced a major locking bug here?  If so, has that change
-> already progressed past the point where you could update it to include
-> this fix?
+The PCI roots in multi-socket SNB are part of specific sockets.  This
+means optimization will need to know which socket the root is part of
+and therefore which cores have direct access as opposed to over one or
+more QPI links.
 
-No, the lock is dropped and then reacquired, so the "break" is OK.
-This change should have been made back when dyntick-idle mode became
-unconditional from RCU's viewpoint.
+I tried to find this information in the /sys filesystem in kernels up
+to the current upstream kernel.  It seems there is actually nothing
+like this.
 
-And yes, I probably should change "rcu_dyntick" to "rcu_idle" and
-make a bunch of similar changes.  But not particularly high priority.
+There are the files /sys/devices/pci*/*/local_cpus which should
+contain this information.  For each device we would be able to get the
+information about the local CPUs.
 
-							Thanx, Paul
+The SPARC OF handling seems to set the field, some Intel drivers seem
+to try to do it in a different way.
 
+The problem I have seen (at least on a Dell R620) is that the
+dev_to_code() function returns -1 which indicates that no node
+information is stored.
+
+If I understand the code correctly, the numa_node field can be set
+explicitly but is mostly inherited from the underlying device (bus
+etc).  Does this mean that the locality information should come from
+the same place where the PCI root data structure is initialized?
+
+This happens, if I'm not mistaken, in the ACPI table parsing.  I've
+disassembled the DSDT table and didn't find anything like this type of
+information.  At least I didn't see it.  I also couldn't find anything
+in the ACPI 5.0 spec.
+
+
+The questions are:
+a) am I missing something?
+b) do BIOSes (perhaps from other manufacturers) provide the information?
+c) can we get this fixed?
+d) can we interpolate the information for platforms where the BIOSes
+don't have the information?
