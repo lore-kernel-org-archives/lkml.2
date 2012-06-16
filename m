@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab2FPUt1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 16:49:27 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:20851 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757016Ab2FPUtY (ORCPT
+	id S1756910Ab2FPU5t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 16:57:49 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57419 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab2FPU5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 16:49:24 -0400
-Message-ID: <201206162049.q5GKnN74019488@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Sat, 16 Jun 2012 16:41:05 -0400
-Subject: [PATCH 3/3] bounce: allow use of bounce pool via config option
-To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-usb@vger.kernel.org>
-In-Reply-To: <201206162048.q5GKm1rt019464@farm-0002.internal.tilera.com>
+	Sat, 16 Jun 2012 16:57:47 -0400
+Date: Sat, 16 Jun 2012 13:57:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com,
+        nikunj@linux.vnet.ibm.com, axboe@kernel.dk, mingo@kernel.org,
+        tglx@linutronix.de, akpm@linux-foundation.org,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 09/10] POWERPC: smp: remove call to
+ ipi_call_lock()/ipi_call_unlock()
+Message-ID: <20120616205738.GM2420@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
+ <1338275765-3217-10-git-send-email-yong.zhang0@gmail.com>
+ <20120616163219.GI2420@linux.vnet.ibm.com>
+ <1339867858.15222.12.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339867858.15222.12.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061620-7408-0000-0000-000005EA1136
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tilegx USB OHCI support needs the bounce pool since we're not
-using the IOMMU to handle 32-bit addresses.
+On Sat, Jun 16, 2012 at 07:30:58PM +0200, Peter Zijlstra wrote:
+> On Sat, 2012-06-16 at 09:32 -0700, Paul E. McKenney wrote:
+> > However, there is an effort to get rid of stop_machine() from the
+> > CPU-down path...  So something else will be needed. 
+> 
+> Elsewhere in this thread I mentioned we could do a synchronize_sched().
+> I think that covers most of what stop-machine is doing these days.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/Kconfig |    6 ++++++
- mm/bounce.c       |    8 +++++---
- 2 files changed, 11 insertions(+), 3 deletions(-)
+Ah, apologies for the noise!
 
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index cf4bb69e..932e443 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -406,6 +406,12 @@ config TILE_USB
- 	  Provides USB host adapter support for the built-in EHCI and OHCI
- 	  interfaces on TILE-Gx chips.
- 
-+# USB OHCI needs the bounce pool since tilegx will often have more
-+# than 4GB of memory, but we don't currently use the IOTLB to present
-+# a 32-bit address to OHCI.  So we need to use a bounce pool instead.
-+config NEED_BOUNCE_POOL
-+	def_bool USB_OHCI_HCD
-+
- config HOTPLUG
- 	bool "Support for hot-pluggable devices"
- 	---help---
-diff --git a/mm/bounce.c b/mm/bounce.c
-index d1be02c..0420867 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -24,23 +24,25 @@
- 
- static mempool_t *page_pool, *isa_page_pool;
- 
--#ifdef CONFIG_HIGHMEM
-+#if defined(CONFIG_HIGHMEM) || defined(CONFIG_NEED_BOUNCE_POOL)
- static __init int init_emergency_pool(void)
- {
--#ifndef CONFIG_MEMORY_HOTPLUG
-+#if defined(CONFIG_HIGHMEM) && !defined(CONFIG_MEMORY_HOTPLUG)
- 	if (max_pfn <= max_low_pfn)
- 		return 0;
- #endif
- 
- 	page_pool = mempool_create_page_pool(POOL_SIZE, 0);
- 	BUG_ON(!page_pool);
--	printk("highmem bounce pool size: %d pages\n", POOL_SIZE);
-+	printk("bounce pool size: %d pages\n", POOL_SIZE);
- 
- 	return 0;
- }
- 
- __initcall(init_emergency_pool);
-+#endif
- 
-+#ifdef CONFIG_HIGHMEM
- /*
-  * highmem version, map in to vec
-  */
--- 
-1.7.10.3
+							Thanx, Paul
 
