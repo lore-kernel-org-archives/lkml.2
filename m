@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab2FPU5t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 16:57:49 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57419 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab2FPU5r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 16:57:47 -0400
-Date: Sat, 16 Jun 2012 13:57:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com,
-        nikunj@linux.vnet.ibm.com, axboe@kernel.dk, mingo@kernel.org,
-        tglx@linutronix.de, akpm@linux-foundation.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [RFC PATCH 09/10] POWERPC: smp: remove call to
- ipi_call_lock()/ipi_call_unlock()
-Message-ID: <20120616205738.GM2420@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
- <1338275765-3217-10-git-send-email-yong.zhang0@gmail.com>
- <20120616163219.GI2420@linux.vnet.ibm.com>
- <1339867858.15222.12.camel@twins>
+	id S1757071Ab2FPVDq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 17:03:46 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:45826 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756632Ab2FPVDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 17:03:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: huang ying <huang.ying.caritas@gmail.com>
+Subject: Re: [PATCH -v5 3/3] PCIe, PM, Add PCIe runtime D3cold support
+Date: Sat, 16 Jun 2012 23:09:01 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: =?iso-8859-2?q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>,
+        Jesse Barnes <jesse.barnes@intel.com>,
+        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+References: <1339382833-7928-1-git-send-email-ying.huang@intel.com> <201206152321.16913.rjw@sisk.pl> <CAC=cRTOCaMGxyS8pvDzYR55w_QOEbcNjgococfE0NtobAg24Hg@mail.gmail.com>
+In-Reply-To: <CAC=cRTOCaMGxyS8pvDzYR55w_QOEbcNjgococfE0NtobAg24Hg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339867858.15222.12.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061620-7408-0000-0000-000005EA1136
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206162309.02170.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 07:30:58PM +0200, Peter Zijlstra wrote:
-> On Sat, 2012-06-16 at 09:32 -0700, Paul E. McKenney wrote:
-> > However, there is an effort to get rid of stop_machine() from the
-> > CPU-down path...  So something else will be needed. 
+On Saturday, June 16, 2012, huang ying wrote:
+> On Sat, Jun 16, 2012 at 5:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> [snip]
+> >
+> > > @@ -731,9 +791,13 @@ int pci_set_power_state(struct pci_dev *
+> > >  {
+> > >       int error;
+> > >
+> > > -     /* bound the state we're entering */
+> > > -     if (state > PCI_D3hot)
+> > > +     /* D3cold during system suspend/hibernate is not supported */
+> > > +     if (!dev->runtime_d3cold && state > PCI_D3hot)
+> >
+> > I don't think this is the right place for the dev->runtime_d3cold check,
+> > I've already told you that and haven't heard anything from you causing me
+> > to change my mind.
+> >
+> > If you don't want D3cold to be used during system sleep transitions,
+> > please make sure that D3cold is not passed to pci_set_power_state() in
+> > those cases.
+> >
 > 
-> Elsewhere in this thread I mentioned we could do a synchronize_sched().
-> I think that covers most of what stop-machine is doing these days.
+> OK.  Checked pci_set_power_state usage with following command line:
+> 
+> $ grep 'pci_set_power_state' -r . | grep -v PCI_D3hot | grep -v PCI_D0 |
+> grep -v pci_choose_state
+> $ grep 'pci_set_power_state' -r . | grep -v PCI_D3hot | grep -v PCI_D0 |
+> grep -v pci_choose_state | grep -i d3cold
+> 
+> Found that, almost all pci_set_power_state usage is:
+> 
+> 1) set to PCI_Dx (not PCI_D3cold)
+> 2) set to the state that choosed by pci_choose_state()
+> 3) driver use pci_prepare_to_sleep(), which will call pci_set_power_state()
+> 
+> The only two exceptions are as follow:
+> 
+> ./drivers/misc/cb710/core.c:            pci_set_power_state(pdev,
+> PCI_D3cold);
+> ./arch/x86/pci/mrst.c:  pci_set_power_state(dev, PCI_D3cold);
 
-Ah, apologies for the noise!
+Well, no one is supposed to pass PCI_D3cold to pci_set_power_state() before
+the $subject patch, so they should be fixed anyway.
 
-							Thanx, Paul
+> And pci_choose_state() will not return PCI_D3cold for system suspend.
+> 
+> So what do you think about the following solution?
+> 
+> a) Change pci_prepare_to_sleep(), so that it will not put device into
+> PCI_D3cold.
+> b) Change PCI_D3cold to PCI_D3hot in the following two places,
+> 
+> ./drivers/misc/cb710/core.c:            pci_set_power_state(pdev,
+> PCI_D3cold);
+> ./arch/x86/pci/mrst.c:  pci_set_power_state(dev, PCI_D3cold);
 
+Yes, that will do.
+
+Thanks,
+Rafael
