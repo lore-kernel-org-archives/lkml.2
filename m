@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab2FPWE5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 18:04:57 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35897 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756627Ab2FPWEx (ORCPT
+	id S1757491Ab2FPWFq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 18:05:46 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57460 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627Ab2FPWE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 18:04:53 -0400
+	Sat, 16 Jun 2012 18:04:59 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-serial@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 03/10] fblog: register framebuffer objects
-Date: Sun, 17 Jun 2012 00:04:19 +0200
-Message-Id: <1339884266-9201-4-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH 09/10] fblog: register all handlers on module-init
+Date: Sun, 17 Jun 2012 00:04:25 +0200
+Message-Id: <1339884266-9201-10-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
@@ -23,150 +23,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We register each available framebuffer in the system with the fblog driver
-so we always know all active devices. We directly open the fb-driver,
-initialize the buffer and load a font so we are ready for drawing
-operations. If a device cannot be opened, we mark it as dead and ignore it
-in all other functions.
+We now create a new "fblog" device when initializing the fblog module. We
+register the "active" sysfs-file with it so user-space can now access
+fblog. We also register the framebuffer-notifier and console-handler so
+fblog is ready to go.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/console/fblog.c |  108 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 108 insertions(+)
+ drivers/video/console/fblog.c |   59 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
 
 diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-index 1504ba9..8038dcc 100644
+index 79bfbcc..9d3b072 100644
 --- a/drivers/video/console/fblog.c
 +++ b/drivers/video/console/fblog.c
-@@ -39,6 +39,14 @@
- #include <linux/font.h>
- #include <linux/module.h>
- 
-+#define FBLOG_STR(x) x, sizeof(x) - 1
-+
-+enum fblog_flags {
-+	FBLOG_KILLED,
-+	FBLOG_SUSPENDED,
-+	FBLOG_BLANKED,
-+};
-+
- /**
-  * struct fblog_buf: Console text buffer
-  *
-@@ -61,6 +69,30 @@ struct fblog_buf {
- 	size_t pos_y;
+@@ -92,6 +92,7 @@ struct fblog_fb {
  };
  
-+/**
-+ * struct fblog_fb: Framebuffer object
-+ *
-+ * For each framebuffer we register this object. It contains all data we need to
-+ * display the console log on it. The index of a framebuffer in registered_fb[]
-+ * is the same as in fblog_fbs[]. So the following must always be true if the
-+ * pointers are non-NULL:
-+ *     registered_fb[idx] == fblog_fbs[idx]->info
-+ *     fblog_fbs[idx]->info->node == idx
-+ *
-+ * flags: Framebuffer flags (see fblog_flags)
-+ * info: Pointer to the associated framebuffer device
-+ * font: Currently used font
-+ * buf: Console text buffer
-+ */
-+struct fblog_fb {
-+	unsigned long flags;
-+	struct fb_info *info;
-+	const struct font_desc *font;
-+	struct fblog_buf buf;
-+};
-+
-+static struct fblog_fb *fblog_fbs[FB_MAX];
-+
- static void fblog_buf_resize(struct fblog_buf *buf, size_t width,
- 			     size_t height)
- {
-@@ -165,6 +197,82 @@ static void fblog_buf_write(struct fblog_buf *buf, const char *str, size_t len)
- 	}
- }
+ static struct fblog_fb *fblog_fbs[FB_MAX];
++static struct device *fblog_device;
+ static atomic_t fblog_active;
  
-+static struct fblog_fb *fblog_info2fb(struct fb_info *info)
+ static void fblog_buf_resize(struct fblog_buf *buf, size_t width,
+@@ -609,13 +610,71 @@ static ssize_t fblog_dev_active_store(struct device *dev,
+ static DEVICE_ATTR(active, S_IRUGO | S_IWUSR | S_IWGRP, fblog_dev_active_show,
+ 		   fblog_dev_active_store);
+ 
++static void fblog_dev_release(struct device *dev)
 +{
-+	if (!info || info->node < 0 || info->node >= FB_MAX ||
-+	    !registered_fb[info->node])
-+		return NULL;
-+
-+	return fblog_fbs[info->node];
-+}
-+
-+static void fblog_register(struct fb_info *info)
-+{
-+	struct fblog_fb *fb;
-+	struct fb_var_screeninfo var;
-+	const struct fb_videomode *mode;
-+	unsigned int width, height;
-+
-+	if (!info || info->node < 0 || info->node >= FB_MAX)
-+		return;
-+	if (!registered_fb[info->node] || fblog_fbs[info->node])
-+		return;
-+
-+	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
-+	if (!fb)
-+		return;
-+
-+	fblog_fbs[info->node] = fb;
-+	fb->info = info;
-+	fblog_buf_init(&fb->buf);
-+	fblog_buf_write(&fb->buf, FBLOG_STR("Framebuffer log initialized\n"));
-+
-+	if (!try_module_get(info->fbops->owner))
-+		goto out_killed;
-+	if (info->fbops->fb_open && info->fbops->fb_open(info, 0))
-+		goto out_unref;
-+
-+	var = info->var;
-+	mode = fb_find_best_mode(&var, &info->modelist);
-+	var.activate = FB_ACTIVATE_NOW | FB_ACTIVATE_FORCE;
-+	fb_set_var(info, &var);
-+
-+	fb->font = get_default_font(info->var.xres, info->var.yres,
-+				    info->pixmap.blit_x,
-+				    info->pixmap.blit_y);
-+	if (fb->font) {
-+		width = info->var.xres / fb->font->width;
-+		height = info->var.yres / fb->font->height;
-+		fblog_buf_resize(&fb->buf, width, height);
-+	}
-+
-+	return;
-+
-+out_unref:
-+	module_put(info->fbops->owner);
-+out_killed:
-+	set_bit(FBLOG_KILLED, &fb->flags);
-+}
-+
-+static void fblog_unregister(struct fblog_fb *fb)
-+{
-+	struct fb_info *info;
-+
-+	if (!fb)
-+		return;
-+
-+	info = fb->info;
-+	if (!test_bit(FBLOG_KILLED, &fb->flags)) {
-+		if (info->fbops->fb_release)
-+			info->fbops->fb_release(info, 0);
-+		module_put(info->fbops->owner);
-+	}
-+
-+	fblog_buf_deinit(&fb->buf);
-+	fblog_fbs[info->node] = NULL;
-+	kfree(fb);
++	kfree(dev);
++	module_put(THIS_MODULE);
 +}
 +
  static int __init fblog_init(void)
  {
++	int ret;
++
++	fblog_device = kzalloc(sizeof(*fblog_device), GFP_KERNEL);
++	if (!fblog_device) {
++		pr_err("fblog: cannot allocate device\n");
++		ret = -ENOMEM;
++		goto err_out;
++	}
++
++	__module_get(THIS_MODULE);
++	device_initialize(fblog_device);
++	fblog_device->class = fb_class;
++	fblog_device->release = fblog_dev_release;
++	dev_set_name(fblog_device, "fblog");
++
++	ret = device_add(fblog_device);
++	if (ret) {
++		pr_err("fblog: cannot add device\n");
++		goto err_dev;
++	}
++
++	ret = fb_register_client(&fblog_notifier);
++	if (ret) {
++		pr_err("fblog: cannot register framebuffer notifier\n");
++		goto err_dev_rm;
++	}
++
++	ret = device_create_file(fblog_device, &dev_attr_active);
++	if (ret) {
++		pr_err("fblog: cannot create sysfs entry\n");
++		goto err_fb;
++	}
++
++	register_console(&fblog_con_driver);
++
  	return 0;
++
++err_fb:
++	fb_unregister_client(&fblog_notifier);
++err_dev_rm:
++	device_del(fblog_device);
++err_dev:
++	put_device(fblog_device);
++err_out:
++	return ret;
+ }
+ 
+ static void __exit fblog_exit(void)
+ {
++	unregister_console(&fblog_con_driver);
++	device_remove_file(fblog_device, &dev_attr_active);
++	device_del(fblog_device);
++	fb_unregister_client(&fblog_notifier);
++	console_lock();
++	fblog_deactivate();
++	console_unlock();
++	put_device(fblog_device);
+ }
+ 
+ module_init(fblog_init);
 -- 
 1.7.10.4
 
