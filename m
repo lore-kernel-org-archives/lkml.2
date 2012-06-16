@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab2FPMiI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 08:38:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33283 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2FPMiH (ORCPT
+	id S1756805Ab2FPMmr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 08:42:47 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41376 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab2FPMmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 08:38:07 -0400
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: [PATCH] mm/frontswap: cleanup doc and comment error
-Date: Sat, 16 Jun 2012 20:37:48 +0800
-Message-Id: <1339850268-13384-1-git-send-email-liwp.linux@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 16 Jun 2012 08:42:45 -0400
+Message-ID: <1339850558.905.10.camel@foo>
+Subject: Re: [PATCH 1/2] printk: use logbuf_mutex_lock to stop syslog_seq
+ from going wild
+From: Kay Sievers <kay@vrfy.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, wfg@linux.intel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Sat, 16 Jun 2012 14:42:38 +0200
+In-Reply-To: <1339821655-14059-1-git-send-email-yuanhan.liu@linux.intel.com>
+References: <1339821655-14059-1-git-send-email-yuanhan.liu@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.5.2 (3.5.2-2.fc18)
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Sat, 2012-06-16 at 12:40 +0800, Yuanhan Liu wrote:
+> Although syslog_seq and log_next_seq stuff are protected by logbuf_lock
+> spin log, it's not enough. Say we have two processes A and B, and let
+> syslog_seq = N, while log_next_seq = N + 1, and the two processes both
+> come to syslog_print at almost the same time. And No matter which
+> process get the spin lock first, it will increase syslog_seq by one,
+> then release spin lock; thus later, another process increase syslog_seq
+> by one again. In this case, syslog_seq is bigger than syslog_next_seq.
+> And latter, it would make:
+>    wait_event_interruptiable(log_wait, syslog != log_next_seq)
+> don't wait any more even there is no new write comes. Thus it introduce
+> a infinite loop reading.
 
-Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
----
- Documentation/vm/frontswap.txt |    4 ++--
- mm/frontswap.c                 |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Oh, multiple readers on the same shared file descriptor are not useful,
+but sure, that needs fixing. Thanks for tracking that down!
 
-diff --git a/Documentation/vm/frontswap.txt b/Documentation/vm/frontswap.txt
-index 37067cf..5ef2d13 100644
---- a/Documentation/vm/frontswap.txt
-+++ b/Documentation/vm/frontswap.txt
-@@ -25,7 +25,7 @@ with the specified swap device number (aka "type").  A "store" will
- copy the page to transcendent memory and associate it with the type and
- offset associated with the page. A "load" will copy the page, if found,
- from transcendent memory into kernel memory, but will NOT remove the page
--from from transcendent memory.  An "invalidate_page" will remove the page
-+from transcendent memory.  An "invalidate_page" will remove the page
- from transcendent memory and an "invalidate_area" will remove ALL pages
- associated with the swap type (e.g., like swapoff) and notify the "device"
- to refuse further stores with that swap type.
-@@ -99,7 +99,7 @@ server configured with a large amount of RAM... without pre-configuring
- how much of the RAM is available for each of the clients!
+Looks like the same issue existed in the original code already, it's
+just that it was granular at a single character level, and not a line,
+and the seqnum which icreases one-by-one, so the issue was hard to
+trigger.
+
+We better make the mutexes interruptible, right? Something like this?
+
+Thanks,
+Kay
+
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..5a01420 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -414,7 +414,10 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	if (!user)
+ 		return -EBADF;
  
- In the virtual case, the whole point of virtualization is to statistically
--multiplex physical resources acrosst the varying demands of multiple
-+multiplex physical resources across the varying demands of multiple
- virtual machines.  This is really hard to do with RAM and efforts to do
- it well with no kernel changes have essentially failed (except in some
- well-publicized special-case workloads).
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index e250255..174c3f3 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -119,7 +119,7 @@ EXPORT_SYMBOL(__frontswap_init);
-  * "Store" data from a page to frontswap and associate it with the page's
-  * swaptype and offset.  Page must be locked and in the swap cache.
-  * If frontswap already contains a page with matching swaptype and
-- * offset, the frontswap implmentation may either overwrite the data and
-+ * offset, the frontswap implementation may either overwrite the data and
-  * return success or invalidate the page from frontswap and return failure.
-  */
- int __frontswap_store(struct page *page)
--- 
-1.7.9.5
+-	mutex_lock(&user->lock);
++	ret = mutex_lock_interruptible(&user->lock);
++	if (ret)
++		return ret;
++
+ 	raw_spin_lock(&logbuf_lock);
+ 	while (user->seq == log_next_seq) {
+ 		if (file->f_flags & O_NONBLOCK) {
+@@ -974,6 +977,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ {
+ 	bool clear = false;
+ 	static int saved_console_loglevel = -1;
++	static DEFINE_MUTEX(syslog_mutex);
+ 	int error;
+ 
+ 	error = check_syslog_permissions(type, from_file);
+@@ -1000,11 +1004,17 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ 			error = -EFAULT;
+ 			goto out;
+ 		}
++		error = mutex_lock_interruptible(&syslog_mutex);
++		if (error)
++			goto out;
+ 		error = wait_event_interruptible(log_wait,
+ 						 syslog_seq != log_next_seq);
+-		if (error)
++		if (error) {
++			mutex_unlock(&syslog_mutex);
+ 			goto out;
++		}
+ 		error = syslog_print(buf, len);
++		mutex_unlock(&syslog_mutex);
+ 		break;
+ 	/* Read/clear last kernel messages */
+ 	case SYSLOG_ACTION_READ_CLEAR:
 
