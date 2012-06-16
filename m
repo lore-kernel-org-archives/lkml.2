@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759118Ab2FPAti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 20:49:38 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57993 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758984Ab2FPAth (ORCPT
+	id S1758974Ab2FPA4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 20:56:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38095 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758903Ab2FPA4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 20:49:37 -0400
-Date: Fri, 15 Jun 2012 17:49:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 09/15] rcu: Increasing rcu_barrier()
- concurrency
-Message-ID: <20120616004931.GU2389@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120615210550.GA27506@linux.vnet.ibm.com>
- <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339794370-28119-9-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120615233151.GA7613@leaf>
- <1339806080.25903.68.camel@gandalf.stny.rr.com>
+	Fri, 15 Jun 2012 20:56:18 -0400
+Date: Fri, 15 Jun 2012 17:55:50 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] swap: fix shmem swapping when more than 8 areas
+Message-ID: <alpine.LSU.2.00.1206151752420.8741@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339806080.25903.68.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061600-7408-0000-0000-000005E5DA3D
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 08:21:20PM -0400, Steven Rostedt wrote:
-> On Fri, 2012-06-15 at 16:31 -0700, Josh Triplett wrote:
-> >   
-> > > -	smp_mb();  /* Prevent any prior operations from leaking in. */
-> > > +	/*
-> > > +	 * Ensure tht all prior references, including to ->n_barrier_done,
-> > > +	 * are ordered before the _rcu_barrier() machinery.
-> > > +	 */
-> > > +	smp_mb();  /* See above block comment. */
-> > 
-> > If checkpatch complains about the lack of a comment to the right of a
-> > barrier even when the barrier has a comment directly above it, that
-> > seems like a bug in checkpatch that needs fixing, to prevent developers
-> > from having to add noise like "See above block comment.". :)
-> 
-> 
-> Yuck yuck yuck yuck!!!
-> 
-> 
-> Really, checkpatch is not the golden rule. I've copied an old checkpatch
-> from something like 2.6.38 or so and use that today, where it was still
-> reasonable. I've long abandoned the latest checkpatch, as it causes too
-> many false positives. Or nazis like dictation.
-> 
-> My rule of thumb is this. If what checkpatch tells you to do makes the
-> format either uglier, or look stupid, it's a good idea to ignore the
-> checkpatch complaint.
-> 
-> I think in this case, you hit the latter.
+Minchan Kim reports that when a system has many swap areas, and tmpfs
+swaps out to the ninth or more, shmem_getpage_gfp()'s attempts to read
+back the page cannot locate it, and the read fails with -ENOMEM.
 
-Heh.  I have been doing this "/* See above block comment. */" thing for
-quite some time.  ;-)
+Whoops.  Yes, I blindly followed read_swap_header()'s pte_to_swp_entry(
+swp_entry_to_pte()) technique for determining maximum usable swap offset,
+without stopping to realize that that actually depends upon the pte swap
+encoding shifting swap offset to the higher bits and truncating it there.
+Whereas our radix_tree swap encoding leaves offset in the lower bits:
+it's swap "type" (that is, index of swap area) that was truncated.
 
-							Thanx, Paul
+Fix it by reducing the SWP_TYPE_SHIFT() in swapops.h, and removing the
+broken radix_to_swp_entry(swp_to_radix_entry()) from read_swap_header().
 
+This does not reduce the usable size of a swap area any further, it leaves
+it as claimed when making the original commit: no change from 3.0 on x86_64,
+nor on i386 without PAE; but 3.0's 512GB is reduced to 128GB per swapfile
+on i386 with PAE.  It's not a change I would have risked five years ago,
+but with x86_64 supported for ten years, I believe it's appropriate now.
+
+Hmm, and what if some architecture implements its swap pte with offset
+encoded below type?  That would equally break the maximum usable swap
+offset check.  Happily, they all follow the same tradition of encoding
+offset above type, but I'll prepare a check on that for next.
+
+Reported-and-Reviewed-and-Tested-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org [3.1, 3.2, 3.3, 3.4]
+---
+
+ include/linux/swapops.h |    8 +++++---
+ mm/swapfile.c           |   12 ++++--------
+ 2 files changed, 9 insertions(+), 11 deletions(-)
+
+--- 3.5-rc2/include/linux/swapops.h	2012-05-20 15:29:13.000000000 -0700
++++ linux/include/linux/swapops.h	2012-06-13 12:01:35.390711624 -0700
+@@ -9,13 +9,15 @@
+  * get good packing density in that tree, so the index should be dense in
+  * the low-order bits.
+  *
+- * We arrange the `type' and `offset' fields so that `type' is at the five
++ * We arrange the `type' and `offset' fields so that `type' is at the seven
+  * high-order bits of the swp_entry_t and `offset' is right-aligned in the
+- * remaining bits.
++ * remaining bits.  Although `type' itself needs only five bits, we allow for
++ * shmem/tmpfs to shift it all up a further two bits: see swp_to_radix_entry().
+  *
+  * swp_entry_t's are *never* stored anywhere in their arch-dependent format.
+  */
+-#define SWP_TYPE_SHIFT(e)	(sizeof(e.val) * 8 - MAX_SWAPFILES_SHIFT)
++#define SWP_TYPE_SHIFT(e)	((sizeof(e.val) * 8) - \
++			(MAX_SWAPFILES_SHIFT + RADIX_TREE_EXCEPTIONAL_SHIFT))
+ #define SWP_OFFSET_MASK(e)	((1UL << SWP_TYPE_SHIFT(e)) - 1)
+ 
+ /*
+--- 3.5-rc2/mm/swapfile.c	2012-06-08 18:48:40.744605221 -0700
++++ linux/mm/swapfile.c	2012-06-13 12:13:56.214729684 -0700
+@@ -1916,24 +1916,20 @@ static unsigned long read_swap_header(st
+ 
+ 	/*
+ 	 * Find out how many pages are allowed for a single swap
+-	 * device. There are three limiting factors: 1) the number
++	 * device. There are two limiting factors: 1) the number
+ 	 * of bits for the swap offset in the swp_entry_t type, and
+ 	 * 2) the number of bits in the swap pte as defined by the
+-	 * the different architectures, and 3) the number of free bits
+-	 * in an exceptional radix_tree entry. In order to find the
++	 * different architectures. In order to find the
+ 	 * largest possible bit mask, a swap entry with swap type 0
+ 	 * and swap offset ~0UL is created, encoded to a swap pte,
+ 	 * decoded to a swp_entry_t again, and finally the swap
+ 	 * offset is extracted. This will mask all the bits from
+ 	 * the initial ~0UL mask that can't be encoded in either
+ 	 * the swp_entry_t or the architecture definition of a
+-	 * swap pte.  Then the same is done for a radix_tree entry.
++	 * swap pte.
+ 	 */
+ 	maxpages = swp_offset(pte_to_swp_entry(
+-			swp_entry_to_pte(swp_entry(0, ~0UL))));
+-	maxpages = swp_offset(radix_to_swp_entry(
+-			swp_to_radix_entry(swp_entry(0, maxpages)))) + 1;
+-
++			swp_entry_to_pte(swp_entry(0, ~0UL)))) + 1;
+ 	if (maxpages > swap_header->info.last_page) {
+ 		maxpages = swap_header->info.last_page + 1;
+ 		/* p->max is an unsigned int: don't overflow it */
