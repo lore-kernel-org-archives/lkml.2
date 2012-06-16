@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab2FPSIK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 14:08:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103Ab2FPSIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 14:08:09 -0400
-Date: Sat, 16 Jun 2012 20:05:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        peterz@infradead.org, Jim Keniston <jkenisto@us.ibm.com>
-Subject: Re: [PATCH v2 1/2] uprobes: Pass probed vaddr to
-	arch_uprobe_analyze_insn()
-Message-ID: <20120616180555.GA13634@redhat.com>
-References: <20120608093257.GG13409@in.ibm.com> <20120611161215.GA12116@redhat.com> <20120612165404.GB30555@linux.vnet.ibm.com> <20120612174305.GA16349@redhat.com> <20120613191519.GA14246@redhat.com> <20120614114514.GA12051@linux.vnet.ibm.com> <20120614181934.GA9424@redhat.com> <20120615123300.GA5748@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120615123300.GA5748@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756098Ab2FPSNX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 14:13:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65179 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab2FPSNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 14:13:22 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] pinctrl/pinctrl-core: cleanup pinctrl_register
+Date: Sat, 16 Jun 2012 23:43:16 +0530
+Message-Id: <1339870396-6726-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar,
+lots of places the ret is used just for non zero cases
+with out that also we can check the status of the function
+calls.
 
-To clarify: I am not arguing, I am asking because I know nothing about
-asm/opcodes/etc.
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
 
-On 06/15, Srikar Dronamraju wrote:
->
-> > But this can't protect from the malicious user who does
-> > mmap(64-bit-code, PROT_EXEC) from a 32-bit app, and this can confuse
-> > uprobes even if that 32-bit app never tries to actually execute that
-> > 64-bit-code.
-> >
->
-> So if we read just after we allocate uprobe struct but before
-> probe insertion, then we dont need to check this for each process.
->
-> So if the library was 64 bit mapped in 32 bit process and has a valid
-> instruction for 64 bit, then we just check for valid 64 bit instructions
-> and allow insertion of the breakpoint even in the 32 bit process.
+This is _completely_ untested change and also non build tested (since
+i dont have a cross compiler (arch?) to build with and it was not
+selectable in make allyesconfig)
 
-And what happens if this insn is not valid from validate_insn_32bits()
-pov and that 32-bit application tries to execute it? Or vice versa,
-see below.
+i didn't removed the one and only ret assignment
+at pinctrl_register_pins because it became ugly while seeing at it.
 
-> Here is a very crude implementation of the same.
-> Also this depends on read_mapping_page taking NULL as an valid argument
-> for file. As a side-effect we can do away with UPROBE_COPY_INSN which
-> was set and read at just one place.
->
-> 1. Move the copy_insn to just after alloc_uprobe.
-> 2. Assume that copy_insn can work without struct file
-> ...
-> 5. Move the analyze instruction to before the actual probe insertion.
+ drivers/pinctrl/core.c |   17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
 
-OK, this is what I think we should do anyway (at least try to do).
-
-> 3. Read the elfhdr for the file.
-> 4. Pass the elfhdr to the arch specific analyze insn
-
-This assumes that everything is elf. Why? An application is free to
-create a file in any format and do mmap(PROT_EXEC).
-
-But OK, probably we can restrict uprobe_register() to work only with
-elf files which do not mix 32/64 bits.
-
-
-
-
-My concern is, are you sure an evil user can't confuse uprobes and
-do something bad?
-
-Just to explain what I mean. For example, we certainly do not want
-to allow to probe the "syscall" insn, at least with the current
-implementation. So I assume that validate_insn_64bits("syscall")
-must fail.
-
-Are you sure that validate_insn_32bits("syscall") will fail too?
-
-Of course, I am not asking about "syscall" in particular. In general,
-suppose that, say, validate_insn_64bits() returns true. Are you sure
-this insn can't do something different and harmful if it is executed
-by __USER32_CS task?
-
-Oleg.
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 0cc053a..50d9c28 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1395,9 +1395,9 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+ 	struct pinctrl_dev *pctldev;
+ 	int ret;
+ 
+-	if (pctldesc == NULL)
++	if (!pctldesc)
+ 		return NULL;
+-	if (pctldesc->name == NULL)
++	if (!pctldesc->name)
+ 		return NULL;
+ 
+ 	pctldev = kzalloc(sizeof(*pctldev), GFP_KERNEL);
+@@ -1415,23 +1415,20 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+ 	pctldev->dev = dev;
+ 
+ 	/* check core ops for sanity */
+-	ret = pinctrl_check_ops(pctldev);
+-	if (ret) {
++	if (pinctrl_check_ops(pctldev)) {
+ 		dev_err(dev, "pinctrl ops lacks necessary functions\n");
+ 		goto out_err;
+ 	}
+ 
+ 	/* If we're implementing pinmuxing, check the ops for sanity */
+ 	if (pctldesc->pmxops) {
+-		ret = pinmux_check_ops(pctldev);
+-		if (ret)
++		if (pinmux_check_ops(pctldev))
+ 			goto out_err;
+ 	}
+ 
+ 	/* If we're implementing pinconfig, check the ops for sanity */
+ 	if (pctldesc->confops) {
+-		ret = pinconf_check_ops(pctldev);
+-		if (ret)
++		if (pinconf_check_ops(pctldev))
+ 			goto out_err;
+ 	}
+ 
+@@ -1457,11 +1454,9 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+ 		if (IS_ERR(s)) {
+ 			dev_dbg(dev, "failed to lookup the default state\n");
+ 		} else {
+-			ret = pinctrl_select_state_locked(pctldev->p, s);
+-			if (ret) {
++			if (pinctrl_select_state_locked(pctldev->p, s))
+ 				dev_err(dev,
+ 					"failed to select default state\n");
+-			}
+ 		}
+ 	}
+ 
+-- 
+1.7.9.5
 
