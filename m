@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759024Ab2FPA4f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 20:56:35 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39038 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758987Ab2FPA4b (ORCPT
+	id S1758994Ab2FPBB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 21:01:58 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:53893 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758948Ab2FPBB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 20:56:31 -0400
-Date: Fri, 15 Jun 2012 17:56:05 -0700
+	Fri, 15 Jun 2012 21:01:57 -0400
+Date: Fri, 15 Jun 2012 18:01:49 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Josh Triplett <josh@joshtriplett.org>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -16,222 +16,103 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 14/15] rcu: Use for_each_rcu_flavor() in
- TREE_RCU tracing
-Message-ID: <20120616005605.GV2389@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 13/15] rcu: Introduce for_each_rcu_flavor()
+ and use it
+Message-ID: <20120616010149.GW2389@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20120615210550.GA27506@linux.vnet.ibm.com>
  <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339794370-28119-14-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120615235957.GF7613@leaf>
+ <1339794370-28119-13-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120615235239.GE7613@leaf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120615235957.GF7613@leaf>
+In-Reply-To: <20120615235239.GE7613@leaf>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061600-1780-0000-0000-0000067D604D
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00148402; UDB=6.00033822; UTC=2012-06-16
- 00:56:29
+x-cbid: 12061601-5518-0000-0000-00000535DB4D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 04:59:57PM -0700, Josh Triplett wrote:
-> On Fri, Jun 15, 2012 at 02:06:09PM -0700, Paul E. McKenney wrote:
+On Fri, Jun 15, 2012 at 04:52:40PM -0700, Josh Triplett wrote:
+> On Fri, Jun 15, 2012 at 02:06:08PM -0700, Paul E. McKenney wrote:
 > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > 
-> > This commit applies the new for_each_rcu_flavor() macro to the
-> > kernel/rcutree_trace.c file.
+> > The arrival of TREE_PREEMPT_RCU some years back included some ugly
+> > code involving either #ifdef or #ifdef'ed wrapper functions to iterate
+> > over all non-SRCU flavors of RCU.  This commit therefore introduces
+> > a for_each_rcu_flavor() iterator over the rcu_state structures for each
+> > flavor of RCU to clean up a bit of the ugliness.
 > > 
 > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcutree_trace.c |   95 +++++++++++++++++++-----------------------------
-> >  1 files changed, 38 insertions(+), 57 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-> > index 057408b..c618665 100644
-> > --- a/kernel/rcutree_trace.c
-> > +++ b/kernel/rcutree_trace.c
-> > @@ -48,22 +48,18 @@
+> 
+> Great cleanup!
+> 
+> A few comments below, though.
+> 
+> >  kernel/rcutree.c        |   53 +++++++++++++---------
+> >  kernel/rcutree.h        |   12 ++---
+> >  kernel/rcutree_plugin.h |  116 -----------------------------------------------
+> >  3 files changed, 36 insertions(+), 145 deletions(-)
+> 
+> Awesome diffstat.
+
+;-)
+
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index bd4e41c..75ad92a 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -84,6 +84,7 @@ struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
+> >  DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
 > >  
-> >  static void print_rcubarrier(struct seq_file *m, struct rcu_state *rsp)
-> >  {
-> > -	seq_printf(m, "%c bcc: %d nbd: %lu\n",
-> > -		   rsp->rcu_barrier_in_progress ? 'B' : '.',
-> > +	seq_printf(m, "%s: %c bcc: %d nbd: %lu\n",
-> > +		   rsp->name, rsp->rcu_barrier_in_progress ? 'B' : '.',
-> >  		   atomic_read(&rsp->barrier_cpu_count),
-> >  		   rsp->n_barrier_done);
-> >  }
+> >  static struct rcu_state *rcu_state;
+> > +LIST_HEAD(rcu_struct_flavors);
+> 
+> Does any means exist to turn this into a constant array known at compile
+> time rather than a runtime linked list?  Having this as a compile-time
+> constant may allow the compiler to unroll for_each_rcu_flavor and
+> potentially inline the calls inside it.
+
+I could do that, but none of the traversals is anywhere near performance
+critical, and all the ways I can think of to do this are uglier than
+the list.
+
+> > @@ -2539,9 +2548,10 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
 > >  
-> >  static int show_rcubarrier(struct seq_file *m, void *unused)
+> >  static void __cpuinit rcu_prepare_cpu(int cpu)
 > >  {
-> > -#ifdef CONFIG_TREE_PREEMPT_RCU
-> > -	seq_puts(m, "rcu_preempt: ");
-> > -	print_rcubarrier(m, &rcu_preempt_state);
-> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> > -	seq_puts(m, "rcu_sched: ");
-> > -	print_rcubarrier(m, &rcu_sched_state);
-> > -	seq_puts(m, "rcu_bh: ");
-> > -	print_rcubarrier(m, &rcu_bh_state);
+> > -	rcu_init_percpu_data(cpu, &rcu_sched_state, 0);
+> > -	rcu_init_percpu_data(cpu, &rcu_bh_state, 0);
+> > -	rcu_preempt_init_percpu_data(cpu);
 > > +	struct rcu_state *rsp;
 > > +
 > > +	for_each_rcu_flavor(rsp)
-> > +		print_rcubarrier(m, rsp);
+> > +		rcu_init_percpu_data(cpu, rsp, 0);
 > 
-> Now that you call this function exactly once, I'd suggest inlining it
-> for clarity; I don't think having it as a separate function makes sense
-> anymore.
+> This results in passing 0 as the "preemptible" parameter of
+> rcu_init_percpu_data, which seems wrong if the preemptible parameter has
+> any meaning at all. :)
 
-This one I am OK with.
+Good catch!  Hmmm...  Probably best to move this to the rcu_state
+initialization.
 
-> > @@ -129,24 +125,16 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
-> >  		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
-> >  }
-> >  
-> > -#define PRINT_RCU_DATA(name, func, m) \
-> > -	do { \
-> > -		int _p_r_d_i; \
-> > -		\
-> > -		for_each_possible_cpu(_p_r_d_i) \
-> > -			func(m, &per_cpu(name, _p_r_d_i)); \
-> > -	} while (0)
-> > -
-> >  static int show_rcudata(struct seq_file *m, void *unused)
-> >  {
-> > -#ifdef CONFIG_TREE_PREEMPT_RCU
-> > -	seq_puts(m, "rcu_preempt:\n");
-> > -	PRINT_RCU_DATA(rcu_preempt_data, print_one_rcu_data, m);
-> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> > -	seq_puts(m, "rcu_sched:\n");
-> > -	PRINT_RCU_DATA(rcu_sched_data, print_one_rcu_data, m);
-> > -	seq_puts(m, "rcu_bh:\n");
-> > -	PRINT_RCU_DATA(rcu_bh_data, print_one_rcu_data, m);
-> > +	int cpu;
-> > +	struct rcu_state *rsp;
-> > +
-> > +	for_each_rcu_flavor(rsp) {
-> > +		seq_printf(m, "%s:\n", rsp->name);
-> > +		for_each_possible_cpu(cpu)
-> > +		print_one_rcu_data(m, per_cpu_ptr(rsp->rda, cpu));
-> > +	}
+> > @@ -2577,18 +2588,15 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+> >  		 * touch any data without introducing corruption. We send the
+> >  		 * dying CPU's callbacks to an arbitrarily chosen online CPU.
+> >  		 */
+> > -		rcu_cleanup_dying_cpu(&rcu_bh_state);
+> > -		rcu_cleanup_dying_cpu(&rcu_sched_state);
+> > -		rcu_preempt_cleanup_dying_cpu();
+> > -		rcu_cleanup_after_idle(cpu);
+> > +		for_each_rcu_flavor(rsp)
+> > +			rcu_cleanup_dying_cpu(rsp);
 > 
-> As above, I'd suggest inlining print_one_rcu_data.
+> Why did rcu_cleanup_after_idle go away here?
 
-Not this one, too bulky.
-
-> Also, you need to indent the body of the for_each_possible_cpu loop.
-
-Good point.
-
-> > @@ -200,6 +188,9 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
-> >  
-> >  static int show_rcudata_csv(struct seq_file *m, void *unused)
-> >  {
-> > +	int cpu;
-> > +	struct rcu_state *rsp;
-> > +
-> >  	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pgp\",\"pq\",");
-> >  	seq_puts(m, "\"dt\",\"dt nesting\",\"dt NMI nesting\",\"df\",");
-> >  	seq_puts(m, "\"of\",\"qll\",\"ql\",\"qs\"");
-> > @@ -207,14 +198,11 @@ static int show_rcudata_csv(struct seq_file *m, void *unused)
-> >  	seq_puts(m, "\"kt\",\"ktl\"");
-> >  #endif /* #ifdef CONFIG_RCU_BOOST */
-> >  	seq_puts(m, ",\"b\",\"ci\",\"co\",\"ca\"\n");
-> > -#ifdef CONFIG_TREE_PREEMPT_RCU
-> > -	seq_puts(m, "\"rcu_preempt:\"\n");
-> > -	PRINT_RCU_DATA(rcu_preempt_data, print_one_rcu_data_csv, m);
-> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> > -	seq_puts(m, "\"rcu_sched:\"\n");
-> > -	PRINT_RCU_DATA(rcu_sched_data, print_one_rcu_data_csv, m);
-> > -	seq_puts(m, "\"rcu_bh:\"\n");
-> > -	PRINT_RCU_DATA(rcu_bh_data, print_one_rcu_data_csv, m);
-> > +	for_each_rcu_flavor(rsp) {
-> > +		seq_printf(m, "\"%s:\"\n", rsp->name);
-> > +		for_each_possible_cpu(cpu)
-> > +			print_one_rcu_data_csv(m, per_cpu_ptr(rsp->rda, cpu));
-> > +	}
-> 
-> As above, I'd suggest inlining print_one_rcu_data_csv.
-
-Also too bulky.
-
-> > @@ -304,9 +292,9 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
-> >  	struct rcu_node *rnp;
-> >  
-> >  	gpnum = rsp->gpnum;
-> > -	seq_printf(m, "c=%lu g=%lu s=%d jfq=%ld j=%x "
-> > +	seq_printf(m, "%s: c=%lu g=%lu s=%d jfq=%ld j=%x "
-> >  		      "nfqs=%lu/nfqsng=%lu(%lu) fqlh=%lu oqlen=%ld/%ld\n",
-> > -		   rsp->completed, gpnum, rsp->fqs_state,
-> > +		   rsp->name, rsp->completed, gpnum, rsp->fqs_state,
-> >  		   (long)(rsp->jiffies_force_qs - jiffies),
-> >  		   (int)(jiffies & 0xffff),
-> >  		   rsp->n_force_qs, rsp->n_force_qs_ngp,
-> > @@ -329,14 +317,10 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
-> >  
-> >  static int show_rcuhier(struct seq_file *m, void *unused)
-> >  {
-> > -#ifdef CONFIG_TREE_PREEMPT_RCU
-> > -	seq_puts(m, "rcu_preempt:\n");
-> > -	print_one_rcu_state(m, &rcu_preempt_state);
-> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> > -	seq_puts(m, "rcu_sched:\n");
-> > -	print_one_rcu_state(m, &rcu_sched_state);
-> > -	seq_puts(m, "rcu_bh:\n");
-> > -	print_one_rcu_state(m, &rcu_bh_state);
-> > +	struct rcu_state *rsp;
-> > +
-> > +	for_each_rcu_flavor(rsp)
-> > +		print_one_rcu_state(m, rsp);
-> 
-> As above, I'd suggest inlining print_one_rcu_state.
-
-Also too bulky.
-
-> > @@ -377,11 +361,10 @@ static void show_one_rcugp(struct seq_file *m, struct rcu_state *rsp)
-> >  
-> >  static int show_rcugp(struct seq_file *m, void *unused)
-> >  {
-> > -#ifdef CONFIG_TREE_PREEMPT_RCU
-> > -	show_one_rcugp(m, &rcu_preempt_state);
-> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> > -	show_one_rcugp(m, &rcu_sched_state);
-> > -	show_one_rcugp(m, &rcu_bh_state);
-> > +	struct rcu_state *rsp;
-> > +
-> > +	for_each_rcu_flavor(rsp)
-> > +		show_one_rcugp(m, rsp);
-> 
-> As above, I'd suggest inlining show_one_rcugp.
-
-Also too bulky.
-
-> > @@ -430,14 +413,12 @@ static void print_rcu_pendings(struct seq_file *m, struct rcu_state *rsp)
-> >  
-> >  static int show_rcu_pending(struct seq_file *m, void *unused)
-> >  {
-> > -#ifdef CONFIG_TREE_PREEMPT_RCU
-> > -	seq_puts(m, "rcu_preempt:\n");
-> > -	print_rcu_pendings(m, &rcu_preempt_state);
-> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-> > -	seq_puts(m, "rcu_sched:\n");
-> > -	print_rcu_pendings(m, &rcu_sched_state);
-> > -	seq_puts(m, "rcu_bh:\n");
-> > -	print_rcu_pendings(m, &rcu_bh_state);
-> > +	struct rcu_state *rsp;
-> > +
-> > +	for_each_rcu_flavor(rsp) {
-> > +		seq_printf(m, "%s:\n", rsp->name);
-> > +		print_rcu_pendings(m, rsp);
-> > +	}
-> 
-> As above, I'd suggest inlining print_rcu_pendings.
-
-This one I will inline.
+Because I fat-fingered it.  Thank you very much for spotting this.  It
+would have been nasty to find otherwise.
 
 							Thanx, Paul
 
