@@ -1,125 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab2FPCR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 22:17:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37400 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab2FPCR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 22:17:57 -0400
-Date: Fri, 15 Jun 2012 23:11:51 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 6/6] KVM: introduce readonly memslot
-Message-ID: <20120616021150.GA3870@amt.cnet>
-References: <4FD6ADA6.40008@linux.vnet.ibm.com>
- <4FD6AE3B.9020508@linux.vnet.ibm.com>
+	id S1758230Ab2FPCnG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 22:43:06 -0400
+Received: from catastrophix.ugh.no ([178.79.162.34]:51368 "EHLO
+	catastrophix.ugh.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756632Ab2FPCmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 22:42:46 -0400
+X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 22:42:46 EDT
+Message-ID: <4FDBF056.7040404@tomt.net>
+Date: Sat, 16 Jun 2012 04:32:54 +0200
+From: Andre Tomt <andre@tomt.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD6AE3B.9020508@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux-NFS <linux-nfs@vger.kernel.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>, David Howells <dhowells@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in __key_instantiate_and_link(): unable to handle kernel
+ paging request at 0000632e6472616f
+References: <20120601034114.GA9248@localhost>
+In-Reply-To: <20120601034114.GA9248@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 10:49:31AM +0800, Xiao Guangrong wrote:
-> In current code, if we map a readonly memory space from host to guest
-> and the page is not currently mapped in the host, we will get a fault-pfn
-> and async is not allowed, then the vm will crash
-> 
-> Address Avi's idea, we introduce readonly memory region to map ROM/ROMD
-> to the guest
+On 01. juni 2012 05:41, Fengguang Wu wrote:
+> Hi David,
+>
+> It's the second time the machine oops in __key_instantiate_and_link() on
+> 3.4 kernel.  This bug only happens after several days of run. Do you
+> have any advices or debug patches? For now I can try older (or newer)
+> kernels and see if it's any better.
 
-Please detail what is the idea in the changelog (a commit message should 
-contain information or precise references to discussions).
+FWIW; I am (still) seeing this exact same crash several times an hour on 
+3.4.3-rc1 on Ubuntu 12.04 client. Only that the same second it happens, 
+all my three displays corrupts badly, becoming completely unreadable. 
+Switching to console and back usually gets my desktop back on two of 
+three displays, and sometimes it will need a full xserver restart. 
+Obviously some memory corruption going on.
 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  Documentation/virtual/kvm/api.txt |    9 ++++--
->  arch/x86/kvm/x86.c                |    1 +
->  include/linux/kvm.h               |    4 ++-
->  virt/kvm/kvm_main.c               |   61 ++++++++++++++++++++++++++++--------
->  4 files changed, 57 insertions(+), 18 deletions(-)
-> 
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index 310fe50..a97ee90 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -857,7 +857,8 @@ struct kvm_userspace_memory_region {
->  };
-> 
->  /* for kvm_memory_region::flags */
-> -#define KVM_MEM_LOG_DIRTY_PAGES  1UL
-> +#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
-> +#define KVM_MEM_READONLY	(1UL << 1)
-> 
->  This ioctl allows the user to create or modify a guest physical memory
->  slot.  When changing an existing slot, it may be moved in the guest
-> @@ -873,9 +874,11 @@ It is recommended that the lower 21 bits of guest_phys_addr and userspace_addr
->  be identical.  This allows large pages in the guest to be backed by large
->  pages in the host.
-> 
-> -The flags field supports just one flag, KVM_MEM_LOG_DIRTY_PAGES, which
-> +The flags field supports two flag, KVM_MEM_LOG_DIRTY_PAGES, which
->  instructs kvm to keep track of writes to memory within the slot.  See
-> -the KVM_GET_DIRTY_LOG ioctl.
-> +the KVM_GET_DIRTY_LOG ioctl. Another flag is KVM_MEM_READONLY, which
-> ++indicates the guest memory is read-only, that means, guest is only allowed
-> ++to read it. Writes will be posted to userspace as KVM_EXIT_MMIO exits.
+One of the crashes also triggered a NX error:
+[20292.196332] kernel tried to execute NX-protected page - exploit 
+attempt? (uid: 0)
 
-Can you introduce a separate exit reason, say KVM_EXIT_READ_FAULT, with
-information about the fault?
+And after a while, things start locking up.
 
-Then perform this exit only if userspace allows it by explicit enable, 
-and by default have the exit_read_fault handler jump to the mmio
-handler. 
+It didn't really start happening until a few days ago though, I've been 
+running 3.4 for since some -rc through all the stable releases. Perhaps 
+server suddenly got a working idmapper or something? Its a debian 
+unstable updated a couple times a month.
 
-> 
-> +static bool vma_is_valid(struct vm_area_struct *vma, bool write_fault)
-> +{
-> +	if (unlikely(!(vma->vm_flags & VM_READ)))
-> +		return false;
-> +
-> +	if (write_fault && (unlikely(!(vma->vm_flags & VM_WRITE))))
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
-> +static int hva_to_pfn_fast(unsigned long addr, bool atomic, bool *async,
-> +			bool slot_writable, bool *writable, struct page **page)
-> +{
-> +	int npages = 0;
-> +
-> +	if (!slot_writable)
-> +		return 0;
-> +
-> +	if (writable)
-> +		*writable = true;
-> +
-> +	if (atomic || async)
-> +		npages = __get_user_pages_fast(addr, 1, 1, page);
-> +
-> +	return npages;
-> +}
-> +
->  static pfn_t hva_to_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
->  			unsigned long addr, bool atomic, bool *async,
->  			bool write_fault, bool *writable)
-> @@ -1105,18 +1140,16 @@ static pfn_t hva_to_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
->  	struct page *page[1];
->  	int npages = 0;
->  	pfn_t pfn;
-> +	bool slot_writable = !(slot->flags & KVM_MEM_READONLY);
-> 
->  	/* we can do it either atomically or asynchronously, not both */
->  	BUG_ON(atomic && async);
-> 
->  	BUG_ON(!write_fault && !writable);
-> +	BUG_ON(write_fault && !slot_writable);
+Booting latest git master now, to see if any of the recent NFS fixes 
+just pulled by Linus fixes anything (-rc2 had other showstopper nfs issues).
 
-Why BUG_ON on this condition?
-
-
+>
+> [53056.100019] BUG: unable to handle kernel paging request at 0000632e6472616f
+> [53056.108072] IP: [<0000632e6472616f>] 0x632e6472616e
+> [53056.113702] PGD 0
+> [53056.116119] Oops: 0010 [#1] SMP
+> [53056.119982] CPU 0
+> [53056.122111] Modules linked in:
+> [53056.125969]
+> [53056.127713] Pid: 3502, comm: rpc.idmapd Not tainted 3.4.0 #130 Intel Corporation S2600CP/S2600CP
+> [53056.137880] RIP: 0010:[<0000632e6472616f>]  [<0000632e6472616f>] 0x632e6472616e
+> [53056.146228] RSP: 0018:ffff880421d2fd30  EFLAGS: 00010246
+> [53056.152249] RAX: ffff8803bef69100 RBX: ffff8803bef690d0 RCX: ffffffff81f0f440
+> [53056.160309] RDX: 0000000000000005 RSI: ffff880421d2fe8d RDI: ffff8803bef690d0
+> [53056.168371] RBP: ffff880421d2fd88 R08: ffff880421d2fcd8 R09: 0000000000000000
+> [53056.176435] R10: ffffffff81f0f468 R11: ffffffff813bbdbf R12: ffff880421d2fe8d
+> [53056.184504] R13: ffff8805c9957b00 R14: ffff8804287b9c00 R15: 0000000000000000
+> [53056.192564] FS:  00007f87fbce5700(0000) GS:ffff88042fa00000(0000) knlGS:0000000000000000
+> [53056.202451] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [53056.209343] CR2: 0000632e6472616f CR3: 000000042951a000 CR4: 00000000000407f0
+> [53056.217784] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [53056.226226] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [53056.234675] Process rpc.idmapd (pid: 3502, threadinfo ffff880421d2e000, task ffff880427865e20)
+> [53056.245144] Stack:
+> [53056.247841]  ffffffff813bbde2 ffff880416c54820 0000000000000005 ffff880421d2fdb0
+> [53056.257281]  fffffff0287b9c28 ffff8803bef690b0 ffff8803bef690d0 ffff8804287b9c00
+> [53056.266725]  0000000000000005 ffff880421d2fe8d 00007f87fbaea800 ffff880421d2fdd8
+> [53056.276172] Call Trace:
+> [53056.279363]  [<ffffffff813bbde2>] ? __key_instantiate_and_link+0x5e/0xe4
+> [53056.287316]  [<ffffffff813bbec5>] key_instantiate_and_link+0x5d/0x85
+> [53056.294888]  [<ffffffff81262c29>] idmap_pipe_downcall+0x14a/0x18f
+> [53056.302176]  [<ffffffff81958071>] rpc_pipe_write+0x5d/0x77
+> [53056.308782]  [<ffffffff8114bfbd>] vfs_write+0xb2/0x142
+> [53056.315000]  [<ffffffff8114c247>] sys_write+0x4a/0x71
+> [53056.321108]  [<ffffffff819bc329>] system_call_fastpath+0x16/0x1b
+> [53056.328278] Code:  Bad RIP value.
+> [53056.332599] RIP  [<0000632e6472616f>] 0x632e6472616e
+> [53056.338687]  RSP<ffff880421d2fd30>
+> [53056.343035] CR2: 0000632e6472616f
+> [53056.347640] ---[ end trace ee5d4100fdd3e1d2 ]---
