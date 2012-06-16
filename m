@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab2FPO1g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 10:27:36 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57243 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756892Ab2FPO10 (ORCPT
+	id S1752327Ab2FPOjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 10:39:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33090 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab2FPOjP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 10:27:26 -0400
-Date: Sat, 16 Jun 2012 15:26:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Roland Stigge <stigge@antcom.de>
-Cc: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        ulf.hansson@stericsson.com, linus.walleij@linaro.org,
-        sebastian.rasmussen@stericsson.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mmc: mmci.c: Defer probe() in case of missing GPIOs
-Message-ID: <20120616142652.GC7628@n2100.arm.linux.org.uk>
-References: <1339856099-9313-1-git-send-email-stigge@antcom.de>
+	Sat, 16 Jun 2012 10:39:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339856099-9313-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1339852911-29481-1-git-send-email-yuanhan.liu@linux.intel.com>
+References: <1339852911-29481-1-git-send-email-yuanhan.liu@linux.intel.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Sat, 16 Jun 2012 16:38:54 +0200
+Message-ID: <CAPXgP11QdNqMzKEuAqfA8SYLLVTeDVHp1L29L71rVHO32t+B7Q@mail.gmail.com>
+Subject: Re: [PATCH] printk: use mutex lock to stop syslog_seq from going wild
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, wfg@linux.intel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 04:14:59PM +0200, Roland Stigge wrote:
-> If the GPIOs used by the MMCI driver are not registered yet when the
-> driver is probe()d, they can't be used. This happens if the mmci driver
-> is probed before the respective GPIO controller (e.g. on the LPC32xx
-> EA3250 board, the PCA9532 GPIO controller would be initialized via DT
-> after mmci). Therefore, we defer mmci in this case.
+On Sat, Jun 16, 2012 at 3:21 PM, Yuanhan Liu
+<yuanhan.liu@linux.intel.com> wrote:
+> Although syslog_seq and log_next_seq stuff are protected by logbuf_lock
+> spin log, it's not enough. Say we have two processes A and B, and let
+> syslog_seq = N, while log_next_seq = N + 1, and the two processes both
+> come to syslog_print at almost the same time. And No matter which
+> process get the spin lock first, it will increase syslog_seq by one,
+> then release spin lock; thus later, another process increase syslog_seq
+> by one again. In this case, syslog_seq is bigger than syslog_next_seq.
+> And latter, it would make:
+>   wait_event_interruptiable(log_wait, syslog != log_next_seq)
+> don't wait any more even there is no new write comes. Thus it introduce
+> a infinite loop reading.
+>
+> I can easily see this kind of issue by the following steps:
+>  # cat /proc/kmsg # at meantime, I don't kill rsyslog
+>                   # So they are the two processes.
+>  # xinit          # I added drm.debug=6 in the kernel parameter line,
+>                   # so that it will produce lots of message and let that
+>                   # issue happen
+>
+> It's 100% reproducable on my side. And my disk will be filled up by
+> /var/log/messages in a quite short time.
+>
+> So, introduce a mutex_lock to stop syslog_seq from going wild just like
+> what devkmsg_read() does. It does fix this issue as expected.
+>
+> v2: use mutex_lock_interruptiable() instead (comments from Kay)
+>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
 
-This code is wrong.  There are platforms where plat->gpio_cd is negative
-(because there isn't an associated GPIO) and we still expect the driver
-to successfully bind.  In that case, the driver gets the CD and WP
-information via the status callback.
+Acked-By: Kay Sievers <kay@vrfy.org>
 
-So this is an incompatible change with existing (and required) driver
-behaviour.
+Thanks again for finding and fixing it.
+
+Kay
