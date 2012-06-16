@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab2FPPiX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 11:38:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49589 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294Ab2FPPiO (ORCPT
+	id S1755043Ab2FPPih (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 11:38:37 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54167 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab2FPPif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 11:38:14 -0400
-Date: Sat, 16 Jun 2012 08:38:09 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-Message-ID: <20120616153809.GA8062@kroah.com>
-References: <20120614045930.GA10508@kroah.com>
- <1339671715.13377.209.camel@gandalf.stny.rr.com>
- <20120614154153.GD17140@kroah.com>
- <1339693625.13377.242.camel@gandalf.stny.rr.com>
- <20120615042233.GA10973@localhost>
- <20120615043017.GA9587@kroah.com>
- <20120615120430.GB23681@gmail.com>
- <20120615231318.GD8205@kroah.com>
- <20120616065903.GA24594@gmail.com>
- <1339851087.11656.3.camel@joe2Laptop>
+	Sat, 16 Jun 2012 11:38:35 -0400
+Message-ID: <4FDCA875.6040905@openvz.org>
+Date: Sat, 16 Jun 2012 19:38:29 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120608 Firefox/10.0.5 Iceape/2.7.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339851087.11656.3.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 3.5] c/r: prctl: less paranoid prctl_set_mm_exe_file()
+References: <20120616085104.14682.16723.stgit@zurg> <20120616090646.GD32029@moon> <20120616091712.GA2021@moon> <4FDC54FF.3020305@openvz.org> <20120616094714.GF32029@moon>
+In-Reply-To: <20120616094714.GF32029@moon>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 05:51:27AM -0700, Joe Perches wrote:
-> On Sat, 2012-06-16 at 08:59 +0200, Ingo Molnar wrote:
-> > * Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> > > On Fri, Jun 15, 2012 at 02:04:30PM +0200, Ingo Molnar wrote:
-> > > > These printk's are useful, are used for a specific (albeit 
-> > > > limited) purpose and were and continue to be useful in that 
-> > > > role.
-> > > > 
-> > > > The changes Steve bisected to broke this use of printk().
-> > > 
-> > > And note, fixed others :)
-> > 
-> > Sorry, the "we fix some bugs and introduce others" stance is not 
-> > a valid response to a regression. Either fix *all* regressions 
-> > or revert the original change. Simple and robust policy, isn't 
-> > it?
-> > 
-> > > > Please apply Steve's fix, fix it yourself or revert the 
-> > > > changes that regressed printk().
-> > > 
-> > > I thought Steve's patch was just a RFC thing, is it really 
-> > > something that everyone wants to see applied?
-> > 
-> > You mean the adding of an API to flush buffered output when 
-> > that's the desired outcome? Why the heck should we *not* want 
-> > that? Either I'm the weird one or you are being difficult ;-)
-> 
-> The API might be better as a global flag
-> not a per-site flush.
-> 
-> Maybe printk_is_buffered(true/false)
+Cyrill Gorcunov wrote:
+> On Sat, Jun 16, 2012 at 01:42:23PM +0400, Konstantin Khlebnikov wrote:
+>>> Side note: there is a little nit with this patch actually,
+>>> because while when we do c/r we do "right things" and unmap
+>>> all vm-executable mappings before we set up new exe_file. But
+>>> we can't guarantee that some brave soul would not setup
+>>> new exe-file just for it's own, then what we migh have
+>>>
+>>>   - mm::exe_file set up and points to some file, moreover num_exe_file_vmas might be>   1
+>>>   - application calls for prctl_set_mm_exe_file
+>>>   - set_mm_exe_file(mm, exe_file) called, and it drops num_exe_file_vmas to 0
+>>>   - finally application might call for removed_exe_file_vma
+>>>
+>>> void removed_exe_file_vma(struct mm_struct *mm)
+>>> {
+>>> 	mm->num_exe_file_vmas--;
+>>> 	if ((mm->num_exe_file_vmas == 0)&&   mm->exe_file) {
+>>> 		fput(mm->exe_file);
+>>> 		mm->exe_file = NULL;
+>>> 	}
+>>>
+>>> }
+>>>
+>>> and it does _not_ test for num_exe_file_vmas being 0 before doing decrement,
+>>> thus we get inconsistency in counter.
+>>
+>> No, removed_exe_file_vma() is called only for vma with VM_EXECUTABLE flag,
+>> there no way to get such vma other than sys_execve().
+>> And this brave soul cannot call prctl_set_mm_exe_file() successfully,
+>> just because for vma with VM_EXECUTABLE flag vma->vm_file == mm->exe_file.
+>>
+>> Anyway, I plan to get rid of mm->num_exe_file_vmas and VM_EXECUTABLE.
+>
+> Yeah, you've changed !path_equal to path_equal. And yes, getting rid of
+> num_exe_file_vmas is good idea. Btw, Konstantin, why do we need to
+> call for path_equal? Maybe we can simply test for mm->exe_file == NULL,
+> and refuse to change anything if it's not nil value? This will simplify
+> the code.
 
-Hm, that sounds a bit better, and I thin it would solve the timestamp
-problem that the proposed patch has, right?  We would then just
-timestamp on a new line, as we should "know" when that happens?
+After removing VM_EXECUTABLE and mm->num_exe_file_vmas mm->exe_file
+will never becomes NULL automatically. Patch for this not commited yet,
+but I hope it will be in 3.6.
 
-Steven, do you like this idea better?
+>
+> 	Cyrill
 
-thanks,
-
-greg k-h
