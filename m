@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab2FPHt4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 03:49:56 -0400
-Received: from nm28.bullet.mail.sp2.yahoo.com ([98.139.91.98]:31507 "HELO
-	nm28.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752129Ab2FPHtz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 03:49:55 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 387165.13777.bm@omp1013.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=F7Syi2e52q3vNcOiXy+esmu1NjqIv2X/A6CJ9d2ZiKodC8arxkW3Jz2+l/X8ZSv8MQI9Un2LfgxXB772HdWL/xcx9j9A/dQ+t9vgUcb0teO41b9flVn9Yv7q7gi/+F+9iu1vnF8c8TOvva+jVzoCvmZNkMmhrrwhPw5GIO3TkaM=;
-X-YMail-OSG: suVDrjoVM1mzo2MyUQYlPJXIX0QP2qqadeWC07._ziVinYv
- 5cVf7ouDXucaLxqGMLPQ.sPQRtQICKOWzsAT6NzaRfN_ag2x4bgcKdYlCKSn
- YbAurhdbA4c0n2Y_gdjXyXVop5VYDpm2f05f7ii86Q1k2eJIrFX3HPY25fuq
- jqbpuzilZetiQLpXv8FzioDWan9iDdrNGQmJKCFHxw.Bh3Kcqp1AadJyQ.c4
- zxGThfs0UKQvWiv54pNW9WGINeRChR1qOGI9ZFaevjhIv26RhnbUZUpF6bir
- F.QMej8wT7w6QHhofQVK8mOfND6F2koHWYRCHy6vPj.lIqCQQZGWmn8TWAsh
- lzXs4g1PiMU4eGaBUmNIRDOFJtGZYhcI.7MqfjDvu59zORnes_6h1sryCEHp
- W5Jyk4qqDHtHSOYo2WRJRfxOD7AKzKf.esdxzuPSsvYBWLYMDD7E8.xGHLDn
- QrESEmZc-
-X-Mailer: YahooMailWebService/0.8.118.349524
-References: <1339832690.65602.YahooMailNeo@web111718.mail.gq1.yahoo.com>
-Message-ID: <1339832874.70701.YahooMailNeo@web111716.mail.gq1.yahoo.com>
-Date: Sat, 16 Jun 2012 00:47:54 -0700 (PDT)
-From: Mahmood Naderan <nt_mahmood@yahoo.com>
-Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Subject: Re: bdver1 and bdver2
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1339832690.65602.YahooMailNeo@web111718.mail.gq1.yahoo.com>
+	id S1755935Ab2FPHuj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 03:50:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54173 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab2FPHuh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 03:50:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20120615143403.GA18876@localhost>
+References: <20120614172523.GB4400@mwanda>
+	<20120615014835.GA5695@localhost>
+	<20120615071222.GZ13539@mwanda>
+	<20120615075810.GA13206@localhost>
+	<alpine.DEB.2.02.1206150639130.1864@hadrien>
+	<20120615111913.GA13539@mwanda>
+	<20120615143403.GA18876@localhost>
+Date: Sat, 16 Jun 2012 15:50:36 +0800
+Message-ID: <CAM_iQpUPYpYVaZhCk-bfMe9ZvttQYaSYM_xfKJYX=Z494PWv+A@mail.gmail.com>
+Subject: Re: automated warning notifications
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christopher Li <sparse@chrisli.org>,
+        Josh Triplett <josh@freedesktop.org>,
+        Linus Torvalds <torvalds@ppc970.osdl.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sorry please ignore that
+On Fri, Jun 15, 2012 at 10:34 PM, Fengguang Wu <wfg@linux.intel.com> wrote:
+> On Fri, Jun 15, 2012 at 02:19:14PM +0300, Dan Carpenter wrote:
+>>
+>> Probably we could use something like the attached script to print
+>> out the line of code which causes the bug and some other script to
+>> querry git blame and attach the offending commit?
+>
+> cat -n $code_file | tail -n +$(($lineno - (($context + 1) / 2))) | head -n $(($context + 1))
+>
+> That's handy, I'll use it to show the source file context for the
+> first error/warning :-)
 
- ~MN
+Well, you can use sed/awk, it will be much shorter:
 
+cat -n drivers/leds/led-triggers.c | sed -ne '224,230p'
+   224			struct led_classdev *led_cdev;
+   225	
+   226			led_cdev = list_entry(entry, struct led_classdev, trig_list);
+   227			led_set_brightness(led_cdev, brightness);
+   228		}
+   229		read_unlock(&trigger->leddev_list_lock);
+   230	}
 
------ Original Message -----
-From: Mahmood Naderan <nt_mahmood@yahoo.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: 
-Sent: Saturday, June 16, 2012 12:14 PM
-Subject: bdver1 and bdver2
+(replace the hard-coded "224,230" with a shell variable)
 
-Hi
-what is the difference between bdver1 and bdver2? 
-I can not find the changlog.
+And if you want to find the offending commit:
 
-~MN
+git show `git blame drivers/leds/led-triggers.c | awk 'NR==227{print $1}'`
