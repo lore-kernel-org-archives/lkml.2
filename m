@@ -1,44 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab2FPRpp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 13:45:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46262 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754375Ab2FPRpo (ORCPT
+	id S1756274Ab2FPRsL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 13:48:11 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49794 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375Ab2FPRsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 13:45:44 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] pinctrl/pinctrl-u300: remove devm_kfree at driver unload
-Date: Sat, 16 Jun 2012 23:15:37 +0530
-Message-Id: <1339868737-5945-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 16 Jun 2012 13:48:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FDAE3CC.60801@kernel.org>
+References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
+	<20120614145716.GA2097@barrios>
+	<CAHGf_=qcA5OfuNgk0BiwyshcLftNWoPfOO_VW9H6xQTX2tAbuA@mail.gmail.com>
+	<4FDAE3CC.60801@kernel.org>
+Date: Sat, 16 Jun 2012 23:18:07 +0530
+Message-ID: <CAEtiSavv8nRAFk6VZEgeCMYicjBPy4244+2KQhng5Pq9bxcX5A@mail.gmail.com>
+Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
+From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@linux-foundation.org,
+        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, frank.rowand@am.sony.com,
+        tim.bird@am.sony.com, takuzo.ohara@ap.sony.com,
+        kan.iibuchi@jp.sony.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the memory allocated by devm_kzalloc is automatically
-freed at the driver detach side, so no neeed of calling
-devm_kfree
+On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/pinctrl/pinctrl-u300.c |    1 -
- 1 file changed, 1 deletion(-)
+>>
+>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
+>> if node has multiple zones. Hm ok, I realized my descriptions was
+>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
+>> pgdat_balanced()
+>> every priority. Most easy case is, movable zone has a lot of free pages and
+>> normal zone has no reclaimable page.
+>>
+>> btw, current pgdat_balanced() logic seems not correct. kswapd should
+>> sleep only if every zones have much free pages than high water mark
+>> _and_ 25% of present pages in node are free.
+>>
+>
+>
+> Sorry. I can't understand your point.
+> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
+> It seems I am missing your point.
+> Please anybody correct me.
 
-diff --git a/drivers/pinctrl/pinctrl-u300.c b/drivers/pinctrl/pinctrl-u300.c
-index 05d0299..13e7a3e 100644
---- a/drivers/pinctrl/pinctrl-u300.c
-+++ b/drivers/pinctrl/pinctrl-u300.c
-@@ -1183,7 +1183,6 @@ static int __devexit u300_pmx_remove(struct platform_device *pdev)
- 	iounmap(upmx->virtbase);
- 	release_mem_region(upmx->phybase, upmx->physize);
- 	platform_set_drvdata(pdev, NULL);
--	devm_kfree(&pdev->dev, upmx);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+Since currently direct reclaim is given up based on
+zone->all_unreclaimable flag,
+so for e.g in one of the scenarios:
 
+Lets say system has one node with two zones (NORMAL and MOVABLE) and we
+hot-remove the all the pages of the MOVABLE zone.
+
+While migrating pages during memory hot-unplugging, the allocation function
+(for new page to which the page in MOVABLE zone would be moved)  can end up
+looping in direct reclaim path for ever.
+
+This is so because when most of the pages in the MOVABLE zone have
+been migrated,
+the zone now contains lots of free memory (basically above low watermark)
+BUT all are in MIGRATE_ISOLATE list of the buddy list.
+
+So kswapd() would not balance this zone as free pages are above low watermark
+(but all are in isolate list). So zone->all_unreclaimable flag would
+never be set for this zone
+and allocation function would end up looping forever. (assuming the
+zone NORMAL is
+left with no reclaimable memory)
+
+
+Regards,
+Aaditya Kumar
+Sony India Software Centre,
+Bangalore.
