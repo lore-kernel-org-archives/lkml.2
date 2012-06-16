@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2FPAFH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 20:05:07 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60848 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab2FPAFF (ORCPT
+	id S1758771Ab2FPAVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 20:21:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20674 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757324Ab2FPAVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 20:05:05 -0400
-X-Originating-IP: 217.70.178.144
-X-Originating-IP: 50.43.46.74
-Date: Fri, 15 Jun 2012 17:04:49 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+	Fri, 15 Jun 2012 20:21:25 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=R5I9ChW_JYgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=rs3dCQBxvbIYi4zThekA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339806080.25903.68.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH tip/core/rcu 09/15] rcu: Increasing rcu_barrier()
+ concurrency
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         dipankar@in.ibm.com, akpm@linux-foundation.org,
         mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 15/15] rcu: RCU_SAVE_DYNTICK code no longer
- ever dead
-Message-ID: <20120616000449.GH7613@leaf>
+        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Date: Fri, 15 Jun 2012 20:21:20 -0400
+In-Reply-To: <20120615233151.GA7613@leaf>
 References: <20120615210550.GA27506@linux.vnet.ibm.com>
- <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339794370-28119-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120616000238.GG7613@leaf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120616000238.GG7613@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1339794370-28119-9-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20120615233151.GA7613@leaf>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 05:02:38PM -0700, Josh Triplett wrote:
-> On Fri, Jun 15, 2012 at 02:06:10PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > Before RCU had unified idle, the RCU_SAVE_DYNTICK leg of the switch
-> > statement in force_quiescent_state() was dead code for CONFIG_NO_HZ=n
-> > kernel builds.  With unified idle, the code is never dead.  This commit
-> > therefore removes the "if" statement designed to make gcc aware of when
-> > the code was and was not dead.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Fri, 2012-06-15 at 16:31 -0700, Josh Triplett wrote:
+>   
+> > -	smp_mb();  /* Prevent any prior operations from leaking in. */
+> > +	/*
+> > +	 * Ensure tht all prior references, including to ->n_barrier_done,
+> > +	 * are ordered before the _rcu_barrier() machinery.
+> > +	 */
+> > +	smp_mb();  /* See above block comment. */
 > 
-> One comment below; with that change:
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> >  kernel/rcutree.c |    2 --
-> >  1 files changed, 0 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 75ad92a..0b0c9cc 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1744,8 +1744,6 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
-> >  		break; /* grace period idle or initializing, ignore. */
-> >  
-> >  	case RCU_SAVE_DYNTICK:
-> > -		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
-> > -			break; /* So gcc recognizes the dead code. */
-> >  
-> >  		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
-> 
-> Drop the blank line too?
+> If checkpatch complains about the lack of a comment to the right of a
+> barrier even when the barrier has a comment directly above it, that
+> seems like a bug in checkpatch that needs fixing, to prevent developers
+> from having to add noise like "See above block comment.". :)
 
-Actually, I just realized a larger concern with what this change
-implies: does this mean that whatever change made this code no longer
-dead introduced a major locking bug here?  If so, has that change
-already progressed past the point where you could update it to include
-this fix?
 
-- Josh Triplett
+Yuck yuck yuck yuck!!!
+
+
+Really, checkpatch is not the golden rule. I've copied an old checkpatch
+from something like 2.6.38 or so and use that today, where it was still
+reasonable. I've long abandoned the latest checkpatch, as it causes too
+many false positives. Or nazis like dictation.
+
+My rule of thumb is this. If what checkpatch tells you to do makes the
+format either uglier, or look stupid, it's a good idea to ignore the
+checkpatch complaint.
+
+I think in this case, you hit the latter.
+
+-- Steve
+
+
