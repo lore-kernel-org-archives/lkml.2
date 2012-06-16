@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab2FPWGb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 18:06:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60200 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286Ab2FPWEz (ORCPT
+	id S1757531Ab2FPWGa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 18:06:30 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47108 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757296Ab2FPWE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 18:04:55 -0400
+	Sat, 16 Jun 2012 18:04:56 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-serial@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 05/10] fblog: add framebuffer helpers
-Date: Sun, 17 Jun 2012 00:04:21 +0200
-Message-Id: <1339884266-9201-6-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH 06/10] fblog: allow enabling/disabling fblog on runtime
+Date: Sun, 17 Jun 2012 00:04:22 +0200
+Message-Id: <1339884266-9201-7-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
@@ -23,54 +23,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These helpers scan the system for all available framebuffers and register
-or unregister them. This is needed during startup and stopping fblog so we
-are aware of all connected displays.
+A sysfs file called "active" can be used to enable and disable fblog on
+runtime. For example, the init-process can run "echo '0' >.../active"
+after booting the system. This will allow other applications like X11 to
+use the graphics subsystem. During shutdown, we can write '1' to get
+system messages again.
 
-The third helper handles mode changes by rescanning the mode and adjusting
-the buffer size.
+When disabling fblog, we remove all framebuffers and will prevent new
+hotplugged framebuffers from being added. When enabling fblog again, we
+rescan the system for all framebuffers and resume operating.
+
+The sysfs file is not registered, yet, as we do not have a "struct device"
+yet. This will follow shortly, though.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/console/fblog.c |   29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ Documentation/ABI/testing/sysfs-fblog |    9 ++++++
+ drivers/video/console/fblog.c         |   49 +++++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-fblog
 
+diff --git a/Documentation/ABI/testing/sysfs-fblog b/Documentation/ABI/testing/sysfs-fblog
+new file mode 100644
+index 0000000..596393c
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-fblog
+@@ -0,0 +1,9 @@
++What:		/sys/class/graphics/fblog/active
++Date:		June 2012
++KernelVersion:	3.6
++Contact:	David Herrmann <dh.herrmann@googlemail.com>
++Description:	Enable/Disable fblog. When setting this to 0, fblog will stop
++		writing to framebuffers and other applications can use the
++		graphics subsystem. When setting this to 1, fblog will rescan
++		the system for all framebuffers and resume drawing the kernel
++		log onto all framebuffers.
 diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-index e790971..7d4032e 100644
+index 7d4032e..9b05c56 100644
 --- a/drivers/video/console/fblog.c
 +++ b/drivers/video/console/fblog.c
-@@ -399,6 +399,35 @@ static void fblog_unregister(struct fblog_fb *fb)
- 	kfree(fb);
+@@ -92,6 +92,7 @@ struct fblog_fb {
+ };
+ 
+ static struct fblog_fb *fblog_fbs[FB_MAX];
++static atomic_t fblog_active;
+ 
+ static void fblog_buf_resize(struct fblog_buf *buf, size_t width,
+ 			     size_t height)
+@@ -338,6 +339,8 @@ static void fblog_register(struct fb_info *info)
+ 	const struct fb_videomode *mode;
+ 	unsigned int width, height;
+ 
++	if (!atomic_read(&fblog_active))
++		return;
+ 	if (!info || info->node < 0 || info->node >= FB_MAX)
+ 		return;
+ 	if (!registered_fb[info->node] || fblog_fbs[info->node])
+@@ -428,6 +431,52 @@ static void fblog_refresh(struct fblog_fb *fb)
+ 	fblog_redraw(fb);
  }
  
-+static void fblog_register_all(void)
++static void fblog_activate(void)
 +{
-+	int i;
-+
-+	for (i = 0; i < FB_MAX; ++i)
-+		fblog_register(registered_fb[i]);
-+}
-+
-+static void fblog_unregister_all(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < FB_MAX; ++i)
-+		fblog_unregister(fblog_info2fb(registered_fb[i]));
-+}
-+
-+static void fblog_refresh(struct fblog_fb *fb)
-+{
-+	unsigned int width, height;
-+
-+	if (!fb || !fb->font)
++	if (atomic_read(&fblog_active))
 +		return;
 +
-+	width = fb->info->var.xres / fb->font->width;
-+	height = fb->info->var.yres / fb->font->height;
-+	fblog_buf_resize(&fb->buf, width, height);
-+	fblog_redraw(fb);
++	atomic_set(&fblog_active, 1);
++	fblog_register_all();
 +}
++
++static void fblog_deactivate(void)
++{
++	if (!atomic_read(&fblog_active))
++		return;
++
++	atomic_set(&fblog_active, 0);
++	fblog_unregister_all();
++}
++
++static ssize_t fblog_dev_active_show(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	return snprintf(buf, PAGE_SIZE, "%d\n", atomic_read(&fblog_active));
++}
++
++static ssize_t fblog_dev_active_store(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf,
++				      size_t count)
++{
++	unsigned long num;
++
++	num = simple_strtoul(buf, NULL, 10);
++	console_lock();
++	if (num)
++		fblog_activate();
++	else
++		fblog_deactivate();
++	console_unlock();
++
++	return count;
++}
++
++static DEVICE_ATTR(active, S_IRUGO | S_IWUSR | S_IWGRP, fblog_dev_active_show,
++		   fblog_dev_active_store);
 +
  static int __init fblog_init(void)
  {
