@@ -1,116 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab2FPV4x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 17:56:53 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56115 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911Ab2FPV4v convert rfc822-to-8bit (ORCPT
+	id S1757421Ab2FPWFA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 18:05:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38450 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757342Ab2FPWE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 17:56:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
-References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
- <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sat, 16 Jun 2012 15:56:28 -0600
-Message-ID: <CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
-Subject: Re: SNB PCI root information
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ulrich Drepper <drepper@gmail.com>, jbarnes@virtuousgeek.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Sat, 16 Jun 2012 18:04:57 -0400
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: linux-serial@vger.kernel.org
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Herrmann <dh.herrmann@googlemail.com>
+Subject: [PATCH 08/10] fblog: react on framebuffer events
+Date: Sun, 17 Jun 2012 00:04:24 +0200
+Message-Id: <1339884266-9201-9-git-send-email-dh.herrmann@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
+References: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 9:03 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Jun 15, 2012 at 6:57 PM, Ulrich Drepper <drepper@gmail.com> wrote:
->> The PCI roots in multi-socket SNB are part of specific sockets.  This
->> means optimization will need to know which socket the root is part of
->> and therefore which cores have direct access as opposed to over one or
->> more QPI links.
->>
->> I tried to find this information in the /sys filesystem in kernels up
->> to the current upstream kernel.  It seems there is actually nothing
->> like this.
->>
->> There are the files /sys/devices/pci*/*/local_cpus which should
->> contain this information.  For each device we would be able to get the
->> information about the local CPUs.
->>
->> The SPARC OF handling seems to set the field, some Intel drivers seem
->> to try to do it in a different way.
->>
->> The problem I have seen (at least on a Dell R620) is that the
->> dev_to_code() function returns -1 which indicates that no node
->> information is stored.
->>
->> If I understand the code correctly, the numa_node field can be set
->> explicitly but is mostly inherited from the underlying device (bus
->> etc).  Does this mean that the locality information should come from
->> the same place where the PCI root data structure is initialized?
->>
->> This happens, if I'm not mistaken, in the ACPI table parsing.  I've
->> disassembled the DSDT table and didn't find anything like this type of
->> information.  At least I didn't see it.  I also couldn't find anything
->> in the ACPI 5.0 spec.
->
-> yes, you should have _PXM for root bus in DSDT.
->
->>
->>
->> The questions are:
->> a) am I missing something?
->> b) do BIOSes (perhaps from other manufacturers) provide the information?
->> c) can we get this fixed?
->
-> get updated BIOS.
->
->> d) can we interpolate the information for platforms where the BIOSes
->> don't have the information?
->
-> in arch/x86/pci/acpi.c::pci_acpi_scan_root(), we have
->
->        node = -1;
-> #ifdef CONFIG_ACPI_NUMA
->        pxm = acpi_get_pxm(device->handle);
->        if (pxm >= 0)
->                node = pxm_to_node(pxm);
->        if (node != -1)
->                set_mp_bus_to_node(busnum, node);
->        else
-> #endif
->                node = get_mp_bus_to_node(busnum);
->
->        if (node != -1 && !node_online(node))
->                node = -1;
->
->        info = kzalloc(sizeof(*info), GFP_KERNEL);
->        if (!info) {
->                printk(KERN_WARNING "pci_bus %04x:%02x: "
->                       "ignored (out of memory)\n", domain, busnum);
->                return NULL;
->        }
->
->        sd = &info->sd;
->        sd->domain = domain;
->        sd->node = node;
->
-> So kernel will check _PXM at first, or will use pre-probe host bridge info.
-> Now we only have that for amd k8 cpu.
->
-> We used to have same for intel IOH nehalem,  and get bless from intel.
-> but that get removed at some point.
-> I have one local internal similar patch for SNB iio for crossing check
-> if BIOS set correctly.
-> but I don't think i will try to get blessing from intel to publish it.
->
-> So please get one updated bios from your vendor.
+This provides an fb-notifier object that can be registered with the
+framebuffer subsystem. We are then notified about events on all
+framebuffers.
+Most of the events are only of interest for fbcon so we can safely ignore
+them. However, we need to handle REGISTERED/UNBIND to add new framebbufers
+and we need to react on mode-changes (probably triggered by user-space).
 
-If ACPI provides a perfectly usable generic way to describe this
-topology and the vendor BIOS doesn't bother to use it, I'm not very
-interested in trying to compensate for that BIOS deficiency by adding
-a bunch of non-portable CPU-specific gunk to Linux.
+Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+---
+ drivers/video/console/fblog.c |  113 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 113 insertions(+)
+
+diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
+index 5297eca..79bfbcc 100644
+--- a/drivers/video/console/fblog.c
++++ b/drivers/video/console/fblog.c
+@@ -449,6 +449,119 @@ static void fblog_deactivate(void)
+ 	fblog_unregister_all();
+ }
+ 
++static int fblog_event(struct notifier_block *self, unsigned long action,
++		       void *data)
++{
++	struct fb_event *event = data;
++	struct fb_info *info = event->info;
++	struct fblog_fb *fb = fblog_info2fb(info);
++	int *blank;
++
++	if (action == FB_EVENT_FB_REGISTERED) {
++		/* This is called when a low-level system driver registers a new
++		 * framebuffer. The registration lock is held but the console
++		 * lock might not be held when this is called (really?). */
++		fblog_register(info);
++		return 0;
++	}
++
++	if (!fb)
++		return 0;
++
++	switch(action) {
++	case FB_EVENT_FB_UNREGISTERED:
++		/* This is called when a low-level system driver unregisters a
++		 * framebuffer. The registration lock is held but the console
++		 * lock might not be held (really?). */
++		/* ignore; see UNBIND */
++		break;
++	case FB_EVENT_FB_UNBIND:
++		/* Called directly before unregistering an FB. The FB is still
++		 * valid here and the registration lock is held but the console
++		 * lock might not be held (really?). */
++		fblog_unregister(fb);
++		break;
++	case FB_EVENT_SUSPEND:
++		/* This is called when the low-level display driver suspends the
++		 * video system. We should not access the video system while it
++		 * is suspended. This is called with the console lock held. */
++		set_bit(FBLOG_SUSPENDED, &fb->flags);
++		break;
++	case FB_EVENT_RESUME:
++		/* This is called when the low-level display driver resumes
++		 * operating. It is called with the console lock held. */
++		clear_bit(FBLOG_SUSPENDED, &fb->flags);
++		break;
++	case FB_EVENT_MODE_DELETE:
++		/* This is sent when a video mode is removed. The current video
++		 * mode is never removed! The console lock is held while this is
++		 * called. */
++		/* fallthrough */
++	case FB_EVENT_NEW_MODELIST:
++		/* This is sent when the modelist got changed. The console-lock
++		 * is held and we should reset the mode. */
++		/* fallthrough */
++	case FB_EVENT_MODE_CHANGE_ALL:
++		/* This is the same as below but notifies us that the user used
++		 * the FB_ACTIVATE_ALL flag when setting the video mode. */
++		/* fallthrough */
++	case FB_EVENT_MODE_CHANGE:
++		/* This is called when the _user_ changes the video mode via
++		 * ioctls. It is not sent, when the kernel changes the mode
++		 * internally. This callback is called inside fb_set_var() so
++		 * the console lock is held. */
++		fblog_refresh(fb);
++		break;
++	case FB_EVENT_BLANK:
++		/* This gets called _after_ the framebuffer was successfully
++		 * blanked. The console-lock is always held while fb_blank is
++		 * called and during this callback. */
++		blank = (int*)event->data;
++		if (*blank == FB_BLANK_UNBLANK)
++			clear_bit(FBLOG_BLANKED, &fb->flags);
++		else
++			set_bit(FBLOG_BLANKED, &fb->flags);
++		break;
++	case FB_EVENT_GET_REQ:
++		/* When fb_set_var() is called, this callback is called to get
++		 * our display requirements. They are then compared with the
++		 * display properties and only if they fulfill the requirements,
++		 * the new mode is activated. The console-lock should be held
++		 * while calling fb_set_var() so we can assume it is locked
++		 * here. */
++		/* ignore */
++		break;
++	case FB_EVENT_CONBLANK:
++		/* This is sent by fbcon when doing a fake blank. That
++		 * is, blanking the screen when the fb driver failed to perform
++		 * an fb_blank(). It simply writes empty lines to the screen.
++		 * We are not interested in this signal. We should also never
++		 * run together with fbcon so this should never be catched. */
++		/* ignore */
++		break;
++	case FB_EVENT_GET_CONSOLE_MAP:
++		/* fallthrough */
++	case FB_EVENT_SET_CONSOLE_MAP:
++		/* Is there any reason why we should support this? We
++		 * ignore it as we consider ourself not to be the classic linux
++		 * console. Hence, this request is not targeted at us. */
++		/* ignore */
++		break;
++	case FB_EVENT_REMAP_ALL_CONSOLE:
++		/* What are we supposed to do here? Do we have to remap
++		 * the primary device to the framebuffer given by \info? Like
++		 * above we currently ignore it for the same reasons. */
++		/* ignore */
++		break;
++	}
++
++	return 0;
++}
++
++static struct notifier_block fblog_notifier = {
++	.notifier_call = fblog_event,
++};
++
+ static void fblog_con_write(struct console *con, const char *buf,
+ 			    unsigned int len)
+ {
+-- 
+1.7.10.4
+
