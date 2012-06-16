@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab2FPTbi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 15:31:38 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:60259 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756153Ab2FPTbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 15:31:37 -0400
-X-IronPort-AV: E=Sophos;i="4.75,783,1330934400"; 
-   d="scan'208";a="655865749"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "ksummit-2012-discuss@lists.linux-foundation.org" 
-	<ksummit-2012-discuss@lists.linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [ATTEND] Discussion: role of the maintainer?
-Thread-Topic: [ATTEND] Discussion: role of the maintainer?
-Thread-Index: AQHNS/abOYKvrFmdEkm0pnWCMkPIXw==
-Date: Sat, 16 Jun 2012 19:31:19 +0000
-Message-ID: <1339875074.8267.87.camel@lade.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <29F803A70CE70849A8425DBC91799445@tahoe.netapp.com>
+	id S1756931Ab2FPTc5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 15:32:57 -0400
+Received: from tru75-7-88-161-131-83.fbx.proxad.net ([88.161.131.83]:47798
+	"EHLO next.fork.zz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756819Ab2FPTc4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 15:32:56 -0400
+Message-ID: <4FDCDF59.9020208@free.fr>
+Date: Sat, 16 Jun 2012 21:32:41 +0200
+From: Wallak <wallak@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120604 Firefox/12.0 SeaMonkey/2.9.1
 MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org, jweiner@redhat.com
+Subject: Re: File copy is very slow on linux-3.4.2 (or linux-3.3x) on a specific
+ hardware: AMD FX-8150 + 990FX (solved?)
+References: <1108815600.134531433.1339443818361.JavaMail.root@zimbra44-e7.priv.proxad.net> <437497008.134549481.1339444456294.JavaMail.root@zimbra44-e7.priv.proxad.net> <20120612165357.GI6021@quack.suse.cz> <4FD78CE4.4000209@free.fr> <20120612210947.GB20007@quack.suse.cz> <4FD7C595.202@free.fr> <20120613065313.GA25425@quack.suse.cz> <4FD8F9F1.2000205@free.fr> <4FDA5048.5000107@redhat.com>
+In-Reply-To: <4FDA5048.5000107@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5GJVhxL013053
 
-Hi,
+Rik van Riel wrote:
+> On 06/13/2012 04:37 PM, Wallak wrote:
+>
+>> HighTotal: 8052692 kB HighTotal: 8052692 kB
+>> HighFree: 7978664 kB | HighFree: 6227412 kB
+>> LowTotal: 229508 kB LowTotal: 229508 kB
+>> LowFree: 195804 kB | LowFree: 148948 kB
+>
+> Did the BIOS remap essentially all of the low memory
+> to end up above the 1GB boundary?
 
-This is a spin off from the discussion topic that was started by Thomas
-Gleixner. I'd like to turn this into a full discussion on the role of
-the Linux Maintainer.
+     May be not, but there was also a vmalloc= option on the linux 
+command line; Theses options must be used with caution, and takes some 
+low memory.
+>
+> This does not look like a system that should be run
+> with a 32 bit kernel, since it only has 200MB of lowmem,
+> giving you a 40:1 highmem:lowmem ratio, which is really
+> too much to run well.
+>
+     You are right; I will try also in 64-bits mode.
 
-Currently, the Linux maintainer appears to be responsible for filling
-all of the traditional roles of software architect, software developer,
-patch reviewer, patch committer, and software maintainer.
+                                                                         
+                                         Wallak.
 
-My question is whether or not there might be some value in splitting out
-some of these roles, so that we can assign them to different people, and
-thus help to address the scalability issues that Thomas raised? For
-instance, would it be useful to have a separate 'software maintainer'
-role for dealing with post-merge issues, such as ensuring that bugs and
-regressions get fixed by someone?
-If so, how do we ensure that people get credit for the roles that they
-assume? Should we perhaps add additional entries to the MAINTAINERS file
-for some of these responsibilities?
-
-Cheers
-  Trond
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
