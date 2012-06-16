@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab2FPFCd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 01:02:33 -0400
+	id S1755156Ab2FPFCn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 01:02:43 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:43906 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab2FPFC3 (ORCPT
+	with ESMTP id S1754154Ab2FPFCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 01:02:29 -0400
+	Sat, 16 Jun 2012 01:02:33 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org
-Cc: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 09/12] irqdomain: Reserve IRQs for legacy domain
-Date: Fri, 15 Jun 2012 23:01:34 -0600
-Message-Id: <1339822897-15840-10-git-send-email-grant.likely@secretlab.ca>
+Cc: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 07/12] irqdomain: Make ops->map hook optional
+Date: Fri, 15 Jun 2012 23:01:32 -0600
+Message-Id: <1339822897-15840-8-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1339822897-15840-1-git-send-email-grant.likely@secretlab.ca>
 References: <1339822897-15840-1-git-send-email-grant.likely@secretlab.ca>
@@ -20,43 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is really important to make sure irqs used by the legacy domain are
-still reserved in the irq_desc subsystem so they don't get allocated
-for some other purpose.  Without SPARSE_IRQ, this generally isn't a
-problem because it is assumed that all irqs have static assignments
-(which isn't actually true, and is part of the reason why SPARSE_IRQ
-should really be turned on these days).  However, when SPARSE_IRQs is
-turned on, the irq range passed to irq_domain_add_legacy() is not
-guaranteed to be reserved.
-
-This patch fixes the problem by unconditionally reserving any irqs
-passed into irq_domain_add_legacy().  The irqs may have already been
-reserved, so the return code on irq_reserve_irqs() may report a
-failure, but it should still be safe.
+There isn't a really compelling reason to force ->map to be populated,
+so allow it to be left unset.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rob Herring <rob.herring@calxeda.com>
 ---
- kernel/irq/irqdomain.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ kernel/irq/irqdomain.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index d6d0de0..c0a00de 100644
+index 00c383b..e88a7b0 100644
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -151,6 +151,13 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
- 	if (!domain)
- 		return NULL;
+@@ -205,7 +205,8 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+ 		 * one can then use irq_create_mapping() to
+ 		 * explicitly change them
+ 		 */
+-		ops->map(domain, irq, hwirq);
++		if (ops->map)
++			ops->map(domain, irq, hwirq);
  
-+	/*
-+	 * Do our best to reserve the irq descs; but this overlaps with the nr_irqs setting
-+	 * from the platform code
-+	 */
-+	if (irq_reserve_irqs(first_irq, size))
-+		pr_info("IRQs %i..%i already reserved, overlapping with nr_irqs?\n",
-+			first_irq, first_irq + size - 1);
- 	WARN_ON(irq_domain_associate_many(domain, first_irq, first_hwirq, size));
+ 		/* Clear norequest flags */
+ 		irq_clear_status_flags(irq, IRQ_NOREQUEST);
+@@ -402,8 +403,8 @@ int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
  
- 	return domain;
+ 		irq_data->hwirq = hwirq;
+ 		irq_data->domain = domain;
+-		if (domain->ops->map(domain, virq, hwirq)) {
+-			pr_debug("irq-%i==>hwirq-0x%lx mapping failed\n", virq, hwirq);
++		if (domain->ops->map && domain->ops->map(domain, virq, hwirq)) {
++			pr_err("irq-%i==>hwirq-0x%lx mapping failed\n", virq, hwirq);
+ 			irq_data->domain = NULL;
+ 			irq_data->hwirq = 0;
+ 			goto err_unmap;
+@@ -783,12 +784,6 @@ static int __init irq_debugfs_init(void)
+ __initcall(irq_debugfs_init);
+ #endif /* CONFIG_IRQ_DOMAIN_DEBUG */
+ 
+-static int irq_domain_simple_map(struct irq_domain *d, unsigned int irq,
+-				 irq_hw_number_t hwirq)
+-{
+-	return 0;
+-}
+-
+ /**
+  * irq_domain_xlate_onecell() - Generic xlate for direct one cell bindings
+  *
+@@ -851,7 +846,6 @@ int irq_domain_xlate_onetwocell(struct irq_domain *d,
+ EXPORT_SYMBOL_GPL(irq_domain_xlate_onetwocell);
+ 
+ const struct irq_domain_ops irq_domain_simple_ops = {
+-	.map = irq_domain_simple_map,
+ 	.xlate = irq_domain_xlate_onetwocell,
+ };
+ EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
 -- 
 1.7.9.5
 
