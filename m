@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab2FPHuj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 03:50:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54173 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab2FPHuh (ORCPT
+	id S1755957Ab2FPIvN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 04:51:13 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34266 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755855Ab2FPIvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 03:50:37 -0400
+	Sat, 16 Jun 2012 04:51:10 -0400
+Subject: [PATCH 3.5] c/r: prctl: less paranoid prctl_set_mm_exe_file()
+To: Andrew Morton <akpm@linux-foundation.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Kees Cook <keescook@chromium.org>, Pavel Emelyanov <xemul@parallels.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        linux-mm@kvack.org, Matt Helsley <matthltc@us.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Tejun Heo <tj@kernel.org>
+Date: Sat, 16 Jun 2012 12:51:04 +0400
+Message-ID: <20120616085104.14682.16723.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <20120615143403.GA18876@localhost>
-References: <20120614172523.GB4400@mwanda>
-	<20120615014835.GA5695@localhost>
-	<20120615071222.GZ13539@mwanda>
-	<20120615075810.GA13206@localhost>
-	<alpine.DEB.2.02.1206150639130.1864@hadrien>
-	<20120615111913.GA13539@mwanda>
-	<20120615143403.GA18876@localhost>
-Date: Sat, 16 Jun 2012 15:50:36 +0800
-Message-ID: <CAM_iQpUPYpYVaZhCk-bfMe9ZvttQYaSYM_xfKJYX=Z494PWv+A@mail.gmail.com>
-Subject: Re: automated warning notifications
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Fengguang Wu <wfg@linux.intel.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christopher Li <sparse@chrisli.org>,
-        Josh Triplett <josh@freedesktop.org>,
-        Linus Torvalds <torvalds@ppc970.osdl.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 10:34 PM, Fengguang Wu <wfg@linux.intel.com> wrote:
-> On Fri, Jun 15, 2012 at 02:19:14PM +0300, Dan Carpenter wrote:
->>
->> Probably we could use something like the attached script to print
->> out the line of code which causes the bug and some other script to
->> querry git blame and attach the offending commit?
->
-> cat -n $code_file | tail -n +$(($lineno - (($context + 1) / 2))) | head -n $(($context + 1))
->
-> That's handy, I'll use it to show the source file context for the
-> first error/warning :-)
+"no other files mapped" requirement from my previous patch
+(c/r: prctl: update prctl_set_mm_exe_file() after mm->num_exe_file_vmas removal)
+is too paranoid, it forbids operation even if there mapped one shared-anon vma.
 
-Well, you can use sed/awk, it will be much shorter:
+Let's check that current mm->exe_file already unmapped, in this case exe_file
+symlink already outdated and its changing is reasonable.
 
-cat -n drivers/leds/led-triggers.c | sed -ne '224,230p'
-   224			struct led_classdev *led_cdev;
-   225	
-   226			led_cdev = list_entry(entry, struct led_classdev, trig_list);
-   227			led_set_brightness(led_cdev, brightness);
-   228		}
-   229		read_unlock(&trigger->leddev_list_lock);
-   230	}
+Plus, this patch fixes exit code in case operation success.
 
-(replace the hard-coded "224,230" with a shell variable)
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+---
+ kernel/sys.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-And if you want to find the offending commit:
+diff --git a/kernel/sys.c b/kernel/sys.c
+index f0ec44d..eb4c87a 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1788,7 +1788,6 @@ SYSCALL_DEFINE1(umask, int, mask)
+ #ifdef CONFIG_CHECKPOINT_RESTORE
+ static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
+ {
+-	struct vm_area_struct *vma;
+ 	struct file *exe_file;
+ 	struct dentry *dentry;
+ 	int err;
+@@ -1816,13 +1815,17 @@ static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
+ 	down_write(&mm->mmap_sem);
+ 
+ 	/*
+-	 * Forbid mm->exe_file change if there are mapped other files.
++	 * Forbid mm->exe_file change if old file still mapped.
+ 	 */
+ 	err = -EBUSY;
+-	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-		if (vma->vm_file && !path_equal(&vma->vm_file->f_path,
+-						&exe_file->f_path))
+-			goto exit_unlock;
++	if (mm->exe_file) {
++		struct vm_area_struct *vma;
++
++		for (vma = mm->mmap; vma; vma = vma->vm_next)
++			if (vma->vm_file &&
++			    path_equal(&vma->vm_file->f_path,
++				       &mm->exe_file->f_path))
++				goto exit_unlock;
+ 	}
+ 
+ 	/*
+@@ -1835,6 +1838,7 @@ static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
+ 	if (test_and_set_bit(MMF_EXE_FILE_CHANGED, &mm->flags))
+ 		goto exit_unlock;
+ 
++	err = 0;
+ 	set_mm_exe_file(mm, exe_file);
+ exit_unlock:
+ 	up_write(&mm->mmap_sem);
 
-git show `git blame drivers/leds/led-triggers.c | awk 'NR==227{print $1}'`
