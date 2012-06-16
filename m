@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab2FPSwz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 14:52:55 -0400
-Received: from edge.cmeerw.net ([84.200.12.152]:45798 "EHLO edge.cmeerw.net"
+	id S1756394Ab2FPTEW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 15:04:22 -0400
+Received: from antcom.de ([188.40.178.216]:46881 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754055Ab2FPSwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 14:52:54 -0400
-X-Greylist: delayed 337 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Jun 2012 14:52:54 EDT
-Date: Sat, 16 Jun 2012 20:47:07 +0200
-From: Christof Meerwald <cmeerw@cmeerw.org>
-To: Paton Lewis <palewis@adobe.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jason Baron <jbaron@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Holland <pholland@adobe.com>,
-        Davide Libenzi <davidel@xmailserver.org>
-Subject: Re: [PATCH] epoll: Improved support for multi-threaded clients
-Message-ID: <20120616184707.GA22656@edge.cmeerw.net>
-References: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
+	id S1755902Ab2FPTEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 15:04:21 -0400
+Message-ID: <4FDCD8B1.5000407@antcom.de>
+Date: Sat, 16 Jun 2012 21:04:17 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
-X-PGP-Key: 1024D/2B10BE68, 1998-06-29
-X-PGP-Fingerprint: 0289 5466 C1F5 B03C DBA7  6304 8CAF 9782 2B10 BE68
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, cjb@laptop.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
+        linus.walleij@linaro.org, sebastian.rasmussen@stericsson.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        aletes.xgr@gmail.com
+Subject: Re: [PATCH v2] mmc: mmci.c: Defer probe() in case of yet uninitialized
+ GPIOs
+References: <1339865375-22314-1-git-send-email-stigge@antcom.de> <201206161723.23768.arnd@arndb.de>
+In-Reply-To: <201206161723.23768.arnd@arndb.de>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012 15:34:49 -0700, Paton Lewis wrote:
-> This patch introduces the new epoll_ctl command EPOLL_CTL_DISABLE, which
-> disables the associated epoll item and returns -EBUSY if the epoll item is not
-> currently in the epoll ready queue. This allows multiple threads to use a
-> mutex to determine when it is safe to delete an epoll item and its associated
-> resources. This allows epoll items to be deleted and closed efficiently and
-> without error.
+On 16/06/12 19:23, Arnd Bergmann wrote:
+> On Saturday 16 June 2012, Roland Stigge wrote:
+>> +       if (of_get_property(np, "wp-gpios", NULL)) {
+>> +               pdata->gpio_wp = of_get_named_gpio(np, "wp-gpios", 0);
+>> +               if (pdata->gpio_wp == -ENODEV)
+>> +                       pdata->gpio_wp = -EPROBE_DEFER;
+>> +       } else {
+>> +               pdata->gpio_wp = -ENODEV;
+>> +       }
+> 
+> This is still very ugly and there is a certain danfer that we might
+> have to duplicate this across more drivers. Can't we make
+> of_get_named_gpio_flags return -EPROBE_DEFER in cases where we can't
+> find the GPIO number yet but still have a chance of returning it at
+> a later point?
 
-Do you assume that EPOLLONESHOT is being used for this to work or
-would you expect your patch to also address the case where
-EPOLLONESHOT is not used?
+OK, will post a new patch.
 
-
-Christof
-
--- 
-
-http://cmeerw.org                              sip:cmeerw at cmeerw.org
-mailto:cmeerw at cmeerw.org                   xmpp:cmeerw at cmeerw.org
+Roland
