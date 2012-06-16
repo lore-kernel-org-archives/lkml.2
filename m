@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab2FPTav (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 15:30:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57841 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab2FPTat convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 15:30:49 -0400
+	id S1756792Ab2FPTbi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 15:31:38 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:60259 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756153Ab2FPTbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 15:31:37 -0400
+X-IronPort-AV: E=Sophos;i="4.75,783,1330934400"; 
+   d="scan'208";a="655865749"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "ksummit-2012-discuss@lists.linux-foundation.org" 
+	<ksummit-2012-discuss@lists.linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [ATTEND] Discussion: role of the maintainer?
+Thread-Topic: [ATTEND] Discussion: role of the maintainer?
+Thread-Index: AQHNS/abOYKvrFmdEkm0pnWCMkPIXw==
+Date: Sat, 16 Jun 2012 19:31:19 +0000
+Message-ID: <1339875074.8267.87.camel@lade.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <29F803A70CE70849A8425DBC91799445@tahoe.netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <20120616191114.GA10098@kroah.com>
-References: <CAMuHMdXk6pByz14JcDgY+UE6QM0sHD8cbXye9CgOVSRRtr7J+Q@mail.gmail.com>
-	<20120615201021.GB14544@kroah.com>
-	<CAMuHMdUj6tAcWhkSkV43Kw3-2-3+JzgP6W=2w3fjL2KBfRh9ZQ@mail.gmail.com>
-	<20120615231220.GC8205@kroah.com>
-	<87lijns84s.fsf@nemi.mork.no>
-	<20120616191114.GA10098@kroah.com>
-Date: Sat, 16 Jun 2012 21:30:48 +0200
-X-Google-Sender-Auth: N4UTVQ39aTR4GZKgCwT7QaprILA
-Message-ID: <CAMuHMdWobY63O6jSuET1MzuQ80N8xjJA7ny6n0tCdc29Z3vKpA@mail.gmail.com>
-Subject: Re: [-next] FATAL: drivers/gpu/drm/udl/udl: sizeof(struct
- usb_device_id)=24 is not a modulo of the size of section __mod_usb_device_table=44.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
-        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Linux-Next <linux-next@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5GJVhxL013053
 
-On Sat, Jun 16, 2012 at 9:11 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sat, Jun 16, 2012 at 03:23:31PM +0200, BjÃ¸rn Mork wrote:
->> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->> > On Fri, Jun 15, 2012 at 11:02:55PM +0200, Geert Uytterhoeven wrote:
->> >
->> >> As "kernel_ulong_t Â driver_info" is no longer naturally aligned, the
->> >> compiler will
->> >> add implicit padding. But the padding depends on the architecture.
->> >
->> > Ah, so we were "lucky" before, nice.
->>
->> I don't really believe in luck :-) Â I think someone has been really
->> smart here. Â Maybe too smart...
->
-> No, I think the previous structure was just "lucky" in that it just
-> happened to be the right alignment. Â I say this as I think I was the one
-> who created that structure years ago. Â Or maybe not, this was back in
-> the 2.3 kernel days, I can't remember what patches I wrote last week...
->
->> >> It can be fixed by adding explicit padding. Probably it should be padded by
->> >> 7 bytes (not 3), as kernel_ulong_t may require 8-byte alignment on some 64-bit
->> >> platforms. Or by an explicit alignment attribute.
->> >>
->> >> See also
->> >> Â  * commit 8175fe2dda1c93a9c596921c8ed4a0b4baccdefe ("HID: fix
->> >> hid_device_id for cross compiling")
->> >> Â  * commit 7492d4a416d68ab4bd254b36ffcc4e0138daa8ff ("sdio: fix module
->> >> device table definition for m68k")
->> >> Â  * commit 9e2d3cd34a159948dc753a14573e16bffc04dba8 ("[PATCH]
->> >> mod_devicetable.h fixes")
->> >
->> > So would the patch below fix this? Â It should force alignment of the
->> > driver_data field, which is all you want here, right?
->> >
->> >> Still, there's a bug in file2alias (which is compiled by the host
->> >> compiler), in that
->> >> it may use different padding than the target platform when cross-compiling.
->> >
->> > That's not good, but outside of this specific issue, right? Â Have we
->> > just been fortunate it hasn't really hit us yet?
->> >
->> > thanks,
->> >
->> > greg k-h
->> >
->> > diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
->> > index 7771d45..6955045 100644
->> > --- a/include/linux/mod_devicetable.h
->> > +++ b/include/linux/mod_devicetable.h
->> > @@ -122,7 +122,8 @@ struct usb_device_id {
->> > Â  Â  __u8 Â  Â  Â  Â  Â  Â bInterfaceNumber;
->> >
->> > Â  Â  /* not matched against */
->> > - Â  kernel_ulong_t Â driver_info;
->> > + Â  kernel_ulong_t Â driver_info
->> > + Â  Â  Â  Â  Â  __attribute__((aligned(sizeof(kernel_ulong_t))));
->> > Â };
->>
->>
->> This feels a lot like papering over the real problem. Â It will solve
->> this instance, but the list of such previous "paper work" that Geert
->> provided should be enough evidence that this will happen again the next
->> time someone modifies a device id struct for some subsystem.
->
-> Hopefully not, if you add another field here, the alignment force will
-> keep things lined up properly, from what I can tell. Â Is that not true?
+Hi,
 
-... for struct usb_device_id.
-But not for all other existing and future device ID types.
+This is a spin off from the discussion topic that was started by Thomas
+Gleixner. I'd like to turn this into a full discussion on the role of
+the Linux Maintainer.
 
-We have kernel_ulong_t to tell the host compiler what the target's
-unsigned long type (actually only its size, not alignment) is.
+Currently, the Linux maintainer appears to be responsible for filling
+all of the traditional roles of software architect, software developer,
+patch reviewer, patch committer, and software maintainer.
 
-scripts/mod/file2alias.c handles this with:
+My question is whether or not there might be some value in splitting out
+some of these roles, so that we can assign them to different people, and
+thus help to address the scalability issues that Thomas raised? For
+instance, would it be useful to have a separate 'software maintainer'
+role for dealing with post-merge issues, such as ensuring that bugs and
+regressions get fixed by someone?
+If so, how do we ensure that people get credit for the roles that they
+assume? Should we perhaps add additional entries to the MAINTAINERS file
+for some of these responsibilities?
 
-#if KERNEL_ELFCLASS == ELFCLASS32
-typedef Elf32_Addr      kernel_ulong_t;
-#define BITS_PER_LONG 32
-#else
-typedef Elf64_Addr      kernel_ulong_t;
-#define BITS_PER_LONG 64
-#endif
+Cheers
+  Trond
 
-To fix the misalignment issue, can't we add
-"__attribute__((aligned(2)))" to the typedef when cross-compiling for m68k?
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Still, that only solves the problem for "kernel_ulong_t". Not for all other
-4 or 8 bytes types (in practice just "u32") that are used in
-include/linux/mod_devicetable.h. So we would also need "kernel_u32".
-And "kernel_u16" for consistency.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-Gr{oetje,eeting}s,
-
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
