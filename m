@@ -1,117 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab2FPSng (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 14:43:36 -0400
-Received: from catastrophix.ugh.no ([178.79.162.34]:55255 "EHLO
-	catastrophix.ugh.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab2FPSne (ORCPT
+	id S1756339Ab2FPStu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 14:49:50 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:32830 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab2FPSts convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 14:43:34 -0400
-Message-ID: <4FDCD3C7.5080503@tomt.net>
-Date: Sat, 16 Jun 2012 20:43:19 +0200
-From: Andre Tomt <andre@tomt.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sat, 16 Jun 2012 14:49:48 -0400
 MIME-Version: 1.0
-To: Linux-NFS <linux-nfs@vger.kernel.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>, David Howells <dhowells@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in __key_instantiate_and_link(): unable to handle kernel
- paging request at 0000632e6472616f
-References: <20120601034114.GA9248@localhost> <4FDBF056.7040404@tomt.net>
-In-Reply-To: <4FDBF056.7040404@tomt.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1338998217-5010-2-git-send-email-dedekind1@gmail.com>
+References: <1338998217-5010-1-git-send-email-dedekind1@gmail.com>
+	<1338998217-5010-2-git-send-email-dedekind1@gmail.com>
+Date: Sat, 16 Jun 2012 20:49:46 +0200
+X-Google-Sender-Auth: bfmXkcJ0MQYbiqHnKsMNcqSzbOo
+Message-ID: <CAMuHMdXW80+jyp3te+uG+=kE5sCs=wRgKzE4CXAZVe3xGdFpmw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/7] affs: stop setting bm_flags
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16. juni 2012 04:32, Andre Tomt wrote:
-> FWIW; I am (still) seeing this exact same crash several times an hour on
-> 3.4.3-rc1 on Ubuntu 12.04 client. Only that the same second it happens,
-> all my three displays corrupts badly, becoming completely unreadable.
-> Switching to console and back usually gets my desktop back on two of
-> three displays, and sometimes it will need a full xserver restart.
-> Obviously some memory corruption going on.
+On Wed, Jun 6, 2012 at 5:56 PM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 >
-> One of the crashes also triggered a NX error:
-> [20292.196332] kernel tried to execute NX-protected page - exploit
-> attempt? (uid: 0)
+> AFFS stores values '1' and '2' in 'bm_flags', and I fail to see any logic when
+> it prefers one or another. AFFS writes '1' only from '->put_super()', while
+> '->sync_fs()' and '->write_super()' store value '2'.  So on the first glance,
+> it looks like we want to have '1' if we unmount.  However, this does not really
+> happen in these cases:
+>  1. superblock is written via 'write_super()' then we unmount;
+>  2. we re-mount R/O, then unmount.
+> which are quite typical.
 >
-> And after a while, things start locking up.
->
-> It didn't really start happening until a few days ago though, I've been
-> running 3.4 for since some -rc through all the stable releases. Perhaps
-> server suddenly got a working idmapper or something? Its a debian
-> unstable updated a couple times a month.
->
-> Booting latest git master now, to see if any of the recent NFS fixes
-> just pulled by Linus fixes anything (-rc2 had other showstopper nfs
-> issues).
+> I could not find good documentation describing this field, except of one random
+> piece of documentation in the internet which says that -1 means that the root
+> block is valid, which is not consistent with what we have in the Linux AFFS
+> driver.
 
-Just had it happen with 3.5-git as of a couple hours ago (last commit 
-a2c2df8672f55195f101d9251117aa59e358d296):
-Jun 16 19:01:49 slurv kernel: [50823.271618] general protection fault: 
-0000 [#1] SMP
-Jun 16 19:01:49 slurv kernel: [50823.271640] CPU 10
-Jun 16 19:01:49 slurv kernel: [50823.271690]
-Jun 16 19:01:49 slurv kernel: [50823.271698] Pid: 1678, comm: rpc.idmapd 
-Not tainted 3.5.0-1-desktop #1 System manufacturer System Product 
-Name/P6T DELUXE V2
-Jun 16 19:01:49 slurv kernel: [50823.271738] RIP: 
-0010:[<ffffffff81129872>]  [<ffffffff81129872>] 
-__key_instantiate_and_link+0x52/0xcb
-Jun 16 19:01:49 slurv kernel: [50823.271767] RSP: 0018:ffff88061941bd38 
-  EFLAGS: 00010246
-Jun 16 19:01:49 slurv kernel: [50823.271785] RAX: 6337346330366233 RBX: 
-ffff880606fb97f0 RCX: 0000000000000000
-Jun 16 19:01:49 slurv kernel: [50823.271807] RDX: 0000000000000006 RSI: 
-ffff88061941be85 RDI: ffff880606fb97f0
-Jun 16 19:01:49 slurv kernel: [50823.271829] RBP: ffff88061941bd88 R08: 
-ffff8802bc9ed380 R09: ffff88061941bdb0
-Jun 16 19:01:49 slurv kernel: [50823.271850] R10: 0000000000000000 R11: 
-0000000000000000 R12: ffff88061aad63c0
-Jun 16 19:01:49 slurv kernel: [50823.271872] R13: ffff8802bc9ed380 R14: 
-0000000000000000 R15: ffff88061941bdb0
-Jun 16 19:01:49 slurv kernel: [50823.271894] FS:  00007fd449a7d700(0000) 
-GS:ffff88063fd40000(0000) knlGS:0000000000000000
-Jun 16 19:01:49 slurv kernel: [50823.271919] CS:  0010 DS: 0000 ES: 0000 
-CR0: 0000000080050033
-Jun 16 19:01:49 slurv kernel: [50823.271937] CR2: 00007f8844002028 CR3: 
-000000061be95000 CR4: 00000000000007e0
-Jun 16 19:01:49 slurv kernel: [50823.271959] DR0: 0000000000000000 DR1: 
-0000000000000000 DR2: 0000000000000000
-Jun 16 19:01:49 slurv kernel: [50823.271980] DR3: 0000000000000000 DR6: 
-00000000ffff0ff0 DR7: 0000000000000400
-Jun 16 19:01:49 slurv kernel: [50823.272003] Process rpc.idmapd (pid: 
-1678, threadinfo ffff88061941a000, task ffff88061b870000)
-Jun 16 19:01:49 slurv kernel: [50823.272028] Stack:
-Jun 16 19:01:49 slurv kernel: [50823.272036]  ffff88061941bd78 
-0000000000000006 ffff88061941be85 fffffff01aad63e8
-Jun 16 19:01:49 slurv kernel: [50823.272060]  ffff880606fb9840 
-ffff880606fb97f0 ffff88061aad63c0 0000000000000006
-Jun 16 19:01:49 slurv kernel: [50823.272083]  ffff88061941be85 
-00007fffe09c4500 ffff88061941bdd8 ffffffff81129943
-Jun 16 19:01:49 slurv kernel: [50823.272106] Call Trace:
-Jun 16 19:01:49 slurv kernel: [50823.272116]  [<ffffffff81129943>] 
-key_instantiate_and_link+0x58/0x80
-Jun 16 19:01:49 slurv kernel: [50823.272145]  [<ffffffffa058a906>] 
-idmap_pipe_downcall+0x154/0x1ad [nfs]
-Jun 16 19:01:49 slurv kernel: [50823.272173]  [<ffffffffa04aeae2>] 
-rpc_pipe_write+0x56/0x6f [sunrpc]
-Jun 16 19:01:49 slurv kernel: [50823.272195]  [<ffffffff810c86ce>] 
-vfs_write+0xad/0x13d
-Jun 16 19:01:49 slurv kernel: [50823.272212]  [<ffffffff810c8949>] 
-sys_write+0x45/0x6c
-Jun 16 19:01:49 slurv kernel: [50823.272229]  [<ffffffff8130a462>] 
-system_call_fastpath+0x16/0x1b
-Jun 16 19:01:49 slurv kernel: [50823.272258] Code: 48 89 55 b8 48 89 75 
-c0 e8 16 e4 1d 00 48 8b 43 78 c7 45 cc f0 ff ff ff 48 8b 55 b8 48 8b 75 
-c0 a8 01 75 4f 48 8b 43 20 48 89 df <ff> 50 18 85 c0 89 45 cc 75 3e 48 
-8b 43 48 f0 ff 40 44 f0 80 4b
-Jun 16 19:01:49 slurv kernel: [50823.272317] RIP  [<ffffffff81129872>] 
-__key_instantiate_and_link+0x52/0xcb
-Jun 16 19:01:49 slurv kernel: [50823.272339]  RSP <ffff88061941bd38>
-Jun 16 19:01:49 slurv kernel: [50823.279199] ---[ end trace 
-25122b5e9d0b0c76 ]---
+The book "Amiga Intern" (German version on the 'net, which is faster to access
+than the Dutch version somewhere in my attic ;-) agrees with this ("Dieses Flag
+enthält -1 (TRUE), wenn die Bit-Map der Diskette gültig ist").
 
-It did take a while this time.
+I checked some file systems I had lying around, and they all have 0xffffffff in
+bm_flag (byte offset 0x138 in the block at the middle of the file system).
+At bit to my surprise, as I expected two of them (very old backups of file
+systems) to have been written to from Linux at least once, but of course I can
+be mistaken, and never have trusted Linux's affs with them ;-).
+Mounting (copies of) them on Ubuntu and writing to them changes this flag to 1.
+
+After digging in the affs sources, it seems we had this behavior since at least
+2.0.29 (which is 1997 or so), so I think it's safe to assume it's been like that
+forever.
+
+> Jan Kara commented on this: "I have some vague recollection that on Amiga
+> boolean was usually encoded as: 0 == false, ~0 == -1 == true. But it has been
+> ages..."
+
+include/exec/types.h:
+
+#define TRUE            1
+#define FALSE           0
+
+However, include/dos/dos.h:
+
+#define DOSTRUE (-1L)
+#define DOSFALSE (0L)
+
+So AmigaOS will probably always use 0xffffffff.
+
+> Thus, my conclusion is that value of '1' is as good as value of '2' and we can
+> just always use '2'. An Jan Kara suggested to go further: "generally bm_flags
+> handling looks strange. If they are 0, we mount fs read only and thus cannot
+> change them.  If they are != 0, we write 2 there. So IMHO if you just removed
+> bm_flags setting, nothing will really happen."
+
+As no one ever complained, 1 or 2 or whatever non-zero value probably doesn't
+matter at all to AmigaOS.
+
+> So this patch removes the bm_flags setting completely. This makes the "clean"
+> argument of the 'affs_commit_super()' function unneeded, so it is also removed.
+>
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> ---
+>  fs/affs/super.c |    9 ++++-----
+>  1 files changed, 4 insertions(+), 5 deletions(-)
+>
+> diff --git a/fs/affs/super.c b/fs/affs/super.c
+> index 0782653..1d42e46 100644
+> --- a/fs/affs/super.c
+> +++ b/fs/affs/super.c
+> @@ -25,13 +25,12 @@ static int affs_statfs(struct dentry *dentry, struct kstatfs *buf);
+>  static int affs_remount (struct super_block *sb, int *flags, char *data);
+>
+>  static void
+> -affs_commit_super(struct super_block *sb, int wait, int clean)
+> +affs_commit_super(struct super_block *sb, int wait)
+>  {
+>        struct affs_sb_info *sbi = AFFS_SB(sb);
+>        struct buffer_head *bh = sbi->s_root_bh;
+>        struct affs_root_tail *tail = AFFS_ROOT_TAIL(sb, bh);
+>
+> -       tail->bm_flag = cpu_to_be32(clean);
+>        secs_to_datestamp(get_seconds(), &tail->disk_change);
+>        affs_fix_checksum(sb, bh);
+>        mark_buffer_dirty(bh);
+> @@ -46,7 +45,7 @@ affs_put_super(struct super_block *sb)
+>        pr_debug("AFFS: put_super()\n");
+>
+>        if (!(sb->s_flags & MS_RDONLY) && sb->s_dirt)
+> -               affs_commit_super(sb, 1, 1);
+> +               affs_commit_super(sb, 1);
+>
+>        kfree(sbi->s_prefix);
+>        affs_free_bitmap(sb);
+> @@ -60,7 +59,7 @@ affs_write_super(struct super_block *sb)
+>  {
+>        lock_super(sb);
+>        if (!(sb->s_flags & MS_RDONLY))
+> -               affs_commit_super(sb, 1, 2);
+> +               affs_commit_super(sb, 1);
+>        sb->s_dirt = 0;
+>        unlock_super(sb);
+>
+> @@ -71,7 +70,7 @@ static int
+>  affs_sync_fs(struct super_block *sb, int wait)
+>  {
+>        lock_super(sb);
+> -       affs_commit_super(sb, wait, 2);
+> +       affs_commit_super(sb, wait);
+>        sb->s_dirt = 0;
+>        unlock_super(sb);
+>        return 0;
+> --
+> 1.7.7.6
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
