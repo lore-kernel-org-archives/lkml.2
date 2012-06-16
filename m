@@ -1,111 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758974Ab2FPA4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 20:56:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38095 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758903Ab2FPA4S (ORCPT
+	id S1759024Ab2FPA4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 20:56:35 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39038 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758987Ab2FPA4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 20:56:18 -0400
-Date: Fri, 15 Jun 2012 17:55:50 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH] swap: fix shmem swapping when more than 8 areas
-Message-ID: <alpine.LSU.2.00.1206151752420.8741@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 15 Jun 2012 20:56:31 -0400
+Date: Fri, 15 Jun 2012 17:56:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 14/15] rcu: Use for_each_rcu_flavor() in
+ TREE_RCU tracing
+Message-ID: <20120616005605.GV2389@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120615210550.GA27506@linux.vnet.ibm.com>
+ <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339794370-28119-14-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120615235957.GF7613@leaf>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120615235957.GF7613@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061600-1780-0000-0000-0000067D604D
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00148402; UDB=6.00033822; UTC=2012-06-16
+ 00:56:29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minchan Kim reports that when a system has many swap areas, and tmpfs
-swaps out to the ninth or more, shmem_getpage_gfp()'s attempts to read
-back the page cannot locate it, and the read fails with -ENOMEM.
+On Fri, Jun 15, 2012 at 04:59:57PM -0700, Josh Triplett wrote:
+> On Fri, Jun 15, 2012 at 02:06:09PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > This commit applies the new for_each_rcu_flavor() macro to the
+> > kernel/rcutree_trace.c file.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcutree_trace.c |   95 +++++++++++++++++++-----------------------------
+> >  1 files changed, 38 insertions(+), 57 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+> > index 057408b..c618665 100644
+> > --- a/kernel/rcutree_trace.c
+> > +++ b/kernel/rcutree_trace.c
+> > @@ -48,22 +48,18 @@
+> >  
+> >  static void print_rcubarrier(struct seq_file *m, struct rcu_state *rsp)
+> >  {
+> > -	seq_printf(m, "%c bcc: %d nbd: %lu\n",
+> > -		   rsp->rcu_barrier_in_progress ? 'B' : '.',
+> > +	seq_printf(m, "%s: %c bcc: %d nbd: %lu\n",
+> > +		   rsp->name, rsp->rcu_barrier_in_progress ? 'B' : '.',
+> >  		   atomic_read(&rsp->barrier_cpu_count),
+> >  		   rsp->n_barrier_done);
+> >  }
+> >  
+> >  static int show_rcubarrier(struct seq_file *m, void *unused)
+> >  {
+> > -#ifdef CONFIG_TREE_PREEMPT_RCU
+> > -	seq_puts(m, "rcu_preempt: ");
+> > -	print_rcubarrier(m, &rcu_preempt_state);
+> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+> > -	seq_puts(m, "rcu_sched: ");
+> > -	print_rcubarrier(m, &rcu_sched_state);
+> > -	seq_puts(m, "rcu_bh: ");
+> > -	print_rcubarrier(m, &rcu_bh_state);
+> > +	struct rcu_state *rsp;
+> > +
+> > +	for_each_rcu_flavor(rsp)
+> > +		print_rcubarrier(m, rsp);
+> 
+> Now that you call this function exactly once, I'd suggest inlining it
+> for clarity; I don't think having it as a separate function makes sense
+> anymore.
 
-Whoops.  Yes, I blindly followed read_swap_header()'s pte_to_swp_entry(
-swp_entry_to_pte()) technique for determining maximum usable swap offset,
-without stopping to realize that that actually depends upon the pte swap
-encoding shifting swap offset to the higher bits and truncating it there.
-Whereas our radix_tree swap encoding leaves offset in the lower bits:
-it's swap "type" (that is, index of swap area) that was truncated.
+This one I am OK with.
 
-Fix it by reducing the SWP_TYPE_SHIFT() in swapops.h, and removing the
-broken radix_to_swp_entry(swp_to_radix_entry()) from read_swap_header().
+> > @@ -129,24 +125,16 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+> >  		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
+> >  }
+> >  
+> > -#define PRINT_RCU_DATA(name, func, m) \
+> > -	do { \
+> > -		int _p_r_d_i; \
+> > -		\
+> > -		for_each_possible_cpu(_p_r_d_i) \
+> > -			func(m, &per_cpu(name, _p_r_d_i)); \
+> > -	} while (0)
+> > -
+> >  static int show_rcudata(struct seq_file *m, void *unused)
+> >  {
+> > -#ifdef CONFIG_TREE_PREEMPT_RCU
+> > -	seq_puts(m, "rcu_preempt:\n");
+> > -	PRINT_RCU_DATA(rcu_preempt_data, print_one_rcu_data, m);
+> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+> > -	seq_puts(m, "rcu_sched:\n");
+> > -	PRINT_RCU_DATA(rcu_sched_data, print_one_rcu_data, m);
+> > -	seq_puts(m, "rcu_bh:\n");
+> > -	PRINT_RCU_DATA(rcu_bh_data, print_one_rcu_data, m);
+> > +	int cpu;
+> > +	struct rcu_state *rsp;
+> > +
+> > +	for_each_rcu_flavor(rsp) {
+> > +		seq_printf(m, "%s:\n", rsp->name);
+> > +		for_each_possible_cpu(cpu)
+> > +		print_one_rcu_data(m, per_cpu_ptr(rsp->rda, cpu));
+> > +	}
+> 
+> As above, I'd suggest inlining print_one_rcu_data.
 
-This does not reduce the usable size of a swap area any further, it leaves
-it as claimed when making the original commit: no change from 3.0 on x86_64,
-nor on i386 without PAE; but 3.0's 512GB is reduced to 128GB per swapfile
-on i386 with PAE.  It's not a change I would have risked five years ago,
-but with x86_64 supported for ten years, I believe it's appropriate now.
+Not this one, too bulky.
 
-Hmm, and what if some architecture implements its swap pte with offset
-encoded below type?  That would equally break the maximum usable swap
-offset check.  Happily, they all follow the same tradition of encoding
-offset above type, but I'll prepare a check on that for next.
+> Also, you need to indent the body of the for_each_possible_cpu loop.
 
-Reported-and-Reviewed-and-Tested-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org [3.1, 3.2, 3.3, 3.4]
----
+Good point.
 
- include/linux/swapops.h |    8 +++++---
- mm/swapfile.c           |   12 ++++--------
- 2 files changed, 9 insertions(+), 11 deletions(-)
+> > @@ -200,6 +188,9 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
+> >  
+> >  static int show_rcudata_csv(struct seq_file *m, void *unused)
+> >  {
+> > +	int cpu;
+> > +	struct rcu_state *rsp;
+> > +
+> >  	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pgp\",\"pq\",");
+> >  	seq_puts(m, "\"dt\",\"dt nesting\",\"dt NMI nesting\",\"df\",");
+> >  	seq_puts(m, "\"of\",\"qll\",\"ql\",\"qs\"");
+> > @@ -207,14 +198,11 @@ static int show_rcudata_csv(struct seq_file *m, void *unused)
+> >  	seq_puts(m, "\"kt\",\"ktl\"");
+> >  #endif /* #ifdef CONFIG_RCU_BOOST */
+> >  	seq_puts(m, ",\"b\",\"ci\",\"co\",\"ca\"\n");
+> > -#ifdef CONFIG_TREE_PREEMPT_RCU
+> > -	seq_puts(m, "\"rcu_preempt:\"\n");
+> > -	PRINT_RCU_DATA(rcu_preempt_data, print_one_rcu_data_csv, m);
+> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+> > -	seq_puts(m, "\"rcu_sched:\"\n");
+> > -	PRINT_RCU_DATA(rcu_sched_data, print_one_rcu_data_csv, m);
+> > -	seq_puts(m, "\"rcu_bh:\"\n");
+> > -	PRINT_RCU_DATA(rcu_bh_data, print_one_rcu_data_csv, m);
+> > +	for_each_rcu_flavor(rsp) {
+> > +		seq_printf(m, "\"%s:\"\n", rsp->name);
+> > +		for_each_possible_cpu(cpu)
+> > +			print_one_rcu_data_csv(m, per_cpu_ptr(rsp->rda, cpu));
+> > +	}
+> 
+> As above, I'd suggest inlining print_one_rcu_data_csv.
 
---- 3.5-rc2/include/linux/swapops.h	2012-05-20 15:29:13.000000000 -0700
-+++ linux/include/linux/swapops.h	2012-06-13 12:01:35.390711624 -0700
-@@ -9,13 +9,15 @@
-  * get good packing density in that tree, so the index should be dense in
-  * the low-order bits.
-  *
-- * We arrange the `type' and `offset' fields so that `type' is at the five
-+ * We arrange the `type' and `offset' fields so that `type' is at the seven
-  * high-order bits of the swp_entry_t and `offset' is right-aligned in the
-- * remaining bits.
-+ * remaining bits.  Although `type' itself needs only five bits, we allow for
-+ * shmem/tmpfs to shift it all up a further two bits: see swp_to_radix_entry().
-  *
-  * swp_entry_t's are *never* stored anywhere in their arch-dependent format.
-  */
--#define SWP_TYPE_SHIFT(e)	(sizeof(e.val) * 8 - MAX_SWAPFILES_SHIFT)
-+#define SWP_TYPE_SHIFT(e)	((sizeof(e.val) * 8) - \
-+			(MAX_SWAPFILES_SHIFT + RADIX_TREE_EXCEPTIONAL_SHIFT))
- #define SWP_OFFSET_MASK(e)	((1UL << SWP_TYPE_SHIFT(e)) - 1)
- 
- /*
---- 3.5-rc2/mm/swapfile.c	2012-06-08 18:48:40.744605221 -0700
-+++ linux/mm/swapfile.c	2012-06-13 12:13:56.214729684 -0700
-@@ -1916,24 +1916,20 @@ static unsigned long read_swap_header(st
- 
- 	/*
- 	 * Find out how many pages are allowed for a single swap
--	 * device. There are three limiting factors: 1) the number
-+	 * device. There are two limiting factors: 1) the number
- 	 * of bits for the swap offset in the swp_entry_t type, and
- 	 * 2) the number of bits in the swap pte as defined by the
--	 * the different architectures, and 3) the number of free bits
--	 * in an exceptional radix_tree entry. In order to find the
-+	 * different architectures. In order to find the
- 	 * largest possible bit mask, a swap entry with swap type 0
- 	 * and swap offset ~0UL is created, encoded to a swap pte,
- 	 * decoded to a swp_entry_t again, and finally the swap
- 	 * offset is extracted. This will mask all the bits from
- 	 * the initial ~0UL mask that can't be encoded in either
- 	 * the swp_entry_t or the architecture definition of a
--	 * swap pte.  Then the same is done for a radix_tree entry.
-+	 * swap pte.
- 	 */
- 	maxpages = swp_offset(pte_to_swp_entry(
--			swp_entry_to_pte(swp_entry(0, ~0UL))));
--	maxpages = swp_offset(radix_to_swp_entry(
--			swp_to_radix_entry(swp_entry(0, maxpages)))) + 1;
--
-+			swp_entry_to_pte(swp_entry(0, ~0UL)))) + 1;
- 	if (maxpages > swap_header->info.last_page) {
- 		maxpages = swap_header->info.last_page + 1;
- 		/* p->max is an unsigned int: don't overflow it */
+Also too bulky.
+
+> > @@ -304,9 +292,9 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
+> >  	struct rcu_node *rnp;
+> >  
+> >  	gpnum = rsp->gpnum;
+> > -	seq_printf(m, "c=%lu g=%lu s=%d jfq=%ld j=%x "
+> > +	seq_printf(m, "%s: c=%lu g=%lu s=%d jfq=%ld j=%x "
+> >  		      "nfqs=%lu/nfqsng=%lu(%lu) fqlh=%lu oqlen=%ld/%ld\n",
+> > -		   rsp->completed, gpnum, rsp->fqs_state,
+> > +		   rsp->name, rsp->completed, gpnum, rsp->fqs_state,
+> >  		   (long)(rsp->jiffies_force_qs - jiffies),
+> >  		   (int)(jiffies & 0xffff),
+> >  		   rsp->n_force_qs, rsp->n_force_qs_ngp,
+> > @@ -329,14 +317,10 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
+> >  
+> >  static int show_rcuhier(struct seq_file *m, void *unused)
+> >  {
+> > -#ifdef CONFIG_TREE_PREEMPT_RCU
+> > -	seq_puts(m, "rcu_preempt:\n");
+> > -	print_one_rcu_state(m, &rcu_preempt_state);
+> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+> > -	seq_puts(m, "rcu_sched:\n");
+> > -	print_one_rcu_state(m, &rcu_sched_state);
+> > -	seq_puts(m, "rcu_bh:\n");
+> > -	print_one_rcu_state(m, &rcu_bh_state);
+> > +	struct rcu_state *rsp;
+> > +
+> > +	for_each_rcu_flavor(rsp)
+> > +		print_one_rcu_state(m, rsp);
+> 
+> As above, I'd suggest inlining print_one_rcu_state.
+
+Also too bulky.
+
+> > @@ -377,11 +361,10 @@ static void show_one_rcugp(struct seq_file *m, struct rcu_state *rsp)
+> >  
+> >  static int show_rcugp(struct seq_file *m, void *unused)
+> >  {
+> > -#ifdef CONFIG_TREE_PREEMPT_RCU
+> > -	show_one_rcugp(m, &rcu_preempt_state);
+> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+> > -	show_one_rcugp(m, &rcu_sched_state);
+> > -	show_one_rcugp(m, &rcu_bh_state);
+> > +	struct rcu_state *rsp;
+> > +
+> > +	for_each_rcu_flavor(rsp)
+> > +		show_one_rcugp(m, rsp);
+> 
+> As above, I'd suggest inlining show_one_rcugp.
+
+Also too bulky.
+
+> > @@ -430,14 +413,12 @@ static void print_rcu_pendings(struct seq_file *m, struct rcu_state *rsp)
+> >  
+> >  static int show_rcu_pending(struct seq_file *m, void *unused)
+> >  {
+> > -#ifdef CONFIG_TREE_PREEMPT_RCU
+> > -	seq_puts(m, "rcu_preempt:\n");
+> > -	print_rcu_pendings(m, &rcu_preempt_state);
+> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+> > -	seq_puts(m, "rcu_sched:\n");
+> > -	print_rcu_pendings(m, &rcu_sched_state);
+> > -	seq_puts(m, "rcu_bh:\n");
+> > -	print_rcu_pendings(m, &rcu_bh_state);
+> > +	struct rcu_state *rsp;
+> > +
+> > +	for_each_rcu_flavor(rsp) {
+> > +		seq_printf(m, "%s:\n", rsp->name);
+> > +		print_rcu_pendings(m, rsp);
+> > +	}
+> 
+> As above, I'd suggest inlining print_rcu_pendings.
+
+This one I will inline.
+
+							Thanx, Paul
+
