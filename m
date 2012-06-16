@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab2FPGwT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 02:52:19 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:26134 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960Ab2FPGwS (ORCPT
+	id S1755863Ab2FPG57 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 02:57:59 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51308 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab2FPG56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 02:52:18 -0400
-Date: Sat, 16 Jun 2012 08:51:59 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andrew Armenia <andrew@asquaredlabs.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c-piix4: support AMD auxiliary SMBus controller
-Message-ID: <20120616085159.35b3c24c@endymion.delvare>
-In-Reply-To: <CA+jCKRVsMNf7Yj7fP4c6+4ff__v5qsea7rYYqHv25XFBi8v9yg@mail.gmail.com>
-References: <20120613094739.360967aa@endymion.delvare>
-	<1339606749-4578-1-git-send-email-andrew@asquaredlabs.com>
-	<1339606749-4578-4-git-send-email-andrew@asquaredlabs.com>
-	<20120615103153.3ea7c009@endymion.delvare>
-	<CA+jCKRVsMNf7Yj7fP4c6+4ff__v5qsea7rYYqHv25XFBi8v9yg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 16 Jun 2012 02:57:58 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FDC2DEA.6010300@jp.fujitsu.com>
+Date: Sat, 16 Jun 2012 15:55:38 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: kosaki.motohiro@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: clear pages_scanned only if draining a pcp adds pages
+ to the buddy allocator again
+References: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Jun 2012 09:43:40 -0400, Andrew Armenia wrote:
-> I've just tested your updated patches and nothing seems broken. Thanks
-> for your patience with a first time submitter.
+(2012/06/15 1:16), kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> 
+> commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
+> to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
+> another miuse still exist.
+> 
+> This patch fixes it.
+> 
+> Cc: David Rientjes<rientjes@google.com>
+> Cc: Mel Gorman<mel@csn.ul.ie>
+> Cc: Johannes Weiner<hannes@cmpxchg.org>
+> Cc: Minchan Kim<minchan.kim@gmail.com>
+> Cc: Wu Fengguang<fengguang.wu@intel.com>
+> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Rik van Riel<riel@redhat.com>
+> Cc: Andrew Morton<akpm@linux-foundation.org>
+> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
 
-You're welcome. It was pretty good for a first submission!
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
--- 
-Jean Delvare
+
