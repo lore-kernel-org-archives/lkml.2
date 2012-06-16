@@ -1,160 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab2FPT7K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 15:59:10 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:23279 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755995Ab2FPT7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 15:59:08 -0400
-X-IronPort-AV: E=Sophos;i="4.75,783,1330934400"; 
-   d="scan'208";a="655867530"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Andre Tomt <andre@tomt.net>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>
-CC: Linux-NFS <linux-nfs@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Howells <dhowells@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in __key_instantiate_and_link(): unable to handle kernel
- paging request at 0000632e6472616f
-Thread-Topic: BUG in __key_instantiate_and_link(): unable to handle kernel
- paging request at 0000632e6472616f
-Thread-Index: AQHNS/p7rqbRiPf+O0SBbKH9jTkvOg==
-Date: Sat, 16 Jun 2012 19:59:05 +0000
-Message-ID: <1339876739.8267.96.camel@lade.trondhjem.org>
-References: <20120601034114.GA9248@localhost> <4FDBF056.7040404@tomt.net>
-	 <4FDCD3C7.5080503@tomt.net>
-In-Reply-To: <4FDCD3C7.5080503@tomt.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <99B26CDD4875E54D8A612391B0734DC3@tahoe.netapp.com>
+	id S1756857Ab2FPUAz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 16:00:55 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:49799 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755952Ab2FPUAx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 16:00:53 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+4QgZBrjC4Hl5Ju+djmWHOUPCSxdFkdDW7Ph+WbC
+	BFeToQU1wr8dCc
+Message-ID: <4FDCE5F2.8010309@gmx.de>
+Date: Sat, 16 Jun 2012 20:00:50 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120506 Icedove/3.0.11
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5GK08EG013131
 
-On Sat, 2012-06-16 at 20:43 +0200, Andre Tomt wrote:
-> On 16. juni 2012 04:32, Andre Tomt wrote:
-> > FWIW; I am (still) seeing this exact same crash several times an hour on
-> > 3.4.3-rc1 on Ubuntu 12.04 client. Only that the same second it happens,
-> > all my three displays corrupts badly, becoming completely unreadable.
-> > Switching to console and back usually gets my desktop back on two of
-> > three displays, and sometimes it will need a full xserver restart.
-> > Obviously some memory corruption going on.
-> >
-> > One of the crashes also triggered a NX error:
-> > [20292.196332] kernel tried to execute NX-protected page - exploit
-> > attempt? (uid: 0)
-> >
-> > And after a while, things start locking up.
-> >
-> > It didn't really start happening until a few days ago though, I've been
-> > running 3.4 for since some -rc through all the stable releases. Perhaps
-> > server suddenly got a working idmapper or something? Its a debian
-> > unstable updated a couple times a month.
-> >
-> > Booting latest git master now, to see if any of the recent NFS fixes
-> > just pulled by Linus fixes anything (-rc2 had other showstopper nfs
-> > issues).
-> 
-> Just had it happen with 3.5-git as of a couple hours ago (last commit 
-> a2c2df8672f55195f101d9251117aa59e358d296):
-> Jun 16 19:01:49 slurv kernel: [50823.271618] general protection fault: 
-> 0000 [#1] SMP
-> Jun 16 19:01:49 slurv kernel: [50823.271640] CPU 10
-> Jun 16 19:01:49 slurv kernel: [50823.271690]
-> Jun 16 19:01:49 slurv kernel: [50823.271698] Pid: 1678, comm: rpc.idmapd 
-> Not tainted 3.5.0-1-desktop #1 System manufacturer System Product 
-> Name/P6T DELUXE V2
-> Jun 16 19:01:49 slurv kernel: [50823.271738] RIP: 
-> 0010:[<ffffffff81129872>]  [<ffffffff81129872>] 
-> __key_instantiate_and_link+0x52/0xcb
-> Jun 16 19:01:49 slurv kernel: [50823.271767] RSP: 0018:ffff88061941bd38 
->   EFLAGS: 00010246
-> Jun 16 19:01:49 slurv kernel: [50823.271785] RAX: 6337346330366233 RBX: 
-> ffff880606fb97f0 RCX: 0000000000000000
-> Jun 16 19:01:49 slurv kernel: [50823.271807] RDX: 0000000000000006 RSI: 
-> ffff88061941be85 RDI: ffff880606fb97f0
-> Jun 16 19:01:49 slurv kernel: [50823.271829] RBP: ffff88061941bd88 R08: 
-> ffff8802bc9ed380 R09: ffff88061941bdb0
-> Jun 16 19:01:49 slurv kernel: [50823.271850] R10: 0000000000000000 R11: 
-> 0000000000000000 R12: ffff88061aad63c0
-> Jun 16 19:01:49 slurv kernel: [50823.271872] R13: ffff8802bc9ed380 R14: 
-> 0000000000000000 R15: ffff88061941bdb0
-> Jun 16 19:01:49 slurv kernel: [50823.271894] FS:  00007fd449a7d700(0000) 
-> GS:ffff88063fd40000(0000) knlGS:0000000000000000
-> Jun 16 19:01:49 slurv kernel: [50823.271919] CS:  0010 DS: 0000 ES: 0000 
-> CR0: 0000000080050033
-> Jun 16 19:01:49 slurv kernel: [50823.271937] CR2: 00007f8844002028 CR3: 
-> 000000061be95000 CR4: 00000000000007e0
-> Jun 16 19:01:49 slurv kernel: [50823.271959] DR0: 0000000000000000 DR1: 
-> 0000000000000000 DR2: 0000000000000000
-> Jun 16 19:01:49 slurv kernel: [50823.271980] DR3: 0000000000000000 DR6: 
-> 00000000ffff0ff0 DR7: 0000000000000400
-> Jun 16 19:01:49 slurv kernel: [50823.272003] Process rpc.idmapd (pid: 
-> 1678, threadinfo ffff88061941a000, task ffff88061b870000)
-> Jun 16 19:01:49 slurv kernel: [50823.272028] Stack:
-> Jun 16 19:01:49 slurv kernel: [50823.272036]  ffff88061941bd78 
-> 0000000000000006 ffff88061941be85 fffffff01aad63e8
-> Jun 16 19:01:49 slurv kernel: [50823.272060]  ffff880606fb9840 
-> ffff880606fb97f0 ffff88061aad63c0 0000000000000006
-> Jun 16 19:01:49 slurv kernel: [50823.272083]  ffff88061941be85 
-> 00007fffe09c4500 ffff88061941bdd8 ffffffff81129943
-> Jun 16 19:01:49 slurv kernel: [50823.272106] Call Trace:
-> Jun 16 19:01:49 slurv kernel: [50823.272116]  [<ffffffff81129943>] 
-> key_instantiate_and_link+0x58/0x80
-> Jun 16 19:01:49 slurv kernel: [50823.272145]  [<ffffffffa058a906>] 
-> idmap_pipe_downcall+0x154/0x1ad [nfs]
-> Jun 16 19:01:49 slurv kernel: [50823.272173]  [<ffffffffa04aeae2>] 
-> rpc_pipe_write+0x56/0x6f [sunrpc]
-> Jun 16 19:01:49 slurv kernel: [50823.272195]  [<ffffffff810c86ce>] 
-> vfs_write+0xad/0x13d
-> Jun 16 19:01:49 slurv kernel: [50823.272212]  [<ffffffff810c8949>] 
-> sys_write+0x45/0x6c
-> Jun 16 19:01:49 slurv kernel: [50823.272229]  [<ffffffff8130a462>] 
-> system_call_fastpath+0x16/0x1b
-> Jun 16 19:01:49 slurv kernel: [50823.272258] Code: 48 89 55 b8 48 89 75 
-> c0 e8 16 e4 1d 00 48 8b 43 78 c7 45 cc f0 ff ff ff 48 8b 55 b8 48 8b 75 
-> c0 a8 01 75 4f 48 8b 43 20 48 89 df <ff> 50 18 85 c0 89 45 cc 75 3e 48 
-> 8b 43 48 f0 ff 40 44 f0 80 4b
-> Jun 16 19:01:49 slurv kernel: [50823.272317] RIP  [<ffffffff81129872>] 
-> __key_instantiate_and_link+0x52/0xcb
-> Jun 16 19:01:49 slurv kernel: [50823.272339]  RSP <ffff88061941bd38>
-> Jun 16 19:01:49 slurv kernel: [50823.279199] ---[ end trace 
-> 25122b5e9d0b0c76 ]---
-> 
-> It did take a while this time.
+Hi Linus,
 
-It looks to me as if the legacy upcall code is assuming that there can
-be no more than 1 upcall at a time: there is only a single
-idmap->idmap_key_cons, which gets assigned in nfs_idmap_legacy_upcall
-and then read in idmap_pipe_downcall.
+please pull the fixes below.
 
-Bryan, can you look into this? I suspect that we need a mutex or
-something like that (for the legacy upcall case only) to ensure that
-nobody overwrites the idmap->idmap_key_cons while an upcall is in
-progress.
 
-Andre, if you want idmapper scalability, then you should rather use the
-new idmapper upcall. You need a recent version of the nfs-utils package,
-the keyutils package, and they you should add an 'id_resolver' line
-to /etc/request-keys.conf as per the nfsidmap manpage.
+Thanks,
 
-Cheers
-  Trond
+Florian Tobias Schandinat
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+The following changes since commit c895305e806b4346006d3cfba2b432d52268ecd3:
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+  video: bfin_adv7393fb: Fix cleanup code (2012-05-29 13:16:45 +0000)
+
+are available in the git repository at:
+
+  git://github.com/schandinat/linux-2.6.git fbdev-fixes-for-3.5-1
+
+for you to fetch changes up to b67989515defba7412acff01162e5bb1f0f5923a:
+
+  video: s3c-fb: fix possible division by zero in s3c_fb_calc_pixclk (2012-06-13 17:34:16 +0000)
+
+----------------------------------------------------------------
+fbdev fixes for 3.5
+
+- two fixes for s3c-fb by Jingoo Han
+  (including a fix for a potential division by zero)
+- a couple of randconfig fixes by Arnd Bergmann
+- a cleanup for bfin_adv7393fb by Emil Goode
+
+----------------------------------------------------------------
+Archit Taneja (1):
+      OMAPDSS: DSI: Fix bug when calculating LP command interleaving parameters
+
+Arnd Bergmann (5):
+      drivers/video: use correct __devexit_p annotation
+      video/ili9320: do not mark exported functions __devexit
+      video/console: automatically select a font
+      drivers/savagefb: use mdelay instead of udelay
+      drivers/tosa: driver needs I2C and SPI to compile
+
+Emil Goode (1):
+      video: bfin_adv7393fb: Convert to kstrtouint_from_user
+
+Florian Tobias Schandinat (1):
+      Merge tag 'omapdss-for-3.5-rc2' of git://gitorious.org/linux-omap-dss2/linux into fbdev-for-linus
+
+Jingoo Han (2):
+      video: s3c-fb: clear SHADOWCON register when clearing hardware window registers
+      video: s3c-fb: fix possible division by zero in s3c_fb_calc_pixclk
+
+Tomi Valkeinen (4):
+      OMAPDSS: fix build when DEBUG_FS or DSS_DEBUG_SUPPORT disabled
+      OMAPDSS: Taal: fix compilation warning
+      OMAPDSS: fix bogus WARN_ON in dss_runtime_put()
+      OMAPDSS: fix registration of DPI and SDI devices
+
+ arch/arm/mach-omap2/display.c             |    4 ++--
+ drivers/video/backlight/Kconfig           |    2 +-
+ drivers/video/backlight/ili9320.c         |    2 +-
+ drivers/video/bfin_adv7393fb.c            |    6 ++----
+ drivers/video/broadsheetfb.c              |    2 +-
+ drivers/video/console/Kconfig             |   14 ++++++++++++++
+ drivers/video/mbx/mbxfb.c                 |    2 +-
+ drivers/video/omap2/displays/panel-taal.c |    2 +-
+ drivers/video/omap2/dss/core.c            |    3 +--
+ drivers/video/omap2/dss/dsi.c             |    2 +-
+ drivers/video/omap2/dss/dss.c             |    2 +-
+ drivers/video/s3c-fb.c                    |   12 +++++++++---
+ drivers/video/savage/savagefb_driver.c    |   10 +++++-----
+ 13 files changed, 40 insertions(+), 23 deletions(-)
+
