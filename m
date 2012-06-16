@@ -1,102 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab2FPJBe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 05:01:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23348 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753073Ab2FPJBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 05:01:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="166385085"
-Date: Sat, 16 Jun 2012 17:01:09 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Josh Triplett <josh@freedesktop.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: Re: automated warning notifications
-Message-ID: <20120616090109.GA10332@localhost>
-References: <20120614172523.GB4400@mwanda>
- <20120615014835.GA5695@localhost>
- <20120615071222.GZ13539@mwanda>
- <20120615075810.GA13206@localhost>
- <alpine.DEB.2.02.1206150639130.1864@hadrien>
- <20120615111913.GA13539@mwanda>
- <20120615143403.GA18876@localhost>
- <CAM_iQpUPYpYVaZhCk-bfMe9ZvttQYaSYM_xfKJYX=Z494PWv+A@mail.gmail.com>
+	id S1755940Ab2FPJGx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 05:06:53 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57515 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab2FPJGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 05:06:52 -0400
+Date: Sat, 16 Jun 2012 13:06:46 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, linux-mm@kvack.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 3.5] c/r: prctl: less paranoid prctl_set_mm_exe_file()
+Message-ID: <20120616090646.GD32029@moon>
+References: <20120616085104.14682.16723.stgit@zurg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAM_iQpUPYpYVaZhCk-bfMe9ZvttQYaSYM_xfKJYX=Z494PWv+A@mail.gmail.com>
+In-Reply-To: <20120616085104.14682.16723.stgit@zurg>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[drop sparse developers]
-
-On Sat, Jun 16, 2012 at 03:50:36PM +0800, Cong Wang wrote:
-> On Fri, Jun 15, 2012 at 10:34 PM, Fengguang Wu <wfg@linux.intel.com> wrote:
-> > On Fri, Jun 15, 2012 at 02:19:14PM +0300, Dan Carpenter wrote:
-> >>
-> >> Probably we could use something like the attached script to print
-> >> out the line of code which causes the bug and some other script to
-> >> querry git blame and attach the offending commit?
-> >
-> > cat -n $code_file | tail -n +$(($lineno - (($context + 1) / 2))) | head -n $(($context + 1))
-> >
-> > That's handy, I'll use it to show the source file context for the
-> > first error/warning :-)
+On Sat, Jun 16, 2012 at 12:51:04PM +0400, Konstantin Khlebnikov wrote:
+> "no other files mapped" requirement from my previous patch
+> (c/r: prctl: update prctl_set_mm_exe_file() after mm->num_exe_file_vmas removal)
+> is too paranoid, it forbids operation even if there mapped one shared-anon vma.
 > 
-> Well, you can use sed/awk, it will be much shorter:
+> Let's check that current mm->exe_file already unmapped, in this case exe_file
+> symlink already outdated and its changing is reasonable.
 > 
-> cat -n drivers/leds/led-triggers.c | sed -ne '224,230p'
->    224			struct led_classdev *led_cdev;
->    225	
->    226			led_cdev = list_entry(entry, struct led_classdev, trig_list);
->    227			led_set_brightness(led_cdev, brightness);
->    228		}
->    229		read_unlock(&trigger->leddev_list_lock);
->    230	}
+> Plus, this patch fixes exit code in case operation success.
 > 
-> (replace the hard-coded "224,230" with a shell variable)
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Matt Helsley <matthltc@us.ibm.com>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> ---
 
-Thanks!  I'll use it this way:
+Ack! Thanks again, Konstantin!
 
-lineno=227
-context=3
-cat -n drivers/leds/led-triggers.c | sed -e "s/  $lineno\t/> $lineno\t/" -ne "$((lineno - context)),$((lineno + context))p"
-   224                  struct led_classdev *led_cdev;
-   225
-   226                  led_cdev = list_entry(entry, struct led_classdev, trig_list);
- > 227                  led_set_brightness(led_cdev, brightness);
-   228          }
-   229          read_unlock(&trigger->leddev_list_lock);
-   230  }
-
-> And if you want to find the offending commit:
-> 
-> git show `git blame drivers/leds/led-triggers.c | awk 'NR==227{print $1}'`
-
-The code offered by Peter should run faster:
-
-        hash=$(git blame $code_file -L $lineno,$lineno |cut -d " " -f 1)
-        git --no-pager show $hash $code_file
-
-Anyway, Dan's original idea of using git blame to find out the offending 
-commit is valuable. The process can be automated like this:
-
-1) use git-blame to find out the commit that changed $lineno in recent 100 days
-2) checkout out $commit and build test and check build error
-3) checkout out $commit~1 and build test and check build error
-
-If (1) succeeded and (2) got the expected build error while (3) don't
-have the build error, we reliably catch the bad commit. Otherwise the
-script may try building test other commits that modified the file
-recently.
-
-Thanks,
-Fengguang
+	Cyrill
