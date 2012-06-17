@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab2FQQgo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 12:36:44 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:41067 "EHLO
+	id S1757605Ab2FQQr6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 12:47:58 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:35418 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757529Ab2FQQgm convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757556Ab2FQQr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 12:36:42 -0400
+	Sun, 17 Jun 2012 12:47:57 -0400
+Date: Sun, 17 Jun 2012 11:47:51 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: John Stultz <johnstul@us.ibm.com>, stable@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Dave Jones <davej@redhat.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -stable]  ntp: Correct TAI offset during leap second
+Message-ID: <20120617164751.GJ12429@burratino>
+References: <4FDB8563.3030805@us.ibm.com>
+ <1339944223.4942.240.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <201206171458.58462.Martin@lichtvoll.de>
-References: <201206170841.20222.Martin@lichtvoll.de>
-	<4FDDB667.4020609@earthlink.net>
-	<201206171458.58462.Martin@lichtvoll.de>
-Date: Sun, 17 Jun 2012 18:36:41 +0200
-X-Google-Sender-Auth: i1FnIRH4jHBYR8ffkfyDf604rOI
-Message-ID: <CAMuHMdWY7=2nJDUjQFGPhdOAFGYeUsnvgPcaEvB2Gxf7P=E+Ug@mail.gmail.com>
-Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while
- OK in AmigaOS 4.1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: jdow <jdow@earthlink.net>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, linux-m68k@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339944223.4942.240.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 17, 2012 at 2:58 PM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
-> Am Sonntag, 17. Juni 2012 schrieb jdow:
-> | JXFS 64 bit file system
-> |
-> | With AmigaOS 4.x a new file system has been introduced called JXFS. It is
-> | a totally new 64 bit file system that supports partitions up to 16 TB in
-> | size. It is a modern journalling file system, which means that it reduces
-> | data loss if data writes to the disk are interrupted. It is the fastest
-> | and most reliable file system ever created for AmigaOS.
->
-> http://www.amigaos.net/content/1/features
->
-> Well I asked AmigaOS 4 developers about this issue as well. Lets see what
-> they say about 2 TB limits.
+Ben Hutchings wrote:
+> On Fri, 2012-06-15 at 11:56 -0700, John Stultz wrote:
 
-16 TB = 2 TB * 8. Perhaps they increased the block size from 512 to 4096?
+>> commit dd48d708ff3e917f6d6b6c2b696c3f18c019feed upstream.
+[...]
+> This doesn't apply to 3.2.y, unsurprisingly.  Let me know if there are
+> any urgent leap second fixes that will be needed there.
 
-block/partitions/amiga.c reads the block size from
-RigidDiskBlock.rdb_BlockBytes,
-but after conversion to 512-byte blocks, all further calculations are done on
-"int", so it will overflow for disks larger than 2 TiB.
+6b43ae8a619d (ntp: Fix leap-second hrtimer livelock) sounds important,
+but the patch depends on bd3312681f69 (ntp: Add ntp_lock to replace
+xtime_locking) which does not have a commit message explaining its
+purpose (and that patch in turn depends on ea7cf49a7633).
 
-Note that in your profile-binary.img, the field is 0x200, i.e. 512
-bytes per block,
-so I'll have to get a deeper look into your RDB first...
+John, is that bug present in 3.2.y and 3.0.y, too?  Any hints for
+fixing it?
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Jonathan
