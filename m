@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab2FQSdg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:33:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50276 "EHLO
+	id S1758188Ab2FQSWo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:22:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50105 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757943Ab2FQSWp (ORCPT
+	by vger.kernel.org with ESMTP id S1757943Ab2FQSWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:45 -0400
-Message-Id: <20120617175948.017910074@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:12 -0400
+Message-Id: <20120617175942.783494860@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:28 +0100
+Date: Sun, 17 Jun 2012 18:59:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        =?ISO-8859-15?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 47/69] USB: option: Add Vodafone/Huawei K5005 support
+        alan@lxorguk.ukuu.org.uk, Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 10/69] drm/nouveau/disp: fix dithering not being enabled on some eDP
+ macbooks
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,39 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 4cbbb039a9719fb3bba73d255c6a95bc6dc6428b upstream.
+commit a6a17859f1bdf607650ee055101f54c5f207762b upstream.
 
-Tested-by: Thomas Schäfer <tschaefer@t-online.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+[Maarten Lankhorst backported to 3.2,
+ changing nv_connector->type to nv_connector->dcb->type]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 1aae902..f3e4a47 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -150,6 +150,7 @@ static void option_instat_callback(struct urb *urb);
- #define HUAWEI_PRODUCT_E14AC			0x14AC
- #define HUAWEI_PRODUCT_K3806			0x14AE
- #define HUAWEI_PRODUCT_K4605			0x14C6
-+#define HUAWEI_PRODUCT_K5005			0x14C8
- #define HUAWEI_PRODUCT_K3770			0x14C9
- #define HUAWEI_PRODUCT_K3771			0x14CA
- #define HUAWEI_PRODUCT_K4510			0x14CB
-@@ -666,6 +667,9 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x31) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x32) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x33) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
+--- a/drivers/gpu/drm/nouveau/nouveau_connector.c
++++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
+@@ -616,7 +616,13 @@
+ 	if (nv_connector->edid && connector->display_info.bpc)
+ 		return;
+ 
+-	/* if not, we're out of options unless we're LVDS, default to 8bpc */
++	/* EDID 1.4 is *supposed* to be supported on eDP, but, Apple... */
++	if (nv_connector->dcb->type == DCB_CONNECTOR_eDP) {
++		connector->display_info.bpc = 6;
++		return;
++	}
++
++	/* we're out of options unless we're LVDS, default to 8bpc */
+ 	if (nv_encoder->dcb->type != OUTPUT_LVDS) {
+ 		connector->display_info.bpc = 8;
+ 		return;
 
 
