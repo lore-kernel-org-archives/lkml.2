@@ -1,27 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab2FQIYX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 04:24:23 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:42718 "EHLO
+	id S1753841Ab2FQId5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 04:33:57 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:42970 "EHLO
 	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2FQIYQ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752955Ab2FQIdx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 04:24:16 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
+	Sun, 17 Jun 2012 04:33:53 -0400
 To: linux-kernel@vger.kernel.org
 Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while OK in AmigaOS 4.1
-Date: Sun, 17 Jun 2012 10:24:14 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
-References: <201206170841.20222.Martin@lichtvoll.de> (sfid-20120617_090121_408610_436C7B18)
-In-Reply-To: <201206170841.20222.Martin@lichtvoll.de>
+From: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: linux-m68k@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Date: Sun, 17 Jun 2012 10:33:51 +0200
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201206171024.14766.Martin@lichtvoll.de>
+Message-Id: <201206171033.51625.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Sorry, forgot to keep Cc.
+
+I think I will keep the disk as is for a while. I just won´t plug it to
+the Amiga, since I have my Amiga backup on another dedicated
+disk and do not want to overwrite my Linux backups. So its available
+for testing for a while. It should be save as long as I use the disk
+in Linux only.
+
+For safety I will recreate all backups. I can checksum the BTRFS based
+backup partition for checksum errors, but fscking the other non
+BTRFS ones will only give a vague hint.
+
 
 Am Sonntag, 17. Juni 2012 schrieb Martin Steigerwald:
 > Hi Jens, hi Linux m68k developers,
@@ -79,9 +90,12 @@ Disk /dev/sdc: 3 heads, 16 sectors, 81396441 cylinders, RDB: 0
 Logical Cylinders from 43 to 81396440, 24576  bytes/Cylinder 
 
 Device     Boot Mount   Begin      End     Size   Pri  BBlks    System
-/dev/sdc1       *        43   65536043   1572864024     0      0  Linux native
-/dev/sdc2       *    65536044   78643244   314572824     0      0  [unknown]
-/dev/sdc3       *    78643245   81396440   66076704     0      0  Amiga FFS Int.
+/dev/sdc1       *        43   65536043   1572864024     0      0  Linux 
+native
+/dev/sdc2       *    65536044   78643244   314572824     0      0  
+[unknown]
+/dev/sdc3       *    78643245   81396440   66076704     0      0  Amiga 
+FFS Int.
 
 
 Due to truncating oversized partition instead of refusing to use
@@ -100,11 +114,13 @@ major minor  #blocks  name
 
 This is just asking for trouble. Thus:
 
-Bug 43521 - Amiga RDB partitions: truncates miscaluted partitions size instead of refusing to use it
+Bug 43521 - Amiga RDB partitions: truncates miscaluted partitions size 
+instead of refusing to use it
 https://bugzilla.kernel.org/show_bug.cgi?id=43521
 
 
-My suggestion is to bail out if a partition size looks insane and impossible.
+My suggestion is to bail out if a partition size looks insane and 
+impossible.
 Having to manually fix it up to access the data on disk still looks better
 to me than potentially overwriting lots of data.
 
