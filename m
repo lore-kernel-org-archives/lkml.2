@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2FQPQI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 11:16:08 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:58105 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757439Ab2FQPPS (ORCPT
+	id S1757513Ab2FQPmd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 11:42:33 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:38550 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754254Ab2FQPmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 11:15:18 -0400
-From: Otavio Salvador <otavio@ossystems.com.br>
-To: linux-kernel@vger.kernel.org
-Cc: Otavio Salvador <otavio@ossystems.com.br>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/2] pinctrl: pinctrl-mxs: fix implicit declaration of free()
-Date: Sun, 17 Jun 2012 12:17:32 -0300
-Message-Id: <1339946252-21019-2-git-send-email-otavio@ossystems.com.br>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1339946252-21019-1-git-send-email-otavio@ossystems.com.br>
-References: <1339946252-21019-1-git-send-email-otavio@ossystems.com.br>
+	Sun, 17 Jun 2012 11:42:32 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: =?utf-8?Q?Bj=C3=B8rn?= Mork <bjorn@mork.no>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Linux-Next <linux-next@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [-next] FATAL: drivers/gpu/drm/udl/udl: sizeof(struct usb_device_id)=24 is not a modulo of the size of section __mod_usb_device_table=44.
+References: <CAMuHMdXk6pByz14JcDgY+UE6QM0sHD8cbXye9CgOVSRRtr7J+Q@mail.gmail.com>
+	<20120615201021.GB14544@kroah.com>
+	<CAMuHMdUj6tAcWhkSkV43Kw3-2-3+JzgP6W=2w3fjL2KBfRh9ZQ@mail.gmail.com>
+	<20120615231220.GC8205@kroah.com> <87lijns84s.fsf@nemi.mork.no>
+	<m2bokjb6tv.fsf@igel.home> <87fw9urqau.fsf@nemi.mork.no>
+X-Yow: I'm in a twist contest!!  I'm in a bathtub!  It's on Mars!!  I'm in
+ tip-top condition!
+Date: Sun, 17 Jun 2012 17:42:22 +0200
+In-Reply-To: <87fw9urqau.fsf@nemi.mork.no> (=?utf-8?Q?=22Bj=C3=B8rn?=
+ Mork"'s message of "Sun, 17
+	Jun 2012 16:00:57 +0200")
+Message-ID: <m27gv654ip.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-,--[ build failure ]
-| ...
-| .../pinctrl-mxs.c: In function 'mxs_dt_node_to_map':
-| .../pinctrl-mxs.c:140:3: error: implicit declaration of function 'free'
-|                   [-Werror=implicit-function-declaration]
-| .../pinctrl-mxs.c:140:3: warning: incompatible implicit declaration of
-|                   built-in function 'free' [enabled by default]
-| ...
-`--
+Bjørn Mork <bjorn@mork.no> writes:
 
-Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
-Cc: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-mxs.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> So the prosed fix from Greg is certainly the correct one, until someone
+> rewrites modpost to be completely cross build safe.
 
-diff --git a/drivers/pinctrl/pinctrl-mxs.c b/drivers/pinctrl/pinctrl-mxs.c
-index afb50ee..85f8dda 100644
---- a/drivers/pinctrl/pinctrl-mxs.c
-+++ b/drivers/pinctrl/pinctrl-mxs.c
-@@ -136,8 +136,7 @@ static int mxs_dt_node_to_map(struct pinctrl_dev *pctldev,
- 	return 0;
- 
- free_group:
--	if (!purecfg)
--		free(group);
-+	kfree(group);
- free:
- 	kfree(new_map);
- 	return ret;
+I started working on that.  Then I saw do_input and barfed.
+
+Andreas.
+
 -- 
-1.7.10
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
