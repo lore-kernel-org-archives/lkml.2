@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758922Ab2FQS0R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:26:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50390 "EHLO
+	id S1758812Ab2FQS0P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:26:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50396 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757969Ab2FQSXC (ORCPT
+	by vger.kernel.org with ESMTP id S1758600Ab2FQSXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Jun 2012 14:23:02 -0400
-Message-Id: <20120617175945.172863157@decadent.org.uk>
+Message-Id: <20120617175944.743205659@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:08 +0100
+Date: Sun, 17 Jun 2012 19:00:05 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 27/69] rt2x00: use atomic variable for seqno
+        alan@lxorguk.ukuu.org.uk, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [ 24/69] ARM i.MX53: Fix PLL4 base address
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,173 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Sascha Hauer <s.hauer@pengutronix.de>
 
-commit e5851dac2c95af7159716832300b9f50c62c648e upstream.
+commit cdd781ab1906d039c2a93078385645d2d5af8491 upstream.
 
-Remove spinlock as atomic_t can be used instead. Note we use only 16
-lower bits, upper bits are changed but we impilcilty cast to u16.
+MX53_DPLL4_BASE accidently returned the base address of PLL3.
+Fix this.
 
-This fix possible deadlock on IBSS mode reproted by lockdep:
-
-=================================
-[ INFO: inconsistent lock state ]
-3.4.0-wl+ #4 Not tainted
----------------------------------
-inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
-kworker/u:2/30374 [HC0[0]:SC0[0]:HE1:SE1] takes:
- (&(&intf->seqlock)->rlock){+.?...}, at: [<f9979a20>] rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
-{IN-SOFTIRQ-W} state was registered at:
-  [<c04978ab>] __lock_acquire+0x47b/0x1050
-  [<c0498504>] lock_acquire+0x84/0xf0
-  [<c0835733>] _raw_spin_lock+0x33/0x40
-  [<f9979a20>] rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
-  [<f9979f2a>] rt2x00queue_write_tx_frame+0x1a/0x300 [rt2x00lib]
-  [<f997834f>] rt2x00mac_tx+0x7f/0x380 [rt2x00lib]
-  [<f98fe363>] __ieee80211_tx+0x1b3/0x300 [mac80211]
-  [<f98ffdf5>] ieee80211_tx+0x105/0x130 [mac80211]
-  [<f99000dd>] ieee80211_xmit+0xad/0x100 [mac80211]
-  [<f9900519>] ieee80211_subif_start_xmit+0x2d9/0x930 [mac80211]
-  [<c0782e87>] dev_hard_start_xmit+0x307/0x660
-  [<c079bb71>] sch_direct_xmit+0xa1/0x1e0
-  [<c0784bb3>] dev_queue_xmit+0x183/0x730
-  [<c078c27a>] neigh_resolve_output+0xfa/0x1e0
-  [<c07b436a>] ip_finish_output+0x24a/0x460
-  [<c07b4897>] ip_output+0xb7/0x100
-  [<c07b2d60>] ip_local_out+0x20/0x60
-  [<c07e01ff>] igmpv3_sendpack+0x4f/0x60
-  [<c07e108f>] igmp_ifc_timer_expire+0x29f/0x330
-  [<c04520fc>] run_timer_softirq+0x15c/0x2f0
-  [<c0449e3e>] __do_softirq+0xae/0x1e0
-irq event stamp: 18380437
-hardirqs last  enabled at (18380437): [<c0526027>] __slab_alloc.clone.3+0x67/0x5f0
-hardirqs last disabled at (18380436): [<c0525ff3>] __slab_alloc.clone.3+0x33/0x5f0
-softirqs last  enabled at (18377616): [<c0449eb3>] __do_softirq+0x123/0x1e0
-softirqs last disabled at (18377611): [<c041278d>] do_softirq+0x9d/0xe0
-
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock(&(&intf->seqlock)->rlock);
-  <Interrupt>
-    lock(&(&intf->seqlock)->rlock);
-
- *** DEADLOCK ***
-
-4 locks held by kworker/u:2/30374:
- #0:  (wiphy_name(local->hw.wiphy)){++++.+}, at: [<c045cf99>] process_one_work+0x109/0x3f0
- #1:  ((&sdata->work)){+.+.+.}, at: [<c045cf99>] process_one_work+0x109/0x3f0
- #2:  (&ifibss->mtx){+.+.+.}, at: [<f98f005b>] ieee80211_ibss_work+0x1b/0x470 [mac80211]
- #3:  (&intf->beacon_skb_mutex){+.+...}, at: [<f997a644>] rt2x00queue_update_beacon+0x24/0x50 [rt2x00lib]
-
-stack backtrace:
-Pid: 30374, comm: kworker/u:2 Not tainted 3.4.0-wl+ #4
-Call Trace:
- [<c04962a6>] print_usage_bug+0x1f6/0x220
- [<c0496a12>] mark_lock+0x2c2/0x300
- [<c0495ff0>] ? check_usage_forwards+0xc0/0xc0
- [<c04978ec>] __lock_acquire+0x4bc/0x1050
- [<c0527890>] ? __kmalloc_track_caller+0x1c0/0x1d0
- [<c0777fb6>] ? copy_skb_header+0x26/0x90
- [<c0498504>] lock_acquire+0x84/0xf0
- [<f9979a20>] ? rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
- [<c0835733>] _raw_spin_lock+0x33/0x40
- [<f9979a20>] ? rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
- [<f9979a20>] rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
- [<f997a5cf>] rt2x00queue_update_beacon_locked+0x5f/0xb0 [rt2x00lib]
- [<f997a64d>] rt2x00queue_update_beacon+0x2d/0x50 [rt2x00lib]
- [<f9977e3a>] rt2x00mac_bss_info_changed+0x1ca/0x200 [rt2x00lib]
- [<f9977c70>] ? rt2x00mac_remove_interface+0x70/0x70 [rt2x00lib]
- [<f98e4dd0>] ieee80211_bss_info_change_notify+0xe0/0x1d0 [mac80211]
- [<f98ef7b8>] __ieee80211_sta_join_ibss+0x3b8/0x610 [mac80211]
- [<c0496ab4>] ? mark_held_locks+0x64/0xc0
- [<c0440012>] ? virt_efi_query_capsule_caps+0x12/0x50
- [<f98efb09>] ieee80211_sta_join_ibss+0xf9/0x140 [mac80211]
- [<f98f0456>] ieee80211_ibss_work+0x416/0x470 [mac80211]
- [<c0496d8b>] ? trace_hardirqs_on+0xb/0x10
- [<c077683b>] ? skb_dequeue+0x4b/0x70
- [<f98f207f>] ieee80211_iface_work+0x13f/0x230 [mac80211]
- [<c045cf99>] ? process_one_work+0x109/0x3f0
- [<c045d015>] process_one_work+0x185/0x3f0
- [<c045cf99>] ? process_one_work+0x109/0x3f0
- [<f98f1f40>] ? ieee80211_teardown_sdata+0xa0/0xa0 [mac80211]
- [<c045ed86>] worker_thread+0x116/0x270
- [<c045ec70>] ? manage_workers+0x1e0/0x1e0
- [<c0462f64>] kthread+0x84/0x90
- [<c0462ee0>] ? __init_kthread_worker+0x60/0x60
- [<c083d382>] kernel_thread_helper+0x6/0x10
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2x00.h      |    3 +--
- drivers/net/wireless/rt2x00/rt2x00mac.c   |    1 -
- drivers/net/wireless/rt2x00/rt2x00queue.c |   13 ++++++-------
- 3 files changed, 7 insertions(+), 10 deletions(-)
+ arch/arm/mach-imx/crm-regs-imx5.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00.h b/drivers/net/wireless/rt2x00/rt2x00.h
-index ca36ccc..8f75402 100644
---- a/drivers/net/wireless/rt2x00/rt2x00.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00.h
-@@ -396,8 +396,7 @@ struct rt2x00_intf {
- 	 * for hardware which doesn't support hardware
- 	 * sequence counting.
- 	 */
--	spinlock_t seqlock;
--	u16 seqno;
-+	atomic_t seqno;
- };
+--- a/arch/arm/mach-mx5/crm_regs.h
++++ b/arch/arm/mach-mx5/crm_regs.h
+@@ -23,7 +23,7 @@
+ #define MX53_DPLL1_BASE		MX53_IO_ADDRESS(MX53_PLL1_BASE_ADDR)
+ #define MX53_DPLL2_BASE		MX53_IO_ADDRESS(MX53_PLL2_BASE_ADDR)
+ #define MX53_DPLL3_BASE		MX53_IO_ADDRESS(MX53_PLL3_BASE_ADDR)
+-#define MX53_DPLL4_BASE		MX53_IO_ADDRESS(MX53_PLL3_BASE_ADDR)
++#define MX53_DPLL4_BASE		MX53_IO_ADDRESS(MX53_PLL4_BASE_ADDR)
  
- static inline struct rt2x00_intf* vif_to_intf(struct ieee80211_vif *vif)
-diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
-index b49773e..dd24b26 100644
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -277,7 +277,6 @@ int rt2x00mac_add_interface(struct ieee80211_hw *hw,
- 	else
- 		rt2x00dev->intf_sta_count++;
- 
--	spin_lock_init(&intf->seqlock);
- 	mutex_init(&intf->beacon_skb_mutex);
- 	intf->beacon = entry;
- 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
-index 4c662ec..2fd8301 100644
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -207,6 +207,7 @@ static void rt2x00queue_create_tx_descriptor_seq(struct rt2x00_dev *rt2x00dev,
- 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
- 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
- 	struct rt2x00_intf *intf = vif_to_intf(tx_info->control.vif);
-+	u16 seqno;
- 
- 	if (!(tx_info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ))
- 		return;
-@@ -238,15 +239,13 @@ static void rt2x00queue_create_tx_descriptor_seq(struct rt2x00_dev *rt2x00dev,
- 	 * sequence counting per-frame, since those will override the
- 	 * sequence counter given by mac80211.
- 	 */
--	spin_lock(&intf->seqlock);
--
- 	if (test_bit(ENTRY_TXD_FIRST_FRAGMENT, &txdesc->flags))
--		intf->seqno += 0x10;
--	hdr->seq_ctrl &= cpu_to_le16(IEEE80211_SCTL_FRAG);
--	hdr->seq_ctrl |= cpu_to_le16(intf->seqno);
--
--	spin_unlock(&intf->seqlock);
-+		seqno = atomic_add_return(0x10, &intf->seqno);
-+	else
-+		seqno = atomic_read(&intf->seqno);
- 
-+	hdr->seq_ctrl &= cpu_to_le16(IEEE80211_SCTL_FRAG);
-+	hdr->seq_ctrl |= cpu_to_le16(seqno);
- }
- 
- static void rt2x00queue_create_tx_descriptor_plcp(struct rt2x00_dev *rt2x00dev,
+ /* PLL Register Offsets */
+ #define MXC_PLL_DP_CTL			0x00
 
 
