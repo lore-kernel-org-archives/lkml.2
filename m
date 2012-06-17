@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759044Ab2FQSfl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:35:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50247 "EHLO
+	id S1759176Ab2FQSf7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:35:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50223 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758137Ab2FQSWl (ORCPT
+	by vger.kernel.org with ESMTP id S1758115Ab2FQSWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:41 -0400
-Message-Id: <20120617175949.413228640@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:40 -0400
+Message-Id: <20120617175948.463936417@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:37 +0100
+Date: Sun, 17 Jun 2012 19:00:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?=E8=AF=B4=E4=B8=8D=E5=BE=97?= <gavin.kx@qq.com>,
-        gavin zhu <gavin.zhu@qq.com>,
+        Mikko Tuumanen <mikko.tuumanen@qemsoftware.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 56/69] USB: option: add more YUGA device ids
+Subject: [ 50/69] USB: serial: cp210x: add Optris MS Pro usb id
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,93 +29,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: 说不得 <gavin.kx@qq.com>
+From: Mikko Tuumanen <mikko.tuumanen@qemsoftware.com>
 
-commit 0ef0be15fd2564767f114c249fc4af704d8e16f4 upstream.
+commit 5bbfa6f427c1d7244a5ee154ab8fa37265a5e049 upstream.
 
-Signed-off-by: gavin zhu <gavin.zhu@qq.com>
+Signed-off-by: Mikko Tuumanen <mikko.tuumanen@qemsoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c |   44 ++++++++++++++++++++++++++-----------------
- 1 file changed, 27 insertions(+), 17 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index d12ee2f..e668a24 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -427,7 +427,7 @@ static void option_instat_callback(struct urb *urb);
- #define SAMSUNG_VENDOR_ID                       0x04e8
- #define SAMSUNG_PRODUCT_GT_B3730                0x6889
- 
--/* YUGA products  www.yuga-info.com*/
-+/* YUGA products  www.yuga-info.com gavin.kx@qq.com */
- #define YUGA_VENDOR_ID				0x257A
- #define YUGA_PRODUCT_CEM600			0x1601
- #define YUGA_PRODUCT_CEM610			0x1602
-@@ -444,6 +444,8 @@ static void option_instat_callback(struct urb *urb);
- #define YUGA_PRODUCT_CEU516			0x160C
- #define YUGA_PRODUCT_CEU528			0x160D
- #define YUGA_PRODUCT_CEU526			0x160F
-+#define YUGA_PRODUCT_CEU881			0x161F
-+#define YUGA_PRODUCT_CEU882			0x162F
- 
- #define YUGA_PRODUCT_CWM600			0x2601
- #define YUGA_PRODUCT_CWM610			0x2602
-@@ -459,23 +461,26 @@ static void option_instat_callback(struct urb *urb);
- #define YUGA_PRODUCT_CWU518			0x260B
- #define YUGA_PRODUCT_CWU516			0x260C
- #define YUGA_PRODUCT_CWU528			0x260D
-+#define YUGA_PRODUCT_CWU581			0x260E
- #define YUGA_PRODUCT_CWU526			0x260F
--
--#define YUGA_PRODUCT_CLM600			0x2601
--#define YUGA_PRODUCT_CLM610			0x2602
--#define YUGA_PRODUCT_CLM500			0x2603
--#define YUGA_PRODUCT_CLM510			0x2604
--#define YUGA_PRODUCT_CLM800			0x2605
--#define YUGA_PRODUCT_CLM900			0x2606
--
--#define YUGA_PRODUCT_CLU718			0x2607
--#define YUGA_PRODUCT_CLU716			0x2608
--#define YUGA_PRODUCT_CLU728			0x2609
--#define YUGA_PRODUCT_CLU726			0x260A
--#define YUGA_PRODUCT_CLU518			0x260B
--#define YUGA_PRODUCT_CLU516			0x260C
--#define YUGA_PRODUCT_CLU528			0x260D
--#define YUGA_PRODUCT_CLU526			0x260F
-+#define YUGA_PRODUCT_CWU582			0x261F
-+#define YUGA_PRODUCT_CWU583			0x262F
-+
-+#define YUGA_PRODUCT_CLM600			0x3601
-+#define YUGA_PRODUCT_CLM610			0x3602
-+#define YUGA_PRODUCT_CLM500			0x3603
-+#define YUGA_PRODUCT_CLM510			0x3604
-+#define YUGA_PRODUCT_CLM800			0x3605
-+#define YUGA_PRODUCT_CLM900			0x3606
-+
-+#define YUGA_PRODUCT_CLU718			0x3607
-+#define YUGA_PRODUCT_CLU716			0x3608
-+#define YUGA_PRODUCT_CLU728			0x3609
-+#define YUGA_PRODUCT_CLU726			0x360A
-+#define YUGA_PRODUCT_CLU518			0x360B
-+#define YUGA_PRODUCT_CLU516			0x360C
-+#define YUGA_PRODUCT_CLU528			0x360D
-+#define YUGA_PRODUCT_CLU526			0x360F
- 
- /* Viettel products */
- #define VIETTEL_VENDOR_ID			0x2262
-@@ -1216,6 +1221,11 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU516) },
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU528) },
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU526) },
-+	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEU881) },
-+	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEU882) },
-+	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CWU581) },
-+	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CWU582) },
-+	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CWU583) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(LG_VENDOR_ID, LG_PRODUCT_L02C) }, /* docomo L-02C modem */
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 1b19262..73d25cd 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -82,6 +82,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x8066) }, /* Argussoft In-System Programmer */
+ 	{ USB_DEVICE(0x10C4, 0x806F) }, /* IMS USB to RS422 Converter Cable */
+ 	{ USB_DEVICE(0x10C4, 0x807A) }, /* Crumb128 board */
++	{ USB_DEVICE(0x10C4, 0x80C4) }, /* Cygnal Integrated Products, Inc., Optris infrared thermometer */
+ 	{ USB_DEVICE(0x10C4, 0x80CA) }, /* Degree Controls Inc */
+ 	{ USB_DEVICE(0x10C4, 0x80DD) }, /* Tracient RFID */
+ 	{ USB_DEVICE(0x10C4, 0x80F6) }, /* Suunto sports instrument */
 
 
