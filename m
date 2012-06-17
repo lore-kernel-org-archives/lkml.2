@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757674Ab2FQWRM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 18:17:12 -0400
-Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:50448 "EHLO
-	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753341Ab2FQWRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 18:17:11 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=uBgQ4+Bt0KFZ7nSW1OSndvqwSKgcW5K0Z5rwenINWqlNKuKvL8GCSdpD5wqmAfst;
-  h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4FDE5763.80801@earthlink.net>
-Date: Sun, 17 Jun 2012 15:17:07 -0700
-From: jdow <jdow@earthlink.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757638Ab2FQWY0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 18:24:26 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:64649 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752544Ab2FQWYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 18:24:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=Bg89tGEVW/qpdDsHG55FsyMU1PcsVqAtbcz+d6wwQ7RE1ZYLm2tcQ2HY
+	mWvwiq94pVXsSG0db4MVxk1FvscnvkTnRXrkJhlE8dBnyk22qa12jmM7sgcs57g6
+	ra3M5HXz/KqpsafzpPgxwi/0QY/Wk7dtC+dAr0CU1oZfRn5sRMo=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.7.10.5
+Date: Sun, 17 Jun 2012 15:24:18 -0700
+Message-ID: <7vd34x60h9.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Martin Steigerwald <Martin@lichtvoll.de>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, linux-m68k@vger.kernel.org
-Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while
- OK in AmigaOS 4.1
-References: <201206170841.20222.Martin@lichtvoll.de> <CAMuHMdWY7=2nJDUjQFGPhdOAFGYeUsnvgPcaEvB2Gxf7P=E+Ug@mail.gmail.com> <4FDE46E4.7020009@earthlink.net> (sfid-20120617_231310_643468_CCA19A89) <201206172320.10272.Martin@lichtvoll.de>
-In-Reply-To: <201206172320.10272.Martin@lichtvoll.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ELNK-Trace: bb89ecdb26a8f9f24d2b10475b571120841c09a80b8d9eb6907f395f07c95072ce3a6a33cc974ab0350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 208.127.11.14
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 2E6D51CE-B8CB-11E1-B8E7-FC762E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/06/17 14:20, Martin Steigerwald wrote:
-> Am Sonntag, 17. Juni 2012 schrieb jdow:
->> On 2012/06/17 09:36, Geert Uytterhoeven wrote:
->>> On Sun, Jun 17, 2012 at 2:58 PM, Martin Steigerwald
-> <Martin@lichtvoll.de> wrote:
->>>> Am Sonntag, 17. Juni 2012 schrieb jdow:
->>>> | JXFS 64 bit file system
->>>> |
->>>> | With AmigaOS 4.x a new file system has been introduced called
->>>> | JXFS. It is a totally new 64 bit file system that supports
->>>> | partitions up to 16 TB in size. It is a modern journalling file
->>>> | system, which means that it reduces data loss if data writes to
->>>> | the disk are interrupted. It is the fastest and most reliable
->>>> | file system ever created for AmigaOS.
->>>>
->>>> http://www.amigaos.net/content/1/features
->>>>
->>>> Well I asked AmigaOS 4 developers about this issue as well. Lets see
->>>> what they say about 2 TB limits.
->>>
->>> 16 TB = 2 TB * 8. Perhaps they increased the block size from 512 to
->>> 4096?
->>>
->>> block/partitions/amiga.c reads the block size from
->>> RigidDiskBlock.rdb_BlockBytes,
->>> but after conversion to 512-byte blocks, all further calculations are
->>> done on "int", so it will overflow for disks larger than 2 TiB.
->>>
->>> Note that in your profile-binary.img, the field is 0x200, i.e. 512
->>> bytes per block,
->>> so I'll have to get a deeper look into your RDB first...
-> […]
->> Note that the work I did on the Linux RDB code eons ago took full
->> cognizance of the physical and virtual block sizes.
-> […]
->> I've asked Martin for a digital copy of his RDBs and what he thinks the
->> partition(s) should look like. I should also be told whether the disk
->> is supposed to be solely Amiga OSs or not. I gather it's not.
->
-> Its all in the bug report. profile-binary.img should be it.
->
-> Its small so I attach it.
->
-> Meanwhile I try to get the currently supported maximum disk size out from
-> the OS 4 developers. Maybe JXFS is playing tricks that other filesystems do
-> not play or simply has a different implementation.
->
-> Thanks,
+The latest maintenance release Git v1.7.10.5 is now available at
+the usual places.
 
-Ah it was on the report to which your bugzilla entry I had referred to.
-OK, it looks like it's not been overwritten - one of the usual overflow
-symptoms. Now I have to hook it up with my handy dandy translator and see
-what that says. I couldn't find it on 43521.
+The release tarballs are found at:
 
-{^_^}
+    http://code.google.com/p/git-core/downloads/list
 
+and their SHA-1 checksums are:
+
+9d0767ef195d3971a891efaf11996158cb341499  git-1.7.10.5.tar.gz
+3f205417f11a9ae478eb77541df483a8fc4a4bc8  git-htmldocs-1.7.10.5.tar.gz
+2249a6481891a349ed9a11dec89a35afec9f9edb  git-manpages-1.7.10.5.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.10.5
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+
+This time I didn't forget to update DEF_VER in GIT-VERSION-FILE ;-)
+
+Git v1.7.10.5 Release Notes
+===========================
+
+Fixes since v1.7.10.4
+---------------------
+
+ * "git fast-export" did not give a readable error message when the
+   same mark erroneously appeared twice in the --import-marks input.
+
+ * "git rebase -p" used to pay attention to rebase.autosquash which
+    was wrong.  "git rebase -p -i" should, but "git rebase -p" by
+    itself should not.
+
+----------------------------------------------------------------
+
+Changes since v1.7.10.4 are as follows:
+
+Johannes Schindelin (1):
+      fast-export: report SHA-1 instead of gibberish when marks exist already
+
+Junio C Hamano (1):
+      Git 1.7.10.5
+
+Vincent van Ravesteijn (1):
+      Do not autosquash in case of an implied interactive rebase
 
