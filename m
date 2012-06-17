@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab2FQMcg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 08:32:36 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:60863 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694Ab2FQMcf convert rfc822-to-8bit (ORCPT
+	id S1757329Ab2FQMwB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 08:52:01 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:44338 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757046Ab2FQMwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 08:32:35 -0400
+	Sun, 17 Jun 2012 08:52:00 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: jdow <jdow@earthlink.net>
+Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while OK in AmigaOS 4.1
+Date: Sun, 17 Jun 2012 14:51:58 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+References: <201206171033.51625.Martin@lichtvoll.de> <4FDDB714.2020005@earthlink.net> (sfid-20120617_144809_298656_B94FF21F)
+In-Reply-To: <4FDDB714.2020005@earthlink.net>
 MIME-Version: 1.0
-In-Reply-To: <CA+i8gKKDdsG95GFkPskH1fZHBw8oMGu+4DW84Xq1-mLzzgFbrQ@mail.gmail.com>
-References: <CAJd=RBB1s-_VOtoDsBbLidS51HwW6e98p=U-4mL-spByUMvETw@mail.gmail.com>
-	<CA+i8gKKQyGBc-BNBJ72S6rq7aiFqS=onqWQyeY4P+VVvFCeXJw@mail.gmail.com>
-	<CAJd=RBA=mvMGQgdKgW26dgd8nK2-_dW_epQLwbjOo2Zx2gsbeg@mail.gmail.com>
-	<CA+i8gK+H-hm9bjJub4siH0pCdOrzRxJXaX2QjosnKCjeWYPt4A@mail.gmail.com>
-	<CAJd=RBBxnD7JirPpy-jTgE9kpnZXN6gkTMsgcG8=goZxgQfTaQ@mail.gmail.com>
-	<CA+i8gKLrd4JUf5P=zkj4x_yYc-kk2kjA-0To9e7iRNbZcCpLxA@mail.gmail.com>
-	<CAJd=RBCa_JfHO-=HiGqz_13CaHj5KGE5-EYAYT3jd+FPofqybw@mail.gmail.com>
-	<CAJd=RBC7r+a8Q6XvQX5-=0h2d5==tOjyG1HY_1q6=gfBwbWtFw@mail.gmail.com>
-	<CA+i8gKKDdsG95GFkPskH1fZHBw8oMGu+4DW84Xq1-mLzzgFbrQ@mail.gmail.com>
-Date: Sun, 17 Jun 2012 20:32:34 +0800
-Message-ID: <CAJd=RBD2Ss1vfugZcZzA5CzRPapBJsmx7tAxijBmOgQ9tjC7cw@mail.gmail.com>
-Subject: Re: [patch] BFS 420: a tiny step forward
-From: Hillf Danton <dhillf@gmail.com>
-To: Emmanuel Benisty <benisty.e@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Manuel Krause <manuelkrause@t-online.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206171451.58499.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 17, 2012 at 6:46 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
-> Hi Hillf,
->
-> On Thu, Jun 7, 2012 at 8:05 PM, Hillf Danton <dhillf@gmail.com> wrote:
->> On Thu, Jun 7, 2012 at 8:37 PM, Hillf Danton <dhillf@gmail.com> wrote:
->>> Hi Emmanuel
->>>
->>> On Wed, Jun 6, 2012 at 11:51 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
->>>>
->>>> Unfortunately, the issue is still there.
->>>>
->>> Hang at same place?
->>>
->> And try to revert handling CPU_ONLINE, please.
->>
->>
->> --- a/kernel/sched/bfs.c        Sat Jun  2 17:30:28 2012
->> +++ b/kernel/sched/bfs.c        Thu Jun  7 20:58:36 2012
->> @@ -5352,7 +5352,7 @@ migration_call(struct notifier_block *nf
->>                /* Update our root-domain */
->>                grq_lock_irqsave(&flags);
->>                if (rq->rd) {
->> -                       BUG_ON(cpumask_test_cpu(cpu, rq->rd->span));
->> +                       BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
->>
->>                        set_rq_online(rq);
->>                }
->> --
->
-> Sorry for the late reply. This patch did solve the issue, thanks.
->
-Thank you, Emmanuel.
-It is good news before 421-1 is released next week:)
+Hi Joanne,
 
-		Hillf
+Great to see you around. Was quite a surprise for me! ;)
+
+Am Sonntag, 17. Juni 2012 schrieb jdow:
+> By the way, what did you use to setup the Amiga RDBs?
+
+Media Toolbox, the AmigaOS successor of your fine HDToolBox on 
+hdwrench.library.
+
+Thanks
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
