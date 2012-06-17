@@ -1,35 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab2FQRLq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 13:11:46 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:48283 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757343Ab2FQRLo convert rfc822-to-8bit (ORCPT
+	id S1757663Ab2FQRMw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 13:12:52 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59908 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757587Ab2FQRMu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 13:11:44 -0400
-Date: Sun, 17 Jun 2012 12:11:38 -0500
+	Sun, 17 Jun 2012 13:12:50 -0400
+Date: Sun, 17 Jun 2012 12:12:44 -0500
 From: Jonathan Nieder <jrnieder@gmail.com>
 To: =?utf-8?Q?Martin-=C3=89ric?= Racine <martin-eric.racine@iki.fi>
 Cc: =?utf-8?Q?Jean-Fran=C3=A7ois?= Moine <moinejf@free.fr>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>
 Subject: Re: video: USB webcam fails since kernel 3.2
-Message-ID: <20120617171138.GK12429@burratino>
+Message-ID: <20120617171244.GL12429@burratino>
 References: <20120614162609.4613.22122.reportbug@henna.lan>
  <20120614215359.GF3537@burratino>
  <CAPZXPQd9gNCxn7xGyqj_xymPaF5OxvRtxRFkt+SsLs942te4og@mail.gmail.com>
  <20120616044137.GB4076@burratino>
  <1339932233.20497.14.camel@henna.lan>
+ <20120617171138.GK12429@burratino>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1339932233.20497.14.camel@henna.lan>
+In-Reply-To: <20120617171138.GK12429@burratino>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc-ing Hans de Goede, the new gspca maintainer.  Sorry I missed that before.)
+Jonathan Nieder wrote:
+
+> (cc-ing Hans de Goede, the new gspca maintainer.  Sorry I missed
+> that before.)
+
+Actually cc-ing this time.  Sorry for the noise.
 
 >> Martin-Éric Racine wrote:
 >>> usb 1-7: new high-speed USB device number 3 using ehci_hcd
