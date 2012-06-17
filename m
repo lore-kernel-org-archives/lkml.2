@@ -1,258 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab2FQRgU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 13:36:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757629Ab2FQRgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 13:36:18 -0400
-Date: Sun, 17 Jun 2012 13:35:55 -0400
-From: "Frank Ch. Eigler" <fche@redhat.com>
-To: systemtap@sourceware.org
-Cc: linux-kernel@vger.kernel.org, lwn@lwn.net
-Subject: systemtap release 1.8
-Message-ID: <20120617173555.GA27325@redhat.com>
-Reply-To: systemtap@sourceware.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.4.2.2i
+	id S1757710Ab2FQRnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 13:43:16 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55316 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757647Ab2FQRnO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 13:43:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FDB3642.5030804@linaro.org>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+	<1339428307-3850-10-git-send-email-lee.jones@linaro.org>
+	<CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com>
+	<4FD8BAD2.50703@linaro.org>
+	<CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com>
+	<4FDAFA17.6050502@linaro.org>
+	<CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com>
+	<20120615115042.GA27480@bnru02>
+	<4FDB2E57.4030904@linaro.org>
+	<20120615130544.GA28537@bnru02>
+	<4FDB3642.5030804@linaro.org>
+Date: Sun, 17 Jun 2012 19:43:13 +0200
+Message-ID: <CACRpkdZ7ESKhokk8Z+6sC9Kq+jPztFNwzger0Db7nCD1fPnG1A@mail.gmail.com>
+Subject: Re: Fwd: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik I2C driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The systemtap team announces release 1.8.
+Gah, what a thread...
 
-  user-space probing support with unmodified linus kernel 3.5-rc,
-  kernel netfilter-hook probing, ipv6 support in tapsets and
-  compile-server, concurrent compilations in compile-server, improved
-  dwarf4 support (.debug_types), @var() construct for accessing
-  variables in global scope, stap resource-limit options, tested on
-  kernels 3.5-rc through 2.6.9
+On Fri, Jun 15, 2012 at 3:18 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On 15/06/12 14:05, Srinidhi Kasagar wrote:
+>> On Fri, Jun 15, 2012 at 14:45:11 +0200, Lee Jones wrote:
+>>> On 15/06/12 12:50, Srinidhi Kasagar wrote:
 
+>>>>> +static struct nmk_i2c_controller u8500_i2c = {
+>>>>> +       /*
+>>>>> +        * Slave data setup time; 250ns, 100ns, and 10ns, which
+>>>>> +        * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
+>>>>> +        */
+>>>>> +       .slsu           = 0xe,
+>>>>> +       .tft            = 1,      /* Tx FIFO threshold */
+>>>>> +       .rft            = 8,      /* Rx FIFO threshold */
+>>>>> +       .clk_freq       = 100000, /* std. mode operation */
+>>>>> +       .timeout        = 200,    /* Slave response timeout(ms) */
+>>>>> +       .sm             = I2C_FREQ_MODE_FAST,
+>>>>
+>>>> How is this possible? you are setting clk_freq as 100kb/s and mode
+>>>> as fast mode which is supposed to be 400kb/s.
+>>>
+>>> That's not how I read it:
+>>
+>>
+>> But it is not readable. It confuses people.
+>
+> I understood it. :)
+>
+> If you think it's unclear speak to the author, Linus. He's CC'ed.
 
-= Where to get it
+Author of what? The i2c driver was written by Srinidhi. (The
+MODULE_AUTHOR() clause should be a good hint...)
 
-  http://sourceware.org/systemtap/ - our project page
-  http://sourceware.org/systemtap/ftp/releases/systemtap-1.8.tar.gz
-  http://koji.fedoraproject.org/koji/packageinfo?packageID=615
-  git tag release-1.8 (commit 48fa6b5e)
+But it's true that board data for the ux500 kernel use
+100000 Hz and I2C_FREQ_MODE_FAST, in the board-mop500.c
+file, like this:
 
-  There have been over 300 commits since the last release.
-  There have been over 50 bugs/features fixed since the last release.
+U8500_I2C_CONTROLLER(0, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
+U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
+U8500_I2C_CONTROLLER(2, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
+U8500_I2C_CONTROLLER(3, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
 
+This is indeed a bit odd. But obviously it works... But reading some
+fixes in another tree it seems it should look like this:
 
-= How to build it
+/*
+ * The board uses 4 i2c controllers, initialize all of
+ * them with slave data setup time of 250 ns,
+ * Tx & Rx FIFO threshold values as 1 and standard
+ * mode of operation
+ */
+U8500_I2C_CONTROLLER(0, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
+U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
+U8500_I2C_CONTROLLER(2, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
+U8500_I2C_CONTROLLER(3, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
 
-  See the README and NEWS files at
-  http://sourceware.org/git/?p=systemtap.git;a=tree
-  Further information at http://sourceware.org/systemtap/wiki/
+Which makes *much* more sense.
 
+I'll cook a separate patch for this or something.
 
-= Systemtap frontend (stap) changes
-
-- When invoked by systemtap, the kbuild $PATH environment is sanitized
-  (prefixed with /usr/bin:/bin:) in an attempt to exclude compilers
-  other than the one the kernel was presumed built with.
-
-- The systemtap compile-server and client now support IPv6 networks.
-
-- Support for DWARF4 .debug_types sections (for executables and shared
-  libraries compiled with recent GCC's -gdwarf-4 / -fdebug-types-section).
-  PR12997.  SystemTap now requires elfutils 0.148+, full .debug_types support
-  depends on elfutils 0.154+.
-
-- Systemtap modules are somewhat smaller & faster to compile.  Their
-  debuginfo is now suppressed by default; use -B CONFIG_DEBUG_INFO=y to
-  re-enable.
-
-- Stap now has resource limit options:
-    --rlimit-as=NUM
-    --rlimit-cpu=NUM
-    --rlimit-nproc=NUM
-    --rlimit-stack=NUM
-    --rlimit-fsize=NUM
-  All resource limiting has been moved from the compile server to stap
-  itself. When running the server as "stap-server", default resource
-  limit values are specified in ~stap-server/.systemtap/rc.
-
-
-= Systemtap script language changes
-
-- @var now an alternative language syntax for accessing DWARF variables
-  in uprobe and kprobe handlers (process, kernel, module). @var("somevar")
-  can be used where $somevar can be used. The @var syntax also makes it
-  possible to access non-local, global compile unit (CU) variables by
-  specifying the CU source file as follows @var("somevar@some/src/file.c").
-  This will provide the target variable value of global "somevar" as defined
-  in the source file "some/src/file.c". The @var syntax combines with all
-  normal features of DWARF target variables like @defined(), @entry(),
-  [N] array indexing, field access through ->, taking the address with
-  the & prefix and shallow or deep pretty printing with a $ or $$ suffix.
-
-- Printf formats can now use "%#c" to escape non-printing characters.
-
-- Pretty-printed bitfields use integers and chars use escaped formatting
-  for printing.
-
-- SystemTap now mangles local variables to avoid collisions with C
-  headers included by tapsets. This required a change in how
-  embedded-C functions access local parameters and the return value slot.
-  If you need to run code which uses the old THIS-> notation, run stap
-  with the --compatible=1.7 option.
-
-
-= Systemtap runtime changes
-
-- There is updated support for user-space probing against kernels >=
-  3.5, which have no utrace but do have the newer inode-uprobes work
-  by Srikar Dronamraju and colleagues.  For kernels < 3.5, the
-  following 3 sets of kernel patches would need to be backported to
-  your kernel to use this preliminary user-space probing support:
-  - inode-uprobes patches:
-  - exec tracepoint kernel patch:
-  - task_work_add kernel patches:
-
-- staprun accepts a -T timeout option to allow less frequent wake-ups
-  to poll for low-throughput output from scripts.
-
-- Previous fix for bug CVE-2012-0875 (kernel panic when processing malformed
-  DWARF unwind data) is merged.
-
-- The systemtap compile-server now supports multiple concurrent connections.
-  Specify the desired maximum number of concurrent connections with
-  the new stap-server/stap-serverd --max-threads option. Specify a
-  value of '0' to tell the server not to spawn any new threads (handle
-  all connections serially in the main thread). The default value is
-  the number of processor cores on the host.
-
-
-= Systemtap tapset changes
-
-- The following tapset functions are deprecated in release 1.8 and will be
-  removed in release 1.9:
-      daddr_to_string()
-
-- All functions were updated for the new STAP_ARG* embedded-C API.
-
-- More tapsets were added to the generated reference documentation /
-  man pages.
-
-- New tapsets:
-  netfilter.stp          defines utilities for netfilter scripts
-  guru-delay.stp         inject mdelay/udelay into kernel operation
-
-- Changed tapsets:
-  syscalls.stp etc.      updated for linux 3.5-rc
-  dentry.stp             updated for rhel5, back to the future
-  context-caller.stp     fixed to operate without uretprobes
-  s390/registers.stp     support getting that pesky sixth syscall arg
-  inet_*.stp             make more available to unprivileged users
-  inet_*.stp             expose ipv6 addresses & functionality
-
-
-= Systemtap sample scripts
-
-- All functions were updated for the new STAP_ARG* embedded-C API.
-
-- New samples:
-  netfilter_drop.stp     netfilter demo: dropping some outgoing packets
-  netfilter_summary.stp  show TCP/IP traffic by src/dest address
-  psig.stp               list active signal handlers of a process
-  auditbt.stp            generate userspace backtraces on kernel audit events
-  nfsdtop.stp            print nfs lookup operation summaries
-  pf3.stp                time-sampling-based profile of kernel+userspace
-  enospc.stp             generate syslog message on filesystem -ENOSPC
-
-- Changed samples:
-  varwatch.stp           produces narrower output
-  eventcount.stp         given new options to periodically monitor/sort
-  mm*.stp                updated for upstream mm kernel tracepoints
-  ioblktime.stp          tries harder to catch merged iorequests
-  pfiles.stp             avoid non-atomic memory allocation
-
-
-= Contributors for this release
-
-  Andreas Müller*, Bryn M. Reeves, Chris Meek, Dave Brolley, David
-  Smith, Eugene Teo, Felix Lin*, Frank Ch. Eigler, Frederic Turgis,
-  Josh Stone, Lukas Czerner*, Mark Wielaard, Negreanu Marius Adrian*,
-  Nitin A Kamble*, Serguei Makarov*, Stan Cox, Timo Juhani Lindfors,
-  Tom Tromey*, Wade Farnsworth, William Cohen, ch huang*
-
-  Special thanks to new contributors, marked with '*' above.
-
-
-= Examples of tested kernel versions
-
-  3.5-rc (x86_64)
-  3.3.0 (x86_64)
-  3.2.0 (x86_64)
-  3.1.0 (x86_64)
-  2.6.32 (x86_64,i686,ppc64,s390x)
-  2.6.18 (x86_64,i686)
-  2.6.9 (i686)
-
-
-= Known issues with this release
-
-- Some kernel crashes continue to be reported when a script probes
-  broad kernel function wildcards.  (PR2725)
-
-
-= Bugs fixed for this release <http://sourceware.org/PR#####>
-
-10299  mangle local variable names
-11763  on s390x, nd_syscall probes that use $arg6 fail
-12331  offer a --sysroot option to aid cross-compiling
-12341  deref()/store_deref() variations between arches
-13193  Running bz6503.exp results in unresponsive/crashed machine
-13370  ipv6 support
-13458  sort generated tapset documentation
-13461  bring back systemtap-client subpackage
-13474  SDT_V3 arm can't parse operand '4@[fp, #-16]'
-13475  SDT_V3 arm can't parse operand '-4@r3'
-13516  more robust handling of ^C
-13609  Consider handling compiler server requests in parallel
-13631  Detection of Reqested Privilege Level in stap-serverd
-13640  stap-server: don't start by default
-13641  pfiles.stp does something nasty
-13644  staprun: support --version
-13646  ipv6 tapset support
-13661  server softening: allow relaxed rlimits
-13667  expose netfilter hook
-13670  on 3.3 kernels, 'mnt_parent' has been moved from 'struct vfsmount'
-13672  on 3.3 kernels, the ioscheduler.stp tapset can't find elevator names
-13681  on rhel4, bulk mode flight recording tests leave a module behind
-13694  on rhel6, tcp.sendmsg returns incorrect "sock" local variable
-13713  MAXTRACE/MAXBACKTRACE undocumented feature
-13714  panic when sampling backtrace() in timer.profile
-13734  systemtap.stress/current.stp need to be updated for arm
-13745  memory tracepoints examples need updating
-13768  systemtap.spec Requires should reflect current packaging
-13784  Cannot find a defining variable location in different CU
-13815  On RHEL5 (2.6.18-308.el5), the dentry.stp tapset is broken
-13819  A Call Trace is generated when stap is run if the kernel option "Debug access to per_cpu maps" is enabled
-13833  function().library() is not aware of rpath
-13868  Use UTRACE_ATTACH_ATOMIC when calling utrace create under lock.
-13876  miscompilation for duplicated tapset function
-13992  assertion failure on bad stap -d /paths
-13998  pretty-printing bitfields shouldn't use %c
-13999  pretty-printing shouldn't use %c
-14000  crosscompiled uprobe target filename doesn't have the sysroot path removed.
-14005  don't freak on overlong kernel module relocs
-14057  ERROR: Your privilege credentials (stapsys) are insufficient to run this module (stapdev required).
-14078  librpmio.so exports bundled broken glob(3) clone
-14079  caller() pass-4 error if no uretprobes in script
-14107  Bad user unwinding from kernel fatal signal handler for some x86_64 kernels
-14137  buildok/netfilter02.stp not ok
-14146  tapset::* man pages should be generated from actual tapset files
-14165  netfilter.stp -- extract IPV6 protocol info
-14168  sanitize environment better for invoking kernel-module-builder make
-14208  Retire obsolete handwritten manpages
-14220  stap failes with "error: ...cpu_possible_map undeclared..."
-14221  timer.profile probes cause kernel warning
-14224  only the 1st of multiple identical perf probes get hit
-14240  on RHEL5 (2.6.18-308.el5), netfilter probe cause compilation to fail
-14244  Mode 0700 debugfs leads staprun to orphan modules
+Thanks,
+Linus Walleij
