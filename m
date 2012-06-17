@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258Ab2FQVHW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 17:07:22 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60669
+	id S1758196Ab2FQVJb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 17:09:31 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60675
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758013Ab2FQVGe (ORCPT
+	by vger.kernel.org with ESMTP id S1754273Ab2FQVJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 17:06:34 -0400
-Message-Id: <20120617210632.922931341@bombadil.infradead.org>
-User-Agent: quilt/0.48-1
-Date: Sun, 17 Jun 2012 17:05:24 -0400
+	Sun, 17 Jun 2012 17:09:30 -0400
+Date: Sun, 17 Jun 2012 17:09:29 -0400
 From: Christoph Hellwig <hch@infradead.org>
 To: torvalds@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Janne Kalliom??ki <janne@tuxera.com>
-Subject: [PATCH 1/2] hfsplus: fix overflow in sector calculations in hfsplus_submit_bio
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] hfsplus fixes for Linux 3.5
+Message-ID: <20120617210929.GA29127@infradead.org>
 References: <20120617210523.088906451@bombadil.infradead.org>
-Content-Disposition: inline; filename=hfsplus-mount-fix.diff
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120617210523.088906451@bombadil.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable io_size was unsigned int, which caused the wrong sector number
-to be calculated after aligning it. This then caused mount to fail with big
-volumes, as backup volume header information was searched from a
-wrong sector.
+On Sun, Jun 17, 2012 at 05:05:23PM -0400, Christoph Hellwig wrote:
+> Two small hfsplus fixes:
+> 
+>  - a one liner regression fix for large volume handling from
 
-Signed-off-by: Janne Kalliom??ki <janne@tuxera.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Sorry, chopped off the message, should be:
 
----
- fs/hfsplus/wrapper.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Two small hfsplus fixes:
 
-diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
-index 5d2aa0c..1cc3920 100644
---- a/fs/hfsplus/wrapper.c
-+++ b/fs/hfsplus/wrapper.c
-@@ -70,7 +70,7 @@ int hfsplus_submit_bio(struct super_block *sb, sector_t sector,
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct bio *bio;
- 	int ret = 0;
--	unsigned int io_size;
-+	u64 io_size;
- 	loff_t start;
- 	int offset;
- 
+ - a one liner regression fix for large volume handling from
+   Janne Kalliom??ki.
+ - a fixup for the boot image blessing feature to make it work
+   with the fake "hardlinks" in hfsplus from Matthew Garrett.
 
