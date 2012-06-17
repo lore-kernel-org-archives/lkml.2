@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab2FQKbM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 06:31:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50498 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754615Ab2FQKbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 06:31:10 -0400
-Date: Sun, 17 Jun 2012 12:31:06 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-Message-ID: <20120617103106.GA31534@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Bojan Smojver <bojan@rexursive.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Linux PM list <linux-pm@vger.kernel.org>,
-	Kernel development list <linux-kernel@vger.kernel.org>
-References: <90304ca8-31ef-4919-bf9d-e0498b0de87b@email.android.com>
- <Pine.LNX.4.44L0.1206161617080.819-100000@netrider.rowland.org>
- <20120616230706.GA26955@liondog.tnic>
- <43c43f4c-6eab-42ca-a7b0-5ce274697287@email.android.com>
+	id S1755809Ab2FQKhb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 06:37:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51623 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754687Ab2FQKha convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 06:37:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <43c43f4c-6eab-42ca-a7b0-5ce274697287@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1206161811020.797@chino.kir.corp.google.com>
+References: <1338438844-5022-1-git-send-email-andi@firstfloor.org>
+	<1339234803-21106-1-git-send-email-tdmackey@twitter.com>
+	<alpine.DEB.2.00.1206091917580.7832@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1206161811020.797@chino.kir.corp.google.com>
+Date: Sun, 17 Jun 2012 13:37:29 +0300
+X-Google-Sender-Auth: MESm4CiZqDrV_rpNV76lWBSa_lU
+Message-ID: <CAOJsxLGhQSZjY8jcL7tB2-oicak-H68CW5S8OOMz8cEh=m5hjg@mail.gmail.com>
+Subject: Re: [PATCH v5] slab/mempolicy: always use local policy from interrupt context
+From: Pekka Enberg <penberg@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: David Mackey <tdmackey@twitter.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>, cl@linux.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 17, 2012 at 01:21:29PM +1000, Bojan Smojver wrote:
-> Borislav Petkov <bp@alien8.de> wrote:
-> 
-> >Ok, I don't know the hibernation code at all but let me give it a try:
-> >
-> >how about teach the piece that parses
-> >
-> >$ echo suspend > /sys/power/disk
-> >
-> >to make a note to self that we're doing the hibrid hibernation method
-> >and then the function that prints the progress indicator to be let
-> >known
-> >of the aforementioned self-note so that it doesn't do any output?
-> >
-> >Purely hypothetical, of course.
+On Sun, Jun 17, 2012 at 4:11 AM, David Rientjes <rientjes@google.com> wrote:
+> On Sat, 9 Jun 2012, David Rientjes wrote:
 >
-> Yeah, we already have a variable for that. But, we can just do it
-> simpler - paint one dot every 10% or something, without any backspaces.
-> That will fix it for sure.
+>> On Sat, 9 Jun 2012, David Mackey wrote:
+>>
+>> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+>> > index f15c1b2..cb0b230 100644
+>> > --- a/mm/mempolicy.c
+>> > +++ b/mm/mempolicy.c
+>> > @@ -1602,8 +1602,14 @@ static unsigned interleave_nodes(struct mempolicy *policy)
+>> >   * task can change it's policy.  The system default policy requires no
+>> >   * such protection.
+>> >   */
+>> > -unsigned slab_node(struct mempolicy *policy)
+>> > +unsigned slab_node(void)
+>> >  {
+>> > +   struct mempolicy *policy;
+>> > +
+>> > +   if (in_interrupt())
+>> > +           return numa_node_id();
+>> > +
+>> > +   policy = current->mempolicy;
+>> >     if (!policy || policy->flags & MPOL_F_LOCAL)
+>> >             return numa_node_id();
+>> >
+>>
+>> Should probably be numa_mem_id() in both these cases for
+>> CONFIG_HAVE_MEMORYLESS_NODES, but it won't cause a problem in this form
+>> either.
+>>
+>> Acked-by: David Rientjes <rientjes@google.com>
+>>
+>
+> Still missing from linux-next, who's going to pick this up?
 
-Right, this could work too. Whatever you guys decide, I'm here to test
-patches :)
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+I'm going to pick it up. I've been postponing merging it until dust
+has settled from Christoph's "common slab" patch series.
