@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab2FQBNT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 21:13:19 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57472 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab2FQBNS (ORCPT
+	id S1757303Ab2FQB1a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 21:27:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36845 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab2FQB13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 21:13:18 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sat, 16 Jun 2012 18:13:21 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: "ksummit-2012-discuss@lists.linux-foundation.org" 
-	<ksummit-2012-discuss@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] [ATTEND] Discussion: role of the
- maintainer?
-Message-ID: <20120617011321.GA29437@roeck-us.net>
-References: <1339875074.8267.87.camel@lade.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339875074.8267.87.camel@lade.trondhjem.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 16 Jun 2012 21:27:29 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: linux-mm@kvack.org
+Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH] mm/vmscan: cleanup comment error in balance_pgdat
+Date: Sun, 17 Jun 2012 09:27:18 +0800
+Message-Id: <1339896438-5412-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 07:31:19PM +0000, Myklebust, Trond wrote:
-> Hi,
-> 
-> This is a spin off from the discussion topic that was started by Thomas
-> Gleixner. I'd like to turn this into a full discussion on the role of
-> the Linux Maintainer.
-> 
-> Currently, the Linux maintainer appears to be responsible for filling
-> all of the traditional roles of software architect, software developer,
-> patch reviewer, patch committer, and software maintainer.
-> 
-> My question is whether or not there might be some value in splitting out
-> some of these roles, so that we can assign them to different people, and
-> thus help to address the scalability issues that Thomas raised? For
-> instance, would it be useful to have a separate 'software maintainer'
-> role for dealing with post-merge issues, such as ensuring that bugs and
-> regressions get fixed by someone?
-> If so, how do we ensure that people get credit for the roles that they
-> assume? Should we perhaps add additional entries to the MAINTAINERS file
-> for some of these responsibilities?
-> 
-Having more than one maintainer works well for the hwmon subsystem. It is a good
-way to "train" new maintainers.
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-I don't like the idea of formalizing maintainer's responsibilities, and I don't
-see the need to do it. It should be up to the maintainers to decide and work out
-which role to take; there are multiple ways to split the work, roles may change
-over time, and the maintainers are the best to decide what their role should be.
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+---
+ mm/vmscan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-And when it comes to architects, my personal opinion is that every architect
-should also implement code, to not forget what it actually takes to do it.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2fc16cf..375d073 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2539,7 +2539,7 @@ loop_again:
+ 				 * consider it to be no longer congested. It's
+ 				 * possible there are dirty pages backed by
+ 				 * congested BDIs but as pressure is relieved,
+-				 * spectulatively avoid congestion waits
++				 * speculatively avoid congestion waits
+ 				 */
+ 				zone_clear_flag(zone, ZONE_CONGESTED);
+ 				if (i <= *classzone_idx)
+-- 
+1.7.9.5
 
-Thanks,
-Guenter
