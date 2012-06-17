@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab2FQSEu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:04:50 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:58093 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757795Ab2FQSEs (ORCPT
+	id S1757872Ab2FQSGJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:06:09 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:40137 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757816Ab2FQSGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:04:48 -0400
+	Sun, 17 Jun 2012 14:06:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339927893-8842-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1339927893-8842-3-git-send-email-stigge@antcom.de>
 References: <1339927893-8842-1-git-send-email-stigge@antcom.de>
-Date: Sun, 17 Jun 2012 20:04:47 +0200
-Message-ID: <CACRpkdZeBiTX6hOu_PyrhZ8VA0uD3kz47a1p9Uo30S=w7U2O6A@mail.gmail.com>
-Subject: Re: [PATCH] gpio: of_get_named_gpio_flags() return -EPROBE_DEFER if
- GPIO not yet available
+	<1339927893-8842-3-git-send-email-stigge@antcom.de>
+Date: Sun, 17 Jun 2012 20:06:06 +0200
+Message-ID: <CACRpkdZMpmjbg-onF9bohBjrt0AadcauzJ-w2VpgbqJ8Kz9YDg@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] mmc: mmci.c: Remove wrong error handling of gpio 0
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Roland Stigge <stigge@antcom.de>
 Cc: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
@@ -27,19 +27,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sun, Jun 17, 2012 at 12:11 PM, Roland Stigge <stigge@antcom.de> wrote:
 
-> of_get_named_gpio_flags() and of_get_named_gpio() return -EPROBE_DEFER if the
-> respective GPIO is not (yet) available. This is useful if driver's probe()
-> functions try to get a GPIO whose controller isn't probed yet. Thus, the driver
-> can be probed again later on.
->
-> The function still returns -EINVAL on other errors (parse error or node doesn't
-> exist). This way, the case of an optional/intentionally missing GPIO is handled
-> appropriately.
+> Zero is a valid GPIO and shouldn't be handled as an error return code from
+> of_get_named_gpio(). It was a leftover from old code before getting
+> pdata->gpio_*() was modified.
 >
 > Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-This will work, good work!
+Pls put this into Russell's patch tracker with the other patch.
+
 Yours,
 Linus Walleij
