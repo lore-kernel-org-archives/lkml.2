@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767Ab2FQSXI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:23:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50159 "EHLO
+	id S1758721Ab2FQSXH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:23:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50143 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757971Ab2FQSWT (ORCPT
+	by vger.kernel.org with ESMTP id S1757965Ab2FQSWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:19 -0400
-Message-Id: <20120617175951.375230652@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:16 -0400
+Message-Id: <20120617175943.904220408@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:50 +0100
+Date: Sun, 17 Jun 2012 18:59:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 69/69] drm/radeon: add some additional 6xx/7xx/EG register init
+        alan@lxorguk.ukuu.org.uk, Mathias Krause <minipli@googlemail.com>,
+        Daniel <garkein@mailueberfall.de>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 18/69] crypto: aesni-intel - fix unaligned cbc decrypt for x86-32
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,119 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit b866d1334ba2d544bc575d75357dea6bdcdc7f46 upstream.
+commit 7c8d51848a88aafdb68f42b6b650c83485ea2f84 upstream.
 
-- SMX_SAR_CTL0 needs to be programmed correctly to prevent
-problems with memory exports in certain cases.
-- VC_ENHANCE needs to be initialized on 6xx/7xx.
+The 32 bit variant of cbc(aes) decrypt is using instructions requiring
+128 bit aligned memory locations but fails to ensure this constraint in
+the code. Fix this by loading the data into intermediate registers with
+load unaligned instructions.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This fixes reported general protection faults related to aesni.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=43223
+Reported-by: Daniel <garkein@mailueberfall.de>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/evergreen.c  |    3 +++
- drivers/gpu/drm/radeon/evergreend.h |    1 +
- drivers/gpu/drm/radeon/r600.c       |    1 +
- drivers/gpu/drm/radeon/r600d.h      |    1 +
- drivers/gpu/drm/radeon/rv770.c      |    5 ++++-
- drivers/gpu/drm/radeon/rv770d.h     |    3 +++
- 6 files changed, 13 insertions(+), 1 deletion(-)
+ arch/x86/crypto/aesni-intel_asm.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 01550d0..7fb3d2e 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1932,6 +1932,9 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
- 	smx_dc_ctl0 |= NUMBER_OF_SETS(rdev->config.evergreen.sx_num_of_sets);
- 	WREG32(SMX_DC_CTL0, smx_dc_ctl0);
- 
-+	if (rdev->family <= CHIP_SUMO2)
-+		WREG32(SMX_SAR_CTL0, 0x00010000);
-+
- 	WREG32(SX_EXPORT_BUFFER_SIZES, (COLOR_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_size / 4) - 1) |
- 					POSITION_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_pos_size / 4) - 1) |
- 					SMX_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_smx_size / 4) - 1)));
-diff --git a/drivers/gpu/drm/radeon/evergreend.h b/drivers/gpu/drm/radeon/evergreend.h
-index 2773039..b50b15c 100644
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -503,6 +503,7 @@
- #define	SCRATCH_UMSK					0x8540
- #define	SCRATCH_ADDR					0x8544
- 
-+#define	SMX_SAR_CTL0					0xA008
- #define	SMX_DC_CTL0					0xA020
- #define		USE_HASH_FUNCTION				(1 << 0)
- #define		NUMBER_OF_SETS(x)				((x) << 1)
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index f30dc95..bff6272 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -1839,6 +1839,7 @@ void r600_gpu_init(struct radeon_device *rdev)
- 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
- 			       NUM_CLIP_SEQ(3)));
- 	WREG32(PA_SC_ENHANCE, FORCE_EOV_MAX_CLK_CNT(4095));
-+	WREG32(VC_ENHANCE, 0);
- }
- 
- 
-diff --git a/drivers/gpu/drm/radeon/r600d.h b/drivers/gpu/drm/radeon/r600d.h
-index a0dbf1f..c6857e8 100644
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -485,6 +485,7 @@
- #define		TC_L2_SIZE(x)					((x)<<5)
- #define		L2_DISABLE_LATE_HIT				(1<<9)
- 
-+#define	VC_ENHANCE					0x9714
- 
- #define	VGT_CACHE_INVALIDATION				0x88C4
- #define		CACHE_INVALIDATION(x)				((x)<<0)
-diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
-index 4ad0281..b4f51c5 100644
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -616,6 +616,9 @@ static void rv770_gpu_init(struct radeon_device *rdev)
- 				       ACK_FLUSH_CTL(3) |
- 				       SYNC_FLUSH_CTL));
- 
-+	if (rdev->family != CHIP_RV770)
-+		WREG32(SMX_SAR_CTL0, 0x00003f3f);
-+
- 	db_debug3 = RREG32(DB_DEBUG3);
- 	db_debug3 &= ~DB_CLK_OFF_DELAY(0x1f);
- 	switch (rdev->family) {
-@@ -792,7 +795,7 @@ static void rv770_gpu_init(struct radeon_device *rdev)
- 
- 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
- 					  NUM_CLIP_SEQ(3)));
--
-+	WREG32(VC_ENHANCE, 0);
- }
- 
- void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
-diff --git a/drivers/gpu/drm/radeon/rv770d.h b/drivers/gpu/drm/radeon/rv770d.h
-index fdc0898..b0adfc5 100644
---- a/drivers/gpu/drm/radeon/rv770d.h
-+++ b/drivers/gpu/drm/radeon/rv770d.h
-@@ -211,6 +211,7 @@
- #define	SCRATCH_UMSK					0x8540
- #define	SCRATCH_ADDR					0x8544
- 
-+#define	SMX_SAR_CTL0					0xA008
- #define	SMX_DC_CTL0					0xA020
- #define		USE_HASH_FUNCTION				(1 << 0)
- #define		CACHE_DEPTH(x)					((x) << 1)
-@@ -310,6 +311,8 @@
- #define	TCP_CNTL					0x9610
- #define	TCP_CHAN_STEER					0x9614
- 
-+#define	VC_ENHANCE					0x9714
-+
- #define	VGT_CACHE_INVALIDATION				0x88C4
- #define		CACHE_INVALIDATION(x)				((x)<<0)
- #define			VC_ONLY						0
+diff --git a/arch/x86/crypto/aesni-intel_asm.S b/arch/x86/crypto/aesni-intel_asm.S
+index be6d9e3..3470624 100644
+--- a/arch/x86/crypto/aesni-intel_asm.S
++++ b/arch/x86/crypto/aesni-intel_asm.S
+@@ -2460,10 +2460,12 @@ ENTRY(aesni_cbc_dec)
+ 	pxor IN3, STATE4
+ 	movaps IN4, IV
+ #else
+-	pxor (INP), STATE2
+-	pxor 0x10(INP), STATE3
+ 	pxor IN1, STATE4
+ 	movaps IN2, IV
++	movups (INP), IN1
++	pxor IN1, STATE2
++	movups 0x10(INP), IN2
++	pxor IN2, STATE3
+ #endif
+ 	movups STATE1, (OUTP)
+ 	movups STATE2, 0x10(OUTP)
 
 
