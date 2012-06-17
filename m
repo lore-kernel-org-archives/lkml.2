@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab2FQTwH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 15:52:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38539 "EHLO
+	id S1753084Ab2FQTyR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 15:54:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38545 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751605Ab2FQTwF (ORCPT
+	by vger.kernel.org with ESMTP id S1750872Ab2FQTyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 15:52:05 -0400
-Date: Sun, 17 Jun 2012 20:52:03 +0100
+	Sun, 17 Jun 2012 15:54:17 -0400
+Date: Sun, 17 Jun 2012 20:54:15 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT 1/2] regulator: wm8350: Use wm8350_ldo_list_voltage
- instead of open code to verify selected voltage
-Message-ID: <20120617195203.GH4267@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH RFT 2/2] regulator: wm8350: Reuse map_voltage() to get
+ selector of a given uV
+Message-ID: <20120617195415.GI4267@opensource.wolfsonmicro.com>
 References: <1339502910.2881.1.camel@phoenix>
+ <1339503026.2881.3.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xHbokkKX1kTiQeDC"
+	protocol="application/pgp-signature"; boundary="cf0hFtnykp6aONGL"
 Content-Disposition: inline
-In-Reply-To: <1339502910.2881.1.camel@phoenix>
+In-Reply-To: <1339503026.2881.3.camel@phoenix>
 X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,37 +28,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---xHbokkKX1kTiQeDC
+--cf0hFtnykp6aONGL
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 12, 2012 at 08:08:30PM +0800, Axel Lin wrote:
-> Call wm8350_ldo_list_voltage() instead of open code to verify selected voltage
-> falls within specified range.
-> Use wm8350_ldo_list_voltage() here is less error prone.
+On Tue, Jun 12, 2012 at 08:10:26PM +0800, Axel Lin wrote:
+> Reuse map_voltage() to get the selector of a given uV.
+>=20
+> Then we can remove wm8350_ldo_mvolts_to_val() and wm8350_dcdc_mvolts_to_v=
+al().
+> Also remove unused wm8350_dcdc_val_to_mvolts() function.
 
 Applied, thanks.
 
---xHbokkKX1kTiQeDC
+--cf0hFtnykp6aONGL
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP3jVdAAoJEBus8iNuMP3d2acP/1dTxP9XLE3fbkFCPY4qe6hk
-+Nta+jMNZdCw6bRwZu2Nn00tE03OJ1KS5ViXWzOQF2JUpDqBXr/HrRgNbvCRIhuH
-Mp1aBxZboE/tMiaIu66P99Sf8wb9kBiO91lfvQCL5CFOBdw4hMPd523rrTcPbgsa
-JrlnRY5NCzkj9x7VNxV5qj0ef5dNVRmX9Le7hkfLWVL4xnBtbS3Cy4druWd2M0rH
-fhE6cHcUB79Kef4CEO6o1AIiwrdVIcqg+sToOUMx37c2s3SFQjmSsx08+hpBaKHw
-m2/o3yZeOPk3XP9SDvIuDSOhwLYy97mNo5EzbbTa52ceRTPvYJ9otL/coVr5mLWF
-UDx7rvVUioZhGeNucEY19LDi0Zh7nRlcOXf4CuD3SQnqGhfcL0MMwfbDevcl1WvE
-JE3nzMMFWSgZGyfe3LR7/Glg7qQiDiKgVnop8+62scgmsCFUa8dqAWdGLUPmlFys
-6LXWiRc4MAj0Hn7xxkKTy0owcTYjF6eGeS7UEu8vxF37yCbbc5jmTAmeXFuftUD4
-p1UgVu3qN4oKlT/V7NLjSW3h1FJvKGfFzH6LE82axMDs23fz4XqtY6uFba71pl67
-Wq+1c64fXomyJ3EqCNbInKH0RC2jRBQInSw13qcXpd3uF5YqXYicaPTXvT0Y5fME
-wqoiiBXOslvpKAs14245
-=KqUm
+iQIcBAEBAgAGBQJP3jXeAAoJEBus8iNuMP3ddi8P/Ak23dOneudJjQ2MTaWtz4Np
+Y5fVvA7Xv6AyRObyyFbC1q3j9Nf667h2Jha6cgio6YzwDA6slX1XFLVQvDMhT6Gs
+Qk3QIKSdOe/pf8VE0enye6DdjngQxtxNNG2DsiL6+AJIgRWl5+Cn4caLkuJpggLC
+h3Dy+A+FRlYtlr9iVfu9oIZM0sThX4bh2XvA70kBXS6gRRg7eTcHmgyppoclP+wh
++IOIXfJ47KZizZrmx4YQA/C95Kippknh4/g5mwc3Lz22NgLcYitYuLwQrZddwRy2
+SF7ppFUgcS3NUqWZJeaViwAU5lvKBjKyd8DYo7WCoAkQl53VdErwh3emkLJoYu2y
+6oY3y+VxE+WHkZ0r3WO6Qqc+DPpZ0PtT6fW6v7CPwUBmrlmG4+yrzuz+cKpW3NFf
+xxuN5s5AOQLfnkLBSp6VW4RBRLJlrlo4AiQXxM6HR+MWcg9Vh/wJLhT4Og9zqtQ0
+tIRrRukO4TJReRhqxpEoZBL2JwNeGvbRn6+vpl/MG9XbF4wl029VVrGom+RZUxr6
+6dqSqBRmxVHjmzeLSSI8S710RFcWaqw5KLE5dEj9o0oex+RdM981IhFsKEg+pdA1
+xXDmd3PoiG75UWtH5QZgGYSHPtrHZyP2oKWcKSHY6HFT7tjhFiG54Ma03PUaQDIH
+fl3+DARKqyB1o5A5szZk
+=ZFC0
 -----END PGP SIGNATURE-----
 
---xHbokkKX1kTiQeDC--
+--cf0hFtnykp6aONGL--
