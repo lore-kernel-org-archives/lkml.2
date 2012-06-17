@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758768Ab2FQSZW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:25:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50402 "EHLO
+	id S1758866Ab2FQSZY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:25:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50399 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758612Ab2FQSXD (ORCPT
+	by vger.kernel.org with ESMTP id S1758607Ab2FQSXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Jun 2012 14:23:03 -0400
-Message-Id: <20120617175944.182051758@decadent.org.uk>
+Message-Id: <20120617175944.881744995@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:01 +0100
+Date: Sun, 17 Jun 2012 19:00:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 20/69] NFSv4.1: Fix a request leak on the back channel
+        alan@lxorguk.ukuu.org.uk, Grazvydas Ignotas <notasas@gmail.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 25/69] usb: musb_gadget: fix crash caused by dangling pointer
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,32 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Grazvydas Ignotas <notasas@gmail.com>
 
-commit b3b02ae5865c2dcd506322e0fc6def59a042e72f upstream.
+commit 08f75bf14fadaa81fe362d5acda9b77b113dd0a2 upstream.
 
-If the call to svc_process_common() fails, then the request
-needs to be freed before we can exit bc_svc_process.
+usb_ep_ops.disable must clear external copy of the endpoint descriptor,
+otherwise musb crashes after loading/unloading several gadget modules
+in a row:
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Unable to handle kernel paging request at virtual address bf013730
+pgd = c0004000
+[bf013730] *pgd=8f26d811, *pte=00000000, *ppte=00000000
+Internal error: Oops: 7 [#1]
+Modules linked in: g_cdc [last unloaded: g_file_storage]
+CPU: 0    Not tainted  (3.2.17 #647)
+PC is at musb_gadget_enable+0x4c/0x24c
+LR is at _raw_spin_lock_irqsave+0x4c/0x58
+[<c027c030>] (musb_gadget_enable+0x4c/0x24c) from [<bf01b760>] (gether_connect+0x3c/0x19c [g_cdc])
+[<bf01b760>] (gether_connect+0x3c/0x19c [g_cdc]) from [<bf01ba1c>] (ecm_set_alt+0x15c/0x180 [g_cdc])
+[<bf01ba1c>] (ecm_set_alt+0x15c/0x180 [g_cdc]) from [<bf01ecd4>] (composite_setup+0x85c/0xac4 [g_cdc])
+[<bf01ecd4>] (composite_setup+0x85c/0xac4 [g_cdc]) from [<c027b744>] (musb_g_ep0_irq+0x844/0x924)
+[<c027b744>] (musb_g_ep0_irq+0x844/0x924) from [<c027a97c>] (musb_interrupt+0x79c/0x864)
+[<c027a97c>] (musb_interrupt+0x79c/0x864) from [<c027aaa8>] (generic_interrupt+0x64/0x7c)
+[<c027aaa8>] (generic_interrupt+0x64/0x7c) from [<c00797cc>] (handle_irq_event_percpu+0x28/0x178)
+...
+
+Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/svc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/musb/musb_gadget.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 017c011..074df5a 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -1377,7 +1377,8 @@ bc_svc_process(struct svc_serv *serv, struct rpc_rqst *req,
- 						sizeof(req->rq_snd_buf));
- 		return bc_send(req);
- 	} else {
--		/* Nothing to do to drop request */
-+		/* drop request */
-+		xprt_free_bc_request(req);
- 		return 0;
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index f42c29b..95918da 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1232,6 +1232,7 @@ static int musb_gadget_disable(struct usb_ep *ep)
  	}
- }
+ 
+ 	musb_ep->desc = NULL;
++	musb_ep->end_point.desc = NULL;
+ 
+ 	/* abort all pending DMA and requests */
+ 	nuke(musb_ep, -ESHUTDOWN);
 
 
