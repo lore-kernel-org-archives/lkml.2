@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab2FQKMh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 06:12:37 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:47145 "EHLO
+	id S1756867Ab2FQKMq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 06:12:46 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:32813 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754615Ab2FQKMb (ORCPT
+	with ESMTP id S1756273Ab2FQKMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 06:12:31 -0400
+	Sun, 17 Jun 2012 06:12:44 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
         rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
@@ -14,9 +14,9 @@ To: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
         linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
         linux-arm-kernel@lists.infradead.org
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v3 1/2] mmc: mmci.c: Defer probe() in case of yet uninitialized GPIOs
-Date: Sun, 17 Jun 2012 12:11:32 +0200
-Message-Id: <1339927893-8842-2-git-send-email-stigge@antcom.de>
+Subject: [PATCH v3 2/2] mmc: mmci.c: Remove wrong error handling of gpio 0
+Date: Sun, 17 Jun 2012 12:11:33 +0200
+Message-Id: <1339927893-8842-3-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339927893-8842-1-git-send-email-stigge@antcom.de>
 References: <1339927893-8842-1-git-send-email-stigge@antcom.de>
@@ -25,39 +25,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the GPIOs used by the MMCI driver are not registered yet when the driver is
-probe()d, they can't be used. This happens if the mmci driver is probed before
-the respective GPIO controller (e.g. on the LPC32xx EA3250 board, the PCA9532
-GPIO controller would be initialized via DT after mmci). Therefore, we defer
-mmci in this case.
+Zero is a valid GPIO and shouldn't be handled as an error return code from
+of_get_named_gpio(). It was a leftover from old code before getting
+pdata->gpio_*() was modified.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
-
 ---
- drivers/mmc/host/mmci.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/mmc/host/mmci.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
 --- linux-2.6.orig/drivers/mmc/host/mmci.c
 +++ linux-2.6/drivers/mmc/host/mmci.c
-@@ -1424,6 +1424,10 @@ static int __devinit mmci_probe(struct a
- 	writel(0, host->base + MMCIMASK1);
- 	writel(0xfff, host->base + MMCICLEAR);
+@@ -1216,12 +1216,7 @@ static void mmci_dt_populate_generic_pda
+ 	int bus_width = 0;
  
-+	if (plat->gpio_cd == -EPROBE_DEFER) {
-+		ret = -EPROBE_DEFER;
-+		goto err_gpio_cd;
-+	}
- 	if (gpio_is_valid(plat->gpio_cd)) {
- 		ret = gpio_request(plat->gpio_cd, DRIVER_NAME " (cd)");
- 		if (ret == 0)
-@@ -1447,6 +1451,10 @@ static int __devinit mmci_probe(struct a
- 		if (ret >= 0)
- 			host->gpio_cd_irq = gpio_to_irq(plat->gpio_cd);
- 	}
-+	if (plat->gpio_wp == -EPROBE_DEFER) {
-+		ret = -EPROBE_DEFER;
-+		goto err_gpio_wp;
-+	}
- 	if (gpio_is_valid(plat->gpio_wp)) {
- 		ret = gpio_request(plat->gpio_wp, DRIVER_NAME " (wp)");
- 		if (ret == 0)
+ 	pdata->gpio_wp = of_get_named_gpio(np, "wp-gpios", 0);
+-	if (!pdata->gpio_wp)
+-		pdata->gpio_wp = -1;
+-
+ 	pdata->gpio_cd = of_get_named_gpio(np, "cd-gpios", 0);
+-	if (!pdata->gpio_cd)
+-		pdata->gpio_cd = -1;
+ 
+ 	if (of_get_property(np, "cd-inverted", NULL))
+ 		pdata->cd_invert = true;
