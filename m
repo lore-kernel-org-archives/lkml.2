@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab2FQXtS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 19:49:18 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52291 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753385Ab2FQXtR (ORCPT
+	id S1753789Ab2FQXtr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 19:49:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64618 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753509Ab2FQXtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 19:49:17 -0400
-X-Sasl-enc: eV44D4dq4NPSFz9wTBEG1djwWnkM/n99fFAdaoHR4U4y 1339976956
-Date: Sun, 17 Jun 2012 16:49:14 -0700
-From: GregKH <greg@kroah.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Otavio Salvador <otavio@ossystems.com.br>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] w1: Fix a typo in 'hardware' word
-Message-ID: <20120617234914.GA11910@kroah.com>
-References: <1339946252-21019-1-git-send-email-otavio@ossystems.com.br>
- <20120617220128.GA30142@ioremap.net>
+	Sun, 17 Jun 2012 19:49:45 -0400
+Date: Sun, 17 Jun 2012 16:49:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [RFC] Plan to get rid of all legacy PM handling
+Message-ID: <20120617234940.GB11910@kroah.com>
+References: <201206172310.49148.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120617220128.GA30142@ioremap.net>
+In-Reply-To: <201206172310.49148.rjw@sisk.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 02:01:28AM +0400, Evgeniy Polyakov wrote:
-> On Sun, Jun 17, 2012 at 12:17:31PM -0300, Otavio Salvador (otavio@ossystems.com.br) wrote:
-> > Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
-> > Cc: Evgeniy Polyakov <zbr@ioremap.net>
+On Sun, Jun 17, 2012 at 11:10:49PM +0200, Rafael J. Wysocki wrote:
+> Hi all,
 > 
-> Looks good, acked-by Evgeniy Polyakov <zbr@ioremap.net>
-> Greg, please pull it into your tree or suggest janitorial contact
+> I have a plan to replace all of the legacy device PM callbacks throughout
+> the kernel with PM handling based on struct dev_pm_ops objects.  Ultimately,
+> that should make it possible to remove the legacy hooks from struct bus_type
+> and struct device_driver and to siplify the PM core and some bus types
+> (most importantly PCI) quite a bit.
+> 
+> I'm going to start with platform drivers that should be the most
+> straightforward to convert and when they all have been dealt with it
+> should be possible to drop the platform bus type's PM callbacks entirely.
+> Next, I'm going to take care of the bus types that only define PM callbacks
+> to call drivers' callbacks, which is completely unnecessary after some PM
+> core changes that went in during the 3.4 development cycle.  Finally, I will
+> be looking at PCI drivers.
+> 
+> The task is huge, but I've done similar things already, so it's nothing new
+> to me.  So, if you're a maintainer of code that contains legacy PM handling,
+> please be prepared to see some patches from me in a not-too-distant-future.
 
-I'll take it, but for "trivial" patches, there is always the trivial
-kernel maintainer, which is good for spelling fixes and other stuff like
-that.
-
-thanks,
+Nice, that work is great to see have happen, thanks for taking this on,
+it's much needed.
 
 greg k-h
