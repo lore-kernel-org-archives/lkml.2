@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab2FQJXz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 05:23:55 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:59363 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756236Ab2FQJXx (ORCPT
+	id S1755167Ab2FQKM0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 06:12:26 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:49170 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754615Ab2FQKMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 05:23:53 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH -next] avr:  Fix sanitize tsk_is_polling fallout
-Date: Sun, 17 Jun 2012 11:23:44 +0200
-Message-Id: <1339925024-23323-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 17 Jun 2012 06:12:25 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
+        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] gpio: of_get_named_gpio_flags() return -EPROBE_DEFER if GPIO not yet available
+Date: Sun, 17 Jun 2012 12:11:31 +0200
+Message-Id: <1339927893-8842-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 6222033ea7bfe166f06aff5462dd88fba70e74f6 ("sanitize tsk_is_polling()")
-removed the definition of TIF_POLLING_NRFLAG, but forgot to remove the
-continuation line, causing:
+of_get_named_gpio_flags() and of_get_named_gpio() return -EPROBE_DEFER if the
+respective GPIO is not (yet) available. This is useful if driver's probe()
+functions try to get a GPIO whose controller isn't probed yet. Thus, the driver
+can be probed again later on.
 
-arch/avr32/include/asm/thread_info.h:80: error: expected identifier or '(' before numeric constant
-include/linux/thread_info.h:128: error: implicit declaration of function 'set_ti_thread_flag'
-make[2]: *** [arch/avr32/kernel/asm-offsets.s] Error 1
+The function still returns -EINVAL on other errors (parse error or node doesn't
+exist). This way, the case of an optional/intentionally missing GPIO is handled
+appropriately.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
---
-http://kisskb.ellerman.id.au/kisskb/buildresult/6518296/
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
 ---
- arch/avr32/include/asm/thread_info.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/gpio/gpiolib-of.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/avr32/include/asm/thread_info.h b/arch/avr32/include/asm/thread_info.h
-index c034601..2f0c412 100644
---- a/arch/avr32/include/asm/thread_info.h
-+++ b/arch/avr32/include/asm/thread_info.h
-@@ -77,7 +77,6 @@ static inline struct thread_info *current_thread_info(void)
- #define TIF_SYSCALL_TRACE       0       /* syscall trace active */
- #define TIF_SIGPENDING          1       /* signal pending */
- #define TIF_NEED_RESCHED        2       /* rescheduling necessary */
--					   TIF_NEED_RESCHED */
- #define TIF_BREAKPOINT		4	/* enter monitor mode on return */
- #define TIF_SINGLE_STEP		5	/* single step in progress */
- #define TIF_MEMDIE		6	/* is terminating due to OOM killer */
--- 
-1.7.0.4
-
+--- linux-2.6.orig/drivers/gpio/gpiolib-of.c
++++ linux-2.6/drivers/gpio/gpiolib-of.c
+@@ -62,7 +62,10 @@ static int of_gpiochip_find_and_xlate(st
+ int of_get_named_gpio_flags(struct device_node *np, const char *propname,
+                            int index, enum of_gpio_flags *flags)
+ {
+-	struct gg_data gg_data = { .flags = flags, .out_gpio = -ENODEV };
++	/* Return -EPROBE_DEFER to support probe() functions to be called
++	 * later when the GPIO actually becomes available
++	 */
++	struct gg_data gg_data = { .flags = flags, .out_gpio = -EPROBE_DEFER };
+ 	int ret;
+ 
+ 	/* .of_xlate might decide to not fill in the flags, so clear it. */
