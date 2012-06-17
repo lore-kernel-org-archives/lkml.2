@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab2FQOVM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 10:21:12 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:62560 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757410Ab2FQOVK (ORCPT
+	id S1757454Ab2FQOcb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 10:32:31 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:36283 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757394Ab2FQOca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 10:21:10 -0400
+	Sun, 17 Jun 2012 10:32:30 -0400
+X-Greylist: delayed 457 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Jun 2012 10:32:30 EDT
 MIME-Version: 1.0
-In-Reply-To: <1339380868.13491.1.camel@phoenix>
-References: <1339380868.13491.1.camel@phoenix>
-Date: Sun, 17 Jun 2012 16:21:09 +0200
-Message-ID: <CACRpkdZ1A=kKs9oWOhMmAsrvH0iNp9xuy9iUWzXh1fBnLOO8Ug@mail.gmail.com>
-Subject: Re: [PATCH RFT] regulator: ab3100: Convert fixed voltage to use regulator_list_voltage_linear
+In-Reply-To: <1339122469.5794.2.camel@phoenix>
+References: <1339122469.5794.2.camel@phoenix>
+Date: Sun, 17 Jun 2012 16:24:52 +0200
+Message-ID: <CACRpkdaUVMp+VstcSsWCQ-5Oe8QwcQL5Rt41Xm7kR2parUDgVQ@mail.gmail.com>
+Subject: Re: [PATCH RFT 1/2] regulator: ab8500: Use regulator_list_voltage_linear
+ for ab8500_regulator_fixed_ops
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
@@ -24,12 +26,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 4:14 AM, Axel Lin <axel.lin@gmail.com> wrote:
+On Fri, Jun 8, 2012 at 4:27 AM, Axel Lin <axel.lin@gmail.com> wrote:
 
+> Also removes set_voltage_time_sel callback from ab8500_regulator_fixed_ops
+> because the voltage won't change. ( And ab8500_regulator_fixed_ops does not
+> implement get_voltage_sel so set_voltage_time_sel won't be called )
+>
 > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-I tried to test this patch but it doesn't apply cleanly on v3.5-rc3, can you
-respin it?
+I cannot test this either, it does not apply cleanly on v3.5-rc3.
+
+Care to respin?
 
 Yours,
 Linus Walleij
