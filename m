@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab2FQXjj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 19:39:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42765 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752889Ab2FQXjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 19:39:37 -0400
-Message-ID: <1339976338.2372.2.camel@pasglop>
-Subject: Re: linux-next: build failure in Linus' tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Date: Mon, 18 Jun 2012 09:38:58 +1000
-In-Reply-To: <20120615005621.GE22007@linux-sh.org>
-References: <20120614114722.0fd16fb906b6a5503cfbc51a@canb.auug.org.au>
-	 <20120614030606.GC27673@linux-sh.org> <20120614034036.GE27673@linux-sh.org>
-	 <20120615101407.369c754da872e18c854ab481@canb.auug.org.au>
-	 <20120615005621.GE22007@linux-sh.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753707Ab2FQXtS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 19:49:18 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52291 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753385Ab2FQXtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 19:49:17 -0400
+X-Sasl-enc: eV44D4dq4NPSFz9wTBEG1djwWnkM/n99fFAdaoHR4U4y 1339976956
+Date: Sun, 17 Jun 2012 16:49:14 -0700
+From: GregKH <greg@kroah.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Otavio Salvador <otavio@ossystems.com.br>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] w1: Fix a typo in 'hardware' word
+Message-ID: <20120617234914.GA11910@kroah.com>
+References: <1339946252-21019-1-git-send-email-otavio@ossystems.com.br>
+ <20120617220128.GA30142@ioremap.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120617220128.GA30142@ioremap.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-15 at 09:56 +0900, Paul Mundt wrote:
-> Will do, thanks for testing.
+On Mon, Jun 18, 2012 at 02:01:28AM +0400, Evgeniy Polyakov wrote:
+> On Sun, Jun 17, 2012 at 12:17:31PM -0300, Otavio Salvador (otavio@ossystems.com.br) wrote:
+> > Signed-off-by: Otavio Salvador <otavio@ossystems.com.br>
+> > Cc: Evgeniy Polyakov <zbr@ioremap.net>
+> 
+> Looks good, acked-by Evgeniy Polyakov <zbr@ioremap.net>
+> Greg, please pull it into your tree or suggest janitorial contact
 
-Ping ? :-)
+I'll take it, but for "trivial" patches, there is always the trivial
+kernel maintainer, which is good for spelling fixes and other stuff like
+that.
 
-All the powerpc builds are still broken...
+thanks,
 
-Cheers,
-Ben.
-
-
+greg k-h
