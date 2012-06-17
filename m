@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759052Ab2FQS3j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:29:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50328 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758359Ab2FQSWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758396Ab2FQSWw (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 17 Jun 2012 14:22:52 -0400
-Message-Id: <20120617175947.697308622@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50121 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757953Ab2FQSWO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 14:22:14 -0400
+Message-Id: <20120617175943.202131124@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:26 +0100
+Date: Sun, 17 Jun 2012 18:59:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        Oliver Neukum <oneukum@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [ 45/69] usb: cdc-wdm: Add device-id for Huawei 3G/LTE modems
+        alan@lxorguk.ukuu.org.uk, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Tim Gardner <tim.gardner@canonical.com>
+Subject: [ 13/69] x86/amd: Re-enable CPU topology extensions in case BIOS has
+ disabled it
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,64 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit fec67b45bf045582c3172101970090d640cd56d9 upstream.
+BIOS will switch off the corresponding feature flag on family
+15h models 10h-1fh non-desktop CPUs.
 
-[v2: Editorial changes suggested by Sergei Shtylyov]
+The topology extension CPUID leafs are required to detect which
+cores belong to the same compute unit. (thread siblings mask is
+set accordingly and also correct information about L1i and L2
+cache sharing depends on this).
 
-These modems use the Qualcomm MSM Interface (QMI) protocol for
-management of their CDC ECM like wwan interface.  This driver
-is perfect for exporting the protocol to userspace.
+W/o this patch we wouldn't see which cores belong to the same
+compute unit and also cache sharing information for L1i and L2
+would be incorrect on such systems.
 
-The created character device will be indistinguishable from a
-common AT command based Device Management interface, so
-userspace applications must do some intelligent matching
-on the USB device.
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+(cherry picked from commit f7f286a910221ae18b21c18d9d0f4cd88965829f)
 
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/class/cdc-wdm.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ arch/x86/kernel/cpu/amd.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
-index c154d4f..23cf9d3 100644
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -31,6 +31,8 @@
- #define DRIVER_AUTHOR "Oliver Neukum"
- #define DRIVER_DESC "USB Abstract Control Model driver for USB WCM Device Management"
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 0bab2b1..3524e1f 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -571,6 +571,24 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		}
+ 	}
  
-+#define HUAWEI_VENDOR_ID	0x12D1
++	/* re-enable TopologyExtensions if switched off by BIOS */
++	if ((c->x86 == 0x15) &&
++	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
++	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
++		u64 val;
 +
- static const struct usb_device_id wdm_ids[] = {
- 	{
- 		.match_flags = USB_DEVICE_ID_MATCH_INT_CLASS |
-@@ -38,6 +40,20 @@ static const struct usb_device_id wdm_ids[] = {
- 		.bInterfaceClass = USB_CLASS_COMM,
- 		.bInterfaceSubClass = USB_CDC_SUBCLASS_DMM
- 	},
-+	{
-+		/* 
-+		 * Huawei E392, E398 and possibly other Qualcomm based modems
-+		 * embed the Qualcomm QMI protocol inside CDC on CDC ECM like
-+		 * control interfaces.  Userspace access to this is required
-+		 * to configure the accompanying data interface
-+		 */
-+		.match_flags        = USB_DEVICE_ID_MATCH_VENDOR |
-+					USB_DEVICE_ID_MATCH_INT_INFO,
-+		.idVendor           = HUAWEI_VENDOR_ID,
-+		.bInterfaceClass    = USB_CLASS_VENDOR_SPEC,
-+		.bInterfaceSubClass = 1,
-+		.bInterfaceProtocol = 9, /* NOTE: CDC ECM control interface! */
-+	},
- 	{ }
- };
++		if (!rdmsrl_amd_safe(0xc0011005, &val)) {
++			val |= 1ULL << 54;
++			wrmsrl_amd_safe(0xc0011005, val);
++			rdmsrl(0xc0011005, val);
++			if (val & (1ULL << 54)) {
++				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
++				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
++				  "disabled Topology Extensions Support\n");
++			}
++		}
++	}
++
+ 	cpu_detect_cache_sizes(c);
  
+ 	/* Multi core CPU? */
 
 
