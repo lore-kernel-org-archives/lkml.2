@@ -1,180 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab2FQG4R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 02:56:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45974 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab2FQG4P convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 02:56:15 -0400
+	id S1752973Ab2FQHmh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 03:42:37 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59018 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752241Ab2FQHmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 03:42:36 -0400
+Date: Sun, 17 Jun 2012 08:42:28 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm-fixes
+Message-ID: <alpine.DEB.2.00.1206170838050.26175@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4FDC2834.7010705@jp.fujitsu.com>
-References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com>
-	<4FDC2834.7010705@jp.fujitsu.com>
-Date: Sun, 17 Jun 2012 14:56:15 +0800
-Message-ID: <CAFj3OHVs4dLAZUPVFaadp3PPH15fU8RpOeciU5rZs9-xutDgsg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] memcg: remove MEMCG_NR_FILE_MAPPED
-From: Sha Zhengju <handai.szj@gmail.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, gthelen@google.com,
-        yinghan@google.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1472687627-1339918948=:26175"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 2:31 PM, Kamezawa Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> (2012/06/15 21:00), Sha Zhengju wrote:
->> While doing memcg page stat accounting, there's no need to use MEMCG_NR_FILE_MAPPED
->> as an intermediate, we can use MEM_CGROUP_STAT_FILE_MAPPED directly.
->>
->> Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
->
-> I'm sorry but my recent patch modified mem_cgroup_stat_index and this will hunk with
-> mm tree. (not visible in linux-next yet.)
->
-> I have no objection to the patch. I'm grad if you'll update this and repost, later.
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--29444707-1472687627-1339918948=:26175
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 
 
-Okay, I'll repost one based on mm tree.
+Hi Linus,
 
-Thanks,
-Sha
+radeon is most of the work, one regression, one BUG fix in the new prime 
+code, some fixes to init code to make streamout not lock up the hardware, 
+and just some code to enable users to test HDMI audio on later hw (its off by 
+default).
 
+Intel adds edp edid caching for some strange Dell Vostros that black 
+screen on startup if keep reading their EDID, and a fix for a DP 
+regression.
 
-> Thanks,
-> -Kame
->
->
->> ---
->>   include/linux/memcontrol.h |   22 ++++++++++++++++------
->>   mm/memcontrol.c            |   25 +------------------------
->>   mm/rmap.c                  |    4 ++--
->>   3 files changed, 19 insertions(+), 32 deletions(-)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index f94efd2..a337c2e 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -27,9 +27,19 @@ struct page_cgroup;
->>   struct page;
->>   struct mm_struct;
->>
->> -/* Stats that can be updated by kernel. */
->> -enum mem_cgroup_page_stat_item {
->> -     MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
->> +/*
->> + * Statistics for memory cgroup.
->> + */
->> +enum mem_cgroup_stat_index {
->> +     /*
->> +      * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
->> +      */
->> +     MEM_CGROUP_STAT_CACHE,     /* # of pages charged as cache */
->> +     MEM_CGROUP_STAT_RSS,       /* # of pages charged as anon rss */
->> +     MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->> +     MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
->> +     MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
->> +     MEM_CGROUP_STAT_NSTATS,
->>   };
->>
->>   struct mem_cgroup_reclaim_cookie {
->> @@ -170,17 +180,17 @@ static inline void mem_cgroup_end_update_page_stat(struct page *page,
->>   }
->>
->>   void mem_cgroup_update_page_stat(struct page *page,
->> -                              enum mem_cgroup_page_stat_item idx,
->> +                              enum mem_cgroup_stat_index idx,
->>                                int val);
->>
->>   static inline void mem_cgroup_inc_page_stat(struct page *page,
->> -                                         enum mem_cgroup_page_stat_item idx)
->> +                                         enum mem_cgroup_stat_index idx)
->>   {
->>       mem_cgroup_update_page_stat(page, idx, 1);
->>   }
->>
->>   static inline void mem_cgroup_dec_page_stat(struct page *page,
->> -                                         enum mem_cgroup_page_stat_item idx)
->> +                                         enum mem_cgroup_stat_index idx)
->>   {
->>       mem_cgroup_update_page_stat(page, idx, -1);
->>   }
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 7685d4a..9102b8c 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -77,21 +77,6 @@ static int really_do_swap_account __initdata = 0;
->>   #endif
->>
->>
->> -/*
->> - * Statistics for memory cgroup.
->> - */
->> -enum mem_cgroup_stat_index {
->> -     /*
->> -      * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
->> -      */
->> -     MEM_CGROUP_STAT_CACHE,     /* # of pages charged as cache */
->> -     MEM_CGROUP_STAT_RSS,       /* # of pages charged as anon rss */
->> -     MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->> -     MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
->> -     MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
->> -     MEM_CGROUP_STAT_NSTATS,
->> -};
->> -
->>   enum mem_cgroup_events_index {
->>       MEM_CGROUP_EVENTS_PGPGIN,       /* # of pages paged in */
->>       MEM_CGROUP_EVENTS_PGPGOUT,      /* # of pages paged out */
->> @@ -1958,7 +1943,7 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
->>   }
->>
->>   void mem_cgroup_update_page_stat(struct page *page,
->> -                              enum mem_cgroup_page_stat_item idx, int val)
->> +                              enum mem_cgroup_stat_index idx, int val)
->>   {
->>       struct mem_cgroup *memcg;
->>       struct page_cgroup *pc = lookup_page_cgroup(page);
->> @@ -1971,14 +1956,6 @@ void mem_cgroup_update_page_stat(struct page *page,
->>       if (unlikely(!memcg || !PageCgroupUsed(pc)))
->>               return;
->>
->> -     switch (idx) {
->> -     case MEMCG_NR_FILE_MAPPED:
->> -             idx = MEM_CGROUP_STAT_FILE_MAPPED;
->> -             break;
->> -     default:
->> -             BUG();
->> -     }
->> -
->>       this_cpu_add(memcg->stat->count[idx], val);
->>   }
->>
->> diff --git a/mm/rmap.c b/mm/rmap.c
->> index 5b5ad58..7e4e481 100644
->> --- a/mm/rmap.c
->> +++ b/mm/rmap.c
->> @@ -1154,7 +1154,7 @@ void page_add_file_rmap(struct page *page)
->>       mem_cgroup_begin_update_page_stat(page,&locked,&flags);
->>       if (atomic_inc_and_test(&page->_mapcount)) {
->>               __inc_zone_page_state(page, NR_FILE_MAPPED);
->> -             mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED);
->> +             mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
->>       }
->>       mem_cgroup_end_update_page_stat(page,&locked,&flags);
->>   }
->> @@ -1208,7 +1208,7 @@ void page_remove_rmap(struct page *page)
->>                                             NR_ANON_TRANSPARENT_HUGEPAGES);
->>       } else {
->>               __dec_zone_page_state(page, NR_FILE_MAPPED);
->> -             mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
->> +             mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
->>       }
->>       /*
->>        * It would be tidy to reset the PageAnon mapping here,
->
->
+Otherwise fix for via/sis and one to stop udl binding to multiple 
+non-video usb.
+
+Dave.
+
+The following changes since commit 9b15b817f3d62409290fd56fe3cbb076a931bb0a:
+
+  swap: fix shmem swapping when more than 8 areas (2012-06-15 21:48:14 -0700)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to c4af5c4597a7a5d64e058703e1328f315a59794e:
+
+  Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes (2012-06-16 14:45:17 +0100)
+
+----------------------------------------------------------------
+
+Alex Deucher (3):
+      drm/radeon: fix regression in dynpm due to multi-ring rework
+      drm/radeon: add some additional 6xx/7xx/EG register init
+      drm/radeon: add support for STRMOUT_BASE_UPDATE on 7xx
+
+Daniel Vetter (2):
+      drm/i915: eDP aux needs vdd
+      Revert "drm/i915/dp: Use auxch precharge value of 5 everywhere"
+
+Dave Airlie (3):
+      drm/udl: only bind to the video devices on the hub.
+      drm/radeon/prime: reserve/unreserve around pin
+      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+
+Jesse Barnes (2):
+      drm/i915: don't enumerate HDMID if an eDP panel is already active on the port
+      drm/i915: cache the EDID for eDP panels
+
+Márton Németh (2):
+      drm via: initialize object_idr
+      drm sis: initialize object_idr
+
+Rafa³ Mi³ecki (1):
+      drm/radeon: enable HDMI on DCE5 (AKA NI excluding Aruba)
+
+Randy Dunlap (1):
+      vga_switcheroo.h: fix pci_dev warning
+
+ drivers/gpu/drm/i915/intel_display.c       |    2 +-
+ drivers/gpu/drm/i915/intel_dp.c            |   60 ++++++++++++++++++++++++----
+ drivers/gpu/drm/radeon/atombios_encoders.c |    4 +-
+ drivers/gpu/drm/radeon/evergreen.c         |    3 ++
+ drivers/gpu/drm/radeon/evergreen_hdmi.c    |    3 --
+ drivers/gpu/drm/radeon/evergreend.h        |    1 +
+ drivers/gpu/drm/radeon/ni.c                |    5 +++
+ drivers/gpu/drm/radeon/r600.c              |    1 +
+ drivers/gpu/drm/radeon/r600_audio.c        |    2 +-
+ drivers/gpu/drm/radeon/r600_cs.c           |   42 +++++++++++++++++++
+ drivers/gpu/drm/radeon/r600_hdmi.c         |    7 +---
+ drivers/gpu/drm/radeon/r600d.h             |    2 +
+ drivers/gpu/drm/radeon/radeon_drv.c        |    3 +-
+ drivers/gpu/drm/radeon/radeon_pm.c         |   10 +++--
+ drivers/gpu/drm/radeon/radeon_prime.c      |   10 ++++-
+ drivers/gpu/drm/radeon/rv770.c             |    5 ++-
+ drivers/gpu/drm/radeon/rv770d.h            |    3 ++
+ drivers/gpu/drm/sis/sis_drv.c              |    2 +-
+ drivers/gpu/drm/udl/udl_drv.c              |   15 ++++++-
+ drivers/gpu/drm/via/via_map.c              |    3 +-
+ include/linux/vga_switcheroo.h             |    2 +
+ 21 files changed, 156 insertions(+), 29 deletions(-)
+--29444707-1472687627-1339918948=:26175--
