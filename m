@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758812Ab2FQS0P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:26:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50396 "EHLO
+	id S1758960Ab2FQS0r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:26:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50384 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758600Ab2FQSXC (ORCPT
+	by vger.kernel.org with ESMTP id S1758436Ab2FQSXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:23:02 -0400
-Message-Id: <20120617175944.743205659@decadent.org.uk>
+	Sun, 17 Jun 2012 14:23:00 -0400
+Message-Id: <20120617175945.438702061@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:05 +0100
+Date: Sun, 17 Jun 2012 19:00:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [ 24/69] ARM i.MX53: Fix PLL4 base address
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 29/69] ASoC: wm8994: Ensure all AIFnCLK events are run from the _late
+ variants
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,30 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit cdd781ab1906d039c2a93078385645d2d5af8491 upstream.
+commit c8fdc1b56611faa7b38eab6b99da5e20113661ff upstream.
 
-MX53_DPLL4_BASE accidently returned the base address of PLL3.
-Fix this.
+Ensure that all the actions get taken at appropriate times by calling the
+_PRE and _POST events for the aifNclk_ev functions explicitly.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mach-imx/crm-regs-imx5.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm8994.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/arch/arm/mach-mx5/crm_regs.h
-+++ b/arch/arm/mach-mx5/crm_regs.h
-@@ -23,7 +23,7 @@
- #define MX53_DPLL1_BASE		MX53_IO_ADDRESS(MX53_PLL1_BASE_ADDR)
- #define MX53_DPLL2_BASE		MX53_IO_ADDRESS(MX53_PLL2_BASE_ADDR)
- #define MX53_DPLL3_BASE		MX53_IO_ADDRESS(MX53_PLL3_BASE_ADDR)
--#define MX53_DPLL4_BASE		MX53_IO_ADDRESS(MX53_PLL3_BASE_ADDR)
-+#define MX53_DPLL4_BASE		MX53_IO_ADDRESS(MX53_PLL4_BASE_ADDR)
- 
- /* PLL Register Offsets */
- #define MXC_PLL_DP_CTL			0x00
+diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
+index 993639d..6d3a865 100644
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -1190,17 +1190,19 @@ static int late_enable_ev(struct snd_soc_dapm_widget *w,
+ 	switch (event) {
+ 	case SND_SOC_DAPM_PRE_PMU:
+ 		if (wm8994->aif1clk_enable) {
+-			aif1clk_ev(w, kcontrol, event);
++			aif1clk_ev(w, kcontrol, SND_SOC_DAPM_PRE_PMU);
+ 			snd_soc_update_bits(codec, WM8994_AIF1_CLOCKING_1,
+ 					    WM8994_AIF1CLK_ENA_MASK,
+ 					    WM8994_AIF1CLK_ENA);
++			aif1clk_ev(w, kcontrol, SND_SOC_DAPM_POST_PMU);
+ 			wm8994->aif1clk_enable = 0;
+ 		}
+ 		if (wm8994->aif2clk_enable) {
+-			aif2clk_ev(w, kcontrol, event);
++			aif2clk_ev(w, kcontrol, SND_SOC_DAPM_PRE_PMU);
+ 			snd_soc_update_bits(codec, WM8994_AIF2_CLOCKING_1,
+ 					    WM8994_AIF2CLK_ENA_MASK,
+ 					    WM8994_AIF2CLK_ENA);
++			aif2clk_ev(w, kcontrol, SND_SOC_DAPM_POST_PMU);
+ 			wm8994->aif2clk_enable = 0;
+ 		}
+ 		break;
+@@ -1221,15 +1223,17 @@ static int late_disable_ev(struct snd_soc_dapm_widget *w,
+ 	switch (event) {
+ 	case SND_SOC_DAPM_POST_PMD:
+ 		if (wm8994->aif1clk_disable) {
++			aif1clk_ev(w, kcontrol, SND_SOC_DAPM_PRE_PMD);
+ 			snd_soc_update_bits(codec, WM8994_AIF1_CLOCKING_1,
+ 					    WM8994_AIF1CLK_ENA_MASK, 0);
+-			aif1clk_ev(w, kcontrol, event);
++			aif1clk_ev(w, kcontrol, SND_SOC_DAPM_POST_PMD);
+ 			wm8994->aif1clk_disable = 0;
+ 		}
+ 		if (wm8994->aif2clk_disable) {
++			aif2clk_ev(w, kcontrol, SND_SOC_DAPM_PRE_PMD);
+ 			snd_soc_update_bits(codec, WM8994_AIF2_CLOCKING_1,
+ 					    WM8994_AIF2CLK_ENA_MASK, 0);
+-			aif2clk_ev(w, kcontrol, event);
++			aif2clk_ev(w, kcontrol, SND_SOC_DAPM_POST_PMD);
+ 			wm8994->aif2clk_disable = 0;
+ 		}
+ 		break;
 
 
