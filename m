@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647Ab2FQWvy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 18:51:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52480 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753468Ab2FQWvw (ORCPT
+	id S1755596Ab2FQXAr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 19:00:47 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:49682 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab2FQXAq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 18:51:52 -0400
-Message-ID: <1339973508.4942.265.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 45/69] usb: cdc-wdm: Add device-id for Huawei 3G/LTE modems
-From: Ben Hutchings <ben@decadent.org.uk>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Oliver Neukum <oneukum@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Date: Sun, 17 Jun 2012 23:51:48 +0100
-In-Reply-To: <87wr35r7a4.fsf@nemi.mork.no>
-References: <20120617175947.697308622@decadent.org.uk>
-	 <87wr35r7a4.fsf@nemi.mork.no>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-igstRUPilVv8Goq73CO1"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 17 Jun 2012 19:00:46 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2001:470:8656:0:a0c8:5db2:5dc3:f787]
+In-Reply-To: <1339706851-10618-1-git-send-email-marko.kohtala@gmail.com>
+References: <1339706851-10618-1-git-send-email-marko.kohtala@gmail.com>
+Date: Sun, 17 Jun 2012 16:00:45 -0700
+Message-ID: <CAOesGMi2nAecB4Lgti-JSrNTuV4MRA9GEQV1T=BrDxJ-QCq+cQ@mail.gmail.com>
+Subject: Re: [PATCH] efivars: prevent Oops if efi_enabled but no EFI runtime
+From: Olof Johansson <olof@lixom.net>
+To: Marko Kohtala <marko.kohtala@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 14, 2012 at 1:47 PM, Marko Kohtala <marko.kohtala@gmail.com> wrote:
+> Since v3.3-rc4-5-g1adbfa3, there has been an Oops in register_efivars
+> calling ops->get_next_variable and ending up at EIP 0 during module init.
+>
+> I boot 32-bit x86 kernel from 64-bit EFI bootloader.
+>
+> The efi_enabled is true, but runtime is not available. The functions
+> are NULL due to 32/64-bit mismatch between kernel and EFI.
+>
+> Signed-off-by: Marko Kohtala <marko.kohtala@gmail.com>
+> ---
+> I currently see this on v3.4.2.
+>
+> I could not figure out how I'm supposed to detect lack of runtime, so
+> I ended up with this quick and overly precise check that all required
+> functions are available. There may be other drivers that need to take
+> this new condition into account, so maybe Olof wants to make a better
+> fix.
 
---=-igstRUPilVv8Goq73CO1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I must not have tested with efivars enabled, or I would have seen this
+when I did. Sigh.
 
-On Sun, 2012-06-17 at 22:51 +0200, Bj=C3=B8rn Mork wrote:
-> Ben Hutchings <ben@decadent.org.uk> writes:
->=20
-> > 3.2-stable review patch.  If anyone has any objections, please let me k=
-now.
-> >
-> > ------------------
-> >
-> > From: Bj=C3=B8rn Mork <bjorn@mork.no>
-> >
-> > commit fec67b45bf045582c3172101970090d640cd56d9 upstream.
-> >
-> This should be dropped for the same reason as patch #46
 
-OK, will drop them both.
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> index 47408e8..612a097 100644
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+> @@ -1223,12 +1223,16 @@ efivars_init(void)
+>                return -ENOMEM;
+>        }
+>
+> -       ops.get_variable = efi.get_variable;
+> -       ops.set_variable = efi.set_variable;
+> -       ops.get_next_variable = efi.get_next_variable;
+> -       error = register_efivars(&__efivars, &ops, efi_kobj);
+> -       if (error)
+> -               goto err_put;
+> +       /* We may have efi_enabled for systab, but no runtime for variables.
+> +        * Check the functions we need before proceeding. */
+> +       if (efi.get_variable && efi.set_variable && efi.get_next_variable) {
+> +               ops.get_variable = efi.get_variable;
+> +               ops.set_variable = efi.set_variable;
+> +               ops.get_next_variable = efi.get_next_variable;
+> +               error = register_efivars(&__efivars, &ops, efi_kobj);
+> +               if (error)
+> +                       goto err_put;
+> +       }
 
-Ben.
+I think it would make more sense to return -ENODEV when the function
+pointers aren't set, that way the exit function won't ever be called
+either, so no need to add the checks there.
 
---=20
-Ben Hutchings
-Time is nature's way of making sure that everything doesn't happen at once.
+So, instead of current efi_enabled check:
 
---=-igstRUPilVv8Goq73CO1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+if (!efi_enabled ||
+    !efi.get_variable ||
+    !efi.set_variable ||
+    !efi.get_next_variable) {
+    return -ENODEV;
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT95fhOe/yOyVhhEJAQprdA//VXVDEvrwXQ7xt4WAvh0USSAH9f2LTzTJ
-1RzXL20HnN2NY+2E8Wc02+R5WB23cXTVCv5bDn0qlS5PKY+3Kg8Ovo41JCrbVeAo
-irHhsXusf5aaKaaEOfz9Al+NvIn0OVQg0vbTRCOV6JTxIOZhR7wZ2ABtrJeT0bG+
-FAHhKLUAbtWGkiBO73NxLzoXs80HTrqfgsPQzqujWZSjaXu2ZdS96lTiIJ+GLkKw
-IAPGaUUTzhkEQwopxKxSdXCiQkUWH0t0uOBCqC1+GQB2Eu64zUHBXuE+CzLIFsiH
-atMAidKA9MNbKAmooEGkpVXaQr+qu8I+8wELQEX5muK691O4xjrUnzCuDekeAjh3
-dj2tFKSz/bwNoUume+JujKQN++RZkxU1zqm0hCDbDj1kW19mHSK8Nh1mfuhKnSpB
-VJnEYU2X5vVsxuJTctorf9B/UhVitjND+GR8E5Vj7EZe4NE17k7RTZYQWZkmP6/1
-54IoGKa4J6smclUI87lrj7G8oJZc8CSyixcmiCdtrwZEwYXbYKWUvJnfVtpAM6N/
-LvJRNlPW0kU/qteGjYRokQy+dZ1ueUtI8xkgEV33wvhvFN6wYtCCO2yoWBXgot/h
-eXN7xtUPyVW9gkd5yEGSz/zen9I2DvIwL9IQw+r/T+OUS2LS5ax615OLJjxRSnOm
-Vu7jXQJwOTs=
-=UBil
------END PGP SIGNATURE-----
-
---=-igstRUPilVv8Goq73CO1--
+-Olof
