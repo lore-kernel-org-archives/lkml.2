@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759209Ab2FQScl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:32:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50290 "EHLO
+	id S1759211Ab2FQSc4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:32:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50287 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758273Ab2FQSWr (ORCPT
+	by vger.kernel.org with ESMTP id S1758257Ab2FQSWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Jun 2012 14:22:47 -0400
-Message-Id: <20120617175947.390877337@decadent.org.uk>
+Message-Id: <20120617175947.875700790@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:24 +0100
+Date: Sun, 17 Jun 2012 19:00:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 43/69] ALSA: hda - Add another jack-detection suppression for ASUS ALC892
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        =?ISO-8859-15?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 46/69] USB: cdc-wdm: Add Vodafone/Huawei K5005 support
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,50 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 1565cc358585be40608b46f18f7ac431a1aae2bc upstream.
+commit de102ef41f24a4c251c4a3838796bb27557d4d93 upstream.
 
-Add the jack-detect suppression for an ASUS machine with ALC892 codec.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42655
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Tested-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_realtek.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/class/cdc-wdm.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index c630598..30ef877 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5875,6 +5875,7 @@ enum {
- 	ALC662_FIXUP_ASUS_MODE6,
- 	ALC662_FIXUP_ASUS_MODE7,
- 	ALC662_FIXUP_ASUS_MODE8,
-+	ALC662_FIXUP_NO_JACK_DETECT,
- };
- 
- static const struct alc_fixup alc662_fixups[] = {
-@@ -6020,6 +6021,10 @@ static const struct alc_fixup alc662_fixups[] = {
- 		.chained = true,
- 		.chain_id = ALC662_FIXUP_SKU_IGNORE
+diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
+index ea8b304..8fd398d 100644
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -55,6 +55,15 @@ static const struct usb_device_id wdm_ids[] = {
+ 		.bInterfaceSubClass = 1,
+ 		.bInterfaceProtocol = 9, /* NOTE: CDC ECM control interface! */
  	},
-+	[ALC662_FIXUP_NO_JACK_DETECT] = {
-+		.type = ALC_FIXUP_FUNC,
-+		.v.func = alc_fixup_no_jack_detect,
++	{
++		 /* Vodafone/Huawei K5005 (12d1:14c8) and similar modems */
++		.match_flags        = USB_DEVICE_ID_MATCH_VENDOR |
++				      USB_DEVICE_ID_MATCH_INT_INFO,
++		.idVendor           = HUAWEI_VENDOR_ID,
++		.bInterfaceClass    = USB_CLASS_VENDOR_SPEC,
++		.bInterfaceSubClass = 1,
++		.bInterfaceProtocol = 57, /* NOTE: CDC ECM control interface! */
 +	},
+ 	{ }
  };
  
- static const struct snd_pci_quirk alc662_fixup_tbl[] = {
-@@ -6028,6 +6033,7 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1025, 0x031c, "Gateway NV79", ALC662_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
-+	SND_PCI_QUIRK(0x1043, 0x8469, "ASUS mobo", ALC662_FIXUP_NO_JACK_DETECT),
- 	SND_PCI_QUIRK(0x105b, 0x0cd6, "Foxconn", ALC662_FIXUP_ASUS_MODE2),
- 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo Ideapad Y550P", ALC662_FIXUP_IDEAPAD),
 
 
