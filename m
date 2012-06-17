@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab2FQSWg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:22:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50080 "EHLO
+	id S1759277Ab2FQSij (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:38:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50185 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757849Ab2FQSWC (ORCPT
+	by vger.kernel.org with ESMTP id S1758034Ab2FQSWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:02 -0400
-Message-Id: <20120617175941.782602149@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:35 -0400
+Message-Id: <20120617175950.313110534@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 18:59:44 +0100
+Date: Sun, 17 Jun 2012 19:00:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 03/69] drm/i915: Unpin the flip target if we fail to queue the flip
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 62/69] xhci: Dont free endpoints in xhci_mem_cleanup()
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,162 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 83d4092b0381e5dd6f312b2ec57121dcf0fcbade upstream.
+commit 32f1d2c536d0c26c5814cb0e6a0606c42d02fac1 upstream.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2:
- - adjust context
- - we don't have intel_unpin_fb_obj(); use i915_gem_object_unpin()]
+This patch fixes a few issues introduced in the recent fix
+[f8a9e72d: USB: fix resource leak in xhci power loss path]
+
+- The endpoints listed in bw table are just links and each entry is an
+ array member of dev->eps[].  But the commit above adds a kfree() call
+ to these instances, and thus it results in memory corruption.
+
+- It clears only the first entry of rh_bw[], but there can be multiple
+  ports.
+
+- It'd be safer to clear the list_head of ep as well, not only
+  removing from the list, as it's checked in
+  xhci_discover_or_reset_device().
+
+This patch should be backported to kernels as old as 3.2, that contain
+the commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe "xhci: Store
+information about roothubs and TTs."
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reviewed-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_display.c |   50 ++++++++++++++++++++++++----------
- 1 file changed, 35 insertions(+), 15 deletions(-)
+ drivers/usb/host/xhci-mem.c |   35 ++++++++++++++---------------------
+ 1 file changed, 14 insertions(+), 21 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7009,14 +7009,14 @@
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 898dfc8..77689bd 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1772,17 +1772,9 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ {
+ 	struct pci_dev	*pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
+ 	struct dev_info	*dev_info, *next;
+-	struct list_head *tt_list_head;
+-	struct list_head *tt;
+-	struct list_head *endpoints;
+-	struct list_head *ep, *q;
+-	struct xhci_tt_bw_info *tt_info;
+-	struct xhci_interval_bw_table *bwt;
+-	struct xhci_virt_ep *virt_ep;
+-
+ 	unsigned long	flags;
+ 	int size;
+-	int i;
++	int i, j, num_ports;
  
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
- 	if (ret)
--		goto out;
-+		goto err;
+ 	/* Free the Event Ring Segment Table and the actual Event Ring */
+ 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
+@@ -1841,21 +1833,22 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 	}
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
  
- 	/* Offset into the new buffer for cases of shared fbs between CRTCs */
- 	offset = crtc->y * fb->pitch + crtc->x * fb->bits_per_pixel/8;
+-	bwt = &xhci->rh_bw->bw_table;
+-	for (i = 0; i < XHCI_MAX_INTERVAL; i++) {
+-		endpoints = &bwt->interval_bw[i].endpoints;
+-		list_for_each_safe(ep, q, endpoints) {
+-			virt_ep = list_entry(ep, struct xhci_virt_ep, bw_endpoint_list);
+-			list_del(&virt_ep->bw_endpoint_list);
+-			kfree(virt_ep);
++	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
++	for (i = 0; i < num_ports; i++) {
++		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
++		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
++			struct list_head *ep = &bwt->interval_bw[j].endpoints;
++			while (!list_empty(ep))
++				list_del_init(ep->next);
+ 		}
+ 	}
  
- 	ret = BEGIN_LP_RING(6);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
+-	tt_list_head = &xhci->rh_bw->tts;
+-	list_for_each_safe(tt, q, tt_list_head) {
+-		tt_info = list_entry(tt, struct xhci_tt_bw_info, tt_list);
+-		list_del(tt);
+-		kfree(tt_info);
++	for (i = 0; i < num_ports; i++) {
++		struct xhci_tt_bw_info *tt, *n;
++		list_for_each_entry_safe(tt, n, &xhci->rh_bw[i].tts, tt_list) {
++			list_del(&tt->tt_list);
++			kfree(tt);
++		}
+ 	}
  
- 	/* Can't queue multiple flips, so wait for the previous
- 	 * one to finish before executing the next.
-@@ -7033,7 +7033,11 @@
- 	OUT_RING(obj->gtt_offset + offset);
- 	OUT_RING(MI_NOOP);
- 	ADVANCE_LP_RING();
--out:
-+	return 0;
-+
-+err_unpin:
-+	i915_gem_object_unpin(obj);
-+err:
- 	return ret;
- }
- 
-@@ -7050,14 +7054,14 @@
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
- 	if (ret)
--		goto out;
-+		goto err;
- 
- 	/* Offset into the new buffer for cases of shared fbs between CRTCs */
- 	offset = crtc->y * fb->pitch + crtc->x * fb->bits_per_pixel/8;
- 
- 	ret = BEGIN_LP_RING(6);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
- 
- 	if (intel_crtc->plane)
- 		flip_mask = MI_WAIT_FOR_PLANE_B_FLIP;
-@@ -7072,7 +7076,11 @@
- 	OUT_RING(MI_NOOP);
- 
- 	ADVANCE_LP_RING();
--out:
-+	return 0;
-+
-+err_unpin:
-+	i915_gem_object_unpin(obj);
-+err:
- 	return ret;
- }
- 
-@@ -7088,11 +7096,11 @@
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
- 	if (ret)
--		goto out;
-+		goto err;
- 
- 	ret = BEGIN_LP_RING(4);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
- 
- 	/* i965+ uses the linear or tiled offsets from the
- 	 * Display Registers (which do not change across a page-flip)
-@@ -7111,7 +7119,11 @@
- 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
- 	OUT_RING(pf | pipesrc);
- 	ADVANCE_LP_RING();
--out:
-+	return 0;
-+
-+err_unpin:
-+	i915_gem_object_unpin(obj);
-+err:
- 	return ret;
- }
- 
-@@ -7127,11 +7139,11 @@
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, LP_RING(dev_priv));
- 	if (ret)
--		goto out;
-+		goto err;
- 
- 	ret = BEGIN_LP_RING(4);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
- 
- 	OUT_RING(MI_DISPLAY_FLIP |
- 		 MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
-@@ -7142,7 +7154,11 @@
- 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
- 	OUT_RING(pf | pipesrc);
- 	ADVANCE_LP_RING();
--out:
-+	return 0;
-+
-+err_unpin:
-+	i915_gem_object_unpin(obj);
-+err:
- 	return ret;
- }
- 
-@@ -7164,18 +7180,22 @@
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
- 	if (ret)
--		goto out;
-+		goto err;
- 
- 	ret = intel_ring_begin(ring, 4);
- 	if (ret)
--		goto out;
-+		goto err_unpin;
- 
- 	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | (intel_crtc->plane << 19));
- 	intel_ring_emit(ring, (fb->pitch | obj->tiling_mode));
- 	intel_ring_emit(ring, (obj->gtt_offset));
- 	intel_ring_emit(ring, (MI_NOOP));
- 	intel_ring_advance(ring);
--out:
-+	return 0;
-+
-+err_unpin:
-+	i915_gem_object_unpin(obj);
-+err:
- 	return ret;
- }
- 
+ 	xhci->num_usb2_ports = 0;
 
 
