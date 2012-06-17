@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab2FQVup (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 17:50:45 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46296 "EHLO gate.crashing.org"
+	id S1758139Ab2FQVxv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 17:53:51 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46312 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754329Ab2FQVun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 17:50:43 -0400
-Message-ID: <1339969775.9220.241.camel@pasglop>
-Subject: Re: [PATCH 4/5] powerpc: bitops: Introduce {clear,set}_bit_le()
+	id S1757239Ab2FQVxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 17:53:49 -0400
+Message-ID: <1339969995.9220.242.camel@pasglop>
+Subject: Re: Build regressions/improvements in v3.5-rc3
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: akpm@linux-foundation.org, bhutchings@solarflare.com,
-        grundler@parisc-linux.org, arnd@arndb.de, avi@redhat.com,
-        mtosatti@redhat.com, linux-net-drivers@solarflare.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, kvm@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Date: Mon, 18 Jun 2012 07:49:35 +1000
-In-Reply-To: <20120613130438.b1cd04db.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
-	 <20120613130438.b1cd04db.yoshikawa.takuya@oss.ntt.co.jp>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, Linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Chris Zankel <chris@zankel.net>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Date: Mon, 18 Jun 2012 07:53:15 +1000
+In-Reply-To: <CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com>
+References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org>
+	 <CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -28,40 +26,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-13 at 13:04 +0900, Takuya Yoshikawa wrote:
-> From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-> 
-> Needed to replace test_and_set_bit_le() in virt/kvm/kvm_main.c which is
-> being used for this missing function.
-> 
-> Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+On Sun, 2012-06-17 at 21:56 +0200, Geert Uytterhoeven wrote:
+> Truckloads of powerpc "Unrecognized opcode" breakage, and
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Where ? The boot wrappers again ?
 
-> ---
->  arch/powerpc/include/asm/bitops.h |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/bitops.h b/arch/powerpc/include/asm/bitops.h
-> index efdc926..dc2cf9c 100644
-> --- a/arch/powerpc/include/asm/bitops.h
-> +++ b/arch/powerpc/include/asm/bitops.h
-> @@ -288,6 +288,16 @@ static __inline__ int test_bit_le(unsigned long nr,
->  	return (tmp[nr >> 3] >> (nr & 7)) & 1;
->  }
->  
-> +static inline void set_bit_le(int nr, void *addr)
-> +{
-> +	set_bit(nr ^ BITOP_LE_SWIZZLE, addr);
-> +}
-> +
-> +static inline void clear_bit_le(int nr, void *addr)
-> +{
-> +	clear_bit(nr ^ BITOP_LE_SWIZZLE, addr);
-> +}
-> +
->  static inline void __set_bit_le(int nr, void *addr)
->  {
->  	__set_bit(nr ^ BITOP_LE_SWIZZLE, addr);
+Cheers,
+Ben.
 
 
