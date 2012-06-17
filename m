@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab2FQUGU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 16:06:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41833 "EHLO
+	id S1754943Ab2FQUHh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 16:07:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55144 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752781Ab2FQUGS (ORCPT
+	by vger.kernel.org with ESMTP id S1751929Ab2FQUHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 16:06:18 -0400
-Date: Sun, 17 Jun 2012 21:06:16 +0100
+	Sun, 17 Jun 2012 16:07:36 -0400
+Date: Sun, 17 Jun 2012 21:07:34 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT] regulator: pcf50633: Convert to
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT] regulator: wm831x-ldo: Convert to
  regulator_set_voltage_sel_regmap and map_voltage
-Message-ID: <20120617200616.GR4267@opensource.wolfsonmicro.com>
-References: <1339397037.18866.1.camel@phoenix>
+Message-ID: <20120617200733.GS4267@opensource.wolfsonmicro.com>
+References: <1339469203.22991.7.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5xr6Gr0irOxp3+3c"
+	protocol="application/pgp-signature"; boundary="Bk6L21jbBNK7V1Rv"
 Content-Disposition: inline
-In-Reply-To: <1339397037.18866.1.camel@phoenix>
+In-Reply-To: <1339469203.22991.7.camel@phoenix>
 X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,35 +27,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---5xr6Gr0irOxp3+3c
+--Bk6L21jbBNK7V1Rv
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Mon, Jun 11, 2012 at 02:43:57PM +0800, Axel Lin wrote:
+On Tue, Jun 12, 2012 at 10:46:43AM +0800, Axel Lin wrote:
 > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
 Applied, thanks.
 
---5xr6Gr0irOxp3+3c
+--Bk6L21jbBNK7V1Rv
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP3jixAAoJEBus8iNuMP3dyvcQAIIbDkReU8p/XtffvHETOuVc
-7aZ6QVFQf+LxnOReIjhWzhlGyeY8aLYlH0eyg9MzPkM4NqrP1JbZsi/0bEnKSo+f
-USQ1s2teQMoYfnfWRe/Jo7NFB1o0fAd4cE96KDmpCJufMkzj1QVal0Uvf6kl/Lgw
-LZ33FpSqB23p7PcfcwoJHqkaqQSMUkBCYdeHYa5P+FNV2IwE1kIbPAPpX2wug/cb
-nGl0t/zfDPDDPJWb6FVVBz9mdg4CUJ7k9ooXvpTANDGSM49YZVpSpZuamT9LCg+x
-vSro01U/EDkqpil2mOK8UshpM3zW/TLucgh+Qa7Oa+pZS7XYXBf6QTpK37rTRiJO
-ORNsr7ydyO4Z6ulThXgoiNze4hDhpnlEsgUgCtooHpt2dGNqFRF1iJCEfIPNDDoI
-btbmD4E0g1MmpEs4CtYIzAjYEZZRkx6N3drxnYppC8gc3pde3zyUl8YRr1bnuufu
-95c+p9OJ5zJzOCmEVBZ+s4mL+rYiD1sT+5/yXrImfgmVqhORm5TrkPyHuzk6/OiV
-vtTaYY0ffJZT0PDxgOIaHf/oX9ffJIDMYw1USnRpfTQy000gk2LPVVuNJXC4hXv2
-AkBUgu8ygRdr3pzFhIwtossKqCXNgj45OubbsIG+Q+uH3Euftfp0ifQCF2NcUAVx
-nlJGTGStJaPW4QKDzVng
-=7igo
+iQIcBAEBAgAGBQJP3jj/AAoJEBus8iNuMP3dlKwP/056T28AqzWly55H+fl5K4L1
+xusuQF0YCly5Vc+wn+l3bWAFC1vFG9mzYtCHACakyPFW1HfFNguI9eMcA7YSy6Gd
+GzKEb8G9i2y+VGoza8MA0D6ceA5jn3dimhbtAKO0ImuGJQy5ki/gsYv89+8TwL85
+yM/wv9X6tOZ68188bVBBruhJlwYjOU4CxkBB50RxxWw6kRi9+NnZfXwcN0SR3X/5
+Gg2ztQ/+fk17rWM/WeOQjBlR4itaArk3kr0eLlQnvSLgIO7QE5G/llrtSKIL3Dfh
+qroRqcHLGEmNcc2IairjM0m9ckLiEx20rNq6MXxUhQcK94926iVkIPmXc71a+Sj/
+b+EijJLOWM3UC4TTGQsEmqnmFAE0CcuWRZbLCXQ8vWczYuyYzUz7kEXRLe+Gpxun
+6FPCiD5MzQI4Mrvf8exSxFL4ojcYPnpZSlGBU443swl1YhLiXFNe56tuO3bLT62E
+RPSytrVwp4y8T0x+sqYGYvd/noHWdMstfVbcvK7c69X196inNXkQf0XKssciUSGQ
+EX7dSKt+AJilB9z20+0i07/0B45mPdXd/wB3LT2G47ez0GLJzoU5O1S3J/IBENAn
+PKyE2FMft0iEph2+LP1IzpKLLnG7Jny9tQmKN7wSvMo2GUnWIzjfF2HTQzZAUqBu
+qsvM/m8O03C4Pz+tr2gv
+=mHmm
 -----END PGP SIGNATURE-----
 
---5xr6Gr0irOxp3+3c--
+--Bk6L21jbBNK7V1Rv--
