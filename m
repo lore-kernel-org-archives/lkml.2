@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894Ab2FQS2T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:28:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50356 "EHLO
+	id S1758468Ab2FQSWz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:22:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50107 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758480Ab2FQSW4 (ORCPT
+	by vger.kernel.org with ESMTP id S1757946Ab2FQSWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:56 -0400
-Message-Id: <20120617175945.577762830@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:13 -0400
+Message-Id: <20120617175943.061562970@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:11 +0100
+Date: Sun, 17 Jun 2012 18:59:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 30/69] ASoC: wm8994: Apply volume updates with clocks enabled
+        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [ 12/69] x86, MCE, AMD: Make APIC LVT thresholding interrupt optional
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,167 +28,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit bfd37bb5f681961e255fd2f346c20fdae2ef3f27 upstream.
+commit f227d4306cf30e1d5b6f231e8ef9006c34f3d186 upstream.
 
-Volume updates may not be acted upon if there is no clock applied when
-the volume update is written. Ensure this doesn't happen by writing out
-registers with volume updates after we enable each of the clocks.
+Currently, the APIC LVT interrupt for error thresholding is implicitly
+enabled. However, there are models in the F15h range which do not enable
+it. Make the code machinery which sets up the APIC interrupt support
+an optional setting and add an ->interrupt_capable member to the bank
+representation mirroring that capability and enable the interrupt offset
+programming only if it is true.
 
-There are more registers updated than before as previously we were
-relying on wm_hubs to set those for controls it manages.
+Simplify code and fixup comment style while at it.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This patch is for stable kernels v3.0 to v3.2.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/codecs/wm8994.c |   93 ++++++++++++++++++++++++++++-----------------
- 1 file changed, 58 insertions(+), 35 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |   55 +++++++++++++++++++++++++++-------
+ 1 files changed, 44 insertions(+), 11 deletions(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -41,6 +41,39 @@
- #define WM8994_NUM_DRC 3
- #define WM8994_NUM_EQ  3
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index bb0adad..dc4fb77 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -52,6 +52,7 @@ struct threshold_block {
+ 	unsigned int		cpu;
+ 	u32			address;
+ 	u16			interrupt_enable;
++	bool			interrupt_capable;
+ 	u16			threshold_limit;
+ 	struct kobject		kobj;
+ 	struct list_head	miscj;
+@@ -86,6 +87,21 @@ struct thresh_restart {
+ 	u16			old_limit;
+ };
  
-+static struct {
-+	unsigned int reg;
-+	unsigned int mask;
-+} wm8994_vu_bits[] = {
-+	{ WM8994_LEFT_LINE_INPUT_1_2_VOLUME, WM8994_IN1_VU },
-+	{ WM8994_RIGHT_LINE_INPUT_1_2_VOLUME, WM8994_IN1_VU },
-+	{ WM8994_LEFT_LINE_INPUT_3_4_VOLUME, WM8994_IN2_VU },
-+	{ WM8994_RIGHT_LINE_INPUT_3_4_VOLUME, WM8994_IN2_VU },
-+	{ WM8994_SPEAKER_VOLUME_LEFT, WM8994_SPKOUT_VU },
-+	{ WM8994_SPEAKER_VOLUME_RIGHT, WM8994_SPKOUT_VU },
-+	{ WM8994_LEFT_OUTPUT_VOLUME, WM8994_HPOUT1_VU },
-+	{ WM8994_RIGHT_OUTPUT_VOLUME, WM8994_HPOUT1_VU },
-+	{ WM8994_LEFT_OPGA_VOLUME, WM8994_MIXOUT_VU },
-+	{ WM8994_RIGHT_OPGA_VOLUME, WM8994_MIXOUT_VU },
++static bool lvt_interrupt_supported(unsigned int bank, u32 msr_high_bits)
++{
++	/*
++	 * bank 4 supports APIC LVT interrupts implicitly since forever.
++	 */
++	if (bank == 4)
++		return true;
 +
-+	{ WM8994_AIF1_DAC1_LEFT_VOLUME, WM8994_AIF1DAC1_VU },
-+	{ WM8994_AIF1_DAC1_RIGHT_VOLUME, WM8994_AIF1DAC1_VU },
-+	{ WM8994_AIF1_DAC2_LEFT_VOLUME, WM8994_AIF1DAC2_VU },
-+	{ WM8994_AIF1_DAC2_RIGHT_VOLUME, WM8994_AIF1DAC2_VU },
-+	{ WM8994_AIF2_DAC_LEFT_VOLUME, WM8994_AIF2DAC_VU },
-+	{ WM8994_AIF2_DAC_RIGHT_VOLUME, WM8994_AIF2DAC_VU },
-+	{ WM8994_AIF1_ADC1_LEFT_VOLUME, WM8994_AIF1ADC1_VU },
-+	{ WM8994_AIF1_ADC1_RIGHT_VOLUME, WM8994_AIF1ADC1_VU },
-+	{ WM8994_AIF1_ADC2_LEFT_VOLUME, WM8994_AIF1ADC2_VU },
-+	{ WM8994_AIF1_ADC2_RIGHT_VOLUME, WM8994_AIF1ADC2_VU },
-+	{ WM8994_AIF2_ADC_LEFT_VOLUME, WM8994_AIF2ADC_VU },
-+	{ WM8994_AIF2_ADC_RIGHT_VOLUME, WM8994_AIF1ADC2_VU },
-+	{ WM8994_DAC1_LEFT_VOLUME, WM8994_DAC1_VU },
-+	{ WM8994_DAC1_RIGHT_VOLUME, WM8994_DAC1_VU },
-+	{ WM8994_DAC2_LEFT_VOLUME, WM8994_DAC2_VU },
-+	{ WM8994_DAC2_RIGHT_VOLUME, WM8994_DAC2_VU },
-+};
++	/*
++	 * IntP: interrupt present; if this bit is set, the thresholding
++	 * bank can generate APIC LVT interrupts
++	 */
++	return msr_high_bits & BIT(28);
++}
 +
- static int wm8994_drc_base[] = {
- 	WM8994_AIF1_DRC1_1,
- 	WM8994_AIF1_DRC2_1,
-@@ -889,6 +922,7 @@
- 	struct snd_soc_codec *codec = w->codec;
- 	struct wm8994 *control = codec->control_data;
- 	int mask = WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC1R_ENA;
-+	int i;
- 	int dac;
- 	int adc;
- 	int val;
-@@ -947,6 +981,13 @@
- 				    WM8994_AIF1DAC2L_ENA);
- 		break;
- 
-+	case SND_SOC_DAPM_POST_PMU:
-+		for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
-+			snd_soc_write(codec, wm8994_vu_bits[i].reg,
-+				      snd_soc_read(codec,
-+						   wm8994_vu_bits[i].reg));
-+		break;
-+
- 	case SND_SOC_DAPM_PRE_PMD:
- 	case SND_SOC_DAPM_POST_PMD:
- 		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
-@@ -972,6 +1013,7 @@
- 		      struct snd_kcontrol *kcontrol, int event)
+ static int lvt_off_valid(struct threshold_block *b, int apic, u32 lo, u32 hi)
  {
- 	struct snd_soc_codec *codec = w->codec;
-+	int i;
- 	int dac;
- 	int adc;
- 	int val;
-@@ -1022,6 +1064,13 @@
- 				    WM8994_AIF2DACR_ENA);
- 		break;
+ 	int msr = (hi & MASK_LVTOFF_HI) >> 20;
+@@ -107,8 +123,10 @@ static int lvt_off_valid(struct threshold_block *b, int apic, u32 lo, u32 hi)
+ 	return 1;
+ };
  
-+	case SND_SOC_DAPM_POST_PMU:
-+		for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
-+			snd_soc_write(codec, wm8994_vu_bits[i].reg,
-+				      snd_soc_read(codec,
-+						   wm8994_vu_bits[i].reg));
-+		break;
+-/* must be called with correct cpu affinity */
+-/* Called via smp_call_function_single() */
++/*
++ * Called via smp_call_function_single(), must be called with correct
++ * cpu affinity.
++ */
+ static void threshold_restart_bank(void *_tr)
+ {
+ 	struct thresh_restart *tr = _tr;
+@@ -131,6 +149,12 @@ static void threshold_restart_bank(void *_tr)
+ 		    (new_count & THRESHOLD_MAX);
+ 	}
+ 
++	/* clear IntType */
++	hi &= ~MASK_INT_TYPE_HI;
 +
- 	case SND_SOC_DAPM_PRE_PMD:
- 	case SND_SOC_DAPM_POST_PMD:
- 		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
-@@ -1470,9 +1519,11 @@
++	if (!tr->b->interrupt_capable)
++		goto done;
++
+ 	if (tr->set_lvt_off) {
+ 		if (lvt_off_valid(tr->b, tr->lvt_off, lo, hi)) {
+ 			/* set new lvt offset */
+@@ -139,9 +163,10 @@ static void threshold_restart_bank(void *_tr)
+ 		}
+ 	}
  
- static const struct snd_soc_dapm_widget wm8994_lateclk_widgets[] = {
- SND_SOC_DAPM_SUPPLY("AIF1CLK", WM8994_AIF1_CLOCKING_1, 0, 0, aif1clk_ev,
--		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD),
-+		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
-+		    SND_SOC_DAPM_PRE_PMD),
- SND_SOC_DAPM_SUPPLY("AIF2CLK", WM8994_AIF2_CLOCKING_1, 0, 0, aif2clk_ev,
--		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD),
-+		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
-+		    SND_SOC_DAPM_PRE_PMD),
- SND_SOC_DAPM_PGA("Direct Voice", SND_SOC_NOPM, 0, 0, NULL, 0),
- SND_SOC_DAPM_MIXER("SPKL", WM8994_POWER_MANAGEMENT_3, 8, 0,
- 		   left_speaker_mixer, ARRAY_SIZE(left_speaker_mixer)),
-@@ -3486,39 +3537,11 @@
+-	tr->b->interrupt_enable ?
+-	    (hi = (hi & ~MASK_INT_TYPE_HI) | INT_TYPE_APIC) :
+-	    (hi &= ~MASK_INT_TYPE_HI);
++	if (tr->b->interrupt_enable)
++		hi |= INT_TYPE_APIC;
++
++ done:
  
- 	wm8994_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+ 	hi |= MASK_COUNT_EN_HI;
+ 	wrmsr(tr->b->address, lo, hi);
+@@ -206,14 +231,18 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+ 			if (shared_bank[bank] && c->cpu_core_id)
+ 				break;
+ #endif
+-			offset = setup_APIC_mce(offset,
+-						(high & MASK_LVTOFF_HI) >> 20);
  
--	/* Latch volume updates (right only; we always do left then right). */
--	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_LEFT_VOLUME,
--			    WM8994_AIF1DAC1_VU, WM8994_AIF1DAC1_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_RIGHT_VOLUME,
--			    WM8994_AIF1DAC1_VU, WM8994_AIF1DAC1_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_DAC2_LEFT_VOLUME,
--			    WM8994_AIF1DAC2_VU, WM8994_AIF1DAC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_DAC2_RIGHT_VOLUME,
--			    WM8994_AIF1DAC2_VU, WM8994_AIF1DAC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF2_DAC_LEFT_VOLUME,
--			    WM8994_AIF2DAC_VU, WM8994_AIF2DAC_VU);
--	snd_soc_update_bits(codec, WM8994_AIF2_DAC_RIGHT_VOLUME,
--			    WM8994_AIF2DAC_VU, WM8994_AIF2DAC_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_ADC1_LEFT_VOLUME,
--			    WM8994_AIF1ADC1_VU, WM8994_AIF1ADC1_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_ADC1_RIGHT_VOLUME,
--			    WM8994_AIF1ADC1_VU, WM8994_AIF1ADC1_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_ADC2_LEFT_VOLUME,
--			    WM8994_AIF1ADC2_VU, WM8994_AIF1ADC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_ADC2_RIGHT_VOLUME,
--			    WM8994_AIF1ADC2_VU, WM8994_AIF1ADC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF2_ADC_LEFT_VOLUME,
--			    WM8994_AIF2ADC_VU, WM8994_AIF1ADC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF2_ADC_RIGHT_VOLUME,
--			    WM8994_AIF2ADC_VU, WM8994_AIF1ADC2_VU);
--	snd_soc_update_bits(codec, WM8994_DAC1_LEFT_VOLUME,
--			    WM8994_DAC1_VU, WM8994_DAC1_VU);
--	snd_soc_update_bits(codec, WM8994_DAC1_RIGHT_VOLUME,
--			    WM8994_DAC1_VU, WM8994_DAC1_VU);
--	snd_soc_update_bits(codec, WM8994_DAC2_LEFT_VOLUME,
--			    WM8994_DAC2_VU, WM8994_DAC2_VU);
--	snd_soc_update_bits(codec, WM8994_DAC2_RIGHT_VOLUME,
--			    WM8994_DAC2_VU, WM8994_DAC2_VU);
-+	/* Latch volume update bits */
-+	for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
-+		snd_soc_update_bits(codec, wm8994_vu_bits[i].reg,
-+				    wm8994_vu_bits[i].mask,
-+				    wm8994_vu_bits[i].mask);
+ 			memset(&b, 0, sizeof(b));
+-			b.cpu		= cpu;
+-			b.bank		= bank;
+-			b.block		= block;
+-			b.address	= address;
++			b.cpu			= cpu;
++			b.bank			= bank;
++			b.block			= block;
++			b.address		= address;
++			b.interrupt_capable	= lvt_interrupt_supported(bank, high);
++
++			if (b.interrupt_capable) {
++				int new = (high & MASK_LVTOFF_HI) >> 20;
++				offset  = setup_APIC_mce(offset, new);
++			}
  
- 	/* Set the low bit of the 3D stereo depth so TLV matches */
- 	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_FILTERS_2,
+ 			mce_threshold_block_init(&b, offset);
+ 			mce_threshold_vector = amd_threshold_interrupt;
+@@ -313,6 +342,9 @@ store_interrupt_enable(struct threshold_block *b, const char *buf, size_t size)
+ 	struct thresh_restart tr;
+ 	unsigned long new;
+ 
++	if (!b->interrupt_capable)
++		return -EINVAL;
++
+ 	if (strict_strtoul(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+@@ -471,6 +503,7 @@ static __cpuinit int allocate_threshold_blocks(unsigned int cpu,
+ 	b->cpu			= cpu;
+ 	b->address		= address;
+ 	b->interrupt_enable	= 0;
++	b->interrupt_capable	= lvt_interrupt_supported(bank, high);
+ 	b->threshold_limit	= THRESHOLD_MAX;
+ 
+ 	INIT_LIST_HEAD(&b->miscj);
 
 
