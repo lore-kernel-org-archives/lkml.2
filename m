@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab2FQRnQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 13:43:16 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:55316 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757647Ab2FQRnO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 13:43:14 -0400
+	id S1757728Ab2FQRpN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 13:45:13 -0400
+Received: from smtp.nexicom.net ([216.168.96.13]:49841 "EHLO smtp.nexicom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757647Ab2FQRpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 13:45:12 -0400
+Message-ID: <4FDE17A4.70605@lockie.ca>
+Date: Sun, 17 Jun 2012 13:45:08 -0400
+From: James <bjlockie@lockie.ca>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120606 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <4FDB3642.5030804@linaro.org>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
-	<1339428307-3850-10-git-send-email-lee.jones@linaro.org>
-	<CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com>
-	<4FD8BAD2.50703@linaro.org>
-	<CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com>
-	<4FDAFA17.6050502@linaro.org>
-	<CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com>
-	<20120615115042.GA27480@bnru02>
-	<4FDB2E57.4030904@linaro.org>
-	<20120615130544.GA28537@bnru02>
-	<4FDB3642.5030804@linaro.org>
-Date: Sun, 17 Jun 2012 19:43:13 +0200
-Message-ID: <CACRpkdZ7ESKhokk8Z+6sC9Kq+jPztFNwzger0Db7nCD1fPnG1A@mail.gmail.com>
-Subject: Re: Fwd: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik I2C driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+To: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: boot change to /dev/sdc1 but still think it's /dev/sda2
+References: <4FDD118D.7060703@lockie.ca>
+In-Reply-To: <4FDD118D.7060703@lockie.ca>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gah, what a thread...
+On 06/16/12 19:06, James wrote:
+> 
+> I'm having a problem where I installed an SSD (/dev/sdc1) and even though I have grub set to
+> root (hd0,0)
+> kernel /boot/bzImage root=/dev/sdc1 rootfstype=ext4 raid=noautodetect
+> it thinks my root is /dev/sda2 (my old boot). It is my ssd though (size, contents).
+> 
+> I read that I can try using the uuid:
+> kernel /boot/bzImage root=/dev/disk/by-uuid/e2647271-08fb-4af5-9a6f-11283a521bbd rootfstype=ext4 raid=noautodetect
+> My system won't boots bot won't load the kernel that way.
+> 
+> I took a pic of the oops, it's fuzzy but I think it is readable.
+> http://lockie.ca/test/small_DSCN0077.JPG
+> 
+> My /etc/fstab
+> UUID="a82c245a-5323-4eda-a094-fa2de81721a5"     /boot           ext2    noauto,noatime  0 0
+> UUID="e2647271-08fb-4af5-9a6f-11283a521bbd"     /               ext4    defaults,auto,noatime,discard   0 0
+> UUID="743d709c-766c-477a-a892-65808cae645d"     /other          ext4    defaults,auto,noatime   0 0
+> UUID="b7c60eb6-5501-4f1e-9c05-a416770cc32f"     /storage        ext4    defaults,auto,noatime   0 0
+> tmpfs                   /tmp            tmpfs   size=4G,mode=1777   0 0
+> 
 
-On Fri, Jun 15, 2012 at 3:18 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On 15/06/12 14:05, Srinidhi Kasagar wrote:
->> On Fri, Jun 15, 2012 at 14:45:11 +0200, Lee Jones wrote:
->>> On 15/06/12 12:50, Srinidhi Kasagar wrote:
+$ df
+df: '/media/storage': No such file or directory
+Filesystem     1K-blocks      Used Available Use% Mounted on
+/dev/sda2       87773488   9382636  73994992  12% /
+/dev/sdb1      480647488 236183452 220044836  52% /storage
+/dev/sda2      487820492 115553208 347848484  25% /home
+/dev/sda2      487820492 115553208 347848484  25% /var
+/dev/sdb1      480647488 236183452 220044836  52% /storage
+/dev/sda2      487820492 115553208 347848484  25% /other
+tmpfs            4194304   1446860   2747444  35% /tmp
+shm              8165176         0   8165176   0% /dev/shm
+/dev/sdb1      480647488 236183452 220044836  52% /storage
 
->>>>> +static struct nmk_i2c_controller u8500_i2c = {
->>>>> +       /*
->>>>> +        * Slave data setup time; 250ns, 100ns, and 10ns, which
->>>>> +        * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
->>>>> +        */
->>>>> +       .slsu           = 0xe,
->>>>> +       .tft            = 1,      /* Tx FIFO threshold */
->>>>> +       .rft            = 8,      /* Rx FIFO threshold */
->>>>> +       .clk_freq       = 100000, /* std. mode operation */
->>>>> +       .timeout        = 200,    /* Slave response timeout(ms) */
->>>>> +       .sm             = I2C_FREQ_MODE_FAST,
->>>>
->>>> How is this possible? you are setting clk_freq as 100kb/s and mode
->>>> as fast mode which is supposed to be 400kb/s.
->>>
->>> That's not how I read it:
->>
->>
->> But it is not readable. It confuses people.
->
-> I understood it. :)
->
-> If you think it's unclear speak to the author, Linus. He's CC'ed.
+$ cat /proc/mounts
+rootfs / rootfs rw 0 0
+/dev/root / ext4 rw,noatime,discard,data=ordered 0 0
+devtmpfs /dev devtmpfs rw,relatime,size=8164956k,nr_inodes=2041239,mode=755 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,relatime,mode=755 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620 0 0
+shm /dev/shm tmpfs rw,nosuid,nodev,noexec,relatime 0 0
+/dev/sda2 /other ext4 rw,noatime,data=ordered 0 0
+tmpfs /tmp tmpfs rw,relatime,size=4194304k 0 0
+shm /dev/shm tmpfs rw,nosuid,nodev,noexec,relatime 0 0
+/dev/sdb1 /storage ext4 rw,noatime,data=ordered 0 0
 
-Author of what? The i2c driver was written by Srinidhi. (The
-MODULE_AUTHOR() clause should be a good hint...)
+$ mount
+/dev/sda2 on / type ext4 (rw,noatime,discard,commit=0)
+/dev/sdb1 on /storage type ext4 (rw,noatime)
+/dev/sdb1 on /media/storage type ext4 (rw,noatime,commit=0)
+/dev/sda2 on /home type ext4 (rw,noatime,commit=0)
+/dev/sda2 on /var type ext4 (rw,noatime,commit=0)
+/dev/sdb1 on /storage type ext4 (rw,noatime)
+/dev/sda2 on /other type ext4 (rw,noatime,commit=0)
+tmpfs on /tmp type tmpfs (rw,size=4G,mode=1777)
+shm on /dev/shm type tmpfs (rw,noexec,nosuid,nodev)
+/dev/sdb1 on /storage type ext4 (rw,noatime)
 
-But it's true that board data for the ux500 kernel use
-100000 Hz and I2C_FREQ_MODE_FAST, in the board-mop500.c
-file, like this:
-
-U8500_I2C_CONTROLLER(0, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
-U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
-U8500_I2C_CONTROLLER(2, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
-U8500_I2C_CONTROLLER(3, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
-
-This is indeed a bit odd. But obviously it works... But reading some
-fixes in another tree it seems it should look like this:
-
-/*
- * The board uses 4 i2c controllers, initialize all of
- * them with slave data setup time of 250 ns,
- * Tx & Rx FIFO threshold values as 1 and standard
- * mode of operation
- */
-U8500_I2C_CONTROLLER(0, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
-U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
-U8500_I2C_CONTROLLER(2, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
-U8500_I2C_CONTROLLER(3, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
-
-Which makes *much* more sense.
-
-I'll cook a separate patch for this or something.
-
-Thanks,
-Linus Walleij
