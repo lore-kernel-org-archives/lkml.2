@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283Ab2FQSjL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:39:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50186 "EHLO
+	id S1758009Ab2FQSWb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:22:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50086 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758033Ab2FQSWe (ORCPT
+	by vger.kernel.org with ESMTP id S1757905Ab2FQSWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:34 -0400
-Message-Id: <20120617175950.170141377@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:03 -0400
+Message-Id: <20120617175942.061097551@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:42 +0100
+Date: Sun, 17 Jun 2012 18:59:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [ 61/69] xhci: Fix invalid loop check in xhci_free_tt_info()
+        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 05/69] char/agp: add another Ironlake host bridge
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,88 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-commit 46ed8f00d8982e49f8fe2c1a9cea192f640cb3ba upstream.
+commit 67384fe3fd450536342330f684ea1f7dcaef8130 upstream.
 
-xhci_free_tt_info() may access the invalid memory when it removes the
-last entry but the list is not empty.  Then tt_next reaches to the
-list head but it still tries to check the tt_info of that entry.
+This seems to come on Gigabyte H55M-S2V and was discovered through the
+https://bugs.freedesktop.org/show_bug.cgi?id=50381 debugging.
 
-This patch fixes the bug and cleans up the messy code by rewriting
-with a simple list_for_each_entry_safe().
-
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe "xhci: Store
-information about roothubs and TTs."
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reviewed-by: Oliver Neukum <oneukum@suse.de>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50381
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-mem.c |   39 ++++++++++-----------------------------
- 1 file changed, 10 insertions(+), 29 deletions(-)
+ drivers/char/agp/intel-agp.c |    1 +
+ drivers/char/agp/intel-agp.h |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index ec4338e..898dfc8 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -793,10 +793,9 @@ static void xhci_free_tt_info(struct xhci_hcd *xhci,
- 		struct xhci_virt_device *virt_dev,
- 		int slot_id)
- {
--	struct list_head *tt;
- 	struct list_head *tt_list_head;
--	struct list_head *tt_next;
--	struct xhci_tt_bw_info *tt_info;
-+	struct xhci_tt_bw_info *tt_info, *next;
-+	bool slot_found = false;
- 
- 	/* If the device never made it past the Set Address stage,
- 	 * it may not have the real_port set correctly.
-@@ -808,34 +807,16 @@ static void xhci_free_tt_info(struct xhci_hcd *xhci,
- 	}
- 
- 	tt_list_head = &(xhci->rh_bw[virt_dev->real_port - 1].tts);
--	if (list_empty(tt_list_head))
--		return;
--
--	list_for_each(tt, tt_list_head) {
--		tt_info = list_entry(tt, struct xhci_tt_bw_info, tt_list);
--		if (tt_info->slot_id == slot_id)
-+	list_for_each_entry_safe(tt_info, next, tt_list_head, tt_list) {
-+		/* Multi-TT hubs will have more than one entry */
-+		if (tt_info->slot_id == slot_id) {
-+			slot_found = true;
-+			list_del(&tt_info->tt_list);
-+			kfree(tt_info);
-+		} else if (slot_found) {
- 			break;
-+		}
- 	}
--	/* Cautionary measure in case the hub was disconnected before we
--	 * stored the TT information.
--	 */
--	if (tt_info->slot_id != slot_id)
--		return;
--
--	tt_next = tt->next;
--	tt_info = list_entry(tt, struct xhci_tt_bw_info,
--			tt_list);
--	/* Multi-TT hubs will have more than one entry */
--	do {
--		list_del(tt);
--		kfree(tt_info);
--		tt = tt_next;
--		if (list_empty(tt_list_head))
--			break;
--		tt_next = tt->next;
--		tt_info = list_entry(tt, struct xhci_tt_bw_info,
--				tt_list);
--	} while (tt_info->slot_id == slot_id);
- }
- 
- int xhci_alloc_tt_info(struct xhci_hcd *xhci,
+diff --git a/drivers/char/agp/intel-agp.c b/drivers/char/agp/intel-agp.c
+index 764f70c..0a41852 100644
+--- a/drivers/char/agp/intel-agp.c
++++ b/drivers/char/agp/intel-agp.c
+@@ -898,6 +898,7 @@ static struct pci_device_id agp_intel_pci_table[] = {
+ 	ID(PCI_DEVICE_ID_INTEL_B43_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_B43_1_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB),
++	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_D2_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_MC2_HB),
+diff --git a/drivers/char/agp/intel-agp.h b/drivers/char/agp/intel-agp.h
+index c009175..8e2d914 100644
+--- a/drivers/char/agp/intel-agp.h
++++ b/drivers/char/agp/intel-agp.h
+@@ -212,6 +212,7 @@
+ #define PCI_DEVICE_ID_INTEL_G41_HB          0x2E30
+ #define PCI_DEVICE_ID_INTEL_G41_IG          0x2E32
+ #define PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB	    0x0040
++#define PCI_DEVICE_ID_INTEL_IRONLAKE_D2_HB	    0x0069
+ #define PCI_DEVICE_ID_INTEL_IRONLAKE_D_IG	    0x0042
+ #define PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB	    0x0044
+ #define PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB	    0x0062
 
 
