@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab2FQSet (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:34:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50222 "EHLO
+	id S1758747Ab2FQSfM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:35:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50239 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758153Ab2FQSWn (ORCPT
+	by vger.kernel.org with ESMTP id S1758138Ab2FQSWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:43 -0400
-Message-Id: <20120617175951.096045500@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:42 -0400
+Message-Id: <20120617175949.555437505@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:48 +0100
+Date: Sun, 17 Jun 2012 19:00:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Mack <zonque@gmail.com>,
-        bEN <ml_all@circa.be>, Ivan Perrone <ivanperrone@hotmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 67/69] USB: fix gathering of interface associations
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 57/69] target: Return error to initiator if SET TARGET PORT GROUPS
+ emulation fails
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,87 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit b3a3dd074f7053ef824ad077e5331b52220ceba1 upstream.
+commit 59e4f541baf728dbb426949bfa9f6862387ffd0e upstream.
 
-TEAC's UD-H01 (and probably other devices) have a gap in the interface
-number allocation of their descriptors:
+The error paths in target_emulate_set_target_port_groups() are all
+essentially "rc = -EINVAL; goto out;" but the code at "out:" ignores
+rc and always returns success.  This means that even if eg explicit
+ALUA is turned off, the initiator will always see a good SCSI status
+for SET TARGET PORT GROUPS.
 
-  Configuration Descriptor:
-    bLength                 9
-    bDescriptorType         2
-    wTotalLength          220
-    bNumInterfaces          3
-    [...]
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        0
-      bAlternateSetting       0
-      [...]
-    Interface Association:
-      bLength                 8
-      bDescriptorType        11
-      bFirstInterface         2
-      bInterfaceCount         2
-      bFunctionClass          1 Audio
-      bFunctionSubClass       0
-      bFunctionProtocol      32
-      iFunction               4
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        2
-      bAlternateSetting       0
-      [...]
+Fix this by returning rc as is intended.  It appears this bug was
+added by the following patch:
 
-Once a configuration is selected, usb_set_configuration() walks the
-known interfaces of a given configuration and calls find_iad() on
-each of them to set the interface association pointer the interface
-is included in.
+commit 05d1c7c0d0db4cc25548d9aadebb416888a82327
+Author: Andy Grover <agrover@redhat.com>
+Date:   Wed Jul 20 19:13:28 2011 +0000
 
-The problem here is that the loop variable is taken for the interface
-number in the comparison logic that gathers the association. Which is
-fine as long as the descriptors are sane.
+    target: Make all control CDBs scatter-gather
 
-In the case above, however, the logic gets out of sync and the
-interface association fields of all interfaces beyond the interface
-number gap are wrong.
-
-Fix this by passing the interface's bInterfaceNumber to find_iad()
-instead.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: bEN <ml_all@circa.be>
-Reported-by: Ivan Perrone <ivanperrone@hotmail.com>
-Tested-by: ivan perrone <ivanperrone@hotmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[bwh: Backported to 3.2: we have transport_complete_task()
+ and not target_complete_cmd()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/message.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/target_core_alua.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
-index b548cf1..bdd1c67 100644
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1838,7 +1838,6 @@ free_interfaces:
- 		intfc = cp->intf_cache[i];
- 		intf->altsetting = intfc->altsetting;
- 		intf->num_altsetting = intfc->num_altsetting;
--		intf->intf_assoc = find_iad(dev, cp, i);
- 		kref_get(&intfc->ref);
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -352,9 +352,11 @@
  
- 		alt = usb_altnum_to_altsetting(intf, 0);
-@@ -1851,6 +1850,8 @@ free_interfaces:
- 		if (!alt)
- 			alt = &intf->altsetting[0];
+ out:
+ 	transport_kunmap_data_sg(cmd);
+-	task->task_scsi_status = GOOD;
+-	transport_complete_task(task, 1);
+-	return 0;
++	if (!rc) {
++		task->task_scsi_status = GOOD;
++		transport_complete_task(task, 1);
++	}
++	return rc;
+ }
  
-+		intf->intf_assoc =
-+			find_iad(dev, cp, alt->desc.bInterfaceNumber);
- 		intf->cur_altsetting = alt;
- 		usb_enable_interface(dev, intf, true);
- 		intf->dev.parent = &dev->dev;
+ static inline int core_alua_state_nonoptimized(
 
 
