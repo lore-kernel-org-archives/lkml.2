@@ -1,112 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab2FQHmh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 03:42:37 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59018 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752241Ab2FQHmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 03:42:36 -0400
-Date: Sun, 17 Jun 2012 08:42:28 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm-fixes
-Message-ID: <alpine.DEB.2.00.1206170838050.26175@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753268Ab2FQHo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 03:44:26 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35370 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752724Ab2FQHoY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 03:44:24 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1472687627-1339918948=:26175"
+In-Reply-To: <xr93k3z8twtg.fsf@gthelen.mtv.corp.google.com>
+References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com>
+	<1339761717-29070-1-git-send-email-handai.szj@taobao.com>
+	<xr93k3z8twtg.fsf@gthelen.mtv.corp.google.com>
+Date: Sun, 17 Jun 2012 15:44:23 +0800
+Message-ID: <CAFj3OHVKpKwxJMgkr18oQ8PMcyP1MOBXyyQqYxyHF_zqKuE8VQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] memcg: add per cgroup dirty pages accounting
+From: Sha Zhengju <handai.szj@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, yinghan@google.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, Jun 15, 2012 at 11:32 PM, Greg Thelen <gthelen@google.com> wrote:
+> On Fri, Jun 15 2012, Sha Zhengju wrote:
+>
+>> This patch adds memcg routines to count dirty pages. I notice that
+>> the list has talked about per-cgroup dirty page limiting
+>> (http://lwn.net/Articles/455341/) before, but it did not get merged.
+>
+> Good timing, I was just about to make another effort to get some of
+> these patches upstream.  Like you, I was going to start with some basic
+> counters.
+>
+> Your approach is similar to what I have in mind.  While it is good to
+> use the existing PageDirty flag, rather than introducing a new
+> page_cgroup flag, there are locking complications (see below) to handle
+> races between moving pages between memcg and the pages being {un}marked
+> dirty.
+>
+>> I've no idea how is this going now, but maybe we can add per cgroup
+>> dirty pages accounting first. This allows the memory controller to
+>> maintain an accurate view of the amount of its memory that is dirty
+>> and can provide some infomation while group's direct reclaim is working.
+>>
+>> After commit 89c06bd5 (memcg: use new logic for page stat accounting),
+>> we do not need per page_cgroup flag anymore and can directly use
+>> struct page flag.
+>>
+>>
+>> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+>> ---
+>>  include/linux/memcontrol.h |    1 +
+>>  mm/filemap.c               |    1 +
+>>  mm/memcontrol.c            |   32 +++++++++++++++++++++++++-------
+>>  mm/page-writeback.c        |    2 ++
+>>  mm/truncate.c              |    1 +
+>>  5 files changed, 30 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index a337c2e..8154ade 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
+>>       MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>>       MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+>>       MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+>> +     MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+>>       MEM_CGROUP_STAT_NSTATS,
+>>  };
+>>
+>> diff --git a/mm/filemap.c b/mm/filemap.c
+>> index 79c4b2b..5b5c121 100644
+>> --- a/mm/filemap.c
+>> +++ b/mm/filemap.c
+>> @@ -141,6 +141,7 @@ void __delete_from_page_cache(struct page *page)
+>>        * having removed the page entirely.
+>>        */
+>>       if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
+>> +             mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+>
+> You need to use mem_cgroup_{begin,end}_update_page_stat around critical
+> sections that:
+> 1) check PageDirty
+> 2) update MEM_CGROUP_STAT_FILE_DIRTY counter
+>
+> This protects against the page from being moved between memcg while
+> accounting.  Same comment applies to all of your new calls to
+> mem_cgroup_{dec,inc}_page_stat.  For usage pattern, see
+> page_add_file_rmap.
 
---29444707-1472687627-1339918948=:26175
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+
+It seems I should call mem_cgroup_{begin,end}_update_page_stat to prevent race
+while modifying struct page info.
+Thanks for patiently explaining!
 
 
-Hi Linus,
+>
+>>               dec_zone_page_state(page, NR_FILE_DIRTY);
+>>               dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+>>       }
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 9102b8c..d200ad1 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -2548,6 +2548,18 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+>>  }
+>>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+>>
+>> +static inline
+>> +void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
+>> +                                     struct mem_cgroup *to,
+>> +                                     enum mem_cgroup_stat_index idx)
+>> +{
+>> +     /* Update stat data for mem_cgroup */
+>> +     preempt_disable();
+>> +     __this_cpu_dec(from->stat->count[idx]);
+>> +     __this_cpu_inc(to->stat->count[idx]);
+>> +     preempt_enable();
+>> +}
+>> +
+>>  /**
+>>   * mem_cgroup_move_account - move account of the page
+>>   * @page: the page
+>> @@ -2597,13 +2609,14 @@ static int mem_cgroup_move_account(struct page *page,
+>>
+>>       move_lock_mem_cgroup(from, &flags);
+>>
+>> -     if (!anon && page_mapped(page)) {
+>> -             /* Update mapped_file data for mem_cgroup */
+>> -             preempt_disable();
+>> -             __this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+>> -             __this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+>> -             preempt_enable();
+>> -     }
+>> +     if (!anon && page_mapped(page))
+>> +             mem_cgroup_move_account_page_stat(from, to,
+>> +                                     MEM_CGROUP_STAT_FILE_MAPPED);
+>> +
+>> +     if (PageDirty(page))
+>> +             mem_cgroup_move_account_page_stat(from, to,
+>> +                                     MEM_CGROUP_STAT_FILE_DIRTY);
+>> +
+>>       mem_cgroup_charge_statistics(from, anon, -nr_pages);
+>>       if (uncharge)
+>>               /* This is not "cancel", but cancel_charge does all we need. */
+>> @@ -4023,6 +4036,7 @@ enum {
+>>       MCS_SWAP,
+>>       MCS_PGFAULT,
+>>       MCS_PGMAJFAULT,
+>> +     MCS_FILE_DIRTY,
+>>       MCS_INACTIVE_ANON,
+>>       MCS_ACTIVE_ANON,
+>>       MCS_INACTIVE_FILE,
+>> @@ -4047,6 +4061,7 @@ struct {
+>>       {"swap", "total_swap"},
+>>       {"pgfault", "total_pgfault"},
+>>       {"pgmajfault", "total_pgmajfault"},
+>> +     {"dirty", "total_dirty"},
+>
+> Please add something to Documentation/cgroups/memory.txt describing this
+> new user visible data.  See my previous patch
+> http://thread.gmane.org/gmane.linux.kernel.mm/67114 for example text.
+>
 
-radeon is most of the work, one regression, one BUG fix in the new prime 
-code, some fixes to init code to make streamout not lock up the hardware, 
-and just some code to enable users to test HDMI audio on later hw (its off by 
-default).
 
-Intel adds edp edid caching for some strange Dell Vostros that black 
-screen on startup if keep reading their EDID, and a fix for a DP 
-regression.
+Got it. I'll add it in next version.
 
-Otherwise fix for via/sis and one to stop udl binding to multiple 
-non-video usb.
+Thanks,
+Sha
 
-Dave.
 
-The following changes since commit 9b15b817f3d62409290fd56fe3cbb076a931bb0a:
-
-  swap: fix shmem swapping when more than 8 areas (2012-06-15 21:48:14 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to c4af5c4597a7a5d64e058703e1328f315a59794e:
-
-  Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes (2012-06-16 14:45:17 +0100)
-
-----------------------------------------------------------------
-
-Alex Deucher (3):
-      drm/radeon: fix regression in dynpm due to multi-ring rework
-      drm/radeon: add some additional 6xx/7xx/EG register init
-      drm/radeon: add support for STRMOUT_BASE_UPDATE on 7xx
-
-Daniel Vetter (2):
-      drm/i915: eDP aux needs vdd
-      Revert "drm/i915/dp: Use auxch precharge value of 5 everywhere"
-
-Dave Airlie (3):
-      drm/udl: only bind to the video devices on the hub.
-      drm/radeon/prime: reserve/unreserve around pin
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-
-Jesse Barnes (2):
-      drm/i915: don't enumerate HDMID if an eDP panel is already active on the port
-      drm/i915: cache the EDID for eDP panels
-
-Márton Németh (2):
-      drm via: initialize object_idr
-      drm sis: initialize object_idr
-
-Rafa³ Mi³ecki (1):
-      drm/radeon: enable HDMI on DCE5 (AKA NI excluding Aruba)
-
-Randy Dunlap (1):
-      vga_switcheroo.h: fix pci_dev warning
-
- drivers/gpu/drm/i915/intel_display.c       |    2 +-
- drivers/gpu/drm/i915/intel_dp.c            |   60 ++++++++++++++++++++++++----
- drivers/gpu/drm/radeon/atombios_encoders.c |    4 +-
- drivers/gpu/drm/radeon/evergreen.c         |    3 ++
- drivers/gpu/drm/radeon/evergreen_hdmi.c    |    3 --
- drivers/gpu/drm/radeon/evergreend.h        |    1 +
- drivers/gpu/drm/radeon/ni.c                |    5 +++
- drivers/gpu/drm/radeon/r600.c              |    1 +
- drivers/gpu/drm/radeon/r600_audio.c        |    2 +-
- drivers/gpu/drm/radeon/r600_cs.c           |   42 +++++++++++++++++++
- drivers/gpu/drm/radeon/r600_hdmi.c         |    7 +---
- drivers/gpu/drm/radeon/r600d.h             |    2 +
- drivers/gpu/drm/radeon/radeon_drv.c        |    3 +-
- drivers/gpu/drm/radeon/radeon_pm.c         |   10 +++--
- drivers/gpu/drm/radeon/radeon_prime.c      |   10 ++++-
- drivers/gpu/drm/radeon/rv770.c             |    5 ++-
- drivers/gpu/drm/radeon/rv770d.h            |    3 ++
- drivers/gpu/drm/sis/sis_drv.c              |    2 +-
- drivers/gpu/drm/udl/udl_drv.c              |   15 ++++++-
- drivers/gpu/drm/via/via_map.c              |    3 +-
- include/linux/vga_switcheroo.h             |    2 +
- 21 files changed, 156 insertions(+), 29 deletions(-)
---29444707-1472687627-1339918948=:26175--
+>>       {"inactive_anon", "total_inactive_anon"},
+>>       {"active_anon", "total_active_anon"},
+>>       {"inactive_file", "total_inactive_file"},
+>> @@ -4080,6 +4095,9 @@ mem_cgroup_get_local_stat(struct mem_cgroup *memcg, struct mcs_total_stat *s)
+>>       val = mem_cgroup_read_events(memcg, MEM_CGROUP_EVENTS_PGMAJFAULT);
+>>       s->stat[MCS_PGMAJFAULT] += val;
+>>
+>> +     val = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_DIRTY);
+>> +     s->stat[MCS_FILE_DIRTY] += val * PAGE_SIZE;
+>> +
+>>       /* per zone stat */
+>>       val = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_INACTIVE_ANON));
+>>       s->stat[MCS_INACTIVE_ANON] += val * PAGE_SIZE;
+>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>> index 26adea8..b17c692 100644
+>> --- a/mm/page-writeback.c
+>> +++ b/mm/page-writeback.c
+>> @@ -1936,6 +1936,7 @@ int __set_page_dirty_no_writeback(struct page *page)
+>>  void account_page_dirtied(struct page *page, struct address_space *mapping)
+>>  {
+>>       if (mapping_cap_account_dirty(mapping)) {
+>> +             mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+>>               __inc_zone_page_state(page, NR_FILE_DIRTY);
+>>               __inc_zone_page_state(page, NR_DIRTIED);
+>>               __inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+>> @@ -2155,6 +2156,7 @@ int clear_page_dirty_for_io(struct page *page)
+>>                * for more comments.
+>>                */
+>>               if (TestClearPageDirty(page)) {
+>> +                     mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+>>                       dec_zone_page_state(page, NR_FILE_DIRTY);
+>>                       dec_bdi_stat(mapping->backing_dev_info,
+>>                                       BDI_RECLAIMABLE);
+>> diff --git a/mm/truncate.c b/mm/truncate.c
+>> index 61a183b..fe8363e 100644
+>> --- a/mm/truncate.c
+>> +++ b/mm/truncate.c
+>> @@ -76,6 +76,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
+>>       if (TestClearPageDirty(page)) {
+>>               struct address_space *mapping = page->mapping;
+>>               if (mapping && mapping_cap_account_dirty(mapping)) {
+>> +                     mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+>>                       dec_zone_page_state(page, NR_FILE_DIRTY);
+>>                       dec_bdi_stat(mapping->backing_dev_info,
+>>                                       BDI_RECLAIMABLE);
