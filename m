@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab2FQREw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 13:04:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42258 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757585Ab2FQREv (ORCPT
+	id S1757634Ab2FQRLq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 13:11:46 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:48283 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757343Ab2FQRLo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 13:04:51 -0400
-Date: Sun, 17 Jun 2012 18:04:43 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, ksummit-2012-discuss@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the
- question!
-Message-ID: <20120617170442.GA10241@sirena.org.uk>
-References: <alpine.LFD.2.02.1206152313310.3086@ionos>
- <20120615233413.GB8894@kroah.com>
- <20120616123032.251dd101@pyramind.ukuu.org.uk>
+	Sun, 17 Jun 2012 13:11:44 -0400
+Date: Sun, 17 Jun 2012 12:11:38 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: =?utf-8?Q?Martin-=C3=89ric?= Racine <martin-eric.racine@iki.fi>
+Cc: =?utf-8?Q?Jean-Fran=C3=A7ois?= Moine <moinejf@free.fr>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: video: USB webcam fails since kernel 3.2
+Message-ID: <20120617171138.GK12429@burratino>
+References: <20120614162609.4613.22122.reportbug@henna.lan>
+ <20120614215359.GF3537@burratino>
+ <CAPZXPQd9gNCxn7xGyqj_xymPaF5OxvRtxRFkt+SsLs942te4og@mail.gmail.com>
+ <20120616044137.GB4076@burratino>
+ <1339932233.20497.14.camel@henna.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120616123032.251dd101@pyramind.ukuu.org.uk>
-X-Cookie: "But I don't like Spam!!!!"
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1339932233.20497.14.camel@henna.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 12:30:32PM +0100, Alan Cox wrote:
-> Greg KH <greg@kroah.com> wrote:
+(cc-ing Hans de Goede, the new gspca maintainer.  Sorry I missed that before.)
 
-> We also have a large consumer electronics and now android ecosystem much
-> of which is made up of companies and people whose business history and
-> business model for all products has always been
+>> Martin-Éric Racine wrote:
+>>> usb 1-7: new high-speed USB device number 3 using ehci_hcd
+[...]
+>>> usb 1-7: Product: USB2.0 Web Camera
+>>> usb 1-7: Manufacturer: Vimicro Corp.
+[...]
+>>> gspca_main: v2.14.0 registered
+>>> gspca_main: vc032x-2.14.0 probing 0ac8:0321
+[...]
+>>> gspca_main: ISOC data error: [36] len=0, status=-71
+>>> gspca_main: ISOC data error: [65] len=0, status=-71
+[...]
+>>> gspca_main: ISOC data error: [48] len=0, status=-71
+>>> video_source:sr[3246]: segfault at 0 ip   (null) sp ab36de1c error 14 in cheese[8048000+21000]
+>>> gspca_main: ISOC data error: [17] len=0, status=-71
 
-> - make it boot
-> - make it usable
-> - ship it
-> - run 
+Thanks again.
 
-> they have little incentive to share, they have no interest in the longer
-> term, and it's often not rational economics for them to clean up their
-> code and upstream it because it just helps their rivals, and besides the
-> part is now 6 months old so obsolete in their world.
+If you get a chance to test Hans's media-for_v3.5 branch, that would
+be interesting.  It works like so:
 
-This is actually getting a lot better these days.
+ 0. prerequisites:
 
-> For a lot of hardware the only way that is going to get fixed is if
+	apt-get install git build-essential
 
-> a) it is easier to do the job right than hack it up
-> b) when the hardware vendors are more involved and have longer term plans
-> c) their customers start to demand it in order to be up and running very
-> fast (ie there is heavy consolidation in the platform)
+ 1. get the kernel history, if you don't already have it:
 
-The latter two are happening right now, mostly thanks to consumer demand
-for software updates for things like phones though the desire to keep
-hardware platforms rolling indepenently of OS releases is also a factor.
-One of the big blockers to that has been the need to move all the out of
-tree stuff up to a newer kernel, reducing the diff to mainline is a good
-way to minimise the effort involved.  I was very pleased when I started
-to find handset vendors wanting to confirm that patches given to them
-were also going upstream.
+	git clone \
+	  git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 
-This doesn't apply to all hardware but more and more things are getting
-in field updates.
+ 2. fetch gspca updates:
 
-> Right now we are doing it for real in some areas, and via the "screw
-> this, mail Andrew Morton" process for others, plus Linus fields some of
-> the really dumb ones. We could formalise some of that a bit more and
-> encourage more maintainers to actual team up with one of the other
-> contributors they trust.
+	cd linux
+	git remote add gspca \
+	  git://linuxtv.org/hgoede/gspca.git
+	git fetch gspca
 
-Yes, this would really help as would better backup plans when things
-aren't working.  Finding people to work with is not just a question of
-trust, it's also a question of finding people with similar work patterns
-as a mismatch can be painful.
+ 3. configure, build, test:
+
+	git checkout gspca/media-for_v3.5
+	cp /boot/config-$(uname -r) .config; # current configuration
+	scripts/config --disable DEBUG_INFO
+	make localmodconfig; # optional: minimize configuration
+	make deb-pkg; # optionally with -j<num> for parallel build
+	dpkg -i ../<name of package>; # as root
+	reboot
+	... test test test ...
+
+I ask because there have been some gspca core fixes cooking that are
+not part of the 3.4.y tree, though none of them looks especially
+relevant.
+
+Hope that helps,
+Jonathan
