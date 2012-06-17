@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab2FQIxt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 04:53:49 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:62954 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab2FQIxs convert rfc822-to-8bit (ORCPT
+	id S1754580Ab2FQI6S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 04:58:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43996 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab2FQI6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 04:53:48 -0400
+	Sun, 17 Jun 2012 04:58:16 -0400
+Message-ID: <4FDD9BEE.9010800@gmail.com>
+Date: Sun, 17 Jun 2012 18:57:18 +1000
+From: Veyrdite <veyrdite@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-Originating-IP: [85.250.103.112]
-In-Reply-To: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 17 Jun 2012 11:53:27 +0300
-Message-ID: <CAK=WgbboTiyjn5W9zr4TE0xk9_YHDmcGzxnMVovs8P=c607r2w@mail.gmail.com>
-Subject: Re: [PATCHv2 0/5] remoteproc: Custom firmware handling.
-To: sjur.brandeland@stericsson.com
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+CC: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-console@vger.kernel.org
+Subject: Re: wishlist: vnc framebuffer device?
+References: <4FDC6874.4070106@afaics.de>
+In-Reply-To: <4FDC6874.4070106@afaics.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+Hey Harald,
 
-On Mon, Jun 11, 2012 at 8:29 PM,  <sjur.brandeland@stericsson.com> wrote:
-> Here is a new patch series. I dropped the two bug-fix patches
-> since last time, as you already included these. I've tried to
-> address all of your review comments since last time, hope I
-> didn't miss any.
+ > To make a headless system "less headless", would it be possible
+ > to integrate a vnc framebuffer device into the kernel?
 
-Thanks, this looks good.
+VNC as I understand is more suitable for graphical environments.  For
+just text SSH or even telnet/netcat would be more practical.
 
-I have a few small mostly-style comments, but I could just do them
-while I apply the patches.
+ > The idea is to have a vnc server instead of a local screen and
+ > keyboard to show the boot output and to provide a console login
+ > on /dev/tty{1..6}. It would be pretty similar to qemu. No need
+ > for fancy graphics, of course. The IP address might either be
+ > obtained using DHCP, or it might use an IP address/netmask
+ > given on the kernel command line.
 
-I've tried applying the (first four) patches, but since they are still
-based on the two bug-fixes patches, they don't apply.
+As I understand it most init implementations log all of their messages
+to a file in /var/log, so you can view them all post-bootup once you
+have vnc'd or into the box.  This would be the simplest and most
+foolproof solution, but may not be what you want.
 
-So we can either wait until the bug fixes are merged by Linus (I'm
-going to send them soon) or you can rebase the patches on a current
-mainline tree (which I could then push to linux-next) - however you
-prefer.
+If you are going to send your messaged over a trusted LAN or network
+( ie not the internet ) then I'd go with the 'netconsole' module for the
+kernel.
 
-> Status:
-> I have done a simple simulated test now with the STE firmware
-> loader and main-flow seems ok, but I haven't done any negative
-> tests.
+See https://www.kernel.org/doc/Documentation/networking/netconsole.txt
 
-Ok, thanks. The first four patches seem trivial enough for me to merge
-even without any extensive testing.
+It (hopefully) would just require an extra kernel command line on the
+headless machine and a 'netcat -ul portnumber' on the receiving machine.
+  'Hopefully' because I am unsure if your kern
 
-> - The latest patch is a bit odd. The ste_modem_remoteproc module
->  contains only the firmware handler, and nothing else.
+The problem is that everything is sent as unencrypted plaintext.
 
-What are your plans regarding the rest of that module? we may want to
-wait with the fifth patch until we have some basic functionality.
+ > I understand that authentication might be an issue here.
 
-Thanks,
-Ohad.
+Yes, if you mean the security of the transmitted data.
+
+It is unlikely your ISP and other routing companies will violate your
+security, but there is always a risk of someone doing something they
+shouldn't be.  It is also *very* unhackerlike to send any plaintext over
+the internet, and you should be secretly ashamed deep down if you do so.
+
+If you do need to secure this information, it might be possible to link
+SSH to your innitab and have things sent that way.  That is idealistic.
+
+In the worst case scenario, you will just have to write a script that
+acts as an init service that delays all bootup until it can make an SSH
+connection to another computer and shove the lines of bootup information
+from /var/log to the other computer as they appear.
+
+If my words have gone over your head, please tell me.  I have no clue
+what you skill level and experience is, and I am making assumptions :)
+
+Regards, William
