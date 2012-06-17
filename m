@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab2FQVGI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 17:06:08 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:53260 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab2FQVGF (ORCPT
+	id S1758241Ab2FQVGg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 17:06:36 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60666
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757928Ab2FQVGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 17:06:05 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while OK in AmigaOS 4.1
-Date: Sun, 17 Jun 2012 23:06:02 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
-Cc: jdow <jdow@earthlink.net>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, linux-m68k@vger.kernel.org
-References: <201206170841.20222.Martin@lichtvoll.de> <201206171458.58462.Martin@lichtvoll.de> <CAMuHMdWY7=2nJDUjQFGPhdOAFGYeUsnvgPcaEvB2Gxf7P=E+Ug@mail.gmail.com> (sfid-20120617_225443_752860_DC66624F)
-In-Reply-To: <CAMuHMdWY7=2nJDUjQFGPhdOAFGYeUsnvgPcaEvB2Gxf7P=E+Ug@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206172306.03202.Martin@lichtvoll.de>
+	Sun, 17 Jun 2012 17:06:33 -0400
+Message-Id: <20120617210633.151202220@bombadil.infradead.org>
+User-Agent: quilt/0.48-1
+Date: Sun, 17 Jun 2012 17:05:25 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 2/2] hfsplus: fix bless ioctl when used with hardlinks
+References: <20120617210523.088906451@bombadil.infradead.org>
+Content-Disposition: inline; filename=hfsplus-bless.diff
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 17. Juni 2012 schrieb Geert Uytterhoeven:
-> On Sun, Jun 17, 2012 at 2:58 PM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
-> > Am Sonntag, 17. Juni 2012 schrieb jdow:
-> > | JXFS 64 bit file system
-> > | 
-> > | With AmigaOS 4.x a new file system has been introduced called JXFS.
-> > | It is a totally new 64 bit file system that supports partitions up
-> > | to 16 TB in size. It is a modern journalling file system, which
-> > | means that it reduces data loss if data writes to the disk are
-> > | interrupted. It is the fastest and most reliable file system ever
-> > | created for AmigaOS.
-> > 
-> > http://www.amigaos.net/content/1/features
-> > 
-> > Well I asked AmigaOS 4 developers about this issue as well. Lets see
-> > what they say about 2 TB limits.
-> 
-> 16 TB = 2 TB * 8. Perhaps they increased the block size from 512 to
-> 4096?
+From: Matthew Garrett <mjg@redhat.com>
 
-I hope to get anything back from the AmigaOS 4 developers.
+HFS+ doesn't really implement hard links - instead, hardlinks are indicated
+by a magic file type which refers to an indirect node in a hidden
+directory. The spec indicates that stat() should return the inode number
+of the indirect node, but it turns out that this doesn't satisfy the
+firmware when it's looking for a bootloader - it wants the catalog ID of
+the hardlink file instead. Fix up this case.
 
-> block/partitions/amiga.c reads the block size from
-> RigidDiskBlock.rdb_BlockBytes,
-> but after conversion to 512-byte blocks, all further calculations are
-> done on "int", so it will overflow for disks larger than 2 TiB.
-> 
-> Note that in your profile-binary.img, the field is 0x200, i.e. 512
-> bytes per block,
-> so I'll have to get a deeper look into your RDB first...
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Okay, thanks!
+---
+ fs/hfsplus/ioctl.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-I did not get any information regarding the current size limit yet.
-
-Strangely on AmigaOS 4.1 all values seem to be fine except for the total
-sectors value. 
-
-And on Linux begin and end cylinders are correct, only size is off:
-
-merkaba:~> amiga-fdisk -l /dev/sdb                         
-Disk /dev/sdb: 3 heads, 16 sectors, 81396441 cylinders, RDB: 0
-Logical Cylinders from 43 to 81396440, 24576  bytes/Cylinder 
-
-Device     Boot Mount   Begin      End     Size   Pri  BBlks    System
-/dev/sdb1       *        43   65536043   1572864024     0      0  Linux native
-/dev/sdb2       *    65536044   78643244   314572824     0      0  [unknown]
-/dev/sdb3       *    78643245   81396440   66076704     0      0  Amiga FFS Int.
-
-But not only from the first, also of the second and third one it seems.
-
-65536043 - 43 = 65536000
-
-78643244 - 65536044 = 13107200
-
-81396440 - 78643245 = 2753195
-
-I would think that if there is a overflow it would already be in the cylinder
-numbers.
-
-Ciao,
+diff --git a/fs/hfsplus/ioctl.c b/fs/hfsplus/ioctl.c
+index c640ba5..09addc8 100644
+--- a/fs/hfsplus/ioctl.c
++++ b/fs/hfsplus/ioctl.c
+@@ -31,6 +31,7 @@ static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
+ 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(inode->i_sb);
+ 	struct hfsplus_vh *vh = sbi->s_vhdr;
+ 	struct hfsplus_vh *bvh = sbi->s_backup_vhdr;
++	u32 cnid = (unsigned long)dentry->d_fsdata;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+@@ -41,8 +42,12 @@ static int hfsplus_ioctl_bless(struct file *file, int __user *user_flags)
+ 	vh->finder_info[0] = bvh->finder_info[0] =
+ 		cpu_to_be32(parent_ino(dentry));
+ 
+-	/* Bootloader */
+-	vh->finder_info[1] = bvh->finder_info[1] = cpu_to_be32(inode->i_ino);
++	/*
++	 * Bootloader. Just using the inode here breaks in the case of
++	 * hard links - the firmware wants the ID of the hard link file,
++	 * but the inode points at the indirect inode
++	 */
++	vh->finder_info[1] = bvh->finder_info[1] = cpu_to_be32(cnid);
+ 
+ 	/* Per spec, the OS X system folder - same as finder_info[0] here */
+ 	vh->finder_info[5] = bvh->finder_info[5] =
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+1.7.10
+
+
+
