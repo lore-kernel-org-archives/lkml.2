@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839Ab2FQSXN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:23:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50308 "EHLO
+	id S932108Ab2FQSXL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:23:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50163 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758303Ab2FQSWt (ORCPT
+	by vger.kernel.org with ESMTP id S1757977Ab2FQSWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:49 -0400
-Message-Id: <20120617175946.829354534@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:21 -0400
+Message-Id: <20120617175951.238337756@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:20 +0100
+Date: Sun, 17 Jun 2012 19:00:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 39/69] iwlwifi: disable the buggy chain extension feature in HW
+        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>
+Subject: [ 68/69] swap: fix shmem swapping when more than 8 areas
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,45 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit d012d04e4d6312ea157b6cf19e9689af934f5aa7 upstream.
+commit 9b15b817f3d62409290fd56fe3cbb076a931bb0a upstream.
 
-This feature has been reported to be buggy and enabled by
-default. We therefore need to disable it manually.
+Minchan Kim reports that when a system has many swap areas, and tmpfs
+swaps out to the ninth or more, shmem_getpage_gfp()'s attempts to read
+back the page cannot locate it, and the read fails with -ENOMEM.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Whoops.  Yes, I blindly followed read_swap_header()'s pte_to_swp_entry(
+swp_entry_to_pte()) technique for determining maximum usable swap
+offset, without stopping to realize that that actually depends upon the
+pte swap encoding shifting swap offset to the higher bits and truncating
+it there.  Whereas our radix_tree swap encoding leaves offset in the
+lower bits: it's swap "type" (that is, index of swap area) that was
+truncated.
+
+Fix it by reducing the SWP_TYPE_SHIFT() in swapops.h, and removing the
+broken radix_to_swp_entry(swp_to_radix_entry()) from read_swap_header().
+
+This does not reduce the usable size of a swap area any further, it
+leaves it as claimed when making the original commit: no change from 3.0
+on x86_64, nor on i386 without PAE; but 3.0's 512GB is reduced to 128GB
+per swapfile on i386 with PAE.  It's not a change I would have risked
+five years ago, but with x86_64 supported for ten years, I believe it's
+appropriate now.
+
+Hmm, and what if some architecture implements its swap pte with offset
+encoded below type? That would equally break the maximum usable swap
+offset check.  Happily, they all follow the same tradition of encoding
+offset above type, but I'll prepare a check on that for next.
+
+Reported-and-Reviewed-and-Tested-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlwifi/iwl-prph.h       |    1 +
- drivers/net/wireless/iwlwifi/iwl-trans-pcie.c |    5 +++++
- 2 files changed, 6 insertions(+)
+ include/linux/swapops.h |    8 +++++---
+ mm/swapfile.c           |   12 ++++--------
+ 2 files changed, 9 insertions(+), 11 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-prph.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-prph.h
-@@ -228,6 +228,7 @@
- #define SCD_TXFACT		(SCD_BASE + 0x10)
- #define SCD_ACTIVE		(SCD_BASE + 0x14)
- #define SCD_QUEUECHAIN_SEL	(SCD_BASE + 0xe8)
-+#define SCD_CHAINEXT_EN		(SCD_BASE + 0x244)
- #define SCD_AGGR_SEL		(SCD_BASE + 0x248)
- #define SCD_INTERRUPT_MASK	(SCD_BASE + 0x108)
+diff --git a/include/linux/swapops.h b/include/linux/swapops.h
+index 792d16d..47ead51 100644
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -9,13 +9,15 @@
+  * get good packing density in that tree, so the index should be dense in
+  * the low-order bits.
+  *
+- * We arrange the `type' and `offset' fields so that `type' is at the five
++ * We arrange the `type' and `offset' fields so that `type' is at the seven
+  * high-order bits of the swp_entry_t and `offset' is right-aligned in the
+- * remaining bits.
++ * remaining bits.  Although `type' itself needs only five bits, we allow for
++ * shmem/tmpfs to shift it all up a further two bits: see swp_to_radix_entry().
+  *
+  * swp_entry_t's are *never* stored anywhere in their arch-dependent format.
+  */
+-#define SWP_TYPE_SHIFT(e)	(sizeof(e.val) * 8 - MAX_SWAPFILES_SHIFT)
++#define SWP_TYPE_SHIFT(e)	((sizeof(e.val) * 8) - \
++			(MAX_SWAPFILES_SHIFT + RADIX_TREE_EXCEPTIONAL_SHIFT))
+ #define SWP_OFFSET_MASK(e)	((1UL << SWP_TYPE_SHIFT(e)) - 1)
  
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-@@ -868,6 +868,11 @@
- 	iwl_write_prph(bus(trans), SCD_DRAM_BASE_ADDR,
- 		       trans_pcie->scd_bc_tbls.dma >> 10);
+ /*
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index de5bc51..71373d0 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1916,24 +1916,20 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
  
-+	/* The chain extension of the SCD doesn't work well. This feature is
-+	 * enabled by default by the HW, so we need to disable it manually.
-+	 */
-+	iwl_write_prph(trans, SCD_CHAINEXT_EN, 0);
-+
- 	/* Enable DMA channel */
- 	for (chan = 0; chan < FH_TCSR_CHNL_NUM ; chan++)
- 		iwl_write_direct32(bus(trans), FH_TCSR_CHNL_TX_CONFIG_REG(chan),
+ 	/*
+ 	 * Find out how many pages are allowed for a single swap
+-	 * device. There are three limiting factors: 1) the number
++	 * device. There are two limiting factors: 1) the number
+ 	 * of bits for the swap offset in the swp_entry_t type, and
+ 	 * 2) the number of bits in the swap pte as defined by the
+-	 * the different architectures, and 3) the number of free bits
+-	 * in an exceptional radix_tree entry. In order to find the
++	 * different architectures. In order to find the
+ 	 * largest possible bit mask, a swap entry with swap type 0
+ 	 * and swap offset ~0UL is created, encoded to a swap pte,
+ 	 * decoded to a swp_entry_t again, and finally the swap
+ 	 * offset is extracted. This will mask all the bits from
+ 	 * the initial ~0UL mask that can't be encoded in either
+ 	 * the swp_entry_t or the architecture definition of a
+-	 * swap pte.  Then the same is done for a radix_tree entry.
++	 * swap pte.
+ 	 */
+ 	maxpages = swp_offset(pte_to_swp_entry(
+-			swp_entry_to_pte(swp_entry(0, ~0UL))));
+-	maxpages = swp_offset(radix_to_swp_entry(
+-			swp_to_radix_entry(swp_entry(0, maxpages)))) + 1;
+-
++			swp_entry_to_pte(swp_entry(0, ~0UL)))) + 1;
+ 	if (maxpages > swap_header->info.last_page) {
+ 		maxpages = swap_header->info.last_page + 1;
+ 		/* p->max is an unsigned int: don't overflow it */
 
 
