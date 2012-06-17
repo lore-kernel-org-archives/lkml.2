@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab2FQS11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:27:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50370 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758536Ab2FQSW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758537Ab2FQSW6 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 17 Jun 2012 14:22:58 -0400
-Message-Id: <20120617175946.132022980@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50110 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757948Ab2FQSWN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 14:22:13 -0400
+Message-Id: <20120617175942.343910608@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:15 +0100
+Date: Sun, 17 Jun 2012 18:59:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Autif Khan <autif.mlist@gmail.com>,
-        Tom Cassidy <tomas.cassidy@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/69] net: sierra_net: device IDs for Aircard 320U++
+        alan@lxorguk.ukuu.org.uk, Steffen Rumler <steffen.rumler.ext@nsn.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [ 07/69] powerpc: Fix kernel panic during kernel module load
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,66 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Steffen Rumler <steffen.rumler.ext@nsn.com>
 
-commit dd03cff23d694cfb0fdae80cb618e7ced05ea696 upstream.
+commit 3c75296562f43e6fbc6cddd3de948a7b3e4e9bcf upstream.
 
-Adding device IDs for Aircard 320U and two other devices
-found in the out-of-tree version of this driver.
+This fixes a problem which can causes kernel oopses while loading
+a kernel module.
 
-Cc: linux@sierrawireless.com
-Cc: Autif Khan <autif.mlist@gmail.com>
-Cc: Tom Cassidy <tomas.cassidy@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+According to the PowerPC EABI specification, GPR r11 is assigned
+the dedicated function to point to the previous stack frame.
+In the powerpc-specific kernel module loader, do_plt_call()
+(in arch/powerpc/kernel/module_32.c), GPR r11 is also used
+to generate trampoline code.
+
+This combination crashes the kernel, in the case where the compiler
+chooses to use a helper function for saving GPRs on entry, and the
+module loader has placed the .init.text section far away from the
+.text section, meaning that it has to generate a trampoline for
+functions in the .init.text section to call the GPR save helper.
+Because the trampoline trashes r11, references to the stack frame
+using r11 can cause an oops.
+
+The fix just uses GPR r12 instead of GPR r11 for generating the
+trampoline code.  According to the statements from Freescale, this is
+safe from an EABI perspective.
+
+I've tested the fix for kernel 2.6.33 on MPC8541.
+
+Signed-off-by: Steffen Rumler <steffen.rumler.ext@nsn.com>
+[paulus@samba.org: reworded the description]
+Signed-off-by: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/sierra_net.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ arch/powerpc/kernel/module_32.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/usb/sierra_net.c b/drivers/net/usb/sierra_net.c
-index 3faef56..d75d1f5 100644
---- a/drivers/net/usb/sierra_net.c
-+++ b/drivers/net/usb/sierra_net.c
-@@ -946,7 +946,7 @@ struct sk_buff *sierra_net_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
+diff --git a/arch/powerpc/kernel/module_32.c b/arch/powerpc/kernel/module_32.c
+index 0b6d796..2e3200c 100644
+--- a/arch/powerpc/kernel/module_32.c
++++ b/arch/powerpc/kernel/module_32.c
+@@ -176,8 +176,8 @@ int module_frob_arch_sections(Elf32_Ehdr *hdr,
+ 
+ static inline int entry_matches(struct ppc_plt_entry *entry, Elf32_Addr val)
+ {
+-	if (entry->jump[0] == 0x3d600000 + ((val + 0x8000) >> 16)
+-	    && entry->jump[1] == 0x396b0000 + (val & 0xffff))
++	if (entry->jump[0] == 0x3d800000 + ((val + 0x8000) >> 16)
++	    && entry->jump[1] == 0x398c0000 + (val & 0xffff))
+ 		return 1;
+ 	return 0;
  }
- 
- static const u8 sierra_net_ifnum_list[] = { 7, 10, 11 };
--static const struct sierra_net_info_data sierra_net_info_data_68A3 = {
-+static const struct sierra_net_info_data sierra_net_info_data_direct_ip = {
- 	.rx_urb_size = 8 * 1024,
- 	.whitelist = {
- 		.infolen = ARRAY_SIZE(sierra_net_ifnum_list),
-@@ -954,7 +954,7 @@ static const struct sierra_net_info_data sierra_net_info_data_68A3 = {
+@@ -204,10 +204,9 @@ static uint32_t do_plt_call(void *location,
+ 		entry++;
  	}
- };
  
--static const struct driver_info sierra_net_info_68A3 = {
-+static const struct driver_info sierra_net_info_direct_ip = {
- 	.description = "Sierra Wireless USB-to-WWAN Modem",
- 	.flags = FLAG_WWAN | FLAG_SEND_ZLP,
- 	.bind = sierra_net_bind,
-@@ -962,12 +962,18 @@ static const struct driver_info sierra_net_info_68A3 = {
- 	.status = sierra_net_status,
- 	.rx_fixup = sierra_net_rx_fixup,
- 	.tx_fixup = sierra_net_tx_fixup,
--	.data = (unsigned long)&sierra_net_info_data_68A3,
-+	.data = (unsigned long)&sierra_net_info_data_direct_ip,
- };
+-	/* Stolen from Paul Mackerras as well... */
+-	entry->jump[0] = 0x3d600000+((val+0x8000)>>16);	/* lis r11,sym@ha */
+-	entry->jump[1] = 0x396b0000 + (val&0xffff);	/* addi r11,r11,sym@l*/
+-	entry->jump[2] = 0x7d6903a6;			/* mtctr r11 */
++	entry->jump[0] = 0x3d800000+((val+0x8000)>>16); /* lis r12,sym@ha */
++	entry->jump[1] = 0x398c0000 + (val&0xffff);     /* addi r12,r12,sym@l*/
++	entry->jump[2] = 0x7d8903a6;                    /* mtctr r12 */
+ 	entry->jump[3] = 0x4e800420;			/* bctr */
  
- static const struct usb_device_id products[] = {
- 	{USB_DEVICE(0x1199, 0x68A3), /* Sierra Wireless USB-to-WWAN modem */
--	.driver_info = (unsigned long) &sierra_net_info_68A3},
-+	.driver_info = (unsigned long) &sierra_net_info_direct_ip},
-+	{USB_DEVICE(0x0F3D, 0x68A3), /* AT&T Direct IP modem */
-+	.driver_info = (unsigned long) &sierra_net_info_direct_ip},
-+	{USB_DEVICE(0x1199, 0x68AA), /* Sierra Wireless Direct IP LTE modem */
-+	.driver_info = (unsigned long) &sierra_net_info_direct_ip},
-+	{USB_DEVICE(0x0F3D, 0x68AA), /* AT&T Direct IP LTE modem */
-+	.driver_info = (unsigned long) &sierra_net_info_direct_ip},
- 
- 	{}, /* last item */
- };
+ 	DEBUGP("Initialized plt for 0x%x at %p\n", val, entry);
 
 
