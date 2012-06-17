@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab2FQLvJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 07:51:09 -0400
-Received: from antcom.de ([188.40.178.216]:37272 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754501Ab2FQLvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 07:51:08 -0400
-Message-ID: <4FDDC4A9.1040706@antcom.de>
-Date: Sun, 17 Jun 2012 13:51:05 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+	id S1757070Ab2FQL5e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 07:57:34 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51965 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755625Ab2FQL5d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 07:57:33 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: riku.voipio@iki.fi, bryan.wu@canonical.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] leds: Add DT support for leds-pca9532
-References: <1339855851-9171-1-git-send-email-stigge@antcom.de> <4FDCA0FC.5000409@wwwdotorg.org>
-In-Reply-To: <4FDCA0FC.5000409@wwwdotorg.org>
-X-Enigmail-Version: 1.4
+In-Reply-To: <CAK=WgbboTiyjn5W9zr4TE0xk9_YHDmcGzxnMVovs8P=c607r2w@mail.gmail.com>
+References: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
+	<CAK=WgbboTiyjn5W9zr4TE0xk9_YHDmcGzxnMVovs8P=c607r2w@mail.gmail.com>
+Date: Sun, 17 Jun 2012 13:57:31 +0200
+X-Google-Sender-Auth: fLOMdjUd_1aoqljA1gur-x_vivg
+Message-ID: <CAJK669bmXFZT=9VBx1gt6jxpFdO6Z8zrLmfE0t6gp6n=H=GyNw@mail.gmail.com>
+Subject: Re: [PATCHv2 0/5] remoteproc: Custom firmware handling.
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Ohad,
 
-On 16/06/12 17:06, Stephen Warren wrote:
->> +- nxp,typecodes: groups of 2 bits for each of the 16 pins:
->> +  0: None
->> +  1: LED
->> +  2: Beep
->> +  3: GPIO
->> +- nxp,statecodes: groups of 2 bits for each of the 16 pins:
->> +  0: off
->> +  1: on
->> +  2: pwm0
->> +  3: pwm1
->> +
->> +Optional properties:
->> +- nxp,psc: array of 2 numbers: PSC values for the two PWM channels (see datasheet)
->> +- nxp,pwm: array of 2 numbers: PWM values for the two PWM channels (see datasheet)
-> 
-> Shouldn't that all be exposed using a combination of the pinctrl
-> bindings that are in 3.5, and the PWM bindings that should be coming in 3.6?
+> I have a few small mostly-style comments, but I could just do them
+> while I apply the patches.
 
-Thanks for the note! I found a pwm tree that should have this at
+Yes, please feel free to fix things when needed.
 
-http://gitorious.org/linux-pwm/linux-pwm
+> I've tried applying the (first four) patches, but since they are still
+> based on the two bug-fixes patches, they don't apply.
+>
+> So we can either wait until the bug fixes are merged by Linus (I'm
+> going to send them soon) or you can rebase the patches on a current
+> mainline tree (which I could then push to linux-next) - however you
+> prefer.
 
-but it gives me server errors. Is there a place where I can have a look?
+Either way works for me. I'm not in particular rush to get things in, but
+I'll send you a rebased version tomorrow anyway.
 
-Thanks in advance,
+>> - The latest patch is a bit odd. The ste_modem_remoteproc module
+>>  contains only the firmware handler, and nothing else.
+>
+> What are your plans regarding the rest of that module? we may want to
+> wait with the fifth patch until we have some basic functionality.
 
-Roland
+I am brewing a module and I hope to send it out for review
+as RFC within a week or two. It will probably make most sense to
+merge the module as a whole and not just the firmware handler.
+So I suggest we wait with the firmware handler until you have reviewed the
+patches on the ste-modem-rproc and we can take it from there.
+
+Regards,
+Sjur
