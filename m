@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759015Ab2FQS3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:29:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50335 "EHLO
+	id S1759052Ab2FQS3j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:29:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50328 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757953Ab2FQSWx (ORCPT
+	by vger.kernel.org with ESMTP id S1758359Ab2FQSWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:53 -0400
-Message-Id: <20120617175946.692684847@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:52 -0400
+Message-Id: <20120617175947.697308622@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:19 +0100
+Date: Sun, 17 Jun 2012 19:00:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 38/69] iwlwifi: use correct supported firmware for 6035 and 6000g2
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Oliver Neukum <oneukum@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [ 45/69] usb: cdc-wdm: Add device-id for Huawei 3G/LTE modems
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,80 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit d2c8b15d0cb486f4938ba7f2af349d9d1220cb10 upstream.
+commit fec67b45bf045582c3172101970090d640cd56d9 upstream.
 
-My patch
+[v2: Editorial changes suggested by Sergei Shtylyov]
 
-   iwlwifi: use correct released ucode version
+These modems use the Qualcomm MSM Interface (QMI) protocol for
+management of their CDC ECM like wwan interface.  This driver
+is perfect for exporting the protocol to userspace.
 
-did not correctly report supported firmware
-for the 6035 device. This patch fixes it. The
-minimum supported firmware version for 6035
-is v6.
+The created character device will be indistinguishable from a
+common AT command based Device Management interface, so
+userspace applications must do some intelligent matching
+on the USB device.
 
-Also correct the minimum supported firmware
-version for the 6000g2 series of devices.
-
-Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2:
- - adjust context
- - make IWL_DEVICE_6035 identical for IWL_DEVICE_6030 except for the
-   ucode_api_* fields]
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/net/wireless/iwlwifi/iwl-6000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
-@@ -49,17 +49,20 @@
- #define IWL6000_UCODE_API_MAX 6
- #define IWL6050_UCODE_API_MAX 5
- #define IWL6000G2_UCODE_API_MAX 6
-+#define IWL6035_UCODE_API_MAX 6
+ drivers/usb/class/cdc-wdm.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
+index c154d4f..23cf9d3 100644
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -31,6 +31,8 @@
+ #define DRIVER_AUTHOR "Oliver Neukum"
+ #define DRIVER_DESC "USB Abstract Control Model driver for USB WCM Device Management"
  
- /* Oldest version we won't warn about */
- #define IWL6000_UCODE_API_OK 4
- #define IWL6000G2_UCODE_API_OK 5
- #define IWL6050_UCODE_API_OK 5
- #define IWL6000G2B_UCODE_API_OK 6
-+#define IWL6035_UCODE_API_OK 6
- 
- /* Lowest firmware API version supported */
- #define IWL6000_UCODE_API_MIN 4
- #define IWL6050_UCODE_API_MIN 4
--#define IWL6000G2_UCODE_API_MIN 4
-+#define IWL6000G2_UCODE_API_MIN 5
-+#define IWL6035_UCODE_API_MIN 6
- 
- #define IWL6000_FW_PRE "iwlwifi-6000-"
- #define IWL6000_MODULE_FIRMWARE(api) IWL6000_FW_PRE __stringify(api) ".ucode"
-@@ -436,9 +439,24 @@
- 	IWL_DEVICE_6030,
- };
- 
-+#define IWL_DEVICE_6035						\
-+	.fw_name_pre = IWL6030_FW_PRE,				\
-+	.ucode_api_max = IWL6035_UCODE_API_MAX,			\
-+	.ucode_api_ok = IWL6035_UCODE_API_OK,			\
-+	.ucode_api_min = IWL6035_UCODE_API_MIN,			\
-+	.eeprom_ver = EEPROM_6030_EEPROM_VERSION,		\
-+	.eeprom_calib_ver = EEPROM_6030_TX_POWER_VERSION,	\
-+	.lib = &iwl6030_lib,					\
-+	.base_params = &iwl6000_g2_base_params,			\
-+	.bt_params = &iwl6000_bt_params,			\
-+	.need_dc_calib = true,					\
-+	.need_temp_offset_calib = true,				\
-+	.led_mode = IWL_LED_RF_STATE,				\
-+	.adv_pm = true
++#define HUAWEI_VENDOR_ID	0x12D1
 +
- struct iwl_cfg iwl6035_2agn_cfg = {
- 	.name = "6035 Series 2x2 AGN/BT",
--	IWL_DEVICE_6030,
-+	IWL_DEVICE_6035,
- 	.ht_params = &iwl6000_ht_params,
+ static const struct usb_device_id wdm_ids[] = {
+ 	{
+ 		.match_flags = USB_DEVICE_ID_MATCH_INT_CLASS |
+@@ -38,6 +40,20 @@ static const struct usb_device_id wdm_ids[] = {
+ 		.bInterfaceClass = USB_CLASS_COMM,
+ 		.bInterfaceSubClass = USB_CDC_SUBCLASS_DMM
+ 	},
++	{
++		/* 
++		 * Huawei E392, E398 and possibly other Qualcomm based modems
++		 * embed the Qualcomm QMI protocol inside CDC on CDC ECM like
++		 * control interfaces.  Userspace access to this is required
++		 * to configure the accompanying data interface
++		 */
++		.match_flags        = USB_DEVICE_ID_MATCH_VENDOR |
++					USB_DEVICE_ID_MATCH_INT_INFO,
++		.idVendor           = HUAWEI_VENDOR_ID,
++		.bInterfaceClass    = USB_CLASS_VENDOR_SPEC,
++		.bInterfaceSubClass = 1,
++		.bInterfaceProtocol = 9, /* NOTE: CDC ECM control interface! */
++	},
+ 	{ }
  };
  
 
