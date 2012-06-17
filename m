@@ -1,162 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab2FQK66 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 06:58:58 -0400
-Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:35003 "EHLO
-	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754780Ab2FQK64 (ORCPT
+	id S1756977Ab2FQLYD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 07:24:03 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:41414 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755768Ab2FQLYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 06:58:56 -0400
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Jun 2012 06:58:56 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=hUAV01ciJPXLz/ry6zcq89t8XxJNKNhoxdBcsUOxHJLsPe4M4v9gr3Y00nI+aOme;
-  h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4FDDB714.2020005@earthlink.net>
-Date: Sun, 17 Jun 2012 03:53:08 -0700
-From: jdow <jdow@earthlink.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Martin Steigerwald <Martin@lichtvoll.de>
-CC: linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while
- OK in AmigaOS 4.1
-References: <201206171033.51625.Martin@lichtvoll.de>
-In-Reply-To: <201206171033.51625.Martin@lichtvoll.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Sun, 17 Jun 2012 07:24:00 -0400
+Message-ID: <1339932233.20497.14.camel@henna.lan>
+Subject: Re: video: USB webcam fails since kernel 3.2
+From: =?ISO-8859-1?Q?Martin-=C9ric?= Racine <martin-eric.racine@iki.fi>
+To: =?ISO-8859-1?Q?Jean-Fran=E7ois?= Moine <moinejf@free.fr>
+Cc: 677533@bugs.debian.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 17 Jun 2012 14:23:53 +0300
+In-Reply-To: <20120616044137.GB4076@burratino>
+References: <20120614162609.4613.22122.reportbug@henna.lan>
+	 <20120614215359.GF3537@burratino>
+	 <CAPZXPQd9gNCxn7xGyqj_xymPaF5OxvRtxRFkt+SsLs942te4og@mail.gmail.com>
+	 <20120616044137.GB4076@burratino>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1
 Content-Transfer-Encoding: 8bit
-X-ELNK-Trace: bb89ecdb26a8f9f24d2b10475b571120841c09a80b8d9eb616d46244ff0f08b215a7e2390362a40c350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 208.127.11.14
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the way, what did you use to setup the Amiga RDBs?
+pe, 2012-06-15 kello 23:41 -0500, Jonathan Nieder kirjoitti:
+> Martin-√âric Racine wrote:
+> > usb 1-7: new high-speed USB device number 3 using ehci_hcd
+> [...]
+> > usb 1-7: New USB device found, idVendor=0ac8, idProduct=0321
+> > usb 1-7: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+> > usb 1-7: Product: USB2.0 Web Camera
+> > usb 1-7: Manufacturer: Vimicro Corp.
+> [...]
+> > Linux media interface: v0.10
+> > Linux video capture interface: v2.00
+> > gspca_main: v2.14.0 registered
+> > gspca_main: vc032x-2.14.0 probing 0ac8:0321
+> > usbcore: registered new interface driver vc032x
+> 
+> The device of interest is discovered.
+> 
+> > gspca_main: ISOC data error: [36] len=0, status=-71
+> > gspca_main: ISOC data error: [65] len=0, status=-71
+> [...]
+> > gspca_main: ISOC data error: [48] len=0, status=-71
+> > video_source:sr[3246]: segfault at 0 ip   (null) sp ab36de1c error 14 in cheese[8048000+21000]
+> > gspca_main: ISOC data error: [17] len=0, status=-71
+> 
+> (The above data error spew starts around t=121 seconds and continues
+> at a rate of about 15 messages per second.  The segfault is around
+> t=154.)
+ 
+> The vc032x code hasn't changed since 3.4.1, so please report your
+> symptoms to Jean-Fran√ßois Moine <moinejf@free.fr>, cc-ing
+> linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, and either
+> me or this bug log so we can track it.  Be sure to mention:
+> 
+>  - steps to reproduce, expected result, actual result, and how the
+>    difference indicates a bug (should be simple enough in this case)
 
-{^_^}   Joanne Dow
+1. Ensure that user 'myself' is a member of the 'video' group.
+2. Launch the webcam application Cheese from the GNOME desktop.
 
-On 2012/06/17 01:33, Martin Steigerwald wrote:
-> Sorry, forgot to keep Cc.
->
-> I think I will keep the disk as is for a while. I just won¥t plug it to
-> the Amiga, since I have my Amiga backup on another dedicated
-> disk and do not want to overwrite my Linux backups. So its available
-> for testing for a while. It should be save as long as I use the disk
-> in Linux only.
->
-> For safety I will recreate all backups. I can checksum the BTRFS based
-> backup partition for checksum errors, but fscking the other non
-> BTRFS ones will only give a vague hint.
->
->
-> Am Sonntag, 17. Juni 2012 schrieb Martin Steigerwald:
->> Hi Jens, hi Linux m68k developers,
->>
->> I reported that as
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=43511
->>
->> I will attach there some more debug data like binary copy of RDB and
->> such.
->>
->> But maybe its easier to discuss here.
->
-> I think this one is pretty serious:
->
-> merkaba:~> pvdisplay /dev/sdb1
->    --- Physical volume ---
->    PV Name               /dev/sdb1
->    VG Name               steigerwald
->    PV Size               1,82 TiB / not usable 4,08 MiB
->    Allocatable           yes
->    PE Size               4,00 MiB
->    Total PE              476931
->    Free PE               105731
->    Allocated PE          371200
->    PV UUID               ZXMECC-JAir-lX8Q-rLhS-W1cS-quwz-b3FXWp
->
-> merkaba:~> vgdisplay steigerwald
->    --- Volume group ---
->    VG Name               steigerwald
->    System ID
->    Format                lvm2
->    Metadata Areas        2
->    Metadata Sequence No  7
->    VG Access             read/write
->    VG Status             resizable
->    MAX LV                0
->    Cur LV                5
->    Open LV               1
->    Max PV                0
->    Cur PV                1
->    Act PV                1
->    VG Size               1,82 TiB
->    PE Size               4,00 MiB
->    Total PE              476931
->    Alloc PE / Size       371200 / 1,42 TiB
->    Free  PE / Size       105731 / 413,01 GiB
->    VG UUID               uhjjE1-0yrD-Ch1A-d9qL-P5jY-UDXE-io4bpi
->
->
-> with
->
-> merkaba:~#1> amiga-fdisk -l /dev/sdc
-> Disk /dev/sdc: 3 heads, 16 sectors, 81396441 cylinders, RDB: 0
-> Logical Cylinders from 43 to 81396440, 24576  bytes/Cylinder
->
-> Device     Boot Mount   Begin      End     Size   Pri  BBlks    System
-> /dev/sdc1       *        43   65536043   1572864024     0      0  Linux
-> native
-> /dev/sdc2       *    65536044   78643244   314572824     0      0
-> [unknown]
-> /dev/sdc3       *    78643245   81396440   66076704     0      0  Amiga
-> FFS Int.
->
->
-> Due to truncating oversized partition instead of refusing to use
-> them the PV and consequently VG span the whole disk instead
-> of leaving space for the >350GB in the two other partitions:
->
-> merkaba:~> cat /proc/partitions
-> major minor  #blocks  name
->
->   [Ö]
->     8       16 1953514584 sdb
->     8       17 1953513552 sdb1
->
-> (now sdb instead of sdc back when I run amiga-fdisk)
->
->
-> This is just asking for trouble. Thus:
->
-> Bug 43521 - Amiga RDB partitions: truncates miscaluted partitions size
-> instead of refusing to use it
-> https://bugzilla.kernel.org/show_bug.cgi?id=43521
->
->
-> My suggestion is to bail out if a partition size looks insane and
-> impossible.
-> Having to manually fix it up to access the data on disk still looks better
-> to me than potentially overwriting lots of data.
->
->
->
-> Until today I never actually did an Amiga backup to the disk, I just
-> created the two Amiga partitions and copied some screenshots of them
-> but that might be enough to explain the checksum errors I found in a
-> BTRFS backup partition.
->
-> I am now checking my Linux backups. They might be save, cause not all
-> space on the volume group is used.
->
-> See:
->
-> kernel got struck while scrubbing BTRFS with node- and leafsize 32768
-> http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg17108.html
->
-> s/struck/stuck
->
-> Thanks,
->
+Expected result: Cheese displays whatever this laptop's camera sees.
+
+Actual result: Cheese crashes while attempting to access the camera.
+
+>  - how reproducible the bug is (100%?)
+
+100%
+
+>  - which kernel versions you have tested and result with each (what is
+>    the newest kernel version that worked?)
+
+It probably was 3.1.0 or some earlier 3.2 release (the upcoming Debian
+will release with 3.2.x; 3.4 was only used here for testing purposes),
+but I wouldn't know for sure since I don't use my webcam too often.
+
+>  - a log from booting and reproducing the bug, or a link to one
+
+See http://bugs.debian.org/677533 
+
+>  - any other weird symptoms or observations
+
+When testing the camera using the closed-source Skype 4.x compiled for
+Debian, the video preferences dialog shows that a USB 2.0 camera is
+found at /dev/video0. However, no image is shown. This would confirm the
+assumption that the issue lies with the kernel video driver, rather than
+with the Gstreamer framework that Cheese uses to access the camera.
+
+> Hopefully someone upstream will have ideas for commands to run or
+> patches to apply to further track down the cause.
+
+Let's indeed hope so. Thanks for providing these instructions!
+
+Regards,
+Martin-√âric
 
