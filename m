@@ -1,115 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab2FQT5B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 15:57:01 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63671 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab2FQT5A convert rfc822-to-8bit (ORCPT
+	id S1754984Ab2FQT6N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 15:58:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40135 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751386Ab2FQT6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 15:57:00 -0400
+	Sun, 17 Jun 2012 15:58:12 -0400
+Date: Sun, 17 Jun 2012 20:58:11 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Anuj Aggarwal <anuj.aggarwal@ti.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: tps65023: Fix mask for LDOs output voltage
+ select control
+Message-ID: <20120617195810.GK4267@opensource.wolfsonmicro.com>
+References: <1339653325.6769.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <1339962373-3224-1-git-send-email-geert@linux-m68k.org>
-References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org>
-Date: Sun, 17 Jun 2012 21:56:59 +0200
-X-Google-Sender-Auth: XBKQccG-6-FRALHkZYWPrCYMBvE
-Message-ID: <CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.5-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mPOSj6iWmtyhwOMz"
+Content-Disposition: inline
+In-Reply-To: <1339653325.6769.1.camel@phoenix>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 17, 2012 at 9:46 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.5-rc3 to v3.5-rc2[3], the summaries are:
->  - build errors: +235/-10
 
-Truckloads of powerpc "Unrecognized opcode" breakage, and
+--mPOSj6iWmtyhwOMz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-  + arch/mips/include/asm/bitops.h: error: static declaration of 'fls'
-follows non-static declaration:  => 615:50
-  + include/asm-generic/bitops/fls64.h: error: static declaration of
-'fls64' follows non-static declaration:  => 26:81, 18:81
-  + include/linux/bitops.h: error: conflicting types for 'fls_long':  => 160:55
+On Thu, Jun 14, 2012 at 01:55:25PM +0800, Axel Lin wrote:
+> According to the datasheet:
+> The LDO_CTRL registers are used to set the output voltage of LDO1 and LDO2.
+> LDO_CTRL[7] and LDO_CTRL[3] are reserved and should always be written to 0.
 
-various mips
+Applied, thanks.
 
-  + drivers/edac/mpc85xx_edac.c: error: too few arguments to function
-'edac_mc_alloc':  => 983:90
+--mPOSj6iWmtyhwOMz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-powerpc-randconfig
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  + drivers/net/ethernet/dlink/de600.c: error: expected expression
-before 'do':  => 146:2, 301:3, 210:3, 150:2, 468:2, 404:2, 208:3,
-495:3, 328:2, 138:2, 499:2, 217:3, 417:2, 136:2, 300:3, 464:2, 501:2,
-493:2, 206:2, 216:3, 254:4, 350:2, 196:3, 137:2, 405:2, 463:2
-  + drivers/scsi/pcmcia/sym53c500_cs.c: error: expected expression
-before 'do':  => 453:4, 434:4, 574:2, 371:2
-  + drivers/scsi/qlogicfas408.c: error: expected expression before
-'do':  => 234:2, 221:2, 312:3, 583:2, 535:2, 324:3, 85:2, 406:2,
-316:5, 569:9, 89:3, 230:2, 546:2
-  + drivers/staging/wlags49_h2/hcf.c: error: expected expression
-before 'do':  => 3375:4, 3592:3, 4378:3, 1135:3, 1203:3, 3593:3,
-4731:3, 3653:3, 704:4, 3802:3, 1150:2, 1209:2, 3645:10, 4178:2,
-3699:5, 3007:5, 4033:2, 787:3, 2646:4, 1190:2, 3797:3, 717:3, 2630:3,
-4732:3, 703:4, 3582:2, 751:5, 2629:3, 755:5, 3507:3, 1153:2, 750:5,
-3057:4, 781:4, 2654:4, 3700:5
-  + drivers/staging/wlags49_h25/../wlags49_h2/hcf.c: error: expected
-expression before 'do':  => 3375:4, 3592:3, 4378:3, 1135:3, 1203:3,
-3593:3, 4731:3, 3653:3, 704:4, 3802:3, 1150:2, 1209:2, 3645:10,
-3699:5, 4033:2, 787:3, 2646:4, 1190:2, 717:3, 2630:3, 4732:3, 703:4,
-3582:2, 751:5, 2629:3, 755:5, 3507:3, 1153:2, 750:5, 3057:4, 781:4,
-2654:4, 3700:5
+iQIcBAEBAgAGBQJP3jbMAAoJEBus8iNuMP3dI4IP/08ntl7bX7+HXuBh5GRJ6RhX
+7s3q8z2rXlOowzrQWEY+lWe1/0cXzvTCLK58bCSCxBVWCFH1VXyQyuILmdsTRe4U
+U90SUyV81Jw7WrWR1ZynxtfDSDrlq2XmYJwr+W8bscZflhvjaYqdQxad74TpaIeC
+0x+ej82a9SjBcR1JDqnsR5c80cXpn3u+/6Zc6sFTYHPHIaWJtEkZjrqJtjfTqyYU
+1E3kumzuTnmq5yDJvnoRcb5xqtZ2glKixMOy7O/7wNknWrUQTuJVSUsh33BQjGOL
+uB5LjiEXwXIPNToykSLaM2gGJWRCmbNdKmURtTqphiLpQczJqmBRqeYKcshdrxg1
+ZrIFLBoyw0e7Tj/JlMMXeN1v8h8a7byGCzBX4rmPlKWpzI5kQ9tB3cP7dIbI1tAX
+mUOLRAyM8v9sf+SdshbALx62COwv5V22KYK2bviU/NjGSk5gZZeZalvxOUWdw7yB
+0xCsXO0nT8AQPgpTjfCeEd9zdFPMm3ku5fj2GPUBeTZD17jcNqKRZGyRl8UXVDFY
+7j0BeFDMWhY9ZFTmmdPLLxjAomJwUlrssLBSBiTQK/tk8iEQCRCRKyOV3DVUL9da
+MjEc1iVAsYGv3SA3ezPZApqLCjwsJQZxgX7Tjj/PLnO4MWZUmx3hB0pDYdQzGur/
+cVaVKAFS+9MUssHgwp6u
+=AO+r
+-----END PGP SIGNATURE-----
 
-sh-allyesconfig/sh-allmodconfig
-
-  + drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c: error: implicit
-declaration of function 'pci_iomap'
-[-Werror=implicit-function-declaration]:  => 90:3
-  + drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c: error: implicit
-declaration of function 'pci_iounmap'
-[-Werror=implicit-function-declaration]:  => 142:2
-
-xtensa
-
-  + error: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!:  => N/A
-  + error: "__lshrdi3" [fs/ntfs/ntfs.ko] undefined!:  => N/A
-
-sh4/landisk_defconfig
-
-  + error: "__ashrdi3" [fs/xfs/xfs.ko] undefined!:  => N/A
-  + error: "__lshrdi3" [drivers/mtd/mtd.ko] undefined!:  => N/A
-  + error: "__lshrdi3" [fs/xfs/xfs.ko] undefined!:  => N/A
-
-sh4/titan_defconfig
-
-  + error: No rule to make target include/config/auto.conf:  => N/A
-
-x86_64-randconfig
-
-  + kernel/sys.c: error: 'mmap_min_addr' undeclared (first use in this
-function):  => 1864:34, 1864:2
-  + security/security.c: error: 'BDI_CAP_EXEC_MAP' undeclared (first
-use in this function):  => 688:16, 688:3
-  + security/security.c: error: dereferencing pointer to incomplete
-type:  => 687:36
-
-sh-allyesconfig/sh-allmodconfig/sh-randconfig
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--mPOSj6iWmtyhwOMz--
