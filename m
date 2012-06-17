@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab2FQRyN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 13:54:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37691 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757700Ab2FQRyM (ORCPT
+	id S1757781Ab2FQR43 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 13:56:29 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:36499 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757703Ab2FQR42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 13:54:12 -0400
-Date: Sun, 17 Jun 2012 18:54:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: "ksummit-2012-discuss@lists.linux-foundation.org" 
-	<ksummit-2012-discuss@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] [ATTEND] Discussion: role of the
- maintainer?
-Message-ID: <20120617175406.GC10241@sirena.org.uk>
-References: <1339875074.8267.87.camel@lade.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339875074.8267.87.camel@lade.trondhjem.org>
-X-Cookie: "But I don't like Spam!!!!"
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Sun, 17 Jun 2012 13:56:28 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 17 Jun 2012 19:56:17 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: core: add is_local sysfs device attribute
+Message-ID: <20120617195617.372a35c5@stein>
+In-Reply-To: <4FDDEC64.5080004@ladisch.de>
+References: <4FDDEC64.5080004@ladisch.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 07:31:19PM +0000, Myklebust, Trond wrote:
+On Jun 17 Clemens Ladisch wrote:
+> Making this information available in sysfs allows to differentiate
+> between controllers in the local and remote Linux PCs, and thus is
+> useful for servers that are started with udev rules.
+> 
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 
-> My question is whether or not there might be some value in splitting out
-> some of these roles, so that we can assign them to different people, and
-> thus help to address the scalability issues that Thomas raised? For
-> instance, would it be useful to have a separate 'software maintainer'
-> role for dealing with post-merge issues, such as ensuring that bugs and
-> regressions get fixed by someone?
+Looks good to me.  Cc'ing LKML, and sending ABI documentation in a reply.
 
-I mostly agree with Guenter's comments on this, I think that overall
-it's much better to give people permission to do more (which naturally
-takes off a bit of the load) and let things flow than to try anything
-formal.
+> ---
+>  drivers/firewire/core-device.c |    9 +++++++++
+>  include/linux/firewire.h       |    2 +-
+>  2 files changed, 10 insertions(+), 1 deletions(-)
+> 
+> --- a/drivers/firewire/core-device.c
+> +++ b/drivers/firewire/core-device.c
+> @@ -398,6 +398,14 @@ static ssize_t guid_show(struct device *dev,
+>  	return ret;
+>  }
+> 
+> +static ssize_t is_local_show(struct device *dev,
+> +			     struct device_attribute *attr, char *buf)
+> +{
+> +	struct fw_device *device = fw_device(dev);
+> +
+> +	return sprintf(buf, "%u\n", device->is_local);
+> +}
+> +
+>  static int units_sprintf(char *buf, const u32 *directory)
+>  {
+>  	struct fw_csr_iterator ci;
+> @@ -447,6 +455,7 @@ static ssize_t units_show(struct device *dev,
+>  static struct device_attribute fw_device_attributes[] = {
+>  	__ATTR_RO(config_rom),
+>  	__ATTR_RO(guid),
+> +	__ATTR_RO(is_local),
+>  	__ATTR_RO(units),
+>  	__ATTR_NULL,
+>  };
+> --- a/include/linux/firewire.h
+> +++ b/include/linux/firewire.h
+> @@ -152,7 +152,7 @@ static inline void fw_card_put(struct fw_card *card)
+>  struct fw_attribute_group {
+>  	struct attribute_group *groups[2];
+>  	struct attribute_group group;
+> -	struct attribute *attrs[12];
+> +	struct attribute *attrs[13];
+>  };
+> 
+>  enum fw_device_state {
 
-> If so, how do we ensure that people get credit for the roles that they
-> assume? Should we perhaps add additional entries to the MAINTAINERS file
-> for some of these responsibilities?
 
-I do sometimes find myself wishing there were more postive things I
-could do to say "X is doing an awesome job, you should pay attention to
-them/do things like they do/whatever", doing that and saying things
-directly to people is good but it's not as discoverable for new
-contributors as it might be.  I'm all out of useful ideas for how to do
-that, though.
+
+-- 
+Stefan Richter
+-=====-===-- -==- =---=
+http://arcgraph.de/sr/
