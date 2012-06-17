@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757803Ab2FQR5i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 13:57:38 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:36511 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757708Ab2FQR5h (ORCPT
+	id S1757825Ab2FQSBX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:01:23 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33743 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757708Ab2FQSBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 13:57:37 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 17 Jun 2012 19:57:23 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] firewire: core: document is_local sysfs attribute
-Message-ID: <20120617195723.067510d5@stein>
-In-Reply-To: <20120617195617.372a35c5@stein>
-References: <4FDDEC64.5080004@ladisch.de>
-	<20120617195617.372a35c5@stein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 17 Jun 2012 14:01:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1339927893-8842-2-git-send-email-stigge@antcom.de>
+References: <1339927893-8842-1-git-send-email-stigge@antcom.de>
+	<1339927893-8842-2-git-send-email-stigge@antcom.de>
+Date: Sun, 17 Jun 2012 20:01:21 +0200
+Message-ID: <CACRpkdaVciTXZ0XY5RvWzHPwh5iXQ7DVSD48K7prgmY0WdyF9g@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] mmc: mmci.c: Defer probe() in case of yet
+ uninitialized GPIOs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- Documentation/ABI/stable/sysfs-bus-firewire |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+On Sun, Jun 17, 2012 at 12:11 PM, Roland Stigge <stigge@antcom.de> wrote:
 
---- a/Documentation/ABI/stable/sysfs-bus-firewire
-+++ b/Documentation/ABI/stable/sysfs-bus-firewire
-@@ -39,6 +39,17 @@ Users:		udev rules to set ownership and
- 		/dev/fw[0-9]+ character device files
- 
- 
-+What:		/sys/bus/firewire/devices/fw[0-9]+/is_local
-+Date:		July 2012
-+KernelVersion:	3.6
-+Contact:	linux1394-devel@lists.sourceforge.net
-+Description:
-+		IEEE 1394 node device attribute.
-+		Read-only and immutable.
-+Values:		1: The sysfs entry represents a local node (a controller card).
-+		0: The sysfs entry represents a remote node.
-+
-+
- What:		/sys/bus/firewire/devices/fw[0-9]+[.][0-9]+/
- Date:		May 2007
- KernelVersion:	2.6.22
+> If the GPIOs used by the MMCI driver are not registered yet when the driver is
+> probe()d, they can't be used. This happens if the mmci driver is probed before
+> the respective GPIO controller (e.g. on the LPC32xx EA3250 board, the PCA9532
+> GPIO controller would be initialized via DT after mmci). Therefore, we defer
+> mmci in this case.
+>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Pls put this into Russell's patch tracker.
 
--- 
-Stefan Richter
--=====-===-- -==- =---=
-http://arcgraph.de/sr/
+Yours,
+Linus Walleij
