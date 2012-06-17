@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab2FQSXL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:23:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50163 "EHLO
+	id S1758767Ab2FQSXI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:23:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50159 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757977Ab2FQSWV (ORCPT
+	by vger.kernel.org with ESMTP id S1757971Ab2FQSWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:21 -0400
-Message-Id: <20120617175951.238337756@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:19 -0400
+Message-Id: <20120617175951.375230652@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:49 +0100
+Date: Sun, 17 Jun 2012 19:00:50 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>
-Subject: [ 68/69] swap: fix shmem swapping when more than 8 areas
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 69/69] drm/radeon: add some additional 6xx/7xx/EG register init
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,101 +28,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9b15b817f3d62409290fd56fe3cbb076a931bb0a upstream.
+commit b866d1334ba2d544bc575d75357dea6bdcdc7f46 upstream.
 
-Minchan Kim reports that when a system has many swap areas, and tmpfs
-swaps out to the ninth or more, shmem_getpage_gfp()'s attempts to read
-back the page cannot locate it, and the read fails with -ENOMEM.
+- SMX_SAR_CTL0 needs to be programmed correctly to prevent
+problems with memory exports in certain cases.
+- VC_ENHANCE needs to be initialized on 6xx/7xx.
 
-Whoops.  Yes, I blindly followed read_swap_header()'s pte_to_swp_entry(
-swp_entry_to_pte()) technique for determining maximum usable swap
-offset, without stopping to realize that that actually depends upon the
-pte swap encoding shifting swap offset to the higher bits and truncating
-it there.  Whereas our radix_tree swap encoding leaves offset in the
-lower bits: it's swap "type" (that is, index of swap area) that was
-truncated.
-
-Fix it by reducing the SWP_TYPE_SHIFT() in swapops.h, and removing the
-broken radix_to_swp_entry(swp_to_radix_entry()) from read_swap_header().
-
-This does not reduce the usable size of a swap area any further, it
-leaves it as claimed when making the original commit: no change from 3.0
-on x86_64, nor on i386 without PAE; but 3.0's 512GB is reduced to 128GB
-per swapfile on i386 with PAE.  It's not a change I would have risked
-five years ago, but with x86_64 supported for ten years, I believe it's
-appropriate now.
-
-Hmm, and what if some architecture implements its swap pte with offset
-encoded below type? That would equally break the maximum usable swap
-offset check.  Happily, they all follow the same tradition of encoding
-offset above type, but I'll prepare a check on that for next.
-
-Reported-and-Reviewed-and-Tested-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/swapops.h |    8 +++++---
- mm/swapfile.c           |   12 ++++--------
- 2 files changed, 9 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c  |    3 +++
+ drivers/gpu/drm/radeon/evergreend.h |    1 +
+ drivers/gpu/drm/radeon/r600.c       |    1 +
+ drivers/gpu/drm/radeon/r600d.h      |    1 +
+ drivers/gpu/drm/radeon/rv770.c      |    5 ++++-
+ drivers/gpu/drm/radeon/rv770d.h     |    3 +++
+ 6 files changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/swapops.h b/include/linux/swapops.h
-index 792d16d..47ead51 100644
---- a/include/linux/swapops.h
-+++ b/include/linux/swapops.h
-@@ -9,13 +9,15 @@
-  * get good packing density in that tree, so the index should be dense in
-  * the low-order bits.
-  *
-- * We arrange the `type' and `offset' fields so that `type' is at the five
-+ * We arrange the `type' and `offset' fields so that `type' is at the seven
-  * high-order bits of the swp_entry_t and `offset' is right-aligned in the
-- * remaining bits.
-+ * remaining bits.  Although `type' itself needs only five bits, we allow for
-+ * shmem/tmpfs to shift it all up a further two bits: see swp_to_radix_entry().
-  *
-  * swp_entry_t's are *never* stored anywhere in their arch-dependent format.
-  */
--#define SWP_TYPE_SHIFT(e)	(sizeof(e.val) * 8 - MAX_SWAPFILES_SHIFT)
-+#define SWP_TYPE_SHIFT(e)	((sizeof(e.val) * 8) - \
-+			(MAX_SWAPFILES_SHIFT + RADIX_TREE_EXCEPTIONAL_SHIFT))
- #define SWP_OFFSET_MASK(e)	((1UL << SWP_TYPE_SHIFT(e)) - 1)
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 01550d0..7fb3d2e 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1932,6 +1932,9 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
+ 	smx_dc_ctl0 |= NUMBER_OF_SETS(rdev->config.evergreen.sx_num_of_sets);
+ 	WREG32(SMX_DC_CTL0, smx_dc_ctl0);
  
- /*
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index de5bc51..71373d0 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1916,24 +1916,20 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
++	if (rdev->family <= CHIP_SUMO2)
++		WREG32(SMX_SAR_CTL0, 0x00010000);
++
+ 	WREG32(SX_EXPORT_BUFFER_SIZES, (COLOR_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_size / 4) - 1) |
+ 					POSITION_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_pos_size / 4) - 1) |
+ 					SMX_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_smx_size / 4) - 1)));
+diff --git a/drivers/gpu/drm/radeon/evergreend.h b/drivers/gpu/drm/radeon/evergreend.h
+index 2773039..b50b15c 100644
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -503,6 +503,7 @@
+ #define	SCRATCH_UMSK					0x8540
+ #define	SCRATCH_ADDR					0x8544
  
- 	/*
- 	 * Find out how many pages are allowed for a single swap
--	 * device. There are three limiting factors: 1) the number
-+	 * device. There are two limiting factors: 1) the number
- 	 * of bits for the swap offset in the swp_entry_t type, and
- 	 * 2) the number of bits in the swap pte as defined by the
--	 * the different architectures, and 3) the number of free bits
--	 * in an exceptional radix_tree entry. In order to find the
-+	 * different architectures. In order to find the
- 	 * largest possible bit mask, a swap entry with swap type 0
- 	 * and swap offset ~0UL is created, encoded to a swap pte,
- 	 * decoded to a swp_entry_t again, and finally the swap
- 	 * offset is extracted. This will mask all the bits from
- 	 * the initial ~0UL mask that can't be encoded in either
- 	 * the swp_entry_t or the architecture definition of a
--	 * swap pte.  Then the same is done for a radix_tree entry.
-+	 * swap pte.
- 	 */
- 	maxpages = swp_offset(pte_to_swp_entry(
--			swp_entry_to_pte(swp_entry(0, ~0UL))));
--	maxpages = swp_offset(radix_to_swp_entry(
--			swp_to_radix_entry(swp_entry(0, maxpages)))) + 1;
++#define	SMX_SAR_CTL0					0xA008
+ #define	SMX_DC_CTL0					0xA020
+ #define		USE_HASH_FUNCTION				(1 << 0)
+ #define		NUMBER_OF_SETS(x)				((x) << 1)
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index f30dc95..bff6272 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -1839,6 +1839,7 @@ void r600_gpu_init(struct radeon_device *rdev)
+ 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
+ 			       NUM_CLIP_SEQ(3)));
+ 	WREG32(PA_SC_ENHANCE, FORCE_EOV_MAX_CLK_CNT(4095));
++	WREG32(VC_ENHANCE, 0);
+ }
+ 
+ 
+diff --git a/drivers/gpu/drm/radeon/r600d.h b/drivers/gpu/drm/radeon/r600d.h
+index a0dbf1f..c6857e8 100644
+--- a/drivers/gpu/drm/radeon/r600d.h
++++ b/drivers/gpu/drm/radeon/r600d.h
+@@ -485,6 +485,7 @@
+ #define		TC_L2_SIZE(x)					((x)<<5)
+ #define		L2_DISABLE_LATE_HIT				(1<<9)
+ 
++#define	VC_ENHANCE					0x9714
+ 
+ #define	VGT_CACHE_INVALIDATION				0x88C4
+ #define		CACHE_INVALIDATION(x)				((x)<<0)
+diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
+index 4ad0281..b4f51c5 100644
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -616,6 +616,9 @@ static void rv770_gpu_init(struct radeon_device *rdev)
+ 				       ACK_FLUSH_CTL(3) |
+ 				       SYNC_FLUSH_CTL));
+ 
++	if (rdev->family != CHIP_RV770)
++		WREG32(SMX_SAR_CTL0, 0x00003f3f);
++
+ 	db_debug3 = RREG32(DB_DEBUG3);
+ 	db_debug3 &= ~DB_CLK_OFF_DELAY(0x1f);
+ 	switch (rdev->family) {
+@@ -792,7 +795,7 @@ static void rv770_gpu_init(struct radeon_device *rdev)
+ 
+ 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
+ 					  NUM_CLIP_SEQ(3)));
 -
-+			swp_entry_to_pte(swp_entry(0, ~0UL)))) + 1;
- 	if (maxpages > swap_header->info.last_page) {
- 		maxpages = swap_header->info.last_page + 1;
- 		/* p->max is an unsigned int: don't overflow it */
++	WREG32(VC_ENHANCE, 0);
+ }
+ 
+ void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
+diff --git a/drivers/gpu/drm/radeon/rv770d.h b/drivers/gpu/drm/radeon/rv770d.h
+index fdc0898..b0adfc5 100644
+--- a/drivers/gpu/drm/radeon/rv770d.h
++++ b/drivers/gpu/drm/radeon/rv770d.h
+@@ -211,6 +211,7 @@
+ #define	SCRATCH_UMSK					0x8540
+ #define	SCRATCH_ADDR					0x8544
+ 
++#define	SMX_SAR_CTL0					0xA008
+ #define	SMX_DC_CTL0					0xA020
+ #define		USE_HASH_FUNCTION				(1 << 0)
+ #define		CACHE_DEPTH(x)					((x) << 1)
+@@ -310,6 +311,8 @@
+ #define	TCP_CNTL					0x9610
+ #define	TCP_CHAN_STEER					0x9614
+ 
++#define	VC_ENHANCE					0x9714
++
+ #define	VGT_CACHE_INVALIDATION				0x88C4
+ #define		CACHE_INVALIDATION(x)				((x)<<0)
+ #define			VC_ONLY						0
 
 
