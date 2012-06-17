@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758747Ab2FQSfM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:35:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50239 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758138Ab2FQSWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758147Ab2FQSWm (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 17 Jun 2012 14:22:42 -0400
-Message-Id: <20120617175949.555437505@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50102 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757940Ab2FQSWM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Jun 2012 14:22:12 -0400
+Message-Id: <20120617175942.485345075@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 19:00:38 +0100
+Date: Sun, 17 Jun 2012 18:59:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 57/69] target: Return error to initiator if SET TARGET PORT GROUPS
- emulation fails
+        alan@lxorguk.ukuu.org.uk, Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 08/69] drm/nouveau: determine a value for display_info.bpc if edid doesnt
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,51 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 59e4f541baf728dbb426949bfa9f6862387ffd0e upstream.
+commit 6322175530c89ab719cea28202f96a3660491727 upstream.
 
-The error paths in target_emulate_set_target_port_groups() are all
-essentially "rc = -EINVAL; goto out;" but the code at "out:" ignores
-rc and always returns success.  This means that even if eg explicit
-ALUA is turned off, the initiator will always see a good SCSI status
-for SET TARGET PORT GROUPS.
-
-Fix this by returning rc as is intended.  It appears this bug was
-added by the following patch:
-
-commit 05d1c7c0d0db4cc25548d9aadebb416888a82327
-Author: Andy Grover <agrover@redhat.com>
-Date:   Wed Jul 20 19:13:28 2011 +0000
-
-    target: Make all control CDBs scatter-gather
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[bwh: Backported to 3.2: we have transport_complete_task()
- and not target_complete_cmd()]
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_alua.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_connector.c |   46 +++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -352,9 +352,11 @@
- 
- out:
- 	transport_kunmap_data_sg(cmd);
--	task->task_scsi_status = GOOD;
--	transport_complete_task(task, 1);
--	return 0;
-+	if (!rc) {
-+		task->task_scsi_status = GOOD;
-+		transport_complete_task(task, 1);
-+	}
-+	return rc;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
+index 5e830a5..fc42ea8 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_connector.c
++++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
+@@ -644,6 +644,46 @@ nouveau_connector_scaler_modes_add(struct drm_connector *connector)
+ 	return modes;
  }
  
- static inline int core_alua_state_nonoptimized(
++static void
++nouveau_connector_detect_depth(struct drm_connector *connector)
++{
++	struct drm_nouveau_private *dev_priv = connector->dev->dev_private;
++	struct nouveau_connector *nv_connector = nouveau_connector(connector);
++	struct nouveau_encoder *nv_encoder = nv_connector->detected_encoder;
++	struct nvbios *bios = &dev_priv->vbios;
++	struct drm_display_mode *mode = nv_connector->native_mode;
++	bool duallink;
++
++	/* if the edid is feeling nice enough to provide this info, use it */
++	if (nv_connector->edid && connector->display_info.bpc)
++		return;
++
++	/* if not, we're out of options unless we're LVDS, default to 6bpc */
++	connector->display_info.bpc = 6;
++	if (nv_encoder->dcb->type != OUTPUT_LVDS)
++		return;
++
++	/* LVDS: panel straps */
++	if (bios->fp_no_ddc) {
++		if (bios->fp.if_is_24bit)
++			connector->display_info.bpc = 8;
++		return;
++	}
++
++	/* LVDS: DDC panel, need to first determine the number of links to
++	 * know which if_is_24bit flag to check...
++	 */
++	if (nv_connector->edid &&
++	    nv_connector->dcb->type == DCB_CONNECTOR_LVDS_SPWG)
++		duallink = ((u8 *)nv_connector->edid)[121] == 2;
++	else
++		duallink = mode->clock >= bios->fp.duallink_transition_clk;
++
++	if ((!duallink && (bios->fp.strapless_is_24bit & 1)) ||
++	    ( duallink && (bios->fp.strapless_is_24bit & 2)))
++		connector->display_info.bpc = 8;
++}
++
+ static int
+ nouveau_connector_get_modes(struct drm_connector *connector)
+ {
+@@ -688,6 +728,12 @@ nouveau_connector_get_modes(struct drm_connector *connector)
+ 		ret = 1;
+ 	}
+ 
++	/* Attempt to determine display colour depth, this has to happen after
++	 * we've determined the "native" mode for LVDS, as the VBIOS tables
++	 * require us to compare against a pixel clock in some cases..
++	 */
++	nouveau_connector_detect_depth(connector);
++
+ 	if (nv_encoder->dcb->type == OUTPUT_TV)
+ 		ret = get_slave_funcs(encoder)->get_modes(encoder, connector);
+ 
 
 
