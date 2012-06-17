@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238Ab2FQSWp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 14:22:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50111 "EHLO
+	id S1759240Ab2FQSdi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 14:33:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50268 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757949Ab2FQSWN (ORCPT
+	by vger.kernel.org with ESMTP id S1758176Ab2FQSWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 14:22:13 -0400
-Message-Id: <20120617175942.199514663@decadent.org.uk>
+	Sun, 17 Jun 2012 14:22:45 -0400
+Message-Id: <20120617175949.697704759@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Jun 2012 18:59:47 +0100
+Date: Sun, 17 Jun 2012 19:00:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Cliff Wickman <cpw@sgi.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 06/69] x86/uv: Fix UV2 BAU legacy mode
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        =?ISO-8859-15?q?D=C3=A2niel=20Fraga?= <fragabr@gmail.com>,
+        Andrey Rahmatullin <wrar@wrar.name>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 58/69] USB: add NO_D3_DURING_SLEEP flag and revert 151b61284776be2
 In-Reply-To: <20120617175941.281333656@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,52 +32,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cliff Wickman <cpw@sgi.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8 upstream.
+commit c2fb8a3fa25513de8fedb38509b1f15a5bbee47b upstream.
 
-The SGI Altix UV2 BAU (Broadcast Assist Unit) as used for
-tlb-shootdown (selective broadcast mode) always uses UV2
-broadcast descriptor format. There is no need to clear the
-'legacy' (UV1) mode, because the hardware always uses UV2 mode
-for selective broadcast.
+This patch (as1558) fixes a problem affecting several ASUS computers:
+The machine crashes or corrupts memory when going into suspend if the
+ehci-hcd driver is bound to any controllers.  Users have been forced
+to unbind or unload ehci-hcd before putting their systems to sleep.
 
-But the BIOS uses general broadcast and legacy mode, and the
-hardware pays attention to the legacy mode bit for general
-broadcast. So the kernel must not clear that mode bit.
+After extensive testing, it was determined that the machines don't
+like going into suspend when any EHCI controllers are in the PCI D3
+power state.  Presumably this is a firmware bug, but there's nothing
+we can do about it except to avoid putting the controllers in D3
+during system sleep.
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Link: http://lkml.kernel.org/r/E1SccoO-0002Lh-Cb@eag09.americas.sgi.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+The patch adds a new flag to indicate whether the problem is present,
+and avoids changing the controller's power state if the flag is set.
+Runtime suspend is unaffected; this matters only for system suspend.
+However as a side effect, the controller will not respond to remote
+wakeup requests while the system is asleep.  Hence USB wakeup is not
+functional -- but of course, this is already true in the current state
+of affairs.
+
+A similar patch has already been applied as commit
+151b61284776be2d6f02d48c23c3625678960b97 (USB: EHCI: fix crash during
+suspend on ASUS computers).  The patch supersedes that one and reverts
+it.  There are two differences:
+
+	The old patch added the flag at the USB level; this patch
+	adds it at the PCI level.
+
+	The old patch applied to all chipsets with the same vendor,
+	subsystem vendor, and product IDs; this patch makes an
+	exception for a known-good system (based on DMI information).
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Dâniel Fraga <fragabr@gmail.com>
+Tested-by: Andrey Rahmatullin <wrar@wrar.name>
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/uv/uv_bau.h |    1 -
- arch/x86/platform/uv/tlb_uv.c    |    1 -
- 2 files changed, 2 deletions(-)
+ drivers/pci/pci.c           |    5 +++++
+ drivers/pci/quirks.c        |   26 ++++++++++++++++++++++++++
+ drivers/usb/core/hcd-pci.c  |    9 ---------
+ drivers/usb/host/ehci-pci.c |    8 --------
+ include/linux/pci.h         |    2 ++
+ include/linux/usb/hcd.h     |    2 --
+ 6 files changed, 33 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index becf47b..6149b47 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -149,7 +149,6 @@
- /* 4 bits of software ack period */
- #define UV2_ACK_MASK			0x7UL
- #define UV2_ACK_UNITS_SHFT		3
--#define UV2_LEG_SHFT UV2H_LB_BAU_MISC_CONTROL_USE_LEGACY_DESCRIPTOR_FORMATS_SHFT
- #define UV2_EXT_SHFT UV2H_LB_BAU_MISC_CONTROL_ENABLE_EXTENDED_SB_STATUS_SHFT
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1689,6 +1689,11 @@
+ 	if (target_state == PCI_POWER_ERROR)
+ 		return -EIO;
  
- /*
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 3ae0e61..59880af 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1295,7 +1295,6 @@ static void __init enable_timeouts(void)
- 		 */
- 		mmr_image |= (1L << SOFTACK_MSHIFT);
- 		if (is_uv2_hub()) {
--			mmr_image &= ~(1L << UV2_LEG_SHFT);
- 			mmr_image |= (1L << UV2_EXT_SHFT);
++	/* Some devices mustn't be in D3 during system sleep */
++	if (target_state == PCI_D3hot &&
++			(dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP))
++		return 0;
++
+ 	pci_enable_wake(dev, target_state, device_may_wakeup(&dev->dev));
+ 
+ 	error = pci_set_power_state(dev, target_state);
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2940,6 +2940,32 @@
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
+ 
++/*
++ * The Intel 6 Series/C200 Series chipset's EHCI controllers on many
++ * ASUS motherboards will cause memory corruption or a system crash
++ * if they are in D3 while the system is put into S3 sleep.
++ */
++static void __devinit asus_ehci_no_d3(struct pci_dev *dev)
++{
++	const char *sys_info;
++	static const char good_Asus_board[] = "P8Z68-V";
++
++	if (dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP)
++		return;
++	if (dev->subsystem_vendor != PCI_VENDOR_ID_ASUSTEK)
++		return;
++	sys_info = dmi_get_system_info(DMI_BOARD_NAME);
++	if (sys_info && memcmp(sys_info, good_Asus_board,
++			sizeof(good_Asus_board) - 1) == 0)
++		return;
++
++	dev_info(&dev->dev, "broken D3 during system sleep on ASUS\n");
++	dev->dev_flags |= PCI_DEV_FLAGS_NO_D3_DURING_SLEEP;
++	device_set_wakeup_capable(&dev->dev, false);
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x1c26, asus_ehci_no_d3);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x1c2d, asus_ehci_no_d3);
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -495,15 +495,6 @@
+ 
+ 	pci_save_state(pci_dev);
+ 
+-	/*
+-	 * Some systems crash if an EHCI controller is in D3 during
+-	 * a sleep transition.  We have to leave such controllers in D0.
+-	 */
+-	if (hcd->broken_pci_sleep) {
+-		dev_dbg(dev, "Staying in PCI D0\n");
+-		return retval;
+-	}
+-
+ 	/* If the root hub is dead rather than suspended, disallow remote
+ 	 * wakeup.  usb_hc_died() should ensure that both hosts are marked as
+ 	 * dying, so we only need to check the primary roothub.
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -144,14 +144,6 @@
+ 			hcd->has_tt = 1;
+ 			tdi_reset(ehci);
  		}
- 		write_mmr_misc_control(pnode, mmr_image);
+-		if (pdev->subsystem_vendor == PCI_VENDOR_ID_ASUSTEK) {
+-			/* EHCI #1 or #2 on 6 Series/C200 Series chipset */
+-			if (pdev->device == 0x1c26 || pdev->device == 0x1c2d) {
+-				ehci_info(ehci, "broken D3 during system sleep on ASUS\n");
+-				hcd->broken_pci_sleep = 1;
+-				device_set_wakeup_capable(&pdev->dev, false);
+-			}
+-		}
+ 		break;
+ 	case PCI_VENDOR_ID_TDI:
+ 		if (pdev->device == PCI_DEVICE_ID_TDI_EHCI) {
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -176,6 +176,8 @@
+ 	PCI_DEV_FLAGS_NO_D3 = (__force pci_dev_flags_t) 2,
+ 	/* Provide indication device is assigned by a Virtual Machine Manager */
+ 	PCI_DEV_FLAGS_ASSIGNED = (__force pci_dev_flags_t) 4,
++	/* Device causes system crash if in D3 during S3 sleep */
++	PCI_DEV_FLAGS_NO_D3_DURING_SLEEP = (__force pci_dev_flags_t) 8,
+ };
+ 
+ enum pci_irq_reroute_variant {
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -128,8 +128,6 @@
+ 	unsigned		wireless:1;	/* Wireless USB HCD */
+ 	unsigned		authorized_default:1;
+ 	unsigned		has_tt:1;	/* Integrated TT in root hub */
+-	unsigned		broken_pci_sleep:1;	/* Don't put the
+-			controller in PCI-D3 for system sleep */
+ 
+ 	int			irq;		/* irq allocated */
+ 	void __iomem		*regs;		/* device memory/io */
 
 
