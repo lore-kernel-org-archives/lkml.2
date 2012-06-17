@@ -1,145 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab2FQGff (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 02:35:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62368 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab2FQGfe (ORCPT
+	id S1752694Ab2FQGlZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 02:41:25 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:49160 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab2FQGlY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 02:35:34 -0400
-Message-ID: <4FDD7AA8.6080601@gmail.com>
-Date: Sun, 17 Jun 2012 00:35:20 -0600
-From: Hakan Akkan <hakanakkan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 17 Jun 2012 02:41:24 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: Partitions: Amiga RDB partition on 2 TB disk way too big, while OK in AmigaOS 4.1
+Date: Sun, 17 Jun 2012 08:41:20 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
+Cc: Jens Axboe <axboe@kernel.dk>, linux-m68k@vger.kernel.org
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] nohz/cpuset: Make a CPU stick with do_timer() duty in the
- presence of nohz cpusets
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201206170841.20222.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An adaptive nohz (AHZ) CPU may not do do_timer() for a while
-despite being non-idle. When all other CPUs are idle, AHZ
-CPUs might be using stale jiffies values. To prevent this
-always keep a CPU with ticks if there is one or more AHZ
-CPUs.
+Hi Jens, hi Linux m68k developers,
 
-The patch changes can_stop_{idle,adaptive}_tick functions
-and prevents either the last CPU who did the do_timer() duty
-or the AHZ CPU itself from stopping its sched timer if there
-is one or more AHZ CPUs in the system. This means AHZ CPUs
-might keep the ticks running for short periods until a
-non-AHZ CPU takes the charge away in
-tick_do_timer_check_handler() function. When a non-AHZ CPU
-takes the charge, it never gives it away so that AHZ CPUs
-can run tickless.
+I reported that as
 
-Signed-off-by: Hakan Akkan <hakanakkan@gmail.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
----
- include/linux/cpuset.h   |    3 ++-
- kernel/cpuset.c          |    5 +++++
- kernel/time/tick-sched.c |   31 ++++++++++++++++++++++++++++++-
- 3 files changed, 37 insertions(+), 2 deletions(-)
+https://bugzilla.kernel.org/show_bug.cgi?id=43511
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index ccbc2fd..19aa448 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -266,11 +266,12 @@ static inline bool cpuset_adaptive_nohz(void)
- 
- extern void cpuset_exit_nohz_interrupt(void *unused);
- extern void cpuset_nohz_flush_cputimes(void);
-+extern bool nohz_cpu_exist(void);
- #else
- static inline bool cpuset_cpu_adaptive_nohz(int cpu) { return false; }
- static inline bool cpuset_adaptive_nohz(void) { return false; }
- static inline void cpuset_nohz_flush_cputimes(void) { }
--
-+static inline bool nohz_cpu_exist(void) { return false; }
- #endif /* CONFIG_CPUSETS_NO_HZ */
- 
- #endif /* _LINUX_CPUSET_H */
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 858217b..ccbaac9 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1231,6 +1231,11 @@ DEFINE_PER_CPU(int, cpu_adaptive_nohz_ref);
- 
- static cpumask_t nohz_cpuset_mask;
- 
-+inline bool nohz_cpu_exist(void)
-+{
-+	return !cpumask_empty(&nohz_cpuset_mask);
-+}
-+
- static void flush_cputime_interrupt(void *unused)
- {
- 	trace_printk("IPI: flush cputime\n");
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index bdc8aeb..e60d541 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -409,6 +409,25 @@ out:
- 	return ret;
- }
- 
-+static inline bool must_take_timer_duty(int cpu)
-+{
-+	int handler = tick_do_timer_cpu;
-+	bool ret = false;
-+	bool tick_needed = nohz_cpu_exist();
-+
-+	/*
-+	 * A CPU will have to take the timer duty if there is an adaptive
-+	 * nohz CPU in the system. The last handler == cpu check ensures
-+	 * that the last cpu that did the do_timer() sticks with the duty.
-+	 * A normal (non nohz) cpu will take the charge from a nohz cpu in
-+	 * tick_do_timer_check_handler anyway.
-+	 */
-+	if (tick_needed && (handler == TICK_DO_TIMER_NONE || handler == cpu))
-+		ret = true;
-+
-+	return ret;
-+}
-+
- static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- {
- 	/*
-@@ -421,6 +440,9 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- 	if (unlikely(!cpu_online(cpu))) {
- 		if (cpu == tick_do_timer_cpu)
- 			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
-+	} else if (must_take_timer_duty(cpu)) {
-+		tick_do_timer_cpu = cpu;
-+		return false;
- 	}
- 
- 	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
-@@ -512,6 +534,13 @@ void tick_nohz_idle_enter(void)
- #ifdef CONFIG_CPUSETS_NO_HZ
- static bool can_stop_adaptive_tick(void)
- {
-+	int cpu = smp_processor_id();
-+
-+	if (must_take_timer_duty(cpu)) {
-+		tick_do_timer_cpu = cpu;
-+		return false;
-+	}
-+
- 	if (!sched_can_stop_tick())
- 		return false;
- 
-@@ -519,7 +548,7 @@ static bool can_stop_adaptive_tick(void)
- 		return false;
- 
- 	/* Is there a grace period to complete ? */
--	if (rcu_pending(smp_processor_id()))
-+	if (rcu_pending(cpu))
- 		return false;
- 
- 	return true;
+I will attach there some more debug data like binary copy of RDB and such.
+
+But maybe its easier to discuss here.
+
+I am not sure whether its an issue with Linux or an issue with the RDB 
+format and disks with big sizes. But AFAIK RDB format is capable of 
+handling 2 TB disks.
+
+
+
+
+With my 2 TB mixed Amiga/Linux backup disk, which I partioned under 
+AmigaOS 4.0/1 with Media Toolbox I get the following in Linux:
+
+
+Jun 17 07:28:14 merkaba kernel: [30852.968978] sata_sil24 0000:05:00.0: 
+enabling device (0000 -> 0003)
+Jun 17 07:28:14 merkaba kernel: [30852.969401] scsi9 : sata_sil24
+Jun 17 07:28:14 merkaba kernel: [30852.969533] ata10: SATA max UDMA/100 
+host m128@0xf1c02000 port 0xf1c00000 irq 19
+Jun 17 07:28:16 merkaba kernel: [30855.163712] ata10: SATA link up 3.0 
+Gbps (SStatus 123 SControl 0)
+Jun 17 07:28:16 merkaba kernel: [30855.165014] ata10.00: ATA-8: Hitachi 
+HDS5C3020ALA632, ML6OA580, max UDMA/133
+Jun 17 07:28:16 merkaba kernel: [30855.165017] ata10.00: 3907029168 
+sectors, multi 16: LBA48 NCQ (depth 31/32)
+Jun 17 07:28:16 merkaba kernel: [30855.166378] ata10.00: configured for 
+UDMA/100
+Jun 17 07:28:16 merkaba kernel: [30855.166477] scsi 9:0:0:0: Direct-Access     
+ATA      Hitachi HDS5C302 ML6O PQ: 0 ANSI: 5
+Jun 17 07:28:16 merkaba kernel: [30855.166653] sd 9:0:0:0: [sdb] 
+3907029168 512-byte logical blocks: (2.00 TB/1.81 TiB)
+Jun 17 07:28:16 merkaba kernel: [30855.166699] sd 9:0:0:0: [sdb] Write 
+Protect is off
+Jun 17 07:28:16 merkaba kernel: [30855.166702] sd 9:0:0:0: [sdb] Mode 
+Sense: 00 3a 00 00
+Jun 17 07:28:16 merkaba kernel: [30855.166726] sd 9:0:0:0: [sdb] Write 
+cache: enabled, read cache: enabled, doesn't support DPO or FUA
+Jun 17 07:28:16 merkaba kernel: [30855.200936]  sdb: RDSK (512) sdb1 
+(LNX^@)(res 2 spb 1) sdb2 (JXF^D)(res 2 spb 1) sdb3 (DOS^C)(res 2 spb 4)
+Jun 17 07:28:16 merkaba kernel: [30855.200943] sdb: p1 size 
+18446744072560312368 extends beyond EOD, enabling native capacity
+Jun 17 07:28:16 merkaba kernel: [30855.201344]  sdb: RDSK (512) sdb1 
+(LNX^@)(res 2 spb 1) sdb2 (JXF^D)(res 2 spb 1) sdb3 (DOS^C)(res 2 spb 4)
+Jun 17 07:28:16 merkaba kernel: [30855.201347] sdb: p1 size 
+18446744072560312368 extends beyond EOD, truncated
+Jun 17 07:28:16 merkaba kernel: [30855.201398] sdb: p2 start 
+18446744072560314432 is beyond EOD, truncated
+Jun 17 07:28:16 merkaba kernel: [30855.201400] sdb: p3 start 
+18446744073189460080 is beyond EOD, truncated
+Jun 17 07:28:16 merkaba kernel: [30855.201570] sd 9:0:0:0: [sdb] Attached 
+SCSI disk
+
+
+The first partition seems to be way to big:
+
+merkaba:~#1> amiga-fdisk -l /dev/sdc
+Disk /dev/sdc: 3 heads, 16 sectors, 81396441 cylinders, RDB: 0
+Logical Cylinders from 43 to 81396440, 24576  bytes/Cylinder 
+
+Device     Boot Mount   Begin      End     Size   Pri  BBlks    System
+/dev/sdc1       *        43   65536043   1572864024     0      0  Linux 
+native
+/dev/sdc2       *    65536044   78643244   314572824     0      0  
+[unknown]
+/dev/sdc3       *    78643245   81396440   66076704     0      0  Amiga 
+FFS Int.
+
+(sdc2 is JXFS, a new filesystem in AmigaOS 4 that is not known to Linux 
+yet)
+
+
+In cat /proc/partitions I get:
+
+merkaba:~> cat /proc/partitions 
+major minor  #blocks  name
+
+ […]
+   8       16 1953514584 sdb
+   8       17 1953513552 sdb1
+merkaba:~> 
+
+
+Thus the Debian Linux Kernel 3.4.1 I am using here, truncates the first 
+oversized partition and has no space for the other, too, which therefore 
+are inaccessible under Linux.
+
+I didn´t notice this initially, but it happened from the beginning, I have 
+an old amiga-fdisk listing that is exactly the same.
+
+Amiga Mediatoolbox has a different oppinion on the partition layout:
+
+LVM aka sdc1: 1500 GByte, 43 to 65536043 cyl, size 65536001 Zylinder
+BAK aka sdc2: 300 GByte, 65536044 to 78643244 cyl, size 13107201 Zylinder
+TAUSCH2 aka sdc3: 63,016 GByte, 78643245 to  81396440 cyl, didn´t note the 
+size here, but as far as I remember was okay as well
+
+But it seems to be confused about the whole size of the disk as well:
+
+Logical sizes:
+
+Blocks per cylinder: 48
+Cylinders: 81396441
+Sectors: -397938128
+Blocksize: 512
+
+The sectors seem overflowed.
+
+So it might be a problem with RDB and 2TB disks and nothing to do with 
+Linux. But still on AmigaOS 4.1 I can access the two Amiga partitions 
+after the Linux partition.
+
+
+
+I have another 500GB disk for backup up my Sam440ep AmigaOS 4.1 "Amiga", I 
+plan to repartition the 2 TB disk as GPT anyway, but since MediaToolBox in 
+AmigaOS 4.1 has a different meaning about the partioning and this can cause 
+serious data loss, I think its good to look at it.
+
+I had a BTRFS filesystem that had some checksum errors. Maybe thats somehow 
+related to this issue and AmigaOS and/or Linux overwrote something it 
+shouldn´t have touched.
+
+I will report a bug with AmigaOS 4.1 developers as well to get more 
+details.
+
+
+merkaba:~> cat /proc/version
+Linux version 3.4-trunk-amd64 (Debian 3.4.1-1~experimental.1)
+(debian-kernel@lists.debian.org) (gcc version 4.6.3 (Debian 4.6.3-1) ) #1 
+SMP
+Wed Jun 6 10:34:53 CEST 2012
+
+Ciao,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
