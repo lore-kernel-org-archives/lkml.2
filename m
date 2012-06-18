@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab2FRREN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 13:04:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45466 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753404Ab2FRREM (ORCPT
+	id S1752390Ab2FRRNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 13:13:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64036 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab2FRRNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 13:04:12 -0400
-Date: Mon, 18 Jun 2012 18:04:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: swarren@wwwdotorg.org, cjb@laptop.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rmk+kernel@arm.linux.org.uk,
-        ulf.hansson@stericsson.com, linus.walleij@linaro.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org, lrg@ti.com,
-        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 1/2] sound: tegra_wm8903: Adjust to of_get_named_gpio()
- change
-Message-ID: <20120618170408.GW3974@opensource.wolfsonmicro.com>
-References: <1340037743-12924-1-git-send-email-stigge@antcom.de>
- <20120618164659.GV3974@opensource.wolfsonmicro.com>
- <4FDF5E9E.6060803@antcom.de>
+	Mon, 18 Jun 2012 13:13:08 -0400
+Date: Mon, 18 Jun 2012 19:13:06 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/2 v2] regulator: support multiple dummy fixed regulators
+In-Reply-To: <20120618163758.GU3974@opensource.wolfsonmicro.com>
+Message-ID: <Pine.LNX.4.64.1206181850280.23884@axis700.grange>
+References: <Pine.LNX.4.64.1206181017360.23884@axis700.grange>
+ <20120618094145.GC3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181145520.23884@axis700.grange>
+ <20120618100657.GG3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181212180.23884@axis700.grange>
+ <20120618115738.GI3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181755370.23884@axis700.grange>
+ <20120618162058.GT3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181826210.23884@axis700.grange>
+ <20120618163758.GU3974@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="S5Rg6oz6PtEXgjQf"
-Content-Disposition: inline
-In-Reply-To: <4FDF5E9E.6060803@antcom.de>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:F3J84up9q/LqiT9Cj2nS7338IgXanPupON+A/gvnF7F
+ joie4O7zY5zqvILBcfXqrYWWpxdSaeeaa+P3b3xUBsd7w5CUiZ
+ 1T5qb2Wt6wDfkbvEG7CKApJU1buiUP5AaEqMOsENeWV7GoDzS1
+ f8ssTwD5IphfC8AQ2SQriQ74N26juKx71iaAWxpTRwailmxUry
+ T7LeD+/jcMYZlmogzdjooYV/n2H7fq19MkKVL9iUBfq+TSClPf
+ tUM4V1QJlMSCH6HkNcjI34MpZlr5XL9tuM70iuztc1QdzuKezE
+ zmIsRIMHuosmbzsks9KH+HPKE/iFkB9q2IwcuLUIW8eQUa/tKV
+ T0xHLP4B7DhCf7NFLcWBkPib+zNRk+qyOr9i+Jt+d2+wp9gkqa
+ 8VdwvQczXz07w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 18 Jun 2012, Mark Brown wrote:
 
---S5Rg6oz6PtEXgjQf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Mon, Jun 18, 2012 at 06:30:30PM +0200, Guennadi Liakhovetski wrote:
+> > On Mon, 18 Jun 2012, Mark Brown wrote:
+> 
+> > > None of this seems terribly obvious to me.  Once we're getting into
+> > > allowing the user to specify a voltage (and possibly other parameters)
+> > > for the regulator it's hopefully going to refer to an actual thing we
+> > > can point at on the board rather than a virtual thing we've got to
+> > > satisfy software so giving it a useful name seems more useful (like a
+> > > name correspoding to the relevant supply on the schematic).  
+> 
+> > Sorry, don't understand. What do you mean by a "virtual" supply? There is 
+> > a device, it is functional, doesn't this mean, that something is supplying 
+> > power to it? And if power is supplied, then it also hopefully has a 
+> > certain voltage :) Why I need to know it - to set an MMC OCR mask.
+> 
+> It's for cases where people can't be bothered to specify the supply
+> properly but want to just put something in there to satisfy the sofware
+> without providing any useful information.  There will be one or more
+> physical supplies but the software is being non-committal about them.
 
-On Mon, Jun 18, 2012 at 07:00:14PM +0200, Roland Stigge wrote:
+Ok, but for that purpose I thought we already have the dummy regulator... 
+So, what's the proper way to describe board common voltage rails? 
+Obviously you don't want to disable and enable them. Of course, there are 
+real physical regulators, that provide that voltage, but what does it 
+change, whether we specify the real name of that device or just say - yes, 
+we have 3.3V on this board? So, it IS just a fixed regulator with a fixed 
+voltage with no way to control it. The only action you can perform with it 
+is query the voltage.
 
-> Basically, yes. But this would mean that doing via gpio, we would need
-> to pull other stuff from the sound tree over to gpio to build upon
-> because "my" tegra_* sound patches won't apply to the gpio branch currently.
+> > > There's also the fact that there shouldn't be any need for unique
+> > > regulator names internally so if it really doesn't matter we should be
+> > > able to give everything the same name happily enough.
+> 
+> > What about entries under /proc/sys/debug/regulator/? Don't they have to be 
+> > unique?
+> 
+> Meh, yes.  I did try to make them readable.  But then making up the
+> names in this fashion does rather defeat the point there...
 
-Oh, yes.  Stephen's gone and reorganised all that code which means it's
-not a trivial merge.  Ho hum.  I'm happy to apply them if folks are
-comfortable with it, I guess ideally I'd be able to pull a branch with
-the gpio changes in and then apply on top of that.
+Ok, what shall we do with this? You want the user to supply a name for 
+these fixed voltage always-on regulators? Or you're against these changes 
+altogether? Strictly speaking, these patches are not required for boards 
+to implement such regulators. It is "just" a helper function. But I think 
+the task is pretty common - provide a power supply with a fixed queryable 
+voltage. This can easily be implemented as a helper function in regulator 
+core, or platforms will have to re-invent it themselves.
 
---S5Rg6oz6PtEXgjQf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP319HAAoJEBus8iNuMP3dxNMP/RSTCzNHazZgPQYBYgF5c7eM
-4hjUK7NU5jJZdTWoPB54LyCM7RcS7IPJmw6+qWv3tDZpmW3sbNavwEaUbPckiC1S
-x5W9AdV9EpqJaflXoW7o3HGRff8xDHqRjzEWNrPQiFdjINxXrPrlS8zlEup5bkEL
-UrICoGQKHjTJD4OkPfdM7mwE9XPNd9darpqCvGf/jVvXxb3r/wKGtsLsUnzaVRAi
-c47nwI7A6+fcrndhCh4k7xbwdjNpPFy0yElVq8CPEtfmzxftokYEWesjNXEYnT6/
-l/CX+4ivcjBEpX7S2dJPel9qa3X8k3+3UEu7qNSddpLOpXuQ2Dh+0jdgC6Fpj8rk
-3BrZmY27C4GUQlR9LXmSADf2LwKtA7Dh6TSyM94Oa8npNRyVA7CZNZyPAG/f+e4C
-P1WqU5rB0Zl360PslfNFY9kaUjedz9PAcxc2vvNh2BSRfM4qfb63aujZ/6PlQRl9
-xVzTKcLJDSGXyWzaJNH2YZE1fTD9VNBda8d83CSpGEFB2OmRKYlZEaMfC2B7qKxF
-3Xx+6kKn7672rhVFHzORdqMjE8xtDQ0Z2AoLwPIrGt/pljxSSdvl3HaTkw5yy8aL
-7R0Rq33WsnMNXB5YIRgkkD6WARhEcLciTq4a0FCaBc4QYykSqO9rn+QL6gIPnjLD
-phWrTOQ4qPePO6kYGZQ7
-=smN/
------END PGP SIGNATURE-----
-
---S5Rg6oz6PtEXgjQf--
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
