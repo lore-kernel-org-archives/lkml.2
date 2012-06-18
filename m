@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab2FRKdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:33:23 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:17418 "EHLO relay.sw.ru"
+	id S1758213Ab2FRKdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:33:40 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:9335 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757743Ab2FRKb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:31:57 -0400
+	id S1751864Ab2FRKdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:33:38 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
@@ -16,10 +16,11 @@ Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
         Suleiman Souhlal <suleiman@google.com>,
         Glauber Costa <glommer@parallels.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH v4 21/25] Track all the memcg children of a kmem_cache.
-Date: Mon, 18 Jun 2012 14:28:14 +0400
-Message-Id: <1340015298-14133-22-git-send-email-glommer@parallels.com>
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH v4 25/25] Documentation: add documentation for slab tracker for memcg
+Date: Mon, 18 Jun 2012 14:28:18 +0400
+Message-Id: <1340015298-14133-26-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
 References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
@@ -27,142 +28,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables us to remove all the children of a kmem_cache being
-destroyed, if for example the kernel module it's being used in
-gets unloaded. Otherwise, the children will still point to the
-destroyed parent.
+In a separate patch, to aid reviewers.
 
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Michal Hocko <mhocko@suse.cz>
 CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>
 ---
- include/linux/memcontrol.h |    1 +
- include/linux/slab.h       |    1 +
- mm/memcontrol.c            |   16 +++++++++++++++-
- mm/slab_common.c           |   31 +++++++++++++++++++++++++++++++
- 4 files changed, 48 insertions(+), 1 deletion(-)
+ Documentation/cgroups/memory.txt |   33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 8ebbcc9..8884a4e 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -464,6 +464,7 @@ extern struct static_key mem_cgroup_kmem_enabled_key;
- #define mem_cgroup_kmem_on static_key_false(&mem_cgroup_kmem_enabled_key)
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 9b1067a..9ea82b5 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -74,6 +74,12 @@ Brief summary of control files.
+  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
+  memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
  
- void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
-+void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id);
- #else
- static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
- 					     struct kmem_cache *s)
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index fb4fb7b..155d19f 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -189,6 +189,7 @@ struct mem_cgroup_cache_params {
- 	bool dead;
- 	atomic_t nr_pages;
- 	struct list_head destroyed_list; /* Used when deleting memcg cache */
-+	struct list_head sibling_list;
- };
- #endif
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e0b79f0..e32b53e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -539,8 +539,11 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
- 
- 	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
- 				      (s->flags & ~SLAB_PANIC), s->ctor, s);
--	if (new)
-+	if (new) {
- 		new->allocflags |= __GFP_SLABMEMCG;
-+		list_add(&new->memcg_params.sibling_list,
-+			 &s->memcg_params.sibling_list);
-+	}
- 
- 	kfree(name);
- 	return new;
-@@ -561,6 +564,7 @@ void mem_cgroup_register_cache(struct mem_cgroup *memcg,
- 	int id = -1;
- 
- 	INIT_LIST_HEAD(&cachep->memcg_params.destroyed_list);
-+	INIT_LIST_HEAD(&cachep->memcg_params.sibling_list);
- 
- 	if (!memcg)
- 		id = ida_simple_get(&cache_types, 0, MAX_KMEM_CACHE_TYPES,
-@@ -573,6 +577,9 @@ void mem_cgroup_release_cache(struct kmem_cache *cachep)
- 	mem_cgroup_flush_cache_create_queue();
- 	if (cachep->memcg_params.id != -1)
- 		ida_simple_remove(&cache_types, cachep->memcg_params.id);
-+	else
-+		list_del(&cachep->memcg_params.sibling_list);
++ memory.kmem.limit_in_bytes	 # set/show hard limit for general kmem memory
++ memory.kmem.usage_in_bytes	 # show current general kmem memory allocation
++ memory.kmem.failcnt		 # show current number of kmem limit hits
++ memory.kmem.max_usage_in_bytes	 # show max kmem usage
++ memory.kmem.slabinfo		 # show cgroup-specific slab usage information
 +
- }
+ 1. History
  
- static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-@@ -776,6 +783,13 @@ static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
- 	schedule_work(&memcg_create_cache_work);
- }
+ The memory controller has a long history. A request for comments for the memory
+@@ -270,6 +276,14 @@ cgroup may or may not be accounted.
+ Currently no soft limit is implemented for kernel memory. It is future work
+ to trigger slab reclaim when those limits are reached.
  
-+void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
-+{
-+	mutex_lock(&memcg_cache_mutex);
-+	cachep->memcg_params.memcg->slabs[id] = NULL;
-+	mutex_unlock(&memcg_cache_mutex);
-+}
++Kernel memory is not accounted until it is limited. Users that want to just
++track kernel memory usage can set the limit value to a big enough value so
++the limit is guaranteed to never hit. A kernel memory limit bigger than the
++current memory limit will have this effect as well.
 +
- /*
-  * Return the kmem_cache we're supposed to use for a slab allocation.
-  * We try to use the current memcg's version of the cache.
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 619d365..b424b28 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -190,8 +190,39 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
- }
- EXPORT_SYMBOL(kmem_cache_create);
++This guarantes that this extension is backwards compatible to any previous
++memory cgroup version.
++
+ 2.7.1 Current Kernel Memory resources accounted
  
-+static void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+{
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	struct kmem_cache *c;
-+	struct mem_cgroup_cache_params *p, *tmp;
-+	int id = s->memcg_params.id;
+ * sockets memory pressure: some sockets protocols have memory pressure
+@@ -278,6 +292,24 @@ per cgroup, instead of globally.
+ 
+ * tcp memory pressure: sockets memory pressure for the tcp protocol.
+ 
++* slab/kmalloc:
 +
-+	if (id == -1)
-+		return;
++When slab memory is tracked (memory.kmem.limit_in_bytes != -1ULL), both
++memory.kmem.usage_in_bytes and memory.usage_in_bytes are updated. When
++memory.kmem.limit_in_bytes is left alone, no tracking of slab caches takes
++place.
 +
-+	mutex_lock(&slab_mutex);
-+	list_for_each_entry_safe(p, tmp,
-+	    &s->memcg_params.sibling_list, sibling_list) {
-+		c = container_of(p, struct kmem_cache, memcg_params);
-+		if (WARN_ON(c == s))
-+			continue;
++Because a slab page is shared among many tasks, it is not possible to take
++any meaningful action upon task migration. Slabs created in a cgroup stay
++around until the cgroup is destructed. Information about the slabs used
++by the cgroup is displayed in the cgroup file memory.kmem.slabinfo. The format
++of this file is and should remain compatible with /proc/slabinfo.
 +
-+		mutex_unlock(&slab_mutex);
-+		BUG_ON(c->memcg_params.id != -1);
-+		mem_cgroup_remove_child_kmem_cache(c, id);
-+		kmem_cache_destroy(c);
-+		mutex_lock(&slab_mutex);
-+	}
-+	mutex_unlock(&slab_mutex);
-+#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-+}
++Upon cgroup destruction, slabs that holds no live references are destructed.
++Workers are fired to destroy the remaining caches as they objects are freed.
 +
- void kmem_cache_destroy(struct kmem_cache *s)
- {
++Memory used by dead caches are shown in the proc file /proc/dead_slabinfo
 +
-+	/* Destroy all the children caches if we aren't a memcg cache */
-+	kmem_cache_destroy_memcg_children(s);
-+
- 	get_online_cpus();
- 	mutex_lock(&slab_mutex);
- 	list_del(&s->list);
+ 3. User Interface
+ 
+ 0. Configuration
+@@ -286,6 +318,7 @@ a. Enable CONFIG_CGROUPS
+ b. Enable CONFIG_RESOURCE_COUNTERS
+ c. Enable CONFIG_CGROUP_MEM_RES_CTLR
+ d. Enable CONFIG_CGROUP_MEM_RES_CTLR_SWAP (to use swap extension)
++d. Enable CONFIG_CGROUP_MEM_RES_CTLR_KMEM (to use experimental kmem extension)
+ 
+ 1. Prepare the cgroups (see cgroups.txt, Why are cgroups needed?)
+ # mount -t tmpfs none /sys/fs/cgroup
 -- 
 1.7.10.2
 
