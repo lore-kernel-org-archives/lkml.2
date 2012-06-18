@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2FRPFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 11:05:18 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18628 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab2FRPFQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 11:05:16 -0400
-Date: Mon, 18 Jun 2012 18:04:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Miguel =?iso-8859-1?Q?G=F3mez?= <magomez@igalia.com>
-Cc: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] Staging: xgifb: Remove XGIFAIL() macro and its calls.
-Message-ID: <20120618150434.GL4400@mwanda>
-References: <cover.1340016625.git.magomez@igalia.com>
- <7d6346bfccd6b00f7718b8d4ec9a8543871cf580.1340016625.git.magomez@igalia.com>
+	id S1752740Ab2FRPIV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 11:08:21 -0400
+Received: from antcom.de ([188.40.178.216]:36127 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752558Ab2FRPIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 11:08:20 -0400
+Message-ID: <4FDF4461.60707@antcom.de>
+Date: Mon, 18 Jun 2012 17:08:17 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7d6346bfccd6b00f7718b8d4ec9a8543871cf580.1340016625.git.magomez@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
+        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] gpio: of_get_named_gpio_flags() return -EPROBE_DEFER
+ if GPIO not yet available
+References: <1339927893-8842-1-git-send-email-stigge@antcom.de> <4FDE8D27.6030508@wwwdotorg.org> <4FDEF293.9080305@antcom.de> <4FDF403E.9090302@wwwdotorg.org>
+In-Reply-To: <4FDF403E.9090302@wwwdotorg.org>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 01:12:03PM +0200, Miguel Gómez wrote:
-> --- a/drivers/staging/xgifb/XGI_main_26.c
-> +++ b/drivers/staging/xgifb/XGI_main_26.c
-> @@ -1376,8 +1376,10 @@ static int XGIfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
->  		vtotal = var->upper_margin + var->yres + var->lower_margin
->  				+ var->vsync_len;
->  
-> -	if (!(htotal) || !(vtotal))
-> -		XGIFAIL("XGIfb: no valid timing data");
-> +	if (!(htotal) || !(vtotal)) {
+On 06/18/2012 04:50 PM, Stephen Warren wrote:
+>> Can you please tell in which way the patch breaks those drivers?
+>> However, I can see that those drivers solved the same problem in a
+>> different way (deferring of_get_named_gpio(), via the sound init()). So
+>> they could be adjusted to take advantage of new -EPROBE_DEFER.
+> 
+> The drivers I mentioned test the return code of of_get_named_gpio() to
+> see if it's -ENODEV, which means that DT property for that GPIO exists
+> but the driver for it isn't available yet, so the property can't be
+> parsed. In this case, the sound drivers defer their own probe. If
+> of_get_named_gpio() is modified to return -EPROBE_DEFER directly, then
+> it won't be returning -ENODEV, and hence the sound drivers' check for
+> -ENODEV won't fire, and hence the sound drivers will just continue their
+> probe assuming that the particular GPIOs are not present on the board
+> (since they are all optional, so anything other than an explicit
+> deferral error from of_get_named_gpio() is not treated as an error).
+> This will break sound on those platforms.
 
-Don't resend this, but next time feel free to write this like:
+Thanks for the hint! I previously also suspected sth. like this but
+didn't find it in v3.5-rc3. In broonie's sound.git for-next, I now
+finally found it.
 
-	if (!htotal || !vtotal) {
+Should be easy to fix (replacing the if (... == -ENODEV) to -EPROBE_DEFER.
 
-We do have a one change per patch rule but tiny formatting things
-like that don't count as a change.
+Will you provide patches as signalled, of should I? Which branch would
+be the correct one to build on top?
 
-regards,
-dan carpenter
+Thanks in advance,
 
-> +		pr_debug("XGIfb: no valid timing data\n");
-> +		return -EINVAL;
-> +	}
->  
->  	if (var->pixclock && htotal && vtotal) {
->  		drate = 1000000000 / var->pixclock;
-
+Roland
