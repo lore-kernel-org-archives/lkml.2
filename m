@@ -1,110 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab2FRPUS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 11:20:18 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:64689 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab2FRPUD (ORCPT
+	id S1752991Ab2FRPUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 11:20:44 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:42822 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab2FRPUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Jun 2012 11:20:03 -0400
-Message-ID: <4FDF4720.1010801@tilera.com>
-Date: Mon, 18 Jun 2012 11:20:00 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [GIT PULL] tilegx ethernet driver support
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+From: Rik van Riel <riel@redhat.com>
+To: linux-mm@kvack.org
+Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
+        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
+        hnaz@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH -mm 4/6] mm: remove x86 arch_get_unmapped_area(_topdown)
+Date: Mon, 18 Jun 2012 10:31:16 -0400
+Message-Id: <1340029878-7966-5-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1340029878-7966-1-git-send-email-riel@redhat.com>
+References: <1340029878-7966-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/16/2012 9:01 PM, Linus Torvalds wrote:
-> Apart from the new tilegx ethernet driver that came in through the
-> networking tree, it's all reasonably small.
+From: Rik van Riel <riel@surriel.com>
 
-There are five additional commits that are required to make that driver
-actually buildable: the tilegx GXIO IORPC framework, including DMA support,
-the GXIO support for the tilegx ethernet engine, <asm/io.h> support for
-MMIO-based readb/writeb, and a minor refactoring change.  These have been
-through some rounds of review on LKML and have been on linux-next for a
-couple of months.
+The generic arch_get_unmapped_area(_topdown) should now be able
+to do everything x86 needs.  Remove the x86 specific functions.
 
-I thought David was queueing the driver for 3.6, and he presumably thought
-all the prerequisite core tile changes were already in 3.5 :-)
+TODO: make the hugetlbfs arch_get_unmapped_area call the generic
+code with proper alignment info.
 
-I'm happy to just say "oh well" and leave the tilegx network driver
-unbuildable until 3.6.  Or, you can pull those five commits; they are 100%
-tile-specific and only affect tilegx iorpc drivers, of which this is now
-the only one in the tree.  (Two more are queued up in linux-next for 3.6,
-namely PCIe root complex and USB host.)
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ arch/x86/include/asm/pgtable_64.h |    2 -
+ arch/x86/kernel/sys_x86_64.c      |  162 -------------------------------------
+ 2 files changed, 0 insertions(+), 164 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git tilegx-net
-
-----------------------------------------------------------------
-Chris Metcalf (5):
-      arch/tile: introduce GXIO IORPC framework for tilegx
-      arch/tile: common DMA code for the GXIO IORPC subsystem
-      arch/tile: support MMIO-based readb/writeb etc.
-      arch/tile: provide kernel support for the tilegx mPIPE shim
-      arch/tile: break out the "csum a long" function to <asm/checksum.h>
-
- arch/tile/Kconfig                         |    2 +
- arch/tile/Makefile                        |    2 +
- arch/tile/gxio/Kconfig                    |   17 +
- arch/tile/gxio/Makefile                   |    7 +
- arch/tile/gxio/dma_queue.c                |  176 +++
- arch/tile/gxio/iorpc_globals.c            |   89 ++
- arch/tile/gxio/iorpc_mpipe.c              |  529 +++++++++
- arch/tile/gxio/iorpc_mpipe_info.c         |   85 ++
- arch/tile/gxio/kiorpc.c                   |   61 +
- arch/tile/gxio/mpipe.c                    |  545 +++++++++
- arch/tile/include/arch/mpipe.h            |  359 ++++++
- arch/tile/include/arch/mpipe_constants.h  |   42 +
- arch/tile/include/arch/mpipe_def.h        |   39 +
- arch/tile/include/arch/mpipe_shm.h        |  509 +++++++++
- arch/tile/include/arch/mpipe_shm_def.h    |   23 +
- arch/tile/include/asm/checksum.h          |   18 +
- arch/tile/include/asm/io.h                |  144 ++-
- arch/tile/include/gxio/common.h           |   40 +
- arch/tile/include/gxio/dma_queue.h        |  161 +++
- arch/tile/include/gxio/iorpc_globals.h    |   38 +
- arch/tile/include/gxio/iorpc_mpipe.h      |  136 +++
- arch/tile/include/gxio/iorpc_mpipe_info.h |   46 +
- arch/tile/include/gxio/kiorpc.h           |   29 +
- arch/tile/include/gxio/mpipe.h            | 1736 +++++++++++++++++++++++++++++
- arch/tile/include/hv/drv_mpipe_intf.h     |  602 ++++++++++
- arch/tile/include/hv/iorpc.h              |  714 ++++++++++++
- arch/tile/lib/checksum.c                  |   15 +-
- 27 files changed, 6122 insertions(+), 42 deletions(-)
- create mode 100644 arch/tile/gxio/Kconfig
- create mode 100644 arch/tile/gxio/Makefile
- create mode 100644 arch/tile/gxio/dma_queue.c
- create mode 100644 arch/tile/gxio/iorpc_globals.c
- create mode 100644 arch/tile/gxio/iorpc_mpipe.c
- create mode 100644 arch/tile/gxio/iorpc_mpipe_info.c
- create mode 100644 arch/tile/gxio/kiorpc.c
- create mode 100644 arch/tile/gxio/mpipe.c
- create mode 100644 arch/tile/include/arch/mpipe.h
- create mode 100644 arch/tile/include/arch/mpipe_constants.h
- create mode 100644 arch/tile/include/arch/mpipe_def.h
- create mode 100644 arch/tile/include/arch/mpipe_shm.h
- create mode 100644 arch/tile/include/arch/mpipe_shm_def.h
- create mode 100644 arch/tile/include/gxio/common.h
- create mode 100644 arch/tile/include/gxio/dma_queue.h
- create mode 100644 arch/tile/include/gxio/iorpc_globals.h
- create mode 100644 arch/tile/include/gxio/iorpc_mpipe.h
- create mode 100644 arch/tile/include/gxio/iorpc_mpipe_info.h
- create mode 100644 arch/tile/include/gxio/kiorpc.h
- create mode 100644 arch/tile/include/gxio/mpipe.h
- create mode 100644 arch/tile/include/hv/drv_mpipe_intf.h
- create mode 100644 arch/tile/include/hv/iorpc.h
-
+diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+index 8408ccd..0ff6500 100644
+--- a/arch/x86/include/asm/pgtable_64.h
++++ b/arch/x86/include/asm/pgtable_64.h
+@@ -167,8 +167,6 @@ static inline int pgd_large(pgd_t pgd) { return 0; }
+ extern int kern_addr_valid(unsigned long addr);
+ extern void cleanup_highmap(void);
+ 
+-#define HAVE_ARCH_UNMAPPED_AREA
+-#define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
+ #define HAVE_ARCH_GET_ADDRESS_RANGE
+ #define HAVE_ARCH_ALIGN_ADDR
+ 
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index ac0afb8..0243c58 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -131,165 +131,3 @@ void arch_get_address_range(unsigned long flags, unsigned long *begin,
+ 		*end = current->mm->mmap_base;
+ 	}
+ }
+-
+-unsigned long
+-arch_get_unmapped_area(struct file *filp, unsigned long addr,
+-		unsigned long len, unsigned long pgoff, unsigned long flags)
+-{
+-	struct mm_struct *mm = current->mm;
+-	struct vm_area_struct *vma;
+-	unsigned long start_addr;
+-	unsigned long begin, end;
+-
+-	if (flags & MAP_FIXED)
+-		return addr;
+-
+-	arch_get_address_range(flags, &begin, &end, ALLOC_UP);
+-
+-	if (len > end)
+-		return -ENOMEM;
+-
+-	if (addr) {
+-		addr = PAGE_ALIGN(addr);
+-		vma = find_vma(mm, addr);
+-		if (end - len >= addr &&
+-		    (!vma || addr + len <= vma->vm_start))
+-			return addr;
+-	}
+-	if (((flags & MAP_32BIT) || test_thread_flag(TIF_ADDR32))
+-	    && len <= mm->cached_hole_size) {
+-		mm->cached_hole_size = 0;
+-		mm->free_area_cache = begin;
+-	}
+-	addr = mm->free_area_cache;
+-	if (addr < begin)
+-		addr = begin;
+-	start_addr = addr;
+-
+-full_search:
+-
+-	addr = arch_align_addr(addr, filp, pgoff, flags, ALLOC_UP);
+-
+-	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
+-		/* At this point:  (!vma || addr < vma->vm_end). */
+-		if (end - len < addr) {
+-			/*
+-			 * Start a new search - just in case we missed
+-			 * some holes.
+-			 */
+-			if (start_addr != begin) {
+-				start_addr = addr = begin;
+-				mm->cached_hole_size = 0;
+-				goto full_search;
+-			}
+-			return -ENOMEM;
+-		}
+-		if (!vma || addr + len <= vma->vm_start) {
+-			/*
+-			 * Remember the place where we stopped the search:
+-			 */
+-			mm->free_area_cache = addr + len;
+-			return addr;
+-		}
+-		if (addr + mm->cached_hole_size < vma->vm_start)
+-			mm->cached_hole_size = vma->vm_start - addr;
+-
+-		addr = vma->vm_end;
+-		addr = arch_align_addr(addr, filp, pgoff, flags, ALLOC_UP);
+-	}
+-}
+-
+-
+-unsigned long
+-arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+-			  const unsigned long len, const unsigned long pgoff,
+-			  const unsigned long flags)
+-{
+-	struct vm_area_struct *vma;
+-	struct mm_struct *mm = current->mm;
+-	unsigned long addr = addr0, start_addr;
+-
+-	/* requested length too big for entire address space */
+-	if (len > TASK_SIZE)
+-		return -ENOMEM;
+-
+-	if (flags & MAP_FIXED)
+-		return addr;
+-
+-	/* for MAP_32BIT mappings we force the legact mmap base */
+-	if (!test_thread_flag(TIF_ADDR32) && (flags & MAP_32BIT))
+-		goto bottomup;
+-
+-	/* requesting a specific address */
+-	if (addr) {
+-		addr = PAGE_ALIGN(addr);
+-		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
+-				(!vma || addr + len <= vma->vm_start))
+-			return addr;
+-	}
+-
+-	/* check if free_area_cache is useful for us */
+-	if (len <= mm->cached_hole_size) {
+-		mm->cached_hole_size = 0;
+-		mm->free_area_cache = mm->mmap_base;
+-	}
+-
+-try_again:
+-	/* either no address requested or can't fit in requested address hole */
+-	start_addr = addr = mm->free_area_cache;
+-
+-	if (addr < len)
+-		goto fail;
+-
+-	addr -= len;
+-	do {
+-		addr = arch_align_addr(addr, filp, pgoff, flags, ALLOC_DOWN);
+-
+-		/*
+-		 * Lookup failure means no vma is above this address,
+-		 * else if new region fits below vma->vm_start,
+-		 * return with success:
+-		 */
+-		vma = find_vma(mm, addr);
+-		if (!vma || addr+len <= vma->vm_start)
+-			/* remember the address as a hint for next time */
+-			return mm->free_area_cache = addr;
+-
+-		/* remember the largest hole we saw so far */
+-		if (addr + mm->cached_hole_size < vma->vm_start)
+-			mm->cached_hole_size = vma->vm_start - addr;
+-
+-		/* try just below the current vma->vm_start */
+-		addr = vma->vm_start-len;
+-	} while (len < vma->vm_start);
+-
+-fail:
+-	/*
+-	 * if hint left us with no space for the requested
+-	 * mapping then try again:
+-	 */
+-	if (start_addr != mm->mmap_base) {
+-		mm->free_area_cache = mm->mmap_base;
+-		mm->cached_hole_size = 0;
+-		goto try_again;
+-	}
+-
+-bottomup:
+-	/*
+-	 * A failed mmap() very likely causes application failure,
+-	 * so fall back to the bottom-up function here. This scenario
+-	 * can happen with large stack limits and large mmap()
+-	 * allocations.
+-	 */
+-	mm->cached_hole_size = ~0UL;
+-	mm->free_area_cache = TASK_UNMAPPED_BASE;
+-	addr = arch_get_unmapped_area(filp, addr0, len, pgoff, flags);
+-	/*
+-	 * Restore the topdown base:
+-	 */
+-	mm->free_area_cache = mm->mmap_base;
+-	mm->cached_hole_size = ~0UL;
+-
+-	return addr;
+-}
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.7.6
 
