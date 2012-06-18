@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab2FRSPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 14:15:34 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:62966 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2FRSPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 14:15:31 -0400
+	id S1752008Ab2FRSRI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 14:17:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49720 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816Ab2FRSRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 14:17:06 -0400
+Date: Mon, 18 Jun 2012 20:16:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
+        minchan@gmail.com, kosaki.motohiro@gmail.com, hnaz@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH -mm 3/6] Fix the x86-64 page colouring code to take pgoff
+ into account and use that code as the basis for a generic page colouring
+ code.
+Message-ID: <20120618181658.GA7190@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+	linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+	peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
+	hnaz@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+	Rik van Riel <riel@surriel.com>
+References: <1340029878-7966-1-git-send-email-riel@redhat.com>
+ <1340029878-7966-4-git-send-email-riel@redhat.com>
+ <m2k3z48twb.fsf@firstfloor.org>
+ <4FDF5B3C.1000007@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4FDEE98D.7010802@linaro.org>
-References: <4FDEE98D.7010802@linaro.org>
-Date: Mon, 18 Jun 2012 11:15:30 -0700
-X-Google-Sender-Auth: wI_0kCCBZtURMMMrkxuhUsOGIGs
-Message-ID: <CAMbhsRQRFXcayyWjM1RirgFppVAK23z2+3EbYOCw-qmzuY9_2g@mail.gmail.com>
-Subject: Re: cpuidle future and improvements
-From: Colin Cross <ccross@android.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Rob Lee <rob.lee@linaro.org>, rjw@sisk.pl,
-        Kevin Hilman <khilman@ti.com>, linux-next@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FDF5B3C.1000007@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 1:40 AM, Daniel Lezcano
-<daniel.lezcano@linaro.org> wrote:
-> I propose to host a cpuidle-next tree where all these modifications will
-> be and where people can send patches against, preventing last minutes
-> conflicts and perhaps Lenb will agree to pull from this tree. In the
-> meantime, the tree will be part of the linux-next, the patches will be
-> more widely tested and could be fixed earlier.
+On Mon, Jun 18, 2012 at 12:45:48PM -0400, Rik van Riel wrote:
+> >What tree is that against? I cannot find x86 page colouring code in next
+> >or mainline.
+> 
+> This is against mainline.
 
-My coupled cpuidle patches were acked and temporarily in Len's
-next/Linus pull branch, but were later dropped when the first pull
-request to Linus was rejected.  I asked Len to either put the coupled
-cpuidle patches into his next branch, or let me host them so people
-could base SoC branches off of them and let Len pull them later, but
-got no response.  If you do start a cpuidle for-next branch, can you
-pull my coupled-cpuidle branch:
+Which mainline do you mean exactly?
 
-The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
+1/6 doesn't apply ontop of current mainline and by "current" I mean
+v3.5-rc3-57-g39a50b42f702.
 
-  Linux 3.4 (2012-05-20 15:29:13 -0700)
-
-are available in the git repository at:
-  https://android.googlesource.com/kernel/common.git coupled-cpuidle
-
-Colin Cross (4):
-      cpuidle: refactor out cpuidle_enter_state
-      cpuidle: fix error handling in __cpuidle_register_device
-      cpuidle: add support for states that affect multiple cpus
-      cpuidle: coupled: add parallel barrier function
-
- drivers/cpuidle/Kconfig   |    3 +
- drivers/cpuidle/Makefile  |    1 +
- drivers/cpuidle/coupled.c |  715 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/cpuidle/cpuidle.c |   68 ++++-
- drivers/cpuidle/cpuidle.h |   32 ++
- include/linux/cpuidle.h   |   11 +
- 6 files changed, 813 insertions(+), 17 deletions(-)
- create mode 100644 drivers/cpuidle/coupled.c
+-- 
+Regards/Gruss,
+Boris.
