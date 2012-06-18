@@ -1,146 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2FRUhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:37:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35577 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751802Ab2FRUhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:37:24 -0400
-Date: Mon, 18 Jun 2012 22:37:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
-        minchan@gmail.com, kosaki.motohiro@gmail.com, hnaz@cmpxchg.org,
-        mel@csn.ul.ie, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@surriel.com>
-Subject: Re: [PATCH -mm 3/6] Fix the x86-64 page colouring code to take pgoff
- into account and use that code as the basis for a generic page colouring
- code.
-Message-ID: <20120618203720.GA4148@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-	linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
-	peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
-	hnaz@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
-	Rik van Riel <riel@surriel.com>
-References: <1340029878-7966-1-git-send-email-riel@redhat.com>
- <1340029878-7966-4-git-send-email-riel@redhat.com>
- <m2k3z48twb.fsf@firstfloor.org>
- <4FDF5B3C.1000007@redhat.com>
- <20120618181658.GA7190@x1.osrc.amd.com>
- <4FDF7B5E.301@redhat.com>
+	id S1753218Ab2FRUjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:39:33 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:59227 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab2FRUj2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 16:39:28 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while OK in AmigaOS 4.1
+Date: Mon, 18 Jun 2012 22:39:26 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
+Cc: jdow <jdow@earthlink.net>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, linux-m68k@vger.kernel.org
+References: <201206170841.20222.Martin@lichtvoll.de> <201206171458.58462.Martin@lichtvoll.de> <CAMuHMdWY7=2nJDUjQFGPhdOAFGYeUsnvgPcaEvB2Gxf7P=E+Ug@mail.gmail.com> (sfid-20120617_225443_752860_DC66624F)
+In-Reply-To: <CAMuHMdWY7=2nJDUjQFGPhdOAFGYeUsnvgPcaEvB2Gxf7P=E+Ug@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FDF7B5E.301@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201206182239.26647.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 03:02:54PM -0400, Rik van Riel wrote:
-> On 06/18/2012 02:16 PM, Borislav Petkov wrote:
-> >On Mon, Jun 18, 2012 at 12:45:48PM -0400, Rik van Riel wrote:
-> >>>What tree is that against? I cannot find x86 page colouring code in next
-> >>>or mainline.
-> >>
-> >>This is against mainline.
-> >
-> >Which mainline do you mean exactly?
-> >
-> >1/6 doesn't apply ontop of current mainline and by "current" I mean
-> >v3.5-rc3-57-g39a50b42f702.
+Am Sonntag, 17. Juni 2012 schrieb Geert Uytterhoeven:
+> On Sun, Jun 17, 2012 at 2:58 PM, Martin Steigerwald 
+> <Martin@lichtvoll.de> wrote:
+> > Am Sonntag, 17. Juni 2012 schrieb jdow:
+> > | JXFS 64 bit file system
+> > | 
+> > | With AmigaOS 4.x a new file system has been introduced called JXFS.
+> > | It is a totally new 64 bit file system that supports partitions up
+> > | to 16 TB in size. It is a modern journalling file system, which
+> > | means that it reduces data loss if data writes to the disk are
+> > | interrupted. It is the fastest and most reliable file system ever
+> > | created for AmigaOS.
+> > 
+> > http://www.amigaos.net/content/1/features
+> > 
+> > Well I asked AmigaOS 4 developers about this issue as well. Lets see
+> > what they say about 2 TB limits.
 > 
-> After pulling in the latest patches, including that
-> 39a50b... commit, all patches still apply here when
-> I type guilt push -a.
+> 16 TB = 2 TB * 8. Perhaps they increased the block size from 512 to
+> 4096?
+> 
+> block/partitions/amiga.c reads the block size from
+> RigidDiskBlock.rdb_BlockBytes,
+> but after conversion to 512-byte blocks, all further calculations are
+> done on "int", so it will overflow for disks larger than 2 TiB.
 
-That's strange.
+Meanwhile I got a response from a AmigaOS 4 developer.
 
-I'm also pulling from
+I documented the stuff as I understood it in the AmigaOS wiki:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6
+| Disk size
+|
+| The RDB has a quite high limit on the maximum device size, but note that 
+| currently each filesystem interprets the partition layout by itself.
 
-Btw, if I had local changes, the top commit id would've changed, right?
-So I wouldn't have had 39a50b anymore.
+| The raw, theoretical limit on the maximum device capacity is about 2^105 
+| bytes:
+|
+| 32 bit rdb_Cylinders * 32 bit rdb_Heads * 32 bit rdb_Sectors * 512 
+| bytes/sector for the HD size in struct RigidDiskBlock
+|
+| It's even much more if the sector size (rdb_BlockBytes and de_SizeBlock) 
+| is larger than 512 bytes, but AmigaOS 4.1 doesn't support anything but 
+| 512 bytes/sector HDs yet.
+|
+| Partition size
+|
+| For the partitions the maximum size is:
+| 32 bit (de_HighCyl + 1 - de_LowCyl) (to get the partition size) * 32 bit 
+| de_Surfaces * 32 bit de_SectorsPerTrack * 512 bytes/sector in struct 
+| DosEnvec (=pb_Environment[]) in struct PartitionBlock.
+|
+| That's from the physical drive part, the actual disk size limit for the 
+| partitions may be much smaller depending on the partitioning software, 
+| if it's only using the logical sizes instead, which is likely the case, 
+| it's only 8 ZiB with 512 bytes/sector: 32 bit rdb_HiCylinder * 32 bit 
+| rdb_CylBlocks * 512 bytes/sector = 2^73 bytes. For using the logical 
+| sizes using simple uint64 calculations (with some overflow checks) should 
+| be enough, for more a math library with support for larger integers 
+| needs to be used which probably no partitioning software does.
+|
+| But note: Nothing in struct RigiDiskBlock is used by the file systems for 
+| mounting the partitions, they only get the information from the struct 
+| PartitionBlock blocks, it's only a problem for the partitioning software 
+| creating the partitions correctly - as soon as there are HDs larger than 
+| 8 ZB while still using 512 bytes/sector if that ever happens.
 
-Just in case, I tried applying 1/6 on another repository and it still
-doesn't apply:
+http://wiki.amigaos.net/index.php/RDB
 
-$ patch -p1 --dry-run -i /tmp/riel.01
-patching file include/linux/mm_types.h
-Hunk #1 succeeded at 300 (offset -7 lines).
-patching file mm/mmap.c
-Hunk #2 succeeded at 206 with fuzz 1 (offset -45 lines).
-Hunk #3 FAILED at 398.
-Hunk #4 FAILED at 461.
-Hunk #5 succeeded at 603 (offset -57 lines).
-Hunk #6 succeeded at 1404 (offset -66 lines).
-Hunk #7 succeeded at 1441 (offset -66 lines).
-Hunk #8 succeeded at 1528 (offset -66 lines).
-Hunk #9 succeeded at 1570 (offset -66 lines).
-Hunk #10 FAILED at 1908.
-Hunk #11 FAILED at 2093.
-4 out of 11 hunks FAILED -- saving rejects to file mm/mmap.c.rej
+Please note that the documentation there might be updated or corrected in 
+the future. But thats the current state.
 
-riel.01 is the mail saved from mutt so it should be fine.
+> Note that in your profile-binary.img, the field is 0x200, i.e. 512
+> bytes per block,
+> so I'll have to get a deeper look into your RDB first...
 
-Now let's look at the first failing hunk:
+I am a bit overwhelmed by Joanne´s analysis. I didn´t yet take time to 
+completely read and try to understand it. I first wanted to get this 
+information out.
 
-Mainline has:
-
-void validate_mm(struct mm_struct *mm)
-{
-	int bug = 0;
-	int i = 0;
-	struct vm_area_struct *tmp = mm->mmap;
-	while (tmp) {
-		tmp = tmp->vm_next;
-		i++;
-	}
-	if (i != mm->map_count)
-		printk("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
-	i = browse_rb(&mm->mm_rb);
-	if (i != mm->map_count)
-		printk("map_count %d rb %d\n", mm->map_count, i), bug = 1;
-	BUG_ON(bug);
-}
-
---
-and your patch has some new ifs in it:
-
-@@ -386,12 +398,16 @@ void validate_mm(struct mm_struct *mm)
- 	int bug = 0;
- 	int i = 0;
- 	struct vm_area_struct *tmp = mm->mmap;
-+	unsigned long highest_address = 0;
- 	while (tmp) {
- 		if (tmp->free_gap != max_free_space(&tmp->vm_rb))
- 			printk("free space %lx, correct %lx\n", tmp->free_gap, max_free_space(&tmp->vm_rb)), bug = 1;
-
-			^^^^^^^^^^^^^^
-
-I think this if-statement is the problem. It is not present in mainline
-but this patch doesn't add it so some patch earlier than that adds it
-which is probably in your queue?
-
-+		highest_address = tmp->vm_end;
- 		tmp = tmp->vm_next;
- 		i++;
- 	}
-+	if (highest_address != mm->highest_vma)
-+		printk("mm->highest_vma %lx, found %lx\n", mm->highest_vma, highest_address), bug = 1;
-
- 	if (i != mm->map_count)
- 		printk("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
- 	i = browse_rb(&mm->mm_rb);
---
-
-I haven't looked at the other failing hunks...
-
-Thanks.
-
+Thanks,
 -- 
-Regards/Gruss,
-    Boris.
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
