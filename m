@@ -1,37 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab2FRWao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 18:30:44 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:53903 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab2FRWan (ORCPT
+	id S1753946Ab2FRWcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 18:32:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32910 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab2FRWcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 18:30:43 -0400
+	Mon, 18 Jun 2012 18:32:07 -0400
+Date: Mon, 18 Jun 2012 15:32:03 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Early boot panic on machine with lots of memory
+Message-ID: <20120618223203.GE32733@google.com>
+References: <1339623535.3321.4.camel@lappy>
+ <20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1339667440.3321.7.camel@lappy>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
-References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
- <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com> <CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Mon, 18 Jun 2012 18:30:21 -0400
-Message-ID: <CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
-Subject: Re: SNB PCI root information
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, jbarnes@virtuousgeek.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339667440.3321.7.camel@lappy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 5:56 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> If ACPI provides a perfectly usable generic way to describe this
-> topology and the vendor BIOS doesn't bother to use it, I'm not very
-> interested in trying to compensate for that BIOS deficiency by adding
-> a bunch of non-portable CPU-specific gunk to Linux.
+On Thu, Jun 14, 2012 at 11:50:40AM +0200, Sasha Levin wrote:
+> On Thu, 2012-06-14 at 12:20 +0900, Tejun Heo wrote:
+> > On Wed, Jun 13, 2012 at 11:38:55PM +0200, Sasha Levin wrote:
+> > > Hi all,
+> > > 
+> > > I'm seeing the following when booting a KVM guest with 65gb of RAM, on latest linux-next.
+> > > 
+> > > Note that it happens with numa=off.
+> > > 
+> > > [    0.000000] BUG: unable to handle kernel paging request at ffff88102febd948
+> > > [    0.000000] IP: [<ffffffff836a6f37>] __next_free_mem_range+0x9b/0x155
+> > 
+> > Can you map it back to the source line please?
+> 
+> mm/memblock.c:583
+> 
+>                         phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
+>   97:   85 d2                   test   %edx,%edx
+>   99:   74 08                   je     a3 <__next_free_mem_range+0xa3>
+>   9b:   49 8b 48 f0             mov    -0x10(%r8),%rcx
+>   9f:   49 03 48 e8             add    -0x18(%r8),%rcx
+> 
+> It's the deref on 9b (r8=ffff88102febd958).
 
-The problem is that all machines get this wrong.  I've tested varies
-models from Dell and HP and none of them have the _PXM entry and the
-local_cpus fields are wrong.  If there is a reasonably sane way to
-compensate for broken BIOSes it should be considered.  We all know how
-good BIOS authors are...
+* Can you please post disassembly of the whole function?  It seems
+  like rsv->regions[] was corrupt.  I want to verify other registers
+  too.
+
+* Can you please try the following patch?
+
+  https://lkml.org/lkml/2012/6/15/510
+
+Thanks.
+
+-- 
+tejun
