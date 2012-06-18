@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab2FRXEL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 19:04:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47793 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab2FRXEJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 19:04:09 -0400
-Date: Mon, 18 Jun 2012 16:04:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Suresh Jayaraman <sjayaraman@suse.com>
-Cc: David Howells <dhowells@redhat.com>, Justin Lecher <jlec@gentoo.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-cachefs@redhat.com
-Subject: Re: [PATCH] [RESEND] fs: cachefiles: Add support for large files in
- filesystem caching
-Message-Id: <20120618160408.8d0dd792.akpm@linux-foundation.org>
-In-Reply-To: <4FD5844D.4010900@suse.com>
-References: <4FD5844D.4010900@suse.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753224Ab2FRXGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 19:06:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59865 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314Ab2FRXGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 19:06:33 -0400
+Message-ID: <4FDFB475.3070805@redhat.com>
+Date: Mon, 18 Jun 2012 20:06:29 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v3 5/9] video/uvc: use memweight()
+References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com> <1339203038-13069-5-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1339203038-13069-5-git-send-email-akinobu.mita@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012 11:08:21 +0530
-Suresh Jayaraman <sjayaraman@suse.com> wrote:
+Em 08-06-2012 21:50, Akinobu Mita escreveu:
+> Use memweight() to count the total number of bits set in memory area.
+> 
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: linux-media@vger.kernel.org
 
-> The below patch which was first posted here:
-> 
->    https://lkml.org/lkml/2012/4/3/193
-> 
-> and tested by me and picked up by the maintainer here:
-> 
->    https://lkml.org/lkml/2012/5/1/57
-> 
-> But it seems to not to have made to the linux-next or Linus tree.
-> I'm resending what it seems like a lost patch.
-> 
-> 
-> From: Justin Lecher <jlec@gentoo.org>
-> 
-> Support the caching of large files.
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=31182
-> 
-> Signed-off-by: Justin Lecher <jlec@gentoo.org>
-> Tested-by: Suresh Jayaraman <sjayaraman@suse.com>
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
 > ---
->  fs/cachefiles/rdwr.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> No changes from v1
 > 
-> diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
-> index 0e3c092..d136686 100644
-> --- a/fs/cachefiles/rdwr.c
-> +++ b/fs/cachefiles/rdwr.c
-> @@ -919,7 +919,7 @@ int cachefiles_write_page(struct fscache_storage *op, struct page *page)
->  	dget(object->backer);
->  	mntget(cache->mnt);
->  	file = dentry_open(object->backer, cache->mnt, O_RDWR,
-> -			   cache->cache_cred);
-> +			   (O_RDWR | O_LARGEFILE), cache->cache_cred);
+>   drivers/media/video/uvc/uvc_ctrl.c |    5 ++---
+>   1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/video/uvc/uvc_ctrl.c b/drivers/media/video/uvc/uvc_ctrl.c
+> index af26bbe..f7061a5 100644
+> --- a/drivers/media/video/uvc/uvc_ctrl.c
+> +++ b/drivers/media/video/uvc/uvc_ctrl.c
+> @@ -2083,7 +2083,7 @@ int uvc_ctrl_init_device(struct uvc_device *dev)
+>   	/* Walk the entities list and instantiate controls */
+>   	list_for_each_entry(entity, &dev->entities, list) {
+>   		struct uvc_control *ctrl;
+> -		unsigned int bControlSize = 0, ncontrols = 0;
+> +		unsigned int bControlSize = 0, ncontrols;
+>   		__u8 *bmControls = NULL;
+>   
+>   		if (UVC_ENTITY_TYPE(entity) == UVC_VC_EXTENSION_UNIT) {
+> @@ -2101,8 +2101,7 @@ int uvc_ctrl_init_device(struct uvc_device *dev)
+>   		uvc_ctrl_prune_entity(dev, entity);
+>   
+>   		/* Count supported controls and allocate the controls array */
+> -		for (i = 0; i < bControlSize; ++i)
+> -			ncontrols += hweight8(bmControls[i]);
+> +		ncontrols = memweight(bmControls, bControlSize);
+>   		if (ncontrols == 0)
+>   			continue;
+>   
+> 
 
-Doesn't compile.
-
-How extensively was this change tested?  Please describe the testing
-which was performed?
 
