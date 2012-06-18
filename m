@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab2FRMKD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:10:03 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53572 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab2FRMKA (ORCPT
+	id S1751898Ab2FRMLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:11:05 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55117 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab2FRMLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:10:00 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FDF1A0D.6080204@jp.fujitsu.com>
-Date: Mon, 18 Jun 2012 21:07:41 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 18 Jun 2012 08:11:03 -0400
+Message-ID: <4FDF1ACC.2040208@monstr.eu>
+Date: Mon, 18 Jun 2012 14:10:52 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH v4 05/25] memcg: Always free struct memcg through schedule_work()
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-6-git-send-email-glommer@parallels.com>
-In-Reply-To: <1340015298-14133-6-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Rob Herring <robherring2@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, John.Linn@xilinx.com, arnd@arndb.de
+Subject: Re: [PATCH] arm: zynq: Support GIC OF initialization
+References: <1340017873-18170-1-git-send-email-monstr@monstr.eu> <4FDF19CF.8010303@gmail.com>
+In-Reply-To: <4FDF19CF.8010303@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/18 19:27), Glauber Costa wrote:
-> Right now we free struct memcg with kfree right after a
-> rcu grace period, but defer it if we need to use vfree() to get
-> rid of that memory area. We do that by need, because we need vfree
-> to be called in a process context.
-> 
-> This patch unifies this behavior, by ensuring that even kfree will
-> happen in a separate thread. The goal is to have a stable place to
-> call the upcoming jump label destruction function outside the realm
-> of the complicated and quite far-reaching cgroup lock (that can't be
-> held when calling neither the cpu_hotplug.lock nor the jump_label_mutex)
-> 
-> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> CC: Tejun Heo<tj@kernel.org>
-> CC: Li Zefan<lizefan@huawei.com>
-> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner<hannes@cmpxchg.org>
-> CC: Michal Hocko<mhocko@suse.cz>
+On 06/18/2012 02:06 PM, Rob Herring wrote:
+> On 06/18/2012 06:11 AM, Michal Simek wrote:
+>> Zynq is OF driven platfrom which requires OF initialization.
+>>
+>> Signed-off-by: Michal Simek<monstr@monstr.eu>
+>> ---
+>>   arch/arm/mach-zynq/common.c |    7 ++++++-
+>>   1 files changed, 6 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+>> index 17d68d6..7941544 100644
+>> --- a/arch/arm/mach-zynq/common.c
+>> +++ b/arch/arm/mach-zynq/common.c
+>> @@ -56,12 +56,17 @@ static void __init xilinx_init_machine(void)
+>>   	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
+>>   }
+>>
+>> +static const struct of_device_id zynq_dt_irq_match[] __initconst = {
+>> +	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init },
+>> +	{ }
+>> +};
+>> +
+>>   /**
+>>    * xilinx_irq_init() - Interrupt controller initialization for the GIC.
+>>    */
+>>   static void __init xilinx_irq_init(void)
+>>   {
+>> -	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
+>
+> And delete the corresponding defines?
 
-How about cut out this patch and merge first as simple cleanu up and
-to reduce patch stack on your side ?
+Agree, Will create v2.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+BTW: Who is responsible for zynq? I think John Linn and who is maintainer I should ask for pulling.
 
-> ---
->   mm/memcontrol.c |   24 +++++++++++++-----------
->   1 file changed, 13 insertions(+), 11 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index e3b528e..ce15be4 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -245,8 +245,8 @@ struct mem_cgroup {
->   		 */
->   		struct rcu_head rcu_freeing;
->   		/*
-> -		 * But when using vfree(), that cannot be done at
-> -		 * interrupt time, so we must then queue the work.
-> +		 * We also need some space for a worker in deferred freeing.
-> +		 * By the time we call it, rcu_freeing is not longer in use.
->   		 */
->   		struct work_struct work_freeing;
->   	};
-> @@ -4826,23 +4826,28 @@ out_free:
->   }
-> 
->   /*
-> - * Helpers for freeing a vzalloc()ed mem_cgroup by RCU,
-> + * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
->    * but in process context.  The work_freeing structure is overlaid
->    * on the rcu_freeing structure, which itself is overlaid on memsw.
->    */
-> -static void vfree_work(struct work_struct *work)
-> +static void free_work(struct work_struct *work)
->   {
->   	struct mem_cgroup *memcg;
-> +	int size = sizeof(struct mem_cgroup);
-> 
->   	memcg = container_of(work, struct mem_cgroup, work_freeing);
-> -	vfree(memcg);
-> +	if (size<  PAGE_SIZE)
-> +		kfree(memcg);
-> +	else
-> +		vfree(memcg);
->   }
-> -static void vfree_rcu(struct rcu_head *rcu_head)
-> +
-> +static void free_rcu(struct rcu_head *rcu_head)
->   {
->   	struct mem_cgroup *memcg;
-> 
->   	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
-> -	INIT_WORK(&memcg->work_freeing, vfree_work);
-> +	INIT_WORK(&memcg->work_freeing, free_work);
->   	schedule_work(&memcg->work_freeing);
->   }
-> 
-> @@ -4868,10 +4873,7 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
->   		free_mem_cgroup_per_zone_info(memcg, node);
-> 
->   	free_percpu(memcg->stat);
-> -	if (sizeof(struct mem_cgroup)<  PAGE_SIZE)
-> -		kfree_rcu(memcg, rcu_freeing);
-> -	else
-> -		call_rcu(&memcg->rcu_freeing, vfree_rcu);
-> +	call_rcu(&memcg->rcu_freeing, free_rcu);
->   }
-> 
->   static void mem_cgroup_get(struct mem_cgroup *memcg)
+Thanks,
+Michal
 
 
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
