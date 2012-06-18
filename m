@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab2FQX4f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 19:56:35 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:14252 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab2FQX4d (ORCPT
+	id S1753811Ab2FRAJO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 20:09:14 -0400
+Received: from mout2.fh-giessen.de ([212.201.18.46]:35021 "EHLO
+	mout2.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545Ab2FRAJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 19:56:33 -0400
-X-AuditID: cbfee61b-b7fcc6d000003a7a-8e-4fde6ead917c
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: "'Liam Girdwood'" <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, sbkim01@gmail.com
-References: <042301cd493e$8d95d7e0$a8c187a0$@com>
- <20120613174620.GD7804@opensource.wolfsonmicro.com>
- <04ad01cd49c0$df565d20$9e031760$@com>
- <20120617185305.GD4267@opensource.wolfsonmicro.com>
-In-reply-to: <20120617185305.GD4267@opensource.wolfsonmicro.com>
-Subject: RE: [PATCH 5/5] regulator: Support AP watchdog reset operation for
- s5m8767a
-Date: Mon, 18 Jun 2012 08:56:29 +0900
-Message-id: <065501cd4ce4$d07c8b90$7175a2b0$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1MunEsYdsK5E+KRh+gAY66ymu0TwAKEr9A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAd21eff8DX7etba4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZbU0zWAp6OCq+z7vH0sC4iK2LkZNDQsBE4uG+hVC2mMSFe+uB
-	bC4OIYFFjBKH9/5ihXDmMknsfHCdCaSKTUBDYuXut0BVHBwiAmYSPw/ygISZBbIknk4/DlV/
-	lFFi29wVYPWcAg4Sk77tArOFBcIkft3+zAhiswioSjxacJAZxOYVMJTYdf0OK4QtKPFj8j0W
-	iKFaEut3HmeCsOUlNq95ywyyV0JAXeLRX12QsIiAkcSr72vZIEpEJPa9eMc4gVFoFpJJs5BM
-	moVk0iwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBAfyM+kdjKsaLA4xCnAwKvHw
-	nki+5y/EmlhWXJl7iFGCg1lJhPd6OFCINyWxsiq1KD++qDQntfgQozQHi5I4b5P1BX8hgfTE
-	ktTs1NSC1CKYLBMHp1QDY/09gUuvH719zbN5Y8VS4QfSTtXpM5U3zb+9842AgSr73pP3Ge99
-	WL3FX3OtSNzKD1a2Dc0ekoeZmX+d/L11k06un+/6D7JLnhse2eFvlvbv7tJCJq7sqY8m3z7J
-	vk6+6M3eqlcFOR63jySHfz/16/DFba8OdCkldrZGZSwJ7+prddigd8Ur+bgSS3FGoqEWc1Fx
-	IgCwe15eYAIAAA==
-X-TM-AS-MML: No
+	Sun, 17 Jun 2012 20:09:13 -0400
+Message-ID: <4FDE71A4.2090807@mni.thm.de>
+Date: Mon, 18 Jun 2012 02:09:08 +0200
+From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/16.0 Thunderbird/16.0a1
+MIME-Version: 1.0
+To: gregkh@linuxfoundation.org
+CC: james.smart@emulex.com, linux-kernel@vger.kernel.org
+Subject: Driver scsi/lpfc breaks build since 3.4.1
+Content-Type: multipart/mixed;
+ boundary="------------000802090709080508090206"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 18, 2012 at 3:53 AM, Mark Brown wrote:
-> > Solution
-> > - Basic concept: After ap watchdog reset, GPIO configuration is
-> > changed by default value
-> > - S5M8767A has function of voltage control with gpio (8 levels with 3
-> > gpios)
-> > - Set bootable voltage on level 0 -> can work with default gpio
-> > configuration
-> > - In the probing, Change voltage control level from level 0 to level 1
-> > - Execute normal dvfs operation on level 1
-> > - After watchdog reset, ap gpio is set by default value
-> > - PMIC operation mode is changed by ap reset (level1 -> level0)
-> > - AP can execute normal boot
-> 
-> OK, so basically what you're doing is fixing one of the GPIO selected voltage levels so that when
-> the AP comes out of reset it'll drive the PMIC into a suitable level for it to boot?  That makes
-> sense 
-That's right.
-The voltage of S5M8767A can be controlled by GPIO.
-So, I try to check the status of gpio.
-I will resend above patch with adding detail commit message.
+This is a multi-part message in MIME format.
+--------------000802090709080508090206
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 
-Thanks,
-Sangbeom.
+Hello there,
+since 3.4.1 the driver scsi/lpfc breaks my build for some unused variables:
+drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_bpl’:
+drivers/scsi/lpfc/lpfc_scsi.c:1900:11: error: unused variable ‘rc’ 
+[-Werror=unused-variable]
+drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_bpl_prot’:
+drivers/scsi/lpfc/lpfc_scsi.c:2037:11: error: unused variable ‘rc’ 
+[-Werror=unused-variable]
+drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_sgl’:
+drivers/scsi/lpfc/lpfc_scsi.c:2256:11: error: unused variable ‘rc’ 
+[-Werror=unused-variable]
+drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_sgl_prot’:
+drivers/scsi/lpfc/lpfc_scsi.c:2386:11: error: unused variable ‘rc’ 
+[-Werror=unused-variable]
+cc1: all warnings being treated as errors
 
+ From the drivers makefile:
+ccflags-y += -Werror <- this causes the bad behavior.
+
+=> remove this line or the unused variables
+=> decided to remove the unused varaibles for 3.4.x and create a patch 
+for it. Maybe you want to queue it up for the 3.4.y stable series!
+
+Greetings
+Tobias Klausmann
+
+--------------000802090709080508090206
+Content-Type: text/x-patch;
+ name="lpfc_compile_fix.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="lpfc_compile_fix.diff"
+
+>From 69c2b0224847f6b7f6fb701fe0cb0c5657f1389b Mon Sep 17 00:00:00 2001
+From: Tobias Klausmann <tobias.klausmann@mni.thm.de>
+Date: Mon, 18 Jun 2012 01:14:55 +0200
+Subject: [PATCH] Driver scsi/lpfc: Remove some unused varaibles (Compilefix
+ for linux 3.4.1-3.4.x)
+
+---
+ drivers/scsi/lpfc/lpfc_scsi.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/scsi/lpfc/lpfc_scsi.c b/drivers/scsi/lpfc/lpfc_scsi.c
+index 88f3a83..7f20599 100644
+--- a/drivers/scsi/lpfc/lpfc_scsi.c
++++ b/drivers/scsi/lpfc/lpfc_scsi.c
+@@ -1897,7 +1897,6 @@ lpfc_bg_setup_bpl(struct lpfc_hba *phba, struct scsi_cmnd *sc,
+ 	dma_addr_t physaddr;
+ 	int i = 0, num_bde = 0, status;
+ 	int datadir = sc->sc_data_direction;
+-	uint32_t rc;
+ 	uint32_t checking = 1;
+ 	uint32_t reftag;
+ 	unsigned blksize;
+@@ -2034,7 +2033,6 @@ lpfc_bg_setup_bpl_prot(struct lpfc_hba *phba, struct scsi_cmnd *sc,
+ 	int datadir = sc->sc_data_direction;
+ 	unsigned char pgdone = 0, alldone = 0;
+ 	unsigned blksize;
+-	uint32_t rc;
+ 	uint32_t checking = 1;
+ 	uint32_t reftag;
+ 	uint8_t txop, rxop;
+@@ -2253,7 +2251,6 @@ lpfc_bg_setup_sgl(struct lpfc_hba *phba, struct scsi_cmnd *sc,
+ 	uint32_t reftag;
+ 	unsigned blksize;
+ 	uint8_t txop, rxop;
+-	uint32_t rc;
+ 	uint32_t checking = 1;
+ 	uint32_t dma_len;
+ 	uint32_t dma_offset = 0;
+@@ -2383,7 +2380,6 @@ lpfc_bg_setup_sgl_prot(struct lpfc_hba *phba, struct scsi_cmnd *sc,
+ 	uint32_t reftag;
+ 	uint8_t txop, rxop;
+ 	uint32_t dma_len;
+-	uint32_t rc;
+ 	uint32_t checking = 1;
+ 	uint32_t dma_offset = 0;
+ 	int num_sge = 0;
+-- 
+1.7.7
+
+
+--------------000802090709080508090206--
