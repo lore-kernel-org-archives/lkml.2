@@ -1,185 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab2FRSUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 14:20:41 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58475 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137Ab2FRSUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 14:20:39 -0400
-Message-ID: <4FDF7161.5020108@us.ibm.com>
-Date: Mon, 18 Jun 2012 11:20:17 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, stable@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -stable]  ntp: Correct TAI offset during leap second
-References: <4FDB8563.3030805@us.ibm.com> <1339944223.4942.240.camel@deadeye.wl.decadent.org.uk> <20120617164751.GJ12429@burratino> <20120617173456.GA3684@netboy.at.omicron.at> <1340027711.9372.29.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1340027711.9372.29.camel@deadeye.wl.decadent.org.uk>
-Content-Type: multipart/mixed;
- boundary="------------020000010707080304080306"
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061818-5806-0000-0000-000016583F64
+	id S1752398Ab2FRS32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 14:29:28 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:4059 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab2FRS31 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 14:29:27 -0400
+From: Greg Pearson <greg.pearson@hp.com>
+To: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
+        shangw@linux.vnet.ibm.com, mingo@elte.hu
+Cc: yinghai@kernel.org, benh@kernel.crashing.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, greg.pearson@hp.com
+Subject: [PATCH v3] mm/memblock: fix overlapping allocation when doubling reserved array
+Date: Mon, 18 Jun 2012 12:28:47 -0600
+Message-Id: <1340044127-13864-1-git-send-email-greg.pearson@hp.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020000010707080304080306
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+The __alloc_memory_core_early() routine will ask memblock for a range
+of memory then try to reserve it. If the reserved region array lacks
+space for the new range, memblock_double_array() is called to allocate
+more space for the array. If memblock is used to allocate memory for
+the new array it can end up using a range that overlaps with the range
+originally allocated in __alloc_memory_core_early(), leading to possible
+data corruption.
 
-On 06/18/2012 06:55 AM, Ben Hutchings wrote:
-> On Sun, 2012-06-17 at 19:34 +0200, Richard Cochran wrote:
->> On Sun, Jun 17, 2012 at 11:47:51AM -0500, Jonathan Nieder wrote:
->>> Ben Hutchings wrote:
->>>
->>> 6b43ae8a619d (ntp: Fix leap-second hrtimer livelock) sounds important,
->>> but the patch depends on bd3312681f69 (ntp: Add ntp_lock to replace
->>> xtime_locking) which does not have a commit message explaining its
->>> purpose (and that patch in turn depends on ea7cf49a7633).
-> If I understand the commit message for 6b43ae8a619d correctly, the
-> livelock results from ntp_lock and xtime_lock being acquired in opposite
-> orders in two threads.  Which means it wasn't possible before ntp_lock
-> was introduced in bd3312681f69.
-Yes, I think Ben is right that before the ntp_lock split the potential 
-deadlock couldn't happen.
+With this patch memblock_double_array() now calls memblock_find_in_range()
+with a narrowed candidate range (in cases where the reserved.regions array
+is being doubled) so any memory allocated will not overlap with the original
+range that was being reserved. The range is narrowed by passing in the
+starting address and size of the previously allocated range. Then the
+range above the ending address is searched and if a candidate is not
+found, the range below the starting address is searched.
 
+Changes from v1 to v2 (based on comments from Yinghai Lu):
+- use obase instead of base in memblock_add_region() for excluding start address
+- pass in both the starting and ending address of the exclude range to
+  memblock_double_array()
+- have memblock_double_array() search above the exclude ending address
+  and below the exclude starting address for a free range
 
->>> John, is that bug present in 3.2.y and 3.0.y, too?  Any hints for
->>> fixing it?
->> It looks like incrementing the TAI offset was wrong even before
->>
->>     6b43ae8a ntp: Fix leap-second hrtimer livelock  v3.4-rc1~44^2~9
->>
->> The offset should change upon entering state OOP, so something like
->> the following (untested) patch should fix it for 3.2.9.
-> [...]
->
-> It looks like this patch just changes the offset reported by adjtimex()
-> during an inserted second; is that right?
+Changes from v2 to v3 (based on comments from Yinghai Lu):
+- pass in exclude_start and exclude_size to memblock_double_array()
+- only exclude a range if doubling the reserved.regions array
+- make sure narrowed range passed to memblock_find_in_range() is accessible
+- to make the code less confusing, change memblock_isolate_range() to
+  pass in exclude_start and exclude_size
+- remove unneeded comment in memblock_add_region() between while and
+  one line loop body
 
-Yep. It just makes sure the TAI offset is adjusted at the same point 
-that the leapsecond is inserted (as opposed to a second late).
+Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ mm/memblock.c |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
 
->
-> Other than that, is 3.2.y likely to be OK?  Is there a good way to test
-> that in advance; does
-> <http://codemonkey.org.uk/2012/06/15/testing-leap-code/>  look
-> reasonable?
-Attached is a simple leap second test you can play with.
-
-thanks
--john
-
-
---------------020000010707080304080306
-Content-Type: text/x-csrc;
- name="leaptest.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="leaptest.c"
-
-/* Leap second test
- *              by: john stultz (johnstul@us.ibm.com)
- *              (C) Copyright IBM 2012
- *              Licensed under the GPL
- */
-
-
-#include <stdio.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/timex.h>
-
-
-#define CALLS_PER_LOOP 64
-#define NSEC_PER_SEC 1000000000ULL
-
-/* returns 1 if a <= b, 0 otherwise */
-static inline int in_order(struct timespec a, struct timespec b)
-{
-	if(a.tv_sec < b.tv_sec)
-		return 1;
-	if(a.tv_sec > b.tv_sec)
-		return 0;
-	if(a.tv_nsec > b.tv_nsec)
-		return 0;
-	return 1;
-}
-
-
-int  main(void)
-{
-	struct timeval tv;
-	struct timex tx;
-	struct timespec list[CALLS_PER_LOOP];
-	int i, inconsistent;
-	int clock_type = CLOCK_REALTIME;
-	long now, then;
-
-	/* Get the current time */
-	gettimeofday(&tv, NULL);
-
-	/* Calculate the next leap second */
-	tv.tv_sec += 86400 - tv.tv_sec % 86400;
-
-	/* Set the time to be 10 seconds from that time */
-	tv.tv_sec -= 10;
-	settimeofday(&tv, NULL);
-
-	/* Set the leap second insert flag */
-	tx.modes = ADJ_STATUS;
-	tx.status = STA_INS;
-	adjtimex(&tx);
-
-	clock_gettime(clock_type, &list[0]);
-	now = then = list[0].tv_sec;
-	while(now - then < 30){
-		inconsistent = 0;
-
-		/* Fill list */
-		for(i=0; i < CALLS_PER_LOOP; i++)
-			clock_gettime(clock_type, &list[i]);
-
-		/* Check for inconsistencies */
-		for(i=0; i < CALLS_PER_LOOP-1; i++)
-			if(!in_order(list[i],list[i+1]))
-				inconsistent = i;
-
-		/* display inconsistency */
-		if(inconsistent){
-			unsigned long long delta;
-			for(i=0; i < CALLS_PER_LOOP; i++){
-				if(i == inconsistent)
-					printf("--------------------\n");
-				printf("%lu:%lu\n",list[i].tv_sec,
-							list[i].tv_nsec);
-				if(i == inconsistent + 1 )
-					printf("--------------------\n");
-			}
-			delta = list[inconsistent].tv_sec*NSEC_PER_SEC;
-			delta += list[inconsistent].tv_nsec;
-			delta -= list[inconsistent+1].tv_sec*NSEC_PER_SEC;
-			delta -= list[inconsistent+1].tv_nsec;
-			printf("Delta: %llu ns\n", delta);
-			fflush(0);
-			break;
-		}
-		now = list[0].tv_sec;
-	}
-
-	/* clear TIME_WAIT */
-	tx.modes = ADJ_STATUS;
-	tx.status = 0;
-	adjtimex(&tx);
-
-	return 0;
-}
-
---------------020000010707080304080306--
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 952123e..3a61e74 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -184,7 +184,9 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
+ 	}
+ }
+ 
+-static int __init_memblock memblock_double_array(struct memblock_type *type)
++static int __init_memblock memblock_double_array(struct memblock_type *type,
++						phys_addr_t exclude_start,
++						phys_addr_t exclude_size)
+ {
+ 	struct memblock_region *new_array, *old_array;
+ 	phys_addr_t old_size, new_size, addr;
+@@ -222,7 +224,18 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
+ 		new_array = kmalloc(new_size, GFP_KERNEL);
+ 		addr = new_array ? __pa(new_array) : 0;
+ 	} else {
+-		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
++		/* only exclude range when trying to double reserved.regions */
++		if (type != &memblock.reserved)
++			exclude_start = exclude_size = 0;
++
++		addr = memblock_find_in_range(exclude_start + exclude_size,
++						memblock.current_limit,
++						new_size, sizeof(phys_addr_t));
++		if (!addr && exclude_size)
++			addr = memblock_find_in_range(0,
++					min(exclude_start, memblock.current_limit),
++					new_size, sizeof(phys_addr_t));
++
+ 		new_array = addr ? __va(addr) : 0;
+ 	}
+ 	if (!addr) {
+@@ -399,7 +412,7 @@ repeat:
+ 	 */
+ 	if (!insert) {
+ 		while (type->cnt + nr_new > type->max)
+-			if (memblock_double_array(type) < 0)
++			if (memblock_double_array(type, obase, size) < 0)
+ 				return -ENOMEM;
+ 		insert = true;
+ 		goto repeat;
+@@ -450,7 +463,7 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 
+ 	/* we'll create at most two more regions */
+ 	while (type->cnt + 2 > type->max)
+-		if (memblock_double_array(type) < 0)
++		if (memblock_double_array(type, base, size) < 0)
+ 			return -ENOMEM;
+ 
+ 	for (i = 0; i < type->cnt; i++) {
+-- 
+1.7.5.4
 
