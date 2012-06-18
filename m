@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab2FRJuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 05:50:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38840 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751765Ab2FRJuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 05:50:09 -0400
-Date: Mon, 18 Jun 2012 10:50:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 2/2] regulator: core: Change the unit of ramp_delay from
- mV/uS to uV/uS
-Message-ID: <20120618095007.GE3974@opensource.wolfsonmicro.com>
-References: <1339999142.18659.1.camel@phoenix>
- <1339999396.18659.4.camel@phoenix>
+	id S1756894Ab2FRJu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 05:50:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756757Ab2FRJuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 05:50:17 -0400
+Message-ID: <4FDEF9D2.3000909@redhat.com>
+Date: Mon, 18 Jun 2012 12:50:10 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XuV1QlJbYrcVoo+x"
-Content-Disposition: inline
-In-Reply-To: <1339999396.18659.4.camel@phoenix>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 6/6] KVM: introduce readonly memslot
+References: <4FD6ADA6.40008@linux.vnet.ibm.com> <4FD6AE3B.9020508@linux.vnet.ibm.com> <20120616021150.GA3870@amt.cnet>
+In-Reply-To: <20120616021150.GA3870@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/16/2012 05:11 AM, Marcelo Tosatti wrote:
+> 
+> Can you introduce a separate exit reason, say KVM_EXIT_READ_FAULT, with
+> information about the fault?
 
---XuV1QlJbYrcVoo+x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think you mean WRITE_FAULT.  But what's wrong with the normal mmio exit?
 
-On Mon, Jun 18, 2012 at 02:03:16PM +0800, Axel Lin wrote:
+> 
+> Then perform this exit only if userspace allows it by explicit enable, 
+> and by default have the exit_read_fault handler jump to the mmio
+> handler. 
 
-> This patch is on top of the patch I sent earlier:
-> http://www.kernelhub.org/?msg=85659&p=2
 
-Always provide something human readable (like the subject line) when
-talking about patches - it's the same problem as the SHA1, it might go
-bad in future and it means your mail isn't directly legible.
+I don't get this.
 
---XuV1QlJbYrcVoo+x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- 
+error compiling committee.c: too many arguments to function
 
-iQIcBAEBAgAGBQJP3vm1AAoJEBus8iNuMP3du84P/1ghBzvsdTrRsyCc6I/cwLgX
-rKqFPjewrQfgrSFiDy8UXtbycePNZVwAhIl4CgcVQfjyyqJuTt6kS/uZUAi7B20j
-8NpgaRrX3h9iA5FiIwHmNwg3L+HPz7LA8Nc0S8lo6Hxy/JrLLkC5+U4vHyBL2wAr
-QRhMeL1Tzj/jw205Unp+iLfbQtYTQc5BoJs5yExZUNcB2iltAoC1jrIV7nVo9vGa
-x/u/XAkdm/u3Lh5als6m5MPK/Z9I0vy2Te5od/R6s0YBwJKxnQJ0NCAcai3TQ++M
-RVurq681j0FVvlvLNfHyMDDC9WHE7Y5j0q/qrDGOaEqgaMYgx8Hazsror0amtsnz
-KHjO4a5F9lzdSJKzF1346fBGR6I+u97RaKG+L70NA+8NOesoGpC2YdCZjFYGOUjm
-OvQX+39pwoL6TIg5szZgr8rIPddjaw/ejYUOrE3B3lVs/7mW9vXcc3mep9DZjOVO
-tWID9g2H1ZdylWj8rlNOs5F3VLdXvvXIiQYSX20PkHhctcDYEETlqz9tsrwdAztl
-JYYMQkcRoFUr+OalIPJ3vwvxvCKaMX5nPx3B5OJyAPxqzCvVnlzJNzmwnSQDo5yg
-+eGBCz1c/yxhOijd7iALFQlWMUT08LEp6s74CUyBnRuq0/uXRGmbNxniWYvY5UqG
-O/Js2aA6+sqOC/ruWj0z
-=rQMi
------END PGP SIGNATURE-----
 
---XuV1QlJbYrcVoo+x--
