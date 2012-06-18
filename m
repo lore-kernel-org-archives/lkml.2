@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab2FRTC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 15:02:58 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:62012 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab2FRTC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 15:02:57 -0400
-Date: Mon, 18 Jun 2012 15:02:53 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Michal Simek <monstr@monstr.eu>
-cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Will Deacon <will.deacon@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org, Ohad Ben-Cohen <ohad@wizery.com>,
-        Peter Crosthwaite <peter.crosthwaite@petalogix.com>
-Subject: Re: [RFC PATCH 7/8] ARM: vmlinux.lds: Setup physical load address
- not virtual
-In-Reply-To: <CAHTX3dJS9zNejv-oLGpbZdXdkJndwR1pcBd9yn3OAobGy3ZLjA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1206181433130.23555@xanadu.home>
-References: <1340019011-18642-1-git-send-email-monstr@monstr.eu> <1340019011-18642-8-git-send-email-monstr@monstr.eu> <alpine.LFD.2.02.1206181000540.23555@xanadu.home> <CAHTX3dJS9zNejv-oLGpbZdXdkJndwR1pcBd9yn3OAobGy3ZLjA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752929Ab2FRTDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 15:03:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752674Ab2FRTD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 15:03:28 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
+References: <4FDEC3C2.4060909@secunet.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 18 Jun 2012 15:03:21 -0400
+In-Reply-To: <4FDEC3C2.4060909@secunet.com> (Torsten Hilbrich's message of
+	"Mon, 18 Jun 2012 07:59:30 +0200")
+Message-ID: <x49fw9smohy.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jun 2012, Michal Simek wrote:
+Torsten Hilbrich <torsten.hilbrich@secunet.com> writes:
 
-> 2012/6/18 Nicolas Pitre <nicolas.pitre@linaro.org>
-> 
-> > On Mon, 18 Jun 2012, Michal Simek wrote:
-> >
-> > > Setup correct virtual and physical address in ELF LOAD section.
-> >
-> > We are moving to a single kernel binary for multiple targets, including
-> > targets with different physical load addresses.  The kernel code figures
-> > out at run time what the actual physical address is when
-> > CONFIG_ARM_PATCH_PHYS_VIRT is set which is the default these days.  In
-> > other words, we don't know the physical offset at build time in that
-> > case and CONFIG_PHYS_OFFSET is simply not defined.
-> >
-> 
-> ok. good to know and nice features. In that case I expect that you are 
-> using any binary format and you copy it to memory and run it. Code 
-> find out where it runs and based on that setup things.
+> Hello,
+>
+> a software that tries to mount each existing partition as ext3 file
+> system started to fail when updating from v3.3.7 to v3.3.8.
+>
+> The applications then hangs-up in the mount syscall, here is a
+> snapshot of its stack at this moment:
+>
+> [<ffffffff81060c6a>] __cond_resched+0x2a/0x40
+> [<ffffffff81134b3f>] __getblk+0x1bf/0x270
+> [<ffffffff811362b3>] __bread+0x13/0xb0
+> [<ffffffff81182222>] ext3_fill_super+0x132/0x1b00
+> [<ffffffff8110891a>] mount_bdev+0x1aa/0x1f0
+> [<ffffffff8117ffc5>] ext3_mount+0x15/0x20
+> [<ffffffff81107fc3>] mount_fs+0x43/0x1a0
+> [<ffffffff81123102>] vfs_kern_mount+0x72/0x100
+> [<ffffffff81123882>] do_kern_mount+0x52/0x110
+> [<ffffffff8112519a>] do_mount+0x25a/0x7d0
+> [<ffffffff811257a8>] sys_mount+0x98/0xf0
+> [<ffffffff814f3e92>] system_call_fastpath+0x16/0x1b
+>
+> The expected behaviour (which was still there in v3.3.7) is that the
+> mount syscall fails because the partition contains no valid ext3 file
+> system.
+>
+> I have create more snapshot of the stack in the following pastebin:
+> http://pastebin.com/99x9EpnM
+>
+> Using bisecting I found the following commit to be the cause of the issue:
+>
+> commit 3735b0a1d73af536484ddefef4d8438dd468c4a6
+> Author: Jeff Moyer <jmoyer@redhat.com>
+> Date:   Fri May 11 16:34:10 2012 +0200
+>
+>     block: don't mark buffers beyond end of disk as mapped
+>     
+>     commit 080399aaaf3531f5b8761ec0ac30ff98891e8686 upstream.
+>     
+> Reverting this commit brought back the desired behaviour of the mount
+> syscall failing because of invalid superblock.
+>
+> It seems to be that ext3_fill_super is unable to read the super block
+> because there is no blocked for an extended partition.
+>
+> The same issue can be found in v3.4, where the upstream commit
+> (080399aa) was released.
 
-Exact.
+I am unable to reproduce this behaviour.  Can you give more information
+about your storage configuration?  What is the partition layout, which
+partition are you trying to mount, and are you using the standard mount
+command to try to mount it?  Is there anything else you can provide that
+would help me reproduce the problem?
 
-> (BTW: This is very interesting for me to implement it on Microblaze. Can
-> you point me to that kernel code part? or any doc?)
-
-You could have a look at https://wiki.ubuntu.com/Specs/ARMSingleKernel, 
-especially the section "Optimized virt_to_phys() with a runtime 
-determined PHYS_OFFSET".
-
-Then the following commits should be of interest:
-
-72a20e22f4 "ARM: P2V: eliminate head.S use of PHYS_OFFSET for !XIP_KERNEL"
-
-dc21af99fa "ARM: P2V: introduce phys_to_virt/virt_to_phys runtime patching"
-
-> But can you do it with elf?
-
-No.
-
-> Please correct me if I am wrong IRC ARM Qemu uses zImage but it is no
-> problem to use elf file. For this case
-> Qemu elf loader also uses physical addresses from ELF and also entry point.
-
-If you want to use the ELF image, then you need to hardcode the physical 
-memory location in its header, and that's something we want to get away 
-from because it prevents a single kernel binary image from being used on 
-different targets with different memory layouts.  Same issue with 
-u-Boot's legacy uImage format.
-
-> I haven't played with CONFIG_ARM_PATCH_PHYS_VIRT option but what is elf
-> entry point for this case?
-
-For the kernel image itself it is the kernel virtual address.
-
-For the relocatable zImage decompressor wrapper it is 0.
-
-
-Nicolas
+Thanks,
+Jeff
