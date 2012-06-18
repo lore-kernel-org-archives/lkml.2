@@ -1,112 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab2FRKdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:33:40 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9335 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab2FRKdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:33:38 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-mm@kvack.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>, <cgroups@vger.kernel.org>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH v4 25/25] Documentation: add documentation for slab tracker for memcg
-Date: Mon, 18 Jun 2012 14:28:18 +0400
-Message-Id: <1340015298-14133-26-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
+	id S1758096Ab2FRKeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:34:18 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:52029 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757822Ab2FRKeQ convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 18 Jun 2012 06:34:16 -0400
+Message-Id: <4FDF2044020000780008A66F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 18 Jun 2012 11:34:12 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/PCI: adjust section annotations
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a separate patch, to aid reviewers.
+DMI tables referenced from __init code only can be __initconst, and as
+a result the functions referenced from there can become __init.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>
+pcibios_setup() can be __init as being a command line parsing function
+only.
+
+A few other variables can then also have their attributes adjusted.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+
 ---
- Documentation/cgroups/memory.txt |   33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+ arch/x86/pci/common.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 9b1067a..9ea82b5 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -74,6 +74,12 @@ Brief summary of control files.
-  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
-  memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
+--- 3.5-rc3/arch/x86/pci/common.c
++++ 3.5-rc3-x86-pci-common-sections/arch/x86/pci/common.c
+@@ -21,10 +21,10 @@
+ unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
+ 				PCI_PROBE_MMCONF;
  
-+ memory.kmem.limit_in_bytes	 # set/show hard limit for general kmem memory
-+ memory.kmem.usage_in_bytes	 # show current general kmem memory allocation
-+ memory.kmem.failcnt		 # show current number of kmem limit hits
-+ memory.kmem.max_usage_in_bytes	 # show max kmem usage
-+ memory.kmem.slabinfo		 # show cgroup-specific slab usage information
-+
- 1. History
+-unsigned int pci_early_dump_regs;
+-static int pci_bf_sort;
+-static int smbios_type_b1_flag;
+-int pci_routeirq;
++unsigned int __initdata pci_early_dump_regs;
++static int __devinitdata pci_bf_sort;
++static int __devinitdata smbios_type_b1_flag;
++int __initdata pci_routeirq;
+ int noioapicquirk;
+ #ifdef CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS
+ int noioapicreroute = 0;
+@@ -32,7 +32,7 @@ int noioapicreroute = 0;
+ int noioapicreroute = 1;
+ #endif
+ int pcibios_last_bus = -1;
+-unsigned long pirq_table_addr;
++unsigned long __initdata pirq_table_addr;
+ struct pci_bus *pci_root_bus;
+ const struct pci_raw_ops *__read_mostly raw_pci_ops;
+ const struct pci_raw_ops *__read_mostly raw_pci_ext_ops;
+@@ -80,14 +80,14 @@ struct pci_ops pci_root_ops = {
+  */
+ DEFINE_RAW_SPINLOCK(pci_config_lock);
  
- The memory controller has a long history. A request for comments for the memory
-@@ -270,6 +276,14 @@ cgroup may or may not be accounted.
- Currently no soft limit is implemented for kernel memory. It is future work
- to trigger slab reclaim when those limits are reached.
+-static int __devinit can_skip_ioresource_align(const struct dmi_system_id *d)
++static int __init can_skip_ioresource_align(const struct dmi_system_id *d)
+ {
+ 	pci_probe |= PCI_CAN_SKIP_ISA_ALIGN;
+ 	printk(KERN_INFO "PCI: %s detected, can skip ISA alignment\n", d->ident);
+ 	return 0;
+ }
  
-+Kernel memory is not accounted until it is limited. Users that want to just
-+track kernel memory usage can set the limit value to a big enough value so
-+the limit is guaranteed to never hit. A kernel memory limit bigger than the
-+current memory limit will have this effect as well.
-+
-+This guarantes that this extension is backwards compatible to any previous
-+memory cgroup version.
-+
- 2.7.1 Current Kernel Memory resources accounted
+-static const struct dmi_system_id can_skip_pciprobe_dmi_table[] __devinitconst = {
++static const struct dmi_system_id can_skip_pciprobe_dmi_table[] __initconst = {
+ /*
+  * Systems where PCI IO resource ISA alignment can be skipped
+  * when the ISA enable bit in the bridge control is not set
+@@ -221,7 +221,7 @@ static int __devinit find_sort_method(co
+  * Enable renumbering of PCI bus# ranges to reach all PCI busses (Cardbus)
+  */
+ #ifdef __i386__
+-static int __devinit assign_all_busses(const struct dmi_system_id *d)
++static int __init assign_all_busses(const struct dmi_system_id *d)
+ {
+ 	pci_probe |= PCI_ASSIGN_ALL_BUSSES;
+ 	printk(KERN_INFO "%s detected: enabling PCI bus# renumbering"
+@@ -230,7 +230,7 @@ static int __devinit assign_all_busses(c
+ }
+ #endif
  
- * sockets memory pressure: some sockets protocols have memory pressure
-@@ -278,6 +292,24 @@ per cgroup, instead of globally.
+-static int __devinit set_scan_all(const struct dmi_system_id *d)
++static int __init set_scan_all(const struct dmi_system_id *d)
+ {
+ 	printk(KERN_INFO "PCI: %s detected, enabling pci=pcie_scan_all\n",
+ 	       d->ident);
+@@ -238,7 +238,7 @@ static int __devinit set_scan_all(const
+ 	return 0;
+ }
  
- * tcp memory pressure: sockets memory pressure for the tcp protocol.
+-static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
++static const struct dmi_system_id __initconst pciprobe_dmi_table[] = {
+ #ifdef __i386__
+ /*
+  * Laptops which need pci=assign-busses to see Cardbus cards
+@@ -494,7 +494,7 @@ int __init pcibios_init(void)
+ 	return 0;
+ }
  
-+* slab/kmalloc:
-+
-+When slab memory is tracked (memory.kmem.limit_in_bytes != -1ULL), both
-+memory.kmem.usage_in_bytes and memory.usage_in_bytes are updated. When
-+memory.kmem.limit_in_bytes is left alone, no tracking of slab caches takes
-+place.
-+
-+Because a slab page is shared among many tasks, it is not possible to take
-+any meaningful action upon task migration. Slabs created in a cgroup stay
-+around until the cgroup is destructed. Information about the slabs used
-+by the cgroup is displayed in the cgroup file memory.kmem.slabinfo. The format
-+of this file is and should remain compatible with /proc/slabinfo.
-+
-+Upon cgroup destruction, slabs that holds no live references are destructed.
-+Workers are fired to destroy the remaining caches as they objects are freed.
-+
-+Memory used by dead caches are shown in the proc file /proc/dead_slabinfo
-+
- 3. User Interface
- 
- 0. Configuration
-@@ -286,6 +318,7 @@ a. Enable CONFIG_CGROUPS
- b. Enable CONFIG_RESOURCE_COUNTERS
- c. Enable CONFIG_CGROUP_MEM_RES_CTLR
- d. Enable CONFIG_CGROUP_MEM_RES_CTLR_SWAP (to use swap extension)
-+d. Enable CONFIG_CGROUP_MEM_RES_CTLR_KMEM (to use experimental kmem extension)
- 
- 1. Prepare the cgroups (see cgroups.txt, Why are cgroups needed?)
- # mount -t tmpfs none /sys/fs/cgroup
--- 
-1.7.10.2
+-char * __devinit  pcibios_setup(char *str)
++char *__init pcibios_setup(char *str)
+ {
+ 	if (!strcmp(str, "off")) {
+ 		pci_probe = 0;
+
+
 
