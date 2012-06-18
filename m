@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab2FRG12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 02:27:28 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:48806 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab2FRG1Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 02:27:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHdPZaNs87D+x6WUiMMmOtTdLWJoxrUN-FawuVN1F=oKi3Q=ow@mail.gmail.com>
-References: <1339607167-26654-1-git-send-email-fabio.estevam@freescale.com>
-	<CACRpkda6FJm4fiQ9w0Mo80_B7W09yCwMdMeqoiDUtkifJ88_RQ@mail.gmail.com>
-	<CAHdPZaNs87D+x6WUiMMmOtTdLWJoxrUN-FawuVN1F=oKi3Q=ow@mail.gmail.com>
-Date: Mon, 18 Jun 2012 08:27:24 +0200
-Message-ID: <CACRpkdZSkQM-RCWvjRxWrU5VT0RN6eh9i4QXg-YUMn7KvtW3OQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: mxs: Use kfree to fix build error
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>, shawn.guo@freescale.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755908Ab2FRG1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 02:27:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63878 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754808Ab2FRG0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 02:26:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="181387392"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
+        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH v5 12/12] [SCSI] sr: make sure ODD is in resumed state in block ioctl
+Date: Mon, 18 Jun 2012 14:26:06 +0800
+Message-Id: <1340000766-129148-13-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
+References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 8:15 AM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+From: Aaron Lu <aaron.lu@amd.com>
 
-> The pinctrl is not selectable even with make allyesconfig. is it for a
-> different arch than x86?
+When application tries to access the ODD's block device by ioctl,
+make sure ODD is in an active state.
 
-At the request of Linus (Torvalds) machines and drivers that need pinctrl
-shall select it explicitly in the Kconfig, and it's hidden for all others so
-as not to confuse people and present them with strange stuff.
+Signed-off-by: Aaron Lu <aaron.lu@amd.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/scsi/sr.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-So currently only some ARM machines that actually use it will select it and
-enable the sub-menu. But there is also a MIPS patch in the works.
+diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+index 72488c2..3da0879 100644
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -654,6 +654,13 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+ 	void __user *argp = (void __user *)arg;
+ 	int ret;
+ 
++	/* Make sure the ODD is not suspended */
++	ret = pm_runtime_get_sync(&sdev->sdev_gendev);
++	if (ret < 0) {
++		pm_runtime_put_noidle(&sdev->sdev_gendev);
++		return -EACCES;
++	}
++
+ 	mutex_lock(&sr_mutex);
+ 
+ 	/*
+@@ -685,6 +692,8 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+ 
+ out:
+ 	mutex_unlock(&sr_mutex);
++	pm_runtime_mark_last_busy(&cd->device->sdev_gendev);
++	pm_runtime_put_autosuspend(&cd->device->sdev_gendev);
+ 	return ret;
+ }
+ 
+-- 
+1.7.10
 
-> may i know which cross compiler to use to build the pinctrl subsystem :) ?
-
-I use the prebuilt Linaro GCC toolchain:
-https://launchpad.net/linaro-toolchain-binaries/+download
-
-Put the /bin subdir in your path and e.g.:
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- mxs_defconfig
-etc
-
-Linus Walleij
