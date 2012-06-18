@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab2FRLiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:38:07 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45346 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab2FRLiD (ORCPT
+	id S1752284Ab2FRLil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:38:41 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42237 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab2FRLik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:38:03 -0400
-Message-ID: <4FDF12F0.6080205@mvista.com>
-Date: Mon, 18 Jun 2012 15:37:20 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
-        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v5 04/12] libata: use correct PCI devices
-References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com> <1340000766-129148-5-git-send-email-ming.m.lin@intel.com>
-In-Reply-To: <1340000766-129148-5-git-send-email-ming.m.lin@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 18 Jun 2012 07:38:40 -0400
+Message-ID: <1340019575.22848.2.camel@lappy>
+Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+From: Sasha Levin <levinsasha928@gmail.com>
+To: dlaor@redhat.com
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Asias He <asias@redhat.com>,
+        kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Christoph Hellwig <hch@lst.de>
+Date: Mon, 18 Jun 2012 13:39:35 +0200
+In-Reply-To: <4FDF0DA7.40604@redhat.com>
+References: <1340002390-3950-1-git-send-email-asias@redhat.com>
+	 <1340002390-3950-4-git-send-email-asias@redhat.com>
+	 <87hau9yse7.fsf@rustcorp.com.au> <4FDEE0CB.1030505@redhat.com>
+	 <87zk81x7dp.fsf@rustcorp.com.au> <4FDF0DA7.40604@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18-06-2012 10:25, Lin Ming wrote:
+On Mon, 2012-06-18 at 14:14 +0300, Dor Laor wrote:
+> On 06/18/2012 01:05 PM, Rusty Russell wrote:
+> > On Mon, 18 Jun 2012 16:03:23 +0800, Asias He<asias@redhat.com>  wrote:
+> >> On 06/18/2012 03:46 PM, Rusty Russell wrote:
+> >>> On Mon, 18 Jun 2012 14:53:10 +0800, Asias He<asias@redhat.com>  wrote:
+> >>>> This patch introduces bio-based IO path for virtio-blk.
+> >>>
+> >>> Why make it optional?
+> >>
+> >> request-based IO path is useful for users who do not want to bypass the
+> >> IO scheduler in guest kernel, e.g. users using spinning disk. For users
+> >> using fast disk device, e.g. SSD device, they can use bio-based IO path.
+> >
+> > Users using a spinning disk still get IO scheduling in the host though.
+> > What benefit is there in doing it in the guest as well?
+> 
+> The io scheduler waits for requests to merge and thus batch IOs 
+> together. It's not important w.r.t spinning disks since the host can do 
+> it but it causes much less vmexits which is the key issue for VMs. 
 
-> From: Holger Macht <holger@homac.de>
-
-> Commit 9a6d6a2ddabbd32c07f6a38b659e5f3db319fa5a
-
-    Please also specify that commit's summary in parens.
-
-> made ata ports parent
-> devices of scsi hosts, so we need to go yet another level up to be able
-> to use the correct PCI devices.
-
-> Signed-off-by: Holger Macht <holger@homac.de>
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-
-MBR, Sergei
+Is the amount of exits caused by virtio-blk significant at all with
+EVENT_IDX?
 
