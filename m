@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab2FRG3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 02:29:50 -0400
+	id S1756086Ab2FRGaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 02:30:19 -0400
 Received: from mga11.intel.com ([192.55.52.93]:63878 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680Ab2FRG0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 02:26:34 -0400
+	id S1752723Ab2FRG02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 02:26:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="181387291"
+   d="scan'208";a="181387249"
 From: Lin Ming <ming.m.lin@intel.com>
 To: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
         Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
@@ -17,9 +17,9 @@ To: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
 Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [PATCH v5 04/12] libata: use correct PCI devices
-Date: Mon, 18 Jun 2012 14:25:58 +0800
-Message-Id: <1340000766-129148-5-git-send-email-ming.m.lin@intel.com>
+Subject: [PATCH v5 01/12] [SCSI]: add wrapper to access and set scsi_bus_type in struct acpi_bus_type
+Date: Mon, 18 Jun 2012 14:25:55 +0800
+Message-Id: <1340000766-129148-2-git-send-email-ming.m.lin@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
 References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
@@ -29,45 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Holger Macht <holger@homac.de>
 
-Commit 9a6d6a2ddabbd32c07f6a38b659e5f3db319fa5a made ata ports parent
-devices of scsi hosts, so we need to go yet another level up to be able
-to use the correct PCI devices.
+For being able to bind ata devices against acpi devices, scsi_bus_type
+needs to be set as bus in struct acpi_bus_type. So add wrapper to
+scsi_lib to accomplish that.
 
 Signed-off-by: Holger Macht <holger@homac.de>
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- drivers/ata/libata-acpi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/scsi_lib.c |   17 +++++++++++++++++
+ include/scsi/scsi.h     |   10 ++++++++++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index adc6336..98826e96 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -987,7 +987,7 @@ static int ata_acpi_bind_host(struct device *dev, int host, acpi_handle *handle)
- 	if (ap->flags & ATA_FLAG_ACPI_SATA)
- 		return -ENODEV;
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 6dfb978..08f1e29 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -68,6 +68,23 @@ static struct scsi_host_sg_pool scsi_sg_pools[] = {
  
--	*handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent), ap->port_no);
-+	*handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent->parent), ap->port_no);
+ struct kmem_cache *scsi_sdb_cache;
  
- 	if (!*handle)
- 		return -ENODEV;
-@@ -1021,13 +1021,13 @@ static int ata_acpi_find_device(struct device *dev, acpi_handle *handle)
- 	unsigned int host, channel, id, lun;
++#ifdef CONFIG_ACPI
++#include <acpi/acpi_bus.h>
++
++int scsi_register_acpi_bus_type(struct acpi_bus_type *bus)
++{
++        bus->bus = &scsi_bus_type;
++        return register_acpi_bus_type(bus);
++}
++EXPORT_SYMBOL_GPL(scsi_register_acpi_bus_type);
++
++void scsi_unregister_acpi_bus_type(struct acpi_bus_type *bus)
++{
++	unregister_acpi_bus_type(bus);
++}
++EXPORT_SYMBOL_GPL(scsi_unregister_acpi_bus_type);
++#endif
++
+ /*
+  * When to reinvoke queueing after a resource shortage. It's 3 msecs to
+  * not change behaviour from the previous unplug mechanism, experimentation
+diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+index f34a5a8..4527b3a 100644
+--- a/include/scsi/scsi.h
++++ b/include/scsi/scsi.h
+@@ -214,6 +214,16 @@ scsi_command_size(const unsigned char *cmnd)
+ 		scsi_varlen_cdb_length(cmnd) : COMMAND_SIZE(cmnd[0]);
+ }
  
- 	if (sscanf(dev_name(dev), "host%u", &host) == 1) {
--		if (!compat_pci_ata(dev->parent))
-+		if (!compat_pci_ata(dev->parent->parent))
- 			return -ENODEV;
- 
- 		return ata_acpi_bind_host(dev, host, handle);
- 	} else if (sscanf(dev_name(dev), "%d:%d:%d:%d",
- 			&host, &channel, &id, &lun) == 4) {
--		if (!compat_pci_ata(dev->parent->parent->parent))
-+		if (!compat_pci_ata(dev->parent->parent->parent->parent))
- 			return -ENODEV;
- 
- 		return ata_acpi_bind_device(dev, channel, id, handle);
++#ifdef CONFIG_ACPI
++struct acpi_bus_type;
++
++extern int
++scsi_register_acpi_bus_type(struct acpi_bus_type *bus);
++
++extern void
++scsi_unregister_acpi_bus_type(struct acpi_bus_type *bus);
++#endif
++
+ /*
+  *  SCSI Architecture Model (SAM) Status codes. Taken from SAM-3 draft
+  *  T10/1561-D Revision 4 Draft dated 7th November 2002.
 -- 
 1.7.10
 
