@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab2FRG5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 02:57:10 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:44796 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab2FRG5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 02:57:08 -0400
-Subject: Re: [PATCH 3/5] acer-wmi: Use struct dev_pm_ops for power
- management
-From: joeyli <jlee@suse.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: platform-driver-x86@vger.kernel.org,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Joey Lee <jlee@novell.com>
-In-Reply-To: <201206172228.59364.rjw@sisk.pl>
-References: <201206172226.42729.rjw@sisk.pl>
-	 <201206172228.59364.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Jun 2012 14:56:38 +0800
-Message-ID: <1340002598.6640.7.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1755167Ab2FRG6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 02:58:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:38695 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752283Ab2FRG57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 02:57:59 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 5/5] infiniband: ehca: Use hotplug thread infrastructure
+In-Reply-To: <20120613105815.416416492@linutronix.de>
+References: <20120613102823.373180763@linutronix.de> <20120613105815.416416492@linutronix.de>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 18 Jun 2012 16:00:16 +0930
+Message-ID: <87y5nlyvwn.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 日，2012-06-17 於 22:28 +0200，Rafael J. Wysocki 提到：
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Make the acer-wmi driver define its PM callbacks through
-> a struct dev_pm_ops object rather than by using legacy PM hooks
-> in struct platform_driver.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-Patch good to me!
-
-Tested on Acer TravelMate 4750
-
-Tested-by: Lee, Chun-Yi <jlee@suse.com>
-
-
-Thanks a lot!
-Joey Lee
-
-> ---
->  drivers/platform/x86/acer-wmi.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> Index: linux/drivers/platform/x86/acer-wmi.c
-> ===================================================================
-> --- linux.orig/drivers/platform/x86/acer-wmi.c
-> +++ linux/drivers/platform/x86/acer-wmi.c
-> @@ -1877,8 +1877,7 @@ static int acer_platform_remove(struct p
->  	return 0;
->  }
+On Wed, 13 Jun 2012 11:00:56 -0000, Thomas Gleixner <tglx@linutronix.de> wrote:
+> @@ -662,10 +663,15 @@ static inline int find_next_online_cpu(s
+>  		ehca_dmp(cpu_online_mask, cpumask_size(), "");
 >  
-> -static int acer_platform_suspend(struct platform_device *dev,
-> -pm_message_t state)
-> +static int acer_suspend(struct device *dev)
->  {
->  	u32 value;
->  	struct acer_data *data = &interface->data;
-> @@ -1900,7 +1899,7 @@ pm_message_t state)
->  	return 0;
->  }
->  
-> -static int acer_platform_resume(struct platform_device *device)
-> +static int acer_resume(struct device *dev)
->  {
->  	struct acer_data *data = &interface->data;
->  
-> @@ -1916,6 +1915,8 @@ static int acer_platform_resume(struct p
->  	return 0;
->  }
->  
-> +static SIMPLE_DEV_PM_OPS(acer_pm, acer_suspend, acer_resume);
-> +
->  static void acer_platform_shutdown(struct platform_device *device)
->  {
->  	struct acer_data *data = &interface->data;
-> @@ -1931,11 +1932,10 @@ static struct platform_driver acer_platf
->  	.driver = {
->  		.name = "acer-wmi",
->  		.owner = THIS_MODULE,
-> +		.pm = &acer_pm,
->  	},
->  	.probe = acer_platform_probe,
->  	.remove = acer_platform_remove,
-> -	.suspend = acer_platform_suspend,
-> -	.resume = acer_platform_resume,
->  	.shutdown = acer_platform_shutdown,
->  };
->  
-> 
-> 
+>  	spin_lock_irqsave(&pool->last_cpu_lock, flags);
+> -	cpu = cpumask_next(pool->last_cpu, cpu_online_mask);
+> -	if (cpu >= nr_cpu_ids)
+> -		cpu = cpumask_first(cpu_online_mask);
+> -	pool->last_cpu = cpu;
+> +	while (1) {
+> +		cpu = cpumask_next(pool->last_cpu, cpu_online_mask);
+> +		if (cpu >= nr_cpu_ids)
+> +			cpu = cpumask_first(cpu_online_mask);
+> +		pool->last_cpu = cpu;
+> +		/* Might be on the way out */
+> +		if (per_cpu_ptr(pool->cpu_comp_tasks, cpu)->active)
+> +			break;
+> +	}
 
+Heh, isn't this what we used to call a "do while" loop? :)
 
+Your infrastructure is a really weird mix.  On the one hand, it's a set
+of callbacks: setup, cleanup, park, unpark.  Cool.
+
+On the other hand, instead of a 'run' callback, you've got a thread_fn,
+which has to loop and call smpboot_thread_check_parking().
+
+If you just had the thread_fn, it'd be trivial to follow program flow.
+If you just had the callbacks, it'd still be pretty easy, though it
+seems like a little too much help.
+
+As it is, we have Paul doing setup stuff inside his thread_fn:
+
+     +	trace_rcu_utilization("Start CPU kthread@unpark");
+     +	sp.sched_priority = RCU_KTHREAD_PRIO;
+     +	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
+
+I'm just not sure this complexity wins us anything.  Why not
+just let people "register_percpu_kthread" and make the thread_fn
+identical to normal kthread fns:
+
+        while (!kthread_should_stop()) {
+                if (kthread_should_park()) {
+                        kthread_parkme();
+                        continue;
+                }
+
+Maybe implement a 'bool kthread_stop_or_park()' helper.
+
+I'll whip up a patch on top of yours if you don't think it's crazy...
+
+Cheers,
+Rusty.
