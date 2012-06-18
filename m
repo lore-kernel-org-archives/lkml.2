@@ -1,132 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab2FRVOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 17:14:10 -0400
-Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:50588 "EHLO
-	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753327Ab2FRVOH (ORCPT
+	id S1753528Ab2FRVOU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 17:14:20 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:49584 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab2FRVOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 17:14:07 -0400
-Message-ID: <1340054045.1367.31.camel@tellur>
-Subject: Re: [PATCH 2/2] iommu/tegra: gart: Reserve iomem resource
-From: Lucas Stach <dev@lynxeye.de>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: joerg.roedel@amd.com, Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Bharat Nihalani <bnihalani@nvidia.com>,
-        Vandana Salve <vsalve@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        iommu@lists.linux-foundation.org
-Date: Mon, 18 Jun 2012 23:14:05 +0200
-In-Reply-To: <20120618133736.8d23c4e70b34b1de8cb71f6f@nvidia.com>
-References: <1337019127-6863-1-git-send-email-hdoyu@nvidia.com>
-	 <1337019127-6863-2-git-send-email-hdoyu@nvidia.com>
-	 <20120521141152.GA21513@avionic-0098.mockup.avionic-design.de>
-	 <4FBA702A.1010203@wwwdotorg.org> <1337619935.1621.13.camel@tellur>
-	 <4FBA77E2.4000409@wwwdotorg.org>
-	 <20120521173124.GB11824@avionic-0098.mockup.avionic-design.de>
-	 <1337621908.1621.16.camel@tellur>
-	 <20120618133736.8d23c4e70b34b1de8cb71f6f@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.2 (3.4.2-1.fc17) 
-Mime-Version: 1.0
+	Mon, 18 Jun 2012 17:14:18 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: jdow <jdow@earthlink.net>
+Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while OK in AmigaOS 4.1
+Date: Mon, 18 Jun 2012 23:14:16 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, linux-m68k@vger.kernel.org
+References: <201206170841.20222.Martin@lichtvoll.de> <201206172306.03202.Martin@lichtvoll.de> <4FDE5320.8070702@earthlink.net> (sfid-20120618_100053_901604_051256AF)
+In-Reply-To: <4FDE5320.8070702@earthlink.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201206182314.16483.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hiroshi,
-
-Am Montag, den 18.06.2012, 13:37 +0300 schrieb Hiroshi Doyu:
-> Hi Lucas,
-> 
-> On Mon, 21 May 2012 19:38:28 +0200
-> Lucas Stach <dev@lynxeye.de> wrote:
-> 
-> > Am Montag, den 21.05.2012, 19:31 +0200 schrieb Thierry Reding:
-> > > * Stephen Warren wrote:
-> > > > On 05/21/2012 11:05 AM, Lucas Stach wrote:
-> > > > > Am Montag, den 21.05.2012, 10:41 -0600 schrieb Stephen Warren:
-> > > > >> On 05/21/2012 08:11 AM, Thierry Reding wrote:
-> > > > >>> * Hiroshi DOYU wrote:
-> > > > >>>> GART Register/Aperture range should be reserved.
-> > > > >> ...
-> > > > >>>> diff --git a/drivers/iommu/tegra-gart.c
-> > > > >>>> b/drivers/iommu/tegra-gart.c
-> > > > >> ...
-> > > > >>>> +	if (!devm_request_mem_region(dev, res_remap->start, +
-> > > > >>>> resource_size(res_remap), dev_name(dev))) { +		dev_err(dev,
-> > > > >>>> "failed to reserve GART aperture\n"); +		return -EBUSY; +	} +
-> > > > >>>
-> > > > >>> I'm not so sure that this is a good idea. If the GART driver
-> > > > >>> requests the GART aperture, then users of the GART aperture (e.g.
-> > > > >>> the DRM driver) will no longer be able to use it.
-> > > > >>
-> > > > >> Presumably the DRM driver would be obtaining access to parts of the
-> > > > >> GART aperture through the GART driver, rather than just grabbing the
-> > > > >> IO region and using it for itself?
-> > > > > 
-> > > > > With a TTM-like memory manager the DRM driver will take over the address
-> > > > > space management of the GART aperture. The GART driver is only used to
-> > > > > set up the mappings in the IOMMU. The DRM driver is the one that sets
-> > > > > up/tears down the CPU mappings on demand, so the aperture should be
-> > > > > claimed in the DRM driver.
-> > > > 
-> > > > Even if the DRM driver is managing the aperture, I still think the GART
-> > > > driver should claim it. The physical address of the aperture is a
-> > > > property of the GART, so only the GART's resources (and DT node) should
-> > > > contain a representation of where that aperture is. The DRM driver
-> > > > should call into the GART driver to find out where the aperture is, and
-> > > > hence GART is able to claim it without conflict.
-> > > 
-> > > That could be difficult to do. There isn't any API to allow this. I guess if
-> > > something like that is added it should probably go into the IOMMU framework.
+Am Sonntag, 17. Juni 2012 schrieb jdow:
+> On 2012/06/17 14:06, Martin Steigerwald wrote:
+> > Am Sonntag, 17. Juni 2012 schrieb Geert Uytterhoeven:
+> >> On Sun, Jun 17, 2012 at 2:58 PM, Martin Steigerwald 
+<Martin@lichtvoll.de> wrote:
+> >>> Am Sonntag, 17. Juni 2012 schrieb jdow:
+> >>> | JXFS 64 bit file system
+> >>> | 
+> >>> | With AmigaOS 4.x a new file system has been introduced called
+> >>> | JXFS. It is a totally new 64 bit file system that supports
+> >>> | partitions up to 16 TB in size. It is a modern journalling file
+> >>> | system, which means that it reduces data loss if data writes to
+> >>> | the disk are interrupted. It is the fastest and most reliable
+> >>> | file system ever created for AmigaOS.
+> >>> 
+> >>> http://www.amigaos.net/content/1/features
+> >>> 
+> >>> Well I asked AmigaOS 4 developers about this issue as well. Lets
+> >>> see what they say about 2 TB limits.
+> >> 
+> >> 16 TB = 2 TB * 8. Perhaps they increased the block size from 512 to
+> >> 4096?
 > > 
-> > Ah, yes. There already was a plan to add properties for this to the
-> > IOMMU API. So I'm ok with the GART driver claiming the resources.
+> > I hope to get anything back from the AmigaOS 4 developers.
+> > 
+> >> block/partitions/amiga.c reads the block size from
+> >> RigidDiskBlock.rdb_BlockBytes,
+> >> but after conversion to 512-byte blocks, all further calculations
+> >> are done on "int", so it will overflow for disks larger than 2 TiB.
+> >> 
+> >> Note that in your profile-binary.img, the field is 0x200, i.e. 512
+> >> bytes per block,
+> >> so I'll have to get a deeper look into your RDB first...
+> > 
+> > Okay, thanks!
+> > 
+> > I did not get any information regarding the current size limit yet.
+> > 
+> > Strangely on AmigaOS 4.1 all values seem to be fine except for the
+> > total sectors value.
 > 
-> I think that DRM driver should be independent of GART, one specific
-> implementation of IOMMU H/W, but it should be a normal client of DMA
-> BUF(or DMABUF API?), which asks info via IOMMU API if necessary.
+> > And on Linux begin and end cylinders are correct, only size is off:
+> Ah, you DO know that "cylinders, surfaces, and tracks" are polite
+> fictions in AmigaOS, don't you? Start and End blocks are all that
+> matter on a real Amiga. The fictions arose because at first it was
+> thought they could be used to optimize disk accesses. Once drives
+> were notched these values became meaningless. So they're created on
+> the fly picking values out of the nose or something. (RDPrep tries
+> to find reasonable size factors for the total block counts.)
 
-You are right that the DRM driver should not care about the specific
-IOMMU implementation. It shouldn't matter to the graphics driver if it
-sits on top of a Tegra 2 GART with a fixed aperture of 32MB or on top of
-a Tegra 3 SMMU with an virtual address space of several Gigabytes. 
+I know there are pure fiction on Linux as well. As in any other modern 
+operating system.
 
-However graphics cores are one of the most complicated devices when it
-comes to DMA resource management. Because of it's natural operation mode
-as a completely parallel coprocessor to the CPU and the big amounts of
-data that has to be mapped at every given time, the GPU doesn't fit
-terribly well within the normal Linux Kernel DMA API.
+Actually Media Toolbox shows both. Physical and logical sizes. See the 
+screenshots I attached to the bug report.
 
-We already have a solution for GPU address space management in the
-kernel, called TTM, which in turn integrates with other things like
-DMABUF. But to guarantee the best performance TTM will have to manage
-the whole virtual address space of the GPU. So I think the IOMMU API is
-the perfect abstraction level for interaction between the DRM and the
-GART/SMMU driver. This way the DRM is able to manage the DMA resources
-on it's own while staying completely agnostic about the underlying IOMMU
-hardware.
-
+> > merkaba:~> amiga-fdisk -l /dev/sdb
 > 
-> For new IOMMU API, I guess that the following would be the one we need here.
-> 
-> [PATCH 0/5] IOMMU: Make IOMMU-API ready for GART-like hardware
->   https://lkml.org/lkml/2012/1/19/170
-> 
-Yes, this is exactly the patchset I had in mind.
+> Are you sure "amiga-fdisk" is not broken?
 
-> > I will try to push the needed API changes forward in the next few
-> > days.
+Not at all, but there is also the syslog.
+
+> > Disk /dev/sdb: 3 heads, 16 sectors, 81396441 cylinders, RDB: 0
+> > Logical Cylinders from 43 to 81396440, 24576  bytes/Cylinder
+> > 
+> > Device     Boot Mount   Begin      End     Size   Pri  BBlks   
+> > System /dev/sdb1       *        43   65536043   1572864024     0    
+> >  0  Linux native /dev/sdb2       *    65536044   78643244  
+> > 314572824     0      0  [unknown] /dev/sdb3       *    78643245  
+> > 81396440   66076704     0      0  Amiga FFS Int.
+> > 
+> > But not only from the first, also of the second and third one it
+> > seems.
+> > 
+> > 65536043 - 43 = 65536000
 > 
-> Have you had any chance to post the above succeeding patch? I couldn't
-> find.
+> So the size in bytes is 24 times the byte offset of the start of the
+> next partition. Fascinating. Let's see. You are working in 512 byte
+> blocks it looks like. With RDBs in blocks that means you can get up to
+> 1099511627776 bytes, 2147483648 blocks, or 44739242. So you are
+> already WAY over what can be expressed in the 32 bit values in the
+> RDBs. So the software that prepared your partitioning needs some
+> repair work of some sort or something other than traditional Amiga FFS
+> format disks.
 > 
-No, sorry. I was occupied with other things for the last weeks and
-couldn't find the time to revisit this topic.
+> The first thing on the agenda is "fixing" the partitioning software. Is
+> the version of Amiga FFS you are using cognizant of 64 bit values? If
+> not you will have to go to block sizes larger than 512 bytes. It looks
+> like 1k is suitable for this instance. Given the way Amiga FFS stores
+> data on the disk I'd go for 4k or 8k block sizes unless you have lots
+> of very small files.
 
--- Lucas
+Is there still something to fix in there? Just still catching up the mail 
+exchange. From what I could see on AmigaOS 4.1 all seemed well. I already 
+reported the negative sector count value.
 
+Anyway, if there is an issue left we can discuss this privately. This 
+would have nothing to do with Linux and I can make sure that current 
+AmigaOS developers hear about your oppinion.
 
+Ciao,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
