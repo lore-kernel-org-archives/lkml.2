@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab2FRPXK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 11:23:10 -0400
-Received: from antcom.de ([188.40.178.216]:55101 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753132Ab2FRPXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 11:23:06 -0400
-Message-ID: <4FDF47D8.9000309@antcom.de>
-Date: Mon, 18 Jun 2012 17:23:04 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1753123Ab2FRPXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 11:23:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40657 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab2FRPXU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 11:23:20 -0400
+Date: Mon, 18 Jun 2012 08:23:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] usb: Convert dbg to pr_eliminated and pr_debug
+Message-ID: <20120618152315.GB1050@kroah.com>
+References: <cover.1339985626.git.joe@perches.com>
+ <25071de4def201f947780d6937b9732ccac3b3f0.1339985627.git.joe@perches.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
-        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] gpio: of_get_named_gpio_flags() return -EPROBE_DEFER
- if GPIO not yet available
-References: <1339927893-8842-1-git-send-email-stigge@antcom.de> <4FDE8D27.6030508@wwwdotorg.org> <4FDEF293.9080305@antcom.de> <4FDF403E.9090302@wwwdotorg.org> <4FDF4461.60707@antcom.de> <4FDF4543.6090009@wwwdotorg.org>
-In-Reply-To: <4FDF4543.6090009@wwwdotorg.org>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <25071de4def201f947780d6937b9732ccac3b3f0.1339985627.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 05:12 PM, Stephen Warren wrote:
->> Thanks for the hint! I previously also suspected sth. like this but
->> didn't find it in v3.5-rc3. In broonie's sound.git for-next, I now
->> finally found it.
->>
->> Should be easy to fix (replacing the if (... == -ENODEV) to -EPROBE_DEFER.
->>
->> Will you provide patches as signalled, of should I? Which branch would
->> be the correct one to build on top?
+On Sun, Jun 17, 2012 at 07:25:10PM -0700, Joe Perches wrote:
+> Change the dbg macro to use pr_eliminated when not
+> DEBUG and pr_debug with DEBUG so dynamic_debug can
+> be used.
 > 
-> I'm happy either way. It'd probably be best to roll the change into your
-> patch/series so you can manage all the dependencies in one series, but
-> if you can't for some reason, I'm happy to provide a patch for this.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  include/linux/usb.h |   12 +++++-------
+>  1 files changed, 5 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/usb.h b/include/linux/usb.h
+> index f717fbd..56b88b8 100644
+> --- a/include/linux/usb.h
+> +++ b/include/linux/usb.h
+> @@ -1714,14 +1714,12 @@ extern void usb_register_notify(struct notifier_block *nb);
+>  extern void usb_unregister_notify(struct notifier_block *nb);
+>  
+>  #ifdef DEBUG
+> -#define dbg(format, arg...)						\
+> -	printk(KERN_DEBUG "%s: " format "\n", __FILE__, ##arg)
+> +#define dbg(format, ...)						\
+> +	pr_debug("%s: " format "\n", __FILE__, ##__VA_ARGS__)
 
-I should be able ;-) - is broonie's sound.git, branch for-next the
-correct one to patch against? Or sth. better suited?
+No, I really want to delete this macro entirely, and am slowly working
+toward that, moving drivers to use the correct dev_dbg() macro instead.
 
-Thanks in advance,
+>  #else
+> -#define dbg(format, arg...)						\
+> -do {									\
+> -	if (0)								\
+> -		printk(KERN_DEBUG "%s: " format "\n", __FILE__, ##arg); \
+> -} while (0)
+> +#define dbg(format, ...)						\
+> +	printk_eliminated(KERN_DEBUG "%s: " format "\n",		\
+> +			  __FILE__, ##__VA_ARGS)
 
-Roland
+As Paul pointed out, this breaks the build, please build test your
+patches before sending them out, it just wastes our time otherwise :(
+
+greg k-h
