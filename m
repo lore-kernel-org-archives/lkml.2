@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab2FRVX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 17:23:58 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61738 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab2FRVX4 convert rfc822-to-8bit (ORCPT
+	id S1753590Ab2FRV2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 17:28:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33133 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab2FRV2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 17:23:56 -0400
+	Mon, 18 Jun 2012 17:28:31 -0400
+Date: Mon, 18 Jun 2012 14:28:26 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Asias He <asias@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+Message-ID: <20120618212826.GB32733@google.com>
+References: <1340002390-3950-1-git-send-email-asias@redhat.com>
+ <1340002390-3950-4-git-send-email-asias@redhat.com>
+ <87hau9yse7.fsf@rustcorp.com.au>
+ <4FDEE0CB.1030505@redhat.com>
+ <87zk81x7dp.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <4FDF83A5.6060703@pengutronix.de>
-References: <1339674222-27699-1-git-send-email-federico.vaga@gmail.com> <4FDF83A5.6060703@pengutronix.de>
-From: Federico Vaga <federico.vaga@gmail.com>
-Date: Mon, 18 Jun 2012 23:23:35 +0200
-Message-ID: <CAH5GJ0p_9x_6sSN=UQW0Wh57LKGKwXnAiO+8UoB=Ex88gNWQsg@mail.gmail.com>
-Subject: Re: [PATCH] c_can_pci: generic module for C_CAN/D_CAN on PCI
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Wolfgang Grandegger <wg@grandegger.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        AnilKumar Chimata <anilkumar@ti.com>,
-        Alessandro Rubini <rubini@gnudd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zk81x7dp.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I get this warning:
->
-> socketcan/linux/drivers/net/can/c_can/c_can_pci.c: In function 'c_can_pci_probe':
-> socketcan/linux/drivers/net/can/c_can/c_can_pci.c:71: warning: 'priv' may be used uninitialized in this function
->
-> What about:
->
-> -       pci_iounmap(pdev, priv->base);
-> +       pci_iounmap(pdev, addr);
+Hello, guys.
 
-I didn't get this warning, but I read again the code and the warning
-is correct, so pci_iounmap(pdev, addr) is the right way.
+On Mon, Jun 18, 2012 at 07:35:22PM +0930, Rusty Russell wrote:
+> On Mon, 18 Jun 2012 16:03:23 +0800, Asias He <asias@redhat.com> wrote:
+> > On 06/18/2012 03:46 PM, Rusty Russell wrote:
+> > > On Mon, 18 Jun 2012 14:53:10 +0800, Asias He <asias@redhat.com> wrote:
+> > >> This patch introduces bio-based IO path for virtio-blk.
+> > >
+> > > Why make it optional?
+> > 
+> > request-based IO path is useful for users who do not want to bypass the 
+> > IO scheduler in guest kernel, e.g. users using spinning disk. For users 
+> > using fast disk device, e.g. SSD device, they can use bio-based IO path.
+> 
+> Users using a spinning disk still get IO scheduling in the host though.
+> What benefit is there in doing it in the guest as well?
+
+Another thing is that some of cgroup features are impelmented in IO
+scheduler (cfq).  e.g. bio based driver will be able to use cgroup
+based throttling but IO weights won't work.  Not sure how meaningful
+this is tho.
+
+With that said, I think this sort of feature switching is quite ugly.
+The pros and cons of each choice aren't obvious unless one is familiar
+with implementation details.  IMHO, if the benefits of ioscheds aren't
+critical, it would be better to just go with bio based implementation.
+
+Thanks.
 
 -- 
-Federico Vaga
+tejun
