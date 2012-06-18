@@ -1,79 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab2FRHbl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 03:31:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53134 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab2FRHbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 03:31:40 -0400
-Date: Mon, 18 Jun 2012 16:31:31 +0900 (JST)
-Message-Id: <20120618.163131.350454467360099988.yamato@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: cluster-devel@redhat.com
-Subject: [PATCH] Fixing double brelse'ing bh allocated in gfs2_meta_read
- when EIO occurs
-From: Masatake YAMATO <yamato@redhat.com>
-Organization: Red Hat Japan, Inc.
+	id S1752022Ab2FRHmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 03:42:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44766 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab2FRHmf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 03:42:35 -0400
+Message-ID: <1340005336.15222.16.camel@twins>
+Subject: Re: [PATCH V6 08/13] perf: Add Sandy Bridge-EP uncore support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: mingo@elte.hu, jolsa@redhat.com, eranian@google.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 18 Jun 2012 09:42:16 +0200
+In-Reply-To: <4FDE88AF.3010902@intel.com>
+References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
+	  <1339741902-8449-9-git-send-email-zheng.z.yan@intel.com>
+	 <1339780230.2559.86.camel@twins> <4FDE88AF.3010902@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes buffer_head double free in following code path:
+On Mon, 2012-06-18 at 09:47 +0800, Yan, Zheng wrote:
 
-gfs2_block_map
-=> gfs2_meta_inode_buffer
- => gfs2_meta_indirect_buffer
-  => gfs2_meta_read
-=> release_metapath
+> Sorry, my document is out-dated. These events were listed in the old
+> document. should we remove them ?
 
+No idea, ask someone from the hardware team for clarification.
 
-gfs2_block_map calls gfs2_meta_inode_buffer with &mp.mp_bh[0]
-as an argument. mp.mp_bh are filled with zero at the beginning
-of gfs2_block_map.
-
-If gfs2_meta_inode_buffer returns non-zero value, gfs2_block_map
-calls release_metapath to free buffers chained to mp.mp_bh.
-release_metapath checks each slot of mp.mp_bh[i] and 
-free(with brelse) unless the slot is filled with NULL.
+If these events were scrapped because they failed to pass validation or
+so, it doesn't really matter if we include the constraints since the
+results are screwy anyway -- unless of course programming these events
+'wrong' will screw over something else.
 
 
-&mp.mp_bh[0] passed to gfs2_meta_inode_buffer is filled at
-gfs2_meta_read. gfs2_meta_read is filled a buffer allocated with
-gfs2_getbuf even if EIO occurs. When EIO occurs, the allocated buffer
-is brelse'ed though the pointer(wrong poiner) points the brelse'ed is
-passed back to caller via an argument bhp.
-
-gfs2_meta_indirect_buffer, the caller also pass the wrong pointer
-to its caller with EIO. Finally gfs2_block_map gets both EIO and
-&mp.mp_bh[0] filled with the wrong pointer. release_metapath
-calls brelse again on the wrong pointer.
-
-Signed-off-by: Masatake YAMATO<yamato@redhat.com>
-
-diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
-index 6c1e5d1..3a56c8d 100644
---- a/fs/gfs2/meta_io.c
-+++ b/fs/gfs2/meta_io.c
-@@ -213,8 +213,10 @@ int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno, int flags,
- 	struct gfs2_sbd *sdp = gl->gl_sbd;
- 	struct buffer_head *bh;
- 
--	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
-+	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
-+		*bhp = NULL;
- 		return -EIO;
-+	}
- 
- 	*bhp = bh = gfs2_getbuf(gl, blkno, CREATE);
- 
-@@ -235,6 +237,7 @@ int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno, int flags,
- 		if (tr && tr->tr_touched)
- 			gfs2_io_error_bh(sdp, bh);
- 		brelse(bh);
-+		*bhp = NULL;
- 		return -EIO;
- 	}
- 
