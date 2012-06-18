@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab2FRIxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 04:53:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40434 "EHLO
+	id S1753454Ab2FRIx6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 04:53:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40449 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab2FRIxD (ORCPT
+	with ESMTP id S1751958Ab2FRIx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 04:53:03 -0400
-Date: Mon, 18 Jun 2012 01:52:42 -0700
+	Mon, 18 Jun 2012 04:53:57 -0400
+Date: Mon, 18 Jun 2012 01:53:34 -0700
 From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-c1914a0936f79ed0236f670122e06e36e4d332ee@git.kernel.org>
+Message-ID: <tip-268720903f87e0b84b161626c4447b81671b5d18@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, ananth@in.ibm.com, anton@redhat.com,
         srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, ananth@in.ibm.com, anton@redhat.com,
         srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120615154331.GA9578@redhat.com>
-References: <20120615154331.GA9578@redhat.com>
+In-Reply-To: <20120615154333.GA9581@redhat.com>
+References: <20120615154333.GA9581@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Install_breakpoint()
-  should fail if is_swbp_insn() == T
-Git-Commit-ID: c1914a0936f79ed0236f670122e06e36e4d332ee
+Subject: [tip:perf/core] uprobes: Rework register_for_each_vma()
+  to make it O(n)
+Git-Commit-ID: 268720903f87e0b84b161626c4447b81671b5d18
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,59 +30,299 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 18 Jun 2012 01:52:47 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 18 Jun 2012 01:53:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c1914a0936f79ed0236f670122e06e36e4d332ee
-Gitweb:     http://git.kernel.org/tip/c1914a0936f79ed0236f670122e06e36e4d332ee
+Commit-ID:  268720903f87e0b84b161626c4447b81671b5d18
+Gitweb:     http://git.kernel.org/tip/268720903f87e0b84b161626c4447b81671b5d18
 Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Fri, 15 Jun 2012 17:43:31 +0200
+AuthorDate: Fri, 15 Jun 2012 17:43:33 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Sat, 16 Jun 2012 09:10:43 +0200
 
-uprobes: Install_breakpoint() should fail if is_swbp_insn() == T
+uprobes: Rework register_for_each_vma() to make it O(n)
 
-install_breakpoint() returns -EEXIST if is_swbp_insn(orig_insn)
-== T, the caller treats this code as success.
+Currently register_for_each_vma() is O(n ** 2) + O(n ** 3),
+every time find_next_vma_info() "restarts" the
+vma_prio_tree_foreach() loop and each iteration rechecks the
+whole try_list. This also means that try_list can grow
+"indefinitely" if register/unregister races with munmap/mmap
+activity even if the number of mapping is bounded at any time.
 
-This is doubly wrong. The successful return should set
-UPROBE_COPY_INSN, but the real problem is that it shouldn't
-succeed. If the probed insn is int3 the application should get
-SIGTRAP, this won't happen with uprobe.
+With this patch register_for_each_vma() builds the list of
+mm/vaddr structures only once and does install_breakpoint() for
+each entry.
 
-Probably we can fix this, we can add the UPROBE_SHARED_BP flag
-and teach handle_swbp/set_orig_insn to handle this case
-correctly. But this needs some complications and we have other
-insns which can't be probed, lets make a simple fix for now.
+We do not care about the new mappings which can be created after
+build_map_info() drops mapping->i_mmap_mutex, uprobe_mmap()
+should do its work.
 
-I think this needs a cleanup. UPROBE_COPY_INSN should die,
-copy_insn() should be called by alloc_uprobe().
-arch_uprobe_analyze_insn() depends on ->mm (ia32_compat) but it
-is called only once.
+Note that we do not allocate map_info under i_mmap_mutex, this
+can deadlock with page reclaim (but see the next patch). So we
+use 2 lists, "curr" which we are going to return, and "prev"
+which holds the already allocated memory. The main loop deques
+the entry from "prev" (initially it is empty), and if "prev"
+becomes empty again it counts the number of entries we need to
+pre-allocate outside of i_mmap_mutex.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 Cc: Anton Arapov <anton@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120615154331.GA9578@redhat.com
+Link: http://lkml.kernel.org/r/20120615154333.GA9581@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/uprobes.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/events/uprobes.c |  199 ++++++++++++++++++++---------------------------
+ 1 files changed, 86 insertions(+), 113 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 3ccdb29..ec78152 100644
+index ec78152..4e0db34 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -693,7 +693,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 			return ret;
+@@ -60,17 +60,6 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
+  */
+ static atomic_t uprobe_events = ATOMIC_INIT(0);
  
- 		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
--			return -EEXIST;
-+			return -ENOTSUPP;
+-/*
+- * Maintain a temporary per vma info that can be used to search if a vma
+- * has already been handled. This structure is introduced since extending
+- * vm_area_struct wasnt recommended.
+- */
+-struct vma_info {
+-	struct list_head	probe_list;
+-	struct mm_struct	*mm;
+-	loff_t			vaddr;
+-};
+-
+ struct uprobe {
+ 	struct rb_node		rb_node;	/* node in the rb tree */
+ 	atomic_t		ref;
+@@ -742,139 +731,123 @@ static void delete_uprobe(struct uprobe *uprobe)
+ 	atomic_dec(&uprobe_events);
+ }
  
- 		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, addr);
- 		if (ret)
+-static struct vma_info *
+-__find_next_vma_info(struct address_space *mapping, struct list_head *head,
+-			struct vma_info *vi, loff_t offset, bool is_register)
++struct map_info {
++	struct map_info *next;
++	struct mm_struct *mm;
++	loff_t vaddr;
++};
++
++static inline struct map_info *free_map_info(struct map_info *info)
+ {
++	struct map_info *next = info->next;
++	kfree(info);
++	return next;
++}
++
++static struct map_info *
++build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
++{
++	unsigned long pgoff = offset >> PAGE_SHIFT;
+ 	struct prio_tree_iter iter;
+ 	struct vm_area_struct *vma;
+-	struct vma_info *tmpvi;
+-	unsigned long pgoff;
+-	int existing_vma;
+-	loff_t vaddr;
+-
+-	pgoff = offset >> PAGE_SHIFT;
++	struct map_info *curr = NULL;
++	struct map_info *prev = NULL;
++	struct map_info *info;
++	int more = 0;
+ 
++ again:
++	mutex_lock(&mapping->i_mmap_mutex);
+ 	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
+ 		if (!valid_vma(vma, is_register))
+ 			continue;
+ 
+-		existing_vma = 0;
+-		vaddr = vma_address(vma, offset);
+-
+-		list_for_each_entry(tmpvi, head, probe_list) {
+-			if (tmpvi->mm == vma->vm_mm && tmpvi->vaddr == vaddr) {
+-				existing_vma = 1;
+-				break;
+-			}
+-		}
+-
+-		/*
+-		 * Another vma needs a probe to be installed. However skip
+-		 * installing the probe if the vma is about to be unlinked.
+-		 */
+-		if (!existing_vma && atomic_inc_not_zero(&vma->vm_mm->mm_users)) {
+-			vi->mm = vma->vm_mm;
+-			vi->vaddr = vaddr;
+-			list_add(&vi->probe_list, head);
+-
+-			return vi;
++		if (!prev) {
++			more++;
++			continue;
+ 		}
+-	}
+-
+-	return NULL;
+-}
+ 
+-/*
+- * Iterate in the rmap prio tree  and find a vma where a probe has not
+- * yet been inserted.
+- */
+-static struct vma_info *
+-find_next_vma_info(struct address_space *mapping, struct list_head *head,
+-		loff_t offset, bool is_register)
+-{
+-	struct vma_info *vi, *retvi;
++		if (!atomic_inc_not_zero(&vma->vm_mm->mm_users))
++			continue;
+ 
+-	vi = kzalloc(sizeof(struct vma_info), GFP_KERNEL);
+-	if (!vi)
+-		return ERR_PTR(-ENOMEM);
++		info = prev;
++		prev = prev->next;
++		info->next = curr;
++		curr = info;
+ 
+-	mutex_lock(&mapping->i_mmap_mutex);
+-	retvi = __find_next_vma_info(mapping, head, vi, offset, is_register);
++		info->mm = vma->vm_mm;
++		info->vaddr = vma_address(vma, offset);
++	}
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 
+-	if (!retvi)
+-		kfree(vi);
++	if (!more)
++		goto out;
++
++	prev = curr;
++	while (curr) {
++		mmput(curr->mm);
++		curr = curr->next;
++	}
+ 
+-	return retvi;
++	do {
++		info = kmalloc(sizeof(struct map_info), GFP_KERNEL);
++		if (!info) {
++			curr = ERR_PTR(-ENOMEM);
++			goto out;
++		}
++		info->next = prev;
++		prev = info;
++	} while (--more);
++
++	goto again;
++ out:
++	while (prev)
++		prev = free_map_info(prev);
++	return curr;
+ }
+ 
+ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ {
+-	struct list_head try_list;
+-	struct vm_area_struct *vma;
+-	struct address_space *mapping;
+-	struct vma_info *vi, *tmpvi;
+-	struct mm_struct *mm;
+-	loff_t vaddr;
+-	int ret;
++	struct map_info *info;
++	int err = 0;
+ 
+-	mapping = uprobe->inode->i_mapping;
+-	INIT_LIST_HEAD(&try_list);
+-
+-	ret = 0;
++	info = build_map_info(uprobe->inode->i_mapping,
++					uprobe->offset, is_register);
++	if (IS_ERR(info))
++		return PTR_ERR(info);
+ 
+-	for (;;) {
+-		vi = find_next_vma_info(mapping, &try_list, uprobe->offset, is_register);
+-		if (!vi)
+-			break;
++	while (info) {
++		struct mm_struct *mm = info->mm;
++		struct vm_area_struct *vma;
++		loff_t vaddr;
+ 
+-		if (IS_ERR(vi)) {
+-			ret = PTR_ERR(vi);
+-			break;
+-		}
++		if (err)
++			goto free;
+ 
+-		mm = vi->mm;
+ 		down_write(&mm->mmap_sem);
+-		vma = find_vma(mm, (unsigned long)vi->vaddr);
+-		if (!vma || !valid_vma(vma, is_register)) {
+-			list_del(&vi->probe_list);
+-			kfree(vi);
+-			up_write(&mm->mmap_sem);
+-			mmput(mm);
+-			continue;
+-		}
++		vma = find_vma(mm, (unsigned long)info->vaddr);
++		if (!vma || !valid_vma(vma, is_register))
++			goto unlock;
++
+ 		vaddr = vma_address(vma, uprobe->offset);
+ 		if (vma->vm_file->f_mapping->host != uprobe->inode ||
+-						vaddr != vi->vaddr) {
+-			list_del(&vi->probe_list);
+-			kfree(vi);
+-			up_write(&mm->mmap_sem);
+-			mmput(mm);
+-			continue;
+-		}
++						vaddr != info->vaddr)
++			goto unlock;
+ 
+-		if (is_register)
+-			ret = install_breakpoint(uprobe, mm, vma, vi->vaddr);
+-		else
+-			remove_breakpoint(uprobe, mm, vi->vaddr);
+-
+-		up_write(&mm->mmap_sem);
+-		mmput(mm);
+ 		if (is_register) {
+-			if (ret && ret == -EEXIST)
+-				ret = 0;
+-			if (ret)
+-				break;
++			err = install_breakpoint(uprobe, mm, vma, info->vaddr);
++			if (err == -EEXIST)
++				err = 0;
++		} else {
++			remove_breakpoint(uprobe, mm, info->vaddr);
+ 		}
++ unlock:
++		up_write(&mm->mmap_sem);
++ free:
++		mmput(mm);
++		info = free_map_info(info);
+ 	}
+ 
+-	list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
+-		list_del(&vi->probe_list);
+-		kfree(vi);
+-	}
+-
+-	return ret;
++	return err;
+ }
+ 
+ static int __uprobe_register(struct uprobe *uprobe)
