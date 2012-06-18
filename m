@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554Ab2FRMDu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:03:50 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52150 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab2FRMDr convert rfc822-to-8bit (ORCPT
+	id S1751863Ab2FRMES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:04:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33785 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab2FRMEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:03:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FDF12F0.6080205@mvista.com>
-References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
-	<1340000766-129148-5-git-send-email-ming.m.lin@intel.com>
-	<4FDF12F0.6080205@mvista.com>
-Date: Mon, 18 Jun 2012 20:03:46 +0800
-X-Google-Sender-Auth: XMWjdNMAle2yY1-HF56kdha7-4Q
-Message-ID: <CAF1ivSaiVGB+TSn80QijpWJWUdkhpjuOKuu9XSTROF-kGgP_gQ@mail.gmail.com>
-Subject: Re: [PATCH v5 04/12] libata: use correct PCI devices
-From: Lin Ming <ming.m.lin@intel.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
-        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Jun 2012 08:04:16 -0400
+Message-ID: <1340021117.22848.3.camel@lappy>
+Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        avi@redhat.com, penberg@cs.helsinki.fi
+Date: Mon, 18 Jun 2012 14:05:17 +0200
+In-Reply-To: <20120618115440.GA25042@redhat.com>
+References: <1320150813.3847.24.camel@lappy>
+	 <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au>
+	 <20111102233110.GA20289@redhat.com> <20111108214021.GA4538@redhat.com>
+	 <1320828366.31056.16.camel@lappy> <20111109101318.GB20612@redhat.com>
+	 <alpine.LFD.2.02.1111091421570.4936@tux.localdomain>
+	 <1320841683.31056.41.camel@lappy>
+	 <alpine.LFD.2.02.1111091434230.4936@tux.localdomain>
+	 <20120618115440.GA25042@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 7:37 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
-> On 18-06-2012 10:25, Lin Ming wrote:
->
->> From: Holger Macht <holger@homac.de>
->
->
->> Commit 9a6d6a2ddabbd32c07f6a38b659e5f3db319fa5a
->
->
->   Please also specify that commit's summary in parens.
+On Mon, 2012-06-18 at 14:54 +0300, Michael S. Tsirkin wrote:
+> On Wed, Nov 09, 2011 at 02:36:43PM +0200, Pekka Enberg wrote:
+> > On Wed, 9 Nov 2011, Sasha Levin wrote:
+> > >They don't exist in kernel code either, for same reason as above.
+> > >
+> > >Nothing will break if we remove it since no one really used it, we were
+> > >probably the first and only implementation of the spec which considered
+> > >them :)
+> > 
+> > As long as we are able to run older versions of the KVM tool with
+> > newer kernels and vice versa, I see no reason why we can't drop
+> > 64-bit features from the KVM tool.
+> > 
+> > 			Pekka
+> 
+> So what happened? Did you guys do this?  Need to know what to do to make
+> progress.  IIUC Rusty removed the new fields in 0.9.3.
+> Does your tool still use them? Did any version of the tool released by
+> distros do so?
 
-OK.
+Yup, they were removed quite a while ago.
 
-Thanks,
-Lin Ming
-
->
->
->> made ata ports parent
->> devices of scsi hosts, so we need to go yet another level up to be able
->> to use the correct PCI devices.
->
->
->> Signed-off-by: Holger Macht <holger@homac.de>
->> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
->
->
-> MBR, Sergei
