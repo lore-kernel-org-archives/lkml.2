@@ -1,114 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2FRW6x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 18:58:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab2FRW6w convert rfc822-to-8bit (ORCPT
+	id S1753682Ab2FRXAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 19:00:14 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:46666 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab2FRXAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 18:58:52 -0400
+	Mon, 18 Jun 2012 19:00:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120618220519.GD32733@google.com>
-References: <1339816331-23284-1-git-send-email-yinghai@kernel.org>
-	<20120618220519.GD32733@google.com>
-Date: Mon, 18 Jun 2012 15:58:52 -0700
-X-Google-Sender-Auth: _qUS7r7k0-7z37VkqEmRN4yA_l0
-Message-ID: <CAE9FiQUYsPFPnQvTsy9u3inM3hP5uWYtCRJMvQ=MvR7fCJTqzg@mail.gmail.com>
-Subject: Re: [PATCH] memblock: Make sure reserved.regions is freed really
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+In-Reply-To: <20120618215847.GU7147@sortiz-mobl>
+References: <20120514080835.GB31985@opensource.wolfsonmicro.com>
+ <4FB0C9D4.2060409@linaro.org> <20120514094357.GF20367@S2100-06.ap.freescale.net>
+ <4FB10821.4000004@linaro.org> <20120514135035.GC29393@b20223-02.ap.freescale.net>
+ <20120518095932.GI30755@b20223-02.ap.freescale.net> <20120521041355.GF5810@S2100-06.ap.freescale.net>
+ <4FBA0A9A.8040901@linaro.org> <20120521093937.GM30755@b20223-02.ap.freescale.net>
+ <CAMXH7KF4qegQkQ3mS2=U=VBXZHJfiU2GiozRHgkP3OVX0Q+thQ@mail.gmail.com> <20120618215847.GU7147@sortiz-mobl>
+From: Rob Lee <rob.lee@linaro.org>
+Date: Mon, 18 Jun 2012 17:59:31 -0500
+Message-ID: <CAMXH7KFJUFGTzXmXhHc06zxzM6hjSM19s4=wg41CKUzLVvefHg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mfd: anatop: permit adata be NULL when access register
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Richard Zhao <richard.zhao@freescale.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
+        Richard Zhao <richard.zhao@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 3:05 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Yinghai.
->
-> On Fri, Jun 15, 2012 at 08:12:11PM -0700, Yinghai Lu wrote:
->> memblock_free() would double reserved.regions too, so we could free
->> old range for reserved.regions.
->>
->> So need to check that regions get doubled. If it is doubled, we need to
->> free it.
->>
->> Cc: Tejun Heo <tj@kernel.org>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
->>  mm/memblock.c |   23 +++++++++++++++++++++--
->>  1 file changed, 21 insertions(+), 2 deletions(-)
->>
->> Index: linux-2.6/mm/memblock.c
->> ===================================================================
->> --- linux-2.6.orig/mm/memblock.c
->> +++ linux-2.6/mm/memblock.c
->> @@ -148,11 +148,26 @@ phys_addr_t __init_memblock memblock_fin
->>   */
->>  int __init_memblock memblock_free_reserved_regions(void)
->>  {
->> +     struct memblock_region *r;
->> +     int ret;
->> +
->>       if (memblock.reserved.regions == memblock_reserved_init_regions)
->>               return 0;
->>
->> -     return memblock_free(__pa(memblock.reserved.regions),
->> -              sizeof(struct memblock_region) * memblock.reserved.max);
->> +     /*
->> +      * During memblock_free, reserved.regions could be doubled,
->> +      * try to check with old one for checking, and need to free the new one.
->> +      */
->> +     do {
->> +             r = memblock.reserved.regions;
->> +             ret = memblock_free(__pa(memblock.reserved.regions),
->> +                     sizeof(struct memblock_region) * memblock.reserved.max);
->> +
->> +             if (ret)
->> +                     break;
->> +     } while (memblock.reserved.regions != r);
->> +
->> +     return ret;
->>  }
->
-> Hmmm... nice catch but I think it's a bit complex and ugly.  In this
-> case, we *know* that the region isn't gonna be split.  Maybe a better
-> option is to add something like the following?
+Hey Samuel, thanks for your response.
 
-how do you know __pa(memblock.reserved.regions) would not be merged
-with other entries
-in reserved.regions?
+On Mon, Jun 18, 2012 at 4:58 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Hi Rob,
+>
+> On Mon, Jun 18, 2012 at 03:23:45PM -0500, Rob Lee wrote:
+>> Hi,
+>>
+>> What is the status of this patch?
+> I'm swamped with other things to look at right now, but I expect to clean my
+> MFD patches backlog at the beginning of next week.
+
+Fyi, I also saw this patch was resent (and acked) here:
+https://lkml.org/lkml/2012/6/3/159
+
+Thanks,
+Rob
 
 >
-> void memblock_remove_region_by_ptr(struct memblock_type *type,
->                                   struct memblock_region *r)
-> {
->        WARN_ON(/* make sure @r is inside @type->regions */);
->        memblock_remove_region(type, r - type->regions);
-> }
-
-you want to change
-
-/*
- * Free memblock.reserved.regions
- */
-int __init_memblock memblock_free_reserved_regions(void)
-{
-        if (memblock.reserved.regions == memblock_reserved_init_regions)
-                return 0;
-
-        return memblock_free(__pa(memblock.reserved.regions),
-                 sizeof(struct memblock_region) * memblock.reserved.max);
-}
-
-to use memblock_remove_region_by_ptr() ?
-
-Thanks
-
-Yinghai
+> Cheers,
+> Samuel.
+>
+> --
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
