@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2FRWJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 18:09:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3664 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab2FRWJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 18:09:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="155083944"
-Message-ID: <4FDFA760.5040403@intel.com>
-Date: Mon, 18 Jun 2012 19:10:40 -0300
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
+	id S1753643Ab2FRWK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 18:10:57 -0400
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:28060 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751385Ab2FRWK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 18:10:56 -0400
+Date: Mon, 18 Jun 2012 23:10:52 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: nfs3 problem with -rc{2,3}
+Message-ID: <20120618221052.GA18341@milliways>
+References: <20120617200700.GA15348@milliways>
+ <1340026956.2451.9.camel@lade.trondhjem.org>
+ <1340027134.2451.12.camel@lade.trondhjem.org>
+ <20120618141854.GA7962@milliways>
+ <1340031234.2451.13.camel@lade.trondhjem.org>
+ <20120618160005.GA10169@milliways>
+ <20120618200525.GA15654@milliways>
+ <20120618215323.GA17561@milliways>
+ <1340057002.20570.31.camel@lade.trondhjem.org>
 MIME-Version: 1.0
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-CC: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [ 04/69] drm/i915: fix up ivb plane 3 pageflips
-References: <20120617175941.281333656@decadent.org.uk> <20120617175941.924141588@decadent.org.uk> <20120618215555.GD3263@herton-Z68MA-D2H-B3>
-In-Reply-To: <20120618215555.GD3263@herton-Z68MA-D2H-B3>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1340057002.20570.31.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=wom5GMh1gUkA:10 a=IxJ0d4kOqokA:10 a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=yOP717waBBROScAMR_cA:9 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 06:55 PM, Herton Ronaldo Krzesinski wrote:
->> +	default:
->> +		WARN_ONCE(1, "unknown plane in flip command\n");
->> +		ret = -ENODEV;
->> +		goto err;
+On Mon, Jun 18, 2012 at 10:03:24PM +0000, Myklebust, Trond wrote:
+> On Mon, 2012-06-18 at 22:53 +0100, Ken Moffat wrote:
+> > On Mon, Jun 18, 2012 at 09:05:25PM +0100, Ken Moffat wrote:
+> > > 
+> > >  I suppose I'll have to enable v4 in my configs.
+> > > 
+> >  Just to confirm, -rc3 with CONFIG_NFS_V4 added to my original
+> > .config appears to work fine on nfs v3.
+> > 
+> >  I suppose I could apply 4f97615d19c370d1d907ef37f8bcd9c3672851ca on
+> > top of the conmits which failed to compile without v4, if it is worth
+> > investigating this ?  It certainly fixes the error in fs/nfs/read.c,
+> > but I also had:
+> > 
+> > fs/nfs/direct.c:86:29: error: field ‘ds_cinfo’ has incomplete type
+> > 
+> >  in 3e9e0ca3 which would still prevent me testing at least some of
+> > these commits.  Seems to have been fixed *somewhere* in that series,
+> > otherwise 4f97615d would not have compiled.  Any suggestions for
+> > that ?  Alternatively would it be useful if I discovered which
+> > commits are affected for ds_cinfo, or should I just follow the good
+> > Dr.Pangloss and add V4 to my config ? ;-)
 > 
-> Shouldn't this have been "goto err_unpin;"?
+> Doesn't 4f97615d19 fix the fs/nfs/direct.c problem too? It should.
 > 
-> It's not a problem in the backport for 3.2, same code is in the original
-> patch, just noticed it seems a problem while looking at it; but by what
-> changelog says the default case is said to not trigger in "practice"
-> (catch programming error), so I think it doesn't pose a real issue in
-> practice.
+> Anyhow, if you can apply that on top of the commits that didn't compile,
+> and then continue the bisection, that would be great. We definitely do
+> want the !defined(CONFIG_NFS_V4) case to work in 3.5-final...
+> 
+ OK (I was assuming errors in different places were from different
+causes).  I'll do that after I've rerun rc3 without NFS_V4 with
+SUNRPC_DEBUG.  Thanks.
 
-You are right, it should be err_unpin. I sent a patch rectifying this.
-
-In practice, this should not happen, but still, better be safe than
-sorry. Thanks for catching that!
-
-Eugeni
+ĸen
+-- 
+das eine Mal als Tragödie, das andere Mal als Farce
