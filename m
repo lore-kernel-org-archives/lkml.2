@@ -1,81 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478Ab2FRL5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:57:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48431 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751120Ab2FRL5l (ORCPT
+	id S1751625Ab2FRL6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:58:10 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34886
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751120Ab2FRL6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:57:41 -0400
-Date: Mon, 18 Jun 2012 12:57:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: extend the fixed voltage regulator to accept
- voltage
-Message-ID: <20120618115738.GI3974@opensource.wolfsonmicro.com>
-References: <Pine.LNX.4.64.1206181017360.23884@axis700.grange>
- <20120618094145.GC3974@opensource.wolfsonmicro.com>
- <Pine.LNX.4.64.1206181145520.23884@axis700.grange>
- <20120618100657.GG3974@opensource.wolfsonmicro.com>
- <Pine.LNX.4.64.1206181212180.23884@axis700.grange>
+	Mon, 18 Jun 2012 07:58:08 -0400
+Date: Mon, 18 Jun 2012 07:58:04 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org, dhowells@redhat.com, mszeredi@suse.cz
+Subject: Re: [PATCH 00/21] vfs: atomic open v6 (part 2)
+Message-ID: <20120618115804.GA4048@infradead.org>
+References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
+ <20120610034921.GB30000@ZenIV.linux.org.uk>
+ <20120610111056.GD30000@ZenIV.linux.org.uk>
+ <20120610175605.GE30000@ZenIV.linux.org.uk>
+ <20120610222745.GG30000@ZenIV.linux.org.uk>
+ <20120617203755.GA31478@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HkMjoL2LAeBLhbFV"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1206181212180.23884@axis700.grange>
-X-Cookie: Your domestic life may be harmonious.
+In-Reply-To: <20120617203755.GA31478@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jun 17, 2012 at 04:37:55PM -0400, Christoph Hellwig wrote:
+> vfs.git#master fails xfstests 005 (Test symlinks & ELOOP) for me. I'll
+> try to get it bisected tomorrow, unless anyone gets to it earlier.
 
---HkMjoL2LAeBLhbFV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+this failure was caused by
 
-On Mon, Jun 18, 2012 at 12:13:58PM +0200, Guennadi Liakhovetski wrote:
-> On Mon, 18 Jun 2012, Mark Brown wrote:
->=20
-> > On Mon, Jun 18, 2012 at 11:52:13AM +0200, Guennadi Liakhovetski wrote:
+	"namei.c: let follow_link() do put_link() on failure"
 
-> Ok, I can add an explanation, why the name changes are necessary.
+and the reason was that we didn't do a proper path_put when failing
+inside follow_link().  Fix that should be squashed in below.  With this
+xfstests 049 is still failing, I'll look into that next.
 
-Please do split it into a separate patch.
 
-> > I suspect we should be using kstrdup()...
-
-> I wouldn't. It would add one more kmalloc(), which is avoided with my=20
-> approach, then it would make a memcpy(), which we also don't need, becaus=
-e=20
-> we have to print the id into the string.
-
-This is because you've decided to go and select a particular set of
-names for the supplies rather than letting people configure them which
-again isn't 100% obvious...
-
---HkMjoL2LAeBLhbFV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP3xesAAoJEBus8iNuMP3duiYP/jchpyD0uXn8nARXkGJXlLlL
-dAcOIckAMFFmwa2edJ7ntKb1yqnmsN0gdLO0Jxc5KeSwFgBPlVbJlfAl8rLlHw5L
-VtpSV64t0Nooa/c5inzKDZD8ZcBT6YrzaOGkKBgYOi5D8RfMHiqjn8DX1kh++6Yu
-STCTf0iLHn5JfT8oH3p0tllsT/c7w/zQXwMkacvEflm8tEmWEfK0Zy8SH97bwZK4
-ca1U5lNj75SVOX+NQCATO++1KwuCYWJbsrvaq+pOi+r/KF7pH+5CMHVTTkDqWoch
-ohRIFHvurR85LrBfuUAm2OX5qawklghqyqg3hHByyGsJajZkbGf+h6p55zRXi2FX
-mQ25IhT1d8SQ/rRoLM+1zjLZn8ntf83r+xDnw5qECh1FX+WCA+BOo4OGx9IswcRN
-gY4QUpJsA6O6phsqwr3jb6uXF7MKIsHDBnRs9UNCrdNWnzijqO2yIMDOFf7/7grK
-UhsIf14+OyVunQaosIbaWRSXxFWU4krybTAXyYcOgq1VQmLxYZkrH/yAZr+Pcwwd
-TURdhF+vjpTUORjC3bM1sHNrCZhavskbI2L+V2s3hTlz2/6mxQodhqLtl+k5Bbab
-KDhcZbKelV02UmPRzyQj63jdhu1+Ei00jCoRqmw0d8TBafI38mke98Gxh1fIjgk0
-TwqqrBmOlHrhFb10tJ6q
-=DMaA
------END PGP SIGNATURE-----
-
---HkMjoL2LAeBLhbFV--
+Index: linux-2.6/fs/namei.c
+===================================================================
+--- linux-2.6.orig/fs/namei.c	2012-06-18 12:17:08.084097978 +0200
++++ linux-2.6/fs/namei.c	2012-06-18 13:39:29.764224510 +0200
+@@ -597,18 +591,19 @@ static inline void put_link(struct namei
+ static __always_inline int
+ follow_link(struct path *link, struct nameidata *nd, void **p)
+ {
+-	int error;
+ 	struct dentry *dentry = link->dentry;
++	int error;
++	char *s;
+ 
+ 	BUG_ON(nd->flags & LOOKUP_RCU);
+ 
+ 	if (link->mnt == nd->path.mnt)
+ 		mntget(link->mnt);
+ 
+-	if (unlikely(current->total_link_count >= 40)) {
+-		path_put(&nd->path);
+-		return -ELOOP;
+-	}
++	error = -ELOOP;
++	if (unlikely(current->total_link_count >= 40))
++		goto out_put_nd_path;
++
+ 	cond_resched();
+ 	current->total_link_count++;
+ 
+@@ -616,31 +611,36 @@ follow_link(struct path *link, struct na
+ 	nd_set_link(nd, NULL);
+ 
+ 	error = security_inode_follow_link(link->dentry, nd);
+-	if (error) {
+-		path_put(&nd->path);
+-		return error;
+-	}
++	if (error)
++		goto out_put_nd_path;
+ 
+ 	nd->last_type = LAST_BIND;
+ 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
+ 	error = PTR_ERR(*p);
+-	if (!IS_ERR(*p)) {
+-		char *s = nd_get_link(nd);
+-		error = 0;
+-		if (s)
+-			error = __vfs_follow_link(nd, s);
+-		else if (nd->last_type == LAST_BIND) {
+-			nd->flags |= LOOKUP_JUMPED;
+-			nd->inode = nd->path.dentry->d_inode;
+-			if (nd->inode->i_op->follow_link) {
+-				/* stepped on a _really_ weird one */
+-				path_put(&nd->path);
+-				error = -ELOOP;
+-			}
++	if (IS_ERR(*p))
++		goto out_put_link;
++
++	error = 0;
++	s = nd_get_link(nd);
++	if (s) {
++		error = __vfs_follow_link(nd, s);
++	} else if (nd->last_type == LAST_BIND) {
++		nd->flags |= LOOKUP_JUMPED;
++		nd->inode = nd->path.dentry->d_inode;
++		if (nd->inode->i_op->follow_link) {
++			/* stepped on a _really_ weird one */
++			path_put(&nd->path);
++			error = -ELOOP;
+ 		}
+-		if (unlikely(error))
+-			put_link(nd, link, p);
+ 	}
++	if (unlikely(error))
++		put_link(nd, link, p);
++	return error;
++
++out_put_nd_path:
++	path_put(&nd->path);
++out_put_link:
++	path_put(link);
+ 	return error;
+ }
+ 
