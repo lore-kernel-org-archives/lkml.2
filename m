@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab2FRWB2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 18:01:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59189 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab2FRWB0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 18:01:26 -0400
-Date: Tue, 19 Jun 2012 08:01:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: linux-next: Tree for Jun 18 (kmsg problems)
-Message-Id: <20120619080109.b28055c1b32fb81027a9562b@canb.auug.org.au>
-In-Reply-To: <4FDF61A7.3050601@xenotime.net>
-References: <20120618165336.48345227c6b64c314326ae57@canb.auug.org.au>
-	<4FDF61A7.3050601@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__19_Jun_2012_08_01_09_+1000_eFMW1_t.IpEeMa0O"
+	id S1753729Ab2FRWDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 18:03:41 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:44691 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752036Ab2FRWDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 18:03:40 -0400
+X-IronPort-AV: E=Sophos;i="4.75,793,1330934400"; 
+   d="scan'208";a="656299065"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: nfs3 problem with -rc{2,3}
+Thread-Topic: nfs3 problem with -rc{2,3}
+Thread-Index: AQHNTMS9i2iatMLpKEGb4f4ZWuxoUpcAjD8AgAAA1ACAAAlRAIAACccAgAASfoCAAESLgIAAHiuAgAACygA=
+Date: Mon, 18 Jun 2012 22:03:24 +0000
+Message-ID: <1340057002.20570.31.camel@lade.trondhjem.org>
+References: <20120617200700.GA15348@milliways>
+	 <1340026956.2451.9.camel@lade.trondhjem.org>
+	 <1340027134.2451.12.camel@lade.trondhjem.org>
+	 <20120618141854.GA7962@milliways>
+	 <1340031234.2451.13.camel@lade.trondhjem.org>
+	 <20120618160005.GA10169@milliways> <20120618200525.GA15654@milliways>
+	 <20120618215323.GA17561@milliways>
+In-Reply-To: <20120618215323.GA17561@milliways>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <0ADF9212B610054F976A2C6C37D0E577@tahoe.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5IM3k77024293
 
---Signature=_Tue__19_Jun_2012_08_01_09_+1000_eFMW1_t.IpEeMa0O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-06-18 at 22:53 +0100, Ken Moffat wrote:
+> On Mon, Jun 18, 2012 at 09:05:25PM +0100, Ken Moffat wrote:
+> > 
+> >  I suppose I'll have to enable v4 in my configs.
+> > 
+>  Just to confirm, -rc3 with CONFIG_NFS_V4 added to my original
+> .config appears to work fine on nfs v3.
+> 
+>  I suppose I could apply 4f97615d19c370d1d907ef37f8bcd9c3672851ca on
+> top of the conmits which failed to compile without v4, if it is worth
+> investigating this ?  It certainly fixes the error in fs/nfs/read.c,
+> but I also had:
+> 
+> fs/nfs/direct.c:86:29: error: field ‚Äòds_cinfo‚Äô has incomplete type
+> 
+>  in 3e9e0ca3 which would still prevent me testing at least some of
+> these commits.  Seems to have been fixed *somewhere* in that series,
+> otherwise 4f97615d would not have compiled.  Any suggestions for
+> that ?  Alternatively would it be useful if I discovered which
+> commits are affected for ds_cinfo, or should I just follow the good
+> Dr.Pangloss and add V4 to my config ? ;-)
 
-[Adding Greg and Kay]
+Doesn't 4f97615d19 fix the fs/nfs/direct.c problem too? It should.
 
-On Mon, 18 Jun 2012 10:13:11 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
-e:
->
-> on x86_64:
->=20
-> arch/x86/kernel/reboot.o: In function `kmsg_dump_get_line':
-> reboot.c:(.text+0xf0): multiple definition of `kmsg_dump_get_line'
-> arch/x86/kernel/setup.o:setup.c:(.text+0x0): first defined here
-> arch/x86/kernel/reboot.o: In function `kmsg_dump_get_buffer':
-> reboot.c:(.text+0x100): multiple definition of `kmsg_dump_get_buffer'
-> arch/x86/kernel/setup.o:setup.c:(.text+0x10): first defined here
-> arch/x86/kernel/reboot.o: In function `kmsg_dump_rewind':
-> reboot.c:(.text+0x110): multiple definition of `kmsg_dump_rewind'
-> arch/x86/kernel/setup.o:setup.c:(.text+0x20): first defined here
+Anyhow, if you can apply that on top of the commits that didn't compile,
+and then continue the bisection, that would be great. We definitely do
+want the !defined(CONFIG_NFS_V4) case to work in 3.5-final...
 
-Caused by commit e2ae715d66bf ("kmsg - kmsg_dump() use iterator to
-receive log buffer content") from the driver-core.current tree.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-This was reported a few days ago.  Why is it not fixed yet?  Especially
-since it is in a branch that is supposedly "bug fixes"?
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__19_Jun_2012_08_01_09_+1000_eFMW1_t.IpEeMa0O
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP36UlAAoJEECxmPOUX5FEzCUP/2Y+t09o1af1KwFFyZawqJDp
-1sjtD0YqxqRqBQCFImSbDnqa8c58Qa1sVjpwbebqz0DVavzvEv9eW8X8PzevVp/l
-pYTTBh/1cpFttLPubeOqjFMYxGVB2VlR/QZvDotXZVNVKB2U4DE2C1HRj270/3j9
-AoFT5SDs+VlrL465oeQs/6M3S/3YWRfe1n7N+rDWgjIg9/LToHUn2FL6btMtBeD1
-dtS7SsVZAqTs4W4kY5vo7ue9bp2CrtDf8OiYRN/hSrAgZkeZ2y9/jF7neahYCcYU
-VAwNVO8xcuR02PxOcDudq63qCjSo16jE/QQpjlfDk+JMdxn6a3wTM0RPrHLuqbZv
-T1eFvUXQEbS5X4eOt3eFCiSTDlzuOrBZMtOjPgwvRVFDFCcjgkWBxc5Mj1dkEtvm
-yJ16jbY2EgHCzshKG5N6N6Dx4ezoEXHk4Bblgc0Qs+467ci+1l359pEOUgCVLoW4
-eoaczCGFC3MHTBeKtgwZiIHYslya7Ulud12e3m25+F0gaHvsS1AO3vkyhlBnVz9+
-8QJChPmB0LqmeAQ7w+zSSq/XP0PEI0WPvE82WPLgIDsXLWvVIJmnGMQH/Y/YGSRn
-fqF7OR9UEMADM3ki6QVQX/n+MxPCB3LGM6CZGbGUKhiXvkTi4LLs2jYrmwVYoq+Q
-kNhjuc7Kzzh5CiBKy7OW
-=t0/s
------END PGP SIGNATURE-----
-
---Signature=_Tue__19_Jun_2012_08_01_09_+1000_eFMW1_t.IpEeMa0O--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
