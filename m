@@ -1,79 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2FRUg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:36:29 -0400
-Received: from smtp-out-04.shaw.ca ([64.59.134.12]:52158 "EHLO
-	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab2FRUg2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:36:28 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=oQE6vNJ3d7oTBHj4PDKYH99BAdyPlqTp0xAtaaBYR4E= c=1 sm=1
- a=w6qfGBVJOdsA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=akHhUqyx16pf1Jmt3m6W8Q==:17 a=EPTh9yppnFHTqSPXL40A:9 a=CjuIK1q_8ugA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: XFS status update for May 2012
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20120618184344.GV4721@sgi.com>
-Date: Mon, 18 Jun 2012 14:36:27 -0600
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        xfs@oss.sgi.com, LKML List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <1005E3D5-D9F4-42F9-8BAE-9FB40A8AFA57@dilger.ca>
-References: <20120618120853.GA15480@infradead.org> <AD997E9D-2C1E-4EE4-80D7-2A5C998B6E9E@dilger.ca> <20120618184344.GV4721@sgi.com>
-To: Ben Myers <bpm@sgi.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1753309Ab2FRUhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:37:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35577 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751802Ab2FRUhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 16:37:24 -0400
+Date: Mon, 18 Jun 2012 22:37:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
+        minchan@gmail.com, kosaki.motohiro@gmail.com, hnaz@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH -mm 3/6] Fix the x86-64 page colouring code to take pgoff
+ into account and use that code as the basis for a generic page colouring
+ code.
+Message-ID: <20120618203720.GA4148@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+	linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+	peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
+	hnaz@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+	Rik van Riel <riel@surriel.com>
+References: <1340029878-7966-1-git-send-email-riel@redhat.com>
+ <1340029878-7966-4-git-send-email-riel@redhat.com>
+ <m2k3z48twb.fsf@firstfloor.org>
+ <4FDF5B3C.1000007@redhat.com>
+ <20120618181658.GA7190@x1.osrc.amd.com>
+ <4FDF7B5E.301@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FDF7B5E.301@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-18, at 12:43 PM, Ben Myers wrote:
-> On Mon, Jun 18, 2012 at 12:25:37PM -0600, Andreas Dilger wrote:
->> On 2012-06-18, at 6:08 AM, Christoph Hellwig wrote:
->>> May saw the release of Linux 3.4, including a decent sized XFS update.
->>> Remarkable XFS features in Linux 3.4 include moving over all metadata
->>> updates to use transactions, the addition of a work queue for the
->>> low-level allocator code to avoid stack overflows due to extreme stack
->>> use in the Linux VM/VFS call chain,
->> 
->> This is essentially a workaround for too-small stacks in the kernel,
->> which we've had to do at times as well, by doing work in a separate
->> thread (with a new stack) and waiting for the results?  This is a
->> generic problem that any reasonably-complex filesystem will have when
->> running under memory pressure on a complex storage stack (e.g. LVM +
->> iSCSI), but causes unnecessary context switching.
->> 
->> Any thoughts on a better way to handle this, or will there continue
->> to be a 4kB stack limit and hack around this with repeated kmalloc
->> on callpaths for any struct over a few tens of bytes, implementing
->> memory pools all over the place, and "forking" over to other threads
->> to continue the stack consumption for another 4kB to work around
->> the small stack limit?
+On Mon, Jun 18, 2012 at 03:02:54PM -0400, Rik van Riel wrote:
+> On 06/18/2012 02:16 PM, Borislav Petkov wrote:
+> >On Mon, Jun 18, 2012 at 12:45:48PM -0400, Rik van Riel wrote:
+> >>>What tree is that against? I cannot find x86 page colouring code in next
+> >>>or mainline.
+> >>
+> >>This is against mainline.
+> >
+> >Which mainline do you mean exactly?
+> >
+> >1/6 doesn't apply ontop of current mainline and by "current" I mean
+> >v3.5-rc3-57-g39a50b42f702.
 > 
-> FWIW, I think your characterization of the problem as a 'workaround for
-> too-small stacks in the kernel' is about right.  I don't think any of
-> the XFS folk were very happy about having to do this, but in the near
-> term it doesn't seem that we have a good alternative.  I'm glad to see
-> that there are others with the same pain, so maybe we can build some
-> support for upping the stack limit.
+> After pulling in the latest patches, including that
+> 39a50b... commit, all patches still apply here when
+> I type guilt push -a.
 
-Is this problem mostly hit in XFS with dedicated service threads like
-kNFSd and similar, or is it a problem with any user thread perhaps
-entering the filesystem for memory reclaim inside an already-deep
-stack?
+That's strange.
 
-For dedicated service threads I was wondering about allocating larger
-stacks for just those processes (16kB would be safe), and then doing
-something special at thread startup to use this larger stack.  If
-the problem is for any potential thread, then the solution would be
-much more complex in all likelihood.
+I'm also pulling from
 
-Cheers, Andreas
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6
 
+Btw, if I had local changes, the top commit id would've changed, right?
+So I wouldn't have had 39a50b anymore.
 
+Just in case, I tried applying 1/6 on another repository and it still
+doesn't apply:
 
+$ patch -p1 --dry-run -i /tmp/riel.01
+patching file include/linux/mm_types.h
+Hunk #1 succeeded at 300 (offset -7 lines).
+patching file mm/mmap.c
+Hunk #2 succeeded at 206 with fuzz 1 (offset -45 lines).
+Hunk #3 FAILED at 398.
+Hunk #4 FAILED at 461.
+Hunk #5 succeeded at 603 (offset -57 lines).
+Hunk #6 succeeded at 1404 (offset -66 lines).
+Hunk #7 succeeded at 1441 (offset -66 lines).
+Hunk #8 succeeded at 1528 (offset -66 lines).
+Hunk #9 succeeded at 1570 (offset -66 lines).
+Hunk #10 FAILED at 1908.
+Hunk #11 FAILED at 2093.
+4 out of 11 hunks FAILED -- saving rejects to file mm/mmap.c.rej
 
+riel.01 is the mail saved from mutt so it should be fine.
 
+Now let's look at the first failing hunk:
+
+Mainline has:
+
+void validate_mm(struct mm_struct *mm)
+{
+	int bug = 0;
+	int i = 0;
+	struct vm_area_struct *tmp = mm->mmap;
+	while (tmp) {
+		tmp = tmp->vm_next;
+		i++;
+	}
+	if (i != mm->map_count)
+		printk("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
+	i = browse_rb(&mm->mm_rb);
+	if (i != mm->map_count)
+		printk("map_count %d rb %d\n", mm->map_count, i), bug = 1;
+	BUG_ON(bug);
+}
+
+--
+and your patch has some new ifs in it:
+
+@@ -386,12 +398,16 @@ void validate_mm(struct mm_struct *mm)
+ 	int bug = 0;
+ 	int i = 0;
+ 	struct vm_area_struct *tmp = mm->mmap;
++	unsigned long highest_address = 0;
+ 	while (tmp) {
+ 		if (tmp->free_gap != max_free_space(&tmp->vm_rb))
+ 			printk("free space %lx, correct %lx\n", tmp->free_gap, max_free_space(&tmp->vm_rb)), bug = 1;
+
+			^^^^^^^^^^^^^^
+
+I think this if-statement is the problem. It is not present in mainline
+but this patch doesn't add it so some patch earlier than that adds it
+which is probably in your queue?
+
++		highest_address = tmp->vm_end;
+ 		tmp = tmp->vm_next;
+ 		i++;
+ 	}
++	if (highest_address != mm->highest_vma)
++		printk("mm->highest_vma %lx, found %lx\n", mm->highest_vma, highest_address), bug = 1;
+
+ 	if (i != mm->map_count)
+ 		printk("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
+ 	i = browse_rb(&mm->mm_rb);
+--
+
+I haven't looked at the other failing hunks...
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
