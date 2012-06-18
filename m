@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab2FRIu4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 04:50:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47951 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab2FRIuz (ORCPT
+	id S1753174Ab2FRIvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 04:51:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40410 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2FRIvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 04:50:55 -0400
-Date: Mon, 18 Jun 2012 10:50:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
- hotplug threads
-In-Reply-To: <20120618084713.GC1946@moon>
-Message-ID: <alpine.LFD.2.02.1206181050270.3086@ionos>
-References: <20120613102823.373180763@linutronix.de> <20120613105815.206105518@linutronix.de> <20120618084713.GC1946@moon>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 18 Jun 2012 04:51:38 -0400
+Date: Mon, 18 Jun 2012 01:50:56 -0700
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-cc359d180fa9c25a4c1819f17e07a422d788353d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, ananth@in.ibm.com, anton@redhat.com,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, ananth@in.ibm.com, anton@redhat.com,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20120615154325.GA9568@redhat.com>
+References: <20120615154325.GA9568@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] uprobes: __copy_insn() should ensure a_ops->
+ readpage != NULL
+Git-Commit-ID: cc359d180fa9c25a4c1819f17e07a422d788353d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 18 Jun 2012 01:51:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jun 2012, Cyrill Gorcunov wrote:
-> On Wed, Jun 13, 2012 at 11:00:54AM -0000, Thomas Gleixner wrote:
-> > +
-> > +static int
-> > +__smpboot_create_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
-> > +{
-> > +	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
-> > +	struct smpboot_thread_data *td;
-> > +
-> > +	if (tsk)
-> > +		return 0;
-> > +
-> > +	td = kzalloc_node(sizeof(*td), GFP_KERNEL, cpu_to_node(cpu));
-> > +	if (!td)
-> > +		return -ENOMEM;
-> > +	td->cpu = cpu;
-> > +	td->ht = ht;
-> > +
-> > +	tsk = kthread_create_on_cpu(ht->thread_fn, td, cpu, ht->thread_comm);
-> > +	if (IS_ERR(tsk))
-> > +		return PTR_ERR(tsk);
-> > +
-> 
-> Hi Thomas, I might be missing something obvious but will not we leak td
-> allocated here if kthread_create_on_cpu failed?
+Commit-ID:  cc359d180fa9c25a4c1819f17e07a422d788353d
+Gitweb:     http://git.kernel.org/tip/cc359d180fa9c25a4c1819f17e07a422d788353d
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Fri, 15 Jun 2012 17:43:25 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sat, 16 Jun 2012 09:10:42 +0200
 
-Yes. Good catch!
+uprobes: __copy_insn() should ensure a_ops->readpage != NULL
 
-Thanks,
+__copy_insn() blindly calls read_mapping_page(), this will crash
+the kernel if ->readpage == NULL, add the necessary check. For
+example, hugetlbfs_aops->readpage is NULL. Perhaps we should
+change read_mapping_page() instead.
 
-	tglx
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120615154325.GA9568@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/events/uprobes.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index f0d0453..604930b 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -610,6 +610,9 @@ __copy_insn(struct address_space *mapping, struct vm_area_struct *vma, char *ins
+ 	if (!filp)
+ 		return -EINVAL;
+ 
++	if (!mapping->a_ops->readpage)
++		return -EIO;
++
+ 	idx = (unsigned long)(offset >> PAGE_CACHE_SHIFT);
+ 	off1 = offset &= ~PAGE_MASK;
+ 
