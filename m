@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab2FRQY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 12:24:26 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752578Ab2FRQTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 12:19:24 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
-        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
-        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
-        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 02/22] UBI: Fastmap: Fix NULL pointer bug
-Date: Mon, 18 Jun 2012 18:18:45 +0200
-Message-Id: <1340036345-96726-3-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1340036345-96726-1-git-send-email-richard@nod.at>
-References: <1340036345-96726-1-git-send-email-richard@nod.at>
+	id S1753237Ab2FRQ3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 12:29:09 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:47541 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633Ab2FRQ3H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 12:29:07 -0400
+Date: Mon, 18 Jun 2012 18:28:55 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, John Stultz <johnstul@us.ibm.com>,
+        stable@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -stable]  ntp: Correct TAI offset during leap second
+Message-ID: <20120618162854.GA3111@netboy.at.omicron.at>
+References: <4FDB8563.3030805@us.ibm.com>
+ <1339944223.4942.240.camel@deadeye.wl.decadent.org.uk>
+ <20120617164751.GJ12429@burratino>
+ <20120617173456.GA3684@netboy.at.omicron.at>
+ <1340027711.9372.29.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340027711.9372.29.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/fastmap.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+On Mon, Jun 18, 2012 at 02:55:11PM +0100, Ben Hutchings wrote:
+> On Sun, 2012-06-17 at 19:34 +0200, Richard Cochran wrote:
+> > The offset should change upon entering state OOP, so something like
+> > the following (untested) patch should fix it for 3.2.9.
+> [...]
+> 
+> It looks like this patch just changes the offset reported by adjtimex()
+> during an inserted second; is that right?
 
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index 8b033e5..5bbf1e3 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -1290,11 +1290,14 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 				goto err;
- 			}
- 
--			tmp_e->pnum = old_fm->e[0]->pnum;
--			tmp_e->ec = old_fm->e[0]->ec;
-+			new_fm->e[0]->pnum = old_fm->e[0]->pnum;
-+			new_fm->e[0]->ec = old_fm->e[0]->ec;
- 		} else {
- 			/* we've got a new early PEB, return the old one */
- 			ubi_wl_put_fm_peb(ubi, old_fm->e[0], 0);
-+
-+			new_fm->e[0]->pnum = tmp_e->pnum;
-+			new_fm->e[0]->ec = tmp_e->ec;
- 		}
- 
- 		/* return all other fastmap block to the wl system */
-@@ -1307,10 +1310,10 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 
- 			goto err;
- 		}
--	}
- 
--	new_fm->e[0]->pnum = tmp_e->pnum;
--	new_fm->e[0]->ec = tmp_e->ec;
-+		new_fm->e[0]->pnum = tmp_e->pnum;
-+		new_fm->e[0]->ec = tmp_e->ec;
-+	}
- 
- 	if (new_fm->used_blocks > UBI_FM_MAX_BLOCKS) {
- 		ubi_err("fastmap too large");
--- 
-1.7.6.5
+Right, nothing really terrible will happen. The worst that I can
+imagine is that ntpd will set the new TAI offset during OOP, and then
+the kernel will add one to it, resulting in the TAI offset being off
+by one.
 
+But I really doubt any software makes use of this information.
+
+> Other than that, is 3.2.y likely to be OK?  Is there a good way to test
+> that in advance; does
+> <http://codemonkey.org.uk/2012/06/15/testing-leap-code/> look
+> reasonable?
+
+Well, if you want to wait all night then that is one way to do it.
+Here is a little test program I have been using:
+
+   https://github.com/richardcochran/leap
+
+Thanks,
+Richard
