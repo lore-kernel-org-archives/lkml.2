@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab2FRIcx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 04:32:53 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56585 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab2FRIcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 04:32:52 -0400
-Message-ID: <4FDEE7B0.9070208@linaro.org>
-Date: Mon, 18 Jun 2012 09:32:48 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1752625Ab2FRIfm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 04:35:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751300Ab2FRIfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 04:35:40 -0400
+Message-ID: <4FDEE95A.8050605@redhat.com>
+Date: Mon, 18 Jun 2012 10:39:54 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall
- time
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <201206121259.38807.arnd@arndb.de> <4FD742C9.7090603@linaro.org> <201206121449.22978.arnd@arndb.de>
-In-Reply-To: <201206121449.22978.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Simon Raffeiner <sturmflut@lieberbiber.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [ 60/69] usb-storage: Add 090c:1000 to unusal-devs
+References: <20120617175950.030711074@decadent.org.uk>
+In-Reply-To: <20120617175950.030711074@decadent.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/12 15:49, Arnd Bergmann wrote:
-> On Tuesday 12 June 2012, Lee Jones wrote:
->> But your suggestion above involves some heavy refactoring of how Device
->> Tree works. Meanwhile the ab8500 will not work as an IRQ controller
->> until we either complete the work or use the same solution as we did for
->> the Nomadik GPIO controller. I think for now at least we should continue
->> to work on enablement and leave the 'nice to have's until last. We are
->> doing nothing new here, just bringing the ab8500 IRQ controller into
->> line with the Nomadik one.
+Hi,
+
+I'm not sure if this is needed with 3.2, it is needed with 3.4 because
+recently the usb-storage driver was changed to report the supported
+scsi level as reported by the device, rather then always report a
+scsi level of 2. This change causes sd.c to try READ_CAPACITY(16)
+first, which foobars up not only this one device, but as it turns
+out a lot of others too, so we're working on another fix
+(and I believe that 3.2 is unaffected).
+
+With that said, this patch certainly cannot hurt in any way...
+
+Regards,
+
+Hans
+
+
+On 06/17/2012 08:00 PM, Ben Hutchings wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
 >
-> Right, I didn't say we should not take your patch, but we should be
-> aware that it's not the solution we want to use in the long run.
-
-So is it only for this and the other one to go in now?
-
-If so, can I have acks for them please, so I may place them in my 
-up-coming pull-request?
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> ------------------
+>
+> From: Hans de Goede<hdegoede@redhat.com>
+>
+> commit afff07e61a5243e14ee3f0a272a0380cd744a8a3 upstream.
+>
+> This device gives a bogus answer to get_capacity(16):
+> [ 8628.278614] scsi 8:0:0:0: Direct-Access     USB 2.0  USB Flash Drive  1100 PQ: 0 ANSI: 4
+> [ 8628.279452] sd 8:0:0:0: Attached scsi generic sg4 type 0
+> [ 8628.280338] sd 8:0:0:0: [sdd] 35747322042253313 512-byte logical blocks: (18.3 EB/15.8 EiB)
+>
+> So set the quirk flag to avoid using get_capacity(16) with it:
+> [11731.386014] usb-storage 2-1.6:1.0: Quirks match for vid 090c pid 1000: 80000
+> [11731.386075] scsi9 : usb-storage 2-1.6:1.0
+> [11731.386172] usbcore: registered new interface driver usb-storage
+> [11731.386175] USB Mass Storage support registered.
+> [11732.387394] scsi 9:0:0:0: Direct-Access     USB 2.0  USB Flash Drive  1100 PQ: 0 ANSI: 4
+> [11732.388462] sd 9:0:0:0: Attached scsi generic sg3 type 0
+> [11732.389432] sd 9:0:0:0: [sdc] 7975296 512-byte logical blocks: (4.08 GB/3.80 GiB)
+>
+> Which makes the capacity look a lot more sane :)
+>
+> Signed-off-by: Hans de Goede<hdegoede@redhat.com>
+> Tested-by: Simon Raffeiner<sturmflut@lieberbiber.de>
+> Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+> Signed-off-by: Ben Hutchings<ben@decadent.org.uk>
+> ---
+>   drivers/usb/storage/unusual_devs.h |    7 +++++++
+>   1 file changed, 7 insertions(+)
+>
+> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+> index 1719886..caf22bf 100644
+> --- a/drivers/usb/storage/unusual_devs.h
+> +++ b/drivers/usb/storage/unusual_devs.h
+> @@ -1107,6 +1107,13 @@ UNUSUAL_DEV( 0x090a, 0x1200, 0x0000, 0x9999,
+>   		USB_SC_RBC, USB_PR_BULK, NULL,
+>   		0 ),
+>
+> +/* Feiya QDI U2 DISK, reported by Hans de Goede<hdegoede@redhat.com>  */
+> +UNUSUAL_DEV( 0x090c, 0x1000, 0x0000, 0xffff,
+> +		"Feiya",
+> +		"QDI U2 DISK",
+> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+> +		US_FL_NO_READ_CAPACITY_16 ),
+> +
+>   /* aeb */
+>   UNUSUAL_DEV( 0x090c, 0x1132, 0x0000, 0xffff,
+>   		"Feiya",
+>
+>
