@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab2FRRra (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 13:47:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45846 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab2FRRr3 (ORCPT
+	id S1752768Ab2FRRu4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 13:50:56 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39480 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab2FRRuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 13:47:29 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] pinctrl/pinctrl-u300: remove unused variable i
-Date: Mon, 18 Jun 2012 23:17:18 +0530
-Message-Id: <1340041638-30233-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 18 Jun 2012 13:50:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <s5h8vfkn2bb.wl%tiwai@suse.de>
+References: <1339444731-15678-1-git-send-email-elezegarcia@gmail.com>
+	<1339444731-15678-2-git-send-email-elezegarcia@gmail.com>
+	<s5h8vfkn2bb.wl%tiwai@suse.de>
+Date: Mon, 18 Jun 2012 14:50:53 -0300
+Message-ID: <CALF0-+Ukw2+whn5zpA4R6PjN0BoLm5aUhQKUNQt0rpWM1vNXFA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] swarm_cs4297: Rename AC97 registers to use
+ sound/ac97_codec.h definitions
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Ralf Baechle <ralf@linux-mips.org>, Jaroslav Kysela <perex@perex.cz>,
+        Clemens Ladisch <clemens@ladisch.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the unused variable warning was thrown when compiled using the
-gcc for ARM (arm-linux-gnueabihf-gcc) with u300_defconfig selected,
+Hi Takashi,
 
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- u300_defconfig
+On Mon, Jun 18, 2012 at 11:04 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Mon, 11 Jun 2012 16:58:50 -0300,
+> Ezequiel Garcia wrote:
+>>
+>> This patch removes the last usage of linux/ac97_codec.h
+>> by renaming ac97 registers to use sound/ac97_codec.h definitions.
+>> This will enable us to remove linux/ac97_codec.h.
+>>
+>> Not even compilation tested.
+>>
+>> Cc: Ralf Baechle <ralf@linux-mips.org>
+>> Cc: Jaroslav Kysela <perex@perex.cz>
+>> Cc: Takashi Iwai <tiwai@suse.de>
+>> Cc: Clemens Ladisch <clemens@ladisch.de>
+>> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+>> ---
+>> Hi all,
+>>
+>> This patch is important so we can remove linux/ac97_codec.h usage.
+>> Since this driver is mips related, I can't test it until I install
+>> a mips toolchain.
+>> If someone can compile this for me, or even test it with real
+>> hardware I think it would be better.
+>> If not then I can install a mips toolchain and compile it myself,
+>> but I won't be able to test it on real hardware.
+>>
+>> This patch should be treated with carefully and be applied only
+>> if someone manages to test it.
+>
+> A slight concern by this change is that the driver includes
+> sound/ac97_codec.h although it's based on OSS framework.
+> sound/ac97_codec.h is the header for ALSA ac97 structs, and this can't
+> be mixed up with OSS.
+>
+> If the intention is only about AC97 register definition, we may split
+> ac97_codec.h into ac97_regs.h and ac97_codecs.h where the former
+> contains only the register definitions (thus framework-neutral) and
+> the latter includes the former.
+>
+>
 
-and then
+Yes, splitting sounds good to me. It could be useful for other ac97
+drivers (e.g. em28xx).
 
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+I wonder if anyone is using this swarm driver (and/or can test).
 
-gives the following warn,
+Also, is there any date scheduled for OSS removal?
 
-drivers/pinctrl/pinctrl-u300.c: In function ‘u300_pmx_remove’:
-drivers/pinctrl/pinctrl-u300.c:1178:6: warning: unused variable ‘i’ [-Wunused-variable]
-
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/pinctrl/pinctrl-u300.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/pinctrl/pinctrl-u300.c b/drivers/pinctrl/pinctrl-u300.c
-index 49b91c2..2ba13c5 100644
---- a/drivers/pinctrl/pinctrl-u300.c
-+++ b/drivers/pinctrl/pinctrl-u300.c
-@@ -1175,7 +1175,6 @@ out_no_resource:
- static int __devexit u300_pmx_remove(struct platform_device *pdev)
- {
- 	struct u300_pmx *upmx = platform_get_drvdata(pdev);
--	int i;
- 
- 	pinctrl_unregister(upmx->pctl);
- 	iounmap(upmx->virtbase);
--- 
-1.7.9.5
-
+Thanks for reviewing,
+Ezequiel.
