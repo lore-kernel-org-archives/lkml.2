@@ -1,65 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab2FRJ6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 05:58:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56203 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751496Ab2FRJ6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 05:58:44 -0400
-Date: Mon, 18 Jun 2012 10:58:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFC] regulator: core: Support table based mapping in
- regulator_set_voltage_time_sel
-Message-ID: <20120618095842.GF3974@opensource.wolfsonmicro.com>
-References: <1339985488.11918.3.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7mxbaLlpDEyR1+x6"
-Content-Disposition: inline
-In-Reply-To: <1339985488.11918.3.camel@phoenix>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752815Ab2FRKAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:00:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65256 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864Ab2FRKAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:00:16 -0400
+Date: Mon, 18 Jun 2012 19:00:14 +0900 (JST)
+Message-Id: <20120618.190014.158443124058398316.yamato@redhat.com>
+In-Reply-To: <20120615080007.GD7205@aemeltch-MOBL1>
+References: <20120615080007.GD7205@aemeltch-MOBL1>
+From: Masatake YAMATO <yamato@redhat.com>
+Subject: [PATCH v2 1/8] /proc/net/ entries for bluetooth protocols
+To: linux-kernel@vger.kernel.org
+Cc: linux-bluetooth@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(I reflected the result of reviewing by Andrei.)
 
---7mxbaLlpDEyR1+x6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+lsof command can tell the type of socket processes are using.
+Internal lsof uses inode numbers on socket fs to resolve the type of
+sockets. Files under /proc/net/, such as tcp, udp, unix, etc provides
+such inode information.
 
-On Mon, Jun 18, 2012 at 10:11:28AM +0800, Axel Lin wrote:
-> For table based mapping, we can calculate voltage difference by below equation:
-> abs(rdev->desc->volt_table[new_selector] - rdev->desc->volt_table[old_selector])
+Unfortunately bluetooth related protocols don't provide such inode
+information. This patch series introduces /proc/net files for the protocols.
 
-I've applied this since it's incrementally an improvement but really the
-fix here should be to just do this in terms of list_voltage() - call
-that on the two selectors and then do the multiplication.
+This patch against af_bluetooth.c provides facility to the implementation
+of protocols. This patch extends bt_sock_list and introduces two exported
+function bt_procfs_init, bt_procfs_cleanup.
 
---7mxbaLlpDEyR1+x6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The type bt_sock_list is already used in some of implementation of
+protocols. bt_procfs_init prepare seq_operations which converts
+protocol own bt_sock_list data to protocol own proc entry when the
+entry is accessed.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+What I, lsof user, need is just inode number of bluetooth
+socket. However, people may want more information. The bt_procfs_init
+takes a function pointer for customizing the show handler of
+seq_operations.
 
-iQIcBAEBAgAGBQJP3vuyAAoJEBus8iNuMP3d3psP/RV4Qso8D+RYq0nKsWCAGP9I
-BDpIUjWENFA4yRwKCFBV4HCFK5uC9JSWVxB70leasWNF3aZJW7GqZLOiisM1I1Bu
-4qvG+h30dcih9MSkAnBR+t42otlDlvsl73bUtsq4ojbhy+cyUWTFW81ZiciAwt/6
-utMyYxPkP4vA3IoHBBDY3IkB9jYSEK8+rub4oiLvlgQrVxyfaDosliSFF7HOWVmG
-guAekfy8YUqmi/iNQnxALZowSfBe8AiUjYYm8cfiDmlT/KPnnzz5e6kBxw9HChFp
-R3iP8C7vXqO1OeWmT+wQ1dVed2dgiXDsSlLCQFgaeGwL/CNRdc4xXghLPiIs5Mvx
-0EvCr/IFdd55BnKVxiODfDyLONklGJR3C8DdwXZejULT5JTGOuOoFszjHqmmEG2h
-k4rko9xl0tc+9rbqEknTb3H2z6Pi4CJq10pXKDnszVupoinpYpPpSBKjo36kNQbF
-X0MrjJP9Pgkp3Pcy54C6y+IJyz04Nwqhq/9xv8hL6BEpHl6Ct0MCYSm5NHfaFju3
-t45heUMlFlBrY4Z9IAL+Czkj+Gp95m3uQKeVaWLAkHNoqwaXql3z2SvK2zBiQyQ+
-/h3z+cPXlyUVd1vDR5LPcMNDu8eUPOjNuuEuf5nBndQD4RV9KIAGmXvEAxemAGIF
-2RmCWcjk1h8V8Kh21SXi
-=/FSo
------END PGP SIGNATURE-----
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+---
+ include/net/bluetooth/bluetooth.h |   10 +++
+ net/bluetooth/af_bluetooth.c      |  136 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 146 insertions(+)
 
---7mxbaLlpDEyR1+x6--
+diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
+index 961669b..9c44977 100644
+--- a/include/net/bluetooth/bluetooth.h
++++ b/include/net/bluetooth/bluetooth.h
+@@ -30,6 +30,7 @@
+ #include <linux/list.h>
+ #include <linux/poll.h>
+ #include <net/sock.h>
++#include <linux/seq_file.h>
+ 
+ #ifndef AF_BLUETOOTH
+ #define AF_BLUETOOTH	31
+@@ -205,6 +206,10 @@ enum {
+ struct bt_sock_list {
+ 	struct hlist_head head;
+ 	rwlock_t          lock;
++#ifdef CONFIG_PROC_FS
++        struct file_operations   fops;
++        int (* custom_seq_show)(struct seq_file *, void *);
++#endif
+ };
+ 
+ int  bt_sock_register(int proto, const struct net_proto_family *ops);
+@@ -293,6 +298,11 @@ extern void hci_sock_cleanup(void);
+ extern int bt_sysfs_init(void);
+ extern void bt_sysfs_cleanup(void);
+ 
++extern int  bt_procfs_init(struct module* module, struct net *net, const char *name, 
++			   struct bt_sock_list* sk_list,
++			   int (* seq_show)(struct seq_file *, void *));
++extern void bt_procfs_cleanup(struct net *net, const char *name);
++
+ extern struct dentry *bt_debugfs;
+ 
+ int l2cap_init(void);
+diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
+index 46e7f86..679cdd0 100644
+--- a/net/bluetooth/af_bluetooth.c
++++ b/net/bluetooth/af_bluetooth.c
+@@ -542,6 +542,142 @@ int bt_sock_wait_state(struct sock *sk, int state, unsigned long timeo)
+ }
+ EXPORT_SYMBOL(bt_sock_wait_state);
+ 
++#ifdef CONFIG_PROC_FS
++struct bt_seq_state {
++	struct bt_sock_list *l;
++};
++
++static void *bt_seq_start(struct seq_file *seq, loff_t *pos)
++{
++	struct bt_seq_state *s = seq->private;
++	struct bt_sock_list *l = s->l;
++
++	read_lock(&l->lock);
++	return seq_hlist_start_head(&l->head, *pos);
++}
++
++static void *bt_seq_next(struct seq_file *seq, void *v, loff_t *pos)
++{
++	struct bt_seq_state *s = seq->private;
++	struct bt_sock_list *l = s->l;
++
++	return seq_hlist_next(v, &l->head, pos);
++}
++
++static void bt_seq_stop(struct seq_file *seq, void *v)
++{
++	struct bt_seq_state *s = seq->private;
++	struct bt_sock_list *l = s->l;
++
++	read_unlock(&l->lock);
++}
++
++static int bt_seq_show(struct seq_file *seq, void *v)
++{
++	struct sock *sk;
++	struct bt_sock *bt;
++	struct bt_seq_state *s = seq->private;
++	struct bt_sock_list *l = s->l;
++	bdaddr_t src_baswapped, dst_baswapped;
++
++	if (v == SEQ_START_TOKEN) {
++		seq_puts(seq ,"sk               RefCnt Rmem   Wmem   User   Inode  Src Dst Parent");
++
++		if (l->custom_seq_show) {
++			seq_putc(seq, ' ');
++			l->custom_seq_show(seq, v);
++		}
++
++		seq_putc(seq, '\n');
++	} else {
++		sk = sk_entry(v);
++		bt = bt_sk(sk);
++		baswap(&src_baswapped, &bt->src);
++		baswap(&dst_baswapped, &bt->dst);
++
++		seq_printf(seq, "%pK %-6d %-6u %-6u %-6u %-6lu %pM %pM %-6lu",
++			   sk,
++			   atomic_read(&sk->sk_refcnt),
++			   sk_rmem_alloc_get(sk),
++			   sk_wmem_alloc_get(sk),
++			   sock_i_uid(sk),
++			   sock_i_ino(sk),
++			   &src_baswapped,
++			   &dst_baswapped,
++			   bt->parent? sock_i_ino(bt->parent): 0LU);
++
++		if (l->custom_seq_show) {
++			seq_putc(seq, ' ');
++			l->custom_seq_show(seq, v);
++		}
++
++		seq_putc(seq, '\n');
++	}
++	return 0;
++}
++
++static struct seq_operations bt_seq_ops = {
++	.start = bt_seq_start,
++	.next  = bt_seq_next,
++	.stop  = bt_seq_stop,
++	.show  = bt_seq_show,
++};
++
++static int bt_seq_open(struct inode *inode, struct file *file)
++{
++	struct bt_sock_list *sk_list;
++	struct bt_seq_state *s;
++
++	sk_list = PDE(inode)->data;
++	s = __seq_open_private(file, &bt_seq_ops,
++			       sizeof(struct bt_seq_state));
++	if (s == NULL)
++		return -ENOMEM;
++	 
++	s->l = sk_list;
++	return 0;
++}
++
++int bt_procfs_init(struct module* module, struct net *net, const char *name, struct bt_sock_list* sk_list,
++		   int (* seq_show)(struct seq_file *, void *))
++{
++	struct proc_dir_entry * pde;
++
++	sk_list->custom_seq_show = seq_show;
++
++	sk_list->fops.owner     = module;
++	sk_list->fops.open      = bt_seq_open;
++	sk_list->fops.read      = seq_read;
++	sk_list->fops.llseek    = seq_lseek;
++	sk_list->fops.release   = seq_release_private;
++	
++	pde = proc_net_fops_create(net, name, 0, &sk_list->fops);
++	if (pde == NULL)
++		return -ENOMEM;
++
++	pde->data = sk_list;
++	
++	return 0;
++}
++
++void bt_procfs_cleanup(struct net *net, const char *name)
++{
++	proc_net_remove(net, name);
++}
++#else
++int bt_procfs_init(struct module* module, struct net *net, const char *name, struct bt_sock_list* sk_list,
++		   int (* seq_show)(struct seq_file *, void *))
++{
++	return 0;
++}
++
++void bt_procfs_cleanup(struct net *net, const char *name)
++{
++}
++#endif
++EXPORT_SYMBOL(bt_procfs_init);
++EXPORT_SYMBOL(bt_procfs_cleanup);
++
+ static struct net_proto_family bt_sock_family_ops = {
+ 	.owner	= THIS_MODULE,
+ 	.family	= PF_BLUETOOTH,
+-- 
+1.7.10.2
+
