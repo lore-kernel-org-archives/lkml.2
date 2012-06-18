@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2FRRQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 13:16:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55786 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752736Ab2FRRQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 13:16:04 -0400
-Date: Mon, 18 Jun 2012 20:15:50 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv7 3/8] kvm_para: guest side for eoi avoidance
-Message-ID: <20120618171550.GA28797@redhat.com>
-References: <cover.1339681762.git.mst@redhat.com>
- <4c5bedc5cb55dcea1676b913a0f6da3f04b03145.1339681762.git.mst@redhat.com>
- <4FDF3874.2050208@redhat.com>
- <20120618145041.GE26540@redhat.com>
- <4FDF42E7.8050902@redhat.com>
+	id S1752763Ab2FRRSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 13:18:22 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:49059 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab2FRRSV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 13:18:21 -0400
+Message-ID: <201206181718.q5IHIKne030367@farm-0010.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 18 Jun 2012 13:11:21 -0400
+Subject: [PATCH] arch/tile: big-endian: properly bswap instruction bundles when backtracing
+To: <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FDF42E7.8050902@redhat.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 06:01:59PM +0300, Avi Kivity wrote:
-> On 06/18/2012 05:50 PM, Michael S. Tsirkin wrote:
-> > 
-> >> >  
-> >> > +/* size alignment is implied but just to make it explicit. */
-> >> > +static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) __aligned(2) =
-> >> > +	KVM_PV_EOI_DISABLED;
-> >> 
-> >> You're actually breaking the alignment.  ulong has 8 byte alignment
-> >> sometimes and you can make it cross cache boundary this way.
-> > 
-> > No, if you look at the definition of __aligned
-> > you will see that it limits the alignment from below.
-> > Compiler still applies the natural size alignment.
-> > You are not the first to get confused. So I wonder: is it better
-> > to add a comment or simply remove __aligned here.
-> 
-> Both.
+Instruction bundles are always little-endian, even when running in
+big-endian mode.  I missed this internal bug fix when cherry-picking
+the big-endian code to return to the community.
 
-Will do.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/backtrace.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-> >> >  
-> >> > +	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI)) {
-> >> > +		__get_cpu_var(kvm_apic_eoi) = 0;
-> >> > +		wrmsrl(MSR_KVM_PV_EOI_EN, __pa(&__get_cpu_var(kvm_apic_eoi)) |
-> >> > +		       KVM_MSR_ENABLED);
-> >> 
-> >> Bad formatting.
-> > 
-> > I guess temporary will make it prettier.
-> > 	unsigned long pa;
-> > 	__get_cpu_var(kvm_apic_eoi) = 0;
-> > 	pa = __pa(&__get_cpu_var(kvm_apic_eoi)) | KVM_MSR_ENABLED;
-> > 	wrmsrl(MSR_KVM_PV_EOI_EN, pa);
-> 
-> That, or
-> 
-> +		wrmsrl(MSR_KVM_PV_EOI_EN,
-> +                      __pa(&__get_cpu_var(kvm_apic_eoi)) | _ENABLED);
-> 
-> You have an argument split over two lines with no helpful indentation to
-> show this.
-> 
-> >> 
-> >> 
-> >> Please check that the kexec path also disables pveoi.
-> > 
-> > The chunk in kvm_pv_guest_cpu_reboot does this, doesn't it?
-> 
-> Dunno, does it?
+diff --git a/arch/tile/kernel/backtrace.c b/arch/tile/kernel/backtrace.c
+index 9092ce8..f8b74ca 100644
+--- a/arch/tile/kernel/backtrace.c
++++ b/arch/tile/kernel/backtrace.c
+@@ -14,6 +14,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/string.h>
++#include <asm/byteorder.h>
+ #include <asm/backtrace.h>
+ #include <asm/tile-desc.h>
+ #include <arch/abi.h>
+@@ -336,8 +337,12 @@ static void find_caller_pc_and_caller_sp(CallerLocation *location,
+ 				bytes_to_prefetch / sizeof(tile_bundle_bits);
+ 		}
+ 
+-		/* Decode the next bundle. */
+-		bundle.bits = prefetched_bundles[next_bundle++];
++		/*
++		 * Decode the next bundle.
++		 * TILE always stores instruction bundles in little-endian
++		 * mode, even when the chip is running in big-endian mode.
++		 */
++		bundle.bits = le64_to_cpu(prefetched_bundles[next_bundle++]);
+ 		bundle.num_insns =
+ 			parse_insn_tile(bundle.bits, pc, bundle.insns);
+ 		num_info_ops = bt_get_info_ops(&bundle, info_operands);
+-- 
+1.7.10.3
 
-I thought it absolutely does but now I noticed this:
-
-Without CONFIG_KEXEC_JUMP, it calls kernel_restart_prepare
-which invokes notifiers. So fine.
-But with CONFIG_KEXEC_JUMP it does suspend which is way more complex -
-it stops all other cpus so we are fine but still not sure about the last
-one.
-
-Any idea?
-
-How does it work for e.g. ASYNC_PF?
-
-> 
-> 
-> -- 
-> error compiling committee.c: too many arguments to function
-> 
