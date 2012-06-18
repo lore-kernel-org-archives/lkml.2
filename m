@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab2FRJFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 05:05:01 -0400
-Received: from catastrophix.ugh.no ([178.79.162.34]:38386 "EHLO
-	catastrophix.ugh.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802Ab2FRJE7 (ORCPT
+	id S1756191Ab2FRJFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 05:05:13 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60986 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455Ab2FRJFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 05:04:59 -0400
-Message-ID: <4FDEEF38.8030101@tomt.net>
-Date: Mon, 18 Jun 2012 11:04:56 +0200
-From: Andre Tomt <andre@tomt.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Howells <dhowells@redhat.com>,
+	Mon, 18 Jun 2012 05:05:07 -0400
+Date: Mon, 18 Jun 2012 11:05:01 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in __key_instantiate_and_link(): unable to handle kernel
- paging request at 0000632e6472616f
-References: <20120601034114.GA9248@localhost> <4FDBF056.7040404@tomt.net>  <4FDCD3C7.5080503@tomt.net> <1339876739.8267.96.camel@lade.trondhjem.org>
-In-Reply-To: <1339876739.8267.96.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] perf tools: Fix an error on perf-bench document
+Message-ID: <20120618090501.GB28824@gmail.com>
+References: <1339944948-3193-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339944948-3193-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16. juni 2012 21:59, Myklebust, Trond wrote:
-> It looks to me as if the legacy upcall code is assuming that there can
-> be no more than 1 upcall at a time: there is only a single
-> idmap->idmap_key_cons, which gets assigned in nfs_idmap_legacy_upcall
-> and then read in idmap_pipe_downcall.
->
-> Bryan, can you look into this? I suspect that we need a mutex or
-> something like that (for the legacy upcall case only) to ensure that
-> nobody overwrites the idmap->idmap_key_cons while an upcall is in
-> progress.
->
-> Andre, if you want idmapper scalability, then you should rather use the
-> new idmapper upcall. You need a recent version of the nfs-utils package,
-> the keyutils package, and they you should add an 'id_resolver' line
-> to /etc/request-keys.conf as per the nfsidmap manpage.
 
-Indeed, using keyutils did avoid the crashes here, 40 hours and counting.
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-Are there any downsides of having keyutils w/ id_resolver on by default 
-in a distribution? Would it break older kernels or nfs-utils (just not 
-getting used is fine, obviously)?
+> The pipe should be messaging.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/Documentation/perf-bench.txt |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
+> index a3dbadb26ef5..d53d22f0c6ee 100644
+> --- a/tools/perf/Documentation/perf-bench.txt
+> +++ b/tools/perf/Documentation/perf-bench.txt
+> @@ -51,8 +51,8 @@ SUITES FOR 'sched'
+>  Suite for evaluating performance of scheduler and IPC mechanisms.
+>  Based on hackbench by Rusty Russell.
+>  
+> -Options of *pipe*
+> -^^^^^^^^^^^^^^^^^
+> +Options of *messaging*
+> +^^^^^^^^^^^^^^^^^^^^^^
+>  -p::
+>  --pipe::
+>  Use pipe() instead of socketpair()
+> -- 
+
+There's several typos all across the perf bench documentation:
+
+1)
+
+       This perf bench command is general framework for benchmark suites.
+
+s/is general/is a general
+
+2)
+
+The output of 'perf bench --help' outputs weird looking 
+formatting characters like:
+
+           .ft C
+           % perf bench sched pipe                      # with no style specified
+           (executing 1000000 pipe operations between two tasks)
+                   Total time:5.855 sec
+                           5.855061 usecs/op
+                           170792 ops/sec
+           .ft
+
+3)
+
+This:
+
+           all: test all suite (pseudo suite)
+
+s/all suite (psudo suite)/all benchmark suites
+
+(this should be fixed for perf bench mem as well.)
+
+4)
+
+perf bench mem memcpy -h outputs:
+
+    -l, --length <1MB>    Specify length of memory to copy. available unit: B, MB, GB (upper and lower)
+
+bad capitalization: s/. a/. A
+
+s/unit/units
+
+5)
+
+This:
+
+    -c, --clock           Use CPU clock for measuring
+
+should probably clarify why the CPU clock matters and what 
+measurement is done otherwise.
+
+Thanks,
+
+	Ingo
