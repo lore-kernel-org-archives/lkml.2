@@ -1,152 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab2FRAnt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 20:43:49 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61466 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab2FRAns (ORCPT
+	id S1753676Ab2FRAtY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 20:49:24 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:22300 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184Ab2FRAtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 20:43:48 -0400
-X-AuditID: 9c93016f-b7c35ae00000135b-27-4fde79be164e
-Message-ID: <4FDE79CF.4050702@kernel.org>
-Date: Mon, 18 Jun 2012 09:43:59 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Aaditya Kumar <aaditya.kumar.30@gmail.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, frank.rowand@am.sony.com,
-        tim.bird@am.sony.com, takuzo.ohara@ap.sony.com,
-        kan.iibuchi@jp.sony.com
-Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
-References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com> <20120614145716.GA2097@barrios> <CAHGf_=qcA5OfuNgk0BiwyshcLftNWoPfOO_VW9H6xQTX2tAbuA@mail.gmail.com> <4FDAE3CC.60801@kernel.org> <CAEtiSavv8nRAFk6VZEgeCMYicjBPy4244+2KQhng5Pq9bxcX5A@mail.gmail.com>
-In-Reply-To: <CAEtiSavv8nRAFk6VZEgeCMYicjBPy4244+2KQhng5Pq9bxcX5A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 17 Jun 2012 20:49:23 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-99-4fde7b102443
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Liam Girdwood'" <lrg@ti.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org, sbkim01@gmail.com
+Subject: [PATCH-Resend] regulator: s5m8767a: Support AP watchdog reset operation
+Date: Mon, 18 Jun 2012 09:49:20 +0900
+Message-id: <065701cd4cec$3252ea60$96f8bf20$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1JPo1uIP2e6nyTSZ6oGo6nBAZ24wDqUVTQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQV2B6nv+Bl86zS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAldGT2tFwTGnipnXbrI0MC437WLk5JAQMJFYvOcvK4QtJnHh3nq2
+	LkYuDiGB6YwSm9uesUI4c5kktv5tYAKpYhPQkFi5+y0biC0iECYxc9ZKFhCbWcBL4uKr52C2
+	sECARNuVOewgNouAqsTeQ4eZQWxeAUOJld/nsUDYghI/Jt+D6tWSWL/zOBOELS+xec1boHoO
+	oIvUJR791YVYZSSx9ulJqHIRiX0v3jFOYBSYhWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5
+	RnrFibnFpXnpesn5uZsYwWH5THoH46oGi0OMAhyMSjy8CmX3/IVYE8uKK3MPMUpwMCuJ8F4P
+	BwrxpiRWVqUW5ccXleakFh9ilOZgURLnbbK+4C8kkJ5YkpqdmlqQWgSTZeLglGpgTPF1nhpw
+	MipLK/i2fmflD2N3ZSm/afvTed+5nM+5e+v02mdHAnemCq9jvrN6ee12M6+HDq7Z2xni3Xds
+	Ohdpa9HGzDrn3Aq1TZEzIlcIHlw28eYaWxXbUz8Mq0+lrw0oUp+/7uJFh7rfp8/1LvoeKxhY
+	Em2eusYtb6HKj/KUjvQGRWaG/TKuSizFGYmGWsxFxYkAI4MgZ0cCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
+The S5M8767A can't know status of ap reset.
+So, After AP watchdog reset, AP can't boot normally.
 
-> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
-> 
->>>
->>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
->>> if node has multiple zones. Hm ok, I realized my descriptions was
->>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
->>> pgdat_balanced()
->>> every priority. Most easy case is, movable zone has a lot of free pages and
->>> normal zone has no reclaimable page.
->>>
->>> btw, current pgdat_balanced() logic seems not correct. kswapd should
->>> sleep only if every zones have much free pages than high water mark
->>> _and_ 25% of present pages in node are free.
->>>
->>
->>
->> Sorry. I can't understand your point.
->> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
->> It seems I am missing your point.
->> Please anybody correct me.
-> 
-> Since currently direct reclaim is given up based on
-> zone->all_unreclaimable flag,
-> so for e.g in one of the scenarios:
-> 
-> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
-> hot-remove the all the pages of the MOVABLE zone.
-> 
-> While migrating pages during memory hot-unplugging, the allocation function
-> (for new page to which the page in MOVABLE zone would be moved)  can end up
-> looping in direct reclaim path for ever.
-> 
-> This is so because when most of the pages in the MOVABLE zone have
-> been migrated,
-> the zone now contains lots of free memory (basically above low watermark)
-> BUT all are in MIGRATE_ISOLATE list of the buddy list.
-> 
-> So kswapd() would not balance this zone as free pages are above low watermark
-> (but all are in isolate list). So zone->all_unreclaimable flag would
-> never be set for this zone
-> and allocation function would end up looping forever. (assuming the
-> zone NORMAL is
-> left with no reclaimable memory)
->
+Problem can be happened like below condition.
+- AP Bootable lowest voltage(vdd_arm): 0.9v
+- AP DVFS voltage table: 0.8v, 0.9v, 1.0v
+- During AP works on lowest voltage(0.8V), watchdog reset is asserted
+- AP can't boot, because vdd arm is still 0.8v
 
+Solution
+- Basic concept: 
+  After ap watchdog reset, GPIO configuration is changed by default value
+- S5M8767A has function of voltage control with gpio (8 levels with 3 gpios)
+- Set bootable voltage on level 0 -> can work with default gpio configuration
+- In the probing, Change voltage control level from level 0 to level 1
+- Execute normal dvfs operation on level 1
+- After watchdog reset, ap gpio is set by default value
+- PMIC operation mode is changed by ap reset (level1 -> level0)
+- Regardless of previous vdd_arm voltage, AP always can be booted.
 
-Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
-But I don't see it's a problem of kswapd.
+Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
+---
+ drivers/regulator/s5m8767.c          |  137 +++++++++++++++++++++++-----------
+ include/linux/mfd/s5m87xx/s5m-core.h |    5 +
+ 2 files changed, 98 insertions(+), 44 deletions(-)
 
-a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
-but we can't allocate it. :(
-It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
-Kswapd is just one of them confused.
-As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too. 
-
-This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
-and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
-free_area[order].nr_free exactly. 
-
-Any thought?
-
-Side Note: I still need KOSAKI's patch with fixed description regardless of this problem because set zone->all_unreclaimable of only kswapd is very fragile.
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4403009..19de56c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5593,8 +5593,10 @@ int set_migratetype_isolate(struct page *page)
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 770e4df..533bde6 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -41,6 +41,7 @@ struct s5m8767_info {
+ 	u8 buck3_vol[8];
+ 	u8 buck4_vol[8];
+ 	int buck_gpios[3];
++	int buck_ds[3];
+ 	int buck_gpioindex;
+ };
  
- out:
-        if (!ret) {
-+               int pages_moved;
-                set_pageblock_migratetype(page, MIGRATE_ISOLATE);
--               move_freepages_block(zone, page, MIGRATE_ISOLATE);
-+               pages_moved = move_freepages_block(zone, page, MIGRATE_ISOLATE);
-+               __mod_zone_page_state(zone, NR_FREE_PAGES, -pages_moved);
-        }   
+@@ -283,17 +284,17 @@ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
+ 		reg = S5M8767_REG_BUCK1CTRL2;
+ 		break;
+ 	case S5M8767_BUCK2:
+-		reg = S5M8767_REG_BUCK2DVS1;
++		reg = S5M8767_REG_BUCK2DVS2;
+ 		if (s5m8767->buck2_gpiodvs)
+ 			reg += s5m8767->buck_gpioindex;
+ 		break;
+ 	case S5M8767_BUCK3:
+-		reg = S5M8767_REG_BUCK3DVS1;
++		reg = S5M8767_REG_BUCK3DVS2;
+ 		if (s5m8767->buck3_gpiodvs)
+ 			reg += s5m8767->buck_gpioindex;
+ 		break;
+ 	case S5M8767_BUCK4:
+-		reg = S5M8767_REG_BUCK4DVS1;
++		reg = S5M8767_REG_BUCK4DVS2;
+ 		if (s5m8767->buck4_gpiodvs)
+ 			reg += s5m8767->buck_gpioindex;
+ 		break;
+@@ -512,7 +513,7 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
+ 	struct regulator_config config = { };
+ 	struct regulator_dev **rdev;
+ 	struct s5m8767_info *s5m8767;
+-	int i, ret, size;
++	int i, ret, size, buck_init;
  
-        spin_unlock_irqrestore(&zone->lock, flags);
-@@ -5607,12 +5609,14 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
- {
-        struct zone *zone;
-        unsigned long flags;
-+       int pages_moved;
-        zone = page_zone(page);
-        spin_lock_irqsave(&zone->lock, flags);
-        if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
-                goto out;
-        set_pageblock_migratetype(page, migratetype);
--       move_freepages_block(zone, page, migratetype);
-+       pages_moved = move_freepages_block(zone, page, migratetype);
-+       __mod_zone_page_state(zone, NR_FREE_PAGES, pages_moved);
- out:
-        spin_unlock_irqrestore(&zone->lock, flags);
- }
-
-
-> 
-> Regards,
-> Aaditya Kumar
-> Sony India Software Centre,
-> Bangalore.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
+ 	if (!pdata) {
+ 		dev_err(pdev->dev.parent, "Platform data not supplied\n");
+@@ -563,12 +564,37 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
+ 	s5m8767->buck_gpios[0] = pdata->buck_gpios[0];
+ 	s5m8767->buck_gpios[1] = pdata->buck_gpios[1];
+ 	s5m8767->buck_gpios[2] = pdata->buck_gpios[2];
++	s5m8767->buck_ds[0] = pdata->buck_ds[0];
++	s5m8767->buck_ds[1] = pdata->buck_ds[1];
++	s5m8767->buck_ds[2] = pdata->buck_ds[2];
++
+ 	s5m8767->ramp_delay = pdata->buck_ramp_delay;
+ 	s5m8767->buck2_ramp = pdata->buck2_ramp_enable;
+ 	s5m8767->buck3_ramp = pdata->buck3_ramp_enable;
+ 	s5m8767->buck4_ramp = pdata->buck4_ramp_enable;
+ 	s5m8767->opmode = pdata->opmode;
+ 
++	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
++						pdata->buck2_init,
++						pdata->buck2_init +
++						buck_voltage_val2.step);
++
++	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK2DVS2, buck_init);
++
++	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
++						pdata->buck3_init,
++						pdata->buck3_init +
++						buck_voltage_val2.step);
++
++	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK3DVS2, buck_init);
++
++	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
++						pdata->buck4_init,
++						pdata->buck4_init +
++						buck_voltage_val2.step);
++
++	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK4DVS2, buck_init);
++
+ 	for (i = 0; i < 8; i++) {
+ 		if (s5m8767->buck2_gpiodvs) {
+ 			s5m8767->buck2_vol[i] =
+@@ -598,48 +624,71 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	if (pdata->buck2_gpiodvs || pdata->buck3_gpiodvs ||
+-		pdata->buck4_gpiodvs) {
+-		if (gpio_is_valid(pdata->buck_gpios[0]) &&
+-			gpio_is_valid(pdata->buck_gpios[1]) &&
+-			gpio_is_valid(pdata->buck_gpios[2])) {
+-			ret = gpio_request(pdata->buck_gpios[0],
+-						"S5M8767 SET1");
+-			if (ret == -EBUSY)
+-				dev_warn(&pdev->dev, "Duplicated gpio request for SET1\n");
+-
+-			ret = gpio_request(pdata->buck_gpios[1],
+-					   "S5M8767 SET2");
+-			if (ret == -EBUSY)
+-				dev_warn(&pdev->dev, "Duplicated gpio request for SET2\n");
+-
+-			ret = gpio_request(pdata->buck_gpios[2],
+-					   "S5M8767 SET3");
+-			if (ret == -EBUSY)
+-				dev_warn(&pdev->dev, "Duplicated gpio request for SET3\n");
+-			/* SET1 GPIO */
+-			gpio_direction_output(pdata->buck_gpios[0],
+-					(s5m8767->buck_gpioindex >> 2) & 0x1);
+-			/* SET2 GPIO */
+-			gpio_direction_output(pdata->buck_gpios[1],
+-					(s5m8767->buck_gpioindex >> 1) & 0x1);
+-			/* SET3 GPIO */
+-			gpio_direction_output(pdata->buck_gpios[2],
+-					(s5m8767->buck_gpioindex >> 0) & 0x1);
+-			ret = 0;
+-		} else {
+-			dev_err(&pdev->dev, "GPIO NOT VALID\n");
+-			ret = -EINVAL;
+-			return ret;
+-		}
++	if (gpio_is_valid(pdata->buck_gpios[0]) &&
++		gpio_is_valid(pdata->buck_gpios[1]) &&
++		gpio_is_valid(pdata->buck_gpios[2])) {
++		ret = gpio_request(pdata->buck_gpios[0], "S5M8767 SET1");
++		if (ret == -EBUSY)
++			dev_warn(&pdev->dev, "Duplicated gpio request"
++				" for SET1\n");
++
++		ret = gpio_request(pdata->buck_gpios[1], "S5M8767 SET2");
++		if (ret == -EBUSY)
++			dev_warn(&pdev->dev, "Duplicated gpio request"
++				" for SET2\n");
++
++		ret = gpio_request(pdata->buck_gpios[2], "S5M8767 SET3");
++		if (ret == -EBUSY)
++			dev_warn(&pdev->dev, "Duplicated gpio request"
++					" for SET3\n");
++		/* SET1 GPIO */
++		gpio_direction_output(pdata->buck_gpios[0],
++				(s5m8767->buck_gpioindex >> 2) & 0x1);
++		/* SET2 GPIO */
++		gpio_direction_output(pdata->buck_gpios[1],
++				(s5m8767->buck_gpioindex >> 1) & 0x1);
++		/* SET3 GPIO */
++		gpio_direction_output(pdata->buck_gpios[2],
++				(s5m8767->buck_gpioindex >> 0) & 0x1);
++		ret = 0;
++
++	} else {
++		dev_err(&pdev->dev, "GPIO NOT VALID\n");
++		ret = -EINVAL;
++		return ret;
+ 	}
+ 
+-	s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK2CTRL,
+-			(pdata->buck2_gpiodvs) ? (1 << 1) : (0 << 1), 1 << 1);
+-	s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK3CTRL,
+-			(pdata->buck3_gpiodvs) ? (1 << 1) : (0 << 1), 1 << 1);
+-	s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK4CTRL,
+-			(pdata->buck4_gpiodvs) ? (1 << 1) : (0 << 1), 1 << 1);
++	ret = gpio_request(pdata->buck_ds[0], "S5M8767 DS2");
++	if (ret == -EBUSY)
++		dev_warn(&pdev->dev, "Duplicated gpio request for DS2\n");
++
++	ret = gpio_request(pdata->buck_ds[1], "S5M8767 DS3");
++	if (ret == -EBUSY)
++		dev_warn(&pdev->dev, "Duplicated gpio request for DS3\n");
++
++	ret = gpio_request(pdata->buck_ds[2], "S5M8767 DS4");
++	if (ret == -EBUSY)
++		dev_warn(&pdev->dev, "Duplicated gpio request for DS4\n");
++
++	/* DS2 GPIO */
++	gpio_direction_output(pdata->buck_ds[0], 0x0);
++	/* DS3 GPIO */
++	gpio_direction_output(pdata->buck_ds[1], 0x0);
++	/* DS4 GPIO */
++	gpio_direction_output(pdata->buck_ds[2], 0x0);
++
++	if (pdata->buck2_gpiodvs || pdata->buck3_gpiodvs ||
++	   pdata->buck4_gpiodvs) {
++		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK2CTRL,
++				(pdata->buck2_gpiodvs) ? (1 << 1) : (0 << 1),
++				1 << 1);
++		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK3CTRL,
++				(pdata->buck3_gpiodvs) ? (1 << 1) : (0 << 1),
++				1 << 1);
++		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK4CTRL,
++				(pdata->buck4_gpiodvs) ? (1 << 1) : (0 << 1),
++				1 << 1);
++	}
+ 
+ 	/* Initialize GPIO DVS registers */
+ 	for (i = 0; i < 8; i++) {
+diff --git a/include/linux/mfd/s5m87xx/s5m-core.h b/include/linux/mfd/s5m87xx/s5m-core.h
+index 21603b4..0b2e0ed 100644
+--- a/include/linux/mfd/s5m87xx/s5m-core.h
++++ b/include/linux/mfd/s5m87xx/s5m-core.h
+@@ -347,6 +347,7 @@ struct s5m_platform_data {
+ 	bool				buck_voltage_lock;
+ 
+ 	int				buck_gpios[3];
++	int				buck_ds[3];
+ 	int				buck2_voltage[8];
+ 	bool				buck2_gpiodvs;
+ 	int				buck3_voltage[8];
+@@ -369,6 +370,10 @@ struct s5m_platform_data {
+ 	bool                            buck2_ramp_enable;
+ 	bool                            buck3_ramp_enable;
+ 	bool                            buck4_ramp_enable;
++
++	int				buck2_init;
++	int				buck3_init;
++	int				buck4_init;
+ };
+ 
+ #endif /*  __LINUX_MFD_S5M_CORE_H */
 -- 
-Kind regards,
-Minchan Kim
+1.7.1
+
+
