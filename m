@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab2FRNUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 09:20:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52694 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab2FRNUQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 09:20:16 -0400
-Date: Mon, 18 Jun 2012 22:20:10 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>, mtosatti@redhat.com,
-        agraf@suse.de, paulus@samba.org, aarcange@redhat.com,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] KVM: MMU: Make kvm_handle_hva() handle range of
- addresses
-Message-Id: <20120618222010.4b605f800956e3c7bf6bcd25@gmail.com>
-In-Reply-To: <4FDF1AFE.4000607@redhat.com>
-References: <20120615203007.4f61bb17.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120615203230.2c577652.yoshikawa.takuya@oss.ntt.co.jp>
-	<4FDF1AFE.4000607@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752110Ab2FRNVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 09:21:49 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:53717 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042Ab2FRNVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 09:21:47 -0400
+Message-ID: <4FDF2AD6.7060606@parallels.com>
+Date: Mon, 18 Jun 2012 17:19:18 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Wanpeng Li <liwp.linux@gmail.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: Re: [PATCH] mm/memcg: add unlikely to mercg->move_charge_at_immigrate
+References: <1340025022-7272-1-git-send-email-liwp.linux@gmail.com> <4FDF2890.3020004@parallels.com> <20120618131918.GA2600@kernel>
+In-Reply-To: <20120618131918.GA2600@kernel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jun 2012 15:11:42 +0300
-Avi Kivity <avi@redhat.com> wrote:
+On 06/18/2012 05:19 PM, Wanpeng Li wrote:
+> On Mon, Jun 18, 2012 at 05:09:36PM +0400, Glauber Costa wrote:
+>> On 06/18/2012 05:10 PM, Wanpeng Li wrote:
+>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>>
+>>> move_charge_at_immigrate feature is disabled by default. Charges
+>>> are moved only when you move mm->owner and it also add additional
+>>> overhead.
+>>
+>> How big is this overhead?
+>>
+>> That's hardly a fast path. And if it happens to matter, it will be
+>> just bigger when you enable it, and the compiler start giving the
+>> wrong hints to the code.
+>
+> Thank you for your quick response.
+>
+> Oh, Maybe I should just write comments "move_charge_at_immigrate feature
+> is disabled by default. So add "unlikely", in order to compiler can optimize."
+>
+
+Again, do you have any reason to optimize that ?
 
 
-> >  	kvm_for_each_memslot(memslot, slots) {
-> > -		gfn_t gfn = hva_to_gfn(hva, memslot);
-> > +		gfn_t gfn = hva_to_gfn(start_hva, memslot);
-> > +		gfn_t end_gfn = hva_to_gfn(end_hva, memslot);
-> 
-> These will return random results which you then use in min/max later, no?
-
-Yes, I will follow your advice: check-then-convert (or check-and-convert).
-
-> > @@ -1212,7 +1218,9 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
-> >  				rmapp = __gfn_to_rmap(gfn, j, memslot);
-> >  				ret |= handler(kvm, rmapp, data);
-> 
-> Potential for improvement: don't do 512 iterations on same large page.
-> 
-> Something like
-> 
->     if ((gfn ^ prev_gfn) & mask(level))
->         ret |= handler(...)
-> 
-> with clever selection of the first prev_gfn so it always matches (~gfn
-> maybe).
-
-Really nice.
-I'm sure that will make this much faster!
-
-Thanks,
-	Takuya
