@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319Ab2FRNbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 09:31:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48483 "EHLO mx2.suse.de"
+	id S1752208Ab2FRNdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 09:33:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751629Ab2FRNbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 09:31:51 -0400
-Date: Mon, 18 Jun 2012 15:31:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 2/2] memcg: clean up force_empty_list() return value check
-Message-ID: <20120618133149.GC2313@tiehlicka.suse.cz>
-References: <4FDF17A3.9060202@jp.fujitsu.com>
- <4FDF1830.1000504@jp.fujitsu.com>
+	id S1751042Ab2FRNdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 09:33:53 -0400
+Date: Mon, 18 Jun 2012 09:33:05 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: baryluk@smp.if.uj.edu.pl, LKML <linux-kernel@vger.kernel.org>,
+        JBeulich@suse.com, zhong@linux.vnet.ibm.com
+Subject: Re: [PATCH 0/2] x86,nmi: Section header fixes
+Message-ID: <20120618133305.GU32472@redhat.com>
+References: <1339428809-29360-1-git-send-email-dzickus@redhat.com>
+ <20120618090731.GC28824@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FDF1830.1000504@jp.fujitsu.com>
+In-Reply-To: <20120618090731.GC28824@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-06-12 20:59:44, KAMEZAWA Hiroyuki wrote:
+On Mon, Jun 18, 2012 at 11:07:31AM +0200, Ingo Molnar wrote:
 > 
-> By commit "memcg: move charges to root cgroup if use_hierarchy=0"
-> mem_cgroup_move_parent() only returns -EBUSY, -EINVAL.
-> So, we can remove -ENOMEM and -EINTR checks.
+> * Don Zickus <dzickus@redhat.com> wrote:
 > 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > An earlier attempt at a fix for the problem described in the second patch was
+> > committed to Ingo's tree.  Later a smaller/cleaner patch was posted.  This
+> > series just reverts the original patch and then applies the second patch.
+> > 
+> > The second patch looks a lot cleaner this way instead of just provding the
+> > delta patch on top.
+> > 
+> > Ingo, let me know if this is not what you want.
+> 
+> Wouldnt this be nicer as a delta enhancement, instead of a 
+> revert+fix-done-differently?
+> 
+> That way we'd should that the original one was good as well, 
+> it's just that this one is easier to maintain.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Ok.  I originally had a delta diff, but it looked ugly and hard to
+understand the new changes.  That is why I did it this way.  I'll send the
+delta enhancement and let you decide.
 
-> ---
->  mm/memcontrol.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index cf8a0f6..726b7c6 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3847,8 +3847,6 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->  		pc = lookup_page_cgroup(page);
->  
->  		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
-> -		if (ret == -ENOMEM || ret == -EINTR)
-> -			break;
->  
->  		if (ret == -EBUSY || ret == -EINVAL) {
->  			/* found lock contention or "pc" is obsolete. */
-> @@ -3910,9 +3908,6 @@ move_account:
->  		}
->  		mem_cgroup_end_move(memcg);
->  		memcg_oom_recover(memcg);
-> -		/* it seems parent cgroup doesn't have enough mem */
-> -		if (ret == -ENOMEM)
-> -			goto try_to_free;
->  		cond_resched();
->  	/* "ret" should also be checked to ensure all lists are empty. */
->  	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0 || ret);
-> -- 
-> 1.7.4.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Cheers,
+Don
