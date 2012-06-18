@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab2FRUZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:25:31 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:52174 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753055Ab2FRUZa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:25:30 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b-cousson@ti.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        swarren@wwwdotorg.org, robherring2@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND] ARM: omap: Fix dts files w/ status property: "disable" -> "disabled"
-Date: Mon, 18 Jun 2012 22:25:10 +0200
-Message-Id: <1340051110-23746-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1753326Ab2FRUZs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:25:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29896 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753075Ab2FRUZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 16:25:46 -0400
+Date: Mon, 18 Jun 2012 17:25:05 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 6/6] KVM: introduce readonly memslot
+Message-ID: <20120618202505.GA3650@amt.cnet>
+References: <4FD6ADA6.40008@linux.vnet.ibm.com>
+ <4FD6AE3B.9020508@linux.vnet.ibm.com>
+ <20120616021150.GA3870@amt.cnet>
+ <4FDEF9D2.3000909@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FDEF9D2.3000909@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches fixes some status = "disable" strings to "disabled", the correct
-way of disabling nodes in the devicetree.
+On Mon, Jun 18, 2012 at 12:50:10PM +0300, Avi Kivity wrote:
+> On 06/16/2012 05:11 AM, Marcelo Tosatti wrote:
+> > 
+> > Can you introduce a separate exit reason, say KVM_EXIT_READ_FAULT, with
+> > information about the fault?
+> 
+> I think you mean WRITE_FAULT.  
 
-Just the OMAP part here, the rest goes via other patches and trees.
+Yes.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Benoit Cousson <b-cousson@ti.com>
+> But what's wrong with the normal mmio exit?
 
----
-Applies to v3.5-rc3
+It is necessary to perform an address->mmio region lookup, to verify
+whether the mmio exit is due to an actual mmio (no memory slot) or from
+a write access to a write protected slot. That information is readily
+available in the kernel but is lost if the mmio exit is used to transmit 
+the information.
 
- arch/arm/boot/dts/omap3-beagle.dts |    4 ++--
- arch/arm/boot/dts/omap4-panda.dts  |    6 +++---
- arch/arm/boot/dts/omap4-sdp.dts    |    4 ++--
- 3 files changed, 7 insertions(+), 7 deletions(-)
+Moreover, i'd argue the uses are different: one is an mmio emulation
+exit, the other is more like handling a pagefault in qemu.
 
---- linux-2.6.orig/arch/arm/boot/dts/omap3-beagle.dts
-+++ linux-2.6/arch/arm/boot/dts/omap3-beagle.dts
-@@ -61,9 +61,9 @@
- };
- 
- &mmc2 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc3 {
--	status = "disable";
-+	status = "disabled";
- };
---- linux-2.6.orig/arch/arm/boot/dts/omap4-panda.dts
-+++ linux-2.6/arch/arm/boot/dts/omap4-panda.dts
-@@ -74,15 +74,15 @@
- };
- 
- &mmc2 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc3 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc4 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc5 {
---- linux-2.6.orig/arch/arm/boot/dts/omap4-sdp.dts
-+++ linux-2.6/arch/arm/boot/dts/omap4-sdp.dts
-@@ -147,11 +147,11 @@
- };
- 
- &mmc3 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc4 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc5 {
+> > Then perform this exit only if userspace allows it by explicit enable, 
+> > and by default have the exit_read_fault handler jump to the mmio
+> > handler. 
+> 
+> 
+> I don't get this.
+
+
+CAN USERSPACE HANDLE WRITE FAULT EXITS?
+YES: WRITE FAULT EXIT.
+NO: MMIO EXIT.
+
+But then again userspace won't set read-only slots if it does not know
+about them. So it is not necessary.
+
