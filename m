@@ -1,77 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab2FRKG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:06:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60572 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751765Ab2FRKG6 (ORCPT
+	id S1757111Ab2FRKHN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:07:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57487 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab2FRKHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:06:58 -0400
-Date: Mon, 18 Jun 2012 11:06:57 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: extend the fixed voltage regulator to accept
- voltage
-Message-ID: <20120618100657.GG3974@opensource.wolfsonmicro.com>
-References: <Pine.LNX.4.64.1206181017360.23884@axis700.grange>
- <20120618094145.GC3974@opensource.wolfsonmicro.com>
- <Pine.LNX.4.64.1206181145520.23884@axis700.grange>
+	Mon, 18 Jun 2012 06:07:11 -0400
+Message-ID: <4FDEFD9A.60703@gmail.com>
+Date: Mon, 18 Jun 2012 18:06:18 +0800
+From: Charles Wang <muming.wq@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bO4vSxwwZtUjUWHo"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1206181145520.23884@axis700.grange>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Tao Ma <tm@tao.ma>, =?UTF-8?B?5ZCr6bub?= <handai.szj@taobao.com>,
+        Doug Smythies <dsmythies@telus.net>
+Subject: Re: [PATCH] sched: Folding nohz load accounting more accurate
+References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>   <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>  <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com> <1339781988.15222.6.camel@twins>
+In-Reply-To: <1339781988.15222.6.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday, June 16, 2012 01:39 AM, Peter Zijlstra wrote:
 
---bO4vSxwwZtUjUWHo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Wednesday I ended up with something like the below.. but I haven't
+> gotten round to trying Doug's latest testing method, nor did I really
+> read the email I'm now replying to.
+> 
+> I think it does something like what Wang described... every time I try
+> and write comments related to why it does this I get stuck though. 
+> 
+> I ran out of time again for this week, I'll try and prod at it a little
+> more next week (and try and catch up with the thread).
+> 
+> In the meantime I thought I might as well post this.. who knows somebody
+> might be bored over the weekend, it might actually work, or not :-)
+> 
+> ---
+>  kernel/sched/core.c |   77 +++++++++++++++++++++++++++++++++++----------------
+>  1 file changed, 53 insertions(+), 24 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index ca07ee0..4101a0e 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2198,26 +2198,49 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+>   *
+>   * When making the ILB scale, we should try to pull this in as well.
+>   */
+> -static atomic_long_t calc_load_tasks_idle;
+> +static atomic_long_t calc_load_idle[2];
+> +static int calc_load_idx;
+> +
+> +static inline int calc_load_write_idx(void)
+> +{
+> +	int idx = calc_load_idx;
+> +
+> +	/*
+> +	 * See calc_global_nohz(), if we observe the new index, we also
+> +	 * need to observe the new update time.
+> +	 */
+> +	smp_rmb();
+> +
+> +	if (!time_before(jiffies, calc_load_update))
+> +		idx++;
+> +
+> +	return idx & 1;
+> +}
+> +
+> +static inline int calc_load_read_idx(void)
+> +{
+> +	return calc_load_idx & 1;
+> +}
+>  
+>  void calc_load_account_idle(struct rq *this_rq)
+>  {
+>  	long delta;
+> +	int idx;
+>  
+>  	delta = calc_load_fold_active(this_rq);
+> -	if (delta)
+> -		atomic_long_add(delta, &calc_load_tasks_idle);
+> +	if (delta) {
+> +		idx = calc_load_write_idx();
+> +		atomic_long_add(delta, &calc_load_idle[idx]);
+> +	}
+>  }
+>  
+>  static long calc_load_fold_idle(void)
+>  {
+> +	int idx = calc_load_read_idx();
+>  	long delta = 0;
+>  
+> -	/*
+> -	 * Its got a race, we don't care...
+> -	 */
+> -	if (atomic_long_read(&calc_load_tasks_idle))
+> -		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
+> +	if (atomic_long_read(&calc_load_idle[idx]))
+> +		delta = atomic_long_xchg(&calc_load_idle[idx], 0);
+>  
+>  	return delta;
+>  }
+> @@ -2313,26 +2336,32 @@ static void calc_global_nohz(void)
+>  	if (delta)
+>  		atomic_long_add(delta, &calc_load_tasks);
+>  
+> -	/*
+> -	 * It could be the one fold was all it took, we done!
+> -	 */
+> -	if (time_before(jiffies, calc_load_update + 10))
+> -		return;
+> +	if (!time_before(jiffies, calc_load_update + 10)) {
+> +		/*
+> +		 * Catch-up, fold however many we are behind still
+> +		 */
+> +		delta = jiffies - calc_load_update - 10;
+> +		n = 1 + (delta / LOAD_FREQ);
+>  
+> -	/*
+> -	 * Catch-up, fold however many we are behind still
+> -	 */
+> -	delta = jiffies - calc_load_update - 10;
+> -	n = 1 + (delta / LOAD_FREQ);
+> +		active = atomic_long_read(&calc_load_tasks);
+> +		active = active > 0 ? active * FIXED_1 : 0;
+>  
+> -	active = atomic_long_read(&calc_load_tasks);
+> -	active = active > 0 ? active * FIXED_1 : 0;
+> +		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
+> +		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
+> +		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+>  
+> -	avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
+> -	avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
+> -	avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+> +		calc_load_update += n * LOAD_FREQ;
+> +	}
+>  
+> -	calc_load_update += n * LOAD_FREQ;
+> +	/*
+> +	 * Flip the idle index...
+> +	 *
+> +	 * Make sure we first write the new time then flip the index, so that
+> +	 * calc_load_write_idx() will see the new time when it reads the new
+> +	 * index, this avoids a double flip messing things up.
+> +	 */
+> +	smp_wmb();
+> +	calc_load_idx++;
+>  }
+>  #else
+>  void calc_load_account_idle(struct rq *this_rq)
+> 
 
-On Mon, Jun 18, 2012 at 11:52:13AM +0200, Guennadi Liakhovetski wrote:
-
-> Well, I never insist on being the most advanced aesthetics connaisseur,=
-=20
-> but I think these two changes are related. The point is, that if we want=
-=20
-> to support different voltages, boards will have several of these=20
-> regulators, therefore they'll need different names. We could splt this,=
-=20
-> but just the first part - changing the name - would look kinda pointless=
-=20
-> without the second one, don't you think?
-
-The major point there is I shouldn't be reading the change and going
-"hang on, this is talking about names not voltages but the changelog
-only mentioned voltages, what's that about then?".  The code looked more
-complex than I'd expect too.  I suspect we should be using kstrdup()...
-
---bO4vSxwwZtUjUWHo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP3v26AAoJEBus8iNuMP3d0dsP/2efCYLc2qmQ8CaI0uJyPk35
-k1MbaHMHpARH/QQsWgnJ5iyxdQFQsVlyxh2W3XWjI7JeEsbUN8xOTBqqh+IsLXks
-yKYM4zUjJrfqOVw04gdCCf8oh9G/q/X7eWlk49s4pvKPXMXT0Ao5zKwPfxeW/YPh
-cag2gezeV3Dy+w+jEQi5uXdsIFb0ZBIkzEgvUHxhO67qP99jDnQE/qicAQGOQMcN
-SwA3xct+j79oco2j2BrsfBMTscKrAOr/JbAyt1tKwwU5Haw8awomOQDOl65TATi1
-5RYjSuMusCt+vpuTBqxp2hLBETseiJYONUqnmtXwGG864c9uqK4r/U8xWxcLiodl
-Wt8z3wN5nJgMnQspBFtmA0svhAwu/nOtVBzrOTCyUBM92kshjdwYamrKsxPFAwrb
-i5s84wgxOsz2PQZJ5SvjrIQtAgYnJZVPZeA4XBWlA/CBvyouBfj1ClpwSnCl0WD0
-fejN5oeDwXBRYw3NmLOKRomgaU6i0NaeCe427WAT2o5KN8LeAHoPMPK9cJnMcC+l
-3Xmdok72aG5No4wAws/FyKi5AW7WO2ecEPOT8v9A806+ciXEGh432QDbZhgiocBa
-8QUwnr/z47HSAjRZFemuoA+hOuAuBop/BwUPydjXOBS71luNgkzEWZwrgNPXWkzG
-gO0RkhrZfoyntRCYjOoO
-=xnuP
------END PGP SIGNATURE-----
-
---bO4vSxwwZtUjUWHo--
+I tried to identify the start-line precisely, and made the implemention
+little more complicated. Using calc_load_update as start-line will cause
+it not that accurate, but may work, and keep simple. I will test this on
+my environments, and try to port the next patch on this.
