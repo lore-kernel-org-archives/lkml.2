@@ -1,110 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2FRIlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 04:41:08 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34510 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab2FRIlE (ORCPT
+	id S1752518Ab2FRIqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 04:46:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58459 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906Ab2FRIqr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 04:41:04 -0400
-Message-ID: <4FDEE99C.9090203@linaro.org>
-Date: Mon, 18 Jun 2012 09:41:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 18 Jun 2012 04:46:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="181434164"
+From: "Ren, Yongjie" <yongjie.ren@intel.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>
+CC: Jan Kiszka <jan.kiszka@siemens.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI interrupts
+Thread-Topic: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI
+ interrupts
+Thread-Index: AQHNR7lbTzrrGB1m3kGBcjEcJOZmOpb0YmsAgAtridA=
+Date: Mon, 18 Jun 2012 08:46:44 +0000
+Message-ID: <1B4B44D9196EFF41AE41FDA404FC0A100F9FC8@SHSMSX101.ccr.corp.intel.com>
+References: <1338570192.23475.25.camel@bling.home>
+ <4FC8F867.7080103@siemens.com> <1338573558.23475.41.camel@bling.home>
+ <4FC90961.8030701@siemens.com> <4FCB2359.9020505@redhat.com>
+ <alpine.LFD.2.02.1206041235540.3086@ionos> <4FCC9EAC.9090007@siemens.com>
+ <20120608143927.GA4949@redhat.com> <4FD21151.9090608@siemens.com>
+ <4FD5C205.5070901@redhat.com> <20120611102139.GA31197@redhat.com>
+In-Reply-To: <20120611102139.GA31197@redhat.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: Fwd: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik
- I2C driver
-References: <4FD8BAD2.50703@linaro.org> <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com> <4FDAFA17.6050502@linaro.org> <CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com> <20120615115042.GA27480@bnru02> <4FDB2E57.4030904@linaro.org> <20120615130544.GA28537@bnru02> <4FDB3642.5030804@linaro.org> <CACRpkdZ7ESKhokk8Z+6sC9Kq+jPztFNwzger0Db7nCD1fPnG1A@mail.gmail.com> <4FDED62D.6030008@linaro.org> <20120618075834.GA14293@bnru02>
-In-Reply-To: <20120618075834.GA14293@bnru02>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/06/12 08:58, Srinidhi Kasagar wrote:
-> On Mon, Jun 18, 2012 at 09:18:05 +0200, Lee Jones wrote:
->> On 17/06/12 18:43, Linus Walleij wrote:
->>> Gah, what a thread...
->>>
->>> On Fri, Jun 15, 2012 at 3:18 PM, Lee Jones<lee.jones@linaro.org>   wrote:
->>>> On 15/06/12 14:05, Srinidhi Kasagar wrote:
->>>>> On Fri, Jun 15, 2012 at 14:45:11 +0200, Lee Jones wrote:
->>>>>> On 15/06/12 12:50, Srinidhi Kasagar wrote:
->>>
->>>>>>>> +static struct nmk_i2c_controller u8500_i2c = {
->>>>>>>> +       /*
->>>>>>>> +        * Slave data setup time; 250ns, 100ns, and 10ns, which
->>>>>>>> +        * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
->>>>>>>> +        */
->>>>>>>> +       .slsu           = 0xe,
->>>>>>>> +       .tft            = 1,      /* Tx FIFO threshold */
->>>>>>>> +       .rft            = 8,      /* Rx FIFO threshold */
->>>>>>>> +       .clk_freq       = 100000, /* std. mode operation */
->>>>>>>> +       .timeout        = 200,    /* Slave response timeout(ms) */
->>>>>>>> +       .sm             = I2C_FREQ_MODE_FAST,
->>>>>>>
->>>>>>> How is this possible? you are setting clk_freq as 100kb/s and mode
->>>>>>> as fast mode which is supposed to be 400kb/s.
->>>>>>
->>>>>> That's not how I read it:
->>>>>
->>>>> But it is not readable. It confuses people.
->>>>
->>>> I understood it. :)
->>>>
->>>> If you think it's unclear speak to the author, Linus. He's CC'ed.
->>>
->>> Author of what? The i2c driver was written by Srinidhi. (The
->>> MODULE_AUTHOR() clause should be a good hint...)
->>
->> Actually, we appear to have our wires crossed. You wrote the board data
->> stuff below, which changes the mode from STANDARD to FAST, no doubt
->> using Srinidhi's struct explanation comments found in
->> arch/arm/plat-nomadik/include/plat/i2c.h.
->>
->>   >  I'll cook a separate patch for this or something.
->>
->> Cool, thanks Linus.
->>
->> But you're correct in what you say Linus. Srinidhi, the comments which
->> are you say are confusing are the bits you are the author of:
->> e208c447bd728920e4f3d438a706344ea31249b9?
->
-> yes, it is of course evident that it's my commit from git.
-> I think you are not catching my point. What I mean is:
-> fast mode devices are downward compatible and can communicate
-> with the devices with standard only mode. Those comments in that
-> enum says exactly that (with "up to" keyword). However the code
-> which configures the bus in fast mode and restrict the frequency
-> to operate in 100 kb/s without any reason, and this creates
-> confusion..
->
-> Perhaps, I think we need to remove one of these
-> parameters as configurable options and derive out the
-> frequency based on the mode of operation..
+> -----Original Message-----
+> From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> Sent: Monday, June 11, 2012 6:22 PM
+> To: Avi Kivity
+> Cc: Jan Kiszka; Thomas Gleixner; Alex Williamson; kvm@vger.kernel.org;
+> mtosatti@redhat.com; linux-kernel@vger.kernel.org; Ren, Yongjie
+> Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI
+> interrupts
+> 
+> On Mon, Jun 11, 2012 at 01:01:41PM +0300, Avi Kivity wrote:
+> > On 06/08/2012 05:50 PM, Jan Kiszka wrote:
+> > >
+> > >>
+> > >> Pls correct me if I'm wrong.
+> > >
+> > > Well, IIRC, the "don't loop over all vcpus with IRQs or preemption
+> > > disabled" was one argument against direct legacy interrupt injection as
+> > > well. That's what I kept in mind from those discussions. Maybe Avi can
+> > > comment on the current position.
+> >
+> > It's still my position.
+> >
+> > IMO we need something like struct gfn_to_hva_cache for interrupts.  If
+> > it's in the cache, we fast-path it from the interrupt handler.  If not,
+> > fall back to a workqueue and let it refill the cache.
+> 
+> And you class the irqfd behaviour of injecting multicast
+> with interrupts disabled a bug then?
+> 
+Hi Avi & Michael,
+Any more news on this issue ?
 
-I think Linus is fixing the frequency issues in platform code and I have 
-done so from Device Tree, so I think we're hot-to-trot.
-
-Linus, Srinidhi,
-
-If you're happy with the patch now (not withstanding the removal of 
-slsu, which I'll do in a separate patch), can you ack it please? By the 
-way, which tree will this go through?
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> > --
+> > error compiling committee.c: too many arguments to function
