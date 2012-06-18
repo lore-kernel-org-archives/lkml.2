@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2FRRcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 13:32:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37319 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752942Ab2FRRcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 13:32:12 -0400
-Message-ID: <1340040703.17272.2.camel@bling.home>
-Subject: Re: [PATCH v2 0/7] IOMMU: Groups support
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        iommu@lists.linux-foundation.org, bhelgaas@google.com,
-        david@gibson.dropbear.id.au, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        gregkh@linuxfoundation.org, ddutile@redhat.com, liuj97@gmail.com
-Date: Mon, 18 Jun 2012 11:31:43 -0600
-In-Reply-To: <1339429021.24037.8.camel@bling.home>
-References: <20120530201424.31527.33142.stgit@bling.home>
-	 <20120606110514.GG757@amd.com> <1339429021.24037.8.camel@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752992Ab2FRRon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 13:44:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33424 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab2FRRom (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 13:44:42 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH 1/2] pinctrl/pinctrl-tegra: remove IS_ERR checking of pmx->pctl
+Date: Mon, 18 Jun 2012 23:14:31 +0530
+Message-Id: <1340041471-30122-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anyone?  Alexey & BenH, I know you're familiar with IOMMU groups, please
-give Joerg some kind of indication that you approve of this for POWER.
-David Woodhouse, these patches touch intel-iommu, please ack or comment:
+pinctrl_register returns a pointer of struct type struct pinctrl_dev,
+if successfully registered to pinctrl subsystem, otherwise returns
+NULL, and there wont' be any pointers which are not dereferencible.
 
-https://lkml.org/lkml/2012/5/30/445
-https://lkml.org/lkml/2012/5/30/450
+They are not type of pointer addresses but are kind of error
+codes rather actual addresses, but are a kind of return
+codes of functions returning integer types.
 
-Joerg, maybe we can just add CC: to the commit log?  Thanks,
+return -ENODEV if device registration fails.
 
-Alex
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/pinctrl/pinctrl-tegra.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-On Mon, 2012-06-11 at 09:37 -0600, Alex Williamson wrote:
-> On Wed, 2012-06-06 at 13:05 +0200, Joerg Roedel wrote:
-> > On Wed, May 30, 2012 at 02:18:29PM -0600, Alex Williamson wrote:
-> > > v2:
-> > >  - Trickle down changes from pci_get_dma_source() to better handle
-> > >    PCI device reference counting in IOMMU driver patches
-> > 
-> > Okay, I looked again over the code and looks good for merging to me.
-> 
-> Great, thanks Joerg!
-> 
-> >  The
-> > IOMMU Groups code depends on changes in the PCI code. We need to work
-> > out how to merge this.
-> > 
-> > Bjorn,
-> > 
-> > I need the PCI changes before I can merge the IOMMU Groups code. There
-> > are two ways that would work for me:
-> > 
-> > 	a) You Ack the PCI patch-set from Alex and I put it into my tree
-> > 	   and merge the IOMMU Group code on-top, or
-> > 	b) You merge the PCI related patch-set into a seperate branch
-> > 	   which you can merge into your next-branch and which I can
-> > 	   pull in to merge IOMMU Groups on-top.
-> > 
-> > Please let me know what works best for you.
-> 
-> I also poked Bjorn with a minor v3 spin on his series, no change to this
-> series.
-> 
-> > What I would also appreciate are a few more Acks from other IOMMU
-> > maintainers (David W.?) and from the Power side.
-> 
-> Alexey, BenH, can either of you comment on this series from the POWER
-> side?  I know Alexey has an implementation of VFIO/Qemu device
-> assignment working on POWER with this series.  David Woodhouse, any
-> comments?  Thanks,
-> 
-> Alex
-
-
-
+diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+index 07228b1..ae52e4e 100644
+--- a/drivers/pinctrl/pinctrl-tegra.c
++++ b/drivers/pinctrl/pinctrl-tegra.c
+@@ -745,9 +745,9 @@ int __devinit tegra_pinctrl_probe(struct platform_device *pdev,
+ 	}
+ 
+ 	pmx->pctl = pinctrl_register(&tegra_pinctrl_desc, &pdev->dev, pmx);
+-	if (IS_ERR(pmx->pctl)) {
++	if (!pmx->pctl) {
+ 		dev_err(&pdev->dev, "Couldn't register pinctrl driver\n");
+-		return PTR_ERR(pmx->pctl);
++		return -ENODEV;
+ 	}
+ 
+ 	pinctrl_add_gpio_range(pmx->pctl, &tegra_pinctrl_gpio_range);
+-- 
+1.7.9.5
 
