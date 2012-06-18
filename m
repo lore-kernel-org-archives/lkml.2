@@ -1,122 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab2FRG2J (ORCPT <rfc822;w@1wt.eu>);
+	id S1756076Ab2FRG2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 02:28:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62053 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755846Ab2FRG2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Jun 2012 02:28:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63878 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753956Ab2FRG0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 02:26:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="181387368"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
-        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH v5 09/12] libata: tell scsi layer device supports runtime power off
-Date: Mon, 18 Jun 2012 14:26:03 +0800
-Message-Id: <1340000766-129148-10-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
-References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
+MIME-Version: 1.0
+In-Reply-To: <CAK7t_7UtjkuZaQRhnj99Y_eRcHLRLmqXOaiGTi4tHwGB4MHsgg@mail.gmail.com>
+References: <CANQmPXip+fKaSYsKaY5TF3Rax=XFFgyh=+BY61snVsgpReL7RA@mail.gmail.com>
+	<1339914285.7349.75.camel@marge.simpson.net>
+	<CANQmPXikSJfms9n2vNugw=+7fijyRem3RHqWfCCM=XcBXDSU6A@mail.gmail.com>
+	<CAK7t_7UtjkuZaQRhnj99Y_eRcHLRLmqXOaiGTi4tHwGB4MHsgg@mail.gmail.com>
+Date: Mon, 18 Jun 2012 14:28:08 +0800
+Message-ID: <CANQmPXgqeERy55LtwO8a-bZAnSacW7bdL_o3jQkne+aGxUOVMg@mail.gmail.com>
+Subject: Re: [PATCH][ANNOUNCE]RIFS-ES Scheduling V1 release.
+From: Chen <hi3766691@gmail.com>
+To: Vikram Dhillon <opensolarisdev@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaron Lu <aaron.lu@amd.com>
+On Mon, Jun 18, 2012 at 11:01 AM, Vikram Dhillon
+<opensolarisdev@gmail.com> wrote:
+> On Sun, Jun 17, 2012 at 6:24 PM, Chen <hi3766691@gmail.com> wrote:
+>> Sorry for my fault.
+>> The patch has build issue and I post the new one.
+>
+> Hi Chen,
+>
+> It is always very interesting to see new scheduler designs however can
+> you shows us some benchmarks? How does this compare to CFS currently?
+> Also how well does it scale beyond desktops?
+>
+> - Vikram
 
-If ATA device supports "Device Attention", then tell scsi layer that
-the device supports runtime power off.
 
-Signed-off-by: Aaron Lu <aaron.lu@amd.com>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/ata/libata-acpi.c  |   32 ++++++++++++++++++++++++++++----
- include/scsi/scsi_device.h |    1 +
- 2 files changed, 29 insertions(+), 4 deletions(-)
+Here is the benchmark result(Latency) for RIFS-ES and CFS(I have done
+them with computer and I am posting them with my Android phone now)
 
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index 9287593..0c54d1e 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -1000,7 +1000,10 @@ static void ata_acpi_add_pm_notifier(struct ata_device *dev)
- 		return;
- 
- 	status = acpi_bus_get_device(handle, &acpi_dev);
--	if (ACPI_SUCCESS(status)) {
-+	if (ACPI_FAILURE(status))
-+		return;
-+
-+	if (dev->sdev->can_power_off) {
- 		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
- 			ata_acpi_wake_dev, dev);
- 		device_set_run_wake(&dev->sdev->sdev_gendev, true);
-@@ -1018,7 +1021,10 @@ static void ata_acpi_remove_pm_notifier(struct ata_device *dev)
- 		return;
- 
- 	status = acpi_bus_get_device(handle, &acpi_dev);
--	if (ACPI_SUCCESS(status)) {
-+	if (ACPI_FAILURE(status))
-+		return;
-+
-+	if (dev->sdev->can_power_off) {
- 		device_set_run_wake(&dev->sdev->sdev_gendev, false);
- 		acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
- 			ata_acpi_wake_dev);
-@@ -1102,10 +1108,13 @@ static int ata_acpi_bind_host(struct device *dev, int host, acpi_handle *handle)
- static int ata_acpi_bind_device(struct device *dev, int channel, int id,
- 				acpi_handle *handle)
- {
--	struct device *host = dev->parent->parent;
--	struct Scsi_Host *shost = dev_to_shost(host);
-+	struct scsi_device *sdev = to_scsi_device(dev);
-+	struct Scsi_Host *shost = sdev->host;
- 	struct ata_port *ap = ata_shost_to_port(shost);
- 	struct ata_device *ata_dev;
-+	acpi_status status;
-+	struct acpi_device *acpi_dev;
-+	struct acpi_device_power_state *states;
- 
- 	if (ap->flags & ATA_FLAG_ACPI_SATA)
- 		ata_dev = &ap->link.device[channel];
-@@ -1117,6 +1126,21 @@ static int ata_acpi_bind_device(struct device *dev, int channel, int id,
- 	if (!*handle)
- 		return -ENODEV;
- 
-+	status = acpi_bus_get_device(*handle, &acpi_dev);
-+	if (ACPI_FAILURE(status))
-+		return 0;
-+
-+	/*
-+	 * If firmware has _PS3 or _PR3 for this device,
-+	 * and this ata ODD device support device attention,
-+	 * it means this device can be powered off
-+	 */
-+	states = acpi_dev->power.states;
-+	if ((states[ACPI_STATE_D3_HOT].flags.valid ||
-+			states[ACPI_STATE_D3_COLD].flags.explicit_set) &&
-+			ata_dev->flags & ATA_DFLAG_DA)
-+		sdev->can_power_off = 1;
-+
- 	return 0;
- }
- 
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index 6efb2e1..1237fac 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -152,6 +152,7 @@ struct scsi_device {
- 	unsigned no_read_disc_info:1;	/* Avoid READ_DISC_INFO cmds */
- 	unsigned no_read_capacity_16:1; /* Avoid READ_CAPACITY_16 cmds */
- 	unsigned is_visible:1;	/* is the device visible in sysfs */
-+	unsigned can_power_off:1; /* Device supports runtime power off */
- 
- 	DECLARE_BITMAP(supported_events, SDEV_EVT_MAXBITS); /* supported events */
- 	struct list_head event_list;	/* asserted events */
--- 
-1.7.10
+RIFS-ES
+========================================
+[root@localhost admin]# latt -c1 sleep 10
 
+Parameters: min_wait=100ms, max_wait=500ms, clients=1
+Entries logged: 27
+
+Wakeup averages
+-------------------------------------
+	Max		      25 usec
+	Avg		      10 usec
+	Stdev		       3 usec
+	Stdev mean	       1 usec
+
+Work averages
+-------------------------------------
+	Max		   20265 usec
+	Avg		   20100 usec
+	Stdev		      82 usec
+	Stdev mean	      16 usec
+[root@localhost admin]# latt -c2 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=2
+Entries logged: 54
+
+Wakeup averages
+-------------------------------------
+	Max		     824 usec
+	Avg		      30 usec
+	Stdev		     117 usec
+	Stdev mean	      16 usec
+
+Work averages
+-------------------------------------
+	Max		   21472 usec
+	Avg		   20486 usec
+	Stdev		     190 usec
+	Stdev mean	      26 usec
+[root@localhost admin]# latt -c4 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=4
+Entries logged: 104
+
+Wakeup averages
+-------------------------------------
+	Max		   20423 usec
+	Avg		    2343 usec
+	Stdev		    3810 usec
+	Stdev mean	     374 usec
+
+Work averages
+-------------------------------------
+	Max		   41037 usec
+	Avg		   36096 usec
+	Stdev		    4247 usec
+	Stdev mean	     416 usec
+[root@localhost admin]# latt -c8 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=8
+Entries logged: 184
+
+Wakeup averages
+-------------------------------------
+	Max		   71284 usec
+	Avg		    6112 usec
+	Stdev		    9640 usec
+	Stdev mean	     711 usec
+
+Work averages
+-------------------------------------
+	Max		   83043 usec
+	Avg		   68615 usec
+	Stdev		   10615 usec
+	Stdev mean	     783 usec
+[root@localhost admin]# latt -c16 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=16
+Entries logged: 320
+
+Wakeup averages
+-------------------------------------
+	Max		   35669 usec
+	Avg		    9690 usec
+	Stdev		    8961 usec
+	Stdev mean	     501 usec
+
+Work averages
+-------------------------------------
+	Max		  166790 usec
+	Avg		  136161 usec
+	Stdev		   30660 usec
+	Stdev mean	    1714 usec
+
+
+RIFS-ES: Total result for wake up average latency:
+-c1:
+	Avg		      10 usec
+-c2:
+	Avg		      30 usec
+-c4:
+	Avg		    2343 usec
+-c8:
+	Avg		    6112 usec
+-c16:
+	Avg		    9690 usec
+
+CFS
+========================================
+[root@localhost ~]$ latt -c1 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=1
+Entries logged: 27
+
+Wakeup averages
+-------------------------------------
+	Max		      40 usec
+	Avg		      21 usec
+	Stdev		       8 usec
+	Stdev mean	       2 usec
+
+Work averages
+-------------------------------------
+	Max		   20648 usec
+	Avg		   20262 usec
+	Stdev		      97 usec
+	Stdev mean	      19 usec
+[root@localhost ~]$ latt -c2 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=2
+Entries logged: 54
+
+Wakeup averages
+-------------------------------------
+	Max		      45 usec
+	Avg		      19 usec
+	Stdev		      10 usec
+	Stdev mean	       1 usec
+
+Work averages
+-------------------------------------
+	Max		   21549 usec
+	Avg		   20495 usec
+	Stdev		     320 usec
+	Stdev mean	      43 usec
+[root@localhost ~]$ latt -c4 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=4
+Entries logged: 104
+
+Wakeup averages
+-------------------------------------
+	Max		   20430 usec
+	Avg		    4900 usec
+	Stdev		    6274 usec
+	Stdev mean	     615 usec
+
+Work averages
+-------------------------------------
+	Max		   50538 usec
+	Avg		   30564 usec
+	Stdev		    6492 usec
+	Stdev mean	     637 usec
+[root@localhost ~]$ latt -c8 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=8
+Entries logged: 184
+
+Wakeup averages
+-------------------------------------
+	Max		   38195 usec
+	Avg		    8068 usec
+	Stdev		    8132 usec
+	Stdev mean	     599 usec
+
+Work averages
+-------------------------------------
+	Max		   83525 usec
+	Avg		   67597 usec
+	Stdev		   10037 usec
+	Stdev mean	     740 usec
+[root@localhost ~]$ latt -c16 sleep 10
+
+Parameters: min_wait=100ms, max_wait=500ms, clients=16
+Entries logged: 320
+
+Wakeup averages
+-------------------------------------
+	Max		   83711 usec
+	Avg		   17497 usec
+	Stdev		   21219 usec
+	Stdev mean	    1186 usec
+
+Work averages
+-------------------------------------
+	Max		  166547 usec
+	Avg		  119376 usec
+	Stdev		   31758 usec
+	Stdev mean	    1775 usec
+
+
+CFS: Total result for wake up average latency:
+-c1:
+	Avg		      21 usec
+-c2:
+	Avg		      19 usec
+-c4:
+	Avg		    4900 usec
+-c8:
+	Avg		    8068 usec
+-c16:
+	Avg		   17497 usec
