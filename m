@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab2FRCGf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 22:06:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50652 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab2FRCGe (ORCPT
+	id S1752939Ab2FRCLk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 22:11:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40120 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2FRCLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 22:06:34 -0400
-Message-ID: <4FDE8D27.6030508@wwwdotorg.org>
-Date: Sun, 17 Jun 2012 20:06:31 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
-        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] gpio: of_get_named_gpio_flags() return -EPROBE_DEFER
- if GPIO not yet available
-References: <1339927893-8842-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1339927893-8842-1-git-send-email-stigge@antcom.de>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 17 Jun 2012 22:11:39 -0400
+Message-ID: <1339985488.11918.3.camel@phoenix>
+Subject: [PATCH RFC] regulator: core: Support table based mapping in
+ regulator_set_voltage_time_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 18 Jun 2012 10:11:28 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2012 04:11 AM, Roland Stigge wrote:
-> of_get_named_gpio_flags() and of_get_named_gpio() return -EPROBE_DEFER if the
-> respective GPIO is not (yet) available. This is useful if driver's probe()
-> functions try to get a GPIO whose controller isn't probed yet. Thus, the driver
-> can be probed again later on.
-> 
-> The function still returns -EINVAL on other errors (parse error or node doesn't
-> exist). This way, the case of an optional/intentionally missing GPIO is handled
-> appropriately.
+For table based mapping, we can calculate voltage difference by below equation:
+abs(rdev->desc->volt_table[new_selector] - rdev->desc->volt_table[old_selector])
 
-While I agree this is a correct change, it is going to break some
-existing code - at least sound/soc/tegra/tegra_{wm8903.c,alc5632.c}. I'm
-happy to send patches for those files though (is this going into 3.5 or
-3.6?). However, have you audited all existing callers (including
-indirect, e.g. through plain of_get_named_gpio()) for issues this will
-cause?
+Thus we can make regulator_set_voltage_time_sel work for table based mapping.
+
+regulator_set_voltage_time_sel() only supports linear or table based mapping.
+In case it is misused, also warn if neither linear nor table based mapping
+is used with regulator_set_voltage_time_sel().
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/core.c |   37 +++++++++++++++++++++++++------------
+ 1 file changed, 25 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index c9a427b..bf0306f 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2305,25 +2305,38 @@ EXPORT_SYMBOL_GPL(regulator_set_voltage_time);
+  * Provided with the starting and target voltage selectors, this function
+  * returns time in microseconds required to rise or fall to this new voltage
+  *
+- * Drivers providing uV_step in their regulator_desc and ramp_delay in
+- * regulation_constraints can use this as their set_voltage_time_sel()
+- * operation.
++ * Drivers providing uV_step or volt_table in their regulator_desc and
++ * ramp_delay in regulation_constraints can use this as their
++ * set_voltage_time_sel() operation.
+  */
+ int regulator_set_voltage_time_sel(struct regulator_dev *rdev,
+ 				   unsigned int old_selector,
+ 				   unsigned int new_selector)
+ {
+-	if (rdev->desc->uV_step) {
+-		if (rdev->constraints->ramp_delay)
+-			return DIV_ROUND_UP(rdev->desc->uV_step *
+-				abs(new_selector - old_selector),
+-				rdev->constraints->ramp_delay * 1000);
+-		if (rdev->desc->ramp_delay)
+-			return DIV_ROUND_UP(rdev->desc->uV_step *
+-				abs(new_selector - old_selector),
+-				rdev->desc->ramp_delay * 1000);
++	unsigned int ramp_delay = 0;
++
++	if (rdev->constraints->ramp_delay)
++		ramp_delay = rdev->constraints->ramp_delay;
++	else if (rdev->desc->ramp_delay)
++		ramp_delay = rdev->desc->ramp_delay;
++
++	if (ramp_delay == 0) {
+ 		rdev_warn(rdev, "ramp_delay not set\n");
++		return 0;
+ 	}
++
++	if (rdev->desc->uV_step) {
++		return DIV_ROUND_UP(rdev->desc->uV_step *
++				    abs(new_selector - old_selector),
++				    ramp_delay * 1000);
++	} else if (rdev->desc->volt_table) {
++		return DIV_ROUND_UP(abs(rdev->desc->volt_table[new_selector] -
++					rdev->desc->volt_table[old_selector]),
++				    ramp_delay * 1000);
++	} else {
++		rdev_warn(rdev, "Unsupported voltage mapping settings\n");
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
+
+
