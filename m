@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab2FRNaQ (ORCPT <rfc822;w@1wt.eu>);
+	id S1752280Ab2FRNaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 09:30:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48381 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751404Ab2FRNaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Jun 2012 09:30:16 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:36978 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751290Ab2FRNaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 09:30:14 -0400
-Message-ID: <4FDF2D58.9010006@ti.com>
-Date: Mon, 18 Jun 2012 19:00:00 +0530
-From: a0393909 <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
+Date: Mon, 18 Jun 2012 15:30:12 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm <linux-mm@kvack.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Lee <rob.lee@linaro.org>
-Subject: Re: [linux-pm] cpuidle future and improvements
-References: <4FDEE98D.7010802@linaro.org>
-In-Reply-To: <4FDEE98D.7010802@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] memcg: remove -EINTR at rmdir()
+Message-ID: <20120618133012.GB2313@tiehlicka.suse.cz>
+References: <4FDF17A3.9060202@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FDF17A3.9060202@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
+On Mon 18-06-12 20:57:23, KAMEZAWA Hiroyuki wrote:
+> 2 follow-up patches for "memcg: move charges to root cgroup if use_hierarchy=0",
+> developped/tested onto memcg-devel tree. Maybe no HUNK with -next and -mm....
+> -Kame
+> ==
+> memcg: remove -EINTR at rmdir()
+> 
+> By commit "memcg: move charges to root cgroup if use_hierarchy=0",
+> no memory reclaiming will occur at removing memory cgroup.
 
-On 06/18/2012 02:10 PM, Daniel Lezcano wrote:
->
-> Dear all,
->
-> A few weeks ago, Peter De Schrijver proposed a patch [1] to allow per
-> cpu latencies. We had a discussion about this patchset because it
-> reverse the modifications Deepthi did some months ago [2] and we may
-> want to provide a different implementation.
->
-> The Linaro Connect [3] event bring us the opportunity to meet people
-> involved in the power management and the cpuidle area for different SoC.
->
-> With the Tegra3 and big.LITTLE architecture, making per cpu latencies
-> for cpuidle is vital.
->
-> Also, the SoC vendors would like to have the ability to tune their cpu
-> latencies through the device tree.
->
-> We agreed in the following steps:
->
-> 1. factor out / cleanup the cpuidle code as much as possible
-> 2. better sharing of code amongst SoC idle drivers by moving common bits
-> to core code
-> 3. make the cpuidle_state structure contain only data
-> 4. add a API to register latencies per cpu
->
-> These four steps impacts all the architecture. I began the factor out
-> code / cleanup [4] and that has been accepted upstream and I proposed
-> some modifications [5] but I had a very few answers.
->
-Another thing which we discussed is bringing the CPU cluster/package
-notion in the core idle code. Couple idle did bring that idea to some
-extent but in can be further extended and absratcted. Atm, most of
-the work is done in back-end cpuidle drivers which can be easily
-abstracted if the "cluster idle" notion is supported in the core layer.
+OK, so the there are only 2 reasons why move_parent could fail in this
+path. 1) it races with somebody else who is uncharging or moving the
+charge and 2) THP split.
+1) works for us and 2) doens't seem to be serious enough to expect that
+it would stall rmdir on the group for unbound amount of time so the
+change is safe (can we make this into the changelog please?).
 
-Per CPU __and__ per operating point(OPP), latency is something which
-can be also added to the list. From the discussion I remember, it
-matters for few SoCs and can be beneficial.
+> So, we don't need to take care of user interrupt by signal. This
+> patch removes it.
+> (*) If -EINTR is returned here, cgroup will show WARNING.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Regards
-Santosh
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0623300..cf8a0f6 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3890,9 +3890,6 @@ move_account:
+>  		ret = -EBUSY;
+>  		if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
+>  			goto out;
+> -		ret = -EINTR;
+> -		if (signal_pending(current))
+> -			goto out;
+>  		/* This is for making all *used* pages to be on LRU. */
+>  		lru_add_drain_all();
+>  		drain_all_stock_sync(memcg);
+> -- 
+> 1.7.4.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
