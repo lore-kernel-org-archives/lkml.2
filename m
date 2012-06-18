@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab2FRMRJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:17:09 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41217 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab2FRMRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:17:06 -0400
-Message-ID: <4FDF1BAB.9050205@parallels.com>
-Date: Mon, 18 Jun 2012 16:14:35 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752099Ab2FRMSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:18:44 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:49533 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2FRMSn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 08:18:43 -0400
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-mm@kvack.org>, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v4 00/25] kmem limitation for memcg
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <4FDF1ABE.7070200@jp.fujitsu.com>
-In-Reply-To: <4FDF1ABE.7070200@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACRpkdZzj2J8UY30Ee+XEtf2NarJJzVzzHCWkucptUuQb3L_ww@mail.gmail.com>
+References: <1339946252-21019-1-git-send-email-otavio@ossystems.com.br>
+	<1339946252-21019-2-git-send-email-otavio@ossystems.com.br>
+	<CACRpkdZzj2J8UY30Ee+XEtf2NarJJzVzzHCWkucptUuQb3L_ww@mail.gmail.com>
+Date: Mon, 18 Jun 2012 09:18:42 -0300
+X-Google-Sender-Auth: EaXG7RJ8oGWVUibxrCe-VHP50Aw
+Message-ID: <CAP9ODKo+wqeyVRX3dLXdktYD2yps1d6E1UZs3zyikAZi_pf7jg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pinctrl: pinctrl-mxs: fix implicit declaration of free()
+From: Otavio Salvador <otavio@ossystems.com.br>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Devendra aaru <devendra.aaru@gmail.com>,
+        Fabio Estevam <festevam@gmail.com>, fabio.estevam@freescale.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 04:10 PM, Kamezawa Hiroyuki wrote:
-> (2012/06/18 19:27), Glauber Costa wrote:
->> Hello All,
->>
->> This is my new take for the memcg kmem accounting. This should merge
->> all of the previous comments from you guys, specially concerning the big churn
->> inside the allocators themselves.
->>
->> My focus in this new round was to keep the changes in the cache internals to
->> a minimum. To do that, I relied upon two main pillars:
->>
->>    * Cristoph's unification series, that allowed me to put must of the changes
->>      in a common file. Even then, the changes are not too many, since the overal
->>      level of invasiveness was decreased.
->>    * Accounting is done directly from the page allocator. This means some pages
->>      can fail to be accounted, but that can only happen when the task calling
->>      kmem_cache_alloc or kmalloc is not the same task allocating a new page.
->>      This never happens in steady state operation if the tasks are kept in the
->>      same memcg. Naturally, if the page ends up being accounted to a memcg that
->>      is not limited (such as root memcg), that particular page will simply not
->>      be accounted.
->>
->> The dispatcher code stays (mem_cgroup_get_kmem_cache), being the mechanism who
->> guarantees that, during steady state operation, all objects allocated in a page
->> will belong to the same memcg. I consider this a good compromise point between
->> strict and loose accounting here.
->>
-> 
-> 2 questions.
-> 
->    - Do you have performance numbers ?
+On Mon, Jun 18, 2012 at 3:04 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> But:
+>
+>>  free_group:
+>> -       if (!purecfg)
+>> -               free(group);
+>> +       kfree(group);
+>
+> Why did you delete the if (!purecfg) clause?
 
-Not extensive. I've run some microbenchmarks trying to determine the
-effect of my code on kmem_cache_alloc, and found it to be in the order
-of 2 to 3 %. I would expect that to vanish in a workload benchmark.
+Ouch! I missread it as if where checking for valid group.
 
-> 
->    - Do you think user-memory memcg should be switched to page-allocator level accounting ?
->      (it will require some study for modifying current bached-freeing and per-cpu-stock
->       logics...)
+Thanks by noticing it.
 
-I don't see a reason for that. My main goal by doing that was to reduce
-the churn in the cache internal structures, but specially because there
-is at least two of them, obeying a stable interface. The way I
-understand it, memcg for user pages is already pretty well integrated to
-the page allocator, so the benefit of it is questionable.
+I will drop it from my tree then.
+
+-- 
+Otavio Salvador                             O.S. Systems
+E-mail: otavio@ossystems.com.br  http://www.ossystems.com.br
+Mobile: +55 53 9981-7854              http://projetos.ossystems.com.br
