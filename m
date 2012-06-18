@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab2FRHSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 03:18:12 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37698 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab2FRHSK (ORCPT
+	id S1751737Ab2FRHZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 03:25:57 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:36308 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab2FRHZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 03:18:10 -0400
-Message-ID: <4FDED62D.6030008@linaro.org>
-Date: Mon, 18 Jun 2012 08:18:05 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 18 Jun 2012 03:25:55 -0400
+X-AuditID: b753bd60-996f1ba000000f6c-55-4fded8008410
+X-AuditID: b753bd60-996f1ba000000f6c-55-4fded8008410
+Message-ID: <4FDED7D8.7070106@hitachi.com>
+Date: Mon, 18 Jun 2012 16:25:12 +0900
+From: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-CC: Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: Fwd: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik
- I2C driver
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com> <4FD8BAD2.50703@linaro.org> <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com> <4FDAFA17.6050502@linaro.org> <CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com> <20120615115042.GA27480@bnru02> <4FDB2E57.4030904@linaro.org> <20120615130544.GA28537@bnru02> <4FDB3642.5030804@linaro.org> <CACRpkdZ7ESKhokk8Z+6sC9Kq+jPztFNwzger0Db7nCD1fPnG1A@mail.gmail.com>
-In-Reply-To: <CACRpkdZ7ESKhokk8Z+6sC9Kq+jPztFNwzger0Db7nCD1fPnG1A@mail.gmail.com>
+To: Avi Kivity <avi@redhat.com>, Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+Cc: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>,
+        vgoyal@redhat.com, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v2 0/5] Export offsets of VMCS fields as note information
+ for kdump
+References: <4FB35C48.30708@cn.fujitsu.com> <4FB92D5A.3060507@redhat.com> <4FB9A92D.7050108@cn.fujitsu.com> <4FB9FE08.4050905@redhat.com> <4FBA05F6.8070804@cn.fujitsu.com> <4FBA0C8A.2050003@redhat.com> <4FBB0ACA.2040907@cn.fujitsu.com> <4FC30C40.80500@cn.fujitsu.com> <4FC37D94.3080404@redhat.com> <4FC47579.2040504@cn.fujitsu.com> <4FD58399.4050700@cn.fujitsu.com> <4FD9E3FF.4050906@redhat.com>
+In-Reply-To: <4FD9E3FF.4050906@redhat.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/06/12 18:43, Linus Walleij wrote:
-> Gah, what a thread...
->
-> On Fri, Jun 15, 2012 at 3:18 PM, Lee Jones<lee.jones@linaro.org>  wrote:
->> On 15/06/12 14:05, Srinidhi Kasagar wrote:
->>> On Fri, Jun 15, 2012 at 14:45:11 +0200, Lee Jones wrote:
->>>> On 15/06/12 12:50, Srinidhi Kasagar wrote:
->
->>>>>> +static struct nmk_i2c_controller u8500_i2c = {
->>>>>> +       /*
->>>>>> +        * Slave data setup time; 250ns, 100ns, and 10ns, which
->>>>>> +        * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
->>>>>> +        */
->>>>>> +       .slsu           = 0xe,
->>>>>> +       .tft            = 1,      /* Tx FIFO threshold */
->>>>>> +       .rft            = 8,      /* Rx FIFO threshold */
->>>>>> +       .clk_freq       = 100000, /* std. mode operation */
->>>>>> +       .timeout        = 200,    /* Slave response timeout(ms) */
->>>>>> +       .sm             = I2C_FREQ_MODE_FAST,
->>>>>
->>>>> How is this possible? you are setting clk_freq as 100kb/s and mode
->>>>> as fast mode which is supposed to be 400kb/s.
->>>>
->>>> That's not how I read it:
->>>
->>> But it is not readable. It confuses people.
->>
->> I understood it. :)
->>
->> If you think it's unclear speak to the author, Linus. He's CC'ed.
->
-> Author of what? The i2c driver was written by Srinidhi. (The
-> MODULE_AUTHOR() clause should be a good hint...)
+Hi, Avi, Yanfei
 
-Actually, we appear to have our wires crossed. You wrote the board data 
-stuff below, which changes the mode from STANDARD to FAST, no doubt 
-using Srinidhi's struct explanation comments found in 
-arch/arm/plat-nomadik/include/plat/i2c.h.
+I'm YOSHIDA Masanori from Hitachi, a developer of livedump.
 
- > I'll cook a separate patch for this or something.
-
-Cool, thanks Linus.
-
-But you're correct in what you say Linus. Srinidhi, the comments which 
-are you say are confusing are the bits you are the author of: 
-e208c447bd728920e4f3d438a706344ea31249b9?
-
-> But it's true that board data for the ux500 kernel use
-> 100000 Hz and I2C_FREQ_MODE_FAST, in the board-mop500.c
-> file, like this:
->
-> U8500_I2C_CONTROLLER(0, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
-> U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
-> U8500_I2C_CONTROLLER(2, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
-> U8500_I2C_CONTROLLER(3, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
+ >> And here is a new case from the LinuxCon Japan:
+ >>
+ >> Developers from Hitach are now developing a new livedump mechanism for the
+ >> same reason as ours. They have come to the situation *many times* that guest
+ >> machines crashed due to host's failures, in particular, under development.
  >
-> This is indeed a bit odd. But obviously it works... But reading some
-> fixes in another tree it seems it should look like this:
->
-> /*
->   * The board uses 4 i2c controllers, initialize all of
->   * them with slave data setup time of 250 ns,
->   * Tx&  Rx FIFO threshold values as 1 and standard
->   * mode of operation
->   */
-> U8500_I2C_CONTROLLER(0, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
-> U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
-> U8500_I2C_CONTROLLER(2, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
-> U8500_I2C_CONTROLLER(3, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
->
-> Which makes *much* more sense.
+ > This has happened to me as well, possible even more times .  I don't
+ > use crash dumps for debugging but different people may use different
+ > techniques.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+As Yanfei's introduction, I'm developing livedump for cases where
+guests crash due to host's failures.
+
+Especially in very important systems, it is strongly requested to
+identify the root cause of any failure even if it is very rare.
+For this purpose, crash dumps must be obtained.
+Therefore, we think livedump technique must be applied to the
+virtualization system on that kind of area.
+
+ >>> After the buggy situation is reproduced, we panic the host *manually*.
+ >>> Then we could use userland tools to get guest machine's crash dump from 
+host machine's
+ >>> with the feature provided by this patch set. Finally we could analyse them 
+separately
+ >>> to find which side causes the problem.
+ >>>
+ >>
+ >> Could you please tell me your attitude towards this patch?
+ >
+ > I still dislike it conceptually.  But let me do a technical review of
+ > the latest version.
+
+Actually, current implementation of livedump is just a core part,
+which dumps only the image of kernel space. And I'd like to expand
+it to obtain guest image at the same time too.
+Also for this situation, VMCSINFO seems necessary to be exported.
+
+Thanks,
+YOSHIDA Masanori
+
+Yokohama Research Laboratory,
+Hitachi, Ltd.
