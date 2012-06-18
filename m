@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750982Ab2FRLwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:52:09 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:38155 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab2FRLwH (ORCPT
+	id S1751180Ab2FRLw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:52:27 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49229 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750997Ab2FRLw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:52:07 -0400
+	Mon, 18 Jun 2012 07:52:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaNF-Tgz_ncnrJp7xsCbGWEgcfmj_yuY0Q8EiWRt-g0rFw@mail.gmail.com>
-References: <CAHdPZaNF-Tgz_ncnrJp7xsCbGWEgcfmj_yuY0Q8EiWRt-g0rFw@mail.gmail.com>
-Date: Mon, 18 Jun 2012 13:52:06 +0200
-Message-ID: <CACRpkda5nYmAT3-fkxdYQEGpi6U=L-kphQEu3naoxPzO9a-7pQ@mail.gmail.com>
-Subject: Re: Q: return of pinctrl_register and handing at drivers that use
- this function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CACqMwkkrngBeH_rYE1KG2fAPwqF-Eum_4kFG4fTAw0r+eCR9eA@mail.gmail.com>
+References: <CACqMwkkrngBeH_rYE1KG2fAPwqF-Eum_4kFG4fTAw0r+eCR9eA@mail.gmail.com>
+Date: Mon, 18 Jun 2012 07:52:25 -0400
+Message-ID: <CAANzHtT5DNC0RVWzQs4FV9Q7OWJc5cdeg3A17Bd-6HQ5Xzcerw@mail.gmail.com>
+Subject: Re:
+From: =?UTF-8?B?wqA=?= <porpen@gmail.com>
+To: sakthiperumal karuthasamy <sakthiperumallinux@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 1:47 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+Hi,
 
-> since the pinctrl_register returns a pointer of structure type "struct
-> pinctrl_dev" or NULL if it was failed to register the pinctrl driver,
-> so IS_ERR checking is not required?
+On 18 June 2012 05:44, sakthiperumal karuthasamy
+<sakthiperumallinux@gmail.com> wrote:
+> how to reduce ramdisk
+>
+> i am beginers to kernel developement . where do i start
 
-Yes. (Unless I did something wrong.)
+That is an _implementation_ problem, not a development problem.
 
-> My understanding about IS_ERR is that its used when the pointer
-> addresses are kind of error codes rather actual addresses,
-> but are a kind of return codes of functions returning integer types.
+Your question is better placed in either the Linux-Admin or your
+distro's equivalent mail list.
+(See http://vger.kernel.org/vger-lists.html#linux-admin )
 
-You are absolutely right.
+However, (since I've already typed this much) try
+make help
+and read about localyesconfig
 
-Yours,
-Linus Walleij
+good luck!
+-p
