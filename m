@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2FRLar (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:30:47 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36293 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab2FRLap (ORCPT
+	id S1752532Ab2FRLaz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:30:55 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43210 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab2FRLaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:30:45 -0400
+	Mon, 18 Jun 2012 07:30:52 -0400
 From: Michal Simek <monstr@monstr.eu>
 To: linux-kernel@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>, Marc Zyngier <marc.zyngier@arm.com>,
@@ -17,9 +17,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Marc Zyngier <marc.zyngier@arm.com>,
         linux-arm-kernel@lists.infradead.org, Ohad Ben-Cohen <ohad@wizery.com>,
         Peter Crosthwaite <peter.crosthwaite@petalogix.com>,
         Michal Simek <monstr@monstr.eu>
-Subject: [RFC PATCH 3/8] ARM: gic: Introduce new gic_set_cpu
-Date: Mon, 18 Jun 2012 13:30:06 +0200
-Message-Id: <1340019011-18642-4-git-send-email-monstr@monstr.eu>
+Subject: [RFC PATCH 5/8] AMP: smp: Extend number of IPIs
+Date: Mon, 18 Jun 2012 13:30:08 +0200
+Message-Id: <1340019011-18642-6-git-send-email-monstr@monstr.eu>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1340019011-18642-1-git-send-email-monstr@monstr.eu>
 References: <1340019011-18642-1-git-send-email-monstr@monstr.eu>
@@ -27,50 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gic_set_cpu enable option to forward specific IRQ to choosen
-ARM core.
+GIC supports up to 16 IPIs.
 
 Signed-off-by: Michal Simek <monstr@monstr.eu>
----
- arch/arm/common/gic.c               |   11 +++++++++++
- arch/arm/include/asm/hardware/gic.h |    2 ++
- 2 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index b8e7202..2998d9e 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -257,6 +257,17 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+---
+Please correct me if this code is also designed for different
+interrupt controller which doesn't support 16 IPIs.
+---
+ arch/arm/include/asm/hardirq.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
+index 436e60b..3e9ded5 100644
+--- a/arch/arm/include/asm/hardirq.h
++++ b/arch/arm/include/asm/hardirq.h
+@@ -5,7 +5,7 @@
+ #include <linux/threads.h>
+ #include <asm/irq.h>
  
- 	return IRQ_SET_MASK_OK;
- }
-+
-+void gic_set_cpu(unsigned int cpu, unsigned int irq)
-+{
-+	struct irq_data *d = irq_get_irq_data(irq);
-+	struct cpumask mask;
-+
-+	cpumask_clear(&mask);
-+	cpumask_set_cpu(cpu, &mask);
-+	gic_set_affinity(d, &mask, true);
-+}
-+EXPORT_SYMBOL(gic_set_cpu);
- #endif
+-#define NR_IPI	5
++#define NR_IPI	16
  
- #ifdef CONFIG_PM
-diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
-index 4b1ce6c..8aa9631 100644
---- a/arch/arm/include/asm/hardware/gic.h
-+++ b/arch/arm/include/asm/hardware/gic.h
-@@ -46,6 +46,8 @@ void gic_handle_irq(struct pt_regs *regs);
- void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
- void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
- 
-+void gic_set_cpu(unsigned int cpu, unsigned int irq);
-+
- static inline void gic_init(unsigned int nr, int start,
- 			    void __iomem *dist , void __iomem *cpu)
- {
+ typedef struct {
+ 	unsigned int __softirq_pending;
 -- 
 1.7.0.4
 
