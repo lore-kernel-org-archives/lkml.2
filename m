@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673Ab2FRKbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:31:18 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:23159 "EHLO relay.sw.ru"
+	id S1757831Ab2FRKba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:31:30 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:31957 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757551Ab2FRKbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:31:14 -0400
+	id S1757775Ab2FRKb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:31:27 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
@@ -14,11 +14,11 @@ Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
         <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH v4 08/25] memcg: change defines to an enum
-Date: Mon, 18 Jun 2012 14:28:01 +0400
-Message-Id: <1340015298-14133-9-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH v4 12/25] sl[au]b: always get the cache from its page in kfree
+Date: Mon, 18 Jun 2012 14:28:05 +0400
+Message-Id: <1340015298-14133-13-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
 References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
@@ -26,38 +26,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a cleanup patch for clarity of expression.
-In earlier submissions, people asked it to be in a separate
-patch, so here it is.
+struct page already have this information. If we start chaining
+caches, this information will always be more trustworthy than
+whatever is passed into the function
+
+A parent pointer is added to the slub structure, so we can make sure
+the freeing comes from either the right slab, or from its rightful
+parent.
+
+[ v3: added parent testing with VM_BUG_ON ]
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
 ---
- mm/memcontrol.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ mm/slab.c |    5 ++++-
+ mm/slab.h |   10 ++++++++++
+ mm/slub.c |    3 ++-
+ 3 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b6cb075..cc1fdb4 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -374,9 +374,12 @@ enum charge_type {
- };
- 
- /* for encoding cft->private value on file */
--#define _MEM			(0)
--#define _MEMSWAP		(1)
--#define _OOM_TYPE		(2)
-+enum res_type {
-+	_MEM,
-+	_MEMSWAP,
-+	_OOM_TYPE,
-+};
+diff --git a/mm/slab.c b/mm/slab.c
+index c30a61c..3783a6a 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3712,9 +3712,12 @@ EXPORT_SYMBOL(__kmalloc);
+  * Free an object which was previously allocated from this
+  * cache.
+  */
+-void kmem_cache_free(struct kmem_cache *cachep, void *objp)
++void kmem_cache_free(struct kmem_cache *s, void *objp)
+ {
+ 	unsigned long flags;
++	struct kmem_cache *cachep = virt_to_cache(objp);
 +
- #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
- #define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
- #define MEMFILE_ATTR(val)	((val) & 0xffff)
++	VM_BUG_ON(!((s == cachep) | slab_is_parent(s, cachep)));
+ 
+ 	local_irq_save(flags);
+ 	debug_check_no_locks_freed(objp, cachep->size);
+diff --git a/mm/slab.h b/mm/slab.h
+index 1781580..0a3e712 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -63,4 +63,14 @@ static inline bool cache_match_memcg(struct kmem_cache *cachep,
+ }
+ 
+ void __init memcg_slab_register_all(void);
++
++static inline bool slab_is_parent(struct kmem_cache *s,
++				  struct kmem_cache *candidate)
++{
++#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM) && defined(CONFIG_DEBUG_VM)
++	return candidate == s->memcg_params.parent;
++#else
++	return false;
++#endif
++}
+ #endif
+diff --git a/mm/slub.c b/mm/slub.c
+index ca4b8e0..e685cfa 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2597,7 +2597,8 @@ void kmem_cache_free(struct kmem_cache *s, void *x)
+ 
+ 	page = virt_to_head_page(x);
+ 
+-	slab_free(s, page, x, _RET_IP_);
++	VM_BUG_ON(!((page->slab == s) | slab_is_parent(page->slab, s)));
++	slab_free(page->slab, page, x, _RET_IP_);
+ 
+ 	trace_kmem_cache_free(_RET_IP_, x);
+ }
 -- 
 1.7.10.2
 
