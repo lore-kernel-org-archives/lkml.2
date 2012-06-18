@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab2FRXx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 19:53:29 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:14348 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab2FRXx2 (ORCPT
+	id S1753308Ab2FRX7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 19:59:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63342 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab2FRX7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 19:53:28 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-2.tower-209.messagelabs.com!1340063604!6250552!3
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: comedi_compat_ioctl should be NULL not 0
-Date: Mon, 18 Jun 2012 16:53:17 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 18 Jun 2012 19:59:06 -0400
+Date: Mon, 18 Jun 2012 16:59:02 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        abbotti@mev.co.uk, fmhess@users.sourceforge.net
+Subject: Re: [PATCH 1/4] staging: comedi: Kconfig: menuconfig options should
+ be bool not tristate
+Message-ID: <20120618235902.GA29679@kroah.com>
+References: <201206151520.04455.hartleys@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201206181653.18034.hartleys@visionengravers.com>
+In-Reply-To: <201206151520.04455.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_COMPAT is not defined, comedi_compat_ioctl should be
-NULL not 0 in order to set the file_operations compat_ioctl variable
-correctly.
+On Fri, Jun 15, 2012 at 03:20:04PM -0700, H Hartley Sweeten wrote:
+> The menuconfig options to enable the misc, isa, pci, pcmcia, and usb
+> comedi driver selections should be bool not tristate. They don't
+> directly affect the building of the kernel they just allow other
+> options to be selected.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+> ---
+>  drivers/staging/comedi/Kconfig |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
 
-This quiets a sparse warning about:
+This patch breaks the build for me with lots of the following errors:
+ERROR: "subdev_8255_init" [drivers/staging/comedi/drivers/adl_pci7296.ko] undefined!
+ERROR: "subdev_8255_cleanup" [drivers/staging/comedi/drivers/adl_pci7296.ko] undefined!
 
-warning: Using plain integer as NULL pointer
+So I can't take it, or the other 4 patches in this series, sorry.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/comedi_compat32.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Care to redo it?
 
-diff --git a/drivers/staging/comedi/comedi_compat32.h b/drivers/staging/comedi/comedi_compat32.h
-index 0340a89..c99573b 100644
---- a/drivers/staging/comedi/comedi_compat32.h
-+++ b/drivers/staging/comedi/comedi_compat32.h
-@@ -37,7 +37,7 @@ extern long comedi_compat_ioctl(struct file *file, unsigned int cmd,
- 
- #else /* CONFIG_COMPAT */
- 
--#define comedi_compat_ioctl 0	/* NULL */
-+#define comedi_compat_ioctl	NULL
- 
- #endif /* CONFIG_COMPAT */
- 
--- 
-1.7.11
+thanks,
 
+greg k-h
