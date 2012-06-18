@@ -1,165 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab2FRJDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 05:03:08 -0400
-Received: from smtp-out-090.synserver.de ([212.40.185.90]:1067 "EHLO
-	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755406Ab2FRJDD (ORCPT
+	id S1755947Ab2FRJDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 05:03:47 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:32945 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397Ab2FRJDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 05:03:03 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 31504
-Message-ID: <4FDEEFA2.1030009@metafoo.de>
-Date: Mon, 18 Jun 2012 11:06:42 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Saranya Gopal <saranya.gopal@intel.com>
-CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bq27x00_battery: Add support for BQ27425 chip
-References: <1339999840-12532-1-git-send-email-saranya.gopal@intel.com>
-In-Reply-To: <1339999840-12532-1-git-send-email-saranya.gopal@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Jun 2012 05:03:45 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-dd-4fdeeeeff2d1
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: "'Hiroshi Doyu'" <hdoyu@nvidia.com>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Krishna Reddy'" <vdumpa@nvidia.com>,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        "'Sumit Semwal'" <sumit.semwal@linaro.org>,
+        "'Abhinav Kochhar'" <abhinav.k@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>
+References: <1338988657-20770-1-git-send-email-m.szyprowski@samsung.com>
+ <20120618105059.12c709d68240ad18c5f8c7a5@nvidia.com>
+In-reply-to: <20120618105059.12c709d68240ad18c5f8c7a5@nvidia.com>
+Subject: RE: [PATCH/RFC 0/2] ARM: DMA-mapping: new extensions for buffer
+ sharing (part 2)
+Date: Mon, 18 Jun 2012 11:03:24 +0200
+Organization: SPRC
+Message-id: <017b01cd4d31$3c855640$b59002c0$%szyprowski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1NJzRK5UMtiFqdRfe4nK6pIBqjwgAAFiJA
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t9jQd337+75G0xfpWLRsesri8XlXXPY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4MrYvFmjoFmoYsX8T+wNjCf5uhg5OCQETCS+dxl2MXIC
+	mWISF+6tZ+ti5OIQEpjOKLFs+Xwo5yejxIdJc5hAqtgEDCW63naxgTSLCKhKPJ3LCFLDLDCH
+	VeL+vGmMIHEhgXqJOyc1Qco5BRwlNn74yw5iCwtESyy8eJgRxGYBaj329wwzSDm/gJDExFkK
+	IGFeAReJ++emskLYghI/Jt9jAbGZBbQkNm9rYoWw5SU2r3nLDHG+usSjv7ogYREBI4nLmxYw
+	QZSISNxteM46gVF4FpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525i
+	BIf4M+kdjKsaLA4xCnAwKvHw7nh9z1+INbGsuDL3EKMEB7OSCK9tO1CINyWxsiq1KD++qDQn
+	tfgQozQHi5I4b5P1BX8hgfTEktTs1NSC1CKYLBMHp1QDo25kw9+rC3OfdTOILNjj4JzNbHL3
+	yabNRp0TU7q//2+XmPqt3+7knz4lvg+FswV15ARZAo6w71Zd9DAudqH2lvwKn6sCUrXGPWKr
+	2BJM1n08/9d5E/M923aOQ7JOHdf7bgoe5V6w7kRRvdkCd4bVb3ft3rTERuTCvDWTj7tcUtd1
+	MucrPnr6txJLcUaioRZzUXEiAHErFgNtAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 08:10 AM, Saranya Gopal wrote:
-> This patch adds support for BQ27425 (TI) chip. This
-> chip is same as BQ27500 with few registers removed
-> and register address map changed. The data sheet for
-> this chip is publicly available at
-> http://www.ti.com/product/bq27425-g1
+Hi,
+
+On Monday, June 18, 2012 9:51 AM Hiroshi Doyu wrote:
+
+> On Wed, 6 Jun 2012 15:17:35 +0200
+> Marek Szyprowski <m.szyprowski@samsung.com> wrote:
 > 
-> Signed-off-by: Saranya Gopal <saranya.gopal@intel.com>
-> ---
->  drivers/power/Kconfig           |    7 +++
->  drivers/power/bq27x00_battery.c |   85 +++++++++++++++++++++++++++++---------
->  2 files changed, 72 insertions(+), 20 deletions(-)
+> > This is a continuation of the dma-mapping extensions posted in the
+> > following thread:
+> > http://thread.gmane.org/gmane.linux.kernel.mm/78644
+> >
+> > We noticed that some advanced buffer sharing use cases usually require
+> > creating a dma mapping for the same memory buffer for more than one
+> > device. Usually also such buffer is never touched with CPU, so the data
+> > are processed by the devices.
+> >
+> > From the DMA-mapping perspective this requires to call one of the
+> > dma_map_{page,single,sg} function for the given memory buffer a few
+> > times, for each of the devices. Each dma_map_* call performs CPU cache
+> > synchronization, what might be a time consuming operation, especially
+> > when the buffers are large. We would like to avoid any useless and time
+> > consuming operations, so that was the main reason for introducing
+> > another attribute for DMA-mapping subsystem: DMA_ATTR_SKIP_CPU_SYNC,
+> > which lets dma-mapping core to skip CPU cache synchronization in certain
+> > cases.
 > 
-> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-> index e3a3b49..38f6807 100644
-> --- a/drivers/power/Kconfig
-> +++ b/drivers/power/Kconfig
-> @@ -157,6 +157,13 @@ config BATTERY_BQ27X00_PLATFORM
->  	help
->  	  Say Y here to enable support for batteries with BQ27000 (HDQ) chips.
->  
-> +config BATTERY_BQ27425
-> +	bool "BQ27425 support"
-> +	depends on BATTERY_BQ27x00
-> +	depends on BATTERY_BQ27X00_I2C
+> I had implemented the similer patch(*1) to optimize/skip the cache
+> maintanace, but we did this with "dir", not with "attr", making use of
+> the existing DMA_NONE to skip cache operations. I'm just interested in
+> why you choose attr for this purpose. Could you enlight me why attr is
+> used here?
 
-There shouldn't be a need for an additional Kconfig entry.
+I also thought initially about adding new dma direction for this feature,
+but then I realized that there might be cases where the real direction of
+the data transfer might be needed (for example to set io read/write
+attributes for the mappings) and this will lead us to 3 new dma directions.
+The second reason was the compatibility with existing code. There are
+already drivers which use DMA_NONE type for their internal stuff. Adding
+support for new dma attributes requires changes in all implementations of
+dma-mapping for all architectures. DMA attributes are imho better fits
+this case. They are by default optional, so other architectures are free
+to leave them unimplemented and the drivers should still work correctly.
+ 
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-> +	help
-> +	  Say Y here to enable support for batteries with BQ27425 (I2C) chip.
-> +
->  config BATTERY_DA9030
->  	tristate "DA9030 battery driver"
->  	depends on PMIC_DA903X
-> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-> index f5d6d37..d22e415 100644
-> --- a/drivers/power/bq27x00_battery.c
-> +++ b/drivers/power/bq27x00_battery.c
-> @@ -22,6 +22,7 @@
->   * Datasheets:
->   * http://focus.ti.com/docs/prod/folders/print/bq27000.html
->   * http://focus.ti.com/docs/prod/folders/print/bq27500.html
-> + * http://www.ti.com/product/bq27425-g1
->   */
->  
->  #include <linux/module.h>
-> @@ -67,6 +68,14 @@
->  #define BQ27500_FLAG_SOC1		BIT(2) /* State-of-Charge threshold 1 */
->  #define BQ27500_FLAG_FC			BIT(9)
->  
-> +#define BQ27425_REG_TEMP		0x02
-> +#define BQ27425_REG_VOLT		0x04
-> +#define BQ27425_REG_FLAGS		0x06
-> +#define BQ27425_REG_NAC			0x08
-> +#define BQ27425_REG_FCC			0x0E
-> +#define BQ27425_REG_AI			0x10
-> +#define BQ27425_REG_SOC			0x1C
-> +
->  #define BQ27000_RS			20 /* Resistor sense */
->  
->  struct bq27x00_device_info;
-> @@ -74,7 +83,7 @@ struct bq27x00_access_methods {
->  	int (*read)(struct bq27x00_device_info *di, u8 reg, bool single);
->  };
->  
-> -enum bq27x00_chip { BQ27000, BQ27500 };
-> +enum bq27x00_chip { BQ27000, BQ27500, BQ27425};
->  
->  struct bq27x00_reg_cache {
->  	int temperature;
-> @@ -114,15 +123,17 @@ static enum power_supply_property bq27x00_battery_props[] = {
->  	POWER_SUPPLY_PROP_CAPACITY,
->  	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
->  	POWER_SUPPLY_PROP_TEMP,
-> +#ifndef CONFIG_BATTERY_BQ27425
-
-Nope, that won't work. If you have support for the bq27425 built-in you'll
-also disable these properties for the other devices supported by this
-driver. Add a second power_supply_property array for the bq27425 and assign
-the appropriate array at run-time depending on the battery type.
-
->  	POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW,
->  	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
->  	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
-> +	POWER_SUPPLY_PROP_CYCLE_COUNT,
-> +	POWER_SUPPLY_PROP_ENERGY_NOW,
-> +#endif
->  	POWER_SUPPLY_PROP_TECHNOLOGY,
->  	POWER_SUPPLY_PROP_CHARGE_FULL,
->  	POWER_SUPPLY_PROP_CHARGE_NOW,
->  	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
-> -	POWER_SUPPLY_PROP_CYCLE_COUNT,
-> -	POWER_SUPPLY_PROP_ENERGY_NOW,
->  };
->  
->  static unsigned int poll_interval = 360;
-> @@ -150,6 +161,8 @@ static int bq27x00_battery_read_rsoc(struct bq27x00_device_info *di)
->  
->  	if (di->chip == BQ27500)
->  		rsoc = bq27x00_read(di, BQ27500_REG_SOC, false);
-> +	else if (di->chip == BQ27425)
-> +		rsoc = bq27x00_read(di, BQ27425_REG_SOC, false);
->  	else
->  		rsoc = bq27x00_read(di, BQ27000_REG_RSOC, true);
->  
-> @@ -174,7 +187,7 @@ static int bq27x00_battery_read_charge(struct bq27x00_device_info *di, u8 reg)
->  		return charge;
->  	}
->  
-> -	if (di->chip == BQ27500)
-> +	if (di->chip == BQ27500 || di->chip == BQ27425)
->  		charge *= 1000;
->  	else
->  		charge = charge * 3570 / BQ27000_RS;
-> @@ -188,6 +201,8 @@ static int bq27x00_battery_read_charge(struct bq27x00_device_info *di, u8 reg)
->   */
->  static inline int bq27x00_battery_read_nac(struct bq27x00_device_info *di)
->  {
-> +	if (di->chip == BQ27425)
-> +		return bq27x00_battery_read_charge(di, BQ27425_REG_NAC);
-
-Maybe it makes sense to provide a look-up table to do the register mapping
-instead of all these if (BQ27425O) use regA else use regB.
-
->  	return bq27x00_battery_read_charge(di, BQ27x00_REG_NAC);
->  }
-> [...]
-
-> @@ -729,6 +773,7 @@ static int bq27x00_battery_remove(struct i2c_client *client)
->  static const struct i2c_device_id bq27x00_id[] = {
->  	{ "bq27200", BQ27000 },	/* bq27200 is same as bq27000, but with i2c */
->  	{ "bq27500", BQ27500 },
-> +	{ "bq27425", BQ27425 },
->  	{},
->  };
->  MODULE_DEVICE_TABLE(i2c, bq27x00_id);
 
