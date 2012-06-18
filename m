@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab2FRMXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:23:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49436 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab2FRMXo (ORCPT
+	id S1752461Ab2FRMXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:23:51 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44950 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab2FRMXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:23:44 -0400
-Date: Mon, 18 Jun 2012 14:23:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gong <gong.chen@linux.intel.com>
-cc: tony.luck@intel.com, borislav.petkov@amd.com, x86@kernel.org,
-        peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] tmp patch to fix hotplug issue in CMCI storm
-In-Reply-To: <4FDEFF53.9040902@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1206181422420.3086@ionos>
-References: <alpine.LFD.2.02.1206151122140.3086@ionos> <1340001930-12519-1-git-send-email-gong.chen@linux.intel.com> <alpine.LFD.2.02.1206180952070.3086@ionos> <4FDEFF53.9040902@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 18 Jun 2012 08:23:49 -0400
+Date: Mon, 18 Jun 2012 13:23:44 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
+        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 08/12] irqdomain: Replace LEGACY mapping with LINEAR
+Message-ID: <20120618122344.GB5739@sirena.org.uk>
+References: <1339822897-15840-1-git-send-email-grant.likely@secretlab.ca>
+ <1339822897-15840-9-git-send-email-grant.likely@secretlab.ca>
+ <1339826500.9220.224.camel@pasglop>
+ <CACxGe6v_nz5pw8xjcy2-ewcZehY_KO0tgRO7=DtWOJS-e5uXMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-918376667-1340022217=:3086"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6v_nz5pw8xjcy2-ewcZehY_KO0tgRO7=DtWOJS-e5uXMg@mail.gmail.com>
+X-Cookie: Whatever became of eternal truth?
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sat, Jun 16, 2012 at 12:16:32AM -0600, Grant Likely wrote:
 
---8323328-918376667-1340022217=:3086
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+> The functionality is still entirely there; it's just implemented with
+> a linear map that gets populated with mappings to reserved irqs.
+> Everything *should* keep working correctly.
 
-On Mon, 18 Jun 2012, Chen Gong wrote:
-> 于 2012/6/18 16:00, Thomas Gleixner 写道:
-> > On Mon, 18 Jun 2012, Chen Gong wrote:
-> > > index 92d8b5c..0493525 100644
-> > > --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> > > +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-> > > @@ -40,6 +40,7 @@ static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
-> > >   static DEFINE_PER_CPU(unsigned long, cmci_time_stamp);
-> > >   static DEFINE_PER_CPU(unsigned int, cmci_storm_cnt);
-> > >   static DEFINE_PER_CPU(unsigned int, cmci_storm_state);
-> > > +static DEFINE_PER_CPU(unsigned long, cmci_storm_hcpu_status);
-> > 
-> > Why do you insist on having another status variable, which does
-> > actually nothing than obfuscate the code?
-> > 
-> > Look at the usage sites:
-> > 
-> > >   		__this_cpu_write(cmci_storm_state, CMCI_STORM_SUBSIDED);
-> > > +		__this_cpu_write(cmci_storm_hcpu_status,
-> > > CMCI_STORM_HCPU_NONE);
-> 
-> Because here I can't substitute CMCI_STORM_HCPU_NONE with
-> CMCI_STORM_SUBSIDED. If so, the status is chaos.
-
-Have you actually read what I wrote later? You do not neeed that extra
-state, period.
-
---8323328-918376667-1340022217=:3086--
+I didn't see anywhere in the series where a user was updated to use this
+mechanism - it might help make it clear what's going on if there was
+sample code.  Since I added irqdomain support to some of my drivers I've
+had several people say things like "Oh, that's actually really simple
+now I see how to use it", this might be an example of that sort of
+issue.
