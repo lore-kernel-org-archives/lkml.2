@@ -1,124 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab2FRTUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 15:20:09 -0400
-Received: from mail19g.g19.rapidsite.net ([204.202.242.83]:15349 "HELO
-	mail19g.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751987Ab2FRTUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 15:20:08 -0400
-thread-index: Ac1Nh18KPPFHdaciQXeMXk8odNHABQ==
-Thread-Topic: Michelle Miller Recommends Advanced Sports to you
-From: <simpleprofit@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Michelle Miller Recommends Advanced Sports to you
-Date: Mon, 18 Jun 2012 15:20:07 -0400
-Message-ID: <AD9FD186D26E4E4C9C7123C62BB3A97E@g19.win.smewh.net>
+	id S1752572Ab2FRTVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 15:21:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24848 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab2FRTVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 15:21:41 -0400
+Date: Mon, 18 Jun 2012 16:21:20 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 6/9] KVM: MMU: fast path of handling guest page fault
+Message-ID: <20120618192120.GA2697@amt.cnet>
+References: <4FC470C7.5040700@linux.vnet.ibm.com>
+ <4FC471B8.3070204@linux.vnet.ibm.com>
+ <20120613224002.GE19290@amt.cnet>
+ <20120614102214.1c8a6e23.yoshikawa.takuya@oss.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012061811)]
-X-MAIL-FROM: <simpleprofit@gmail.com>
-X-SOURCE-IP: [199.239.254.58]
-X-SF-Loop: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120614102214.1c8a6e23.yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From         :Michelle Miller
-Email        :simpleprofit@gmail.com
-Friend Name  :Friend
-Friend Email :linux-kernel@vger.kernel.org
-comment      :HOW TO TURN $12 INTO $4000/WEEK ONLINE
+On Thu, Jun 14, 2012 at 10:22:14AM +0900, Takuya Yoshikawa wrote:
+> On Wed, 13 Jun 2012 19:40:02 -0300
+> Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> 
+> > mmu_spte_update is handling several different cases. Please rewrite
+> > it, add a comment on top of it (or spread comments on top of each
+> > significant code line) with all cases it is handling (also recheck it
+> > regarding new EPT accessed/dirty bits code).
+> 
+> [not about this patch]
+> 
+> EPT accessed/dirty bits will be used for more things in the future.
+> Are there any rules for using these bits?
+> 
+> Same as other bits?
 
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-HOW TO TURN $12 INTO $4000 IN 7 DAYS ONLINE
-
-
->>>>>  COMPLETE CA$H $Y$TEM  <<<<<<<
-
-
-No Selling,No Advertising,No Reffering,No Owning of website,
-
-
-Dear Fellow Entrepreneur,
-
-OK, I'm going to keep this short and sweet - I'm not going to
-bore you with the usual "rags-to-riches" story because I'm
-pretty sure you don't want to hear it.
-
-What I will say though, is this...
-             
-Click here: http://www.completecashsystem.com/?code=4fcd3f50a61c6  
-
-If you're tired of all the so-called "systems" and business
-opportunities that require you to sell affiliate products, run
-pay per click advertising campaigns, operate websites or
-recruit new members then I have excellent news for you.
-
-
-Keep reading because I guarantee that this will be the most
-important piece of information you will ever read about
-making money online... or in general for that matter.
-
-I have discovered an amazingly simple income system that will
-allow you and anyone else to earn an incredible income from
-home, just by using your computer and the Internet.
-
-This system is called "The Complete Cash System"
-and it does NOT involve any of the following:
-
-
-* No building websites
-
-* No selling products - in any way shape or form
-
-* No advertising
-
-* No data entry
-
-* No Adsense
-
-* No mailing lists
-
-* No rebate processing
-
-* No recruiting new members - this is not MLM
-
-* No uplines or downlines
-
-* No gambling
-
-* No chain letters
-
-* No surveys or "paid to read" programs
-
-If you want to make money online,
-join to my system before it's too late.
-
-Feel FREE To Check This Out
-
-Here:) ===>>  http://www.completecashsystem.com/?code=4fcd3f50a61c6 
-
-
-Michelle Miller
-United Kingdom
-
-God Bless Us.
-
-
-
-
-
-
-
-
-
-
-
-
+Do you mean hardware rules or KVM rules?
 
