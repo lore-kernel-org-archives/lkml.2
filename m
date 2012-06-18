@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2FRXGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 19:06:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59865 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab2FRXGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 19:06:33 -0400
-Message-ID: <4FDFB475.3070805@redhat.com>
-Date: Mon, 18 Jun 2012 20:06:29 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753324Ab2FRXJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 19:09:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42930 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab2FRXJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 19:09:43 -0400
+Date: Mon, 18 Jun 2012 16:09:39 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] memblock: Make sure reserved.regions is freed really
+Message-ID: <20120618230939.GI32733@google.com>
+References: <1339816331-23284-1-git-send-email-yinghai@kernel.org>
+ <20120618220519.GD32733@google.com>
+ <CAE9FiQUYsPFPnQvTsy9u3inM3hP5uWYtCRJMvQ=MvR7fCJTqzg@mail.gmail.com>
 MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH v3 5/9] video/uvc: use memweight()
-References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com> <1339203038-13069-5-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1339203038-13069-5-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQUYsPFPnQvTsy9u3inM3hP5uWYtCRJMvQ=MvR7fCJTqzg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 08-06-2012 21:50, Akinobu Mita escreveu:
-> Use memweight() to count the total number of bits set in memory area.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: linux-media@vger.kernel.org
+Hey, Yinghai.
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-> ---
-> No changes from v1
+On Mon, Jun 18, 2012 at 03:58:52PM -0700, Yinghai Lu wrote:
+> > Hmmm... nice catch but I think it's a bit complex and ugly.  In this
+> > case, we *know* that the region isn't gonna be split.  Maybe a better
+> > option is to add something like the following?
 > 
->   drivers/media/video/uvc/uvc_ctrl.c |    5 ++---
->   1 files changed, 2 insertions(+), 3 deletions(-)
+> how do you know __pa(memblock.reserved.regions) would not be merged
+> with other entries
+> in reserved.regions?
+>
+> >
+> > void memblock_remove_region_by_ptr(struct memblock_type *type,
+> >                                   struct memblock_region *r)
+> > {
+> >        WARN_ON(/* make sure @r is inside @type->regions */);
+> >        memblock_remove_region(type, r - type->regions);
+> > }
 > 
-> diff --git a/drivers/media/video/uvc/uvc_ctrl.c b/drivers/media/video/uvc/uvc_ctrl.c
-> index af26bbe..f7061a5 100644
-> --- a/drivers/media/video/uvc/uvc_ctrl.c
-> +++ b/drivers/media/video/uvc/uvc_ctrl.c
-> @@ -2083,7 +2083,7 @@ int uvc_ctrl_init_device(struct uvc_device *dev)
->   	/* Walk the entities list and instantiate controls */
->   	list_for_each_entry(entity, &dev->entities, list) {
->   		struct uvc_control *ctrl;
-> -		unsigned int bControlSize = 0, ncontrols = 0;
-> +		unsigned int bControlSize = 0, ncontrols;
->   		__u8 *bmControls = NULL;
->   
->   		if (UVC_ENTITY_TYPE(entity) == UVC_VC_EXTENSION_UNIT) {
-> @@ -2101,8 +2101,7 @@ int uvc_ctrl_init_device(struct uvc_device *dev)
->   		uvc_ctrl_prune_entity(dev, entity);
->   
->   		/* Count supported controls and allocate the controls array */
-> -		for (i = 0; i < bControlSize; ++i)
-> -			ncontrols += hweight8(bmControls[i]);
-> +		ncontrols = memweight(bmControls, bControlSize);
->   		if (ncontrols == 0)
->   			continue;
->   
-> 
+> you want to change
 
+Heh, you're right.  My suggestion was completely bonkers.  Sorry about
+that.  Hmm.... how about separating out removal pre-expansion and
+doing it before calling into free?  ie. something like
 
+static int memblock_prepare_for_isolation(struct memblock_type *type)
+{
+	/* we'll create at most two more regions */
+	while (type->cnt + 2 > type->max)
+		if (memblock_double_array(type) < 0)
+			return -ENOMEM;
+	return 0;
+}
+
+int __init_memblock memblock_free_reserved_regions(void)
+{
+	int ret;
+
+	if (memblock.reserved.regions == memblock_reserved_init_regions)
+		return 0;
+
+	ret = memblock_prepare_for_isolation(&memblock.reserved);
+	if (ret)
+		return ret;
+
+	ret = memblock_free(__pa(memblock.reserved.regions),
+		sizeof(struct memblock_region) * memblock.reserved.max);
+	WARN_ON(ret || memblock.reserved.regions has changed);
+	return ret;
+}
+
+Thanks.
+
+-- 
+tejun
