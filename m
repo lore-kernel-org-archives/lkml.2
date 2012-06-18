@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab2FRECx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 00:02:53 -0400
-Received: from nm24.bullet.mail.sp2.yahoo.com ([98.139.91.94]:20765 "HELO
-	nm24.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750763Ab2FRECv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 00:02:51 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 33427.73761.bm@omp1060.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=XFlh4OJXnjm1xFwsmT1lwuiEDHIwfAwINAcMvOdrFlh52wCKjfKl3aNNuIj8AXNeZFcf/uHm937dF6VdbDkwi0TfUWIiO74Mnq4xG2Q0zLr6+Ho57+OQzzQ+jhdhEnZoE4M6Hhnrn41hV/oG+PR4U1dJeB+DiCuJ6pswxMx+uR8=;
-X-YMail-OSG: 3k.rtygVM1n2r0tDuMKYfnKY9bFzyyxrtWpjn.GMY7ICfiM
- C1uACmnPMmofgSI1H8JZbPo5PS8EkZfCmrhlC.BpRgiOLCz9btxl8tKbkLVf
- QtWsqSFsFDktJDR.YMtHayoFgoAm5CKck52xY37vsk4wlLNDqMoT2wIEKHFu
- kM3uwcLsDgCIok3DcM_ZCFDitrLW8X9fQj99bbfc_ynC1qkr0DESB6fnZ1Oi
- 5JAYgN7TsDgPOHx95yKgM2psdEGBM5uORJzPh.Dsqkj.mGobAsqah3IBeKUg
- V8uOE4u9vTJ3aUaSiNI1JpThzyYGRM7Gke3eoiHwgrPkBoOJW.aCTRzu4WAA
- iEO7DPIx7WckM.np7_NOsx5Tw6VxJHxPk2e8vZSUkskI.abw3nAfSptv9rBf
- irAY3ZEVi.Ii9TUOrhEcwIF1bb.biSNy56O6z_h7kr8oRBleplt7Ic_UcHw4
- ZqPD.uloKPBwRpwVi61UyPCII532MMwYd.96YDfd4uhzMy6TxKPhWw69kVfO
- .SSwPch7R4gooWPTxSWzSYAJ_.PMEDZaw3di3SRFRI9XKN.oj2AxfAJEMV0u
- .DVO9cQB6AqgqAjuTZr.FpjsIbXXX84.B7w--
-X-Mailer: YahooMailClassic/15.0.6 YahooMailWebService/0.8.118.349524
-Message-ID: <1339992170.35835.YahooMailClassic@web113213.mail.gq1.yahoo.com>
-Date: Sun, 17 Jun 2012 21:02:50 -0700 (PDT)
-From: John <jhnlmn@yahoo.com>
-Subject: What is the status of fanotify bugs?
-To: linux-kernel@vger.kernel.org
-Cc: eparis@redhat.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1752009Ab2FREIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 00:08:50 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:39223 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab2FREIr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 00:08:47 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org
+Cc: Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 03/22 v4] Input: atmel_mxt_ts - detect OOM when creating mt slots
+Date: Mon, 18 Jun 2012 12:08:23 +0800
+Message-Id: <1339992522-22073-4-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
+References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I googled and found at least 2 fanotify bugs,
-which were discussed and patches were submitted but never merged into the kernel:
+Hopefully this new code path will never be used, but better safe than
+sorry...
 
-1. This one is more than 2 years old. Seems to be an obvious bug:
-http://groups.google.com/group/linux.kernel/browse_thread/thread/46b25f4dfc96d811
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-2. This discussion was abruptly terminated last year:
-http://groups.google.com/group/linux.kernel/browse_thread/thread/5e21ff2b0c446b69
-
-And I have another problem, which is a complete show stopper for me:
-fsnotify/fanotify do not pass file/directory  creation/deletion events
-when working in FAN_MARK_MOUNT mode.
-I was hoping to get notified about file system changes, but it appears to be impossible.
-A directory with many subdirectories can be deleted and fsnotify/fanotify completely ignore this event.
-
-So, I wonder whether fsnotify/fanotify framework is still being maintained and used by anybody.
-If nobody else cares about it, then I will need to make my own file system notification hook.
-But, of course, it would be better to fix fsnotify/fanotify so that I can avoid maintaining my own notification code.
-
-What do you think?
-
-Thank you
-John
-
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index cb191fe..00b37b1 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -1132,7 +1132,9 @@ static int __devinit mxt_probe(struct i2c_client *client,
+ 			     0, 255, 0, 0);
+ 
+ 	/* For multi touch */
+-	input_mt_init_slots(input_dev, MXT_MAX_FINGER);
++	error = input_mt_init_slots(input_dev, MXT_MAX_FINGER);
++	if (error)
++		goto err_free_mem;
+ 	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR,
+ 			     0, MXT_MAX_AREA, 0, 0);
+ 	input_set_abs_params(input_dev, ABS_MT_POSITION_X,
+-- 
+1.7.7.3
 
