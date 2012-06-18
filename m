@@ -1,120 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab2FRKeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:34:18 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:52029 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757822Ab2FRKeQ convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Mon, 18 Jun 2012 06:34:16 -0400
-Message-Id: <4FDF2044020000780008A66F@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 18 Jun 2012 11:34:12 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86/PCI: adjust section annotations
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1757932Ab2FRKbl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:31:41 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:21049 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752268Ab2FRKbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:31:36 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-mm@kvack.org>
+Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH v4 15/25] allow enable_cpu_cache to use preset values for its tunables
+Date: Mon, 18 Jun 2012 14:28:08 +0400
+Message-Id: <1340015298-14133-16-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
+References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMI tables referenced from __init code only can be __initconst, and as
-a result the functions referenced from there can become __init.
+SLAB allows us to tune a particular cache behavior with tunables.
+When creating a new memcg cache copy, we'd like to preserve any tunables
+the parent cache already had.
 
-pcibios_setup() can be __init as being a command line parsing function
-only.
+This could be done by an explicit call to do_tune_cpucache() after the
+cache is created. But this is not very convenient now that the caches are
+created from common code, since this function is SLAB-specific.
 
-A few other variables can then also have their attributes adjusted.
+Another method of doing that is taking advantage of the fact that
+do_tune_cpucache() is always called from enable_cpucache(), which is
+called at cache initialization. We can just preset the values, and
+then things work as expected.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
 ---
- arch/x86/pci/common.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ include/linux/slab.h |    3 ++-
+ mm/memcontrol.c      |    2 +-
+ mm/slab.c            |   19 ++++++++++++++++---
+ mm/slab_common.c     |    7 ++++---
+ 4 files changed, 23 insertions(+), 8 deletions(-)
 
---- 3.5-rc3/arch/x86/pci/common.c
-+++ 3.5-rc3-x86-pci-common-sections/arch/x86/pci/common.c
-@@ -21,10 +21,10 @@
- unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
- 				PCI_PROBE_MMCONF;
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index d347616..d2d2fad 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -128,7 +128,7 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
+ 			void (*)(void *));
+ struct kmem_cache *
+ kmem_cache_create_memcg(struct mem_cgroup *, const char *, size_t, size_t,
+-			unsigned long, void (*)(void *));
++			unsigned long, void (*)(void *), struct kmem_cache *);
+ void kmem_cache_destroy(struct kmem_cache *);
+ int kmem_cache_shrink(struct kmem_cache *);
+ void kmem_cache_free(struct kmem_cache *, void *);
+@@ -184,6 +184,7 @@ unsigned int kmem_cache_size(struct kmem_cache *);
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ struct mem_cgroup_cache_params {
+ 	struct mem_cgroup *memcg;
++	struct kmem_cache *parent;
+ 	int id;
+ 	atomic_t refcnt;
+ };
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index beead5e..324e550 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -507,7 +507,7 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+ 		return NULL;
  
--unsigned int pci_early_dump_regs;
--static int pci_bf_sort;
--static int smbios_type_b1_flag;
--int pci_routeirq;
-+unsigned int __initdata pci_early_dump_regs;
-+static int __devinitdata pci_bf_sort;
-+static int __devinitdata smbios_type_b1_flag;
-+int __initdata pci_routeirq;
- int noioapicquirk;
- #ifdef CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS
- int noioapicreroute = 0;
-@@ -32,7 +32,7 @@ int noioapicreroute = 0;
- int noioapicreroute = 1;
+ 	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
+-				      (s->flags & ~SLAB_PANIC), s->ctor);
++				      (s->flags & ~SLAB_PANIC), s->ctor, s);
+ 
+ 	kfree(name);
+ 	return new;
+diff --git a/mm/slab.c b/mm/slab.c
+index 3783a6a..c548666 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3918,8 +3918,19 @@ static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
+ static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp)
+ {
+ 	int err;
+-	int limit, shared;
+-
++	int limit = 0;
++	int shared = 0;
++	int batchcount = 0;
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++        if (cachep->memcg_params.parent) {
++                limit = cachep->memcg_params.parent->limit;
++                shared = cachep->memcg_params.parent->shared;
++                batchcount = cachep->memcg_params.parent->batchcount;
++        }
++#endif
++	if (limit && shared && batchcount)
++		goto skip_setup;
+ 	/*
+ 	 * The head array serves three purposes:
+ 	 * - create a LIFO ordering, i.e. return objects that are cache-warm
+@@ -3961,7 +3972,9 @@ static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp)
+ 	if (limit > 32)
+ 		limit = 32;
  #endif
- int pcibios_last_bus = -1;
--unsigned long pirq_table_addr;
-+unsigned long __initdata pirq_table_addr;
- struct pci_bus *pci_root_bus;
- const struct pci_raw_ops *__read_mostly raw_pci_ops;
- const struct pci_raw_ops *__read_mostly raw_pci_ext_ops;
-@@ -80,14 +80,14 @@ struct pci_ops pci_root_ops = {
-  */
- DEFINE_RAW_SPINLOCK(pci_config_lock);
+-	err = do_tune_cpucache(cachep, limit, (limit + 1) / 2, shared, gfp);
++	batchcount = (limit + 1) / 2;
++skip_setup:
++	err = do_tune_cpucache(cachep, limit, batchcount, shared, gfp);
+ 	if (err)
+ 		printk(KERN_ERR "enable_cpucache failed for %s, error %d.\n",
+ 		       cachep->name, -err);
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 42f226d..619d365 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -80,7 +80,8 @@ unsigned long calculate_alignment(unsigned long flags,
  
--static int __devinit can_skip_ioresource_align(const struct dmi_system_id *d)
-+static int __init can_skip_ioresource_align(const struct dmi_system_id *d)
+ struct kmem_cache *
+ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+-			size_t align, unsigned long flags, void (*ctor)(void *))
++			size_t align, unsigned long flags, void (*ctor)(void *),
++			struct kmem_cache *parent_cache)
  {
- 	pci_probe |= PCI_CAN_SKIP_ISA_ALIGN;
- 	printk(KERN_INFO "PCI: %s detected, can skip ISA alignment\n", d->ident);
- 	return 0;
- }
- 
--static const struct dmi_system_id can_skip_pciprobe_dmi_table[] __devinitconst = {
-+static const struct dmi_system_id can_skip_pciprobe_dmi_table[] __initconst = {
- /*
-  * Systems where PCI IO resource ISA alignment can be skipped
-  * when the ISA enable bit in the bridge control is not set
-@@ -221,7 +221,7 @@ static int __devinit find_sort_method(co
-  * Enable renumbering of PCI bus# ranges to reach all PCI busses (Cardbus)
-  */
- #ifdef __i386__
--static int __devinit assign_all_busses(const struct dmi_system_id *d)
-+static int __init assign_all_busses(const struct dmi_system_id *d)
- {
- 	pci_probe |= PCI_ASSIGN_ALL_BUSSES;
- 	printk(KERN_INFO "%s detected: enabling PCI bus# renumbering"
-@@ -230,7 +230,7 @@ static int __devinit assign_all_busses(c
- }
+ 	struct kmem_cache *s = NULL;
+ 	char *n;
+@@ -153,9 +154,9 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 	s->ctor = ctor;
+ 	s->flags = flags;
+ 	s->align = calculate_alignment(flags, align, size);
+-
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ 	s->memcg_params.memcg = memcg;
++	s->memcg_params.parent = parent_cache;
  #endif
  
--static int __devinit set_scan_all(const struct dmi_system_id *d)
-+static int __init set_scan_all(const struct dmi_system_id *d)
+ 	r = __kmem_cache_create(s);
+@@ -185,7 +186,7 @@ oops:
+ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align,
+ 		unsigned long flags, void (*ctor)(void *))
  {
- 	printk(KERN_INFO "PCI: %s detected, enabling pci=pcie_scan_all\n",
- 	       d->ident);
-@@ -238,7 +238,7 @@ static int __devinit set_scan_all(const
- 	return 0;
+-	return kmem_cache_create_memcg(NULL, name, size, align, flags, ctor);
++	return kmem_cache_create_memcg(NULL, name, size, align, flags, ctor, NULL);
  }
+ EXPORT_SYMBOL(kmem_cache_create);
  
--static const struct dmi_system_id __devinitconst pciprobe_dmi_table[] = {
-+static const struct dmi_system_id __initconst pciprobe_dmi_table[] = {
- #ifdef __i386__
- /*
-  * Laptops which need pci=assign-busses to see Cardbus cards
-@@ -494,7 +494,7 @@ int __init pcibios_init(void)
- 	return 0;
- }
- 
--char * __devinit  pcibios_setup(char *str)
-+char *__init pcibios_setup(char *str)
- {
- 	if (!strcmp(str, "off")) {
- 		pci_probe = 0;
-
-
+-- 
+1.7.10.2
 
