@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab2FRWFZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 18:05:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42585 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab2FRWFY (ORCPT
+	id S1752939Ab2FRWFs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 18:05:48 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:44559 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab2FRWFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 18:05:24 -0400
-Date: Mon, 18 Jun 2012 15:05:19 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] memblock: Make sure reserved.regions is freed really
-Message-ID: <20120618220519.GD32733@google.com>
-References: <1339816331-23284-1-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339816331-23284-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 18 Jun 2012 18:05:44 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-mm@kvack.org
+Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
+        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
+        hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org
+Subject: [PATCH -mm 0/7] mm: scalable and unified arch_get_unmapped_area
+Date: Mon, 18 Jun 2012 18:05:19 -0400
+Message-Id: <1340057126-31143-1-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Yinghai.
+[actually include all 7 patches]
 
-On Fri, Jun 15, 2012 at 08:12:11PM -0700, Yinghai Lu wrote:
-> memblock_free() would double reserved.regions too, so we could free
-> old range for reserved.regions.
-> 
-> So need to check that regions get doubled. If it is doubled, we need to
-> free it.
-> 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  mm/memblock.c |   23 +++++++++++++++++++++--
->  1 file changed, 21 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6/mm/memblock.c
-> ===================================================================
-> --- linux-2.6.orig/mm/memblock.c
-> +++ linux-2.6/mm/memblock.c
-> @@ -148,11 +148,26 @@ phys_addr_t __init_memblock memblock_fin
->   */
->  int __init_memblock memblock_free_reserved_regions(void)
->  {
-> +	struct memblock_region *r;
-> +	int ret;
-> +
->  	if (memblock.reserved.regions == memblock_reserved_init_regions)
->  		return 0;
->  
-> -	return memblock_free(__pa(memblock.reserved.regions),
-> -		 sizeof(struct memblock_region) * memblock.reserved.max);
-> +	/*
-> +	 * During memblock_free, reserved.regions could be doubled,
-> +	 * try to check with old one for checking, and need to free the new one.
-> +	 */
-> +	do {
-> +		r = memblock.reserved.regions;
-> +		ret = memblock_free(__pa(memblock.reserved.regions),
-> +			sizeof(struct memblock_region) * memblock.reserved.max);
-> +
-> +		if (ret)
-> +			break;
-> +	} while (memblock.reserved.regions != r);
-> +
-> +	return ret;
->  }
+A long time ago, we decided to limit the number of VMAs per
+process to 64k. As it turns out, there actually are programs
+using tens of thousands of VMAs.
 
-Hmmm... nice catch but I think it's a bit complex and ugly.  In this
-case, we *know* that the region isn't gonna be split.  Maybe a better
-option is to add something like the following?
+The linear search in arch_get_unmapped_area and
+arch_get_unmapped_area_topdown can be a real issue for
+those programs. 
 
-void memblock_remove_region_by_ptr(struct memblock_type *type,
-				   struct memblock_region *r)
-{
-	WARN_ON(/* make sure @r is inside @type->regions */);
-	memblock_remove_region(type, r - type->regions);
-}
+This patch series aims to fix the scalability issue by
+tracking the size of each free hole in the VMA rbtree,
+propagating the free hole info up the tree. 
 
-Thanks.
+Another major goal is to put the bulk of the necessary
+arch_get_unmapped_area(_topdown) functionality into one
+set of functions, so we can eliminate the custom large
+functions per architecture, sticking to a few much smaller
+architecture specific functions instead.
 
--- 
-tejun
+In this version I have only gotten rid of the x86, ARM
+and MIPS arch-specific code, and am already showing a
+fairly promising diffstat:
+
+ arch/arm/include/asm/pgtable.h    |    6 
+ arch/arm/mm/init.c                |    3 
+ arch/arm/mm/mmap.c                |  217 ------------------
+ arch/mips/include/asm/page.h      |    2 
+ arch/mips/include/asm/pgtable.h   |    7 
+ arch/mips/mm/mmap.c               |  177 --------------
+ arch/x86/include/asm/elf.h        |    3 
+ arch/x86/include/asm/pgtable_64.h |    4 
+ arch/x86/kernel/sys_x86_64.c      |  200 ++--------------
+ arch/x86/vdso/vma.c               |    2 
+ include/linux/mm_types.h          |    8 
+ include/linux/sched.h             |   13 +
+ mm/internal.h                     |    5 
+ mm/mmap.c                         |  455 ++++++++++++++++++++++++++++++--------
+ 14 files changed, 420 insertions(+), 682 deletions(-)
+
+TODO:
+- eliminate arch-specific functions for more architectures
+- integrate hugetlbfs alignment (with Andi Kleen's patch?)
+
+Performance
+
+Testing performance with a benchmark that allocates tens
+of thousands of VMAs, unmaps them and mmaps them some more
+in a loop, shows promising results.
+
+Vanilla 3.4 kernel:
+$ ./agua_frag_test_64
+..........
+
+Min Time (ms): 6
+Avg. Time (ms): 294.0000
+Max Time (ms): 609
+Std Dev (ms): 113.1664
+Standard deviation exceeds 10
+
+With patches:
+$ ./agua_frag_test_64
+..........
+
+Min Time (ms): 14
+Avg. Time (ms): 38.0000
+Max Time (ms): 60
+Std Dev (ms): 3.9312
+All checks pass
+
+The total run time of the test goes down by about a
+factor 4.  More importantly, the worst case performance
+of the loop (which is what really hurt some applications)
+has gone down by about a factor 10.
+
