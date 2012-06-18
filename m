@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757831Ab2FRKba (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:31:30 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:31957 "EHLO relay.sw.ru"
+	id S1757993Ab2FRKbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:31:43 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:18806 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757775Ab2FRKb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:31:27 -0400
+	id S1757802Ab2FRKba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:31:30 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
@@ -14,11 +14,11 @@ Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
         <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v4 12/25] sl[au]b: always get the cache from its page in kfree
-Date: Mon, 18 Jun 2012 14:28:05 +0400
-Message-Id: <1340015298-14133-13-git-send-email-glommer@parallels.com>
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH v4 13/25] Add a __GFP_SLABMEMCG flag
+Date: Mon, 18 Jun 2012 14:28:06 +0400
+Message-Id: <1340015298-14133-14-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
 References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
@@ -26,76 +26,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct page already have this information. If we start chaining
-caches, this information will always be more trustworthy than
-whatever is passed into the function
+This flag is used to indicate to the callees that this allocation will be
+serviced to the kernel. It is not supposed to be passed by the callers
+of kmem_cache_alloc, but rather by the cache core itself.
 
-A parent pointer is added to the slub structure, so we can make sure
-the freeing comes from either the right slab, or from its rightful
-parent.
-
-[ v3: added parent testing with VM_BUG_ON ]
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
 ---
- mm/slab.c |    5 ++++-
- mm/slab.h |   10 ++++++++++
- mm/slub.c |    3 ++-
- 3 files changed, 16 insertions(+), 2 deletions(-)
+ include/linux/gfp.h |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index c30a61c..3783a6a 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3712,9 +3712,12 @@ EXPORT_SYMBOL(__kmalloc);
-  * Free an object which was previously allocated from this
-  * cache.
-  */
--void kmem_cache_free(struct kmem_cache *cachep, void *objp)
-+void kmem_cache_free(struct kmem_cache *s, void *objp)
- {
- 	unsigned long flags;
-+	struct kmem_cache *cachep = virt_to_cache(objp);
-+
-+	VM_BUG_ON(!((s == cachep) | slab_is_parent(s, cachep)));
- 
- 	local_irq_save(flags);
- 	debug_check_no_locks_freed(objp, cachep->size);
-diff --git a/mm/slab.h b/mm/slab.h
-index 1781580..0a3e712 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -63,4 +63,14 @@ static inline bool cache_match_memcg(struct kmem_cache *cachep,
- }
- 
- void __init memcg_slab_register_all(void);
-+
-+static inline bool slab_is_parent(struct kmem_cache *s,
-+				  struct kmem_cache *candidate)
-+{
-+#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM) && defined(CONFIG_DEBUG_VM)
-+	return candidate == s->memcg_params.parent;
-+#else
-+	return false;
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 581e74b..f904fe1 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -37,6 +37,9 @@ struct vm_area_struct;
+ #define ___GFP_NO_KSWAPD	0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++#define ___GFP_SLABMEMCG	0x2000000u
 +#endif
-+}
- #endif
-diff --git a/mm/slub.c b/mm/slub.c
-index ca4b8e0..e685cfa 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2597,7 +2597,8 @@ void kmem_cache_free(struct kmem_cache *s, void *x)
  
- 	page = virt_to_head_page(x);
+ /*
+  * GFP bitmasks..
+@@ -88,13 +91,16 @@ struct vm_area_struct;
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
  
--	slab_free(s, page, x, _RET_IP_);
-+	VM_BUG_ON(!((page->slab == s) | slab_is_parent(page->slab, s)));
-+	slab_free(page->slab, page, x, _RET_IP_);
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++#define __GFP_SLABMEMCG	((__force gfp_t)___GFP_SLABMEMCG)/* Allocation comes from a memcg slab */
++#endif
+ /*
+  * This may seem redundant, but it's a way of annotating false positives vs.
+  * allocations that simply cannot be supported (e.g. page tables).
+  */
+ #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
  
- 	trace_kmem_cache_free(_RET_IP_, x);
- }
+-#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
++#define __GFP_BITS_SHIFT 26	/* Room for N __GFP_FOO bits */
+ #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+ 
+ /* This equals 0, but use constants in case they ever change */
 -- 
 1.7.10.2
 
