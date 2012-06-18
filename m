@@ -1,141 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab2FRMY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:24:27 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58143 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab2FRMYZ (ORCPT
+	id S1752414Ab2FRMZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:25:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19473 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab2FRMZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:24:25 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FDF1D76.4060406@jp.fujitsu.com>
-Date: Mon, 18 Jun 2012 21:22:14 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v4 19/25] memcg: disable kmem code when not in use.
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-20-git-send-email-glommer@parallels.com>
-In-Reply-To: <1340015298-14133-20-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Mon, 18 Jun 2012 08:25:12 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=POXSTHpag7MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=dOCTTjtUIargT7NTa7oA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340022309.25903.69.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH][GIT PULL][v3.5] ftrace: Make all inline tags also
+ include notrace
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Fengguang Wu <wfg@linux.intel.com>
+Date: Mon, 18 Jun 2012 08:25:09 -0400
+In-Reply-To: <20120618085626.GA28824@gmail.com>
+References: <1339714048.13377.246.camel@gandalf.stny.rr.com>
+	 <20120618085626.GA28824@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/18 19:28), Glauber Costa wrote:
-> We can use jump labels to patch the code in or out
-> when not used.
+On Mon, 2012-06-18 at 10:56 +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> Because the assignment: memcg->kmem_accounted = true
-> is done after the jump labels increment, we guarantee
-> that the root memcg will always be selected until
-> all call sites are patched (see mem_cgroup_kmem_enabled).
-> This guarantees that no mischarges are applied.
+> >     ftrace: Make all inline tags also include notrace
+> >     
+> >     Commit 5963e317b1 ftrace/x86: Do not change stacks in DEBUG when calling lockdep
+> >     prevented lockdep calls from the int3 breakpoint handler from reseting the
+> >     stack if a function that was called was in the process of being converted
+> >     for tracing and had a breakpoint on it.
 > 
-> Jump label decrement happens when the last reference
-> count from the memcg dies. This will only happen when
-> the caches are all dead.
+> That's now how we refer to commits ...
 > 
-> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> CC: Christoph Lameter<cl@linux.com>
-> CC: Pekka Enberg<penberg@cs.helsinki.fi>
-> CC: Michal Hocko<mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner<hannes@cmpxchg.org>
-> CC: Suleiman Souhlal<suleiman@google.com>
-> ---
->   include/linux/memcontrol.h |    5 ++++-
->   mm/memcontrol.c            |   22 +++++++++++++++++++++-
->   2 files changed, 25 insertions(+), 2 deletions(-)
+> >     Commit 45959ee7 ftrace: Do not function trace inlined functions
+> >     only touched the 'inline' tags when CONFIG_OPMITIZE_INLINING was enabled.
 > 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 27a3f16..47ccd80 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -22,6 +22,7 @@
->   #include<linux/cgroup.h>
->   #include<linux/vm_event_item.h>
->   #include<linux/hardirq.h>
-> +#include<linux/jump_label.h>
+> neither this :-/
 > 
->   struct mem_cgroup;
->   struct page_cgroup;
-> @@ -451,7 +452,6 @@ bool __mem_cgroup_new_kmem_page(gfp_t gfp, void *handle, int order);
->   void __mem_cgroup_commit_kmem_page(struct page *page, void *handle, int order);
->   void __mem_cgroup_free_kmem_page(struct page *page, int order);
+> We tend to write it like this:
 > 
-> -#define mem_cgroup_kmem_on 1
->   struct kmem_cache *
->   __mem_cgroup_get_kmem_cache(struct kmem_cache *cachep, gfp_t gfp);
-> 
-> @@ -459,6 +459,9 @@ static inline bool has_memcg_flag(gfp_t gfp)
->   {
->   	return gfp&  __GFP_SLABMEMCG;
->   }
-> +
-> +extern struct static_key mem_cgroup_kmem_enabled_key;
-> +#define mem_cgroup_kmem_on static_key_false(&mem_cgroup_kmem_enabled_key)
->   #else
->   static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
->   					     struct kmem_cache *s)
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b47ab87..5295ab6 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -422,6 +422,10 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
->   #include<net/sock.h>
->   #include<net/ip.h>
-> 
-> +struct static_key mem_cgroup_kmem_enabled_key;
-> +/* so modules can inline the checks */
-> +EXPORT_SYMBOL(mem_cgroup_kmem_enabled_key);
-> +
->   static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
->   static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta);
->   static void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta);
-> @@ -468,6 +472,12 @@ void sock_release_memcg(struct sock *sk)
->   	}
->   }
-> 
-> +static void disarm_static_keys(struct mem_cgroup *memcg)
-> +{
-> +	if (memcg->kmem_accounted)
-> +		static_key_slow_dec(&mem_cgroup_kmem_enabled_key);
-> +}
-> +
->   #ifdef CONFIG_INET
->   struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
->   {
-> @@ -831,6 +841,10 @@ static void memcg_slab_init(struct mem_cgroup *memcg)
->   	for (i = 0; i<  MAX_KMEM_CACHE_TYPES; i++)
->   		memcg->slabs[i] = NULL;
->   }
-> +#else
-> +static inline void disarm_static_keys(struct mem_cgroup *memcg)
-> +{
-> +}
->   #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-> 
->   static void drain_all_stock_async(struct mem_cgroup *memcg);
-> @@ -4344,8 +4358,13 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
->   			 *
->   			 * But it is not worth the trouble
->   			 */
-> -			if (!memcg->kmem_accounted&&  val != RESOURCE_MAX)
-> +			mutex_lock(&set_limit_mutex);
-> +			if (!memcg->kmem_accounted&&  val != RESOURCE_MAX
-> +			&&  !memcg->kmem_accounted) {
+>       Commit 45959ee7aa64 ("ftrace: Do not function trace 
+>       inlined functions") only touched the 'inline' tags when 
+>       CONFIG_OPMITIZE_INLINING was enabled.
 
-I'm sorry why you check the value twice ?
+This looks like something that should be added to SubmittingPatches.
 
-Thanks,
--Kame
+Want me to rebase with a new changelog?
+
+-- Steve
+
 
