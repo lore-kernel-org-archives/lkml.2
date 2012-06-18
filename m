@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab2FRUY3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:24:29 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36558 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238Ab2FRUY2 convert rfc822-to-8bit (ORCPT
+	id S1753250Ab2FRUZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:25:31 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:52174 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753055Ab2FRUZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:24:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120521093937.GM30755@b20223-02.ap.freescale.net>
-References: <1336870794-6351-2-git-send-email-richard.zhao@freescale.com>
- <20120514035137.GB20367@S2100-06.ap.freescale.net> <20120514080835.GB31985@opensource.wolfsonmicro.com>
- <4FB0C9D4.2060409@linaro.org> <20120514094357.GF20367@S2100-06.ap.freescale.net>
- <4FB10821.4000004@linaro.org> <20120514135035.GC29393@b20223-02.ap.freescale.net>
- <20120518095932.GI30755@b20223-02.ap.freescale.net> <20120521041355.GF5810@S2100-06.ap.freescale.net>
- <4FBA0A9A.8040901@linaro.org> <20120521093937.GM30755@b20223-02.ap.freescale.net>
-From: Rob Lee <rob.lee@linaro.org>
-Date: Mon, 18 Jun 2012 15:23:45 -0500
-Message-ID: <CAMXH7KF4qegQkQ3mS2=U=VBXZHJfiU2GiozRHgkP3OVX0Q+thQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mfd: anatop: permit adata be NULL when access register
-To: Richard Zhao <richard.zhao@freescale.com>, sameo@linux.intel.com
-Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
-        Richard Zhao <richard.zhao@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Jun 2012 16:25:30 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, b-cousson@ti.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        swarren@wwwdotorg.org, robherring2@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND] ARM: omap: Fix dts files w/ status property: "disable" -> "disabled"
+Date: Mon, 18 Jun 2012 22:25:10 +0200
+Message-Id: <1340051110-23746-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patches fixes some status = "disable" strings to "disabled", the correct
+way of disabling nodes in the devicetree.
 
-What is the status of this patch?
+Just the OMAP part here, the rest goes via other patches and trees.
 
-Thanks,
-Rob
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Acked-by: Benoit Cousson <b-cousson@ti.com>
 
-On Mon, May 21, 2012 at 4:39 AM, Richard Zhao
-<richard.zhao@freescale.com> wrote:
-> On Mon, May 21, 2012 at 05:27:54PM +0800, Ying-Chun Liu (PaulLiu) wrote:
->> (2012年05月21日 12:13), Shawn Guo wrote:
->> > On Fri, May 18, 2012 at 05:59:32PM +0800, Richard Zhao wrote:
->> >> Guys, we need to draw conclusion.
->> >> I think current patch keep some how compatible with multi-anatop.
->> >> It's ok.
->> >>
->> > I'm fine with that.
->> >
->> Yes. It is good for me.
->>
-> So, Sameo, could you pick the patch.
->
-> Thanks
-> Richard
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+---
+Applies to v3.5-rc3
+
+ arch/arm/boot/dts/omap3-beagle.dts |    4 ++--
+ arch/arm/boot/dts/omap4-panda.dts  |    6 +++---
+ arch/arm/boot/dts/omap4-sdp.dts    |    4 ++--
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+--- linux-2.6.orig/arch/arm/boot/dts/omap3-beagle.dts
++++ linux-2.6/arch/arm/boot/dts/omap3-beagle.dts
+@@ -61,9 +61,9 @@
+ };
+ 
+ &mmc2 {
+-	status = "disable";
++	status = "disabled";
+ };
+ 
+ &mmc3 {
+-	status = "disable";
++	status = "disabled";
+ };
+--- linux-2.6.orig/arch/arm/boot/dts/omap4-panda.dts
++++ linux-2.6/arch/arm/boot/dts/omap4-panda.dts
+@@ -74,15 +74,15 @@
+ };
+ 
+ &mmc2 {
+-	status = "disable";
++	status = "disabled";
+ };
+ 
+ &mmc3 {
+-	status = "disable";
++	status = "disabled";
+ };
+ 
+ &mmc4 {
+-	status = "disable";
++	status = "disabled";
+ };
+ 
+ &mmc5 {
+--- linux-2.6.orig/arch/arm/boot/dts/omap4-sdp.dts
++++ linux-2.6/arch/arm/boot/dts/omap4-sdp.dts
+@@ -147,11 +147,11 @@
+ };
+ 
+ &mmc3 {
+-	status = "disable";
++	status = "disabled";
+ };
+ 
+ &mmc4 {
+-	status = "disable";
++	status = "disabled";
+ };
+ 
+ &mmc5 {
