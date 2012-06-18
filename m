@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab2FRKVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:21:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab2FRKVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:21:17 -0400
-Date: Mon, 18 Jun 2012 13:21:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Asias He <asias@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Christoph Hellwig <hch@lst.de>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
-Message-ID: <20120618102108.GD23134@redhat.com>
-References: <1340002390-3950-1-git-send-email-asias@redhat.com>
- <1340002390-3950-4-git-send-email-asias@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753212Ab2FRK2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:28:50 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:51226 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab2FRK2t convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 18 Jun 2012 06:28:49 -0400
+Message-Id: <4FDF1EFD020000780008A65D@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 18 Jun 2012 11:28:45 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/microcode: microcode_id[] can be __initconst
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1340002390-3950-4-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 02:53:10PM +0800, Asias He wrote:
-> +static void virtblk_make_request(struct request_queue *q, struct bio *bio)
-> +{
-> +	struct virtio_blk *vblk = q->queuedata;
-> +	unsigned int num, out = 0, in = 0;
-> +	struct virtblk_req *vbr;
-> +
-> +	BUG_ON(bio->bi_phys_segments + 2 > vblk->sg_elems);
-> +	BUG_ON(bio->bi_rw & (REQ_FLUSH | REQ_FUA));
-> +
-> +	vbr = virtblk_alloc_req(vblk, GFP_NOIO);
-> +	if (!vbr) {
-> +		bio_endio(bio, -ENOMEM);
-> +		return;
-> +	}
-> +
-> +	vbr->bio = bio;
-> +	vbr->req = NULL;
-> +	vbr->out_hdr.type = 0;
-> +	vbr->out_hdr.sector = bio->bi_sector;
-> +	vbr->out_hdr.ioprio = bio_prio(bio);
-> +
-> +	sg_set_buf(&vbr->sg[out++], &vbr->out_hdr, sizeof(vbr->out_hdr));
-> +
-> +	num = blk_bio_map_sg(q, bio, vbr->sg + out);
-> +
-> +	sg_set_buf(&vbr->sg[num + out + in++], &vbr->status,
-> +		   sizeof(vbr->status));
-> +
-> +	if (num) {
-> +		if (bio->bi_rw & REQ_WRITE) {
-> +			vbr->out_hdr.type |= VIRTIO_BLK_T_OUT;
-> +			out += num;
-> +		} else {
-> +			vbr->out_hdr.type |= VIRTIO_BLK_T_IN;
-> +			in += num;
-> +		}
-> +	}
-> +
-> +	spin_lock_irq(vblk->disk->queue->queue_lock);
-> +	if (virtqueue_add_buf(vblk->vq, vbr->sg, out, in, vbr,
-> +			      GFP_ATOMIC) < 0) {
-> +		spin_unlock_irq(vblk->disk->queue->queue_lock);
+It's not being used for other than creating module aliases (i.e. no
+loadable section has any reference to it).
 
-Any implications of dropping lock like that?
-E.g. for suspend. like we are still discussing with
-unlocked kick?
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-> +		virtblk_add_buf_wait(vblk, vbr, out, in);
-> +	} else {
-> +		virtqueue_kick(vblk->vq);
+---
+ arch/x86/kernel/microcode_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Why special case the first call? task state manipulation so expensive?
+--- 3.5-rc3/arch/x86/kernel/microcode_core.c
++++ 3.5-rc3-x86-microcode-sections/arch/x86/kernel/microcode_core.c
+@@ -504,7 +504,7 @@ static struct notifier_block __refdata m
+ 
+ #ifdef MODULE
+ /* Autoload on Intel and AMD systems */
+-static const struct x86_cpu_id microcode_id[] = {
++static const struct x86_cpu_id __initconst microcode_id[] = {
+ #ifdef CONFIG_MICROCODE_INTEL
+ 	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, },
+ #endif
 
-> +		spin_unlock_irq(vblk->disk->queue->queue_lock);
-> +	}
-> +}
-> +
+
+
