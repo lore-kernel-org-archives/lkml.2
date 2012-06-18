@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab2FRFLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 01:11:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60146 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736Ab2FRFLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 01:11:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="181369070"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Subject: RE: [PATCHv2] power_supply: Register battery as a thermal zone
-Thread-Topic: [PATCHv2] power_supply: Register battery as a thermal zone
-Thread-Index: AQHNTQs71I137SCSiUGywBoF1Z1h2Jb/hstg
-Date: Mon, 18 Jun 2012 05:10:57 +0000
-Message-ID: <20ADAB092842284E95860F279283C564282328@BGSMSX101.gar.corp.intel.com>
-References: <1336576007-8772-1-git-send-email-jenny.tc@intel.com>
- <20120618042927.GA25372@lizard>
-In-Reply-To: <20120618042927.GA25372@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1751533Ab2FRFTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 01:19:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49744 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2FRFTd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 01:19:33 -0400
 MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20120617200342.GO4267@opensource.wolfsonmicro.com>
+References: <1339137332.16616.0.camel@phoenix> <20120617200342.GO4267@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Mon, 18 Jun 2012 13:19:12 +0800
+Message-ID: <CAF+7xWnS7+hxgoVbxYghi3Zj007U4tAsNZ6XnwkWEWdyK12+uA@mail.gmail.com>
+Subject: Re: [PATCH] regulator: tps62360: Simplify tps62360_set_voltage_time_sel
+ implementation
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5I5CBhe018714
 
-Hi Anton,
+2012/6/18 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Fri, Jun 08, 2012 at 02:35:32PM +0800, Axel Lin wrote:
+>> For linear mappings, we can use below equation to get the voltage difference
+>> between new_selector and old_selector:
+>
+> Applied, thanks.  There's a new framework feature that Yadwinder Singh
+> has contributed which should allow this to be moved to the regulator
+> desc.
 
-> -----Original Message-----
-> From: Anton Vorontsov [mailto:cbouatmailru@gmail.com]
-> Sent: Monday, June 18, 2012 9:59 AM
-> To: Tc, Jenny
-> Cc: linux-kernel@vger.kernel.org; R, Durgadoss
-> Subject: Re: [PATCHv2] power_supply: Register battery as a thermal zone
-> 
-> On Wed, May 09, 2012 at 08:36:47PM +0530, Jenny TC wrote:
-> > Battery and charger contribute to Thermals in most of the embedded
-> > devices. So, it makes sense to identify them as Thermal zones in a
-> > particular platform.
-> >
-> > This patch registers a thermal zone if the power supply is reporting a
-> > temperature property. The thermal zone will be used by platform's
-> > thermal management solution.
-> >
-> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
-> > ---
-> 
-> Once again, thanks for the patch! It's a nice feature.
-> 
-> [...]
-> > @@ -206,6 +258,9 @@ int power_supply_register(struct device *parent,
-> struct power_supply *psy)
-> >  	goto success;
-> >
-> >  create_triggers_failed:
-> > +	if (psy->tzd)
-> > +		thermal_zone_device_unregister(psy->tzd);
-> 
-> This causes errors:
-> 
->   CC      drivers/power/pda_power.o
-> drivers/power/power_supply_core.c: In function â€˜power_supply_registerâ€™:
-> drivers/power/power_supply_core.c:261:9: error: â€˜struct power_supplyâ€™ has
-> no member named â€˜tzdâ€™
-> drivers/power/power_supply_core.c:262:37: error: â€˜struct power_supplyâ€™
-> has no member named â€˜tzdâ€™
-> make[2]: *** [drivers/power/power_supply_core.o] Error 1
-> 
-> I think we should just introduce unregister_thermal(). So, that's what I've
-> applied:
+In this case, tps->change_uv_per_us is is calculated by :
+tps->change_uv_per_us = DIV_ROUND_UP(32000, BIT(ramp_ctrl));
 
-Sorry I missed it. Thanks for adding it.  Hope you will merge it
+Which means tps->change_uv_per_us may be not alignment to mV.
 
--jtc
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This make me think if we should change the unit of ramp_delay
+to uV/uS rather than mV/uS. So we can avoid truncate issue.
+
+Regards,
+Axel
