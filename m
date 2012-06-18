@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab2FRCy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 22:54:29 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59323 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab2FRCy2 convert rfc822-to-8bit (ORCPT
+	id S1753966Ab2FRCyg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 22:54:36 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53084 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab2FRCye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 22:54:28 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <3920966.545511339987371711.JavaMail.weblogic@epml17>
-References: <3920966.545511339987371711.JavaMail.weblogic@epml17>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 18 Jun 2012 10:54:07 +0800
-Message-ID: <CAF+7xWmSsFDWVqRakSz3BP_pFEK_i4DUtw-03gwp3rCZrLicsg@mail.gmail.com>
-Subject: Re: [PATCH] extcon: max8997: Add missing kfree for info->edev in max8997_muic_remove()
-To: myungjoo.ham@samsung.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>,
-        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 17 Jun 2012 22:54:34 -0400
+X-AuditID: 9c93016f-b7c35ae00000135b-a0-4fde9866280b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH v2 1/5] tools lib traceevent: Replace malloc_or_die to plain calloc in alloc_event()
+Date: Mon, 18 Jun 2012 11:50:47 +0900
+Message-Id: <1339987851-22491-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.10.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/18 함명주 <myungjoo.ham@samsung.com>:
->> extcon_dev_unregister(info->edev) doest not free info->edev, we need to call
->> kfree(info->edev) here.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> The patch is correct.
->
-> However, using devm_kzalloc at probe and removing kfree at remove appears to be much better.
-Yes, But I think Greg may prefer this one-linear for 3.5.
-And another patch for the devm_kcalloc conversion for 3.6.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Regards,
-Axel
+Because the only caller of the alloc_event()
+(pevent_parse_event) checks return value properly
+and all it does after allocation is initializing,
+it can be changed to use plain calloc.
+
+Thanks to Steven for suggesting this simpler way.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/n/tip-wagq5qbdy1mytvjkrjbqt095@git.kernel.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/lib/traceevent/event-parse.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index c471075e4974..4f667fdc5fae 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -619,12 +619,7 @@ void pevent_print_printk(struct pevent *pevent)
+ 
+ static struct event_format *alloc_event(void)
+ {
+-	struct event_format *event;
+-
+-	event = malloc_or_die(sizeof(*event));
+-	memset(event, 0, sizeof(*event));
+-
+-	return event;
++	return calloc(1, sizeof(struct event_format));
+ }
+ 
+ static void add_event(struct pevent *pevent, struct event_format *event)
+-- 
+1.7.10.2
+
