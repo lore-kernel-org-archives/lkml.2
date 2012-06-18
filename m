@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751174Ab2FRM30 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:29:26 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37106 "EHLO mx2.parallels.com"
+	id S1751352Ab2FRMc1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:32:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43601 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab2FRM3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:29:24 -0400
-Message-ID: <4FDF1E89.2020007@parallels.com>
-Date: Mon, 18 Jun 2012 16:26:49 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1750696Ab2FRMcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 08:32:25 -0400
+Date: Mon, 18 Jun 2012 14:32:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Bojan Smojver <bojan@rexursive.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both
+Message-ID: <20120618123205.GA5319@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Bojan Smojver <bojan@rexursive.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Alan Stern <stern@rowland.harvard.edu>,
+	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	Linux PM list <linux-pm@vger.kernel.org>,
+	Kernel development list <linux-kernel@vger.kernel.org>
+References: <90304ca8-31ef-4919-bf9d-e0498b0de87b@email.android.com>
+ <20120616230706.GA26955@liondog.tnic>
+ <43c43f4c-6eab-42ca-a7b0-5ce274697287@email.android.com>
+ <201206172221.55493.rjw@sisk.pl>
+ <1339979586.1666.13.camel@shrek.rexursive.com>
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-mm@kvack.org>, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v4 19/25] memcg: disable kmem code when not in use.
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-20-git-send-email-glommer@parallels.com> <4FDF1D76.4060406@jp.fujitsu.com>
-In-Reply-To: <4FDF1D76.4060406@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1339979586.1666.13.camel@shrek.rexursive.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->>    static void drain_all_stock_async(struct mem_cgroup *memcg);
->> @@ -4344,8 +4358,13 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
->>    			 *
->>    			 * But it is not worth the trouble
->>    			 */
->> -			if (!memcg->kmem_accounted&&  val != RESOURCE_MAX)
->> +			mutex_lock(&set_limit_mutex);
->> +			if (!memcg->kmem_accounted&&  val != RESOURCE_MAX
->> +			&&  !memcg->kmem_accounted) {
+On Mon, Jun 18, 2012 at 10:33:06AM +1000, Bojan Smojver wrote:
+> On Sun, 2012-06-17 at 22:21 +0200, Rafael J. Wysocki wrote:
+> > Yeah, that will do.
 > 
-> I'm sorry why you check the value twice ?
-> 
+> Something like this maybe. I didn't really test this, so Borislav,
+> please let me know whether this is something that may works for you.
 
-Hi Kame,
+Yeah, this could probably work but it changes the progress indicator
+unconditionally.
 
-For no reason, it should be removed. I never noticed this because 1)
-This is the kind of thing testing will never reveal, and 2), this
-actually goes away in a later patch (memcg: propagate kmem limiting
-information to children)
+I don't know what the general consensus is about the progress indicator
+but if you want to keep the old behavior too, you probably need to carve
+out the printk functionality from save_image() and pass flags to the new
+function which printks different output depending on how it is.
 
-In any case, I will update my tree here.
+If we don't want the current output with how many pages it needs to use
+on swap, then we can do the dots.
 
-Thanks for spotting this
+Frankly, I don't have a preference.
 
+Hmm.
+
+-- 
+Regards/Gruss,
+Boris.
