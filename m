@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab2FRMGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:06:44 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53281 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab2FRMGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:06:43 -0400
-Message-ID: <4FDF19CF.8010303@gmail.com>
-Date: Mon, 18 Jun 2012 07:06:39 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751619Ab2FRMIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:08:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750696Ab2FRMIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 08:08:11 -0400
+Date: Mon, 18 Jun 2012 15:07:27 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        avi@redhat.com, penberg@cs.helsinki.fi
+Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
+Message-ID: <20120618120727.GB25390@redhat.com>
+References: <8739e7uy87.fsf@rustcorp.com.au>
+ <20111102233110.GA20289@redhat.com>
+ <20111108214021.GA4538@redhat.com>
+ <1320828366.31056.16.camel@lappy>
+ <20111109101318.GB20612@redhat.com>
+ <alpine.LFD.2.02.1111091421570.4936@tux.localdomain>
+ <1320841683.31056.41.camel@lappy>
+ <alpine.LFD.2.02.1111091434230.4936@tux.localdomain>
+ <20120618115440.GA25042@redhat.com>
+ <1340021117.22848.3.camel@lappy>
 MIME-Version: 1.0
-To: Michal Simek <monstr@monstr.eu>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, John.Linn@xilinx.com, arnd@arndb.de
-Subject: Re: [PATCH] arm: zynq: Support GIC OF initialization
-References: <1340017873-18170-1-git-send-email-monstr@monstr.eu>
-In-Reply-To: <1340017873-18170-1-git-send-email-monstr@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340021117.22848.3.camel@lappy>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 06:11 AM, Michal Simek wrote:
-> Zynq is OF driven platfrom which requires OF initialization.
+On Mon, Jun 18, 2012 at 02:05:17PM +0200, Sasha Levin wrote:
+> On Mon, 2012-06-18 at 14:54 +0300, Michael S. Tsirkin wrote:
+> > On Wed, Nov 09, 2011 at 02:36:43PM +0200, Pekka Enberg wrote:
+> > > On Wed, 9 Nov 2011, Sasha Levin wrote:
+> > > >They don't exist in kernel code either, for same reason as above.
+> > > >
+> > > >Nothing will break if we remove it since no one really used it, we were
+> > > >probably the first and only implementation of the spec which considered
+> > > >them :)
+> > > 
+> > > As long as we are able to run older versions of the KVM tool with
+> > > newer kernels and vice versa, I see no reason why we can't drop
+> > > 64-bit features from the KVM tool.
+> > > 
+> > > 			Pekka
+> > 
+> > So what happened? Did you guys do this?  Need to know what to do to make
+> > progress.  IIUC Rusty removed the new fields in 0.9.3.
+> > Does your tool still use them? Did any version of the tool released by
+> > distros do so?
 > 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-> ---
->  arch/arm/mach-zynq/common.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-> index 17d68d6..7941544 100644
-> --- a/arch/arm/mach-zynq/common.c
-> +++ b/arch/arm/mach-zynq/common.c
-> @@ -56,12 +56,17 @@ static void __init xilinx_init_machine(void)
->  	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
->  }
->  
-> +static const struct of_device_id zynq_dt_irq_match[] __initconst = {
-> +	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init },
-> +	{ }
-> +};
-> +
->  /**
->   * xilinx_irq_init() - Interrupt controller initialization for the GIC.
->   */
->  static void __init xilinx_irq_init(void)
->  {
-> -	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
+> Yup, they were removed quite a while ago.
 
-And delete the corresponding defines?
+Thanks, that's nice. So we can reuse that bit if we need it
+and it won't break your code.
 
-Rob
-
-> +	of_irq_init(zynq_dt_irq_match);
->  }
->  
->  /* The minimum devices needed to be mapped before the VM system is up and
-
+-- 
+MST
