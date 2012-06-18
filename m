@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab2FRKa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:30:57 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:1502 "EHLO relay.sw.ru"
+	id S1757491Ab2FRKbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:31:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:39559 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646Ab2FRKay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:30:54 -0400
+	id S1757419Ab2FRKbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:31:05 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
@@ -14,11 +14,12 @@ Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
         <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v4 02/25] provide a common place for initcall processing in kmem_cache
-Date: Mon, 18 Jun 2012 14:27:55 +0400
-Message-Id: <1340015298-14133-3-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH v4 05/25] memcg: Always free struct memcg through schedule_work()
+Date: Mon, 18 Jun 2012 14:27:58 +0400
+Message-Id: <1340015298-14133-6-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
 References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
@@ -26,115 +27,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both SLAB and SLUB depend on some initialization to happen when the
-system is already booted, with all subsystems working. This is done
-by issuing an initcall that does the final initialization.
+Right now we free struct memcg with kfree right after a
+rcu grace period, but defer it if we need to use vfree() to get
+rid of that memory area. We do that by need, because we need vfree
+to be called in a process context.
 
-This patch moves that to slab_common.c, while creating an empty
-placeholder for the SLOB.
+This patch unifies this behavior, by ensuring that even kfree will
+happen in a separate thread. The goal is to have a stable place to
+call the upcoming jump label destruction function outside the realm
+of the complicated and quite far-reaching cgroup lock (that can't be
+held when calling neither the cpu_hotplug.lock nor the jump_label_mutex)
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: David Rientjes <rientjes@google.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Li Zefan <lizefan@huawei.com>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Michal Hocko <mhocko@suse.cz>
 ---
- mm/slab.c        |    5 ++---
- mm/slab.h        |    1 +
- mm/slab_common.c |    5 +++++
- mm/slob.c        |    5 +++++
- mm/slub.c        |    4 +---
- 5 files changed, 14 insertions(+), 6 deletions(-)
+ mm/memcontrol.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 020605f..e174e50 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -853,7 +853,7 @@ static void __cpuinit start_cpu_timer(int cpu)
- 	struct delayed_work *reap_work = &per_cpu(slab_reap_work, cpu);
- 
- 	/*
--	 * When this gets called from do_initcalls via cpucache_init(),
-+	 * When this gets called from do_initcalls via __kmem_cache_initcall(),
- 	 * init_workqueues() has already run, so keventd will be setup
- 	 * at that time.
- 	 */
-@@ -1666,7 +1666,7 @@ void __init kmem_cache_init_late(void)
- 	 */
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e3b528e..ce15be4 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -245,8 +245,8 @@ struct mem_cgroup {
+ 		 */
+ 		struct rcu_head rcu_freeing;
+ 		/*
+-		 * But when using vfree(), that cannot be done at
+-		 * interrupt time, so we must then queue the work.
++		 * We also need some space for a worker in deferred freeing.
++		 * By the time we call it, rcu_freeing is not longer in use.
+ 		 */
+ 		struct work_struct work_freeing;
+ 	};
+@@ -4826,23 +4826,28 @@ out_free:
  }
- 
--static int __init cpucache_init(void)
-+int __init __kmem_cache_initcall(void)
- {
- 	int cpu;
- 
-@@ -1677,7 +1677,6 @@ static int __init cpucache_init(void)
- 		start_cpu_timer(cpu);
- 	return 0;
- }
--__initcall(cpucache_init);
- 
- static noinline void
- slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
-diff --git a/mm/slab.h b/mm/slab.h
-index b44a8cc..19e17c7 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -37,6 +37,7 @@ unsigned long calculate_alignment(unsigned long flags,
- 
- /* Functions provided by the slab allocators */
- int __kmem_cache_create(struct kmem_cache *s);
-+int __kmem_cache_initcall(void);
- 
- #ifdef CONFIG_SLUB
- struct kmem_cache *__kmem_cache_alias(const char *name, size_t size,
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index b5def07..15db694ac 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -203,3 +203,8 @@ int slab_is_available(void)
- 	return slab_state >= UP;
- }
- 
-+static int __init kmem_cache_initcall(void)
-+{
-+	return __kmem_cache_initcall();
-+}
-+__initcall(kmem_cache_initcall);
-diff --git a/mm/slob.c b/mm/slob.c
-index 507589d..61b1845 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -610,3 +610,8 @@ void __init kmem_cache_init(void)
- void __init kmem_cache_init_late(void)
- {
- }
-+
-+int __init kmem_cache_initcall(void)
-+{
-+	return 0;
-+}
-diff --git a/mm/slub.c b/mm/slub.c
-index 7fc3499..d9d4d5a 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -5309,7 +5309,7 @@ static int sysfs_slab_alias(struct kmem_cache *s, const char *name)
- 	return 0;
- }
- 
--static int __init slab_sysfs_init(void)
-+int __init __kmem_cache_initcall(void)
- {
- 	struct kmem_cache *s;
- 	int err;
-@@ -5347,8 +5347,6 @@ static int __init slab_sysfs_init(void)
- 	resiliency_test();
- 	return 0;
- }
--
--__initcall(slab_sysfs_init);
- #endif /* CONFIG_SYSFS */
  
  /*
+- * Helpers for freeing a vzalloc()ed mem_cgroup by RCU,
++ * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
+  * but in process context.  The work_freeing structure is overlaid
+  * on the rcu_freeing structure, which itself is overlaid on memsw.
+  */
+-static void vfree_work(struct work_struct *work)
++static void free_work(struct work_struct *work)
+ {
+ 	struct mem_cgroup *memcg;
++	int size = sizeof(struct mem_cgroup);
+ 
+ 	memcg = container_of(work, struct mem_cgroup, work_freeing);
+-	vfree(memcg);
++	if (size < PAGE_SIZE)
++		kfree(memcg);
++	else
++		vfree(memcg);
+ }
+-static void vfree_rcu(struct rcu_head *rcu_head)
++
++static void free_rcu(struct rcu_head *rcu_head)
+ {
+ 	struct mem_cgroup *memcg;
+ 
+ 	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+-	INIT_WORK(&memcg->work_freeing, vfree_work);
++	INIT_WORK(&memcg->work_freeing, free_work);
+ 	schedule_work(&memcg->work_freeing);
+ }
+ 
+@@ -4868,10 +4873,7 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+ 		free_mem_cgroup_per_zone_info(memcg, node);
+ 
+ 	free_percpu(memcg->stat);
+-	if (sizeof(struct mem_cgroup) < PAGE_SIZE)
+-		kfree_rcu(memcg, rcu_freeing);
+-	else
+-		call_rcu(&memcg->rcu_freeing, vfree_rcu);
++	call_rcu(&memcg->rcu_freeing, free_rcu);
+ }
+ 
+ static void mem_cgroup_get(struct mem_cgroup *memcg)
 -- 
 1.7.10.2
 
