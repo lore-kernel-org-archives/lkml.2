@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab2FRGaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 02:30:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63878 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723Ab2FRG02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 02:26:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="181387249"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
-        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH v5 01/12] [SCSI]: add wrapper to access and set scsi_bus_type in struct acpi_bus_type
-Date: Mon, 18 Jun 2012 14:25:55 +0800
-Message-Id: <1340000766-129148-2-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
-References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
+	id S1753910Ab2FRGba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 02:31:30 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38974 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab2FRGb2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 02:31:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1339665743-7947-1-git-send-email-sonic.adi@gmail.com>
+References: <1339665743-7947-1-git-send-email-sonic.adi@gmail.com>
+Date: Mon, 18 Jun 2012 14:31:26 +0800
+Message-ID: <CAJxxZ0OARrRmYZZcwSSi-hEEb6B39wOTA26WT1gtfWfipR+=3A@mail.gmail.com>
+Subject: Re: [PATCH 1/5 v2] mmc: bfin_sdh: limit mmc DMA segment len to 1 for bf518.
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Holger Macht <holger@homac.de>
+Hi Chris,
 
-For being able to bind ata devices against acpi devices, scsi_bus_type
-needs to be set as bus in struct acpi_bus_type. So add wrapper to
-scsi_lib to accomplish that.
+Could you please comment on the patches for blackfin SD controller driver?
 
-Signed-off-by: Holger Macht <holger@homac.de>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/scsi/scsi_lib.c |   17 +++++++++++++++++
- include/scsi/scsi.h     |   10 ++++++++++
- 2 files changed, 27 insertions(+)
+Thanks
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 6dfb978..08f1e29 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -68,6 +68,23 @@ static struct scsi_host_sg_pool scsi_sg_pools[] = {
- 
- struct kmem_cache *scsi_sdb_cache;
- 
-+#ifdef CONFIG_ACPI
-+#include <acpi/acpi_bus.h>
-+
-+int scsi_register_acpi_bus_type(struct acpi_bus_type *bus)
-+{
-+        bus->bus = &scsi_bus_type;
-+        return register_acpi_bus_type(bus);
-+}
-+EXPORT_SYMBOL_GPL(scsi_register_acpi_bus_type);
-+
-+void scsi_unregister_acpi_bus_type(struct acpi_bus_type *bus)
-+{
-+	unregister_acpi_bus_type(bus);
-+}
-+EXPORT_SYMBOL_GPL(scsi_unregister_acpi_bus_type);
-+#endif
-+
- /*
-  * When to reinvoke queueing after a resource shortage. It's 3 msecs to
-  * not change behaviour from the previous unplug mechanism, experimentation
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index f34a5a8..4527b3a 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -214,6 +214,16 @@ scsi_command_size(const unsigned char *cmnd)
- 		scsi_varlen_cdb_length(cmnd) : COMMAND_SIZE(cmnd[0]);
- }
- 
-+#ifdef CONFIG_ACPI
-+struct acpi_bus_type;
-+
-+extern int
-+scsi_register_acpi_bus_type(struct acpi_bus_type *bus);
-+
-+extern void
-+scsi_unregister_acpi_bus_type(struct acpi_bus_type *bus);
-+#endif
-+
- /*
-  *  SCSI Architecture Model (SAM) Status codes. Taken from SAM-3 draft
-  *  T10/1561-D Revision 4 Draft dated 7th November 2002.
--- 
-1.7.10
+Sonic
 
+On Thu, Jun 14, 2012 at 5:22 PM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> bf518 RSI dma doesn't work in array mode.
+>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+> ---
+>  drivers/mmc/host/bfin_sdh.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mmc/host/bfin_sdh.c b/drivers/mmc/host/bfin_sdh.c
+> index 0366617..fd25b0c 100644
+> --- a/drivers/mmc/host/bfin_sdh.c
+> +++ b/drivers/mmc/host/bfin_sdh.c
+> @@ -469,7 +469,11 @@ static int __devinit sdh_probe(struct platform_device *pdev)
+>        }
+>
+>        mmc->ops = &sdh_ops;
+> +#if defined(CONFIG_BF54x)
+>        mmc->max_segs = 32;
+> +#elif defined(CONFIG_BF51x)
+> +       mmc->max_segs = 1;
+> +#endif
+>        mmc->max_seg_size = 1 << 16;
+>        mmc->max_blk_size = 1 << 11;
+>        mmc->max_blk_count = 1 << 11;
+> --
+> 1.7.0.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
