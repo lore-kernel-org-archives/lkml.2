@@ -1,171 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688Ab2FRAdK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 20:33:10 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:47657 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab2FRAdI (ORCPT
+	id S1753737Ab2FRAnt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 20:43:49 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61466 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab2FRAns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 20:33:08 -0400
-Message-ID: <1339979586.1666.13.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Borislav Petkov <bp@alien8.de>, Alan Stern <stern@rowland.harvard.edu>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Jun 2012 10:33:06 +1000
-In-Reply-To: <201206172221.55493.rjw@sisk.pl>
-References: <90304ca8-31ef-4919-bf9d-e0498b0de87b@email.android.com>
-	 <20120616230706.GA26955@liondog.tnic>
-	 <43c43f4c-6eab-42ca-a7b0-5ce274697287@email.android.com>
-	 <201206172221.55493.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.2 (3.4.2-1.fc17) 
-Mime-Version: 1.0
+	Sun, 17 Jun 2012 20:43:48 -0400
+X-AuditID: 9c93016f-b7c35ae00000135b-27-4fde79be164e
+Message-ID: <4FDE79CF.4050702@kernel.org>
+Date: Mon, 18 Jun 2012 09:43:59 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@linux-foundation.org,
+        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, frank.rowand@am.sony.com,
+        tim.bird@am.sony.com, takuzo.ohara@ap.sony.com,
+        kan.iibuchi@jp.sony.com
+Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
+References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com> <20120614145716.GA2097@barrios> <CAHGf_=qcA5OfuNgk0BiwyshcLftNWoPfOO_VW9H6xQTX2tAbuA@mail.gmail.com> <4FDAE3CC.60801@kernel.org> <CAEtiSavv8nRAFk6VZEgeCMYicjBPy4244+2KQhng5Pq9bxcX5A@mail.gmail.com>
+In-Reply-To: <CAEtiSavv8nRAFk6VZEgeCMYicjBPy4244+2KQhng5Pq9bxcX5A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-06-17 at 22:21 +0200, Rafael J. Wysocki wrote:
-> Yeah, that will do.
+On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
 
-Something like this maybe. I didn't really test this, so Borislav,
-please let me know whether this is something that may works for you.
+> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
+> 
+>>>
+>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
+>>> if node has multiple zones. Hm ok, I realized my descriptions was
+>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
+>>> pgdat_balanced()
+>>> every priority. Most easy case is, movable zone has a lot of free pages and
+>>> normal zone has no reclaimable page.
+>>>
+>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
+>>> sleep only if every zones have much free pages than high water mark
+>>> _and_ 25% of present pages in node are free.
+>>>
+>>
+>>
+>> Sorry. I can't understand your point.
+>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
+>> It seems I am missing your point.
+>> Please anybody correct me.
+> 
+> Since currently direct reclaim is given up based on
+> zone->all_unreclaimable flag,
+> so for e.g in one of the scenarios:
+> 
+> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
+> hot-remove the all the pages of the MOVABLE zone.
+> 
+> While migrating pages during memory hot-unplugging, the allocation function
+> (for new page to which the page in MOVABLE zone would be moved)  can end up
+> looping in direct reclaim path for ever.
+> 
+> This is so because when most of the pages in the MOVABLE zone have
+> been migrated,
+> the zone now contains lots of free memory (basically above low watermark)
+> BUT all are in MIGRATE_ISOLATE list of the buddy list.
+> 
+> So kswapd() would not balance this zone as free pages are above low watermark
+> (but all are in isolate list). So zone->all_unreclaimable flag would
+> never be set for this zone
+> and allocation function would end up looping forever. (assuming the
+> zone NORMAL is
+> left with no reclaimable memory)
+>
 
--------------------------
- kernel/power/swap.c |   33 ++++++++++++++++-----------------
- 1 file changed, 16 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 11e22c0..c24d354 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -448,9 +448,9 @@ static int save_image(struct swap_map_handle *handle,
- 	struct timeval start;
- 	struct timeval stop;
+Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
+But I don't see it's a problem of kswapd.
+
+a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
+but we can't allocate it. :(
+It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
+Kswapd is just one of them confused.
+As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too. 
+
+This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
+and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
+free_area[order].nr_free exactly. 
+
+Any thought?
+
+Side Note: I still need KOSAKI's patch with fixed description regardless of this problem because set zone->all_unreclaimable of only kswapd is very fragile.
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4403009..19de56c 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5593,8 +5593,10 @@ int set_migratetype_isolate(struct page *page)
  
--	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
-+	printk(KERN_INFO "PM: Saving image data pages (%u pages) ",
- 		nr_to_write);
--	m = nr_to_write / 100;
-+	m = nr_to_write / 10;
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
-@@ -464,7 +464,7 @@ static int save_image(struct swap_map_handle *handle,
- 		if (ret)
- 			break;
- 		if (!(nr_pages % m))
--			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
-+			printk(KERN_CONT ".");
- 		nr_pages++;
- 	}
- 	err2 = hib_wait_on_bio_chain(&bio);
-@@ -472,7 +472,7 @@ static int save_image(struct swap_map_handle *handle,
- 	if (!ret)
- 		ret = err2;
- 	if (!ret)
--		printk(KERN_CONT "\b\b\b\bdone\n");
-+		printk(KERN_CONT " done.\n");
- 	else
- 		printk(KERN_CONT "\n");
- 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
-@@ -668,9 +668,9 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ out:
+        if (!ret) {
++               int pages_moved;
+                set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+-               move_freepages_block(zone, page, MIGRATE_ISOLATE);
++               pages_moved = move_freepages_block(zone, page, MIGRATE_ISOLATE);
++               __mod_zone_page_state(zone, NR_FREE_PAGES, -pages_moved);
+        }   
  
- 	printk(KERN_INFO
- 		"PM: Using %u thread(s) for compression.\n"
--		"PM: Compressing and saving image data (%u pages) ...     ",
-+		"PM: Compressing and saving image data (%u pages) ",
- 		nr_threads, nr_to_write);
--	m = nr_to_write / 100;
-+	m = nr_to_write / 10;
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
-@@ -690,8 +690,7 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 				       data_of(*snapshot), PAGE_SIZE);
- 
- 				if (!(nr_pages % m))
--					printk(KERN_CONT "\b\b\b\b%3d%%",
--				               nr_pages / m);
-+					printk(KERN_CONT ".");
- 				nr_pages++;
- 			}
- 			if (!off)
-@@ -762,7 +761,7 @@ out_finish:
- 	if (!ret)
- 		ret = err2;
- 	if (!ret) {
--		printk(KERN_CONT "\b\b\b\bdone\n");
-+		printk(KERN_CONT " done.\n");
- 	} else {
- 		printk(KERN_CONT "\n");
- 	}
-@@ -973,9 +972,9 @@ static int load_image(struct swap_map_handle *handle,
- 	int err2;
- 	unsigned nr_pages;
- 
--	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
-+	printk(KERN_INFO "PM: Loading image data pages (%u pages) ",
- 		nr_to_read);
--	m = nr_to_read / 100;
-+	m = nr_to_read / 10;
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
-@@ -993,7 +992,7 @@ static int load_image(struct swap_map_handle *handle,
- 		if (ret)
- 			break;
- 		if (!(nr_pages % m))
--			printk("\b\b\b\b%3d%%", nr_pages / m);
-+			printk(".");
- 		nr_pages++;
- 	}
- 	err2 = hib_wait_on_bio_chain(&bio);
-@@ -1001,7 +1000,7 @@ static int load_image(struct swap_map_handle *handle,
- 	if (!ret)
- 		ret = err2;
- 	if (!ret) {
--		printk("\b\b\b\bdone\n");
-+		printk(" done.\n");
- 		snapshot_write_finalize(snapshot);
- 		if (!snapshot_image_loaded(snapshot))
- 			ret = -ENODATA;
-@@ -1185,9 +1184,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
- 
- 	printk(KERN_INFO
- 		"PM: Using %u thread(s) for decompression.\n"
--		"PM: Loading and decompressing image data (%u pages) ...     ",
-+		"PM: Loading and decompressing image data (%u pages) ",
- 		nr_threads, nr_to_read);
--	m = nr_to_read / 100;
-+	m = nr_to_read / 10;
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
-@@ -1319,7 +1318,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
- 				       data[thr].unc + off, PAGE_SIZE);
- 
- 				if (!(nr_pages % m))
--					printk("\b\b\b\b%3d%%", nr_pages / m);
-+					printk(".");
- 				nr_pages++;
- 
- 				ret = snapshot_write_next(snapshot);
-@@ -1344,7 +1343,7 @@ out_finish:
- 	}
- 	do_gettimeofday(&stop);
- 	if (!ret) {
--		printk("\b\b\b\bdone\n");
-+		printk(" done.\n");
- 		snapshot_write_finalize(snapshot);
- 		if (!snapshot_image_loaded(snapshot))
- 			ret = -ENODATA;
--------------------------
+        spin_unlock_irqrestore(&zone->lock, flags);
+@@ -5607,12 +5609,14 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
+ {
+        struct zone *zone;
+        unsigned long flags;
++       int pages_moved;
+        zone = page_zone(page);
+        spin_lock_irqsave(&zone->lock, flags);
+        if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+                goto out;
+        set_pageblock_migratetype(page, migratetype);
+-       move_freepages_block(zone, page, migratetype);
++       pages_moved = move_freepages_block(zone, page, migratetype);
++       __mod_zone_page_state(zone, NR_FREE_PAGES, pages_moved);
+ out:
+        spin_unlock_irqrestore(&zone->lock, flags);
+ }
+
+
+> 
+> Regards,
+> Aaditya Kumar
+> Sony India Software Centre,
+> Bangalore.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
 
 -- 
-Bojan
-
+Kind regards,
+Minchan Kim
