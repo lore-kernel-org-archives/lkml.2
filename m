@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab2FRLOq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:14:46 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:56246 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750906Ab2FRLMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:12:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Am4CADoM309bdWObgWdsb2JhbABFhVewBCIBARYmJ4IZAQUjDwFGECUCJgICVwcSiA+lcpIFgSCPQIESA5Ukkl8
-X-IronPort-AV: E=Sophos;i="4.77,430,1336341600"; 
-   d="scan'208";a="1004339230"
-From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-Subject: [PATCH 1/8] Staging: xgifb: reformat module parameter descriptions.
-Date: Mon, 18 Jun 2012 13:11:59 +0200
-Message-Id: <1031dc5d561c9b8b9f518a09d9b99ed15a7934a4.1340016625.git.magomez@igalia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1340016625.git.magomez@igalia.com>
-References: <cover.1340016625.git.magomez@igalia.com>
-In-Reply-To: <cover.1340016625.git.magomez@igalia.com>
-References: <cover.1340016625.git.magomez@igalia.com>
+	id S1752051Ab2FRLO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:14:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52562 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751660Ab2FRLO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 07:14:56 -0400
+Message-ID: <4FDF0DA7.40604@redhat.com>
+Date: Mon, 18 Jun 2012 14:14:47 +0300
+From: Dor Laor <dlaor@redhat.com>
+Reply-To: dlaor@redhat.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Asias He <asias@redhat.com>, kvm@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+References: <1340002390-3950-1-git-send-email-asias@redhat.com> <1340002390-3950-4-git-send-email-asias@redhat.com> <87hau9yse7.fsf@rustcorp.com.au> <4FDEE0CB.1030505@redhat.com> <87zk81x7dp.fsf@rustcorp.com.au>
+In-Reply-To: <87zk81x7dp.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Miguel Gómez <magomez@igalia.com>
----
- drivers/staging/xgifb/XGI_main_26.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+On 06/18/2012 01:05 PM, Rusty Russell wrote:
+> On Mon, 18 Jun 2012 16:03:23 +0800, Asias He<asias@redhat.com>  wrote:
+>> On 06/18/2012 03:46 PM, Rusty Russell wrote:
+>>> On Mon, 18 Jun 2012 14:53:10 +0800, Asias He<asias@redhat.com>  wrote:
+>>>> This patch introduces bio-based IO path for virtio-blk.
+>>>
+>>> Why make it optional?
+>>
+>> request-based IO path is useful for users who do not want to bypass the
+>> IO scheduler in guest kernel, e.g. users using spinning disk. For users
+>> using fast disk device, e.g. SSD device, they can use bio-based IO path.
+>
+> Users using a spinning disk still get IO scheduling in the host though.
+> What benefit is there in doing it in the guest as well?
 
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 3382272..8e0786d 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -2297,23 +2297,23 @@ static struct pci_driver xgifb_driver = {
- 
- module_param(mode, charp, 0);
- MODULE_PARM_DESC(mode,
--	"\nSelects the desired default display mode in the format XxYxDepth,\n"
--	"eg. 1024x768x16.\n");
-+	"Selects the desired default display mode in the format XxYxDepth "
-+	"(eg. 1024x768x16).");
- 
- module_param(forcecrt2type, charp, 0);
- MODULE_PARM_DESC(forcecrt2type,
--	"\nForce the second display output type. Possible values are NONE,\n"
--	"LCD, TV, VGA, SVIDEO or COMPOSITE.\n");
-+	"Force the second display output type. Possible values are NONE, "
-+	"LCD, TV, VGA, SVIDEO or COMPOSITE.");
- 
- module_param(vesa, int, 0);
- MODULE_PARM_DESC(vesa,
--	"\nSelects the desired default display mode by VESA mode number, eg.\n"
--	"0x117.\n");
-+	"Selects the desired default display mode by VESA mode number "
-+	"(eg. 0x117).");
- 
- module_param(filter, int, 0);
- MODULE_PARM_DESC(filter,
--	"\nSelects TV flicker filter type (only for systems with a SiS301 video bridge).\n"
--	"(Possible values 0-7, default: [no filter])\n");
-+	"Selects TV flicker filter type (only for systems with a SiS301 video bridge). "
-+	"Possible values 0-7. Default: [no filter]).");
- 
- static int __init xgifb_init(void)
- {
--- 
-1.7.9.5
+The io scheduler waits for requests to merge and thus batch IOs 
+together. It's not important w.r.t spinning disks since the host can do 
+it but it causes much less vmexits which is the key issue for VMs.
+
+>
+> Cheers,
+> Rusty.
+> _______________________________________________
+> Virtualization mailing list
+> Virtualization@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
 
