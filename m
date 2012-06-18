@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab2FREJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 00:09:26 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:42580 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab2FREIu (ORCPT
+	id S1753480Ab2FREJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 00:09:23 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:46271 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2FREIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Jun 2012 00:08:50 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -16,9 +16,9 @@ Cc: Iiro Valkonen <iiro.valkonen@atmel.com>,
         Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 09/22 v4] Input: atmel_mxt_ts - print all instances when dumping objects
-Date: Mon, 18 Jun 2012 12:08:29 +0800
-Message-Id: <1339992522-22073-10-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 21/22 v4] Input: atmel_mxt_ts - send all MT-B slots in one input report
+Date: Mon, 18 Jun 2012 12:08:41 +0800
+Message-Id: <1339992522-22073-22-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
 References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
@@ -26,66 +26,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For objects with multiple instances, dump them all, prepending each with
-its "Instance #".
+Each interrupt contains information for all contacts with changing
+properties.  Process all of this information at once, and send it all in a
+a single input report (ie input events ending in EV_SYN/SYN_REPORT).
+
+This patch was tested using an MXT224E.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   30 +++++++++++++++++++++---------
- 1 files changed, 21 insertions(+), 9 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 65fd89b..281fcbd 100644
+index 460c10f..06f2b7a 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -882,7 +882,7 @@ static ssize_t mxt_object_show(struct device *dev,
- 	struct mxt_data *data = dev_get_drvdata(dev);
- 	struct mxt_object *object;
- 	int count = 0;
--	int i, j;
-+	int i, j, k;
- 	int error;
- 	u8 val;
- 	u8 *obuf;
-@@ -902,18 +902,30 @@ static ssize_t mxt_object_show(struct device *dev,
- 		count += scnprintf(buf + count, PAGE_SIZE - count,
- 				"T%u:\n", object->type);
- 
--		error = __mxt_read_reg(data->client, object->start_address,
--				object->size + 1, obuf);
--		if (error)
--			break;
-+		for (j = 0; j < object->instances + 1; j++) {
-+			u16 size = object->size + 1;
-+			u16 addr = object->start_address + j * size;
-+
-+			error = __mxt_read_reg(data->client, addr, size, obuf);
-+			if (error)
-+				break;
- 
--		for (j = 0; j < object->size + 1; j++) {
--			val = obuf[j];
-+			if (object->instances > 0)
-+				count += scnprintf(buf + count,
-+						PAGE_SIZE - count,
-+						"Instance %u\n", j);
- 
-+			for (k = 0; k < object->size + 1; k++) {
-+				val = obuf[k];
-+
-+				count += scnprintf(buf + count,
-+						PAGE_SIZE - count,
-+						"\t[%2u]: %02x (%d)\n",
-+						k, val, val);
-+			}
- 			count += scnprintf(buf + count, PAGE_SIZE - count,
--					"\t[%2d]: %02x (%d)\n", j, val, val);
-+					"\n");
- 		}
--		count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
+@@ -540,9 +540,6 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 		input_report_abs(input_dev, ABS_MT_PRESSURE, pressure);
+ 		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
  	}
+-
+-	input_mt_report_pointer_emulation(input_dev, false);
+-	input_sync(input_dev);
+ }
  
- 	kfree(obuf);
+ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+@@ -554,6 +551,7 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 	u8 reportid;
+ 	u8 max_reportid;
+ 	u8 min_reportid;
++	bool update_input = false;
+ 
+ 	do {
+ 		if (mxt_read_message(data, &message)) {
+@@ -567,12 +565,19 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 		min_reportid = data->T9_reportid_min;
+ 		id = reportid - min_reportid;
+ 
+-		if (reportid >= min_reportid && reportid <= max_reportid)
++		if (reportid >= min_reportid && reportid <= max_reportid) {
+ 			mxt_input_touchevent(data, &message, id);
+-		else
++			update_input = true;
++		} else {
+ 			mxt_dump_message(dev, &message);
++		}
+ 	} while (reportid != 0xff);
+ 
++	if (update_input) {
++		input_mt_report_pointer_emulation(data->input_dev, false);
++		input_sync(data->input_dev);
++	}
++
+ end:
+ 	return IRQ_HANDLED;
+ }
 -- 
 1.7.7.3
 
