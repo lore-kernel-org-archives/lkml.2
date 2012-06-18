@@ -1,73 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab2FRCzj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 22:55:39 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53084 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794Ab2FRCyf (ORCPT
+	id S1753457Ab2FRDBI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 23:01:08 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35589 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab2FRDBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 22:54:35 -0400
-X-AuditID: 9c93016f-b7c35ae00000135b-b0-4fde9868a755
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH v2 2/5] tools lib traceevent: Do not link broken field arg for an old ftrace event
-Date: Mon, 18 Jun 2012 11:50:48 +0900
-Message-Id: <1339987851-22491-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1339987851-22491-1-git-send-email-namhyung@kernel.org>
-References: <1339987851-22491-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 17 Jun 2012 23:01:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANQmPXikSJfms9n2vNugw=+7fijyRem3RHqWfCCM=XcBXDSU6A@mail.gmail.com>
+References: <CANQmPXip+fKaSYsKaY5TF3Rax=XFFgyh=+BY61snVsgpReL7RA@mail.gmail.com>
+	<1339914285.7349.75.camel@marge.simpson.net>
+	<CANQmPXikSJfms9n2vNugw=+7fijyRem3RHqWfCCM=XcBXDSU6A@mail.gmail.com>
+Date: Sun, 17 Jun 2012 23:01:05 -0400
+Message-ID: <CAK7t_7UtjkuZaQRhnj99Y_eRcHLRLmqXOaiGTi4tHwGB4MHsgg@mail.gmail.com>
+Subject: Re: [PATCH][ANNOUNCE]RIFS-ES Scheduling V1 release.
+From: Vikram Dhillon <opensolarisdev@gmail.com>
+To: Chen <hi3766691@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Sun, Jun 17, 2012 at 6:24 PM, Chen <hi3766691@gmail.com> wrote:
+> Sorry for my fault.
+> The patch has build issue and I post the new one.
 
-Defer linking a newly allocated arg to print_fmt.args until
-all of its field is setup so that later access to ->field.name
-cannot be NULL.
+Hi Chen,
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-7zlkindw0qqqe5h117u59ood@git.kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/event-parse.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+It is always very interesting to see new scheduler designs however can
+you shows us some benchmarks? How does this compare to CFS currently?
+Also how well does it scale beyond desktops?
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 4f667fdc5fae..ae172e2ee958 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -4658,20 +4658,20 @@ int pevent_parse_event(struct pevent *pevent,
- 		struct print_arg *arg, **list;
- 
- 		/* old ftrace had no args */
--
- 		list = &event->print_fmt.args;
- 		for (field = event->format.fields; field; field = field->next) {
- 			arg = alloc_arg();
--			*list = arg;
--			list = &arg->next;
- 			arg->type = PRINT_FIELD;
- 			arg->field.name = strdup(field->name);
- 			if (!arg->field.name) {
- 				do_warning("failed to allocate field name");
- 				event->flags |= EVENT_FL_FAILED;
-+				free_arg(arg);
- 				return -1;
- 			}
- 			arg->field.field = field;
-+			*list = arg;
-+			list = &arg->next;
- 		}
- 		return 0;
- 	}
--- 
-1.7.10.2
-
+- Vikram
