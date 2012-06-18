@@ -1,130 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab2FRJXc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 05:23:32 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37233 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab2FRJXb convert rfc822-to-8bit (ORCPT
+	id S1756339Ab2FRJY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 05:24:28 -0400
+Received: from hogsmeade.lieberbiber.de ([217.28.97.4]:49420 "EHLO
+	hogsmeade.leitwerk.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752053Ab2FRJY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 05:23:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339850780.15222.8.camel@twins>
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
-	<1339741902-8449-7-git-send-email-zheng.z.yan@intel.com>
-	<1339780730.2559.92.camel@twins>
-	<CABPqkBTuBnFWo0wpcmg_YR_C0Q_BAMBqs7nrFTHnag=_RMPddA@mail.gmail.com>
-	<1339850780.15222.8.camel@twins>
-Date: Mon, 18 Jun 2012 11:23:29 +0200
-Message-ID: <CABPqkBQYRs9F2U3LVWcxip3-2ijxAE8+szj2TY8MKwO2w7se1A@mail.gmail.com>
-Subject: Re: [PATCH V6 06/13] perf: Add Nehalem and Sandy Bridge uncore support
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 18 Jun 2012 05:24:27 -0400
+X-Greylist: delayed 618 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Jun 2012 05:24:26 EDT
+Date: Mon, 18 Jun 2012 11:14:03 +0200
+From: Simon Raffeiner <sturmflut@lieberbiber.de>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [ 60/69] usb-storage: Add 090c:1000 to unusal-devs
+Message-ID: <20120618111403.0da5fbe6@cloud>
+In-Reply-To: <4FDEE95A.8050605@redhat.com>
+References: <20120617175950.030711074@decadent.org.uk>
+	<4FDEE95A.8050605@redhat.com>
+Organization: Lieberbiber, Inc.
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 2:46 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> On Fri, 2012-06-15 at 20:46 +0200, Stephane Eranian wrote:
-> > Yes, and let the parser be case insensitive.
->
-> Right, I did the below on top..
->
-> ---
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -179,22 +179,17 @@ static struct attribute *snbep_uncore_pc
->  };
->
->  static struct uncore_event_desc snbep_uncore_imc_events[] = {
-> -       INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
-> -       /* read */
-> -       INTEL_UNCORE_EVENT_DESC(CAS_COUNT_RD, "event=0x4,umask=0x3"),
-> -       /* write */
-> -       INTEL_UNCORE_EVENT_DESC(CAS_COUNT_WR, "event=0x4,umask=0xc"),
-> +       INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0xff");
+Hi,
 
-Just like for core, I would pick 0xff as the pseudo event code for
-fixed uncore events
-and use the umask value to determine which of the fixed events we want
-to map to. There
-is only one fixed counter so far. But more could be added later on, so
-why not start with
-umask=0x00 or umask=0x1 instead of umask=0xff?
+I wrote the original bug report for the Feiya QDI U2 DISK (bug 43265)
+and can confirm that the bug was introduced with kernel 3.4.
 
-> +       INTEL_UNCORE_EVENT_DESC(cas_count_read,  "event=0x04,umask=0x03"),
-> +       INTEL_UNCORE_EVENT_DESC(cas_count_write, "event=0x04,umask=0x0c"),
->        { /* end: all zeroes */ },
->  };
->
->  static struct uncore_event_desc snbep_uncore_qpi_events[] = {
-> -       INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "event=0x14"),
-> -       /* outgoing data+nondata flits */
-> -       INTEL_UNCORE_EVENT_DESC(TxL_FLITS_ACTIVE, "event=0x0,umask=0x6"),
-> -       /* DRS data received */
-> -       INTEL_UNCORE_EVENT_DESC(DRS_DATA, "event=0x2,umask=0x8"),
-> -       /* NCB data received */
-> -       INTEL_UNCORE_EVENT_DESC(NCB_DATA, "event=0x3,umask=0x4"),
-> +       INTEL_UNCORE_EVENT_DESC(clockticks,       "event=0x14"),
-> +       INTEL_UNCORE_EVENT_DESC(txl_flits_active, "event=0x0,umask=0x6"),
-> +       INTEL_UNCORE_EVENT_DESC(drs_data,         "event=0x2,umask=0x8"),
-> +       INTEL_UNCORE_EVENT_DESC(ncb_data,         "event=0x3,umask=0x4"),
->        { /* end: all zeroes */ },
->  };
->
-> @@ -621,29 +616,15 @@ static struct attribute_group nhm_uncore
->  };
->
->  static struct uncore_event_desc nhm_uncore_events[] = {
-> -       INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
-> -       /* full cache line writes to DRAM */
-> -       INTEL_UNCORE_EVENT_DESC(QMC_WRITES_FULL_ANY,
-> "event=0x2f,umask=0xf"),
-> -       /* Quickpath Memory Controller normal priority read requests */
-> -       INTEL_UNCORE_EVENT_DESC(QMC_NORMAL_READS_ANY,
-> "event=0x2c,umask=0xf"),
-> -       /* Quickpath Home Logic read requests from the IOH */
-> -       INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_READS,
-> -                               "event=0x20,umask=0x1"),
-> -       /* Quickpath Home Logic write requests from the IOH */
-> -       INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_WRITES,
-> -                               "event=0x20,umask=0x2"),
-> -       /* Quickpath Home Logic read requests from a remote socket */
-> -       INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_READS,
-> -                               "event=0x20,umask=0x4"),
-> -       /* Quickpath Home Logic write requests from a remote socket */
-> -       INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_WRITES,
-> -                               "event=0x20,umask=0x8"),
-> -       /* Quickpath Home Logic read requests from the local socket */
-> -       INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_READS,
-> -                               "event=0x20,umask=0x10"),
-> -       /* Quickpath Home Logic write requests from the local socket */
-> -       INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_WRITES,
-> -                               "event=0x20,umask=0x20"),
-> +       INTEL_UNCORE_EVENT_DESC(clockticks,
->  "event=0xff,umask=0xff"),
-> +       INTEL_UNCORE_EVENT_DESC(qmc_writes_full_any,
-> "event=0x2f,umask=0x0f"),
-> +       INTEL_UNCORE_EVENT_DESC(qmc_normal_reads_any,
->  "event=0x2c,umask=0x0f"),
-> +       INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_reads,
-> "event=0x20,umask=0x01"),
-> +       INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_writes,
->  "event=0x20,umask=0x02"),
-> +       INTEL_UNCORE_EVENT_DESC(qhl_request_remote_reads,
->  "event=0x20,umask=0x04"),
-> +       INTEL_UNCORE_EVENT_DESC(qhl_request_remote_writes,
-> "event=0x20,umask=0x08"),
-> +       INTEL_UNCORE_EVENT_DESC(qhl_request_local_reads,
-> "event=0x20,umask=0x10"),
-> +       INTEL_UNCORE_EVENT_DESC(qhl_request_local_writes,
->  "event=0x20,umask=0x20"),
->        { /* end: all zeroes */ },
->  };
->
->
+3.2 and 3.3 are unaffected.
+
+regards,
+Simon
+
+
+
+On Mon, 18 Jun 2012 10:39:54 +0200
+Hans de Goede <hdegoede@redhat.com> wrote:
+
+> Hi,
+> 
+> I'm not sure if this is needed with 3.2, it is needed with 3.4 because
+> recently the usb-storage driver was changed to report the supported
+> scsi level as reported by the device, rather then always report a
+> scsi level of 2. This change causes sd.c to try READ_CAPACITY(16)
+> first, which foobars up not only this one device, but as it turns
+> out a lot of others too, so we're working on another fix
+> (and I believe that 3.2 is unaffected).
+> 
+> With that said, this patch certainly cannot hurt in any way...
+> 
+> Regards,
+> 
+> Hans
+> 
+> 
+> On 06/17/2012 08:00 PM, Ben Hutchings wrote:
+> > 3.2-stable review patch.  If anyone has any objections, please let
+> > me know.
+> >
+> > ------------------
+> >
+> > From: Hans de Goede<hdegoede@redhat.com>
+> >
+> > commit afff07e61a5243e14ee3f0a272a0380cd744a8a3 upstream.
+> >
+> > This device gives a bogus answer to get_capacity(16):
+> > [ 8628.278614] scsi 8:0:0:0: Direct-Access     USB 2.0  USB Flash
+> > Drive  1100 PQ: 0 ANSI: 4 [ 8628.279452] sd 8:0:0:0: Attached scsi
+> > generic sg4 type 0 [ 8628.280338] sd 8:0:0:0: [sdd]
+> > 35747322042253313 512-byte logical blocks: (18.3 EB/15.8 EiB)
+> >
+> > So set the quirk flag to avoid using get_capacity(16) with it:
+> > [11731.386014] usb-storage 2-1.6:1.0: Quirks match for vid 090c pid
+> > 1000: 80000 [11731.386075] scsi9 : usb-storage 2-1.6:1.0
+> > [11731.386172] usbcore: registered new interface driver usb-storage
+> > [11731.386175] USB Mass Storage support registered.
+> > [11732.387394] scsi 9:0:0:0: Direct-Access     USB 2.0  USB Flash
+> > Drive  1100 PQ: 0 ANSI: 4 [11732.388462] sd 9:0:0:0: Attached scsi
+> > generic sg3 type 0 [11732.389432] sd 9:0:0:0: [sdc] 7975296
+> > 512-byte logical blocks: (4.08 GB/3.80 GiB)
+> >
+> > Which makes the capacity look a lot more sane :)
+> >
+> > Signed-off-by: Hans de Goede<hdegoede@redhat.com>
+> > Tested-by: Simon Raffeiner<sturmflut@lieberbiber.de>
+> > Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+> > Signed-off-by: Ben Hutchings<ben@decadent.org.uk>
+> > ---
+> >   drivers/usb/storage/unusual_devs.h |    7 +++++++
+> >   1 file changed, 7 insertions(+)
+> >
+> > diff --git a/drivers/usb/storage/unusual_devs.h
+> > b/drivers/usb/storage/unusual_devs.h index 1719886..caf22bf 100644
+> > --- a/drivers/usb/storage/unusual_devs.h
+> > +++ b/drivers/usb/storage/unusual_devs.h
+> > @@ -1107,6 +1107,13 @@ UNUSUAL_DEV( 0x090a, 0x1200, 0x0000, 0x9999,
+> >   		USB_SC_RBC, USB_PR_BULK, NULL,
+> >   		0 ),
+> >
+> > +/* Feiya QDI U2 DISK, reported by Hans de
+> > Goede<hdegoede@redhat.com>  */ +UNUSUAL_DEV( 0x090c, 0x1000,
+> > 0x0000, 0xffff,
+> > +		"Feiya",
+> > +		"QDI U2 DISK",
+> > +		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+> > +		US_FL_NO_READ_CAPACITY_16 ),
+> > +
+> >   /* aeb */
+> >   UNUSUAL_DEV( 0x090c, 0x1132, 0x0000, 0xffff,
+> >   		"Feiya",
+> >
+> >
+
