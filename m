@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2FRKbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:31:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9616 "EHLO relay.sw.ru"
+	id S1757608Ab2FRKbQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:31:16 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:24932 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757329Ab2FRKa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:30:57 -0400
+	id S1757419Ab2FRKbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:31:10 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
@@ -14,11 +14,10 @@ Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
         <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v4 03/25] slab: move FULL state transition to an initcall
-Date: Mon, 18 Jun 2012 14:27:56 +0400
-Message-Id: <1340015298-14133-4-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v4 07/25] memcg: Reclaim when more than one page needed.
+Date: Mon, 18 Jun 2012 14:28:00 +0400
+Message-Id: <1340015298-14133-8-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
 References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
@@ -26,66 +25,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During kmem_cache_init_late(), we transition to the LATE state,
-and after some more work, to the FULL state, its last state
+From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 
-This is quite different from slub, that will only transition to
-its last state (previously SYSFS), in a (late)initcall, after a lot
-more of the kernel is ready.
+mem_cgroup_do_charge() was written before slab accounting, and expects
+three cases: being called for 1 page, being called for a stock of 32 pages,
+or being called for a hugepage.  If we call for 2 or 3 pages (and several
+slabs used in process creation are such, at least with the debug options I
+had), it assumed it's being called for stock and just retried without reclaiming.
 
-This means that in slab, we have no way to taking actions dependent
-on the initialization of other pieces of the kernel that are supposed
-to start way after kmem_init_late(), such as cgroups initialization.
+Fix that by passing down a minsize argument in addition to the csize.
 
-To achieve more consistency in this behavior, that patch only
-transitions to the UP state in kmem_init_late. In my analysis,
-setup_cpu_cache() should be happy to test for >= UP, instead of
-== FULL. It also has passed some tests I've made.
+And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
+needed at all (and presumably is since it's there, perhaps to handle
+races), then it should be extended to more than PAGE_SIZE, yet how far?
+And should there be a retry count limit, of what?  For now retry up to
+COSTLY_ORDER (as page_alloc.c does), stay safe with a cond_resched(),
+and make sure not to do it if __GFP_NORETRY.
 
-We then only mark FULL state after the reap timers are in place,
-meaning that no further setup is expected.
+[v4: fixed nr pages calculation pointed out by Christoph Lameter ]
 
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: David Rientjes <rientjes@google.com>
+Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/slab.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ mm/memcontrol.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index e174e50..2d5fe28 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1643,9 +1643,6 @@ void __init kmem_cache_init_late(void)
- 			BUG();
- 	mutex_unlock(&slab_mutex);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 00b9f1e..b6cb075 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2187,7 +2187,8 @@ enum {
+ };
  
--	/* Done! */
--	slab_state = FULL;
--
- 	/*
- 	 * Register a cpu startup notifier callback that initializes
- 	 * cpu_cache_get for all new cpus
-@@ -1675,6 +1672,9 @@ int __init __kmem_cache_initcall(void)
- 	 */
- 	for_each_online_cpu(cpu)
- 		start_cpu_timer(cpu);
-+
-+	/* Done! */
-+	slab_state = FULL;
- 	return 0;
- }
- 
-@@ -2120,7 +2120,7 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
- 
- static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
+ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+-				unsigned int nr_pages, bool oom_check)
++				unsigned int nr_pages, unsigned int min_pages,
++				bool oom_check)
  {
--	if (slab_state == FULL)
-+	if (slab_state >= UP)
- 		return enable_cpucache(cachep, gfp);
+ 	unsigned long csize = nr_pages * PAGE_SIZE;
+ 	struct mem_cgroup *mem_over_limit;
+@@ -2210,18 +2211,18 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	} else
+ 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+ 	/*
+-	 * nr_pages can be either a huge page (HPAGE_PMD_NR), a batch
+-	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
+-	 *
+ 	 * Never reclaim on behalf of optional batching, retry with a
+ 	 * single page instead.
+ 	 */
+-	if (nr_pages == CHARGE_BATCH)
++	if (nr_pages > min_pages)
+ 		return CHARGE_RETRY;
  
- 	if (slab_state == DOWN) {
+ 	if (!(gfp_mask & __GFP_WAIT))
+ 		return CHARGE_WOULDBLOCK;
+ 
++	if (gfp_mask & __GFP_NORETRY)
++		return CHARGE_NOMEM;
++
+ 	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
+ 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+ 		return CHARGE_RETRY;
+@@ -2234,8 +2235,10 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	 * unlikely to succeed so close to the limit, and we fall back
+ 	 * to regular pages anyway in case of failure.
+ 	 */
+-	if (nr_pages == 1 && ret)
++	if (nr_pages <= (1 << PAGE_ALLOC_COSTLY_ORDER) && ret) {
++		cond_resched();
+ 		return CHARGE_RETRY;
++	}
+ 
+ 	/*
+ 	 * At task move, charge accounts can be doubly counted. So, it's
+@@ -2369,7 +2372,8 @@ again:
+ 			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+ 		}
+ 
+-		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
++		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, nr_pages,
++		    oom_check);
+ 		switch (ret) {
+ 		case CHARGE_OK:
+ 			break;
 -- 
 1.7.10.2
 
