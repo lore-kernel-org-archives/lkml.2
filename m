@@ -1,168 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab2FRKk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:40:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:18557 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753940Ab2FRKkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:40:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="157615145"
-Message-ID: <1340016236.2420.23.camel@sauron.fi.intel.com>
-Subject: Re: [patch] UBIFS: add key state map data structure and accessors
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 18 Jun 2012 13:43:56 +0300
-In-Reply-To: <alpine.DEB.2.00.1206090016010.14953@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1206090016010.14953@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-x4CdtE6Eqxscv7PAAFbP"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753014Ab2FRKmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:42:22 -0400
+Received: from mailout.rz.uni-frankfurt.de ([141.2.22.233]:46820 "EHLO
+	mailout.rz.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751468Ab2FRKmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:42:20 -0400
+X-Greylist: delayed 1340 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Jun 2012 06:42:20 EDT
+Message-ID: <4FDF00CB.7090703@med.uni-frankfurt.de>
+Date: Mon, 18 Jun 2012 12:19:55 +0200
+From: Thomas Sattler <sattler@med.uni-frankfurt.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@timesys.com>
+Subject: BUG: scheduling while atomic: chcpu/6197/0x00000002
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-MailScanner: Found to be clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi there ...
 
---=-x4CdtE6Eqxscv7PAAFbP
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I run into the BUG by running 'chcpu --disable 1' on an "Intel(R)
+Core(TM)2 CPU" machine. I used 3.4.2-rt10 and I seems not to
+happen in vanilla 3.4.2.
 
-On Sat, 2012-06-09 at 00:16 +0200, Joel Reardon wrote:
-> #define KEYMAP_STATES_PER_BYTE_SHIFT 2
-> +
-> +/**
-> + * Defines the three possible states of a key:
-> + * @KEYMAP_STATE_UNUSED: the key has never been assigned or used
-> + * @KEYMAP_STATE_USED: the key has been assigned and is used for live da=
-ta
-> + * @KEYMAP_STATE_DELETED: the key has been assigned and is used for
-> + *			  deleted data.
-> + */
-> +enum {
-> +	KEYMAP_STATE_UNUSED  =3D 0,
-> +	KEYMAP_STATE_USED    =3D 1,
-> +	KEYMAP_STATE_DELETED =3D 2,
+I'll try 3.4.3 and 3.4.3-rt10 next and I'll send their results as
+a reply to this mail.
 
-I'd suggest to remove the values, they are the same as the  default
-ones, and add
-          KEYMAP_STATE_CNT,
+(Please CC: me, I'm not on LKML)
 
-to have the count of states for ubifs_assert() below.
+Thanks
+Thomas
 
-> +};
-> +
->  /**
->   * struct ubifs_keymap - UBIFS key map.
->   * @key_size: size of a key in bytes
->   * @keys_per_leb: number of keys per KSA LEB
-> - * @ksa_size: number of LEBS in the KSA
-> + * @ksa_lebs: number of LEBS in the KSA
->   * @ksa_first: the first LEB belonging to the KSA
 
-Yo do not have "ksa_first".
-
-> + * @state: a double-array [ksa_lebs]x[keys_per_leb] that stores the
-> + *	   state of the key at that position. The state consumes two bits so
-> + *	   each byte contains four states. The first index is from 0 to the
-> + *	   number of KSA LEBs - 1, and the second is from 0 to the number of
-> + *	   keys per (KSA LEB - 1) >> 2
-
-I do not understand this "number of  keys per (KSA LEB - 1) >> 2" - it
-should be "number of keys per KSA LEB", no?
-
-> +static void set_state(struct ubifs_keymap *km, int ksa_leb,
-> +		      int ksa_offset, int value)
-> +{
-> +	static const int minor_mask =3D (1 << KEYMAP_STATES_PER_BYTE_SHIFT) - 1=
-;
-> +	int major, shift, mask, old;
-> +
-
-ubifs_assert(ksa_leb is sane);
-ubifs_assert(value > 0 && value < KEYMAP_STATE_CNT);
-ubifs_assert(ksa_offset > 0 && ksa_offset <=3D c->leb_size - UBIFS_CRYPTO_K=
-EYSIZE);
-
-unless this is fast-path where we'd want to avoid wasting time for checks,
-but it does not look so.
-
-> +	major =3D ksa_offset >> KEYMAP_STATES_PER_BYTE_SHIFT;
-> +	shift =3D (ksa_offset & minor_mask) << 1;
-> +	mask  =3D minor_mask << shift;
-> +	old =3D km->state[ksa_leb][major];
-> +	km->state[ksa_leb][major] =3D old - (old & mask) + (value << shift);
-> +}
-
-All you need to do is to set the stat in the array of bits, right?
-Wouldn't something straightforward like this be simpler?
-
-uint8_t *byte =3D km->start[ksa_leb][ksa_offset / UBIFS_CRYPTO_KEYSIZE];
-pair =3D ksa_offset % 4;
-*byte &=3D value << pair * 2;
-
-Frankly, I cannot parse your implementation, but I did not try too hard.
-
-Btw, do not try too hare do use shifts instead of multiplications,
-modern compilers and processors are smart enough to do it themselves.
-
-> +
-> +/**
-> + * get_state - get the key state
-> + * @km: the keymap
-> + * @ksa_leb: the KSA eraseblock number
-> + * @ksa_offset: the key's offset in the KSA eraseblock
-> + *
-> + * This function returns key position's state.
-> + */
-> +static int get_state(struct ubifs_keymap *km, int ksa_leb, int ksa_offse=
-t)
-> +{
-> +	static const int minor_mask =3D (1 << KEYMAP_STATES_PER_BYTE_SHIFT) - 1=
-;
-> +	int major, shift;
-> +
-> +	major =3D ksa_offset >> KEYMAP_STATES_PER_BYTE_SHIFT;
-> +	shift =3D (ksa_offset & minor_mask) << 1;
-> +	return (km->state[ksa_leb][major] >> shift) & minor_mask;
-> +}
-
-Similarly, add assertion to check that you never return 0x3. Check input
-parameters. Would this be simpler to understand?
-
-byte =3D km->start[ksa_leb][ksa_offset / UBIFS_CRYPTO_KEYSIZE];
-pair =3D ksa_offset % 4;
-ret =3D byte >> pair * 2;
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-x4CdtE6Eqxscv7PAAFbP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP3wZsAAoJECmIfjd9wqK0Ab4QAJV5ChhmExH3PLRVi1HHFnaf
-wAyYKtkHbQ9UQftaGIgc9AlKsIU0u5wX4PidU1kHtmBV6YW3YwsiePvJyMcUuIHK
-P23i+ST50eO4WCcWl4FvTAApj6ySUPmVQsaVuVwRwhWtT1aYJyncITMmVBQHAkHn
-zJYZMghpyDsv6XWpodG4y5/RK81czdc06aKJIdp0+F/pMFtzqdbkRrg+dz0caru7
-/gslJkeDxE5ZHuerK2psD/nugYVsp6BqH+LyCHXLDC0xb/9+0r3140zsm3GVo/Wd
-3vb3E0DtNFi2/JgBZWMc8CJQ0LeVNupEKzL21D3i4+CPY0zdae5lmRdr1CjpWyl+
-Ncmi3e2/w2F63KHwj4KFT3aAPwOPu+5fQmeGd/UO5pXmb8cHwd8Qq3x1eMFZTxPh
-WKlf4U50pXjlleIswI4RWH2+xpjURgtzCi0o5rH3TqdWLp+mEe61ALKveIjYH3ul
-vMDZoWdNIPYnoYVJyHNtthvGGKVDO/nDUm+6u9bqX23Q9mKvFxjudh9OIFFt+4yh
-8H50sOC0sgHhjLj3Rw2YadzmWkFNdT5Ew7S595z77V6rgNLlKmyo5/xJRRXB7QZ5
-KLBBzDx7W+VC84yc2Hb//0c+20SNybzYYxroqhLjf+79fw51qpvWm27q+lqoTGzr
-BOUVDPoAs22DNRur0D6Z
-=3kEr
------END PGP SIGNATURE-----
-
---=-x4CdtE6Eqxscv7PAAFbP--
-
+[  554.815919] BUG: scheduling while atomic: chcpu/6197/0x00000002
+[  554.815923] Modules linked in: loop rfcomm bnep btusb hid_microsoft
+usbhid hid uhci_hcd ehci_hcd 3c59x mii e1000e sg usbcore usb_common
+[  554.815942] Pid: 6197, comm: chcpu Not tainted 3.4.2-rt10 #19
+[  554.815945] Call Trace:
+[  554.815953]  [<c103df4d>] __schedule_bug+0x3d/0x42
+[  554.815958]  [<c1355334>] __schedule+0x68/0x571
+[  554.815964]  [<c1045844>] ? enqueue_entity+0x313/0x3d8
+[  554.815969]  [<c13558e2>] schedule+0x60/0x70
+[  554.815972]  [<c1354902>] schedule_timeout+0x17/0x160
+[  554.815977]  [<c103ed57>] ? check_preempt_curr+0x29/0x64
+[  554.815981]  [<c13551ed>] wait_for_common+0xa3/0xff
+[  554.815985]  [<c10412e2>] ? try_to_wake_up+0x391/0x391
+[  554.815989]  [<c13552ca>] wait_for_completion+0x12/0x14
+[  554.815993]  [<c103781c>] kthread_create_on_node+0x71/0xb5
+[  554.815997]  [<c102542c>] ? put_online_cpus+0x44/0x44
+[  554.816002]  [<c1350101>] ? init_amd+0x56f/0x64f
+[  554.816007]  [<c134719f>] _cpu_down+0x106/0x2b4
+[  554.816021]  [<c102542c>] ? put_online_cpus+0x44/0x44
+[  554.816027]  [<c1347372>] cpu_down+0x25/0x34
+[  554.816030]  [<c13489b6>] store_online+0x29/0x70
+[  554.816034]  [<c134898d>] ? acpi_processor_start+0xf7/0xf7
+[  554.816038]  [<c127b037>] dev_attr_store+0x1b/0x23
+[  554.816043]  [<c10eb6c6>] sysfs_write_file+0xae/0xe7
+[  554.816048]  [<c10ab93e>] vfs_write+0x8c/0x122
+[  554.816052]  [<c10eb618>] ? sysfs_poll+0x77/0x77
+[  554.816056]  [<c10abb8f>] sys_write+0x3b/0x60
+[  554.816061]  [<c1357823>] sysenter_do_call+0x12/0x2c
+[  554.817316] BUG: scheduling while atomic: chcpu/6197/0x00000002
+[  554.817319] Modules linked in: loop rfcomm bnep btusb hid_microsoft
+usbhid hid uhci_hcd ehci_hcd 3c59x mii e1000e sg usbcore usb_common
+[  554.817335] Pid: 6197, comm: chcpu Not tainted 3.4.2-rt10 #19
+[  554.817337] Call Trace:
+[  554.817343]  [<c103df4d>] __schedule_bug+0x3d/0x42
+[  554.817347]  [<c1355334>] __schedule+0x68/0x571
+[  554.817351]  [<c1356a61>] ? _raw_spin_unlock_irqrestore+0x1a/0x2f
+[  554.817356]  [<c103a992>] ? __hrtimer_start_range_ns+0x2cf/0x2f6
+[  554.817360]  [<c13558e2>] schedule+0x60/0x70
+[  554.817364]  [<c1354dea>] schedule_hrtimeout_range_clock+0xc5/0xec
+[  554.817368]  [<c103a202>] ? update_rmtp+0x68/0x68
+[  554.817372]  [<c1354e1b>] schedule_hrtimeout_range+0xa/0xc
+[  554.817376]  [<c1354e29>] schedule_hrtimeout+0xc/0xe
+[  554.817380]  [<c103f197>] wait_task_inactive+0xc5/0xd6
+[  554.817385]  [<c1037773>] kthread_bind+0x13/0x4b
+[  554.817389]  [<c13471ba>] _cpu_down+0x121/0x2b4
+[  554.817394]  [<c1347372>] cpu_down+0x25/0x34
+[  554.817397]  [<c13489b6>] store_online+0x29/0x70
+[  554.817401]  [<c134898d>] ? acpi_processor_start+0xf7/0xf7
+[  554.817405]  [<c127b037>] dev_attr_store+0x1b/0x23
+[  554.817409]  [<c10eb6c6>] sysfs_write_file+0xae/0xe7
+[  554.817413]  [<c10ab93e>] vfs_write+0x8c/0x122
+[  554.817417]  [<c10eb618>] ? sysfs_poll+0x77/0x77
+[  554.817421]  [<c10abb8f>] sys_write+0x3b/0x60
+[  554.817425]  [<c1357823>] sysenter_do_call+0x12/0x2c
+[  554.819134] BUG: scheduling while atomic: chcpu/6197/0x00000002
+[  554.819137] Modules linked in: loop rfcomm bnep btusb hid_microsoft
+usbhid hid uhci_hcd ehci_hcd 3c59x mii e1000e sg usbcore usb_common
+[  554.819153] Pid: 6197, comm: chcpu Not tainted 3.4.2-rt10 #19
+[  554.819155] Call Trace:
+[  554.819160]  [<c103df4d>] __schedule_bug+0x3d/0x42
+[  554.819164]  [<c1355334>] __schedule+0x68/0x571
+[  554.819170]  [<c1008017>] ? sched_clock+0x9/0xd
+[  554.819173]  [<c10428f9>] ? sched_clock_local+0x11/0x12f
+[  554.819178]  [<c13558e2>] schedule+0x60/0x70
+[  554.819182]  [<c1354902>] schedule_timeout+0x17/0x160
+[  554.819186]  [<c13551ed>] wait_for_common+0xa3/0xff
+[  554.819190]  [<c10412e2>] ? try_to_wake_up+0x391/0x391
+[  554.819195]  [<c13552ca>] wait_for_completion+0x12/0x14
+[  554.819199]  [<c13471c9>] _cpu_down+0x130/0x2b4
+[  554.819203]  [<c1347372>] cpu_down+0x25/0x34
+[  554.819207]  [<c13489b6>] store_online+0x29/0x70
+[  554.819210]  [<c134898d>] ? acpi_processor_start+0xf7/0xf7
+[  554.819214]  [<c127b037>] dev_attr_store+0x1b/0x23
+[  554.819219]  [<c10eb6c6>] sysfs_write_file+0xae/0xe7
+[  554.819223]  [<c10ab93e>] vfs_write+0x8c/0x122
+[  554.819227]  [<c10eb618>] ? sysfs_poll+0x77/0x77
+[  554.819230]  [<c10abb8f>] sys_write+0x3b/0x60
+[  554.819235]  [<c1357823>] sysenter_do_call+0x12/0x2c
+[  554.819269] BUG: scheduling while atomic: chcpu/6197/0x00000002
+[  554.819271] Modules linked in: loop rfcomm bnep btusb hid_microsoft
+usbhid hid uhci_hcd ehci_hcd 3c59x mii e1000e sg usbcore usb_common
+[  554.819287] Pid: 6197, comm: chcpu Not tainted 3.4.2-rt10 #19
+[  554.819289] Call Trace:
+[  554.819293]  [<c103df4d>] __schedule_bug+0x3d/0x42
+[  554.819297]  [<c1355334>] __schedule+0x68/0x571
+[  554.819302]  [<c1008017>] ? sched_clock+0x9/0xd
+[  554.819306]  [<c10428f9>] ? sched_clock_local+0x11/0x12f
+[  554.819312]  [<c13558e2>] schedule+0x60/0x70
+[  554.819316]  [<c1354902>] schedule_timeout+0x17/0x160
+[  554.819320]  [<c13551ed>] wait_for_common+0xa3/0xff
+[  554.819324]  [<c10412e2>] ? try_to_wake_up+0x391/0x391
+[  554.819328]  [<c13552ca>] wait_for_completion+0x12/0x14
+[  554.819332]  [<c1037742>] kthread_stop+0x2d/0x4b
+[  554.819337]  [<c10330fa>] destroy_worker+0x54/0x74
+[  554.819341]  [<c1348d37>] workqueue_cpu_down_callback+0x193/0x251
+[  554.819346]  [<c1185d3d>] ? compute_batch_value+0x19/0x29
+[  554.819350]  [<c1353d1e>] ? percpu_counter_hotcpu_callback+0x13/0x8b
+[  554.819354]  [<c103b6b9>] notifier_call_chain+0x26/0x48
+[  554.819358]  [<c103b6fd>] __raw_notifier_call_chain+0xe/0x10
+[  554.819362]  [<c1025331>] __cpu_notify+0x15/0x29
+[  554.819367]  [<c13471f1>] _cpu_down+0x158/0x2b4
+[  554.819371]  [<c1347372>] cpu_down+0x25/0x34
+[  554.819375]  [<c13489b6>] store_online+0x29/0x70
+[  554.819378]  [<c134898d>] ? acpi_processor_start+0xf7/0xf7
+[  554.819382]  [<c127b037>] dev_attr_store+0x1b/0x23
+[  554.819386]  [<c10eb6c6>] sysfs_write_file+0xae/0xe7
+[  554.819390]  [<c10ab93e>] vfs_write+0x8c/0x122
+[  554.819394]  [<c10eb618>] ? sysfs_poll+0x77/0x77
+[  554.819398]  [<c10abb8f>] sys_write+0x3b/0x60
+[  554.819402]  [<c1357823>] sysenter_do_call+0x12/0x2c
+[  554.819421] BUG: scheduling while atomic: chcpu/6197/0x00000002
+[  554.819424] Modules linked in: loop rfcomm bnep btusb hid_microsoft
+usbhid hid uhci_hcd ehci_hcd 3c59x mii e1000e sg usbcore usb_common
+[  554.819439] Pid: 6197, comm: chcpu Not tainted 3.4.2-rt10 #19
+[  554.819442] Call Trace:
+[  554.819446]  [<c103df4d>] __schedule_bug+0x3d/0x42
+[  554.819450]  [<c1355334>] __schedule+0x68/0x571
+[  554.819455]  [<c1008017>] ? sched_clock+0x9/0xd
+[  554.819459]  [<c10428f9>] ? sched_clock_local+0x11/0x12f
+[  554.819463]  [<c13558e2>] schedule+0x60/0x70
+[  554.819466]  [<c1354902>] schedule_timeout+0x17/0x160
+[  554.819471]  [<c13551ed>] wait_for_common+0xa3/0xff
+[  554.819475]  [<c10412e2>] ? try_to_wake_up+0x391/0x391
+[  554.819478]  [<c13552ca>] wait_for_completion+0x12/0x14
+[  554.819482]  [<c1037742>] kthread_stop+0x2d/0x4b
+[  554.819486]  [<c10330fa>] destroy_worker+0x54/0x74
+[  554.819491]  [<c1348d37>] workqueue_cpu_down_callback+0x193/0x251
+[  554.819495]  [<c1185d3d>] ? compute_batch_value+0x19/0x29
+[  554.819499]  [<c1353d1e>] ? percpu_counter_hotcpu_callback+0x13/0x8b
+[  554.819504]  [<c103b6b9>] notifier_call_chain+0x26/0x48
+[  554.819508]  [<c103b6fd>] __raw_notifier_call_chain+0xe/0x10
+[  554.819512]  [<c1025331>] __cpu_notify+0x15/0x29
+[  554.819516]  [<c13471f1>] _cpu_down+0x158/0x2b4
+[  554.819521]  [<c1347372>] cpu_down+0x25/0x34
+[  554.819524]  [<c13489b6>] store_online+0x29/0x70
+[  554.819528]  [<c134898d>] ? acpi_processor_start+0xf7/0xf7
+[  554.819532]  [<c127b037>] dev_attr_store+0x1b/0x23
+[  554.819536]  [<c10eb6c6>] sysfs_write_file+0xae/0xe7
+[  554.819540]  [<c10ab93e>] vfs_write+0x8c/0x122
+[  554.819544]  [<c10eb618>] ? sysfs_poll+0x77/0x77
+[  554.819548]  [<c10abb8f>] sys_write+0x3b/0x60
+[  554.819552]  [<c1357823>] sysenter_do_call+0x12/0x2c
