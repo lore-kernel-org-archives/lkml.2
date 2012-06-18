@@ -1,88 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab2FRQHN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 12:07:13 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41859 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752545Ab2FRQHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 12:07:11 -0400
-Message-ID: <1340035630.2182.19.camel@joe2Laptop>
-Subject: Re: [PATCH 3/5] usb: Convert dbg to pr_eliminated and pr_debug
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Mundt <lethal@linux-sh.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 18 Jun 2012 09:07:10 -0700
-In-Reply-To: <20120618152315.GB1050@kroah.com>
-References: <cover.1339985626.git.joe@perches.com>
-	 <25071de4def201f947780d6937b9732ccac3b3f0.1339985627.git.joe@perches.com>
-	 <20120618152315.GB1050@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1752952Ab2FRQMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 12:12:00 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:46410 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750792Ab2FRQL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 12:11:58 -0400
+X-IronPort-AV: E=Sophos;i="4.75,792,1330934400"; 
+   d="scan'208";a="656201902"
+Message-ID: <4FDF533A.2090901@netapp.com>
+Date: Mon, 18 Jun 2012 12:11:38 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Andre Tomt <andre@tomt.net>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Howells <dhowells@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in __key_instantiate_and_link(): unable to handle kernel
+ paging request at 0000632e6472616f
+References: <20120601034114.GA9248@localhost> <4FDBF056.7040404@tomt.net>   <4FDCD3C7.5080503@tomt.net> <1339876739.8267.96.camel@lade.trondhjem.org>  <4FDEEF38.8030101@tomt.net> <1340026127.2451.7.camel@lade.trondhjem.org>
+In-Reply-To: <1340026127.2451.7.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-18 at 08:23 -0700, Greg Kroah-Hartman wrote:
-> On Sun, Jun 17, 2012 at 07:25:10PM -0700, Joe Perches wrote:
-> > Change the dbg macro to use pr_eliminated when not
-> > DEBUG and pr_debug with DEBUG so dynamic_debug can
-> > be used.
-> > 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  include/linux/usb.h |   12 +++++-------
-> >  1 files changed, 5 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/include/linux/usb.h b/include/linux/usb.h
-> > index f717fbd..56b88b8 100644
-> > --- a/include/linux/usb.h
-> > +++ b/include/linux/usb.h
-> > @@ -1714,14 +1714,12 @@ extern void usb_register_notify(struct notifier_block *nb);
-> >  extern void usb_unregister_notify(struct notifier_block *nb);
-> >  
-> >  #ifdef DEBUG
-> > -#define dbg(format, arg...)						\
-> > -	printk(KERN_DEBUG "%s: " format "\n", __FILE__, ##arg)
-> > +#define dbg(format, ...)						\
-> > +	pr_debug("%s: " format "\n", __FILE__, ##__VA_ARGS__)
+On 06/18/2012 09:28 AM, Myklebust, Trond wrote:
+> On Mon, 2012-06-18 at 11:04 +0200, Andre Tomt wrote:
+>> On 16. juni 2012 21:59, Myklebust, Trond wrote:
+>>> It looks to me as if the legacy upcall code is assuming that there can
+>>> be no more than 1 upcall at a time: there is only a single
+>>> idmap->idmap_key_cons, which gets assigned in nfs_idmap_legacy_upcall
+>>> and then read in idmap_pipe_downcall.
+>>>
+>>> Bryan, can you look into this? I suspect that we need a mutex or
+>>> something like that (for the legacy upcall case only) to ensure that
+>>> nobody overwrites the idmap->idmap_key_cons while an upcall is in
+>>> progress.
+>>>
+>>> Andre, if you want idmapper scalability, then you should rather use the
+>>> new idmapper upcall. You need a recent version of the nfs-utils package,
+>>> the keyutils package, and they you should add an 'id_resolver' line
+>>> to /etc/request-keys.conf as per the nfsidmap manpage.
+>>
+>> Indeed, using keyutils did avoid the crashes here, 40 hours and counting.
+>>
+>> Are there any downsides of having keyutils w/ id_resolver on by default 
+>> in a distribution? Would it break older kernels or nfs-utils (just not 
+>> getting used is fine, obviously)?
 > 
-> No, I really want to delete this macro entirely, and am slowly working
-> toward that, moving drivers to use the correct dev_dbg() macro instead.
-
-It'd be hard to replace it with only dev_dbg
-as no struct device is always available.
-
-And anyway, why go slowly?  Why not just do it?
-
-There's 41 files / 1442 instances
-
-$ git grep --name-only -E "^\s*#\s*include\s*[\<\"]linux/usb\.h[\>\"]" | \
-	xargs grep -El "\bdbg\s*\("|wc -l
-41
-$ git grep --name-only -E "^\s*#\s*include\s*[\<\"]linux/usb\.h[\>\"]" | \
-	xargs grep -E "\bdbg\s*\(" | wc -l
-1442
-
-There are also 5 redefinitions of dbg in there.
-
-> > -#define dbg(format, arg...)						\
-> > -do {									\
-> > -	if (0)								\
-> > -		printk(KERN_DEBUG "%s: " format "\n", __FILE__, ##arg); \
-> > -} while (0)
-> > +#define dbg(format, ...)						\
-> > +	printk_eliminated(KERN_DEBUG "%s: " format "\n",		\
-> > +			  __FILE__, ##__VA_ARGS)
+> Older kernels aren't able to use the keyutils mechanism, so they will
+> still require you to run the idmapd daemon, but there should be no
+> problems with just enabling it in /etc/request-key.conf.
+> Fedora 17 is supposed to install the id_resolver by default.
 > 
-> As Paul pointed out, this breaks the build,
 
-Yeah, Typos happen.
+Hi Andre,
 
-Paul's imagery was certainly colorful though a bit
-umm, dispassionate. ;)
+Can you please check if this patch fixes the old idmapper?
+
+- Bryan
+
+>From 3bef58765c7308965d06d9e9d7707c7ca55648ee Mon Sep 17 00:00:00 2001
+From: Bryan Schumaker <bjschuma@netapp.com>
+Date: Mon, 18 Jun 2012 12:01:25 -0400
+Subject: [PATCH] NFS: Force the legacy idmapper to be single threaded
+
+It was initially coded under the assumption that there would only be one
+request at a time, so use a lock to enforce this requirement..
+
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+---
+ fs/nfs/idmap.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index b5b86a0..864c51e 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -57,6 +57,11 @@ unsigned int nfs_idmap_cache_timeout = 600;
+ static const struct cred *id_resolver_cache;
+ static struct key_type key_type_id_resolver_legacy;
+ 
++struct idmap {
++	struct rpc_pipe		*idmap_pipe;
++	struct key_construction	*idmap_key_cons;
++	struct mutex		idmap_mutex;
++};
+ 
+ /**
+  * nfs_fattr_init_names - initialise the nfs_fattr owner_name/group_name fields
+@@ -310,9 +315,11 @@ static ssize_t nfs_idmap_get_key(const char *name, size_t namelen,
+ 					    name, namelen, type, data,
+ 					    data_size, NULL);
+ 	if (ret < 0) {
++		mutex_lock(&idmap->idmap_mutex);
+ 		ret = nfs_idmap_request_key(&key_type_id_resolver_legacy,
+ 					    name, namelen, type, data,
+ 					    data_size, idmap);
++		mutex_unlock(&idmap->idmap_mutex);
+ 	}
+ 	return ret;
+ }
+@@ -354,11 +361,6 @@ static int nfs_idmap_lookup_id(const char *name, size_t namelen, const char *typ
+ /* idmap classic begins here */
+ module_param(nfs_idmap_cache_timeout, int, 0644);
+ 
+-struct idmap {
+-	struct rpc_pipe		*idmap_pipe;
+-	struct key_construction	*idmap_key_cons;
+-};
+-
+ enum {
+ 	Opt_find_uid, Opt_find_gid, Opt_find_user, Opt_find_group, Opt_find_err
+ };
+@@ -469,6 +471,7 @@ nfs_idmap_new(struct nfs_client *clp)
+ 		return error;
+ 	}
+ 	idmap->idmap_pipe = pipe;
++	mutex_init(&idmap->idmap_mutex);
+ 
+ 	clp->cl_idmap = idmap;
+ 	return 0;
+-- 
+1.7.10.4
 
 
