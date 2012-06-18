@@ -1,109 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab2FRPpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 11:45:19 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:7557
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751646Ab2FRPpR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 11:45:17 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zzbb2dI98dI9371I542M1432I4015Izz1202hzzz2fh95h668h839h944hd24hf0ah906i)
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1752935Ab2FRPpc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 11:45:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43771 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab2FRPp3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 11:45:29 -0400
+Message-ID: <4FDF4D14.50203@wwwdotorg.org>
+Date: Mon, 18 Jun 2012 09:45:24 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] arm: zynq: Support GIC OF initialization
-Date: Mon, 18 Jun 2012 09:45:10 -0600
-In-Reply-To: <4FDF1ACC.2040208@monstr.eu>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] arm: zynq: Support GIC OF initialization
-Thread-Index: Ac1NS3HLku98WWtVRc2ow6MOhbu+2wAHb4xA
-References: <1340017873-18170-1-git-send-email-monstr@monstr.eu> <4FDF19CF.8010303@gmail.com> <4FDF1ACC.2040208@monstr.eu>
-From: John Linn <John.Linn@xilinx.com>
-To: <monstr@monstr.eu>, Rob Herring <robherring2@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <arnd@arndb.de>
-X-OriginalArrivalTime: 18 Jun 2012 15:45:11.0736 (UTC) FILETIME=[589F6B80:01CD4D69]
-Message-ID: <4fb922e3-9501-4684-9b84-85aad0652dce@CH1EHSMHS021.ehs.local>
-X-OriginatorOrg: xilinx.com
+To: Roland Stigge <stigge@antcom.de>
+CC: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
+        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] gpio: of_get_named_gpio_flags() return -EPROBE_DEFER
+ if GPIO not yet available
+References: <1339927893-8842-1-git-send-email-stigge@antcom.de> <4FDE8D27.6030508@wwwdotorg.org> <4FDEF293.9080305@antcom.de> <4FDF403E.9090302@wwwdotorg.org> <4FDF4461.60707@antcom.de> <4FDF4543.6090009@wwwdotorg.org> <4FDF47D8.9000309@antcom.de>
+In-Reply-To: <4FDF47D8.9000309@antcom.de>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Michal Simek [mailto:monstr@monstr.eu]
-> Sent: Monday, June 18, 2012 5:11 AM
-> To: Rob Herring
-> Cc: linux-kernel@vger.kernel.org;
-linux-arm-kernel@lists.infradead.org;
-> linux@arm.linux.org.uk; John Linn; arnd@arndb.de
-> Subject: Re: [PATCH] arm: zynq: Support GIC OF initialization
+On 06/18/2012 09:23 AM, Roland Stigge wrote:
+> On 06/18/2012 05:12 PM, Stephen Warren wrote:
+>>> Thanks for the hint! I previously also suspected sth. like this but
+>>> didn't find it in v3.5-rc3. In broonie's sound.git for-next, I now
+>>> finally found it.
+>>>
+>>> Should be easy to fix (replacing the if (... == -ENODEV) to -EPROBE_DEFER.
+>>>
+>>> Will you provide patches as signalled, of should I? Which branch would
+>>> be the correct one to build on top?
+>>
+>> I'm happy either way. It'd probably be best to roll the change into your
+>> patch/series so you can manage all the dependencies in one series, but
+>> if you can't for some reason, I'm happy to provide a patch for this.
 > 
-> On 06/18/2012 02:06 PM, Rob Herring wrote:
-> > On 06/18/2012 06:11 AM, Michal Simek wrote:
-> >> Zynq is OF driven platfrom which requires OF initialization.
-> >>
-> >> Signed-off-by: Michal Simek<monstr@monstr.eu>
-> >> ---
-> >>   arch/arm/mach-zynq/common.c |    7 ++++++-
-> >>   1 files changed, 6 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-
-> zynq/common.c
-> >> index 17d68d6..7941544 100644
-> >> --- a/arch/arm/mach-zynq/common.c
-> >> +++ b/arch/arm/mach-zynq/common.c
-> >> @@ -56,12 +56,17 @@ static void __init xilinx_init_machine(void)
-> >>   	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
-> >>   }
-> >>
-> >> +static const struct of_device_id zynq_dt_irq_match[] __initconst =
-{
-> >> +	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init },
-> >> +	{ }
-> >> +};
-> >> +
-> >>   /**
-> >>    * xilinx_irq_init() - Interrupt controller initialization for
-the
-> GIC.
-> >>    */
-> >>   static void __init xilinx_irq_init(void)
-> >>   {
-> >> -	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
-> >
-> > And delete the corresponding defines?
-> 
-> Agree, Will create v2.
-> 
-> BTW: Who is responsible for zynq? I think John Linn and who is
-> maintainer I should ask for pulling.
+> I should be able ;-) - is broonie's sound.git, branch for-next the
+> correct one to patch against?
 
-In the past I've acked some patches and they were picked up by others
-into the Soc tree I believe.
-
-Thanks,
-John
-
-> 
-> Thanks,
-> Michal
-> 
-> 
-> 
-> 
-> --
-> Michal Simek, Ing. (M.Eng)
-> w: www.monstr.eu p: +42-0-721842854
-> Maintainer of Linux kernel 2.6 Microblaze Linux -
-> http://www.monstr.eu/fdt/
-> Microblaze U-BOOT custodian
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+Yes, that's the one. Thanks.
