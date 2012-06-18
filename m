@@ -1,121 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2FRROF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 13:14:05 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35690 "EHLO e9.ny.us.ibm.com"
+	id S1752647Ab2FRRPv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 13:15:51 -0400
+Received: from antcom.de ([188.40.178.216]:36664 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab2FRROC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 13:14:02 -0400
-Date: Mon, 18 Jun 2012 10:05:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, ralf@linux-mips.org, sshtylyov@mvista.com,
-        david.daney@cavium.com, nikunj@linux.vnet.ibm.com, axboe@kernel.dk,
-        mingo@kernel.org, tglx@linutronix.de, peterz@infradead.org,
-        akpm@linux-foundation.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [RFC PATCH 09/10] POWERPC: smp: remove call to
- ipi_call_lock()/ipi_call_unlock()
-Message-ID: <20120618170554.GE2400@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
- <1338275765-3217-10-git-send-email-yong.zhang0@gmail.com>
- <20120616163219.GI2420@linux.vnet.ibm.com>
- <20120618025159.GA24420@zhy>
+	id S1751877Ab2FRRPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 13:15:50 -0400
+Message-ID: <4FDF6242.3040400@antcom.de>
+Date: Mon, 18 Jun 2012 19:15:46 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120618025159.GA24420@zhy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061817-7182-0000-0000-000001C48DAA
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: swarren@wwwdotorg.org, cjb@laptop.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rmk+kernel@arm.linux.org.uk,
+        ulf.hansson@stericsson.com, linus.walleij@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org, lrg@ti.com,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 1/2] sound: tegra_wm8903: Adjust to of_get_named_gpio()
+ change
+References: <1340037743-12924-1-git-send-email-stigge@antcom.de> <20120618164659.GV3974@opensource.wolfsonmicro.com> <4FDF5E9E.6060803@antcom.de> <20120618170408.GW3974@opensource.wolfsonmicro.com>
+In-Reply-To: <20120618170408.GW3974@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 10:51:59AM +0800, Yong Zhang wrote:
-> On Sat, Jun 16, 2012 at 09:32:19AM -0700, Paul E. McKenney wrote:
-> > On Tue, May 29, 2012 at 03:16:04PM +0800, Yong Zhang wrote:
-> > > From: Yong Zhang <yong.zhang@windriver.com>
-> > > 
-> > > 1) call_function.lock used in smp_call_function_many() is just to protect
-> > >    call_function.queue and &data->refs, cpu_online_mask is outside of the
-> > >    lock. And it's not necessary to protect cpu_online_mask,
-> > >    because data->cpumask is pre-calculate and even if a cpu is brougt up
-> > >    when calling arch_send_call_function_ipi_mask(), it's harmless because
-> > >    validation test in generic_smp_call_function_interrupt() will take care
-> > >    of it.
-> > > 
-> > > 2) For cpu down issue, stop_machine() will guarantee that no concurrent
-> > >    smp_call_fuction() is processing.
-> > 
-> > However, there is an effort to get rid of stop_machine() from the
-> > CPU-down path...  So something else will be needed.
+On 06/18/2012 07:04 PM, Mark Brown wrote:
+> On Mon, Jun 18, 2012 at 07:00:14PM +0200, Roland Stigge wrote:
 > 
-> Yeah. So Thomas changed the commit log like below:
-> [
->     ipi_call_lock/unlock() lock resp. unlock call_function.lock. This lock
->     protects only the call_function data structure itself, but it's
->     completely unrelated to cpu_online_mask. The mask to which the IPIs
->     are sent is calculated before call_function.lock is taken in
->     smp_call_function_many(), so the locking around set_cpu_online() is
->     pointless and can be removed.
->     
->     [ tglx: Massaged changelog ]
-> ]
+>> Basically, yes. But this would mean that doing via gpio, we would
+>> need to pull other stuff from the sound tree over to gpio to
+>> build upon because "my" tegra_* sound patches won't apply to the
+>> gpio branch currently.
 > 
-> in tip/smp/hotplug.
+> Oh, yes.  Stephen's gone and reorganised all that code which means
+> it's not a trivial merge.  Ho hum.  I'm happy to apply them if
+> folks are comfortable with it, I guess ideally I'd be able to pull
+> a branch with the gpio changes in and then apply on top of that.
 
-Got it, thank you!
+Depending on what else changes will come via gpio for 3.6, maybe you
+don't even need to merge gpio to sound?
 
-							Thanx, Paul
+Can you please coordinate between sound and gpio?
 
-> Thanks,
-> Yong
-> 
-> > 
-> > 							Thanx, Paul
-> > 
-> > > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> > > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > > Cc: Paul Mackerras <paulus@samba.org>
-> > > Cc: linuxppc-dev@lists.ozlabs.org
-> > > ---
-> > >  arch/powerpc/kernel/smp.c |    2 --
-> > >  1 files changed, 0 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-> > > index e4cb343..e1417c4 100644
-> > > --- a/arch/powerpc/kernel/smp.c
-> > > +++ b/arch/powerpc/kernel/smp.c
-> > > @@ -571,7 +571,6 @@ void __devinit start_secondary(void *unused)
-> > >  	if (system_state == SYSTEM_RUNNING)
-> > >  		vdso_data->processorCount++;
-> > >  #endif
-> > > -	ipi_call_lock();
-> > >  	notify_cpu_starting(cpu);
-> > >  	set_cpu_online(cpu, true);
-> > >  	/* Update sibling maps */
-> > > @@ -601,7 +600,6 @@ void __devinit start_secondary(void *unused)
-> > >  		of_node_put(np);
-> > >  	}
-> > >  	of_node_put(l2_cache);
-> > > -	ipi_call_unlock();
-> > > 
-> > >  	local_irq_enable();
-> > > 
-> > > -- 
-> > > 1.7.5.4
-> > > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Only stand for myself
-> 
+Thanks in advance!
 
+Roland
+
+PS: I'm posting a combined patch suitable for the sound subsystem.
+Please tell me if you also need the gpiolib-of patch singled out.
