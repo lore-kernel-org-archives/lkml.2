@@ -1,105 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab2FRJBs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 05:01:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40602 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab2FRJBr (ORCPT
+	id S1755713Ab2FRJCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 05:02:16 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:33235 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753628Ab2FRJCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 05:01:47 -0400
-Date: Mon, 18 Jun 2012 02:01:26 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-593609a59600c8377f311b300f14deacb155b9a4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, ananth@in.ibm.com, anton@redhat.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, ananth@in.ibm.com, anton@redhat.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120615154359.GA9625@redhat.com>
-References: <20120615154359.GA9625@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: __copy_insn() needs "loff_t offset"
-Git-Commit-ID: 593609a59600c8377f311b300f14deacb155b9a4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 18 Jun 2012 05:02:14 -0400
+Date: Mon, 18 Jun 2012 17:02:01 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: linux-crypto@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crypto: aes - make assembler implementation default
+ for i386 and x86-64
+Message-ID: <20120618090201.GA25104@gondor.apana.org.au>
+References: <20120530215333.32995tjzj9dr4jwo@www.81.fi>
+ <20120609145055.12766.42439.stgit@localhost6.localdomain6>
+ <20120612082651.GA13419@gondor.apana.org.au>
+ <20120612212518.22246qw5kuyn2osg@www.81.fi>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 18 Jun 2012 02:01:32 -0700 (PDT)
+In-Reply-To: <20120612212518.22246qw5kuyn2osg@www.81.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  593609a59600c8377f311b300f14deacb155b9a4
-Gitweb:     http://git.kernel.org/tip/593609a59600c8377f311b300f14deacb155b9a4
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Fri, 15 Jun 2012 17:43:59 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 16 Jun 2012 09:10:49 +0200
+On Tue, Jun 12, 2012 at 09:25:18PM +0300, Jussi Kivilinna wrote:
+>
+> Well, how about letting arch specific assembler implementations
+> replace aes-generic
+> completely.. in this case add "depends on !X86" on
+> CRYPTO_AES_GENERIC. Hardware
+> modules get autoloaded (cpuid/pci/platform/etc) but generic
+> assembler implementation
+> might as well be replacement as it cannot autoload depending on
+> hardware support (or
+> it can, but will be always loaded).
 
-uprobes: __copy_insn() needs "loff_t offset"
+Perhaps we can just force a modprobe of a given algorithm at least
+once for each boot (when requested for the first time).  I think
+that should be easy to implement and should solve your problem
+scenario.
 
-1. __copy_insn() needs "loff_t offset", not "unsigned long",
-   to read the file.
+What do you think?
 
-2. use pgoff_t for "idx" and remove the unnecessary typecast.
-
-3. fix the typo, "&=" is not what we want
-
-4. can't resist, rename off1 to off.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120615154359.GA9625@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/events/uprobes.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 4df84b7..d1b2eeb 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -581,12 +581,12 @@ static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
- 
- static int
- __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
--			unsigned long nbytes, unsigned long offset)
-+			unsigned long nbytes, loff_t offset)
- {
- 	struct page *page;
- 	void *vaddr;
--	unsigned long off1;
--	unsigned long idx;
-+	unsigned long off;
-+	pgoff_t idx;
- 
- 	if (!filp)
- 		return -EINVAL;
-@@ -594,8 +594,8 @@ __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
- 	if (!mapping->a_ops->readpage)
- 		return -EIO;
- 
--	idx = (unsigned long)(offset >> PAGE_CACHE_SHIFT);
--	off1 = offset &= ~PAGE_MASK;
-+	idx = offset >> PAGE_CACHE_SHIFT;
-+	off = offset & ~PAGE_MASK;
- 
- 	/*
- 	 * Ensure that the page that has the original instruction is
-@@ -606,7 +606,7 @@ __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
- 		return PTR_ERR(page);
- 
- 	vaddr = kmap_atomic(page);
--	memcpy(insn, vaddr + off1, nbytes);
-+	memcpy(insn, vaddr + off, nbytes);
- 	kunmap_atomic(vaddr);
- 	page_cache_release(page);
- 
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
