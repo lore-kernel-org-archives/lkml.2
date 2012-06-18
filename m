@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab2FRRqN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 13:46:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37177 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab2FRRqM (ORCPT
+	id S1753180Ab2FRRra (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 13:47:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45846 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab2FRRr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 13:46:12 -0400
+	Mon, 18 Jun 2012 13:47:29 -0400
 From: Devendra Naga <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
 Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 2/2] pinctrl/pinctrl-spear: remove IS_ERR checking of pmx->pctl
-Date: Mon, 18 Jun 2012 23:16:04 +0530
-Message-Id: <1340041564-30168-1-git-send-email-devendra.aaru@gmail.com>
+Subject: [PATCH] pinctrl/pinctrl-u300: remove unused variable i
+Date: Mon, 18 Jun 2012 23:17:18 +0530
+Message-Id: <1340041638-30233-1-git-send-email-devendra.aaru@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pinctrl_register returns a pointer of struct type struct pinctrl_dev,
-if successfully registered to pinctrl subsystem, otherwise returns
-NULL, and there wont' be any pointers which are not dereferencible.
+the unused variable warning was thrown when compiled using the
+gcc for ARM (arm-linux-gnueabihf-gcc) with u300_defconfig selected,
 
-They are not type of pointer addresses but are kind of error
-codes rather actual addresses, but are a kind of return
-codes of functions returning integer types.
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- u300_defconfig
 
-return -ENODEV if device registration fails.
+and then
+
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+
+gives the following warn,
+
+drivers/pinctrl/pinctrl-u300.c: In function ‘u300_pmx_remove’:
+drivers/pinctrl/pinctrl-u300.c:1178:6: warning: unused variable ‘i’ [-Wunused-variable]
 
 Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 ---
- drivers/pinctrl/spear/pinctrl-spear.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-u300.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/pinctrl/spear/pinctrl-spear.c b/drivers/pinctrl/spear/pinctrl-spear.c
-index 5ae50aa..b9a52c9 100644
---- a/drivers/pinctrl/spear/pinctrl-spear.c
-+++ b/drivers/pinctrl/spear/pinctrl-spear.c
-@@ -336,9 +336,9 @@ int __devinit spear_pinctrl_probe(struct platform_device *pdev,
- 	spear_pinctrl_desc.npins = machdata->npins;
+diff --git a/drivers/pinctrl/pinctrl-u300.c b/drivers/pinctrl/pinctrl-u300.c
+index 49b91c2..2ba13c5 100644
+--- a/drivers/pinctrl/pinctrl-u300.c
++++ b/drivers/pinctrl/pinctrl-u300.c
+@@ -1175,7 +1175,6 @@ out_no_resource:
+ static int __devexit u300_pmx_remove(struct platform_device *pdev)
+ {
+ 	struct u300_pmx *upmx = platform_get_drvdata(pdev);
+-	int i;
  
- 	pmx->pctl = pinctrl_register(&spear_pinctrl_desc, &pdev->dev, pmx);
--	if (IS_ERR(pmx->pctl)) {
-+	if (!pmx->pctl) {
- 		dev_err(&pdev->dev, "Couldn't register pinctrl driver\n");
--		return PTR_ERR(pmx->pctl);
-+		return -ENODEV;
- 	}
- 
- 	return 0;
+ 	pinctrl_unregister(upmx->pctl);
+ 	iounmap(upmx->virtbase);
 -- 
 1.7.9.5
 
