@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab2FRLal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:30:41 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48874 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab2FRLah (ORCPT
+	id S1752382Ab2FRLar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:30:47 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:36293 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab2FRLap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:30:37 -0400
+	Mon, 18 Jun 2012 07:30:45 -0400
 From: Michal Simek <monstr@monstr.eu>
 To: linux-kernel@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>, Marc Zyngier <marc.zyngier@arm.com>,
@@ -17,9 +17,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Marc Zyngier <marc.zyngier@arm.com>,
         linux-arm-kernel@lists.infradead.org, Ohad Ben-Cohen <ohad@wizery.com>,
         Peter Crosthwaite <peter.crosthwaite@petalogix.com>,
         Michal Simek <monstr@monstr.eu>
-Subject: [RFC PATCH 1/8] ARM: gic: Support forcing cpumask for possible cpus in the system
-Date: Mon, 18 Jun 2012 13:30:04 +0200
-Message-Id: <1340019011-18642-2-git-send-email-monstr@monstr.eu>
+Subject: [RFC PATCH 3/8] ARM: gic: Introduce new gic_set_cpu
+Date: Mon, 18 Jun 2012 13:30:06 +0200
+Message-Id: <1340019011-18642-4-git-send-email-monstr@monstr.eu>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1340019011-18642-1-git-send-email-monstr@monstr.eu>
 References: <1340019011-18642-1-git-send-email-monstr@monstr.eu>
@@ -27,35 +27,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gic_set_affinity doesn't support force option. Force option
-should work with all possible cpus in the system not only with
-online cpus.
+gic_set_cpu enable option to forward specific IRQ to choosen
+ARM core.
 
 Signed-off-by: Michal Simek <monstr@monstr.eu>
 ---
- arch/arm/common/gic.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ arch/arm/common/gic.c               |   11 +++++++++++
+ arch/arm/include/asm/hardware/gic.h |    2 ++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
 diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index aa52699..4003cc2 100644
+index b8e7202..2998d9e 100644
 --- a/arch/arm/common/gic.c
 +++ b/arch/arm/common/gic.c
-@@ -235,9 +235,14 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
- {
- 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
- 	unsigned int shift = (gic_irq(d) % 4) * 8;
--	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
-+	unsigned int cpu;
- 	u32 val, mask, bit;
+@@ -257,6 +257,17 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
  
-+	if (force)
-+		cpu = cpumask_any_and(mask_val, cpu_possible_mask);
-+	else
-+		cpu = cpumask_any_and(mask_val, cpu_online_mask);
+ 	return IRQ_SET_MASK_OK;
+ }
 +
- 	if (cpu >= 8 || cpu >= nr_cpu_ids)
- 		return -EINVAL;
++void gic_set_cpu(unsigned int cpu, unsigned int irq)
++{
++	struct irq_data *d = irq_get_irq_data(irq);
++	struct cpumask mask;
++
++	cpumask_clear(&mask);
++	cpumask_set_cpu(cpu, &mask);
++	gic_set_affinity(d, &mask, true);
++}
++EXPORT_SYMBOL(gic_set_cpu);
+ #endif
  
+ #ifdef CONFIG_PM
+diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
+index 4b1ce6c..8aa9631 100644
+--- a/arch/arm/include/asm/hardware/gic.h
++++ b/arch/arm/include/asm/hardware/gic.h
+@@ -46,6 +46,8 @@ void gic_handle_irq(struct pt_regs *regs);
+ void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
+ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
+ 
++void gic_set_cpu(unsigned int cpu, unsigned int irq);
++
+ static inline void gic_init(unsigned int nr, int start,
+ 			    void __iomem *dist , void __iomem *cpu)
+ {
 -- 
 1.7.0.4
 
