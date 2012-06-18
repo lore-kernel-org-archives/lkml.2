@@ -1,111 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2FRUjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:39:33 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:59227 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab2FRUj2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:39:28 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: Partitions: Amiga RDB partition on 2 TB disk way too big, while OK in AmigaOS 4.1
-Date: Mon, 18 Jun 2012 22:39:26 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
-Cc: jdow <jdow@earthlink.net>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, linux-m68k@vger.kernel.org
-References: <201206170841.20222.Martin@lichtvoll.de> <201206171458.58462.Martin@lichtvoll.de> <CAMuHMdWY7=2nJDUjQFGPhdOAFGYeUsnvgPcaEvB2Gxf7P=E+Ug@mail.gmail.com> (sfid-20120617_225443_752860_DC66624F)
-In-Reply-To: <CAMuHMdWY7=2nJDUjQFGPhdOAFGYeUsnvgPcaEvB2Gxf7P=E+Ug@mail.gmail.com>
+	id S1753304Ab2FRUnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:43:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44308 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab2FRUnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 16:43:37 -0400
+Date: Mon, 18 Jun 2012 22:43:34 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: netdev@vger.kernel.org
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: NETDEV WATCHDOG: eth0 (forcedeth): transmit queue 0 timed out
+Message-ID: <20120618204334.GB4148@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, netdev@vger.kernel.org,
+	lkml <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201206182239.26647.Martin@lichtvoll.de>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 17. Juni 2012 schrieb Geert Uytterhoeven:
-> On Sun, Jun 17, 2012 at 2:58 PM, Martin Steigerwald 
-> <Martin@lichtvoll.de> wrote:
-> > Am Sonntag, 17. Juni 2012 schrieb jdow:
-> > | JXFS 64 bit file system
-> > | 
-> > | With AmigaOS 4.x a new file system has been introduced called JXFS.
-> > | It is a totally new 64 bit file system that supports partitions up
-> > | to 16 TB in size. It is a modern journalling file system, which
-> > | means that it reduces data loss if data writes to the disk are
-> > | interrupted. It is the fastest and most reliable file system ever
-> > | created for AmigaOS.
-> > 
-> > http://www.amigaos.net/content/1/features
-> > 
-> > Well I asked AmigaOS 4 developers about this issue as well. Lets see
-> > what they say about 2 TB limits.
-> 
-> 16 TB = 2 TB * 8. Perhaps they increased the block size from 512 to
-> 4096?
-> 
-> block/partitions/amiga.c reads the block size from
-> RigidDiskBlock.rdb_BlockBytes,
-> but after conversion to 512-byte blocks, all further calculations are
-> done on "int", so it will overflow for disks larger than 2 TiB.
+Just got the below on -rc3 after resuming. No network afterwards.
 
-Meanwhile I got a response from a AmigaOS 4 developer.
+Rebooting fixed it.
 
-I documented the stuff as I understood it in the AmigaOS wiki:
+[15473.272994] Restarting tasks ... done.
+[15473.685535] forcedeth 0000:00:08.0: eth0: link up
+[15483.926079] ------------[ cut here ]------------
+[15483.926095] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x16f/0x213()
+[15483.926099] Hardware name:  
+[15483.926103] NETDEV WATCHDOG: eth0 (forcedeth): transmit queue 0 timed out
+[15483.926160] Modules linked in: nls_iso8859_15 nls_cp437 tun cpufreq_powersave cpufreq_userspace ip6table_filter cpufreq_conservative ip6_tables cpufreq_stats iptable_filter ip_tables x_tables binfmt_misc fuse dm_crypt ipv6 vfat fat dm_mod powernow_k8 mperf kvm_amd kvm radeon drm_kms_helper ttm edac_core k10temp microcode cfbfillrect cfbimgblt cfbcopyarea
+[15483.926166] Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc3+ #3
+[15483.926170] Call Trace:
+[15483.926180]  <IRQ>  [<ffffffff8137b500>] ? dev_watchdog+0x72/0x213
+[15483.926189]  [<ffffffff8102b354>] warn_slowpath_common+0x83/0x9b
+[15483.926195]  [<ffffffff8102b40f>] warn_slowpath_fmt+0x46/0x48
+[15483.926203]  [<ffffffff8137b5fd>] dev_watchdog+0x16f/0x213
+[15483.926211]  [<ffffffff8103a4a9>] run_timer_softirq+0x37b/0x58f
+[15483.926217]  [<ffffffff8103a354>] ? run_timer_softirq+0x226/0x58f
+[15483.926224]  [<ffffffff8105e56e>] ? local_clock+0x2a/0x3b
+[15483.926231]  [<ffffffff81051842>] ? hrtimer_interrupt+0x118/0x1b4
+[15483.926237]  [<ffffffff8137b48e>] ? pfifo_fast_dequeue+0xc2/0xc2
+[15483.926245]  [<ffffffff81075638>] ? trace_hardirqs_off_caller+0x1f/0x10e
+[15483.926256]  [<ffffffff81032c26>] __do_softirq+0x17f/0x32d
+[15483.926262]  [<ffffffff810720c2>] ? clockevents_program_event+0xab/0xc7
+[15483.926269]  [<ffffffff813fe40c>] call_softirq+0x1c/0x30
+[15483.926277]  [<ffffffff810035bf>] do_softirq+0x3d/0x86
+[15483.926282]  [<ffffffff81033021>] irq_exit+0x53/0xbb
+[15483.926290]  [<ffffffff813fea2d>] smp_apic_timer_interrupt+0x8a/0x98
+[15483.926296]  [<ffffffff813fdbdc>] apic_timer_interrupt+0x6c/0x80
+[15483.926304]  <EOI>  [<ffffffff810532b0>] ? __atomic_notifier_call_chain+0xdb/0x109
+[15483.926313]  [<ffffffff81009a40>] ? default_idle+0x113/0x24e
+[15483.926319]  [<ffffffff81009a3e>] ? default_idle+0x111/0x24e
+[15483.926326]  [<ffffffff81009d06>] amd_e400_idle+0xe5/0xe7
+[15483.926332]  [<ffffffff8100a4ae>] cpu_idle+0x6c/0xc8
+[15483.926339]  [<ffffffff813e044c>] rest_init+0x130/0x137
+[15483.926345]  [<ffffffff813e031c>] ? csum_partial_copy_generic+0x16c/0x16c
+[15483.926353]  [<ffffffff8186fa30>] start_kernel+0x2d2/0x2df
+[15483.926359]  [<ffffffff8186f567>] ? repair_env_string+0x56/0x56
+[15483.926366]  [<ffffffff8186f27a>] x86_64_start_reservations+0x7e/0x82
+[15483.926373]  [<ffffffff8186f36e>] x86_64_start_kernel+0xf0/0xf7
+[15483.926377] ---[ end trace bd46b3883a3ab819 ]---
+[15483.926385] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15488.929896] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15498.921512] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15508.913144] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15518.904786] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15528.896409] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15538.888039] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15548.879678] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15558.871309] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15568.862929] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15578.854570] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15588.846189] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15598.837828] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15608.829441] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15618.821083] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15628.812722] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15638.804350] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15648.795974] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15658.787605] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15668.779222] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15678.770871] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15688.762501] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15698.754136] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15708.745764] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15718.737391] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15728.729019] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15738.720654] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15748.712280] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15754.570157] forcedeth 0000:00:08.0: eth0: link down
+[15756.972392] forcedeth 0000:00:08.0: eth0: link up
+[15762.700565] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15777.679993] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15787.671642] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15797.663285] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15802.667092] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15812.658701] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15822.650341] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15832.641980] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15882.600137] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15892.591755] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15917.562840] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15932.558276] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15962.533183] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15972.524806] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15982.516438] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[15992.508077] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[16002.499699] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[16012.491327] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[16022.482969] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
+[16032.474585] forcedeth 0000:00:08.0: eth0: Got tx_timeout. irq status: 00000020
 
-| Disk size
-|
-| The RDB has a quite high limit on the maximum device size, but note that 
-| currently each filesystem interprets the partition layout by itself.
-
-| The raw, theoretical limit on the maximum device capacity is about 2^105 
-| bytes:
-|
-| 32 bit rdb_Cylinders * 32 bit rdb_Heads * 32 bit rdb_Sectors * 512 
-| bytes/sector for the HD size in struct RigidDiskBlock
-|
-| It's even much more if the sector size (rdb_BlockBytes and de_SizeBlock) 
-| is larger than 512 bytes, but AmigaOS 4.1 doesn't support anything but 
-| 512 bytes/sector HDs yet.
-|
-| Partition size
-|
-| For the partitions the maximum size is:
-| 32 bit (de_HighCyl + 1 - de_LowCyl) (to get the partition size) * 32 bit 
-| de_Surfaces * 32 bit de_SectorsPerTrack * 512 bytes/sector in struct 
-| DosEnvec (=pb_Environment[]) in struct PartitionBlock.
-|
-| That's from the physical drive part, the actual disk size limit for the 
-| partitions may be much smaller depending on the partitioning software, 
-| if it's only using the logical sizes instead, which is likely the case, 
-| it's only 8 ZiB with 512 bytes/sector: 32 bit rdb_HiCylinder * 32 bit 
-| rdb_CylBlocks * 512 bytes/sector = 2^73 bytes. For using the logical 
-| sizes using simple uint64 calculations (with some overflow checks) should 
-| be enough, for more a math library with support for larger integers 
-| needs to be used which probably no partitioning software does.
-|
-| But note: Nothing in struct RigiDiskBlock is used by the file systems for 
-| mounting the partitions, they only get the information from the struct 
-| PartitionBlock blocks, it's only a problem for the partitioning software 
-| creating the partitions correctly - as soon as there are HDs larger than 
-| 8 ZB while still using 512 bytes/sector if that ever happens.
-
-http://wiki.amigaos.net/index.php/RDB
-
-Please note that the documentation there might be updated or corrected in 
-the future. But thats the current state.
-
-> Note that in your profile-binary.img, the field is 0x200, i.e. 512
-> bytes per block,
-> so I'll have to get a deeper look into your RDB first...
-
-I am a bit overwhelmed by Joanne´s analysis. I didn´t yet take time to 
-completely read and try to understand it. I first wanted to get this 
-information out.
-
-Thanks,
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+Regards/Gruss,
+    Boris.
