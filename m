@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab2FRUYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:24:12 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:48792 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab2FRUYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:24:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-Date: Mon, 18 Jun 2012 22:29:31 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Bojan Smojver <bojan@rexursive.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <90304ca8-31ef-4919-bf9d-e0498b0de87b@email.android.com> <1339979586.1666.13.camel@shrek.rexursive.com> <20120618123205.GA5319@x1.osrc.amd.com>
-In-Reply-To: <20120618123205.GA5319@x1.osrc.amd.com>
+	id S1753281Ab2FRUY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:24:29 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36558 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab2FRUY2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 16:24:28 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206182229.32055.rjw@sisk.pl>
+In-Reply-To: <20120521093937.GM30755@b20223-02.ap.freescale.net>
+References: <1336870794-6351-2-git-send-email-richard.zhao@freescale.com>
+ <20120514035137.GB20367@S2100-06.ap.freescale.net> <20120514080835.GB31985@opensource.wolfsonmicro.com>
+ <4FB0C9D4.2060409@linaro.org> <20120514094357.GF20367@S2100-06.ap.freescale.net>
+ <4FB10821.4000004@linaro.org> <20120514135035.GC29393@b20223-02.ap.freescale.net>
+ <20120518095932.GI30755@b20223-02.ap.freescale.net> <20120521041355.GF5810@S2100-06.ap.freescale.net>
+ <4FBA0A9A.8040901@linaro.org> <20120521093937.GM30755@b20223-02.ap.freescale.net>
+From: Rob Lee <rob.lee@linaro.org>
+Date: Mon, 18 Jun 2012 15:23:45 -0500
+Message-ID: <CAMXH7KF4qegQkQ3mS2=U=VBXZHJfiU2GiozRHgkP3OVX0Q+thQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mfd: anatop: permit adata be NULL when access register
+To: Richard Zhao <richard.zhao@freescale.com>, sameo@linux.intel.com
+Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
+        Richard Zhao <richard.zhao@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 18, 2012, Borislav Petkov wrote:
-> On Mon, Jun 18, 2012 at 10:33:06AM +1000, Bojan Smojver wrote:
-> > On Sun, 2012-06-17 at 22:21 +0200, Rafael J. Wysocki wrote:
-> > > Yeah, that will do.
-> > 
-> > Something like this maybe. I didn't really test this, so Borislav,
-> > please let me know whether this is something that may works for you.
-> 
-> Yeah, this could probably work but it changes the progress indicator
-> unconditionally.
-> 
-> I don't know what the general consensus is about the progress indicator
-> but if you want to keep the old behavior too, you probably need to carve
-> out the printk functionality from save_image() and pass flags to the new
-> function which printks different output depending on how it is.
-> 
-> If we don't want the current output with how many pages it needs to use
-> on swap, then we can do the dots.
-> 
-> Frankly, I don't have a preference.
+Hi,
 
-I'm not sure if the current behavior is worth preserving.  It's a bit hackish
-and doesn't work with dmesg buffer, as you have noticed.
-
-So, I think printing a status line every 10% would be fine.
+What is the status of this patch?
 
 Thanks,
-Rafael
+Rob
+
+On Mon, May 21, 2012 at 4:39 AM, Richard Zhao
+<richard.zhao@freescale.com> wrote:
+> On Mon, May 21, 2012 at 05:27:54PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+>> (2012年05月21日 12:13), Shawn Guo wrote:
+>> > On Fri, May 18, 2012 at 05:59:32PM +0800, Richard Zhao wrote:
+>> >> Guys, we need to draw conclusion.
+>> >> I think current patch keep some how compatible with multi-anatop.
+>> >> It's ok.
+>> >>
+>> > I'm fine with that.
+>> >
+>> Yes. It is good for me.
+>>
+> So, Sameo, could you pick the patch.
+>
+> Thanks
+> Richard
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
