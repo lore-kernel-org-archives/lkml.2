@@ -1,119 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab2FROvB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 10:51:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12930 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab2FROvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 10:51:00 -0400
-Date: Mon, 18 Jun 2012 17:50:41 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv7 3/8] kvm_para: guest side for eoi avoidance
-Message-ID: <20120618145041.GE26540@redhat.com>
-References: <cover.1339681762.git.mst@redhat.com>
- <4c5bedc5cb55dcea1676b913a0f6da3f04b03145.1339681762.git.mst@redhat.com>
- <4FDF3874.2050208@redhat.com>
+	id S1752721Ab2FROvX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 10:51:23 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:32999
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751999Ab2FROvT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 10:51:19 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202hzz8275bh8275dhz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M5TILB-01-5J5-02
+X-M-MSG: 
+Date: Mon, 18 Jun 2012 16:51:08 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, <stable@vger.kernel.org>
+Subject: [PATCH] perf stat: Fix default logfd to use stderr
+Message-ID: <20120618145108.GG5046@erda.amd.com>
+References: <1317336490-19437-1-git-send-email-acme@infradead.org>
+ <1317336490-19437-8-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4FDF3874.2050208@redhat.com>
+In-Reply-To: <1317336490-19437-8-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 05:17:24PM +0300, Avi Kivity wrote:
-> On 06/14/2012 04:53 PM, Michael S. Tsirkin wrote:
-> > The idea is simple: there's a bit, per APIC, in guest memory,
-> > that tells the guest that it does not need EOI.
-> > Guest tests it using a single est and clear operation - this is
-> > necessary so that host can detect interrupt nesting - and if set, it can
-> > skip the EOI MSR.
-> > 
-> > I run a simple microbenchmark to show exit reduction
-> > (note: for testing, need to apply follow-up patch
-> > 'kvm: host side for eoi optimization' + a qemu patch
-> >  I posted separately, on host):
-> > 
-> > 
-> > diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-> > index a6983b2..47f9eff 100644
-> > --- a/arch/x86/include/asm/bitops.h
-> > +++ b/arch/x86/include/asm/bitops.h
-> > @@ -28,11 +28,13 @@
-> >  #if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 1)
-> >  /* Technically wrong, but this avoids compilation errors on some gcc
-> >     versions. */
-> > -#define BITOP_ADDR(x) "=m" (*(volatile long *) (x))
-> > +#define BITOP_ADDR_CONSTRAINT "=m"
-> >  #else
-> > -#define BITOP_ADDR(x) "+m" (*(volatile long *) (x))
-> > +#define BITOP_ADDR_CONSTRAINT "+m"
-> >  #endif
-> >  
-> > +#define BITOP_ADDR(x) BITOP_ADDR_CONSTRAINT (*(volatile long *) (x))
-> > +
-> >  #define ADDR				BITOP_ADDR(addr)
+On 29.09.11 18:48:01, Arnaldo Carvalho de Melo wrote:
+> From: Jim Cromie <jim.cromie@gmail.com>
 > 
-> What's this doing here?
-
-Ugh. More leftovers from when I had inline asm here.
-Will remove.
-
-> >  
-> > +/* size alignment is implied but just to make it explicit. */
-> > +static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) __aligned(2) =
-> > +	KVM_PV_EOI_DISABLED;
+> This perf stat option emulates valgrind's --log-fd option, allowing the
+> user to send perf results elsewhere, and leaving stderr for use by the
+> program under test.  This complements --output file option, and is
+> mutually exclusive with it.
 > 
-> You're actually breaking the alignment.  ulong has 8 byte alignment
-> sometimes and you can make it cross cache boundary this way.
-
-No, if you look at the definition of __aligned
-you will see that it limits the alignment from below.
-Compiler still applies the natural size alignment.
-You are not the first to get confused. So I wonder: is it better
-to add a comment or simply remove __aligned here.
-
-> > +
-> >  void __cpuinit kvm_guest_cpu_init(void)
-> >  {
-> >  	if (!kvm_para_available())
-> > @@ -300,11 +320,17 @@ void __cpuinit kvm_guest_cpu_init(void)
-> >  		       smp_processor_id());
-> >  	}
-> >  
-> > +	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI)) {
-> > +		__get_cpu_var(kvm_apic_eoi) = 0;
-> > +		wrmsrl(MSR_KVM_PV_EOI_EN, __pa(&__get_cpu_var(kvm_apic_eoi)) |
-> > +		       KVM_MSR_ENABLED);
+>    3>results  perf stat --log-fd 3          -- $cmd
+>    3>>results perf stat --log-fd 3 --append -- $cmd
 > 
-> Bad formatting.
-
-I guess temporary will make it prettier.
-	unsigned long pa;
-	__get_cpu_var(kvm_apic_eoi) = 0;
-	pa = __pa(&__get_cpu_var(kvm_apic_eoi)) | KVM_MSR_ENABLED;
-	wrmsrl(MSR_KVM_PV_EOI_EN, pa);
-
-or did I miss the point?
-
-> > +	}
-> > +
-> >  	if (has_steal_clock)
-> >  		kvm_register_steal_time();
-> >  }
-> >  
+> The perl distro's make test.valgrind target uses valgrind's --log-fd
+> option, I've adapted it to invoke perf also, and tested this patch
+> there.
 > 
-> 
-> Please check that the kexec path also disables pveoi.
+> Link: http://lkml.kernel.org/r/1315437244-3788-2-git-send-email-jim.cromie@gmail.com
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The chunk in kvm_pv_guest_cpu_reboot does this, doesn't it?
+With certain shell redirections this (56f3bae) fails with a log fd
+setup failure. Fix below.
 
-> -- 
-> error compiling committee.c: too many arguments to function
-> 
+-Robert
+
+
+
+>From fd83259163c8022f9264a119d5ef7df594702f3a Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Thu, 7 Jun 2012 17:41:52 +0200
+Subject: [PATCH] perf stat: Fix default logfd to use stderr
+
+When running perf-stat in certain shell environments with stdout
+redirection there is a logging file descriptor setup failure:
+
+ Failed opening logfd: Invalid argument
+
+Fixing this by setting the default fd to the correct value of 2.
+
+Cc: Jim Cromie <jim.cromie@gmail.com>
+Cc: <stable@vger.kernel.org> # 3.2+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ tools/perf/builtin-stat.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 2625899..c47e7d3 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -195,7 +195,7 @@ static bool			csv_output			= false;
+ static bool			group				= false;
+ static const char		*output_name			= NULL;
+ static FILE			*output				= NULL;
+-static int			output_fd;
++static int			output_fd			=  2;
+ 
+ static volatile int done = 0;
+ 
+-- 
+1.7.8.4
+
+
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
