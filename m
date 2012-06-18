@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab2FRRPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 13:15:51 -0400
-Received: from antcom.de ([188.40.178.216]:36664 "EHLO chuck.antcom.de"
+	id S1752858Ab2FRRQG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 13:16:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55786 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab2FRRPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 13:15:50 -0400
-Message-ID: <4FDF6242.3040400@antcom.de>
-Date: Mon, 18 Jun 2012 19:15:46 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1752736Ab2FRRQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 13:16:04 -0400
+Date: Mon, 18 Jun 2012 20:15:50 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv7 3/8] kvm_para: guest side for eoi avoidance
+Message-ID: <20120618171550.GA28797@redhat.com>
+References: <cover.1339681762.git.mst@redhat.com>
+ <4c5bedc5cb55dcea1676b913a0f6da3f04b03145.1339681762.git.mst@redhat.com>
+ <4FDF3874.2050208@redhat.com>
+ <20120618145041.GE26540@redhat.com>
+ <4FDF42E7.8050902@redhat.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: swarren@wwwdotorg.org, cjb@laptop.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rmk+kernel@arm.linux.org.uk,
-        ulf.hansson@stericsson.com, linus.walleij@linaro.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org, lrg@ti.com,
-        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 1/2] sound: tegra_wm8903: Adjust to of_get_named_gpio()
- change
-References: <1340037743-12924-1-git-send-email-stigge@antcom.de> <20120618164659.GV3974@opensource.wolfsonmicro.com> <4FDF5E9E.6060803@antcom.de> <20120618170408.GW3974@opensource.wolfsonmicro.com>
-In-Reply-To: <20120618170408.GW3974@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FDF42E7.8050902@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 07:04 PM, Mark Brown wrote:
-> On Mon, Jun 18, 2012 at 07:00:14PM +0200, Roland Stigge wrote:
+On Mon, Jun 18, 2012 at 06:01:59PM +0300, Avi Kivity wrote:
+> On 06/18/2012 05:50 PM, Michael S. Tsirkin wrote:
+> > 
+> >> >  
+> >> > +/* size alignment is implied but just to make it explicit. */
+> >> > +static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) __aligned(2) =
+> >> > +	KVM_PV_EOI_DISABLED;
+> >> 
+> >> You're actually breaking the alignment.  ulong has 8 byte alignment
+> >> sometimes and you can make it cross cache boundary this way.
+> > 
+> > No, if you look at the definition of __aligned
+> > you will see that it limits the alignment from below.
+> > Compiler still applies the natural size alignment.
+> > You are not the first to get confused. So I wonder: is it better
+> > to add a comment or simply remove __aligned here.
 > 
->> Basically, yes. But this would mean that doing via gpio, we would
->> need to pull other stuff from the sound tree over to gpio to
->> build upon because "my" tegra_* sound patches won't apply to the
->> gpio branch currently.
+> Both.
+
+Will do.
+
+> >> >  
+> >> > +	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI)) {
+> >> > +		__get_cpu_var(kvm_apic_eoi) = 0;
+> >> > +		wrmsrl(MSR_KVM_PV_EOI_EN, __pa(&__get_cpu_var(kvm_apic_eoi)) |
+> >> > +		       KVM_MSR_ENABLED);
+> >> 
+> >> Bad formatting.
+> > 
+> > I guess temporary will make it prettier.
+> > 	unsigned long pa;
+> > 	__get_cpu_var(kvm_apic_eoi) = 0;
+> > 	pa = __pa(&__get_cpu_var(kvm_apic_eoi)) | KVM_MSR_ENABLED;
+> > 	wrmsrl(MSR_KVM_PV_EOI_EN, pa);
 > 
-> Oh, yes.  Stephen's gone and reorganised all that code which means
-> it's not a trivial merge.  Ho hum.  I'm happy to apply them if
-> folks are comfortable with it, I guess ideally I'd be able to pull
-> a branch with the gpio changes in and then apply on top of that.
+> That, or
+> 
+> +		wrmsrl(MSR_KVM_PV_EOI_EN,
+> +                      __pa(&__get_cpu_var(kvm_apic_eoi)) | _ENABLED);
+> 
+> You have an argument split over two lines with no helpful indentation to
+> show this.
+> 
+> >> 
+> >> 
+> >> Please check that the kexec path also disables pveoi.
+> > 
+> > The chunk in kvm_pv_guest_cpu_reboot does this, doesn't it?
+> 
+> Dunno, does it?
 
-Depending on what else changes will come via gpio for 3.6, maybe you
-don't even need to merge gpio to sound?
+I thought it absolutely does but now I noticed this:
 
-Can you please coordinate between sound and gpio?
+Without CONFIG_KEXEC_JUMP, it calls kernel_restart_prepare
+which invokes notifiers. So fine.
+But with CONFIG_KEXEC_JUMP it does suspend which is way more complex -
+it stops all other cpus so we are fine but still not sure about the last
+one.
 
-Thanks in advance!
+Any idea?
 
-Roland
+How does it work for e.g. ASYNC_PF?
 
-PS: I'm posting a combined patch suitable for the sound subsystem.
-Please tell me if you also need the gpiolib-of patch singled out.
+> 
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
+> 
