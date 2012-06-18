@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab2FRGSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 02:18:33 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:42166 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751987Ab2FRGSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 02:18:30 -0400
-X-Greylist: delayed 1133 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Jun 2012 02:18:29 EDT
-Message-ID: <4FDEC3C2.4060909@secunet.com>
-Date: Mon, 18 Jun 2012 07:59:30 +0200
-From: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: jmoyer@redhat.com
-CC: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Jun 2012 05:59:30.0906 (UTC) FILETIME=[870E4BA0:01CD4D17]
+	id S1753261Ab2FRGTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 02:19:17 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:11104 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab2FRGTQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 02:19:16 -0400
+Date: Mon, 18 Jun 2012 08:19:05 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Len Brown <len.brown@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thermal: Constify 'type' argument for the registration
+ routine
+Message-ID: <20120618081905.47d5cd33@endymion.delvare>
+In-Reply-To: <1339995037-19561-1-git-send-email-cbouatmailru@gmail.com>
+References: <1339995037-19561-1-git-send-email-cbouatmailru@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, 17 Jun 2012 21:50:37 -0700, Anton Vorontsov wrote:
+> thermal_zone_device_register() does not modify 'type' argument, so
+> it is safe to declare it as const. Otherwise, if we pass a const
+> string, we are getting the ugly warning:
+> 
+>   CC      drivers/power/power_supply_core.o
+> drivers/power/power_supply_core.c: In function 'psy_register_thermal':
+> drivers/power/power_supply_core.c:204:6: warning: passing argument 1 of ‘thermal_zone_device_register’ discards 'const' qualifier from pointer target type [enabled by default]
+> include/linux/thermal.h:140:29: note: expected 'char *' but argument is of type 'const char *'
+> 
+> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> ---
+>  drivers/thermal/thermal_sys.c |    2 +-
+>  include/linux/thermal.h       |    3 ++-
+>  2 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 022bacb..3bf68c9 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -1106,7 +1106,7 @@ EXPORT_SYMBOL(thermal_zone_device_update);
+>   * longer needed. The passive cooling formula uses tc1 and tc2 as described in
+>   * section 11.1.5.1 of the ACPI specification 3.0.
+>   */
+> -struct thermal_zone_device *thermal_zone_device_register(char *type,
+> +struct thermal_zone_device *thermal_zone_device_register(const char *type,
+>  	int trips, void *devdata,
+>  	const struct thermal_zone_device_ops *ops,
+>  	int tc1, int tc2, int passive_delay, int polling_delay)
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 796f1ff..ef75757 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -137,7 +137,8 @@ enum {
+>  };
+>  #define THERMAL_GENL_CMD_MAX (__THERMAL_GENL_CMD_MAX - 1)
+>  
+> -struct thermal_zone_device *thermal_zone_device_register(char *, int, void *,
+> +struct thermal_zone_device *
+> +thermal_zone_device_register(const char *, int, void *,
+>  		const struct thermal_zone_device_ops *, int tc1, int tc2,
+>  		int passive_freq, int polling_freq);
+>  void thermal_zone_device_unregister(struct thermal_zone_device *);
 
-a software that tries to mount each existing partition as ext3 file system started to fail when updating from v3.3.7 to v3.3.8.
+Acked-by: Jean Delvare <khali@linux-fr.org>
 
-The applications then hangs-up in the mount syscall, here is a snapshot of its stack at this moment:
-
-[<ffffffff81060c6a>] __cond_resched+0x2a/0x40
-[<ffffffff81134b3f>] __getblk+0x1bf/0x270
-[<ffffffff811362b3>] __bread+0x13/0xb0
-[<ffffffff81182222>] ext3_fill_super+0x132/0x1b00
-[<ffffffff8110891a>] mount_bdev+0x1aa/0x1f0
-[<ffffffff8117ffc5>] ext3_mount+0x15/0x20
-[<ffffffff81107fc3>] mount_fs+0x43/0x1a0
-[<ffffffff81123102>] vfs_kern_mount+0x72/0x100
-[<ffffffff81123882>] do_kern_mount+0x52/0x110
-[<ffffffff8112519a>] do_mount+0x25a/0x7d0
-[<ffffffff811257a8>] sys_mount+0x98/0xf0
-[<ffffffff814f3e92>] system_call_fastpath+0x16/0x1b
-
-The expected behaviour (which was still there in v3.3.7) is that the mount syscall fails because the partition contains no valid ext3 file system.
-
-I have create more snapshot of the stack in the following pastebin: http://pastebin.com/99x9EpnM
-
-Using bisecting I found the following commit to be the cause of the issue:
-
-commit 3735b0a1d73af536484ddefef4d8438dd468c4a6
-Author: Jeff Moyer <jmoyer@redhat.com>
-Date:   Fri May 11 16:34:10 2012 +0200
-
-    block: don't mark buffers beyond end of disk as mapped
-    
-    commit 080399aaaf3531f5b8761ec0ac30ff98891e8686 upstream.
-    
-Reverting this commit brought back the desired behaviour of the mount syscall failing because of invalid superblock.
-
-It seems to be that ext3_fill_super is unable to read the super block because there is no blocked for an extended partition.
-
-The same issue can be found in v3.4, where the upstream commit (080399aa) was released.
-
-This problem was found and debugged with an amd64 build of the linux kernel. The native ext3 support was used:
-
-CONFIG_EXT3_FS=y
-# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-CONFIG_EXT3_FS_XATTR=y
-# CONFIG_EXT3_FS_POSIX_ACL is not set
-# CONFIG_EXT3_FS_SECURITY is not set
-
-I will rewrite the application causing this issue to check the file system type before trying to mount the partition to work around this problem for now.
-
-	Torsten
+-- 
+Jean Delvare
