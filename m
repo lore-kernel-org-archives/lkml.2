@@ -1,255 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab2FRG2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 02:28:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62053 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab2FRG2J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 02:28:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK7t_7UtjkuZaQRhnj99Y_eRcHLRLmqXOaiGTi4tHwGB4MHsgg@mail.gmail.com>
-References: <CANQmPXip+fKaSYsKaY5TF3Rax=XFFgyh=+BY61snVsgpReL7RA@mail.gmail.com>
-	<1339914285.7349.75.camel@marge.simpson.net>
-	<CANQmPXikSJfms9n2vNugw=+7fijyRem3RHqWfCCM=XcBXDSU6A@mail.gmail.com>
-	<CAK7t_7UtjkuZaQRhnj99Y_eRcHLRLmqXOaiGTi4tHwGB4MHsgg@mail.gmail.com>
-Date: Mon, 18 Jun 2012 14:28:08 +0800
-Message-ID: <CANQmPXgqeERy55LtwO8a-bZAnSacW7bdL_o3jQkne+aGxUOVMg@mail.gmail.com>
-Subject: Re: [PATCH][ANNOUNCE]RIFS-ES Scheduling V1 release.
-From: Chen <hi3766691@gmail.com>
-To: Vikram Dhillon <opensolarisdev@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755618Ab2FRG2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 02:28:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63878 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753176Ab2FRG0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 02:26:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="181387352"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
+        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH v5 07/12] libata-acpi: register/unregister device to/from power resource
+Date: Mon, 18 Jun 2012 14:26:01 +0800
+Message-Id: <1340000766-129148-8-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
+References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 11:01 AM, Vikram Dhillon
-<opensolarisdev@gmail.com> wrote:
-> On Sun, Jun 17, 2012 at 6:24 PM, Chen <hi3766691@gmail.com> wrote:
->> Sorry for my fault.
->> The patch has build issue and I post the new one.
->
-> Hi Chen,
->
-> It is always very interesting to see new scheduler designs however can
-> you shows us some benchmarks? How does this compare to CFS currently?
-> Also how well does it scale beyond desktops?
->
-> - Vikram
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/acpi/power.c      |    2 ++
+ drivers/ata/libata-acpi.c |   32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
 
+diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+index dd6d6a3..eb640874 100644
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -390,6 +390,7 @@ void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handl
+ 		__acpi_power_resource_unregister_device(dev,
+ 			list->handles[i]);
+ }
++EXPORT_SYMBOL_GPL(acpi_power_resource_unregister_device);
+ 
+ static int __acpi_power_resource_register_device(
+ 	struct acpi_power_managed_device *powered_device, acpi_handle handle)
+@@ -460,6 +461,7 @@ int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
+ 	printk(KERN_WARNING PREFIX "Invalid Power Resource to register!");
+ 	return -ENODEV;
+ }
++EXPORT_SYMBOL_GPL(acpi_power_resource_register_device);
+ 
+ /**
+  * acpi_device_sleep_wake - execute _DSW (Device Sleep Wake) or (deprecated in
+diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
+index 3f7d376..9287593 100644
+--- a/drivers/ata/libata-acpi.c
++++ b/drivers/ata/libata-acpi.c
+@@ -1025,14 +1025,46 @@ static void ata_acpi_remove_pm_notifier(struct ata_device *dev)
+ 	}
+ }
+ 
++static void ata_acpi_register_power_resource(struct ata_device *dev)
++{
++	struct scsi_device *sdev = dev->sdev;
++	acpi_handle handle;
++	struct device *device;
++
++	handle = ata_dev_acpi_handle(dev);
++	if (!handle)
++		return;
++
++	device = &sdev->sdev_gendev;
++
++	acpi_power_resource_register_device(device, handle);
++}
++
++static void ata_acpi_unregister_power_resource(struct ata_device *dev)
++{
++	struct scsi_device *sdev = dev->sdev;
++	acpi_handle handle;
++	struct device *device;
++
++	handle = ata_dev_acpi_handle(dev);
++	if (!handle)
++		return;
++
++	device = &sdev->sdev_gendev;
++
++	acpi_power_resource_unregister_device(device, handle);
++}
++
+ void ata_acpi_bind(struct ata_device *dev)
+ {
+ 	ata_acpi_add_pm_notifier(dev);
++	ata_acpi_register_power_resource(dev);
+ }
+ 
+ void ata_acpi_unbind(struct ata_device *dev)
+ {
+ 	ata_acpi_remove_pm_notifier(dev);
++	ata_acpi_unregister_power_resource(dev);
+ }
+ 
+ static int compat_pci_ata(struct device *dev)
+-- 
+1.7.10
 
-Here is the benchmark result(Latency) for RIFS-ES and CFS(I have done
-them with computer and I am posting them with my Android phone now)
-
-RIFS-ES
-========================================
-[root@localhost admin]# latt -c1 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=1
-Entries logged: 27
-
-Wakeup averages
--------------------------------------
-	Max		      25 usec
-	Avg		      10 usec
-	Stdev		       3 usec
-	Stdev mean	       1 usec
-
-Work averages
--------------------------------------
-	Max		   20265 usec
-	Avg		   20100 usec
-	Stdev		      82 usec
-	Stdev mean	      16 usec
-[root@localhost admin]# latt -c2 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=2
-Entries logged: 54
-
-Wakeup averages
--------------------------------------
-	Max		     824 usec
-	Avg		      30 usec
-	Stdev		     117 usec
-	Stdev mean	      16 usec
-
-Work averages
--------------------------------------
-	Max		   21472 usec
-	Avg		   20486 usec
-	Stdev		     190 usec
-	Stdev mean	      26 usec
-[root@localhost admin]# latt -c4 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=4
-Entries logged: 104
-
-Wakeup averages
--------------------------------------
-	Max		   20423 usec
-	Avg		    2343 usec
-	Stdev		    3810 usec
-	Stdev mean	     374 usec
-
-Work averages
--------------------------------------
-	Max		   41037 usec
-	Avg		   36096 usec
-	Stdev		    4247 usec
-	Stdev mean	     416 usec
-[root@localhost admin]# latt -c8 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=8
-Entries logged: 184
-
-Wakeup averages
--------------------------------------
-	Max		   71284 usec
-	Avg		    6112 usec
-	Stdev		    9640 usec
-	Stdev mean	     711 usec
-
-Work averages
--------------------------------------
-	Max		   83043 usec
-	Avg		   68615 usec
-	Stdev		   10615 usec
-	Stdev mean	     783 usec
-[root@localhost admin]# latt -c16 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=16
-Entries logged: 320
-
-Wakeup averages
--------------------------------------
-	Max		   35669 usec
-	Avg		    9690 usec
-	Stdev		    8961 usec
-	Stdev mean	     501 usec
-
-Work averages
--------------------------------------
-	Max		  166790 usec
-	Avg		  136161 usec
-	Stdev		   30660 usec
-	Stdev mean	    1714 usec
-
-
-RIFS-ES: Total result for wake up average latency:
--c1:
-	Avg		      10 usec
--c2:
-	Avg		      30 usec
--c4:
-	Avg		    2343 usec
--c8:
-	Avg		    6112 usec
--c16:
-	Avg		    9690 usec
-
-CFS
-========================================
-[root@localhost ~]$ latt -c1 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=1
-Entries logged: 27
-
-Wakeup averages
--------------------------------------
-	Max		      40 usec
-	Avg		      21 usec
-	Stdev		       8 usec
-	Stdev mean	       2 usec
-
-Work averages
--------------------------------------
-	Max		   20648 usec
-	Avg		   20262 usec
-	Stdev		      97 usec
-	Stdev mean	      19 usec
-[root@localhost ~]$ latt -c2 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=2
-Entries logged: 54
-
-Wakeup averages
--------------------------------------
-	Max		      45 usec
-	Avg		      19 usec
-	Stdev		      10 usec
-	Stdev mean	       1 usec
-
-Work averages
--------------------------------------
-	Max		   21549 usec
-	Avg		   20495 usec
-	Stdev		     320 usec
-	Stdev mean	      43 usec
-[root@localhost ~]$ latt -c4 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=4
-Entries logged: 104
-
-Wakeup averages
--------------------------------------
-	Max		   20430 usec
-	Avg		    4900 usec
-	Stdev		    6274 usec
-	Stdev mean	     615 usec
-
-Work averages
--------------------------------------
-	Max		   50538 usec
-	Avg		   30564 usec
-	Stdev		    6492 usec
-	Stdev mean	     637 usec
-[root@localhost ~]$ latt -c8 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=8
-Entries logged: 184
-
-Wakeup averages
--------------------------------------
-	Max		   38195 usec
-	Avg		    8068 usec
-	Stdev		    8132 usec
-	Stdev mean	     599 usec
-
-Work averages
--------------------------------------
-	Max		   83525 usec
-	Avg		   67597 usec
-	Stdev		   10037 usec
-	Stdev mean	     740 usec
-[root@localhost ~]$ latt -c16 sleep 10
-
-Parameters: min_wait=100ms, max_wait=500ms, clients=16
-Entries logged: 320
-
-Wakeup averages
--------------------------------------
-	Max		   83711 usec
-	Avg		   17497 usec
-	Stdev		   21219 usec
-	Stdev mean	    1186 usec
-
-Work averages
--------------------------------------
-	Max		  166547 usec
-	Avg		  119376 usec
-	Stdev		   31758 usec
-	Stdev mean	    1775 usec
-
-
-CFS: Total result for wake up average latency:
--c1:
-	Avg		      21 usec
--c2:
-	Avg		      19 usec
--c4:
-	Avg		    4900 usec
--c8:
-	Avg		    8068 usec
--c16:
-	Avg		   17497 usec
