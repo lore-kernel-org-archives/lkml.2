@@ -1,257 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab2FRPUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 11:20:04 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:42820 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab2FRPUA (ORCPT
+	id S1752914Ab2FRPUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 11:20:18 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:64689 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab2FRPUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 11:20:00 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-mm@kvack.org
-Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
-        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
-        hnaz@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@surriel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        sjhill@mips.com, Rik van Riel <riel@redhat.com>
-Subject: [PATCH -mm 5/6] remove MIPS arch_get_unmapped_area code
-Date: Mon, 18 Jun 2012 10:31:17 -0400
-Message-Id: <1340029878-7966-6-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1340029878-7966-1-git-send-email-riel@redhat.com>
-References: <1340029878-7966-1-git-send-email-riel@redhat.com>
+	Mon, 18 Jun 2012 11:20:03 -0400
+Message-ID: <4FDF4720.1010801@tilera.com>
+Date: Mon, 18 Jun 2012 11:20:00 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [GIT PULL] tilegx ethernet driver support
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@surriel.com>
+On 6/16/2012 9:01 PM, Linus Torvalds wrote:
+> Apart from the new tilegx ethernet driver that came in through the
+> networking tree, it's all reasonably small.
 
-Remove all the MIPS specific arch_get_unmapped_area(_topdown) and
-page colouring code, now that the generic code should be able to
-handle things.
+There are five additional commits that are required to make that driver
+actually buildable: the tilegx GXIO IORPC framework, including DMA support,
+the GXIO support for the tilegx ethernet engine, <asm/io.h> support for
+MMIO-based readb/writeb, and a minor refactoring change.  These have been
+through some rounds of review on LKML and have been on linux-next for a
+couple of months.
 
-Untested, because I do not have any MIPS systems.
+I thought David was queueing the driver for 3.6, and he presumably thought
+all the prerequisite core tile changes were already in 3.5 :-)
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: sjhill@mips.com
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- arch/mips/include/asm/pgtable.h |    8 --
- arch/mips/mm/mmap.c             |  175 ---------------------------------------
- 2 files changed, 0 insertions(+), 183 deletions(-)
+I'm happy to just say "oh well" and leave the tilegx network driver
+unbuildable until 3.6.  Or, you can pull those five commits; they are 100%
+tile-specific and only affect tilegx iorpc drivers, of which this is now
+the only one in the tree.  (Two more are queued up in linux-next for 3.6,
+namely PCIe root complex and USB host.)
 
-diff --git a/arch/mips/include/asm/pgtable.h b/arch/mips/include/asm/pgtable.h
-index f133a4c..5f9c49a 100644
---- a/arch/mips/include/asm/pgtable.h
-+++ b/arch/mips/include/asm/pgtable.h
-@@ -410,14 +410,6 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
- #endif
- 
- /*
-- * We provide our own get_unmapped area to cope with the virtual aliasing
-- * constraints placed on us by the cache architecture.
-- */
--#define HAVE_ARCH_UNMAPPED_AREA
--#define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
--#define HAVE_ARCH_ALIGN_ADDR
--
--/*
-  * No page table caches to initialise
-  */
- #define pgtable_cache_init()	do { } while (0)
-diff --git a/arch/mips/mm/mmap.c b/arch/mips/mm/mmap.c
-index 3f8af17..ac342bd 100644
---- a/arch/mips/mm/mmap.c
-+++ b/arch/mips/mm/mmap.c
-@@ -15,9 +15,6 @@
- #include <linux/random.h>
- #include <linux/sched.h>
- 
--unsigned long shm_align_mask = PAGE_SIZE - 1;	/* Sane caches */
--EXPORT_SYMBOL(shm_align_mask);
--
- /* gap between mmap and stack */
- #define MIN_GAP (128*1024*1024UL)
- #define MAX_GAP ((TASK_SIZE)/6*5)
-@@ -45,178 +42,6 @@ static unsigned long mmap_base(unsigned long rnd)
- 	return PAGE_ALIGN(TASK_SIZE - gap - rnd);
- }
- 
--static inline unsigned long COLOUR_ALIGN_DOWN(unsigned long addr,
--					      unsigned long pgoff)
--{
--	unsigned long base = addr & ~shm_align_mask;
--	unsigned long off = (pgoff << PAGE_SHIFT) & shm_align_mask;
--
--	if (base + off <= addr)
--		return base + off;
--
--	return base - off;
--}
--
--#define COLOUR_ALIGN(addr, pgoff)				\
--	((((addr) + shm_align_mask) & ~shm_align_mask) +	\
--	 (((pgoff) << PAGE_SHIFT) & shm_align_mask))
--
--static unsigned long arch_get_unmapped_area_common(struct file *filp,
--	unsigned long addr0, unsigned long len, unsigned long pgoff,
--	unsigned long flags, enum mmap_allocation_direction dir)
--{
--	struct mm_struct *mm = current->mm;
--	struct vm_area_struct *vma;
--	unsigned long addr = addr0;
--	int do_color_align;
--
--	if (unlikely(len > TASK_SIZE))
--		return -ENOMEM;
--
--	if (flags & MAP_FIXED) {
--		/* Even MAP_FIXED mappings must reside within TASK_SIZE */
--		if (TASK_SIZE - len < addr)
--			return -EINVAL;
--
--		/*
--		 * We do not accept a shared mapping if it would violate
--		 * cache aliasing constraints.
--		 */
--		if ((flags & MAP_SHARED) &&
--		    ((addr - (pgoff << PAGE_SHIFT)) & shm_align_mask))
--			return -EINVAL;
--		return addr;
--	}
--
--	do_color_align = 0;
--	if (filp || (flags & MAP_SHARED))
--		do_color_align = 1;
--
--	/* requesting a specific address */
--	if (addr) {
--		if (do_color_align)
--			addr = COLOUR_ALIGN(addr, pgoff);
--		else
--			addr = PAGE_ALIGN(addr);
--
--		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
--		    (!vma || addr + len <= vma->vm_start))
--			return addr;
--	}
--
--	if (dir == ALLOC_UP) {
--		addr = mm->mmap_base;
--		if (do_color_align)
--			addr = COLOUR_ALIGN(addr, pgoff);
--		else
--			addr = PAGE_ALIGN(addr);
--
--		for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
--			/* At this point:  (!vma || addr < vma->vm_end). */
--			if (TASK_SIZE - len < addr)
--				return -ENOMEM;
--			if (!vma || addr + len <= vma->vm_start)
--				return addr;
--			addr = vma->vm_end;
--			if (do_color_align)
--				addr = COLOUR_ALIGN(addr, pgoff);
--		 }
--	 } else {
--		/* check if free_area_cache is useful for us */
--		if (len <= mm->cached_hole_size) {
--			mm->cached_hole_size = 0;
--			mm->free_area_cache = mm->mmap_base;
--		}
--
--		/*
--		 * either no address requested, or the mapping can't fit into
--		 * the requested address hole
--		 */
--		addr = mm->free_area_cache;
--		if (do_color_align) {
--			unsigned long base =
--				COLOUR_ALIGN_DOWN(addr - len, pgoff);
--			addr = base + len;
--		}
--
--		/* make sure it can fit in the remaining address space */
--		if (likely(addr > len)) {
--			vma = find_vma(mm, addr - len);
--			if (!vma || addr <= vma->vm_start) {
--				/* cache the address as a hint for next time */
--				return mm->free_area_cache = addr - len;
--			}
--		}
--
--		if (unlikely(mm->mmap_base < len))
--			goto bottomup;
--
--		addr = mm->mmap_base - len;
--		if (do_color_align)
--			addr = COLOUR_ALIGN_DOWN(addr, pgoff);
--
--		do {
--			/*
--			 * Lookup failure means no vma is above this address,
--			 * else if new region fits below vma->vm_start,
--			 * return with success:
--			 */
--			vma = find_vma(mm, addr);
--			if (likely(!vma || addr + len <= vma->vm_start)) {
--				/* cache the address as a hint for next time */
--				return mm->free_area_cache = addr;
--			}
--
--			/* remember the largest hole we saw so far */
--			if (addr + mm->cached_hole_size < vma->vm_start)
--				mm->cached_hole_size = vma->vm_start - addr;
--
--			/* try just below the current vma->vm_start */
--			addr = vma->vm_start - len;
--			if (do_color_align)
--				addr = COLOUR_ALIGN_DOWN(addr, pgoff);
--		} while (likely(len < vma->vm_start));
--
--bottomup:
--		/*
--		 * A failed mmap() very likely causes application failure,
--		 * so fall back to the bottom-up function here. This scenario
--		 * can happen with large stack limits and large mmap()
--		 * allocations.
--		 */
--		mm->cached_hole_size = ~0UL;
--		mm->free_area_cache = TASK_UNMAPPED_BASE;
--		addr = arch_get_unmapped_area(filp, addr0, len, pgoff, flags);
--		/*
--		 * Restore the topdown base:
--		 */
--		mm->free_area_cache = mm->mmap_base;
--		mm->cached_hole_size = ~0UL;
--
--		return addr;
--	}
--}
--
--unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr0,
--	unsigned long len, unsigned long pgoff, unsigned long flags)
--{
--	return arch_get_unmapped_area_common(filp,
--			addr0, len, pgoff, flags, ALLOC_UP);
--}
--
--/*
-- * There is no need to export this but sched.h declares the function as
-- * extern so making it static here results in an error.
-- */
--unsigned long arch_get_unmapped_area_topdown(struct file *filp,
--	unsigned long addr0, unsigned long len, unsigned long pgoff,
--	unsigned long flags)
--{
--	return arch_get_unmapped_area_common(filp,
--			addr0, len, pgoff, flags, ALLOC_DOWN);
--}
--
- void arch_pick_mmap_layout(struct mm_struct *mm)
- {
- 	unsigned long random_factor = 0UL;
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git tilegx-net
+
+----------------------------------------------------------------
+Chris Metcalf (5):
+      arch/tile: introduce GXIO IORPC framework for tilegx
+      arch/tile: common DMA code for the GXIO IORPC subsystem
+      arch/tile: support MMIO-based readb/writeb etc.
+      arch/tile: provide kernel support for the tilegx mPIPE shim
+      arch/tile: break out the "csum a long" function to <asm/checksum.h>
+
+ arch/tile/Kconfig                         |    2 +
+ arch/tile/Makefile                        |    2 +
+ arch/tile/gxio/Kconfig                    |   17 +
+ arch/tile/gxio/Makefile                   |    7 +
+ arch/tile/gxio/dma_queue.c                |  176 +++
+ arch/tile/gxio/iorpc_globals.c            |   89 ++
+ arch/tile/gxio/iorpc_mpipe.c              |  529 +++++++++
+ arch/tile/gxio/iorpc_mpipe_info.c         |   85 ++
+ arch/tile/gxio/kiorpc.c                   |   61 +
+ arch/tile/gxio/mpipe.c                    |  545 +++++++++
+ arch/tile/include/arch/mpipe.h            |  359 ++++++
+ arch/tile/include/arch/mpipe_constants.h  |   42 +
+ arch/tile/include/arch/mpipe_def.h        |   39 +
+ arch/tile/include/arch/mpipe_shm.h        |  509 +++++++++
+ arch/tile/include/arch/mpipe_shm_def.h    |   23 +
+ arch/tile/include/asm/checksum.h          |   18 +
+ arch/tile/include/asm/io.h                |  144 ++-
+ arch/tile/include/gxio/common.h           |   40 +
+ arch/tile/include/gxio/dma_queue.h        |  161 +++
+ arch/tile/include/gxio/iorpc_globals.h    |   38 +
+ arch/tile/include/gxio/iorpc_mpipe.h      |  136 +++
+ arch/tile/include/gxio/iorpc_mpipe_info.h |   46 +
+ arch/tile/include/gxio/kiorpc.h           |   29 +
+ arch/tile/include/gxio/mpipe.h            | 1736 +++++++++++++++++++++++++++++
+ arch/tile/include/hv/drv_mpipe_intf.h     |  602 ++++++++++
+ arch/tile/include/hv/iorpc.h              |  714 ++++++++++++
+ arch/tile/lib/checksum.c                  |   15 +-
+ 27 files changed, 6122 insertions(+), 42 deletions(-)
+ create mode 100644 arch/tile/gxio/Kconfig
+ create mode 100644 arch/tile/gxio/Makefile
+ create mode 100644 arch/tile/gxio/dma_queue.c
+ create mode 100644 arch/tile/gxio/iorpc_globals.c
+ create mode 100644 arch/tile/gxio/iorpc_mpipe.c
+ create mode 100644 arch/tile/gxio/iorpc_mpipe_info.c
+ create mode 100644 arch/tile/gxio/kiorpc.c
+ create mode 100644 arch/tile/gxio/mpipe.c
+ create mode 100644 arch/tile/include/arch/mpipe.h
+ create mode 100644 arch/tile/include/arch/mpipe_constants.h
+ create mode 100644 arch/tile/include/arch/mpipe_def.h
+ create mode 100644 arch/tile/include/arch/mpipe_shm.h
+ create mode 100644 arch/tile/include/arch/mpipe_shm_def.h
+ create mode 100644 arch/tile/include/gxio/common.h
+ create mode 100644 arch/tile/include/gxio/dma_queue.h
+ create mode 100644 arch/tile/include/gxio/iorpc_globals.h
+ create mode 100644 arch/tile/include/gxio/iorpc_mpipe.h
+ create mode 100644 arch/tile/include/gxio/iorpc_mpipe_info.h
+ create mode 100644 arch/tile/include/gxio/kiorpc.h
+ create mode 100644 arch/tile/include/gxio/mpipe.h
+ create mode 100644 arch/tile/include/hv/drv_mpipe_intf.h
+ create mode 100644 arch/tile/include/hv/iorpc.h
+
 -- 
-1.7.7.6
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
