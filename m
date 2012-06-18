@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2FRLil (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:38:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42237 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab2FRLik (ORCPT
+	id S1752153Ab2FRLkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:40:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62210 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab2FRLkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:38:40 -0400
-Message-ID: <1340019575.22848.2.camel@lappy>
-Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
-From: Sasha Levin <levinsasha928@gmail.com>
-To: dlaor@redhat.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Asias He <asias@redhat.com>,
-        kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Christoph Hellwig <hch@lst.de>
-Date: Mon, 18 Jun 2012 13:39:35 +0200
-In-Reply-To: <4FDF0DA7.40604@redhat.com>
-References: <1340002390-3950-1-git-send-email-asias@redhat.com>
-	 <1340002390-3950-4-git-send-email-asias@redhat.com>
-	 <87hau9yse7.fsf@rustcorp.com.au> <4FDEE0CB.1030505@redhat.com>
-	 <87zk81x7dp.fsf@rustcorp.com.au> <4FDF0DA7.40604@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 18 Jun 2012 07:40:45 -0400
+Date: Mon, 18 Jun 2012 19:48:41 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Why does ionice(1) ban the user to set back to 'none' class?
+Message-ID: <20120618114841.GA4855@gmail.com>
+Mail-Followup-To: Jens Axboe <axboe@kernel.dk>,
+	Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-18 at 14:14 +0300, Dor Laor wrote:
-> On 06/18/2012 01:05 PM, Rusty Russell wrote:
-> > On Mon, 18 Jun 2012 16:03:23 +0800, Asias He<asias@redhat.com>  wrote:
-> >> On 06/18/2012 03:46 PM, Rusty Russell wrote:
-> >>> On Mon, 18 Jun 2012 14:53:10 +0800, Asias He<asias@redhat.com>  wrote:
-> >>>> This patch introduces bio-based IO path for virtio-blk.
-> >>>
-> >>> Why make it optional?
-> >>
-> >> request-based IO path is useful for users who do not want to bypass the
-> >> IO scheduler in guest kernel, e.g. users using spinning disk. For users
-> >> using fast disk device, e.g. SSD device, they can use bio-based IO path.
-> >
-> > Users using a spinning disk still get IO scheduling in the host though.
-> > What benefit is there in doing it in the guest as well?
-> 
-> The io scheduler waits for requests to merge and thus batch IOs 
-> together. It's not important w.r.t spinning disks since the host can do 
-> it but it causes much less vmexits which is the key issue for VMs. 
+Hi Jens,
 
-Is the amount of exits caused by virtio-blk significant at all with
-EVENT_IDX?
+I meet a problem when I use ionice(1) to adjust a process's io priority.
+I do the following operations:
 
+$ ionice -p${pid}
+none: prio 0
+$ ionice -p${pid} -c2 -n4
+$ ionice -p${pid}
+best-effort: prio 4
+$ ionice -p${pid} -c0 -n0
+$ ionice -p${pid}
+best-effort: prio 0
+
+So I cannot set scheduling class back to 'none'.  If I call ioprio_set(2)
+directly, it will be fine.  But if I use ionice(1), I cannot change it.  I
+read the docs about ionice in [1].  I notice this code:
+
+switch (ioprio_class) {
+	case IOPRIO_CLASS_NONE:
+		ioprio_class = IOPRIO_CLASS_BE;
+                               ^^^^^^^^^^^^^^^^
+                               *It means that we cannot set back to none.*
+		break;
+	case IOPRIO_CLASS_RT:
+	case IOPRIO_CLASS_BE:
+		break;
+	case IOPRIO_CLASS_IDLE:
+		ioprio = 7;
+		break;
+	default:
+		printf("bad prio class %d\n", ioprio_class);
+		return 1;
+}
+
+My question is why we need to ban the user to set back to 'none'.  Is there
+some reasons?  Thank you.
+
+[Sorry, I don't subscribe linux-doc and linux-kernel mailing list.
+Please CC to me.]
+
+1. ${linux_src}/Documentation/block/ioprio.txt.
+
+Regards,
+Zheng
