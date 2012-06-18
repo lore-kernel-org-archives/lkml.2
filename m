@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553Ab2FRE60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 00:58:26 -0400
-Received: from linux-sh.org ([111.68.239.195]:58412 "EHLO linux-sh.org"
+	id S1751430Ab2FRFLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 01:11:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60146 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200Ab2FRE6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 00:58:25 -0400
-Date: Mon, 18 Jun 2012 13:58:08 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: linux-next: build failure in Linus' tree
-Message-ID: <20120618045807.GD19803@linux-sh.org>
-References: <20120614114722.0fd16fb906b6a5503cfbc51a@canb.auug.org.au>
- <20120614030606.GC27673@linux-sh.org>
- <20120614034036.GE27673@linux-sh.org>
- <20120615101407.369c754da872e18c854ab481@canb.auug.org.au>
- <20120615005621.GE22007@linux-sh.org>
- <1339976338.2372.2.camel@pasglop>
+	id S1750736Ab2FRFLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 01:11:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="181369070"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Subject: RE: [PATCHv2] power_supply: Register battery as a thermal zone
+Thread-Topic: [PATCHv2] power_supply: Register battery as a thermal zone
+Thread-Index: AQHNTQs71I137SCSiUGywBoF1Z1h2Jb/hstg
+Date: Mon, 18 Jun 2012 05:10:57 +0000
+Message-ID: <20ADAB092842284E95860F279283C564282328@BGSMSX101.gar.corp.intel.com>
+References: <1336576007-8772-1-git-send-email-jenny.tc@intel.com>
+ <20120618042927.GA25372@lizard>
+In-Reply-To: <20120618042927.GA25372@lizard>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339976338.2372.2.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5I5CBhe018714
 
-On Mon, Jun 18, 2012 at 09:38:58AM +1000, Benjamin Herrenschmidt wrote:
-> On Fri, 2012-06-15 at 09:56 +0900, Paul Mundt wrote:
-> > Will do, thanks for testing.
+Hi Anton,
+
+> -----Original Message-----
+> From: Anton Vorontsov [mailto:cbouatmailru@gmail.com]
+> Sent: Monday, June 18, 2012 9:59 AM
+> To: Tc, Jenny
+> Cc: linux-kernel@vger.kernel.org; R, Durgadoss
+> Subject: Re: [PATCHv2] power_supply: Register battery as a thermal zone
 > 
-> Ping ? :-)
+> On Wed, May 09, 2012 at 08:36:47PM +0530, Jenny TC wrote:
+> > Battery and charger contribute to Thermals in most of the embedded
+> > devices. So, it makes sense to identify them as Thermal zones in a
+> > particular platform.
+> >
+> > This patch registers a thermal zone if the power supply is reporting a
+> > temperature property. The thermal zone will be used by platform's
+> > thermal management solution.
+> >
+> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> > ---
 > 
-> All the powerpc builds are still broken...
+> Once again, thanks for the patch! It's a nice feature.
 > 
-Sent now, sorry about the delay! As I was about to send it earlier,
-someone else reported an x86 build failure that looked related, so I held
-off until I could properly test it (I didn't want to just trade one
-platform breakage for another). In the end it was unrelated to the patch
-in question.
+> [...]
+> > @@ -206,6 +258,9 @@ int power_supply_register(struct device *parent,
+> struct power_supply *psy)
+> >  	goto success;
+> >
+> >  create_triggers_failed:
+> > +	if (psy->tzd)
+> > +		thermal_zone_device_unregister(psy->tzd);
+> 
+> This causes errors:
+> 
+>   CC      drivers/power/pda_power.o
+> drivers/power/power_supply_core.c: In function â€˜power_supply_registerâ€™:
+> drivers/power/power_supply_core.c:261:9: error: â€˜struct power_supplyâ€™ has
+> no member named â€˜tzdâ€™
+> drivers/power/power_supply_core.c:262:37: error: â€˜struct power_supplyâ€™
+> has no member named â€˜tzdâ€™
+> make[2]: *** [drivers/power/power_supply_core.o] Error 1
+> 
+> I think we should just introduce unregister_thermal(). So, that's what I've
+> applied:
+
+Sorry I missed it. Thanks for adding it.  Hope you will merge it
+
+-jtc
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
