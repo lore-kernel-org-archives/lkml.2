@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab2FRIkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 04:40:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47668 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab2FRIku (ORCPT
+	id S1753247Ab2FRIlI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 04:41:08 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34510 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab2FRIlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 04:40:50 -0400
-Message-ID: <4FDEE98D.7010802@linaro.org>
-Date: Mon, 18 Jun 2012 10:40:45 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 18 Jun 2012 04:41:04 -0400
+Message-ID: <4FDEE99C.9090203@linaro.org>
+Date: Mon, 18 Jun 2012 09:41:00 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Colin Cross <ccross@android.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Rob Lee <rob.lee@linaro.org>, rjw@sisk.pl,
-        Kevin Hilman <khilman@ti.com>, linux-next@vger.kernel.org
-Subject: cpuidle future and improvements
-Content-Type: text/plain; charset=UTF-8
+To: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: Re: Fwd: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik
+ I2C driver
+References: <4FD8BAD2.50703@linaro.org> <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com> <4FDAFA17.6050502@linaro.org> <CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com> <20120615115042.GA27480@bnru02> <4FDB2E57.4030904@linaro.org> <20120615130544.GA28537@bnru02> <4FDB3642.5030804@linaro.org> <CACRpkdZ7ESKhokk8Z+6sC9Kq+jPztFNwzger0Db7nCD1fPnG1A@mail.gmail.com> <4FDED62D.6030008@linaro.org> <20120618075834.GA14293@bnru02>
+In-Reply-To: <20120618075834.GA14293@bnru02>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 18/06/12 08:58, Srinidhi Kasagar wrote:
+> On Mon, Jun 18, 2012 at 09:18:05 +0200, Lee Jones wrote:
+>> On 17/06/12 18:43, Linus Walleij wrote:
+>>> Gah, what a thread...
+>>>
+>>> On Fri, Jun 15, 2012 at 3:18 PM, Lee Jones<lee.jones@linaro.org>   wrote:
+>>>> On 15/06/12 14:05, Srinidhi Kasagar wrote:
+>>>>> On Fri, Jun 15, 2012 at 14:45:11 +0200, Lee Jones wrote:
+>>>>>> On 15/06/12 12:50, Srinidhi Kasagar wrote:
+>>>
+>>>>>>>> +static struct nmk_i2c_controller u8500_i2c = {
+>>>>>>>> +       /*
+>>>>>>>> +        * Slave data setup time; 250ns, 100ns, and 10ns, which
+>>>>>>>> +        * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
+>>>>>>>> +        */
+>>>>>>>> +       .slsu           = 0xe,
+>>>>>>>> +       .tft            = 1,      /* Tx FIFO threshold */
+>>>>>>>> +       .rft            = 8,      /* Rx FIFO threshold */
+>>>>>>>> +       .clk_freq       = 100000, /* std. mode operation */
+>>>>>>>> +       .timeout        = 200,    /* Slave response timeout(ms) */
+>>>>>>>> +       .sm             = I2C_FREQ_MODE_FAST,
+>>>>>>>
+>>>>>>> How is this possible? you are setting clk_freq as 100kb/s and mode
+>>>>>>> as fast mode which is supposed to be 400kb/s.
+>>>>>>
+>>>>>> That's not how I read it:
+>>>>>
+>>>>> But it is not readable. It confuses people.
+>>>>
+>>>> I understood it. :)
+>>>>
+>>>> If you think it's unclear speak to the author, Linus. He's CC'ed.
+>>>
+>>> Author of what? The i2c driver was written by Srinidhi. (The
+>>> MODULE_AUTHOR() clause should be a good hint...)
+>>
+>> Actually, we appear to have our wires crossed. You wrote the board data
+>> stuff below, which changes the mode from STANDARD to FAST, no doubt
+>> using Srinidhi's struct explanation comments found in
+>> arch/arm/plat-nomadik/include/plat/i2c.h.
+>>
+>>   >  I'll cook a separate patch for this or something.
+>>
+>> Cool, thanks Linus.
+>>
+>> But you're correct in what you say Linus. Srinidhi, the comments which
+>> are you say are confusing are the bits you are the author of:
+>> e208c447bd728920e4f3d438a706344ea31249b9?
+>
+> yes, it is of course evident that it's my commit from git.
+> I think you are not catching my point. What I mean is:
+> fast mode devices are downward compatible and can communicate
+> with the devices with standard only mode. Those comments in that
+> enum says exactly that (with "up to" keyword). However the code
+> which configures the bus in fast mode and restrict the frequency
+> to operate in 100 kb/s without any reason, and this creates
+> confusion..
+>
+> Perhaps, I think we need to remove one of these
+> parameters as configurable options and derive out the
+> frequency based on the mode of operation..
 
-Dear all,
+I think Linus is fixing the frequency issues in platform code and I have 
+done so from Device Tree, so I think we're hot-to-trot.
 
-A few weeks ago, Peter De Schrijver proposed a patch [1] to allow per
-cpu latencies. We had a discussion about this patchset because it
-reverse the modifications Deepthi did some months ago [2] and we may
-want to provide a different implementation.
+Linus, Srinidhi,
 
-The Linaro Connect [3] event bring us the opportunity to meet people
-involved in the power management and the cpuidle area for different SoC.
-
-With the Tegra3 and big.LITTLE architecture, making per cpu latencies
-for cpuidle is vital.
-
-Also, the SoC vendors would like to have the ability to tune their cpu
-latencies through the device tree.
-
-We agreed in the following steps:
-
-1. factor out / cleanup the cpuidle code as much as possible
-2. better sharing of code amongst SoC idle drivers by moving common bits
-to core code
-3. make the cpuidle_state structure contain only data
-4. add a API to register latencies per cpu
-
-These four steps impacts all the architecture. I began the factor out
-code / cleanup [4] and that has been accepted upstream and I proposed
-some modifications [5] but I had a very few answers.
-
-The patch review are very slow and done at the last minute at the merge
-window and that makes code upstreaming very difficult. It is not a
-reproach, it is just how it is and I would like to propose a solution
-for that.
-
-I propose to host a cpuidle-next tree where all these modifications will
-be and where people can send patches against, preventing last minutes
-conflicts and perhaps Lenb will agree to pull from this tree. In the
-meantime, the tree will be part of the linux-next, the patches will be
-more widely tested and could be fixed earlier.
-
-Thanks
--- Daniel
-
-[1] http://lwn.net/Articles/491257/
-[2] http://lwn.net/Articles/464808/
-[3] http://summit.linaro.org/
-[4]
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg67033.html,
-http://www.spinics.net/lists/linux-pm/msg27330.html,
-http://comments.gmane.org/gmane.linux.ports.arm.omap/76311,
-http://www.digipedia.pl/usenet/thread/18885/11795/
-
-[5] https://lkml.org/lkml/2012/6/8/375
+If you're happy with the patch now (not withstanding the removal of 
+slsu, which I'll do in a separate patch), can you ack it please? By the 
+way, which tree will this go through?
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
