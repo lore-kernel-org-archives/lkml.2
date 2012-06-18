@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab2FROx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 10:53:59 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:9077 "EHLO mx2.netapp.com"
+	id S1752622Ab2FRO4l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 10:56:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45768 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751912Ab2FROx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 10:53:58 -0400
-X-IronPort-AV: E=Sophos;i="4.75,792,1330934400"; 
-   d="scan'208";a="656175777"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: nfs3 problem with -rc{2,3}
-Thread-Topic: nfs3 problem with -rc{2,3}
-Thread-Index: AQHNTMS9i2iatMLpKEGb4f4ZWuxoUpcAjD8AgAAA1ACAAAlRAIAACccA
-Date: Mon, 18 Jun 2012 14:53:56 +0000
-Message-ID: <1340031234.2451.13.camel@lade.trondhjem.org>
-References: <20120617200700.GA15348@milliways>
-	 <1340026956.2451.9.camel@lade.trondhjem.org>
-	 <1340027134.2451.12.camel@lade.trondhjem.org>
-	 <20120618141854.GA7962@milliways>
-In-Reply-To: <20120618141854.GA7962@milliways>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <6E7DE5C36A2DC64185F4BFD7729738F0@tahoe.netapp.com>
+	id S1751016Ab2FRO4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 10:56:39 -0400
+Date: Mon, 18 Jun 2012 17:56:26 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, gleb@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv7 5/8] kvm: eoi msi documentation
+Message-ID: <20120618145626.GF26540@redhat.com>
+References: <cover.1339681762.git.mst@redhat.com>
+ <dd9306b83249bce230ef9a9011887e2a67974b55.1339681762.git.mst@redhat.com>
+ <4FDF3911.7020902@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FDF3911.7020902@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5IEs4ZF022011
 
-On Mon, 2012-06-18 at 15:18 +0100, Ken Moffat wrote:
-> On Mon, Jun 18, 2012 at 01:45:35PM +0000, Myklebust, Trond wrote:
-> > > 
-> > > Is this a problem with the client or with the server, and have you tried
-> > > seeing if the fixes that were merged into -rc3 help?
+On Mon, Jun 18, 2012 at 05:20:01PM +0300, Avi Kivity wrote:
+> On 06/14/2012 04:53 PM, Michael S. Tsirkin wrote:
+> > Document the new EOI MSR. Couldn't decide whether this change belongs
+> > conceptually on guest or host side, so a separate patch.
 > > 
-> > Doh... Ignore the second half of the above sentence. error=ENOCOFFEE.
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  Documentation/virtual/kvm/msr.txt | 32 ++++++++++++++++++++++++++++++++
+> >  1 file changed, 32 insertions(+)
 > > 
-> > I would still like to know whether this is a client or server issue
-> > (i.e. whether a downgrade of one or the other to 3.4 fixes the problem).
+> > diff --git a/Documentation/virtual/kvm/msr.txt b/Documentation/virtual/kvm/msr.txt
+> > index 96b41bd..6ae5a85 100644
+> > --- a/Documentation/virtual/kvm/msr.txt
+> > +++ b/Documentation/virtual/kvm/msr.txt
+> > @@ -223,3 +223,35 @@ MSR_KVM_STEAL_TIME: 0x4b564d03
+> >  		steal: the amount of time in which this vCPU did not run, in
+> >  		nanoseconds. Time during which the vcpu is idle, will not be
+> >  		reported as steal time.
+> > +
+> > +MSR_KVM_EOI_EN: 0x4b564d04
+> > +	data: Bit 0 is 1 when PV end of interrupt is enabled on the vcpu; 0
+> > +	when disabled.  When enabled, bits 63-1 hold 2-byte aligned physical address
+> > +	of a 2 byte memory area which must be in guest RAM and must be zeroed.
 > 
->  It's the client - the server is still running 3.0.
+> 2 byte aligned means we must never access it on the host with a >2 byte
+> instruction, or we risk touching unmapped memory.
 
-OK. You said you had bisected this down to 15 patches? Can you please
-tell me which ones?
+Yes. So ... that's correct for any length.
+The patch actually accesses a single byte only.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Could you clarify what you are saying here please?
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> -- 
+> error compiling committee.c: too many arguments to function
+> 
