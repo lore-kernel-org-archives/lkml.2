@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab2FRUfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:35:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751802Ab2FRUfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:35:20 -0400
-Message-ID: <4FDF90FE.1050809@redhat.com>
-Date: Mon, 18 Jun 2012 17:35:10 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Kim Phillips <kim.phillips@freescale.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Chris Zankel <chris@zankel.net>
-Subject: Re: Build regressions/improvements in v3.5-rc3
-References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org> <CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com> <20120618152758.3a0a28c7f68615e9e2599ee3@freescale.com>
-In-Reply-To: <20120618152758.3a0a28c7f68615e9e2599ee3@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753284Ab2FRUg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:36:29 -0400
+Received: from smtp-out-04.shaw.ca ([64.59.134.12]:52158 "EHLO
+	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab2FRUg2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 16:36:28 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=oQE6vNJ3d7oTBHj4PDKYH99BAdyPlqTp0xAtaaBYR4E= c=1 sm=1
+ a=w6qfGBVJOdsA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=akHhUqyx16pf1Jmt3m6W8Q==:17 a=EPTh9yppnFHTqSPXL40A:9 a=CjuIK1q_8ugA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: XFS status update for May 2012
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20120618184344.GV4721@sgi.com>
+Date: Mon, 18 Jun 2012 14:36:27 -0600
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        xfs@oss.sgi.com, LKML List <linux-kernel@vger.kernel.org>
 Content-Transfer-Encoding: 7bit
+Message-Id: <1005E3D5-D9F4-42F9-8BAE-9FB40A8AFA57@dilger.ca>
+References: <20120618120853.GA15480@infradead.org> <AD997E9D-2C1E-4EE4-80D7-2A5C998B6E9E@dilger.ca> <20120618184344.GV4721@sgi.com>
+To: Ben Myers <bpm@sgi.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 18-06-2012 17:27, Kim Phillips escreveu:
-> On Sun, 17 Jun 2012 21:56:59 +0200
-> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+On 2012-06-18, at 12:43 PM, Ben Myers wrote:
+> On Mon, Jun 18, 2012 at 12:25:37PM -0600, Andreas Dilger wrote:
+>> On 2012-06-18, at 6:08 AM, Christoph Hellwig wrote:
+>>> May saw the release of Linux 3.4, including a decent sized XFS update.
+>>> Remarkable XFS features in Linux 3.4 include moving over all metadata
+>>> updates to use transactions, the addition of a work queue for the
+>>> low-level allocator code to avoid stack overflows due to extreme stack
+>>> use in the Linux VM/VFS call chain,
+>> 
+>> This is essentially a workaround for too-small stacks in the kernel,
+>> which we've had to do at times as well, by doing work in a separate
+>> thread (with a new stack) and waiting for the results?  This is a
+>> generic problem that any reasonably-complex filesystem will have when
+>> running under memory pressure on a complex storage stack (e.g. LVM +
+>> iSCSI), but causes unnecessary context switching.
+>> 
+>> Any thoughts on a better way to handle this, or will there continue
+>> to be a 4kB stack limit and hack around this with repeated kmalloc
+>> on callpaths for any struct over a few tens of bytes, implementing
+>> memory pools all over the place, and "forking" over to other threads
+>> to continue the stack consumption for another 4kB to work around
+>> the small stack limit?
 > 
->>    + drivers/edac/mpc85xx_edac.c: error: too few arguments to function
->> 'edac_mc_alloc':  => 983:90
->>
->> powerpc-randconfig
-> 
-> fixed in linux-next commit b9bc5dd, should have been upstreamed by
-> now [1] - Mauro?
+> FWIW, I think your characterization of the problem as a 'workaround for
+> too-small stacks in the kernel' is about right.  I don't think any of
+> the XFS folk were very happy about having to do this, but in the near
+> term it doesn't seem that we have a good alternative.  I'm glad to see
+> that there are others with the same pain, so maybe we can build some
+> support for upping the stack limit.
 
-Just sent it a few mins ago. I was waiting for Linus to return back 
-from his trip.
+Is this problem mostly hit in XFS with dedicated service threads like
+kNFSd and similar, or is it a problem with any user thread perhaps
+entering the filesystem for memory reclaim inside an already-deep
+stack?
 
-Regards,
-Mauro
+For dedicated service threads I was wondering about allocating larger
+stacks for just those processes (16kB would be safe), and then doing
+something special at thread startup to use this larger stack.  If
+the problem is for any potential thread, then the solution would be
+much more complex in all likelihood.
 
-> 
-> Kim
-> 
-> [1] http://marc.info/?l=linux-edac&m=133942731507920&w=2
-> 
+Cheers, Andreas
+
+
+
 
 
