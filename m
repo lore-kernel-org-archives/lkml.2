@@ -1,121 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab2FRKLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:11:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29247 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab2FRKLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:11:08 -0400
-Message-ID: <4FDEFEB8.9000001@redhat.com>
-Date: Mon, 18 Jun 2012 13:11:04 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 6/6] KVM: introduce readonly memslot
-References: <4FD6ADA6.40008@linux.vnet.ibm.com> <4FD6AE3B.9020508@linux.vnet.ibm.com>
-In-Reply-To: <4FD6AE3B.9020508@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757071Ab2FRKN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:13:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47133 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab2FRKN1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:13:27 -0400
+Message-ID: <1340014395.15222.25.camel@twins>
+Subject: RE: [PATCH] sched: Folding nohz load accounting more accurate
+From: Peter Zijlstra <peterz@infradead.org>
+To: Doug Smythies <dsmythies@telus.net>
+Cc: "'Charles Wang'" <muming.wq@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Ingo Molnar'" <mingo@redhat.com>,
+        "'Charles Wang'" <muming.wq@taobao.com>, "'Tao Ma'" <tm@tao.ma>,
+        =?UTF-8?Q?=27=E5=90=AB=E9=BB=9B=27?= <handai.szj@taobao.com>
+Date: Mon, 18 Jun 2012 12:13:15 +0200
+In-Reply-To: <000101cd49db$b0d92a20$128b7e60$@net>
+References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
+				 <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>
+			 <1339494970.31548.66.camel@twins> <004701cd4929$200d4600$6027d200$@net>
+		 <1339575411.31548.107.camel@twins> <000601cd4979$e1fda7a0$a5f8f6e0$@net>
+	 <1339624653.8980.76.camel@twins> <000101cd49db$b0d92a20$128b7e60$@net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2012 05:49 AM, Xiao Guangrong wrote:
-> In current code, if we map a readonly memory space from host to guest
-> and the page is not currently mapped in the host, we will get a fault-pfn
-> and async is not allowed, then the vm will crash
-> 
-> Address Avi's idea, we introduce readonly memory region to map ROM/ROMD
-> to the guest
-> 
-> index 4b96bc2..b551db1 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -688,7 +688,7 @@ void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
-> 
->  static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
->  {
-> -	if (mem->flags & ~KVM_MEM_LOG_DIRTY_PAGES)
-> +	if (mem->flags & ~(KVM_MEM_LOG_DIRTY_PAGES | KVM_MEM_READONLY))
->  		return -EINVAL;
+On Wed, 2012-06-13 at 20:13 -0700, Doug Smythies wrote:
+> ./waiter 2 900 345912 9444
 
-Only x86 supports readonly so far.
+So we're all simply just trying to burn a particular amount of cpu-time?
 
-> 
-> -static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
-> -				     gfn_t *nr_pages)
-> +static unsigned long __gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
-> +				     gfn_t *nr_pages, bool write)
->  {
-> -	if (!slot || slot->flags & KVM_MEMSLOT_INVALID)
-> +	if (!slot || slot->flags & KVM_MEMSLOT_INVALID ||
-> +	      ((slot->flags & KVM_MEM_READONLY) && write))
->  		return bad_hva();
-> 
->  	if (nr_pages)
-> @@ -1045,6 +1046,12 @@ static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
->  	return gfn_to_hva_memslot(slot, gfn);
->  }
-> 
-> +static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
-> +				     gfn_t *nr_pages)
-> +{
-> +	return __gfn_to_hva_many(slot, gfn, nr_pages, true);
-> +}
+I have a little consume.c thing lying about doing something like that.
+Its independent of clockspeed, but doesn't really like preemption much,
+but it more or less works ;-)
 
-We have dozens of translation functions: read/write guest virtual, guest
-physical (nested and non nested), host virtual, host physical,
-atomic/nonatomic, sync/async, with/without slot lookup, and probably a
-few more I forgot.
+---
+#include <sys/time.h>
+#include <unistd.h>
+#include <stdio.h>
 
-I think we should refactor this into a series of on-step translations:
+unsigned long long stamp(void)
+{
+	struct timeval tv;
 
-   /*
-    * Translate gva/len write access to a number of tlb entries
-    * (due to cross-page splits) or a fault
-    */
-   gva_to_tlb(gva, len, ACCESS_WRITE, &translation);
-   /*
-    * Translate tlb entries to callbacks that do I/O (either directly
-    * or through KVM_EXIT_MMIO, provided there is no exception pending
-    */
-   tlb_to_io(&translation, &iolist, IO_ATOMIC);
-   /*
-    * Initiate I/O (if no exception)
-    */
-   run_iolist(&iolist, data);
+	gettimeofday(&tv, NULL);
 
-   struct gpa_scatterlist {
-       unsigned nr_entries;
-       struct {
-           gpa_t gpa;
-           unsigned len;
-       } entry[2];
-       struct x86_exception exception;
-   };
+	return (unsigned long long)tv.tv_sec * 1000000 + tv.tv_usec;
+}
 
-   struct kvm_iolist {
-       unsigned nr_entries;
-       struct kvm_ioentry {
-           struct kvm_memslot *slot;  /* NULL for mmio */
-           struct something *kernel_iodevice;
-           gfn_t page_in_slot;
-           unsigned offset_in_page;
-           unsigned len;
-           void (*iofunc)(struct kvm_ioentry *entry, void *data);
-       } entry[2];
-       struct x86_exception execption;
-   };
+void consume(int spin, int total)
+{
+	unsigned long long begin, now;
 
-This is of course outside the scope of this patchset, just something to
-think about (and write opinions on).
+	begin = stamp();
 
+	for (;;) {
+		now = stamp();
+		if ((long long)(now - begin) > spin) {
+			usleep(total - spin);
+			begin += total;
+		}
+	}
+}
 
+int main(int argc, char **argv)
+{
+	int period = 100000; /* 100ms */
+	int frac;
 
--- 
-error compiling committee.c: too many arguments to function
+	if (argc < 2) {
+		fprintf(stderr, "%s <frac> [<period>]\n"
+				"  frac   -- [1-100] %% of time to burn\n"
+				"  period -- [usec] period of burn/sleep cycle\n",
+				argv[0]);
+		return -1;
+	}
 
+	frac = atoi(argv[1]);
+	if (argc > 2)
+		period = atoi(argv[2]);
+
+	if (frac > 100)
+		frac = 100;
+
+	if (frac < 1)
+		frac = 1;
+
+	consume((period * frac) / 100, period);
+
+	return 0;
+}
 
