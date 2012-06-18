@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab2FRTDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 15:03:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27031 "EHLO mx1.redhat.com"
+	id S1753102Ab2FRTDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 15:03:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64848 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674Ab2FRTD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 15:03:28 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
-References: <4FDEC3C2.4060909@secunet.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 18 Jun 2012 15:03:21 -0400
-In-Reply-To: <4FDEC3C2.4060909@secunet.com> (Torsten Hilbrich's message of
-	"Mon, 18 Jun 2012 07:59:30 +0200")
-Message-ID: <x49fw9smohy.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752989Ab2FRTDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 15:03:38 -0400
+Message-ID: <4FDF7B5E.301@redhat.com>
+Date: Mon, 18 Jun 2012 15:02:54 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
+        hnaz@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH -mm 3/6] Fix the x86-64 page colouring code to take pgoff
+ into account and use that code as the basis for a generic page colouring
+ code.
+References: <1340029878-7966-1-git-send-email-riel@redhat.com> <1340029878-7966-4-git-send-email-riel@redhat.com> <m2k3z48twb.fsf@firstfloor.org> <4FDF5B3C.1000007@redhat.com> <20120618181658.GA7190@x1.osrc.amd.com>
+In-Reply-To: <20120618181658.GA7190@x1.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Torsten Hilbrich <torsten.hilbrich@secunet.com> writes:
+On 06/18/2012 02:16 PM, Borislav Petkov wrote:
+> On Mon, Jun 18, 2012 at 12:45:48PM -0400, Rik van Riel wrote:
+>>> What tree is that against? I cannot find x86 page colouring code in next
+>>> or mainline.
+>>
+>> This is against mainline.
+>
+> Which mainline do you mean exactly?
+>
+> 1/6 doesn't apply ontop of current mainline and by "current" I mean
+> v3.5-rc3-57-g39a50b42f702.
 
-> Hello,
->
-> a software that tries to mount each existing partition as ext3 file
-> system started to fail when updating from v3.3.7 to v3.3.8.
->
-> The applications then hangs-up in the mount syscall, here is a
-> snapshot of its stack at this moment:
->
-> [<ffffffff81060c6a>] __cond_resched+0x2a/0x40
-> [<ffffffff81134b3f>] __getblk+0x1bf/0x270
-> [<ffffffff811362b3>] __bread+0x13/0xb0
-> [<ffffffff81182222>] ext3_fill_super+0x132/0x1b00
-> [<ffffffff8110891a>] mount_bdev+0x1aa/0x1f0
-> [<ffffffff8117ffc5>] ext3_mount+0x15/0x20
-> [<ffffffff81107fc3>] mount_fs+0x43/0x1a0
-> [<ffffffff81123102>] vfs_kern_mount+0x72/0x100
-> [<ffffffff81123882>] do_kern_mount+0x52/0x110
-> [<ffffffff8112519a>] do_mount+0x25a/0x7d0
-> [<ffffffff811257a8>] sys_mount+0x98/0xf0
-> [<ffffffff814f3e92>] system_call_fastpath+0x16/0x1b
->
-> The expected behaviour (which was still there in v3.3.7) is that the
-> mount syscall fails because the partition contains no valid ext3 file
-> system.
->
-> I have create more snapshot of the stack in the following pastebin:
-> http://pastebin.com/99x9EpnM
->
-> Using bisecting I found the following commit to be the cause of the issue:
->
-> commit 3735b0a1d73af536484ddefef4d8438dd468c4a6
-> Author: Jeff Moyer <jmoyer@redhat.com>
-> Date:   Fri May 11 16:34:10 2012 +0200
->
->     block: don't mark buffers beyond end of disk as mapped
->     
->     commit 080399aaaf3531f5b8761ec0ac30ff98891e8686 upstream.
->     
-> Reverting this commit brought back the desired behaviour of the mount
-> syscall failing because of invalid superblock.
->
-> It seems to be that ext3_fill_super is unable to read the super block
-> because there is no blocked for an extended partition.
->
-> The same issue can be found in v3.4, where the upstream commit
-> (080399aa) was released.
+After pulling in the latest patches, including that
+39a50b... commit, all patches still apply here when
+I type guilt push -a.
 
-I am unable to reproduce this behaviour.  Can you give more information
-about your storage configuration?  What is the partition layout, which
-partition are you trying to mount, and are you using the standard mount
-command to try to mount it?  Is there anything else you can provide that
-would help me reproduce the problem?
-
-Thanks,
-Jeff
+-- 
+All rights reversed
