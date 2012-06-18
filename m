@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab2FRIfm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 04:35:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab2FRIfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 04:35:40 -0400
-Message-ID: <4FDEE95A.8050605@redhat.com>
-Date: Mon, 18 Jun 2012 10:39:54 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752491Ab2FRIja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 04:39:30 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45796 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2FRIj3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 04:39:29 -0400
+X-AuditID: 9c930197-b7b87ae000000e4d-fd-4fdee93bbf41
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>, rostedt@goodmis.org,
+        acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, weisbec@gmail.com, namhyung.kim@lge.com,
+        mingo@kernel.org, peterz@infradead.org
+Subject: Re: [RFC PATCH 0/2] libtraceevent/perf: Add support for trace-cmd plugins
+References: <1339695333-64591-1-git-send-email-dsahern@gmail.com>
+Date: Mon, 18 Jun 2012 17:35:56 +0900
+In-Reply-To: <1339695333-64591-1-git-send-email-dsahern@gmail.com> (David
+	Ahern's message of "Thu, 14 Jun 2012 11:35:31 -0600")
+Message-ID: <87lijlhv9v.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Simon Raffeiner <sturmflut@lieberbiber.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [ 60/69] usb-storage: Add 090c:1000 to unusal-devs
-References: <20120617175950.030711074@decadent.org.uk>
-In-Reply-To: <20120617175950.030711074@decadent.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, David
 
-I'm not sure if this is needed with 3.2, it is needed with 3.4 because
-recently the usb-storage driver was changed to report the supported
-scsi level as reported by the device, rather then always report a
-scsi level of 2. This change causes sd.c to try READ_CAPACITY(16)
-first, which foobars up not only this one device, but as it turns
-out a lot of others too, so we're working on another fix
-(and I believe that 3.2 is unaffected).
+On Thu, 14 Jun 2012 11:35:31 -0600, David Ahern wrote:
+> Now that perf is using libtraceevent and libtraceevent is based
+> on trace-cmd both can be extended to leverage the plugins written
+> for trace-cmd to improve pretty printing of the events.
+>
+> Given that it is based on code from trace-cmd I am not sure what the
+> right approach is, so wanted to throw this out for comments/suggestions.
+>
 
-With that said, this patch certainly cannot hurt in any way...
+Yeah, it can be useful to reuse existing code for extending the
+functionality. But I'm not so sure including the plugin APIs into
+libtraceevent is the right thing (at least in its current form).
 
-Regards,
+And for this particular case in patch 2/2, it seems that format of the
+kvm_emulate_insn event is broken already and should be fixed anyway.
+Further improvement in this area can be addressed in perf kvm or other
+users if needed.
 
-Hans
+So I'd like to hear from others.
+Arnaldo and Steven, what do you think?
 
-
-On 06/17/2012 08:00 PM, Ben Hutchings wrote:
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: Hans de Goede<hdegoede@redhat.com>
->
-> commit afff07e61a5243e14ee3f0a272a0380cd744a8a3 upstream.
->
-> This device gives a bogus answer to get_capacity(16):
-> [ 8628.278614] scsi 8:0:0:0: Direct-Access     USB 2.0  USB Flash Drive  1100 PQ: 0 ANSI: 4
-> [ 8628.279452] sd 8:0:0:0: Attached scsi generic sg4 type 0
-> [ 8628.280338] sd 8:0:0:0: [sdd] 35747322042253313 512-byte logical blocks: (18.3 EB/15.8 EiB)
->
-> So set the quirk flag to avoid using get_capacity(16) with it:
-> [11731.386014] usb-storage 2-1.6:1.0: Quirks match for vid 090c pid 1000: 80000
-> [11731.386075] scsi9 : usb-storage 2-1.6:1.0
-> [11731.386172] usbcore: registered new interface driver usb-storage
-> [11731.386175] USB Mass Storage support registered.
-> [11732.387394] scsi 9:0:0:0: Direct-Access     USB 2.0  USB Flash Drive  1100 PQ: 0 ANSI: 4
-> [11732.388462] sd 9:0:0:0: Attached scsi generic sg3 type 0
-> [11732.389432] sd 9:0:0:0: [sdc] 7975296 512-byte logical blocks: (4.08 GB/3.80 GiB)
->
-> Which makes the capacity look a lot more sane :)
->
-> Signed-off-by: Hans de Goede<hdegoede@redhat.com>
-> Tested-by: Simon Raffeiner<sturmflut@lieberbiber.de>
-> Signed-off-by: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
-> Signed-off-by: Ben Hutchings<ben@decadent.org.uk>
-> ---
->   drivers/usb/storage/unusual_devs.h |    7 +++++++
->   1 file changed, 7 insertions(+)
->
-> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-> index 1719886..caf22bf 100644
-> --- a/drivers/usb/storage/unusual_devs.h
-> +++ b/drivers/usb/storage/unusual_devs.h
-> @@ -1107,6 +1107,13 @@ UNUSUAL_DEV( 0x090a, 0x1200, 0x0000, 0x9999,
->   		USB_SC_RBC, USB_PR_BULK, NULL,
->   		0 ),
->
-> +/* Feiya QDI U2 DISK, reported by Hans de Goede<hdegoede@redhat.com>  */
-> +UNUSUAL_DEV( 0x090c, 0x1000, 0x0000, 0xffff,
-> +		"Feiya",
-> +		"QDI U2 DISK",
-> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-> +		US_FL_NO_READ_CAPACITY_16 ),
-> +
->   /* aeb */
->   UNUSUAL_DEV( 0x090c, 0x1132, 0x0000, 0xffff,
->   		"Feiya",
->
->
+Thanks,
+Namhyung
