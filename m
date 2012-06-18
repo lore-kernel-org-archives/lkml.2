@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab2FRMES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:04:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33785 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2FRMEQ (ORCPT
+	id S1751982Ab2FRMEy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:04:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41472 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab2FRMEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:04:16 -0400
-Message-ID: <1340021117.22848.3.camel@lappy>
-Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        avi@redhat.com, penberg@cs.helsinki.fi
-Date: Mon, 18 Jun 2012 14:05:17 +0200
-In-Reply-To: <20120618115440.GA25042@redhat.com>
-References: <1320150813.3847.24.camel@lappy>
-	 <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au>
-	 <20111102233110.GA20289@redhat.com> <20111108214021.GA4538@redhat.com>
-	 <1320828366.31056.16.camel@lappy> <20111109101318.GB20612@redhat.com>
-	 <alpine.LFD.2.02.1111091421570.4936@tux.localdomain>
-	 <1320841683.31056.41.camel@lappy>
-	 <alpine.LFD.2.02.1111091434230.4936@tux.localdomain>
-	 <20120618115440.GA25042@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 18 Jun 2012 08:04:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkda5nYmAT3-fkxdYQEGpi6U=L-kphQEu3naoxPzO9a-7pQ@mail.gmail.com>
+References: <CAHdPZaNF-Tgz_ncnrJp7xsCbGWEgcfmj_yuY0Q8EiWRt-g0rFw@mail.gmail.com>
+	<CACRpkda5nYmAT3-fkxdYQEGpi6U=L-kphQEu3naoxPzO9a-7pQ@mail.gmail.com>
+Date: Mon, 18 Jun 2012 17:34:53 +0530
+Message-ID: <CAHdPZaPFtO1bRC3TdLx8MSgFMznr5FBXV5DdUyasNAcF34s3mQ@mail.gmail.com>
+Subject: Re: Q: return of pinctrl_register and handing at drivers that use
+ this function
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-18 at 14:54 +0300, Michael S. Tsirkin wrote:
-> On Wed, Nov 09, 2011 at 02:36:43PM +0200, Pekka Enberg wrote:
-> > On Wed, 9 Nov 2011, Sasha Levin wrote:
-> > >They don't exist in kernel code either, for same reason as above.
-> > >
-> > >Nothing will break if we remove it since no one really used it, we were
-> > >probably the first and only implementation of the spec which considered
-> > >them :)
-> > 
-> > As long as we are able to run older versions of the KVM tool with
-> > newer kernels and vice versa, I see no reason why we can't drop
-> > 64-bit features from the KVM tool.
-> > 
-> > 			Pekka
-> 
-> So what happened? Did you guys do this?  Need to know what to do to make
-> progress.  IIUC Rusty removed the new fields in 0.9.3.
-> Does your tool still use them? Did any version of the tool released by
-> distros do so?
+Hi Linus,
 
-Yup, they were removed quite a while ago.
+On Mon, Jun 18, 2012 at 5:22 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Jun 18, 2012 at 1:47 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+>
+>> since the pinctrl_register returns a pointer of structure type "struct
+>> pinctrl_dev" or NULL if it was failed to register the pinctrl driver,
+>> so IS_ERR checking is not required?
+>
+> Yes. (Unless I did something wrong.)
+>
+So checking the return value of pinctrl_register with IS_ERR is not required.
+There are drivers in pinctrl subsystem which uses the IS_ERR and may (not)
+check whether its null or not.
 
+you can expect a patchset of those fixes. :)
+> Yours,
+> Linus Walleij
+
+Thanks,
+Devendra.
