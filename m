@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342Ab2FRMjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:39:20 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57997 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab2FRMjT (ORCPT
+	id S1751744Ab2FRMjq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:39:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37919 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750756Ab2FRMjp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:39:19 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FDF20ED.4090401@jp.fujitsu.com>
-Date: Mon, 18 Jun 2012 21:37:01 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 18 Jun 2012 08:39:45 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: "axel.lin@gmail.com" <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Girdwood, Liam" <lrg@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
+Subject: RE: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Thread-Topic: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Thread-Index: AQHNSRRxSJBCL2eqoUaZnppvZVbxc5b39csQgAf6AbD//7R+gIAAZxhA
+Date: Mon, 18 Jun 2012 12:39:38 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9D84D9@DBDE01.ent.ti.com>
+References: <1339558031.26190.4.camel@phoenix>
+ <331ABD5ECB02734CA317220B2BBEABC13E9D83E7@DBDE01.ent.ti.com>
+ <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com>
+In-Reply-To: <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.24]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v4 23/25] memcg: propagate kmem limiting information to
- children
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-24-git-send-email-glommer@parallels.com>
-In-Reply-To: <1340015298-14133-24-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/18 19:28), Glauber Costa wrote:
-> The current memcg slab cache management fails to present satisfatory hierarchical
-> behavior in the following scenario:
+Hi Axel,
+
+Small correction in core file modification.
+
+On Mon, Jun 18, 2012 at 17:25:59, Axel Lin wrote:
+> > Basically regmap pointer is missed out in runtime configutaion data. Without this we
+> > can see NULL pointer exception because config.regmap is NULL.
+> >
+> > +       config.regmap = tps->regmap;
+> >
+> Since this patch is target for 3.6, this is not required.
+> The regulator core will set it automatically.
+> In drivers/regulator/core.c
+>         if (config->regmap)
+>                 rdev->regmap = config->regmap;
+>         else
+>                 rdev->regmap = dev_get_regmap(dev, NULL);
 > 
-> ->  /cgroups/memory/A/B/C
-> 
-> * kmem limit set at A
-> * A and B empty taskwise
-> * bash in C does find /
-> 
-> Because kmem_accounted is a boolean that was not set for C, no accounting
-> would be done. This is, however, not what we expect.
-> 
 
-Hmm....do we need this new routines even while we have mem_cgroup_iter() ?
++	if (config->regmap)
++		rdev->regmap = config->regmap;
++	else
++		rdev->regmap = dev_get_regmap(dev->parent, NULL);
 
-Doesn't this work ?
-
-	struct mem_cgroup {
-		.....
-		bool kmem_accounted_this;
-		atomic_t kmem_accounted;
-		....
-	}
-
-at set limit
-
-	....set_limit(memcg) {
-
-		if (newly accounted) {
-			mem_cgroup_iter() {
-				atomic_inc(&iter->kmem_accounted)
-			}
-		} else {
-			mem_cgroup_iter() {
-				atomic_dec(&iter->kmem_accounted);
-			}
-	}
-
-
-hm ? Then, you can see kmem is accounted or not by atomic_read(&memcg->kmem_accounted);
-
-Thanks,
--Kame
-
-
+Regards
+AnilKumar
