@@ -1,144 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab2FRML1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:11:27 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:59864 "EHLO e3.ny.us.ibm.com"
+	id S1752115Ab2FRMLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:11:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1469 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751029Ab2FRML0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:11:26 -0400
-Date: Mon, 18 Jun 2012 17:36:43 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        peterz@infradead.org, Jim Keniston <jkenisto@us.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, torvalds@linux-foundation.org
-Subject: Re: [PATCH v2 1/2] uprobes: Pass probed vaddr to
- arch_uprobe_analyze_insn()
-Message-ID: <20120618120642.GA4629@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120608093257.GG13409@in.ibm.com>
- <20120611161215.GA12116@redhat.com>
- <20120612165404.GB30555@linux.vnet.ibm.com>
- <20120612174305.GA16349@redhat.com>
- <20120613191519.GA14246@redhat.com>
- <20120614114514.GA12051@linux.vnet.ibm.com>
- <20120614181934.GA9424@redhat.com>
- <20120615123300.GA5748@linux.vnet.ibm.com>
- <20120616180555.GA13634@redhat.com>
+	id S1751120Ab2FRMLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 08:11:51 -0400
+Message-ID: <4FDF1AFE.4000607@redhat.com>
+Date: Mon, 18 Jun 2012 15:11:42 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120616180555.GA13634@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061812-8974-0000-0000-00000A3384E8
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: mtosatti@redhat.com, agraf@suse.de, paulus@samba.org, aarcange@redhat.com,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, takuya.yoshikawa@gmail.com
+Subject: Re: [PATCH 3/4] KVM: MMU: Make kvm_handle_hva() handle range of addresses
+References: <20120615203007.4f61bb17.yoshikawa.takuya@oss.ntt.co.jp> <20120615203230.2c577652.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120615203230.2c577652.yoshikawa.takuya@oss.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-06-16 20:05:55]:
+On 06/15/2012 02:32 PM, Takuya Yoshikawa wrote:
+> When guest's memory is backed by THP pages, MMU notifier needs to call
+> kvm_unmap_hva(), which in turn leads to kvm_handle_hva(), in a loop to
+> invalidate a range of pages which constitute one huge page:
+> 
+>   for each guest page
+>     for each memslot
+>       if page is in memslot
+>         unmap using rmap
+> 
+> This means although every page in that range is expected to be found in
+> the same memslot, we are forced to check unrelated memslots many times.
+> If the guest has more memslots, the situation will become worse.
+> 
+> This patch, together with the following patch, solves this problem by
+> introducing kvm_handle_hva_range() which makes the loop look like this:
+> 
+>   for each memslot
+>     for each guest page in memslot
+>       unmap using rmap
+> 
+> In this new processing, the actual work is converted to the loop over
+> rmap array which is much more cache friendly than before.
 
-> Srikar,
-> 
-> To clarify: I am not arguing, I am asking because I know nothing about
-> asm/opcodes/etc.
 
-Certainly not, I think you are talking about a valid concern.
+Moreover, if the pages are in no slot (munmap of some non-guest memory),
+then we're iterating over all those pages for no purpose.
 
-> 
-> On 06/15, Srikar Dronamraju wrote:
-> >
-> > > But this can't protect from the malicious user who does
-> > > mmap(64-bit-code, PROT_EXEC) from a 32-bit app, and this can confuse
-> > > uprobes even if that 32-bit app never tries to actually execute that
-> > > 64-bit-code.
-> > >
-> >
-> > So if we read just after we allocate uprobe struct but before
-> > probe insertion, then we dont need to check this for each process.
-> >
-> > So if the library was 64 bit mapped in 32 bit process and has a valid
-> > instruction for 64 bit, then we just check for valid 64 bit instructions
-> > and allow insertion of the breakpoint even in the 32 bit process.
-> 
-> And what happens if this insn is not valid from validate_insn_32bits()
-> pov and that 32-bit application tries to execute it? Or vice versa,
-> see below.
-> 
-> > Here is a very crude implementation of the same.
-> > Also this depends on read_mapping_page taking NULL as an valid argument
-> > for file. As a side-effect we can do away with UPROBE_COPY_INSN which
-> > was set and read at just one place.
-> >
-> > 1. Move the copy_insn to just after alloc_uprobe.
-> > 2. Assume that copy_insn can work without struct file
-> > ...
-> > 5. Move the analyze instruction to before the actual probe insertion.
-> 
-> OK, this is what I think we should do anyway (at least try to do).
-> 
-> > 3. Read the elfhdr for the file.
-> > 4. Pass the elfhdr to the arch specific analyze insn
-> 
-> This assumes that everything is elf. Why? An application is free to
-> create a file in any format and do mmap(PROT_EXEC).
-> 
-> But OK, probably we can restrict uprobe_register() to work only with
-> elf files which do not mix 32/64 bits.
-> 
- 
-We should probably be able to fix file type part, As I said it was just
-a thought.
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index ba57b3b..3629f9b 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1185,10 +1185,13 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+>  	return 0;
+>  }
+>  
+> -static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+> -			  unsigned long data,
+> -			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
+> -					 unsigned long data))
+> +static int kvm_handle_hva_range(struct kvm *kvm,
+> +				unsigned long start_hva,
+> +				unsigned long end_hva,
+> +				unsigned long data,
+> +				int (*handler)(struct kvm *kvm,
+> +					       unsigned long *rmapp,
+> +					       unsigned long data))
+>  {
+>  	int j;
+>  	int ret;
+> @@ -1199,10 +1202,13 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+>  	slots = kvm_memslots(kvm);
+>  
+>  	kvm_for_each_memslot(memslot, slots) {
+> -		gfn_t gfn = hva_to_gfn(hva, memslot);
+> +		gfn_t gfn = hva_to_gfn(start_hva, memslot);
+> +		gfn_t end_gfn = hva_to_gfn(end_hva, memslot);
 
-> 
-> My concern is, are you sure an evil user can't confuse uprobes and
-> do something bad?
-> 
-> Just to explain what I mean. For example, we certainly do not want
-> to allow to probe the "syscall" insn, at least with the current
-> implementation. So I assume that validate_insn_64bits("syscall")
-> must fail.
-> 
-> Are you sure that validate_insn_32bits("syscall") will fail too?
-> 
-> Of course, I am not asking about "syscall" in particular. In general,
-> suppose that, say, validate_insn_64bits() returns true. Are you sure
-> this insn can't do something different and harmful if it is executed
-> by __USER32_CS task?
-> 
+These will return random results which you then use in min/max later, no?
 
-validate_insn_64bits can return fail for two cases.
-1. Few opcodes that uprobes refuses to place probes.
-2. opcodes that are invalid from a 64 perspective.
+> +
+> +		gfn = max(gfn, memslot->base_gfn);
+> +		end_gfn = min(end_gfn, memslot->base_gfn + memslot->npages);
+>  
+> -		if (gfn >= memslot->base_gfn &&
+> -		    gfn < memslot->base_gfn + memslot->npages) {
+> +		for (; gfn < end_gfn; gfn++) {
+>  			ret = 0;
+>  
+>  			for (j = PT_PAGE_TABLE_LEVEL;
+> @@ -1212,7 +1218,9 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+>  				rmapp = __gfn_to_rmap(gfn, j, memslot);
+>  				ret |= handler(kvm, rmapp, data);
 
-validate_insn_32bits() can return fail for similar reasons.
+Potential for improvement: don't do 512 iterations on same large page.
 
-The first set is a common set between validate_insn_64bits /
-validate_insn_32bits. This includes the syscall, lock prefix, etc.
+Something like
 
-Coming to the second set, there can be an instruction that is valid for
-64 bit and not valid for 32 bit. 
+    if ((gfn ^ prev_gfn) & mask(level))
+        ret |= handler(...)
 
-If the instruction is valid for 32 bit set but invalid instruction for
-64 bit, and is part of a 32 bit executable file but was mapped by a 64
-bit process. We would allow it to be probed since we only check for 32
-bit set. [Assuming it runs till a breakpoint hit;] I assume singlestep
-should generate a SIGILL signal since its not a valid 64 bit
-instruction.  However this behaviour is on par with the behaviour if the
-probe was not hit too. i.e Once this invalid instruction was executed,
-It would have generated SIGILL.  The same should hold true for a 32 bit
-invalid instruction in a 64 bit executable mapped into 32 bit process.
+with clever selection of the first prev_gfn so it always matches (~gfn
+maybe).
 
-Please do let me know if my understanding is incorrect or if there are
-loopholes 
-
-Again, this is all dependent on the ability to detect the executable
-type from the inode. If there is any case we cant detect the executable
-type, I think we should just skip this discussion and go with your
-suggestion.
 
 -- 
-Thanks and Regards
-Srikar
+error compiling committee.c: too many arguments to function
+
 
