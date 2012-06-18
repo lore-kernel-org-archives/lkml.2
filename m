@@ -1,257 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab2FRWGv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 18:06:51 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:44603 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab2FRWGF (ORCPT
+	id S1753811Ab2FRWIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 18:08:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46187 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab2FRWIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 18:06:05 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-mm@kvack.org
-Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
-        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
-        hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@surriel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        sjhill@mips.com, Rik van Riel <riel@redhat.com>
-Subject: [PATCH -mm 6/7] remove MIPS arch_get_unmapped_area code
-Date: Mon, 18 Jun 2012 18:05:25 -0400
-Message-Id: <1340057126-31143-7-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1340057126-31143-1-git-send-email-riel@redhat.com>
-References: <1340057126-31143-1-git-send-email-riel@redhat.com>
+	Mon, 18 Jun 2012 18:08:06 -0400
+Date: Tue, 19 Jun 2012 00:08:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Tollerton <richard.tollerton@gmail.com>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robin Getz <rgetz@blackfin.uclinux.org>,
+        Matt Mackall <mpm@selenic.com>, Nicholas Mc Guire <der.herr@hofr.at>,
+        linux-security-module@vger.kernel.org
+Subject: Re: How do embedded linux-rt systems fill their entropy/randomness
+ pools?
+In-Reply-To: <CAM7vvUeRQ0K5J-wtir4JmJcPRfFJtmvxn-yud16BG7KZupFNKg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1206182321070.3086@ionos>
+References: <CAM7vvUeRQ0K5J-wtir4JmJcPRfFJtmvxn-yud16BG7KZupFNKg@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@surriel.com>
+Richard,
 
-Remove all the MIPS specific arch_get_unmapped_area(_topdown) and
-page colouring code, now that the generic code should be able to
-handle things.
+On Mon, 18 Jun 2012, Richard Tollerton wrote:
+> Your "genirq: Disable random call on preempt-rt" commit on Jul 21 2009
+> removes interrupt timings as a potential source of randomness for the
+> kernel entropy pool, if CONFIG_PREEMPT_RT_FULL  is set. I have no qualms
+> with this change, per se; manipulating the entropy pool is clearly
+> something that shouldn't be happening at IRQ priority.
+> 
+> However: on an embedded linux-rt system with solid-state storage,
+> add_input_randomness() ought to contribute no entropy at all, and
+> add_disk_randomness() likely contributes a marginal amount of entropy,
+> since SSD seek timings have little variance. That leaves ioctl(/dev/random,
+> RNDADDENTROPY) as the only remaining entropy source. But no kernel drivers
+> appear to use that, and few distributions have egd set up out-of-the-box.
 
-Untested, because I do not have any MIPS systems.
+Well, to be clear. Just do a 
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: sjhill@mips.com
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- arch/mips/include/asm/pgtable.h |    8 --
- arch/mips/mm/mmap.c             |  175 ---------------------------------------
- 2 files changed, 0 insertions(+), 183 deletions(-)
-
-diff --git a/arch/mips/include/asm/pgtable.h b/arch/mips/include/asm/pgtable.h
-index f133a4c..5f9c49a 100644
---- a/arch/mips/include/asm/pgtable.h
-+++ b/arch/mips/include/asm/pgtable.h
-@@ -410,14 +410,6 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
- #endif
+  git grep IRQF_SAMPLE_RANDOM
  
- /*
-- * We provide our own get_unmapped area to cope with the virtual aliasing
-- * constraints placed on us by the cache architecture.
-- */
--#define HAVE_ARCH_UNMAPPED_AREA
--#define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
--#define HAVE_ARCH_ALIGN_ADDR
--
--/*
-  * No page table caches to initialise
-  */
- #define pgtable_cache_init()	do { } while (0)
-diff --git a/arch/mips/mm/mmap.c b/arch/mips/mm/mmap.c
-index 3f8af17..ac342bd 100644
---- a/arch/mips/mm/mmap.c
-+++ b/arch/mips/mm/mmap.c
-@@ -15,9 +15,6 @@
- #include <linux/random.h>
- #include <linux/sched.h>
- 
--unsigned long shm_align_mask = PAGE_SIZE - 1;	/* Sane caches */
--EXPORT_SYMBOL(shm_align_mask);
--
- /* gap between mmap and stack */
- #define MIN_GAP (128*1024*1024UL)
- #define MAX_GAP ((TASK_SIZE)/6*5)
-@@ -45,178 +42,6 @@ static unsigned long mmap_base(unsigned long rnd)
- 	return PAGE_ALIGN(TASK_SIZE - gap - rnd);
- }
- 
--static inline unsigned long COLOUR_ALIGN_DOWN(unsigned long addr,
--					      unsigned long pgoff)
--{
--	unsigned long base = addr & ~shm_align_mask;
--	unsigned long off = (pgoff << PAGE_SHIFT) & shm_align_mask;
--
--	if (base + off <= addr)
--		return base + off;
--
--	return base - off;
--}
--
--#define COLOUR_ALIGN(addr, pgoff)				\
--	((((addr) + shm_align_mask) & ~shm_align_mask) +	\
--	 (((pgoff) << PAGE_SHIFT) & shm_align_mask))
--
--static unsigned long arch_get_unmapped_area_common(struct file *filp,
--	unsigned long addr0, unsigned long len, unsigned long pgoff,
--	unsigned long flags, enum mmap_allocation_direction dir)
--{
--	struct mm_struct *mm = current->mm;
--	struct vm_area_struct *vma;
--	unsigned long addr = addr0;
--	int do_color_align;
--
--	if (unlikely(len > TASK_SIZE))
--		return -ENOMEM;
--
--	if (flags & MAP_FIXED) {
--		/* Even MAP_FIXED mappings must reside within TASK_SIZE */
--		if (TASK_SIZE - len < addr)
--			return -EINVAL;
--
--		/*
--		 * We do not accept a shared mapping if it would violate
--		 * cache aliasing constraints.
--		 */
--		if ((flags & MAP_SHARED) &&
--		    ((addr - (pgoff << PAGE_SHIFT)) & shm_align_mask))
--			return -EINVAL;
--		return addr;
--	}
--
--	do_color_align = 0;
--	if (filp || (flags & MAP_SHARED))
--		do_color_align = 1;
--
--	/* requesting a specific address */
--	if (addr) {
--		if (do_color_align)
--			addr = COLOUR_ALIGN(addr, pgoff);
--		else
--			addr = PAGE_ALIGN(addr);
--
--		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
--		    (!vma || addr + len <= vma->vm_start))
--			return addr;
--	}
--
--	if (dir == ALLOC_UP) {
--		addr = mm->mmap_base;
--		if (do_color_align)
--			addr = COLOUR_ALIGN(addr, pgoff);
--		else
--			addr = PAGE_ALIGN(addr);
--
--		for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
--			/* At this point:  (!vma || addr < vma->vm_end). */
--			if (TASK_SIZE - len < addr)
--				return -ENOMEM;
--			if (!vma || addr + len <= vma->vm_start)
--				return addr;
--			addr = vma->vm_end;
--			if (do_color_align)
--				addr = COLOUR_ALIGN(addr, pgoff);
--		 }
--	 } else {
--		/* check if free_area_cache is useful for us */
--		if (len <= mm->cached_hole_size) {
--			mm->cached_hole_size = 0;
--			mm->free_area_cache = mm->mmap_base;
--		}
--
--		/*
--		 * either no address requested, or the mapping can't fit into
--		 * the requested address hole
--		 */
--		addr = mm->free_area_cache;
--		if (do_color_align) {
--			unsigned long base =
--				COLOUR_ALIGN_DOWN(addr - len, pgoff);
--			addr = base + len;
--		}
--
--		/* make sure it can fit in the remaining address space */
--		if (likely(addr > len)) {
--			vma = find_vma(mm, addr - len);
--			if (!vma || addr <= vma->vm_start) {
--				/* cache the address as a hint for next time */
--				return mm->free_area_cache = addr - len;
--			}
--		}
--
--		if (unlikely(mm->mmap_base < len))
--			goto bottomup;
--
--		addr = mm->mmap_base - len;
--		if (do_color_align)
--			addr = COLOUR_ALIGN_DOWN(addr, pgoff);
--
--		do {
--			/*
--			 * Lookup failure means no vma is above this address,
--			 * else if new region fits below vma->vm_start,
--			 * return with success:
--			 */
--			vma = find_vma(mm, addr);
--			if (likely(!vma || addr + len <= vma->vm_start)) {
--				/* cache the address as a hint for next time */
--				return mm->free_area_cache = addr;
--			}
--
--			/* remember the largest hole we saw so far */
--			if (addr + mm->cached_hole_size < vma->vm_start)
--				mm->cached_hole_size = vma->vm_start - addr;
--
--			/* try just below the current vma->vm_start */
--			addr = vma->vm_start - len;
--			if (do_color_align)
--				addr = COLOUR_ALIGN_DOWN(addr, pgoff);
--		} while (likely(len < vma->vm_start));
--
--bottomup:
--		/*
--		 * A failed mmap() very likely causes application failure,
--		 * so fall back to the bottom-up function here. This scenario
--		 * can happen with large stack limits and large mmap()
--		 * allocations.
--		 */
--		mm->cached_hole_size = ~0UL;
--		mm->free_area_cache = TASK_UNMAPPED_BASE;
--		addr = arch_get_unmapped_area(filp, addr0, len, pgoff, flags);
--		/*
--		 * Restore the topdown base:
--		 */
--		mm->free_area_cache = mm->mmap_base;
--		mm->cached_hole_size = ~0UL;
--
--		return addr;
--	}
--}
--
--unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr0,
--	unsigned long len, unsigned long pgoff, unsigned long flags)
--{
--	return arch_get_unmapped_area_common(filp,
--			addr0, len, pgoff, flags, ALLOC_UP);
--}
--
--/*
-- * There is no need to export this but sched.h declares the function as
-- * extern so making it static here results in an error.
-- */
--unsigned long arch_get_unmapped_area_topdown(struct file *filp,
--	unsigned long addr0, unsigned long len, unsigned long pgoff,
--	unsigned long flags)
--{
--	return arch_get_unmapped_area_common(filp,
--			addr0, len, pgoff, flags, ALLOC_DOWN);
--}
--
- void arch_pick_mmap_layout(struct mm_struct *mm)
- {
- 	unsigned long random_factor = 0UL;
--- 
-1.7.7.6
+over the mainline Linux source and you will find out, that this is
+really not a RT problem.
 
+That's a total of 28 places which have IRQF_SAMPLE_RANDOM set on their
+interrupt request call.
+
+You can see the very interesting file which matches that pattern:
+
+Documentation/feature-removal-schedule.txt:What:        IRQF_SAMPLE_RANDOM
+Documentation/feature-removal-schedule.txt:Check:       IRQF_SAMPLE_RANDOM
+Documentation/feature-removal-schedule.txt:Why: Many of IRQF_SAMPLE_RANDOM users are technically bogus as entropy
+
+Now obviosly neither that misfeature has been removed, nor one of the
+folks who are interested in security, randomness etc. has come up with
+any useful replacement.
+
+> Thus, for a stock linux-rt kernel, it appears to be the case that **NOTHING
+> POPULATES THE ENTROPY POOL**. I can readily reproduce this on a live
+> linux-rt ARM system: after boot, /proc/sys/kernel/random/entropy_avail is
+> 0, and stays there.
+
+s/stock linux-rt kernel/stock linux kernel/ and I'm with you :)
+
+> This, to me, seems to be a severe problem. In particular, if the embedded
+> RT system is responsible for generating its own RSA keys for e.g. SSH/SSL
+> on first boot, then the lack of entropy leaves it susceptible to
+> catastrophic factorization attacks as documented in "Ron was wrong, Whit is
+> right", http://eprint.iacr.org/2012/064.pdf, which made the news 3 months
+> or so ago.
+> 
+> Do you agree with this analysis?
+
+I agree that the lack of randomization is idiotic though I don't agree
+that this is a RT problem. I have access to enough systems where RT
+and mainline have exactly the same issue.
+
+> Would anybody (else) be interested in pursing a realtime-safe way to use
+> interrupt timings as an entropy source?
+
+s/realtime-safe/proper/ and I'm all ear and probably a lot of other
+folks as well.
+
+Though I doubt that interrupt timings are going to solve the
+problem. Just look at /proc/interrupts on your headless SSD equipped
+entropy challenged system.
+
+There is not much which can add to the entropy, really. And that's why
+IRQF_SAMPLE_RANDOM is pretty useless and any attempt to make it useful
+is probably as useless as well.
+
+And I really disagree with the way how the randomness stuff is done
+today. We feed crap into the random generator whether we need it or
+not. Look at the code path, then you know _WHY_ I disabled it on RT
+(aside of the RT specific locking issues). This stuff is really wrong,
+independent of RT.
+
+We need to provide randomness when a consumer needs it, but we don't
+have to do expensive randomness calculations when there is no consumer
+at all. So why not moving off the expensive computations into the
+context of those who need it?
+
+Some time ago I did some experiments on implementing a lockless per
+cpu "ring buffer" which could be fed fast and w/o overhead with random
+values. Unfortunatly I lost those patches while debugging some weird
+file system corruption issue on RT and I never bothered to reimplement
+them due to lack of bandwidth :(
+
+But it shouldn't be that hard to reimplement something like that which
+is fast and halfways deep (e.g. at least 4k samples per cpu) which can
+be fed into the random generator consumer side on demand w/o affecting
+the producers. The nice thing is that due to randomness you don't have
+to care about races. It does not matter whether a producer overwrites
+the value while the consumer side is reading it. And the consumer
+side, which is the "slow" path can be a producer as well. It's code
+pathes are equally random as any other ones chosen to be a producer.
+
+For me that approach with a few producers sprinkled into frequently
+used, but not crucial hot code pathes solved the annoying problem of
+missing randomness in my embedded headless systems quite well, w/o
+enforcing a braindamaged user space daemon which sucks energy forever
+just to fix that shortcoming.
+
+I know that it's not going to be a mathematically provable random
+generator on the producer side, but I really don't care. As long as it
+passes the various tests on the consumer side, I don't worry about
+that theoretical part :)
+
+There are enough papers out there, which cover the inherent randomness
+of todays cpu systems, so go wild with finding the relevant points
+which can be abused to a stick some value into the pools fast
+path.
+
+Thanks,
+
+	tglx
