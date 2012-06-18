@@ -1,281 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab2FRPLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 11:11:31 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36568 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab2FRPL2 (ORCPT
+	id S1752792Ab2FRPMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 11:12:09 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49979 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab2FRPMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 11:11:28 -0400
-Date: Mon, 18 Jun 2012 10:06:10 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Mathias Leblanc <matthias.leblanc@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net,
-        Mathias Leblanc <mathias.leblanc@st.com>
-Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C/SPI & ST19 I2C
-Message-ID: <20120618150610.GA14970@linux.vnet.ibm.com>
-References: <1338573960-12425-1-git-send-email-mathias.leblanc@st.com>
+	Mon, 18 Jun 2012 11:12:07 -0400
+Message-ID: <4FDF4543.6090009@wwwdotorg.org>
+Date: Mon, 18 Jun 2012 09:12:03 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338573960-12425-1-git-send-email-mathias.leblanc@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061815-7282-0000-0000-00000A05CAEE
+To: Roland Stigge <stigge@antcom.de>
+CC: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
+        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] gpio: of_get_named_gpio_flags() return -EPROBE_DEFER
+ if GPIO not yet available
+References: <1339927893-8842-1-git-send-email-stigge@antcom.de> <4FDE8D27.6030508@wwwdotorg.org> <4FDEF293.9080305@antcom.de> <4FDF403E.9090302@wwwdotorg.org> <4FDF4461.60707@antcom.de>
+In-Reply-To: <4FDF4461.60707@antcom.de>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
- Hi Mathias,
-
-On Fri, Jun 01, 2012 at 08:06:00PM +0200, Mathias Leblanc wrote:
->  * STMicroelectronics version 1.2.0, Copyright (C) 2010
->  * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
->  * This is free software, and you are welcome to redistribute it
->  * under certain conditions.
+On 06/18/2012 09:08 AM, Roland Stigge wrote:
+> On 06/18/2012 04:50 PM, Stephen Warren wrote:
+>>> Can you please tell in which way the patch breaks those drivers?
+>>> However, I can see that those drivers solved the same problem in a
+>>> different way (deferring of_get_named_gpio(), via the sound init()). So
+>>> they could be adjusted to take advantage of new -EPROBE_DEFER.
+>>
+>> The drivers I mentioned test the return code of of_get_named_gpio() to
+>> see if it's -ENODEV, which means that DT property for that GPIO exists
+>> but the driver for it isn't available yet, so the property can't be
+>> parsed. In this case, the sound drivers defer their own probe. If
+>> of_get_named_gpio() is modified to return -EPROBE_DEFER directly, then
+>> it won't be returning -ENODEV, and hence the sound drivers' check for
+>> -ENODEV won't fire, and hence the sound drivers will just continue their
+>> probe assuming that the particular GPIOs are not present on the board
+>> (since they are all optional, so anything other than an explicit
+>> deferral error from of_get_named_gpio() is not treated as an error).
+>> This will break sound on those platforms.
 > 
-> This is the driver for TPM chip from ST Microelectronics.
-
-  Please go through Documentation/SubmitChecklist and make use of
-scripts/checkpatch.pl.  This patch is far from meeting those standards.
-
-> If you have a TPM security chip from STMicroelectronics working with
-> an I2C/SPI, in menuconfig or .config choose the tpm driver on
-> device --> tpm and activate the protocol of your choice before compiling
-> the kernel.
-> The driver will be accessible from within Linux.
+> Thanks for the hint! I previously also suspected sth. like this but
+> didn't find it in v3.5-rc3. In broonie's sound.git for-next, I now
+> finally found it.
 > 
-> Tested on linux x86/x64 and beagleboard REV B & XM REV C
+> Should be easy to fix (replacing the if (... == -ENODEV) to -EPROBE_DEFER.
 > 
-> Signed-off-by: Mathias Leblanc <mathias.leblanc@st.com>
-> ---
->  arch/arm/mach-omap2/board-omap3beagle.c |   58 ++
->  drivers/char/tpm/Kconfig                |   32 +-
->  drivers/char/tpm/Makefile               |    2 +
->  drivers/char/tpm/tpm_stm_st19_i2c.c     |  560 ++++++++++++++
->  drivers/char/tpm/tpm_stm_st19_i2c.h     |   52 ++
->  drivers/char/tpm/tpm_stm_st33_i2c.c     | 1200 +++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm_stm_st33_i2c.h     |   76 ++
->  drivers/char/tpm/tpm_stm_st33_spi.c     | 1285 +++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm_stm_st33_spi.h     |   80 ++
->  include/linux/i2c/tpm_stm_st19_i2c.h    |   42 +
->  include/linux/i2c/tpm_stm_st33_i2c.h    |   48 ++
->  include/linux/spi/tpm_stm_st33_spi.h    |   46 ++
->  12 files changed, 3473 insertions(+), 8 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm_stm_st19_i2c.c
->  create mode 100644 drivers/char/tpm/tpm_stm_st19_i2c.h
->  create mode 100644 drivers/char/tpm/tpm_stm_st33_i2c.c
->  create mode 100644 drivers/char/tpm/tpm_stm_st33_i2c.h
->  create mode 100644 drivers/char/tpm/tpm_stm_st33_spi.c
->  create mode 100644 drivers/char/tpm/tpm_stm_st33_spi.h
->  create mode 100644 include/linux/i2c/tpm_stm_st19_i2c.h
->  create mode 100644 include/linux/i2c/tpm_stm_st33_i2c.h
->  create mode 100644 include/linux/spi/tpm_stm_st33_spi.h
+> Will you provide patches as signalled, of should I? Which branch would
+> be the correct one to build on top?
 
-  Please break up the patch into at least 4 patches, the spi driver, the
-i2c driver the build stuff and then the additions to the beagle board
-code.
-
-[cut]
-> 
-> diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-> index a048199..7384c93 100644
-> --- a/drivers/char/tpm/Kconfig
-> +++ b/drivers/char/tpm/Kconfig
-> @@ -5,6 +5,7 @@
->  menuconfig TCG_TPM
->  	tristate "TPM Hardware Support"
->  	depends on HAS_IOMEM
-> +	depends on EXPERIMENTAL
-
-  This makes all TPM drivers experimental. Please move this into the
-config options for your drivers specifically so that only they are
-experimental.
-
->  	select SECURITYFS
->  	---help---
->  	  If you have a TPM security chip in your system, which
-> @@ -16,17 +17,14 @@ menuconfig TCG_TPM
->  	  obtained at: <http://sourceforge.net/projects/trousers>.  To 
->  	  compile this driver as a module, choose M here; the module 
->  	  will be called tpm. If unsure, say N.
-> -	  Notes:
-> -	  1) For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
-> +	  Note: For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
->  	  and CONFIG_PNPACPI.
-> -	  2) Without ACPI enabled, the BIOS event log won't be accessible,
-> -	  which is required to validate the PCR 0-7 values.
-> 
->  if TCG_TPM
-> 
->  config TCG_TIS
->  	tristate "TPM Interface Specification 1.2 Interface"
-> -	depends on X86
-> +	depends on PNP
-
-  I don't think this is correct, PNP is optional for tis.
-
->  	---help---
->  	  If you have a TPM security chip that is compliant with the
->  	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
-> @@ -35,7 +33,6 @@ config TCG_TIS
-> 
->  config TCG_NSC
->  	tristate "National Semiconductor TPM Interface"
-> -	depends on X86
-
-  This needs to stay.  Non-tis drivers are for 1.1 TPMs that have only
-been tested on their arch AFAIK. Unless you can provide a Tested-by: for
-this, I'll NACK it.
-
->  	---help---
->  	  If you have a TPM security chip from National Semiconductor 
->  	  say Yes and it will be accessible from within Linux.  To 
-> @@ -44,7 +41,6 @@ config TCG_NSC
-> 
->  config TCG_ATMEL
->  	tristate "Atmel TPM Interface"
-> -	depends on PPC64 || HAS_IOPORT
-
-  same as above.
-
->  	---help---
->  	  If you have a TPM security chip from Atmel say Yes and it 
->  	  will be accessible from within Linux.  To compile this driver 
-> @@ -60,6 +56,26 @@ config TCG_INFINEON
->  	  To compile this driver as a module, choose M here; the module
->  	  will be called tpm_infineon.
->  	  Further information on this driver and the supported hardware
-> -	  can be found at http://www.trust.rub.de/projects/linux-device-driver-infineon-tpm/ 
-> +	  can be found at http://www.prosec.rub.de/tpm
-> +
-> +config TCG_ST33_I2C
-> +        tristate "STMicroelectronics ST33 I2C TPM with locality 0 & 4"
-
-  Is "with locality 0 & 4" relevent here?
-
-> +        depends on I2C
-> +        depends on GPIOLIB
-> +        ---help---
-> +        If you have a TPM security chip from STMicroelectronics working with
-> +        an I2C bus say Yes and it will be accessible from within Linux.
-> +        To compile this driver as a module, choose M here; the module will be
-> +        called tpm_stm_st33_i2c.
-> +
-> +config TCG_ST33_SPI
-> +	tristate "STMicroelectronics ST33 SPI"
-> +	depends on SPI
-> +	depends on GPIOLIB
-> +	---help---
-> +	If you have a TPM security chip from STMicroelectronics working with
-> +	an SPI bus say Yes and it will be accessible from within Linux.
-> +	To compile this driver as a module, choose M here; the module will be
-> +	called tpm_stm_st33_spi.
-> 
->  endif # TCG_TPM
-> diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-> index ea3a1e0..8d3449f 100644
-> --- a/drivers/char/tpm/Makefile
-> +++ b/drivers/char/tpm/Makefile
-> @@ -9,3 +9,5 @@ obj-$(CONFIG_TCG_TIS) += tpm_tis.o
->  obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
->  obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
->  obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
-> +obj-$(CONFIG_TCG_ST33_I2C) += tpm_stm_st33_i2c.o
-> +obj-$(CONFIG_TCG_ST33_SPI) += tpm_stm_st33_spi.o 
-
-  EOL white space - please read Documentation/CodingStyle.
-
-[cut]
-
-> +
-> +#include <linux/i2c/tpm_stm_st19_i2c.h>
-> +
-> +#include "tpm.h"
-> +
-> +#include "tpm_stm_st19_i2c.h"
-> +
-> +#ifdef DEBUG
-> +#define FUNC_ENTER() pr_info("%s\n", __func__)
-> +#else
-> +#define FUNC_ENTER() do {} while (0)
-> +#endif
-
- Please remove FUNC_ENTER or replace with direct calls to pr_debug().
-
-[cut]
-> +static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
-> +			    size_t count)
-> +{
-> +	u32 ret = 0, i, size, ordinal;
-> +	struct i2c_client *client;
-> +
-> +	FUNC_ENTER();
-> +
-> +	if (chip == NULL)
-> +		return -EBUSY;
-> +
-> +	if (count < TPM_HEADER_SIZE)
-> +		return -EBUSY;
-> +	client = (struct i2c_client *)pin_infos->client;
-> +
-> +	ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
-
- ordinal looks to be set but unused.
-
-[cut]
-> +static const struct file_operations tpm_st19_i2c_fops = {
-> +	.owner = THIS_MODULE,
-> +	.llseek = no_llseek,
-> +	.read = tpm_read,
-> +	.unlocked_ioctl = tpm_stm_i2c_ioctl,
-> +	.write = tpm_write,
-> +	.open = tpm_open,
-> +	.release = tpm_release,
-> +};
-
-  trousers doesn't need an ioctl path - do you have another user for it?
-Otherwise please remove the ioctl stuff.
-
-[cut]
-> +//static DEFINE_SPINLOCK(tpm_stm_st33_lock);
-
-  Please remove any commented-out code.
-
-[cut]
-> +#define wait_for_serirq_timeout(chip, condition, timeout) \
-> +({ \
-> +        unsigned long status = 2; \
-> +        struct i2c_client *client; \
-> +        struct st33zp24_platform_data* pin_infos; \
-> +\
-> +        client = (struct i2c_client *) chip->vendor.iobase; \
-> +        pin_infos = client->dev.platform_data;  \
-> +\
-> +        status = _wait_for_interrupt_serirq_timeout(chip, timeout); \
-> +        if (!status) \
-> +        { \
-> +                status = -EBUSY; \
-> +                goto wait_end; \
-> +        } \
-> +        clear_interruption(client);     \
-> +        if (condition) \
-> +                status = 1; \
-> +\
-> +wait_end: \
-> +        status;\
-> +}) 
-
-  Please use do { } while (0) per Documentation/CodingStyle.
-
-  I'm gonna stop here for now. There's quite a bit of work TBD on these
-drivers based on the kernel coding standards alone.
-
-Kent
-
+I'm happy either way. It'd probably be best to roll the change into your
+patch/series so you can manage all the dependencies in one series, but
+if you can't for some reason, I'm happy to provide a patch for this.
