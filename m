@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab2FRF7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 01:59:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55415 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab2FRF7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 01:59:12 -0400
-Message-ID: <1339999142.18659.1.camel@phoenix>
-Subject: [PATCH 1/2] regulator: Fix setting constraints->ramp_delay in
- of_get_regulation_constraints
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 18 Jun 2012 13:59:02 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752064Ab2FRGDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 02:03:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51186 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab2FRGDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 02:03:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="158852512"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+CC: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Joey Lee <jlee@novell.com>
+Subject: RE: [PATCH 4/5] intel_mid_thermal: Use struct dev_pm_ops for power
+ management
+Thread-Topic: [PATCH 4/5] intel_mid_thermal: Use struct dev_pm_ops for power
+ management
+Thread-Index: AQHNTMei8caaDTWFsEa52YFDpV0N0Zb/lguQ
+Date: Mon, 18 Jun 2012 06:03:16 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59143300@BGSMSX101.gar.corp.intel.com>
+References: <201206172226.42729.rjw@sisk.pl> <201206172229.41550.rjw@sisk.pl>
+In-Reply-To: <201206172229.41550.rjw@sisk.pl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5I63SxQ018875
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/of_regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks Rafael for the patch.
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index e2a7310..68dc3d4 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -63,7 +63,7 @@ static void of_get_regulation_constraints(struct device_node *np,
- 
- 	ramp_delay = of_get_property(np, "regulator-ramp-delay", NULL);
- 	if (ramp_delay)
--		constraints->min_uV = be32_to_cpu(*ramp_delay);
-+		constraints->ramp_delay = be32_to_cpu(*ramp_delay);
- }
- 
- /**
--- 
-1.7.9.5
+> -----Original Message-----
+> From: platform-driver-x86-owner@vger.kernel.org [mailto:platform-driver-x86-
+> owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+> Sent: Monday, June 18, 2012 2:00 AM
+> To: platform-driver-x86@vger.kernel.org
+> Cc: Henrique de Moraes Holschuh; LKML; Linux PM list; Matthew Garrett; Joey
+> Lee
+> Subject: [PATCH 4/5] intel_mid_thermal: Use struct dev_pm_ops for power
+> management
+> 
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Make the intel_mid_thermal driver define its PM callbacks through
+> a struct dev_pm_ops object rather than by using legacy PM hooks
+> in struct platform_driver.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
+Reviewed-by: Durgadoss R <durgadoss.r@intel.com>
 
-
+Thanks,
+Durga
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
