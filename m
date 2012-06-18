@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541Ab2FRMhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:37:43 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43782 "EHLO
+	id S1751699Ab2FRMht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:37:49 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49571 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab2FRMhj (ORCPT
+	with ESMTP id S1751314Ab2FRMhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:37:39 -0400
+	Mon, 18 Jun 2012 08:37:42 -0400
 From: Michal Nazarewicz <mpn@google.com>
 To: Felipe Balbi <balbi@ti.com>
 Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] usb: gadget: storage_common: remove FSG_BUFFHD_STATIC_BUFFER support
-Date: Mon, 18 Jun 2012 14:37:19 +0200
-Message-Id: <d3dce6e6d68f76850b1c1e55dae63a0d65145b60.1340022674.git.mina86@mina86.com>
+Subject: [PATCH 3/3] usb: gadget: mass_storage: require backing file for non-removable LUNs
+Date: Mon, 18 Jun 2012 14:37:21 +0200
+Message-Id: <593bff689c31fefb07534e3f500d8a8c29fcdacb.1340022674.git.mina86@mina86.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <cover.1340022674.git.mina86@mina86.com>
 References: <cover.1340022674.git.mina86@mina86.com>
@@ -25,45 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-Since f_mass_storage stopped using FSG_BUFFHD_STATIC_BUFFER (because it
-caused buffers not to be page aligned which did not work well with at
-least some UDCs), no code was using it.  Removing not to bloat the code
-too much.
+The fsg_file_store() function does not check whether a LUN is removable or not
+allowing one to specify an empty file name for a non-removable LUN.  This
+commit adds explicit check of whether a file name is provided for
+non-removable LUNs.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- drivers/usb/gadget/storage_common.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+ drivers/usb/gadget/storage_common.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index 8081ca3..8a8157f 100644
+index e576678..52334d7 100644
 --- a/drivers/usb/gadget/storage_common.c
 +++ b/drivers/usb/gadget/storage_common.c
-@@ -38,12 +38,6 @@
-  */
+@@ -878,6 +878,9 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
+ 	if (count > 0 && buf[count-1] == '\n')
+ 		((char *) buf)[count-1] = 0;		/* Ugh! */
  
- /*
-- * When FSG_BUFFHD_STATIC_BUFFER is defined when this file is included
-- * the fsg_buffhd structure's buf field will be an array of FSG_BUFLEN
-- * characters rather then a pointer to void.
-- */
--
--/*
-  * When USB_GADGET_DEBUG_FILES is defined the module param num_buffers
-  * sets the number of pipeline buffers (length of the fsg_buffhd array).
-  * The valid range of num_buffers is: num >= 2 && num <= 4.
-@@ -260,11 +254,7 @@ enum fsg_buffer_state {
- };
++	/* Must specify a valid file if LUN is not removable. */
++	if (!curlun->removable && !*buf)
++		return -EINVAL;
  
- struct fsg_buffhd {
--#ifdef FSG_BUFFHD_STATIC_BUFFER
--	char				buf[FSG_BUFLEN];
--#else
- 	void				*buf;
--#endif
- 	enum fsg_buffer_state		state;
- 	struct fsg_buffhd		*next;
- 
+ 	/* Load new medium */
+ 	down_write(filesem);
 -- 
 1.7.7.3
 
