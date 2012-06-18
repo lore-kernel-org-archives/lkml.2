@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab2FRWm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 18:42:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33497 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab2FRWm6 (ORCPT
+	id S1754015Ab2FRWqC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 18:46:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47165 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab2FRWqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 18:42:58 -0400
-Date: Mon, 18 Jun 2012 15:42:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Muthu Kumar <muthu.lkml@gmail.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, Jens Axboe <axboe@kernel.dk>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH UPDATED] block: In blk_execute_rq_nowait, init
- rq->end_io before checking for dead queue.
-Message-ID: <20120618224253.GH32733@google.com>
-References: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
- <4FD345DC.6020405@acm.org>
- <CAFR8ueca-MQWRipE+3OQSpqmJ40HKJEY7jWt6PQ+zTCQ9Bh=5Q@mail.gmail.com>
- <4FD4DC26.5080902@acm.org>
- <CAFR8uecF0LwbV8FvYob5m34sVbKqafrNoYOrcRUQCEOymGnYRA@mail.gmail.com>
- <CAFR8uefK+nByiJ8tw5_KF1qEJs4du2mDdU36gg1_2nRNZXN5Fw@mail.gmail.com>
+	Mon, 18 Jun 2012 18:46:00 -0400
+Date: Mon, 18 Jun 2012 15:45:56 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Kay Sievers <kay@vrfy.org>
+Subject: Re: linux-next: Tree for Jun 18 (kmsg problems)
+Message-ID: <20120618224556.GA2750@kroah.com>
+References: <20120618165336.48345227c6b64c314326ae57@canb.auug.org.au>
+ <4FDF61A7.3050601@xenotime.net>
+ <20120619080109.b28055c1b32fb81027a9562b@canb.auug.org.au>
+ <20120618221535.GA13037@kroah.com>
+ <20120619083720.996b2d743cff619a58e1de97@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFR8uefK+nByiJ8tw5_KF1qEJs4du2mDdU36gg1_2nRNZXN5Fw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120619083720.996b2d743cff619a58e1de97@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 02:23:23PM -0700, Muthu Kumar wrote:
-> On Mon, Jun 11, 2012 at 10:33 AM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
-> > On Sun, Jun 10, 2012 at 10:40 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> >> On 06/09/12 23:57, Muthu Kumar wrote:
-> >>
-> >>> Locking change is the one you posted already (the link above). Anyway,
-> >>> I have the attached patch *including* the locking change. Original
-> >>> mail has attachment without locking change. Please use whatever you
-> >>> need.
-> >>
-> >>
-> >> While we are at it ... the rq->rq_disk and rq->end_io assignments can be
-> >> performed safely before the spinlock is taken, isn't it ?
-> >>
-> >
-> > Yes.. that spinlock is to protect the q.
-> >
+On Tue, Jun 19, 2012 at 08:37:20AM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Attached patch with assignment performed before taking the spinlock.
+> On Mon, 18 Jun 2012 15:15:35 -0700 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> >
+> > > Caused by commit e2ae715d66bf ("kmsg - kmsg_dump() use iterator to
+> > > receive log buffer content") from the driver-core.current tree.
+> > 
+> > I'm building my tree right now, and I can't seem to hit this.
+> 
+> You need CONFIG_PRINTK turned off ...
 
-This looks correct to me.  Bart, can you please include this patch in
-your series and repost the series?
+Ugh, no wonder I couldn't reproduce it, who runs systems like that
+becides the CONFIG_TINY people?  :)
 
-Thank you.
+> > > This was reported a few days ago.  Why is it not fixed yet?
+> > 
+> > It was reported Friday evening, on a holiday weekend for some of us, we
+> > are trying the best we can :)
+> 
+> Ah ha, another of those pesky holiday things :-)
+> 
+> > > Especially since it is in a branch that is supposedly "bug fixes"?
+> > 
+> > It fixes up a reported problem, and we had 3 people test it and said it
+> > resolved the issue for them, no build problems reported.
+> 
+> My usual mantra is that if your patch is modifying code that clearly
+> depends on a CONFIG option, you must test with that option both on and
+> off. I see build problems in linux-next all the time where this has not
+> been done.  :-(
 
--- 
-tejun
+Thanks, as this was a kmsg thing, I didn't catch that CONFIG_PRINTK was
+involved, sorry about that.
+
+I'll go queue up Kay's patch right now,
+
+greg k-h
