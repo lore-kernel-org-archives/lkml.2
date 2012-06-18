@@ -1,119 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab2FRS32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 14:29:28 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:4059 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab2FRS31 (ORCPT
+	id S1752974Ab2FRS3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 14:29:44 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36761 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab2FRS3f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 14:29:27 -0400
-From: Greg Pearson <greg.pearson@hp.com>
-To: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
-        shangw@linux.vnet.ibm.com, mingo@elte.hu
-Cc: yinghai@kernel.org, benh@kernel.crashing.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, greg.pearson@hp.com
-Subject: [PATCH v3] mm/memblock: fix overlapping allocation when doubling reserved array
-Date: Mon, 18 Jun 2012 12:28:47 -0600
-Message-Id: <1340044127-13864-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 18 Jun 2012 14:29:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FD066C3.4090008@web.de>
+References: <4FBF90E5.8030800@siemens.com> <4FCE19DA.1070802@siemens.com>
+ <4FD0389F.7030400@ozlabs.ru> <4FD066C3.4090008@web.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 18 Jun 2012 12:29:12 -0600
+Message-ID: <CAErSpo7a24UcHQFTTDZvVJ-swP3q6uirkr=Xps5dG6wnBbUqDg@mail.gmail.com>
+Subject: Re: [PATCH v2] PCI: Mark INTx masking support of Chelsio T310 10GbE
+ NIC as broken
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Alexander Graf <agraf@suse.de>, kvm <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __alloc_memory_core_early() routine will ask memblock for a range
-of memory then try to reserve it. If the reserved region array lacks
-space for the new range, memblock_double_array() is called to allocate
-more space for the array. If memblock is used to allocate memory for
-the new array it can end up using a range that overlaps with the range
-originally allocated in __alloc_memory_core_early(), leading to possible
-data corruption.
+On Thu, Jun 7, 2012 at 2:30 AM, Jan Kiszka <jan.kiszka@web.de> wrote:
+> From: Jan Kiszka <jan.kiszka@siemens.com>
+>
+> According to
+>
+> http://thread.gmane.org/gmane.comp.emulators.kvm.devel/91388
+>
+> the T310 does not properly support INTx masking as it fails to keep the
+> PCI_STATUS_INTERRUPT bit updated once the interrupt is masked. Mark this
+> adapter as broken so that pci_intx_mask_supported won't report it as
+> compatible.
+>
+> Tested-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>
+> Changes in v2:
+>  - Fixed device ID to Alexey's report
+>  - Added reference to the original report
+>
+>  drivers/pci/pci.c    |    3 +++
+>  drivers/pci/quirks.c |   12 ++++++++++++
+>  include/linux/pci.h  |    2 ++
+>  3 files changed, 17 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 447e834..9ae517a 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -2876,6 +2876,9 @@ bool pci_intx_mask_supported(struct pci_dev *dev)
+>        bool mask_supported = false;
+>        u16 orig, new;
+>
+> +       if (dev->broken_intx_masking)
+> +               return false;
+> +
+>        pci_cfg_access_lock(dev);
+>
+>        pci_read_config_word(dev, PCI_COMMAND, &orig);
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 2a75216..28804f4 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -2929,6 +2929,18 @@ static void __devinit disable_igfx_irq(struct pci_dev *dev)
+>  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
+>  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
+>
+> +/*
+> + * Some devices may pass our check in pci_intx_mask_supported if
+> + * PCI_COMMAND_INTX_DISABLE works though they actually do not properly
+> + * support this feature.
+> + */
+> +static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
+> +{
+> +       dev->broken_intx_masking = 1;
+> +}
+> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0030,
+> +                       quirk_broken_intx_masking);
+> +
+>  static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+>                          struct pci_fixup *end)
+>  {
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index d8c379d..7ea6cf8 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -324,6 +324,8 @@ struct pci_dev {
+>        unsigned int    is_hotplug_bridge:1;
+>        unsigned int    __aer_firmware_first_valid:1;
+>        unsigned int    __aer_firmware_first:1;
+> +       unsigned int    broken_intx_masking:1;  /* device's INTx masking
+> +                                                  support is not working */
+>        pci_dev_flags_t dev_flags;
+>        atomic_t        enable_cnt;     /* pci_enable_device has been called */
+>
+> --
+> 1.7.3.4
 
-With this patch memblock_double_array() now calls memblock_find_in_range()
-with a narrowed candidate range (in cases where the reserved.regions array
-is being doubled) so any memory allocated will not overlap with the original
-range that was being reserved. The range is narrowed by passing in the
-starting address and size of the previously allocated range. Then the
-range above the ending address is searched and if a candidate is not
-found, the range below the starting address is searched.
+I applied this to my "next" branch with minor tweaks (split the
+infrastructure part from the device-specific quirk, and changed from a
+FINAL quirk to a HEADER quirk because FINAL quirks currently aren't
+called for hot-added devices).  Let me know if you see anything wrong.
 
-Changes from v1 to v2 (based on comments from Yinghai Lu):
-- use obase instead of base in memblock_add_region() for excluding start address
-- pass in both the starting and ending address of the exclude range to
-  memblock_double_array()
-- have memblock_double_array() search above the exclude ending address
-  and below the exclude starting address for a free range
+Thanks!
 
-Changes from v2 to v3 (based on comments from Yinghai Lu):
-- pass in exclude_start and exclude_size to memblock_double_array()
-- only exclude a range if doubling the reserved.regions array
-- make sure narrowed range passed to memblock_find_in_range() is accessible
-- to make the code less confusing, change memblock_isolate_range() to
-  pass in exclude_start and exclude_size
-- remove unneeded comment in memblock_add_region() between while and
-  one line loop body
-
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- mm/memblock.c |   21 +++++++++++++++++----
- 1 files changed, 17 insertions(+), 4 deletions(-)
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 952123e..3a61e74 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -184,7 +184,9 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 	}
- }
- 
--static int __init_memblock memblock_double_array(struct memblock_type *type)
-+static int __init_memblock memblock_double_array(struct memblock_type *type,
-+						phys_addr_t exclude_start,
-+						phys_addr_t exclude_size)
- {
- 	struct memblock_region *new_array, *old_array;
- 	phys_addr_t old_size, new_size, addr;
-@@ -222,7 +224,18 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 		new_array = kmalloc(new_size, GFP_KERNEL);
- 		addr = new_array ? __pa(new_array) : 0;
- 	} else {
--		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
-+		/* only exclude range when trying to double reserved.regions */
-+		if (type != &memblock.reserved)
-+			exclude_start = exclude_size = 0;
-+
-+		addr = memblock_find_in_range(exclude_start + exclude_size,
-+						memblock.current_limit,
-+						new_size, sizeof(phys_addr_t));
-+		if (!addr && exclude_size)
-+			addr = memblock_find_in_range(0,
-+					min(exclude_start, memblock.current_limit),
-+					new_size, sizeof(phys_addr_t));
-+
- 		new_array = addr ? __va(addr) : 0;
- 	}
- 	if (!addr) {
-@@ -399,7 +412,7 @@ repeat:
- 	 */
- 	if (!insert) {
- 		while (type->cnt + nr_new > type->max)
--			if (memblock_double_array(type) < 0)
-+			if (memblock_double_array(type, obase, size) < 0)
- 				return -ENOMEM;
- 		insert = true;
- 		goto repeat;
-@@ -450,7 +463,7 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 
- 	/* we'll create at most two more regions */
- 	while (type->cnt + 2 > type->max)
--		if (memblock_double_array(type) < 0)
-+		if (memblock_double_array(type, base, size) < 0)
- 			return -ENOMEM;
- 
- 	for (i = 0; i < type->cnt; i++) {
--- 
-1.7.5.4
-
+Bjorn
