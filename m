@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab2FRLNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:13:25 -0400
-Received: from antcom.de ([188.40.178.216]:40159 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548Ab2FRLNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:13:20 -0400
-Message-ID: <4FDF0D4E.7090303@antcom.de>
-Date: Mon, 18 Jun 2012 13:13:18 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1752001Ab2FRLNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:13:47 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:56246 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751451Ab2FRLMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 07:12:40 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am4CADoM309bdWObgWdsb2JhbABFhVewBCIBARYmJ4IZAQUjBAsBRhAlAiYCAlcHEogPpXKSBYEgj0CBEgOVJJJf
+X-IronPort-AV: E=Sophos;i="4.77,430,1336341600"; 
+   d="scan'208";a="1004339241"
+From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+Subject: [PATCH 5/8] Staging: xgifb: Remove XGIFAIL() macro and its calls.
+Date: Mon, 18 Jun 2012 13:12:03 +0200
+Message-Id: <7d6346bfccd6b00f7718b8d4ec9a8543871cf580.1340016625.git.magomez@igalia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1340016625.git.magomez@igalia.com>
+References: <cover.1340016625.git.magomez@igalia.com>
+In-Reply-To: <cover.1340016625.git.magomez@igalia.com>
+References: <cover.1340016625.git.magomez@igalia.com>
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
-        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH] spi: spi-pl022: Adjust probe() to of_get_named_gpio()
- returning -EPROBE_DEFER
-References: <1340011219-31657-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1340011219-31657-1-git-send-email-stigge@antcom.de>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 11:20 AM, Roland Stigge wrote:
-> The patch to gpiolib-of.c providing -EPROBE_DEFER as a hint to defer
-> of_get_named_gpio*() to a later probe() breaks spi-pl022.c.
-> 
-> This patch adjusts to this change, using -EPROBE_DEFER as indication to defer.
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> 
-> ---
-> Applies to 3.5-rc3
-> 
-> Should this patch be joined with gpiolib-of's patch to of_get_named_gpio()? Or
-> should they just be issued as a series?
-> 
->  drivers/spi/spi-pl022.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux-2.6.orig/drivers/spi/spi-pl022.c
-> +++ linux-2.6/drivers/spi/spi-pl022.c
-> @@ -2075,7 +2075,7 @@ pl022_probe(struct amba_device *adev, co
->  	for (i = 0; i < num_cs; i++) {
->  		int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
->  
-> -		if (cs_gpio == -ENODEV) {
-> +		if (cs_gpio == -EPROBE_DEFER) {
->  			status = -EPROBE_DEFER;
->  			goto err_no_gpio;
->  		}
+XGIFAIL() prints a message and returns a value, but it's used only in one
+place. Better remove it and replace the call with the macro content.
 
-You can ignore this patch, Alexandre will merge this into his
-yet-unapplied patch to support dt in spi-pl022.
+Signed-off-by: Miguel Gómez <magomez@igalia.com>
+---
+ drivers/staging/xgifb/XGI_main.h    |    2 --
+ drivers/staging/xgifb/XGI_main_26.c |    6 ++++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-Sorry for the noise,
+diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
+index ce18f8c..be6bb7d 100644
+--- a/drivers/staging/xgifb/XGI_main.h
++++ b/drivers/staging/xgifb/XGI_main.h
+@@ -4,8 +4,6 @@
+ #include "XGIfb.h"
+ #include "vb_def.h"
+ 
+-#define XGIFAIL(x) do { printk(x "\n"); return -EINVAL; } while (0)
+-
+ #ifndef PCI_DEVICE_ID_XGI_42
+ #define PCI_DEVICE_ID_XGI_42      0x042
+ #endif
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index a45a497..58cddb4 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -1376,8 +1376,10 @@ static int XGIfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+ 		vtotal = var->upper_margin + var->yres + var->lower_margin
+ 				+ var->vsync_len;
+ 
+-	if (!(htotal) || !(vtotal))
+-		XGIFAIL("XGIfb: no valid timing data");
++	if (!(htotal) || !(vtotal)) {
++		pr_debug("XGIfb: no valid timing data\n");
++		return -EINVAL;
++	}
+ 
+ 	if (var->pixclock && htotal && vtotal) {
+ 		drate = 1000000000 / var->pixclock;
+-- 
+1.7.9.5
 
-Roland
