@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab2FRKfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:35:55 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:31803 "EHLO relay.sw.ru"
+	id S1757564Ab2FRKbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:31:13 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:1986 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757419Ab2FRKbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:31:17 -0400
+	id S1757469Ab2FRKbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:31:08 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
@@ -14,11 +14,10 @@ Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
         <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH v4 09/25] kmem slab accounting basic infrastructure
-Date: Mon, 18 Jun 2012 14:28:02 +0400
-Message-Id: <1340015298-14133-10-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v4 06/25] memcg: Make it possible to use the stock for more than one page.
+Date: Mon, 18 Jun 2012 14:27:59 +0400
+Message-Id: <1340015298-14133-7-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
 References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
@@ -26,204 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the basic infrastructure for the accounting of the slab
-caches. To control that, the following files are created:
+From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 
- * memory.kmem.usage_in_bytes
- * memory.kmem.limit_in_bytes
- * memory.kmem.failcnt
- * memory.kmem.max_usage_in_bytes
-
-They have the same meaning of their user memory counterparts. They reflect
-the state of the "kmem" res_counter.
-
-The code is not enabled until a limit is set. This can be tested by the flag
-"kmem_accounted". This means that after the patch is applied, no behavioral
-changes exists for whoever is still using memcg to control their memory usage.
-
-We always account to both user and kernel resource_counters. This effectively
-means that an independent kernel limit is in place when the limit is set
-to a lower value than the user memory. A equal or higher value means that the
-user limit will always hit first, meaning that kmem is effectively unlimited.
-
-People who want to track kernel memory but not limit it, can set this limit
-to a very high number (like RESOURCE_MAX - 1page - that no one will ever hit,
-or equal to the user memory)
-
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 77 insertions(+), 1 deletion(-)
+ mm/memcontrol.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index cc1fdb4..04ac774 100644
+index ce15be4..00b9f1e 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -252,6 +252,10 @@ struct mem_cgroup {
- 	};
- 
- 	/*
-+	 * the counter to account for kernel memory usage.
-+	 */
-+	struct res_counter kmem;
-+	/*
- 	 * Per cgroup active and inactive list, similar to the
- 	 * per zone LRU lists.
- 	 */
-@@ -266,6 +270,7 @@ struct mem_cgroup {
- 	 * Should the accounting and control be hierarchical, per subtree?
- 	 */
- 	bool use_hierarchy;
-+	bool kmem_accounted;
- 
- 	bool		oom_lock;
- 	atomic_t	under_oom;
-@@ -378,6 +383,7 @@ enum res_type {
- 	_MEM,
- 	_MEMSWAP,
- 	_OOM_TYPE,
-+	_KMEM,
- };
- 
- #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
-@@ -1470,6 +1476,10 @@ done:
- 		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
- 		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
- 		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
-+	printk(KERN_INFO "kmem: usage %llukB, limit %llukB, failcnt %llu\n",
-+		res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
-+		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
-+		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
- }
+@@ -1998,19 +1998,19 @@ static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
+ static DEFINE_MUTEX(percpu_charge_mutex);
  
  /*
-@@ -3908,6 +3918,11 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
- 		else
- 			val = res_counter_read_u64(&memcg->memsw, name);
- 		break;
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	case _KMEM:
-+		val = res_counter_read_u64(&memcg->kmem, name);
-+		break;
-+#endif
- 	default:
- 		BUG();
- 	}
-@@ -3945,8 +3960,26 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
- 			break;
- 		if (type == _MEM)
- 			ret = mem_cgroup_resize_limit(memcg, val);
--		else
-+		else if (type == _MEMSWAP)
- 			ret = mem_cgroup_resize_memsw_limit(memcg, val);
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+		else if (type == _KMEM) {
-+			ret = res_counter_set_limit(&memcg->kmem, val);
-+			if (ret)
-+				break;
-+			/*
-+			 * Once enabled, can't be disabled. We could in theory
-+			 * disable it if we haven't yet created any caches, or
-+			 * if we can shrink them all to death.
-+			 *
-+			 * But it is not worth the trouble
-+			 */
-+			if (!memcg->kmem_accounted && val != RESOURCE_MAX)
-+				memcg->kmem_accounted = true;
-+		}
-+#endif
-+		else
-+			return -EINVAL;
- 		break;
- 	case RES_SOFT_LIMIT:
- 		ret = res_counter_memparse_write_strategy(buffer, &val);
-@@ -4011,12 +4044,20 @@ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
- 	case RES_MAX_USAGE:
- 		if (type == _MEM)
- 			res_counter_reset_max(&memcg->res);
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+		else if (type == _KMEM)
-+			res_counter_reset_max(&memcg->kmem);
-+#endif
- 		else
- 			res_counter_reset_max(&memcg->memsw);
- 		break;
- 	case RES_FAILCNT:
- 		if (type == _MEM)
- 			res_counter_reset_failcnt(&memcg->res);
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+		else if (type == _KMEM)
-+			res_counter_reset_failcnt(&memcg->kmem);
-+#endif
- 		else
- 			res_counter_reset_failcnt(&memcg->memsw);
- 		break;
-@@ -4647,6 +4688,33 @@ static int mem_control_numa_stat_open(struct inode *unused, struct file *file)
- #endif /* CONFIG_NUMA */
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+static struct cftype kmem_cgroup_files[] = {
-+	{
-+		.name = "kmem.limit_in_bytes",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
-+		.write_string = mem_cgroup_write,
-+		.read = mem_cgroup_read,
-+	},
-+	{
-+		.name = "kmem.usage_in_bytes",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
-+		.read = mem_cgroup_read,
-+	},
-+	{
-+		.name = "kmem.failcnt",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
-+		.trigger = mem_cgroup_reset,
-+		.read = mem_cgroup_read,
-+	},
-+	{
-+		.name = "kmem.max_usage_in_bytes",
-+		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
-+		.trigger = mem_cgroup_reset,
-+		.read = mem_cgroup_read,
-+	},
-+	{},
-+};
-+
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+- * Try to consume stocked charge on this cpu. If success, one page is consumed
+- * from local stock and true is returned. If the stock is 0 or charges from a
+- * cgroup which is not current target, returns false. This stock will be
+- * refilled.
++ * Try to consume stocked charge on this cpu. If success, nr_pages pages are
++ * consumed from local stock and true is returned. If the stock is 0 or
++ * charges from a cgroup which is not current target, returns false.
++ * This stock will be refilled.
+  */
+-static bool consume_stock(struct mem_cgroup *memcg)
++static bool consume_stock(struct mem_cgroup *memcg, int nr_pages)
  {
- 	return mem_cgroup_sockets_init(memcg, ss);
-@@ -4981,6 +5049,12 @@ mem_cgroup_create(struct cgroup *cont)
- 		int cpu;
- 		enable_swap_cgroup();
- 		parent = NULL;
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+		WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
-+					   kmem_cgroup_files));
-+#endif
-+
- 		if (mem_cgroup_soft_limit_tree_init())
- 			goto free_out;
- 		root_mem_cgroup = memcg;
-@@ -4999,6 +5073,7 @@ mem_cgroup_create(struct cgroup *cont)
- 	if (parent && parent->use_hierarchy) {
- 		res_counter_init(&memcg->res, &parent->res);
- 		res_counter_init(&memcg->memsw, &parent->memsw);
-+		res_counter_init(&memcg->kmem, &parent->kmem);
- 		/*
- 		 * We increment refcnt of the parent to ensure that we can
- 		 * safely access it on res_counter_charge/uncharge.
-@@ -5009,6 +5084,7 @@ mem_cgroup_create(struct cgroup *cont)
+ 	struct memcg_stock_pcp *stock;
+ 	bool ret = true;
+ 
+ 	stock = &get_cpu_var(memcg_stock);
+-	if (memcg == stock->cached && stock->nr_pages)
+-		stock->nr_pages--;
++	if (memcg == stock->cached && stock->nr_pages >= nr_pages)
++		stock->nr_pages -= nr_pages;
+ 	else /* need to call res_counter_charge */
+ 		ret = false;
+ 	put_cpu_var(memcg_stock);
+@@ -2309,7 +2309,7 @@ again:
+ 		VM_BUG_ON(css_is_removed(&memcg->css));
+ 		if (mem_cgroup_is_root(memcg))
+ 			goto done;
+-		if (nr_pages == 1 && consume_stock(memcg))
++		if (consume_stock(memcg, nr_pages))
+ 			goto done;
+ 		css_get(&memcg->css);
  	} else {
- 		res_counter_init(&memcg->res, NULL);
- 		res_counter_init(&memcg->memsw, NULL);
-+		res_counter_init(&memcg->kmem, NULL);
- 	}
- 	memcg->last_scanned_node = MAX_NUMNODES;
- 	INIT_LIST_HEAD(&memcg->oom_notify);
+@@ -2334,7 +2334,7 @@ again:
+ 			rcu_read_unlock();
+ 			goto done;
+ 		}
+-		if (nr_pages == 1 && consume_stock(memcg)) {
++		if (consume_stock(memcg, nr_pages)) {
+ 			/*
+ 			 * It seems dagerous to access memcg without css_get().
+ 			 * But considering how consume_stok works, it's not
 -- 
 1.7.10.2
 
