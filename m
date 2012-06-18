@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab2FREMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 00:12:17 -0400
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:38525 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab2FREIt (ORCPT
+	id S1752764Ab2FREMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 00:12:16 -0400
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:50931 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab2FREIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Jun 2012 00:08:49 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -16,9 +16,9 @@ Cc: Iiro Valkonen <iiro.valkonen@atmel.com>,
         Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 16/22 v4] Input: atmel_mxt_ts - add sysfs entries to read fw and hw version
-Date: Mon, 18 Jun 2012 12:08:36 +0800
-Message-Id: <1339992522-22073-17-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 08/22 v4] Input: atmel_mxt_ts - print less overhead when dumping objects
+Date: Mon, 18 Jun 2012 12:08:28 +0800
+Message-Id: <1339992522-22073-9-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
 References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
@@ -26,61 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make firmware and hardware version strings available to userspace.
-This is useful, for example, to allow a userspace program to implement
-a firwmare update policy.
+Conserve limited (PAGE_SIZE) sysfs output buffer space by only showing
+readable objects and not printing the object's index, which is not useful
+to userspace.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 9200cf4..0d769de 100644
+index 8c99d6d..65fd89b 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -863,6 +863,26 @@ static void mxt_calc_resolution(struct mxt_data *data)
- 	}
- }
+@@ -896,15 +896,11 @@ static ssize_t mxt_object_show(struct device *dev,
+ 	for (i = 0; i < data->info.object_num; i++) {
+ 		object = data->object_table + i;
  
-+/* Firmware Version is returned as Major.Minor.Build */
-+static ssize_t mxt_fw_version_show(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
-+{
-+	struct mxt_data *data = dev_get_drvdata(dev);
-+	struct mxt_info *info = &data->info;
-+	return scnprintf(buf, PAGE_SIZE, "%u.%u.%02X\n",
-+			 info->version >> 4, info->version & 0xf, info->build);
-+}
+-		count += scnprintf(buf + count, PAGE_SIZE - count,
+-				"Object[%d] (Type %d)\n",
+-				i + 1, object->type);
+-
+-		if (!mxt_object_readable(object->type)) {
+-			count += scnprintf(buf + count, PAGE_SIZE - count,
+-					"\n");
++		if (!mxt_object_readable(object->type))
+ 			continue;
+-		}
 +
-+/* Hardware Version is returned as FamilyID.VariantID */
-+static ssize_t mxt_hw_version_show(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
-+{
-+	struct mxt_data *data = dev_get_drvdata(dev);
-+	struct mxt_info *info = &data->info;
-+	return scnprintf(buf, PAGE_SIZE, "%u.%u\n",
-+			 info->family_id, info->variant_id);
-+}
-+
- static ssize_t mxt_object_show(struct device *dev,
- 				    struct device_attribute *attr, char *buf)
- {
-@@ -1024,10 +1044,14 @@ static ssize_t mxt_update_fw_store(struct device *dev,
- 	return count;
- }
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				"T%u:\n", object->type);
  
-+static DEVICE_ATTR(fw_version, S_IRUGO, mxt_fw_version_show, NULL);
-+static DEVICE_ATTR(hw_version, S_IRUGO, mxt_hw_version_show, NULL);
- static DEVICE_ATTR(object, S_IRUGO, mxt_object_show, NULL);
- static DEVICE_ATTR(update_fw, S_IWUSR, NULL, mxt_update_fw_store);
- 
- static struct attribute *mxt_attrs[] = {
-+	&dev_attr_fw_version.attr,
-+	&dev_attr_hw_version.attr,
- 	&dev_attr_object.attr,
- 	&dev_attr_update_fw.attr,
- 	NULL
+ 		error = __mxt_read_reg(data->client, object->start_address,
+ 				object->size + 1, obuf);
 -- 
 1.7.7.3
 
