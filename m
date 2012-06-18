@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab2FRUTM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:19:12 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:42796 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752036Ab2FRUTK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:19:10 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND] gpio: LPC32xx: Driver cleanup
-Date: Mon, 18 Jun 2012 22:18:58 +0200
-Message-Id: <1340050738-22988-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1753195Ab2FRUXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:23:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45800 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700Ab2FRUXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 16:23:04 -0400
+Message-ID: <4FDF8E20.5050606@zytor.com>
+Date: Mon, 18 Jun 2012 13:22:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Marko Kohtala <marko.kohtala@gmail.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efivars: prevent Oops if efi_enabled but no EFI runtime
+References: <1339706851-10618-1-git-send-email-marko.kohtala@gmail.com> <CAOesGMi2nAecB4Lgti-JSrNTuV4MRA9GEQV1T=BrDxJ-QCq+cQ@mail.gmail.com>
+In-Reply-To: <CAOesGMi2nAecB4Lgti-JSrNTuV4MRA9GEQV1T=BrDxJ-QCq+cQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since LPC32xx is now switched over to devicetree based GPIO, the unused
-lpc32xx_gpio_init() can be removed.
+On 06/17/2012 04:00 PM, Olof Johansson wrote:
+> 
+> I think it would make more sense to return -ENODEV when the function
+> pointers aren't set, that way the exit function won't ever be called
+> either, so no need to add the checks there.
+> 
 
-Further, the driver title changed since it referred to the wrong file.
+-ENIXO?  ENODEV is usually some form of "wrong type of device"; ENXIO is
+"device is not there."
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+	-hpa
 
----
-Applies to v3.5-rc3
-
- drivers/gpio/gpio-lpc32xx.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
-
---- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
-+++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
-@@ -1,5 +1,5 @@
- /*
-- * arch/arm/mach-lpc32xx/gpiolib.c
-+ * GPIO driver for LPC32xx SoC
-  *
-  * Author: Kevin Wells <kevin.wells@nxp.com>
-  *
-@@ -457,13 +457,6 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 	},
- };
- 
--/* Empty now, can be removed later when mach-lpc32xx is finally switched over
-- * to DT support
-- */
--void __init lpc32xx_gpio_init(void)
--{
--}
--
- static int lpc32xx_of_xlate(struct gpio_chip *gc,
- 			    const struct of_phandle_args *gpiospec, u32 *flags)
- {
