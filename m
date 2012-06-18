@@ -1,116 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab2FRHOH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 03:14:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59135 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730Ab2FRHNq (ORCPT
+	id S1754046Ab2FRHSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 03:18:12 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37698 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752281Ab2FRHSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 03:13:46 -0400
-From: Charles Wang <muming.wq@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Charles Wang <muming.wq@taobao.com>, Peter Zijlstra <peterz@infradead.org>,
-        Doug Smythies <dsmythies@telus.net>, Ingo Molnar <mingo@redhat.com>,
-        Tao Ma <tm@tao.ma>, Sha Zhengju <handai.szj@gmail.com>
-Subject: [PATCH 2/2] sched: Try fix sampling time line for idle
-Date: Mon, 18 Jun 2012 15:12:50 +0800
-Message-Id: <1340003570-7193-2-git-send-email-muming.wq@taobao.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1340003570-7193-1-git-send-email-muming.wq@taobao.com>
-References: <1340003570-7193-1-git-send-email-muming.wq@taobao.com>
+	Mon, 18 Jun 2012 03:18:10 -0400
+Message-ID: <4FDED62D.6030008@linaro.org>
+Date: Mon, 18 Jun 2012 08:18:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+CC: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: Re: Fwd: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik
+ I2C driver
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com> <4FD8BAD2.50703@linaro.org> <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com> <4FDAFA17.6050502@linaro.org> <CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com> <20120615115042.GA27480@bnru02> <4FDB2E57.4030904@linaro.org> <20120615130544.GA28537@bnru02> <4FDB3642.5030804@linaro.org> <CACRpkdZ7ESKhokk8Z+6sC9Kq+jPztFNwzger0Db7nCD1fPnG1A@mail.gmail.com>
+In-Reply-To: <CACRpkdZ7ESKhokk8Z+6sC9Kq+jPztFNwzger0Db7nCD1fPnG1A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In our mind per-cpu sampling for cpu idle and non-idle is equal. But
-actually may not. For non-idle cpu sampling, it's right the load when
-sampling. But for idle, cause of nohz, the sampling will be delayed to
-nohz exit(less than 1 tick after nohz exit). Nohz exit is always caused
-by processes woken up--non-idle model. It's not fair here. Idle
-sampling will be turned to non-idle sampling. And cause loadavg being
-higher than normal.
+On 17/06/12 18:43, Linus Walleij wrote:
+> Gah, what a thread...
+>
+> On Fri, Jun 15, 2012 at 3:18 PM, Lee Jones<lee.jones@linaro.org>  wrote:
+>> On 15/06/12 14:05, Srinidhi Kasagar wrote:
+>>> On Fri, Jun 15, 2012 at 14:45:11 +0200, Lee Jones wrote:
+>>>> On 15/06/12 12:50, Srinidhi Kasagar wrote:
+>
+>>>>>> +static struct nmk_i2c_controller u8500_i2c = {
+>>>>>> +       /*
+>>>>>> +        * Slave data setup time; 250ns, 100ns, and 10ns, which
+>>>>>> +        * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
+>>>>>> +        */
+>>>>>> +       .slsu           = 0xe,
+>>>>>> +       .tft            = 1,      /* Tx FIFO threshold */
+>>>>>> +       .rft            = 8,      /* Rx FIFO threshold */
+>>>>>> +       .clk_freq       = 100000, /* std. mode operation */
+>>>>>> +       .timeout        = 200,    /* Slave response timeout(ms) */
+>>>>>> +       .sm             = I2C_FREQ_MODE_FAST,
+>>>>>
+>>>>> How is this possible? you are setting clk_freq as 100kb/s and mode
+>>>>> as fast mode which is supposed to be 400kb/s.
+>>>>
+>>>> That's not how I read it:
+>>>
+>>> But it is not readable. It confuses people.
+>>
+>> I understood it. :)
+>>
+>> If you think it's unclear speak to the author, Linus. He's CC'ed.
+>
+> Author of what? The i2c driver was written by Srinidhi. (The
+> MODULE_AUTHOR() clause should be a good hint...)
 
-     time-expected-sampling
-                   |    time-do-sampling
-                   |         |
-                   V         V
--|-------------------------|--
-start_nohz              stop_nohz
+Actually, we appear to have our wires crossed. You wrote the board data 
+stuff below, which changes the mode from STANDARD to FAST, no doubt 
+using Srinidhi's struct explanation comments found in 
+arch/arm/plat-nomadik/include/plat/i2c.h.
 
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Doug Smythies <dsmythies@telus.net>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Tao Ma <tm@tao.ma>
-CC: Sha Zhengju <handai.szj@gmail.com>
-Reported-by: Sha Zhengju <handai.szj@gmail.com>
-Signed-off-by: Charles Wang <muming.wq@taobao.com>
+ > I'll cook a separate patch for this or something.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 691e7ec..2983838 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2166,6 +2166,7 @@ unsigned long this_cpu_load(void)
- static atomic_long_t calc_load_tasks;
- static unsigned long calc_load_update;
- static unsigned long calc_mask_update;
-+static unsigned long calc_load_time_start = LOAD_FREQ;
- unsigned long avenrun[3];
- EXPORT_SYMBOL(avenrun);
- 
-@@ -2260,6 +2261,7 @@ void calc_load_account_idle(struct rq *this_rq)
- 	long delta;
- 
- 	delta = calc_load_fold_active(this_rq);
-+	this_rq->last_idle_enter = jiffies;
- 	if (delta) {
- 		atomic_long_add(delta, &calc_load_tasks_idle);
- 		/*
-@@ -2499,6 +2501,8 @@ void prepare_calc_load(void)
- static void calc_load_account_active(struct rq *this_rq)
- {
- 	long delta;
-+	unsigned long delta_time;
-+	long last_idle_time_elapse;
- 
- 	if (time_before(jiffies, this_rq->calc_load_update))
- 		return;
-@@ -2508,15 +2512,24 @@ static void calc_load_account_active(struct rq *this_rq)
- 		atomic_long_xchg(&calc_unmask_cpu_load_idle, 0);
- 		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
- 		atomic_long_add(delta, &calc_load_tasks);
-+		calc_load_time_start = jiffies;
- 	}
- 	/* mark this cpu as load calculated */
- 	set_cpu_load_update_mask();
- 
-+	last_idle_time_elapse = this_rq->last_idle_enter - calc_load_time_start;
-+	delta_time = jiffies - this_rq->calc_load_update;
-+	if (last_idle_time_elapse > 0)
-+		goto out;
-+	if ((last_idle_time_elapse > -1) && (delta_time >= 1))
-+		goto out;
-+
- 	delta  = calc_load_fold_active(this_rq);
- 	delta += calc_load_fold_unmask_idle();
- 	if (delta)
- 		atomic_long_add(delta, &calc_load_tasks);
- 
-+out:
- 	this_rq->calc_load_update += LOAD_FREQ;
- }
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 4134d37..a356588 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -438,6 +438,7 @@ struct rq {
- 
- 	/* calc_load related fields */
- 	unsigned long calc_load_update;
-+	unsigned long last_idle_enter;
- 	long calc_load_active;
- 
- #ifdef CONFIG_SCHED_HRTICK
+Cool, thanks Linus.
+
+But you're correct in what you say Linus. Srinidhi, the comments which 
+are you say are confusing are the bits you are the author of: 
+e208c447bd728920e4f3d438a706344ea31249b9?
+
+> But it's true that board data for the ux500 kernel use
+> 100000 Hz and I2C_FREQ_MODE_FAST, in the board-mop500.c
+> file, like this:
+>
+> U8500_I2C_CONTROLLER(0, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
+> U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
+> U8500_I2C_CONTROLLER(2, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
+> U8500_I2C_CONTROLLER(3, 0xe, 1, 8, 100000, 200, I2C_FREQ_MODE_FAST);
+ >
+> This is indeed a bit odd. But obviously it works... But reading some
+> fixes in another tree it seems it should look like this:
+>
+> /*
+>   * The board uses 4 i2c controllers, initialize all of
+>   * them with slave data setup time of 250 ns,
+>   * Tx&  Rx FIFO threshold values as 1 and standard
+>   * mode of operation
+>   */
+> U8500_I2C_CONTROLLER(0, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
+> U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
+> U8500_I2C_CONTROLLER(2, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
+> U8500_I2C_CONTROLLER(3, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
+>
+> Which makes *much* more sense.
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
