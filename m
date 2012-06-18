@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab2FRNML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 09:12:11 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47748 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915Ab2FRNMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 09:12:09 -0400
-Message-ID: <4FDF2890.3020004@parallels.com>
-Date: Mon, 18 Jun 2012 17:09:36 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752052Ab2FRNM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 09:12:57 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35218
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750992Ab2FRNM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 09:12:56 -0400
+Date: Mon, 18 Jun 2012 09:12:52 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org, dhowells@redhat.com, mszeredi@suse.cz
+Subject: Re: [PATCH 00/21] vfs: atomic open v6 (part 2)
+Message-ID: <20120618131252.GA21931@infradead.org>
+References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
+ <20120610034921.GB30000@ZenIV.linux.org.uk>
+ <20120610111056.GD30000@ZenIV.linux.org.uk>
+ <20120610175605.GE30000@ZenIV.linux.org.uk>
+ <20120610222745.GG30000@ZenIV.linux.org.uk>
+ <20120617203755.GA31478@infradead.org>
+ <20120618115804.GA4048@infradead.org>
 MIME-Version: 1.0
-To: Wanpeng Li <liwp.linux@gmail.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH] mm/memcg: add unlikely to mercg->move_charge_at_immigrate
-References: <1340025022-7272-1-git-send-email-liwp.linux@gmail.com>
-In-Reply-To: <1340025022-7272-1-git-send-email-liwp.linux@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120618115804.GA4048@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 05:10 PM, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->
-> move_charge_at_immigrate feature is disabled by default. Charges
-> are moved only when you move mm->owner and it also add additional
-> overhead.
+And here is fix number two, to be folded into the same commit:
 
-How big is this overhead?
 
-That's hardly a fast path. And if it happens to matter, it will be just 
-bigger when you enable it, and the compiler start giving the wrong hints 
-to the code.
+Index: linux-2.6/fs/namei.c
+===================================================================
+--- linux-2.6.orig/fs/namei.c	2012-06-18 15:01:47.540350941 +0200
++++ linux-2.6/fs/namei.c	2012-06-18 15:01:48.160350957 +0200
+@@ -640,7 +640,8 @@ follow_link(struct path *link, struct na
+ 		}
+ 	}
+ 	if (unlikely(error))
+-		put_link(nd, link, p);
++		put_link(nd, link, *p);
++
+ 	return error;
+ 
+ out_put_nd_path:
