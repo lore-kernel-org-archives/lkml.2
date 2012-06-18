@@ -1,64 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab2FRUFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:05:30 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:44598 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751265Ab2FRUF3 (ORCPT
+	id S1752918Ab2FRUGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:06:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44002 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab2FRUGG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:05:29 -0400
-Date: Mon, 18 Jun 2012 21:05:25 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: nfs3 problem with -rc{2,3}
-Message-ID: <20120618200525.GA15654@milliways>
-References: <20120617200700.GA15348@milliways>
- <1340026956.2451.9.camel@lade.trondhjem.org>
- <1340027134.2451.12.camel@lade.trondhjem.org>
- <20120618141854.GA7962@milliways>
- <1340031234.2451.13.camel@lade.trondhjem.org>
- <20120618160005.GA10169@milliways>
+	Mon, 18 Jun 2012 16:06:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120618160005.GA10169@milliways>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=wom5GMh1gUkA:10 a=IxJ0d4kOqokA:10 a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=MAu2br0noMOb-L-UWAYA:9 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+In-Reply-To: <CAOesGMi2nAecB4Lgti-JSrNTuV4MRA9GEQV1T=BrDxJ-QCq+cQ@mail.gmail.com>
+References: <1339706851-10618-1-git-send-email-marko.kohtala@gmail.com>
+	<CAOesGMi2nAecB4Lgti-JSrNTuV4MRA9GEQV1T=BrDxJ-QCq+cQ@mail.gmail.com>
+Date: Mon, 18 Jun 2012 23:06:05 +0300
+Message-ID: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com>
+Subject: Re: [PATCH] efivars: prevent Oops if efi_enabled but no EFI runtime
+From: Marko Kohtala <marko.kohtala@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 05:00:05PM +0100, Ken Moffat wrote:
-> > 
-> > OK. You said you had bisected this down to 15 patches? Can you please
-> > tell me which ones?
-> > 
-> 
->  I'm just about to resume, to see if I can get anywhere - the rc2
-> version built fine, so I'm guessing that some more of the remaining
-> versions will also build.  Not sure which commits are still
-> outstanding.
-> 
+2012/6/18 Olof Johansson <olof@lixom.net>:
+> On Thu, Jun 14, 2012 at 1:47 PM, Marko Kohtala <marko.kohtala@gmail.com> wrote:
+>> Since v3.3-rc4-5-g1adbfa3, there has been an Oops in register_efivars
+>> calling ops->get_next_variable and ending up at EIP 0 during module init.
+>>
+>> I boot 32-bit x86 kernel from 64-bit EFI bootloader.
+>>
+>> The efi_enabled is true, but runtime is not available. The functions
+>> are NULL due to 32/64-bit mismatch between kernel and EFI.
+>>
+>> Signed-off-by: Marko Kohtala <marko.kohtala@gmail.com>
+>> ---
+>> I currently see this on v3.4.2.
+>>
+>> I could not figure out how I'm supposed to detect lack of runtime, so
+>> I ended up with this quick and overly precise check that all required
+>> functions are available. There may be other drivers that need to take
+>> this new condition into account, so maybe Olof wants to make a better
+>> fix.
+>
+> I must not have tested with efivars enabled, or I would have seen this
+> when I did. Sigh.
 
- Turned out that almost everything from 3e9e0ca3 failed to compile,
-until 4f97615d (fix for NFS_V4_1 undefined) resolved that, (only had
-one or two still to try when I decided to use 'git visualize').  And
-it was bad by 4f97615d.
+I looked around a little, and it seems there is drivers/scsi/isci
+driver using get_variable. arch/x86/kernel/reboot.c also calls
+efi.reset_system if reboot=efi is given on command line. Some RTC
+drivers call EFI runtime but are only for IA64 and this problem should
+not be there.
 
- Added all the NFS v4 / 4.1 client options to my config :
-3e9e0ca3 is now good, I'll start a fresh bisect between these two.
+>
+>
+>> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+>> index 47408e8..612a097 100644
+>> --- a/drivers/firmware/efivars.c
+>> +++ b/drivers/firmware/efivars.c
+>> @@ -1223,12 +1223,16 @@ efivars_init(void)
+>>                return -ENOMEM;
+>>        }
+>>
+>> -       ops.get_variable = efi.get_variable;
+>> -       ops.set_variable = efi.set_variable;
+>> -       ops.get_next_variable = efi.get_next_variable;
+>> -       error = register_efivars(&__efivars, &ops, efi_kobj);
+>> -       if (error)
+>> -               goto err_put;
+>> +       /* We may have efi_enabled for systab, but no runtime for variables.
+>> +        * Check the functions we need before proceeding. */
+>> +       if (efi.get_variable && efi.set_variable && efi.get_next_variable) {
+>> +               ops.get_variable = efi.get_variable;
+>> +               ops.set_variable = efi.set_variable;
+>> +               ops.get_next_variable = efi.get_next_variable;
+>> +               error = register_efivars(&__efivars, &ops, efi_kobj);
+>> +               if (error)
+>> +                       goto err_put;
+>> +       }
+>
+> I think it would make more sense to return -ENODEV when the function
+> pointers aren't set, that way the exit function won't ever be called
+> either, so no need to add the checks there.
+>
+> So, instead of current efi_enabled check:
+>
+> if (!efi_enabled ||
+>    !efi.get_variable ||
+>    !efi.set_variable ||
+>    !efi.get_next_variable) {
+>    return -ENODEV;
+> }
 
- Actually, I'd better retry 4f97515d to confirm it is still bad with
-this config. [ saves this message, tests ... ].  Rude words!  If I
-enable all the NFS v4 client options, 4f97615d is good.
+This was the first thought I had. Looking more closely there is a
+reason why efivars returns 0 if !efi_enabled. The module exports
+functions to export other variables as well (used by
+drivers/firmware/google). Also, it is loaded (bloated?) with a feature
+to show /sys/firmware/efi/systab. Systab is there in case of
+efi_enabled but no runtime.
 
- Looks, to me, as if something in that untested range of patches, or
-in 3e9e0ca3 itself, causes the problem *if* nfs v4 is not enabled.
+So there are three modes to work with:
+- !efi_enabled
+- efi_enabled, but no runtime
+- efi_enabled and runtime
 
- I suppose I'll have to enable v4 in my configs.
+I was wondering if you had some feelings for handling the difference
+between the last two modes. I have no objection to checking the
+pointers, but somehow it seems excessive checking many pointers when
+really they are either all set or unset.
 
-Ä¸en
--- 
-das eine Mal als TragÃ¶die, das andere Mal als Farce
+Maybe efi_enabled could have a third value for the new mode so other
+modules like efivars can easily skip some useless initialization.
+
+If there is no "final" solution quickly available, then maybe my patch
+should be applied now to stable 3.4.y and replaced later with a better
+solution for 3.5 or something.
+
+>
+> -Olof
+
+Marko
