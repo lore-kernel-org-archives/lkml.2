@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab2FRKcC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 06:32:02 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:25566 "EHLO relay.sw.ru"
+	id S1758174Ab2FRKcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 06:32:14 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:24081 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758030Ab2FRKbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 06:31:50 -0400
+	id S1758100Ab2FRKcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 06:32:09 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
@@ -17,9 +17,9 @@ Cc: Pekka Enberg <penberg@kernel.org>, Cristoph Lameter <cl@linux.com>,
         Glauber Costa <glommer@parallels.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH v4 19/25] memcg: disable kmem code when not in use.
-Date: Mon, 18 Jun 2012 14:28:12 +0400
-Message-Id: <1340015298-14133-20-git-send-email-glommer@parallels.com>
+Subject: [PATCH v4 24/25] memcg/slub: shrink dead caches
+Date: Mon, 18 Jun 2012 14:28:17 +0400
+Message-Id: <1340015298-14133-25-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340015298-14133-1-git-send-email-glommer@parallels.com>
 References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
@@ -27,18 +27,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use jump labels to patch the code in or out
-when not used.
+In the slub allocator, when the last object of a page goes away, we
+don't necessarily free it - there is not necessarily a test for empty
+page in any slab_free path.
 
-Because the assignment: memcg->kmem_accounted = true
-is done after the jump labels increment, we guarantee
-that the root memcg will always be selected until
-all call sites are patched (see mem_cgroup_kmem_enabled).
-This guarantees that no mischarges are applied.
+This means that when we destroy a memcg cache that happened to be empty,
+those caches may take a lot of time to go away: removing the memcg
+reference won't destroy them - because there are pending references,
+and the empty pages will stay there, until a shrinker is called upon
+for any reason.
 
-Jump label decrement happens when the last reference
-count from the memcg dies. This will only happen when
-the caches are all dead.
+This patch marks all memcg caches as dead. kmem_cache_shrink is called
+for the ones who are not yet dead - this will force internal cache
+reorganization, and then all references to empty pages will be removed.
+
+An unlikely branch is used to make sure this case does not affect
+performance in the usual slab_free path.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
@@ -48,102 +52,161 @@ CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
 ---
- include/linux/memcontrol.h |    5 ++++-
- mm/memcontrol.c            |   22 +++++++++++++++++++++-
- 2 files changed, 25 insertions(+), 2 deletions(-)
+ include/linux/slab.h     |    3 +++
+ include/linux/slub_def.h |    8 ++++++++
+ mm/memcontrol.c          |   44 +++++++++++++++++++++++++++++++++++++++++++-
+ mm/slub.c                |    1 +
+ 4 files changed, 55 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 27a3f16..47ccd80 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -22,6 +22,7 @@
- #include <linux/cgroup.h>
- #include <linux/vm_event_item.h>
- #include <linux/hardirq.h>
-+#include <linux/jump_label.h>
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 155d19f..7e13055 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -182,6 +182,8 @@ unsigned int kmem_cache_size(struct kmem_cache *);
+ #endif
  
- struct mem_cgroup;
- struct page_cgroup;
-@@ -451,7 +452,6 @@ bool __mem_cgroup_new_kmem_page(gfp_t gfp, void *handle, int order);
- void __mem_cgroup_commit_kmem_page(struct page *page, void *handle, int order);
- void __mem_cgroup_free_kmem_page(struct page *page, int order);
- 
--#define mem_cgroup_kmem_on 1
- struct kmem_cache *
- __mem_cgroup_get_kmem_cache(struct kmem_cache *cachep, gfp_t gfp);
- 
-@@ -459,6 +459,9 @@ static inline bool has_memcg_flag(gfp_t gfp)
- {
- 	return gfp & __GFP_SLABMEMCG;
- }
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++#include <linux/workqueue.h>
 +
-+extern struct static_key mem_cgroup_kmem_enabled_key;
-+#define mem_cgroup_kmem_on static_key_false(&mem_cgroup_kmem_enabled_key)
- #else
- static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
- 					     struct kmem_cache *s)
+ struct mem_cgroup_cache_params {
+ 	struct mem_cgroup *memcg;
+ 	struct kmem_cache *parent;
+@@ -190,6 +192,7 @@ struct mem_cgroup_cache_params {
+ 	atomic_t nr_pages;
+ 	struct list_head destroyed_list; /* Used when deleting memcg cache */
+ 	struct list_head sibling_list;
++	struct work_struct cache_shrinker;
+ };
+ #endif
+ 
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index 7183596..871f82b 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -116,6 +116,14 @@ struct kmem_cache {
+ 	struct kmem_cache_node *node[MAX_NUMNODES];
+ };
+ 
++static inline void kmem_cache_verify_dead(struct kmem_cache *cachep)
++{
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	if (unlikely(cachep->memcg_params.dead))
++		schedule_work(&cachep->memcg_params.cache_shrinker);
++#endif
++}
++
+ /*
+  * Kmalloc subsystem.
+  */
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b47ab87..5295ab6 100644
+index 972e83f..c368480 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -422,6 +422,10 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
- #include <net/sock.h>
- #include <net/ip.h>
+@@ -531,7 +531,7 @@ static char *mem_cgroup_cache_name(struct mem_cgroup *memcg, struct kmem_cache *
  
-+struct static_key mem_cgroup_kmem_enabled_key;
-+/* so modules can inline the checks */
-+EXPORT_SYMBOL(mem_cgroup_kmem_enabled_key);
-+
- static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
- static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta);
- static void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta);
-@@ -468,6 +472,12 @@ void sock_release_memcg(struct sock *sk)
- 	}
+ 	BUG_ON(dentry == NULL);
+ 
+-	name = kasprintf(GFP_KERNEL, "%s(%d:%s)",
++	name = kasprintf(GFP_KERNEL, "%s(%d:%s)dead",
+ 	    cachep->name, css_id(&memcg->css), dentry->d_name.name);
+ 
+ 	return name;
+@@ -592,11 +592,24 @@ void mem_cgroup_release_cache(struct kmem_cache *cachep)
+ 
  }
  
-+static void disarm_static_keys(struct mem_cgroup *memcg)
++static void cache_shrinker_work_func(struct work_struct *work)
 +{
-+	if (memcg->kmem_accounted)
-+		static_key_slow_dec(&mem_cgroup_kmem_enabled_key);
++	struct mem_cgroup_cache_params *params;
++	struct kmem_cache *cachep;
++
++	params = container_of(work, struct mem_cgroup_cache_params,
++			      cache_shrinker);
++	cachep = container_of(params, struct kmem_cache, memcg_params);
++
++	kmem_cache_shrink(cachep);
 +}
 +
- #ifdef CONFIG_INET
- struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 						  struct kmem_cache *cachep)
  {
-@@ -831,6 +841,10 @@ static void memcg_slab_init(struct mem_cgroup *memcg)
- 	for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++)
- 		memcg->slabs[i] = NULL;
+ 	struct kmem_cache *new_cachep;
+ 	int idx;
++	char *name;
+ 
+ 	BUG_ON(!mem_cgroup_kmem_enabled(memcg));
+ 
+@@ -616,10 +629,21 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 		goto out;
+ 	}
+ 
++	/*
++	 * Because the cache is expected to duplicate the string,
++	 * we must make sure it has opportunity to copy its full
++	 * name. Only now we can remove the dead part from it
++	 */
++	name = (char *)new_cachep->name;
++	if (name)
++		name[strlen(name) - 4] = '\0';
++
+ 	mem_cgroup_get(memcg);
+ 	memcg->slabs[idx] = new_cachep;
+ 	new_cachep->memcg_params.memcg = memcg;
+ 	atomic_set(&new_cachep->memcg_params.nr_pages , 0);
++	INIT_WORK(&new_cachep->memcg_params.cache_shrinker,
++		  cache_shrinker_work_func);
+ out:
+ 	mutex_unlock(&memcg_cache_mutex);
+ 	return new_cachep;
+@@ -642,6 +666,21 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
+ 	struct mem_cgroup_cache_params *p, *tmp;
+ 	unsigned long flags;
+ 	LIST_HEAD(del_unlocked);
++	LIST_HEAD(shrinkers);
++
++	spin_lock_irqsave(&cache_queue_lock, flags);
++	list_for_each_entry_safe(p, tmp, &destroyed_caches, destroyed_list) {
++		cachep = container_of(p, struct kmem_cache, memcg_params);
++		if (atomic_read(&cachep->memcg_params.nr_pages) != 0)
++			list_move(&cachep->memcg_params.destroyed_list, &shrinkers);
++	}
++	spin_unlock_irqrestore(&cache_queue_lock, flags);
++
++	list_for_each_entry_safe(p, tmp, &shrinkers, destroyed_list) {
++		cachep = container_of(p, struct kmem_cache, memcg_params);
++		list_del(&cachep->memcg_params.destroyed_list);
++		kmem_cache_shrink(cachep);
++	}
+ 
+ 	spin_lock_irqsave(&cache_queue_lock, flags);
+ 	list_for_each_entry_safe(p, tmp, &destroyed_caches, destroyed_list) {
+@@ -719,11 +758,14 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+ 
+ 	spin_lock_irqsave(&cache_queue_lock, flags);
+ 	for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++) {
++		char *name;
+ 		cachep = memcg->slabs[i];
+ 		if (!cachep)
+ 			continue;
+ 
+ 		cachep->memcg_params.dead = true;
++		name = (char *)cachep->name;
++		name[strlen(name)] = 'd';
+ 		__mem_cgroup_destroy_cache(cachep);
+ 	}
+ 	spin_unlock_irqrestore(&cache_queue_lock, flags);
+diff --git a/mm/slub.c b/mm/slub.c
+index d5b91f4..37ac548 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2593,6 +2593,7 @@ redo:
+ 	} else
+ 		__slab_free(s, page, x, addr);
+ 
++	kmem_cache_verify_dead(s);
  }
-+#else
-+static inline void disarm_static_keys(struct mem_cgroup *memcg)
-+{
-+}
- #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
  
- static void drain_all_stock_async(struct mem_cgroup *memcg);
-@@ -4344,8 +4358,13 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
- 			 *
- 			 * But it is not worth the trouble
- 			 */
--			if (!memcg->kmem_accounted && val != RESOURCE_MAX)
-+			mutex_lock(&set_limit_mutex);
-+			if (!memcg->kmem_accounted && val != RESOURCE_MAX
-+			    && !memcg->kmem_accounted) {
-+				static_key_slow_inc(&mem_cgroup_kmem_enabled_key);
- 				memcg->kmem_accounted = true;
-+			}
-+			mutex_unlock(&set_limit_mutex);
- 		}
- #endif
- 		else
-@@ -5285,6 +5304,7 @@ static void free_work(struct work_struct *work)
- 	int size = sizeof(struct mem_cgroup);
- 
- 	memcg = container_of(work, struct mem_cgroup, work_freeing);
-+	disarm_static_keys(memcg);
- 	if (size < PAGE_SIZE)
- 		kfree(memcg);
- 	else
+ void kmem_cache_free(struct kmem_cache *s, void *x)
 -- 
 1.7.10.2
 
