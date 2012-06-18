@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759Ab2FRMPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:15:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56506 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab2FRMPG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:15:06 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH RFT] regulator: tps65217: Convert to
- regulator_[is_enabled|get_voltage_sel]_regmap
-Thread-Topic: [PATCH RFT] regulator: tps65217: Convert to
- regulator_[is_enabled|get_voltage_sel]_regmap
-Thread-Index: AQHNSRRxSJBCL2eqoUaZnppvZVbxc5b39csQgAf6AbD//7R+gIAAAawAgAABMQCAAFyB0A==
-Date: Mon, 18 Jun 2012 12:14:58 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9D8476@DBDE01.ent.ti.com>
-References: <1339558031.26190.4.camel@phoenix>
- <331ABD5ECB02734CA317220B2BBEABC13E9D83E7@DBDE01.ent.ti.com>
- <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com>
- <20120618120158.GJ3974@opensource.wolfsonmicro.com>
- <CAF+7xWkdpGFLg5Dwj4sLp9ttocOFbREwLAEpd9MJ-ChDeJcenA@mail.gmail.com>
-In-Reply-To: <CAF+7xWkdpGFLg5Dwj4sLp9ttocOFbREwLAEpd9MJ-ChDeJcenA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751948Ab2FRMRJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:17:09 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:41217 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab2FRMRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 08:17:06 -0400
+Message-ID: <4FDF1BAB.9050205@parallels.com>
+Date: Mon, 18 Jun 2012 16:14:35 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-mm@kvack.org>, Pekka Enberg <penberg@kernel.org>,
+        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v4 00/25] kmem limitation for memcg
+References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <4FDF1ABE.7070200@jp.fujitsu.com>
+In-Reply-To: <4FDF1ABE.7070200@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
-
-On Mon, Jun 18, 2012 at 17:36:14, Axel Lin wrote:
-> 2012/6/18 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> > On Mon, Jun 18, 2012 at 07:55:59PM +0800, Axel Lin wrote:
-> >
-> >> Since this patch is target for 3.6, this is not required.
-> >> The regulator core will set it automatically.
-> >
-> > Do we need to fix it for 3.5?
-> No. In current Linus' tree, this driver does not use
-> regulator_[is_enabled|get_voltage_sel]_regmap.
+On 06/18/2012 04:10 PM, Kamezawa Hiroyuki wrote:
+> (2012/06/18 19:27), Glauber Costa wrote:
+>> Hello All,
+>>
+>> This is my new take for the memcg kmem accounting. This should merge
+>> all of the previous comments from you guys, specially concerning the big churn
+>> inside the allocators themselves.
+>>
+>> My focus in this new round was to keep the changes in the cache internals to
+>> a minimum. To do that, I relied upon two main pillars:
+>>
+>>    * Cristoph's unification series, that allowed me to put must of the changes
+>>      in a common file. Even then, the changes are not too many, since the overal
+>>      level of invasiveness was decreased.
+>>    * Accounting is done directly from the page allocator. This means some pages
+>>      can fail to be accounted, but that can only happen when the task calling
+>>      kmem_cache_alloc or kmalloc is not the same task allocating a new page.
+>>      This never happens in steady state operation if the tasks are kept in the
+>>      same memcg. Naturally, if the page ends up being accounted to a memcg that
+>>      is not limited (such as root memcg), that particular page will simply not
+>>      be accounted.
+>>
+>> The dispatcher code stays (mem_cgroup_get_kmem_cache), being the mechanism who
+>> guarantees that, during steady state operation, all objects allocated in a page
+>> will belong to the same memcg. I consider this a good compromise point between
+>> strict and loose accounting here.
+>>
 > 
+> 2 questions.
+> 
+>    - Do you have performance numbers ?
 
-Yes, I understood. This fix is not required in 3.5.
+Not extensive. I've run some microbenchmarks trying to determine the
+effect of my code on kmem_cache_alloc, and found it to be in the order
+of 2 to 3 %. I would expect that to vanish in a workload benchmark.
 
-If we use *_voltage_sel_regmap APIs then this regmap pointer is required
-otherwise not required because regulator APIs passing proper regmap pointers.
+> 
+>    - Do you think user-memory memcg should be switched to page-allocator level accounting ?
+>      (it will require some study for modifying current bached-freeing and per-cpu-stock
+>       logics...)
 
-Thanks for your clarification.
-
-Regards
-AnilKumar
+I don't see a reason for that. My main goal by doing that was to reduce
+the churn in the cache internal structures, but specially because there
+is at least two of them, obeying a stable interface. The way I
+understand it, memcg for user pages is already pretty well integrated to
+the page allocator, so the benefit of it is questionable.
