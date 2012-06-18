@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab2FRMWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:22:06 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41911 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab2FRMWE (ORCPT
+	id S1752292Ab2FRMXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:23:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49436 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111Ab2FRMXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:22:04 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FDF1CE5.90803@jp.fujitsu.com>
-Date: Mon, 18 Jun 2012 21:19:49 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 18 Jun 2012 08:23:44 -0400
+Date: Mon, 18 Jun 2012 14:23:36 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gong <gong.chen@linux.intel.com>
+cc: tony.luck@intel.com, borislav.petkov@amd.com, x86@kernel.org,
+        peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] tmp patch to fix hotplug issue in CMCI storm
+In-Reply-To: <4FDEFF53.9040902@linux.intel.com>
+Message-ID: <alpine.LFD.2.02.1206181422420.3086@ionos>
+References: <alpine.LFD.2.02.1206151122140.3086@ionos> <1340001930-12519-1-git-send-email-gong.chen@linux.intel.com> <alpine.LFD.2.02.1206180952070.3086@ionos> <4FDEFF53.9040902@linux.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v4 17/25] skip memcg kmem allocations in specified code
- regions
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-18-git-send-email-glommer@parallels.com>
-In-Reply-To: <1340015298-14133-18-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-918376667-1340022217=:3086"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/18 19:28), Glauber Costa wrote:
-> This patch creates a mechanism that skip memcg allocations during
-> certain pieces of our core code. It basically works in the same way
-> as preempt_disable()/preempt_enable(): By marking a region under
-> which all allocations will be accounted to the root memcg.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-918376667-1340022217=:3086
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 18 Jun 2012, Chen Gong wrote:
+> 于 2012/6/18 16:00, Thomas Gleixner 写道:
+> > On Mon, 18 Jun 2012, Chen Gong wrote:
+> > > index 92d8b5c..0493525 100644
+> > > --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> > > +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> > > @@ -40,6 +40,7 @@ static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
+> > >   static DEFINE_PER_CPU(unsigned long, cmci_time_stamp);
+> > >   static DEFINE_PER_CPU(unsigned int, cmci_storm_cnt);
+> > >   static DEFINE_PER_CPU(unsigned int, cmci_storm_state);
+> > > +static DEFINE_PER_CPU(unsigned long, cmci_storm_hcpu_status);
+> > 
+> > Why do you insist on having another status variable, which does
+> > actually nothing than obfuscate the code?
+> > 
+> > Look at the usage sites:
+> > 
+> > >   		__this_cpu_write(cmci_storm_state, CMCI_STORM_SUBSIDED);
+> > > +		__this_cpu_write(cmci_storm_hcpu_status,
+> > > CMCI_STORM_HCPU_NONE);
 > 
-> We need this to prevent races in early cache creation, when we
-> allocate data using caches that are not necessarily created already.
-> 
-> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> CC: Christoph Lameter<cl@linux.com>
-> CC: Pekka Enberg<penberg@cs.helsinki.fi>
-> CC: Michal Hocko<mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner<hannes@cmpxchg.org>
-> CC: Suleiman Souhlal<suleiman@google.com>
+> Because here I can't substitute CMCI_STORM_HCPU_NONE with
+> CMCI_STORM_SUBSIDED. If so, the status is chaos.
 
-I'm ok with this approach.
+Have you actually read what I wrote later? You do not neeed that extra
+state, period.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
+--8323328-918376667-1340022217=:3086--
