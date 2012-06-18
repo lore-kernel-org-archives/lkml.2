@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab2FRLYL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:24:11 -0400
-Received: from antcom.de ([188.40.178.216]:46293 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab2FRLYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:24:09 -0400
-Message-ID: <4FDF0FD7.3060004@antcom.de>
-Date: Mon, 18 Jun 2012 13:24:07 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
-        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] gpio: of_get_named_gpio_flags() return -EPROBE_DEFER
- if GPIO not yet available
-References: <1339927893-8842-1-git-send-email-stigge@antcom.de> <4FDE8D27.6030508@wwwdotorg.org> <4FDEF293.9080305@antcom.de>
-In-Reply-To: <4FDEF293.9080305@antcom.de>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751360Ab2FRL22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:28:28 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:43795 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab2FRL20 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 07:28:26 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-f6-4fdf10d93c05
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        sameo@linux.intel.com
+Cc: "'Liam Girdwood'" <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        sbkim01@gmail.com
+Subject: [PATCH 0/7] Initial release of Samsung S2MPS11 pmic driver
+Date: Mon, 18 Jun 2012 20:28:16 +0900
+Message-id: <067201cd4d45$7987d680$6c978380$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1NRXPY3hj2z6DKTvmyl1TVKKzlsg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jQd2bAvf9DY4/ELW4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZU7fNZCy4y1Fxrm0BYwPjNPYuRk4OCQETiZsXZjND2GISF+6t
+	Z+ti5OIQEpjOKHFhdQczhDOXSeL749dgVWwCGhIrd79lA7FFBHwlLr38z9rFyMHBLBAssfW0
+	HkhYWMBZ4tqsFywgNouAqsS226sZQWxeAUOJbWt6mCBsQYkfk++B1TALaEms33mcCcKWl9i8
+	5i0zyEgJAXWJR391QUwRAT2JuSeUICpEJPa9eMc4gVFgFpJBs5AMmoVk0CwkLQsYWVYxiqYW
+	JBcUJ6XnGukVJ+YWl+al6yXn525iBAflM+kdjKsaLA4xCnAwKvHwvmG/7y/EmlhWXJl7iFGC
+	g1lJhPcHF1CINyWxsiq1KD++qDQntfgQozQHi5I4b5P1BX8hgfTEktTs1NSC1CKYLBMHp1QD
+	I0Nbfv75Lyv/TNF9z12RGq84Re50/ot5dzfo695yPW/oe/iHZ/WNz00iE1zKD9fHBrh5qDq4
+	R+n0SaSd8EjLd3x5RPxDenXibmUbK+NpOwUE/VPMvB+4FBVu1N0/Yb7NDP+onab3KtcyJfVX
+	KOUVe9e7TlGwXrdk+q8jW/raG2zCJJb/O5ykxFKckWioxVxUnAgAvSIDvUYCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 11:19 AM, Roland Stigge wrote:
->> While I agree this is a correct change, it is going to break some
->> existing code - at least sound/soc/tegra/tegra_{wm8903.c,alc5632.c}.
-> 
-> Can you please tell in which way the patch breaks those drivers?
-> However, I can see that those drivers solved the same problem in a
-> different way (deferring of_get_named_gpio(), via the sound init()). So
-> they could be adjusted to take advantage of new -EPROBE_DEFER
-> 
->> However, have you audited all existing callers (including
->> indirect, e.g. through plain of_get_named_gpio()) for issues this will
->> cause?
-> 
-> Thanks for the hint, I searched the code and found
-> 
-> drivers/spi/spi-pl022.c
-> 
-> to be using -ENODEV as indication to return -EPROBE_DEFER from probe().
-> Will send a patch that adjusts to our of_get_named_gpio_flags() patch
-> and if it's good, we should join the two.
+The S2MPS11 is comprised of high efficient Buck converters,
+various LDOs, and an RTC and tightly coupled with Multi Core Samsung 
+Application Processors, which is used in a wide variety of mobile applications
+such as smart phones and tablet PCs.
+S2MPS11 provide 10 high efficiency buck converters and 38 LDO regulators.
+Especially, Buck2 can support 7.0A current capacity for high performance
+samsung application processor.
+Most of S2MPS11 feature are similar to S5M series.
+and Instead of using s5m prefix, Samsung decide to use s2m prefix.
+So, I try to make common mfd driver for S2M and S5M series.
+Most of s5m prefix is changed into sec prefix.
 
-Turned out that this is a fix for a yet-unapplied patch (to support dt
-for pl022). Alexandre will merge my fix into his patch.
-
-So I can't find immediate breakage from the gpiolib-of patch.
+[PATCH 1/7] mfd: samsung: Rename and Replace file and directory
+[PATCH 2/7] regulator: s5m8767: Modify header file and Kconfig
+[PATCH 3/7] mfd: samsung: Modify samsung mfd driver for common api
+[PATCH 4/7] regulator: s5m8767a: Modify function and variable name
+[PATCH 5/7] mfd: samsung: Modify samsung mfd header
+[PATCH 6/7] regualtor: Add samsung s2mps11 regulator driver
+[PATCH 7/7] mfd: s2mps11: Add samsung s2mps11 pmic
 
 Thanks,
+Sangbeom.
 
-Roland
