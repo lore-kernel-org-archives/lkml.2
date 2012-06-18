@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab2FRVbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 17:31:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55193 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab2FRVbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 17:31:09 -0400
-Date: Mon, 18 Jun 2012 14:31:03 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Asias He <asias@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>
-Subject: Re: [PATCH 1/3] block: Introduce __blk_segment_map_sg() helper
-Message-ID: <20120618213103.GC32733@google.com>
-References: <1340002390-3950-1-git-send-email-asias@redhat.com>
- <1340002390-3950-2-git-send-email-asias@redhat.com>
+	id S1753703Ab2FRVnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 17:43:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64931 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658Ab2FRVnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 17:43:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="155071965"
+Message-ID: <4FDFA09A.4030405@linux.intel.com>
+Date: Mon, 18 Jun 2012 14:41:46 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340002390-3950-2-git-send-email-asias@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: Re: [RFC PATCH] pch_uart: Add eg20t_port lock field, avoid recursive
+ spinlocks
+References: <8854635ac5471f8671b93c65e3663eb1cb204c9d.1338454156.git.dvhart@linux.intel.com> <CANKRQnhZErpvcsRW3ukNzY0_zv4x=5OzQ-sr+aeuxL63=tQ=4A@mail.gmail.com> <4FC90BAD.3080606@linux.intel.com> <4FCE8307.3050901@linux.intel.com> <CANKRQnj5mxHLprMt4VMMa7sCwLZb=PAktnVVD1MZVkkUG4eLoA@mail.gmail.com>
+In-Reply-To: <CANKRQnj5mxHLprMt4VMMa7sCwLZb=PAktnVVD1MZVkkUG4eLoA@mail.gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Asias.
 
-On Mon, Jun 18, 2012 at 02:53:08PM +0800, Asias He wrote:
-> Split the mapping code in blk_rq_map_sg() to a helper
-> __blk_segment_map_sg(), so that other mapping function, e.g.
-> blk_bio_map_sg(), can share the code.
+
+On 06/05/2012 04:48 PM, Tomoya MORINAGA wrote:
+> On Wed, Jun 6, 2012 at 7:07 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+>> Are there still concerns about the additional lock? I'll resend V2
+>> tomorrow with the single whitespace fix if I don't hear anything back today.
 > 
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Shaohua Li <shli@kernel.org>
-> Cc: linux-kernel@vger.kernel.org
-> Suggested-by: Tejun Heo <tj@kernel.org>
-> Suggested-by: Jens Axboe <axboe@kernel.dk>
-> Signed-off-by: Asias He <asias@redhat.com>
-> ---
->  block/blk-merge.c |   80 ++++++++++++++++++++++++++++++-----------------------
->  1 file changed, 45 insertions(+), 35 deletions(-)
-> 
-> diff --git a/block/blk-merge.c b/block/blk-merge.c
-> index 160035f..576b68e 100644
-> --- a/block/blk-merge.c
-> +++ b/block/blk-merge.c
-> @@ -110,6 +110,49 @@ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
->  	return 0;
->  }
->  
-> +static void
-> +__blk_segment_map_sg(struct request_queue *q, struct bio_vec *bvec,
-> +		     struct scatterlist *sglist, struct bio_vec **bvprv,
-> +		     struct scatterlist **sg, int *nsegs, int *cluster)
-> +{
-> +
-> +	int nbytes = bvec->bv_len;
-> +
-> +	if (*bvprv && *cluster) {
-> +		if ((*sg)->length + nbytes > queue_max_segment_size(q))
-> +			goto new_segment;
-> +
-> +		if (!BIOVEC_PHYS_MERGEABLE(*bvprv, bvec))
-> +			goto new_segment;
-> +		if (!BIOVEC_SEG_BOUNDARY(q, *bvprv, bvec))
-> +			goto new_segment;
-> +
-> +		(*sg)->length += nbytes;
-> +	} else {
-> +new_segment:
-> +		if (!*sg)
-> +			*sg = sglist;
-> +		else {
-> +			/*
-> +			 * If the driver previously mapped a shorter
-> +			 * list, we could see a termination bit
-> +			 * prematurely unless it fully inits the sg
-> +			 * table on each mapping. We KNOW that there
-> +			 * must be more entries here or the driver
-> +			 * would be buggy, so force clear the
-> +			 * termination bit to avoid doing a full
-> +			 * sg_init_table() in drivers for each command.
-> +			 */
-> +			(*sg)->page_link &= ~0x02;
-> +			*sg = sg_next(*sg);
-> +		}
-> +
-> +		sg_set_page(*sg, bvec->bv_page, nbytes, bvec->bv_offset);
-> +		(*nsegs)++;
-> +	}
-> +	*bvprv = bvec;
-> +}
+> I understand your saying. Looks good.
+> However, I am not expert of linux-uart core system.
+> So, I'd like UART maintainer to give us your opinion.
 
-I *hope* this is a bit prettier.  e.g. Do we really need to pass in
-@sglist and keep using "goto new_segment"?
+Greg, Alan,
 
-Thanks.
+any concerns with the locking approach I've adopted in the patch?
+
+Thanks,
 
 -- 
-tejun
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
+
