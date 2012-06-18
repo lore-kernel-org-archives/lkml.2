@@ -1,141 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab2FRXsP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 19:48:15 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:17008 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab2FRXsO (ORCPT
+	id S1753827Ab2FRXx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 19:53:29 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:14348 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab2FRXx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 19:48:14 -0400
-From: Greg Pearson <greg.pearson@hp.com>
-To: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
-        shangw@linux.vnet.ibm.com, mingo@elte.hu
-Cc: yinghai@kernel.org, benh@kernel.crashing.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, greg.pearson@hp.com
-Subject: [PATCH v4] mm/memblock: fix overlapping allocation when doubling reserved array
-Date: Mon, 18 Jun 2012 17:47:58 -0600
-Message-Id: <1340063278-31601-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 18 Jun 2012 19:53:28 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-209.messagelabs.com!1340063604!6250552!3
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: comedi_compat_ioctl should be NULL not 0
+Date: Mon, 18 Jun 2012 16:53:17 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206181653.18034.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __alloc_memory_core_early() routine will ask memblock for a range
-of memory then try to reserve it. If the reserved region array lacks
-space for the new range, memblock_double_array() is called to allocate
-more space for the array. If memblock is used to allocate memory for
-the new array it can end up using a range that overlaps with the range
-originally allocated in __alloc_memory_core_early(), leading to possible
-data corruption.
+When CONFIG_COMPAT is not defined, comedi_compat_ioctl should be
+NULL not 0 in order to set the file_operations compat_ioctl variable
+correctly.
 
-With this patch memblock_double_array() now calls memblock_find_in_range()
-with a narrowed candidate range (in cases where the reserved.regions array
-is being doubled) so any memory allocated will not overlap with the original
-range that was being reserved. The range is narrowed by passing in the
-starting address and size of the previously allocated range. Then the
-range above the ending address is searched and if a candidate is not
-found, the range below the starting address is searched.
+This quiets a sparse warning about:
 
-Changes from v1 to v2 (based on comments from Yinghai Lu):
-- use obase instead of base in memblock_add_region() for excluding start address
-- pass in both the starting and ending address of the exclude range to
-  memblock_double_array()
-- have memblock_double_array() search above the exclude ending address
-  and below the exclude starting address for a free range
+warning: Using plain integer as NULL pointer
 
-Changes from v2 to v3 (based on comments from Yinghai Lu):
-- pass in exclude_start and exclude_size to memblock_double_array()
-- only exclude a range if doubling the reserved.regions array
-- make sure narrowed range passed to memblock_find_in_range() is accessible
-- to make the code less confusing, change memblock_isolate_range() to
-  pass in exclude_start and exclude_size
-- remove unneeded comment in memblock_add_region() between while and
-  one line loop body
-
-Changes from v3 to v4 (based on comments from Tejun Heo):
-- change parameter names passed to memblock_double_array() so they
-  are not misleading and better signify the reason why the array is
-  being doubled
-- add function comment block to memblock_double_arry() to ensure
-  the details of the possible overlap are explained
-
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- mm/memblock.c |   36 ++++++++++++++++++++++++++++++++----
- 1 files changed, 32 insertions(+), 4 deletions(-)
+ drivers/staging/comedi/comedi_compat32.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 952123e..0e737d9 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -184,7 +184,24 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 	}
- }
+diff --git a/drivers/staging/comedi/comedi_compat32.h b/drivers/staging/comedi/comedi_compat32.h
+index 0340a89..c99573b 100644
+--- a/drivers/staging/comedi/comedi_compat32.h
++++ b/drivers/staging/comedi/comedi_compat32.h
+@@ -37,7 +37,7 @@ extern long comedi_compat_ioctl(struct file *file, unsigned int cmd,
  
--static int __init_memblock memblock_double_array(struct memblock_type *type)
-+/**
-+ * memblock_double_array - double the size of the memblock regions array
-+ * @type: memblock type of the regions array being doubled
-+ * @new_area_start: starting address of memory range to avoid overlap with
-+ * @new_area_size: size of memory range to avoid overlap with
-+ *
-+ * Double the size of the @type regions array. If memblock is being used to
-+ * allocate memory for a new reserved regions array and there is a previously
-+ * allocated memory range [@new_area_start,@new_area_start+@new_area_size]
-+ * waiting to be reserved, ensure the memory used by the new array does
-+ * not overlap.
-+ *
-+ * RETURNS:
-+ * 0 on success, -1 on failure.
-+ */
-+static int __init_memblock memblock_double_array(struct memblock_type *type,
-+						phys_addr_t new_area_start,
-+						phys_addr_t new_area_size)
- {
- 	struct memblock_region *new_array, *old_array;
- 	phys_addr_t old_size, new_size, addr;
-@@ -222,7 +239,18 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 		new_array = kmalloc(new_size, GFP_KERNEL);
- 		addr = new_array ? __pa(new_array) : 0;
- 	} else {
--		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
-+		/* only exclude range when trying to double reserved.regions */
-+		if (type != &memblock.reserved)
-+			new_area_start = new_area_size = 0;
-+
-+		addr = memblock_find_in_range(new_area_start + new_area_size,
-+						memblock.current_limit,
-+						new_size, sizeof(phys_addr_t));
-+		if (!addr && new_area_size)
-+			addr = memblock_find_in_range(0,
-+					min(new_area_start, memblock.current_limit),
-+					new_size, sizeof(phys_addr_t));
-+
- 		new_array = addr ? __va(addr) : 0;
- 	}
- 	if (!addr) {
-@@ -399,7 +427,7 @@ repeat:
- 	 */
- 	if (!insert) {
- 		while (type->cnt + nr_new > type->max)
--			if (memblock_double_array(type) < 0)
-+			if (memblock_double_array(type, obase, size) < 0)
- 				return -ENOMEM;
- 		insert = true;
- 		goto repeat;
-@@ -450,7 +478,7 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ #else /* CONFIG_COMPAT */
  
- 	/* we'll create at most two more regions */
- 	while (type->cnt + 2 > type->max)
--		if (memblock_double_array(type) < 0)
-+		if (memblock_double_array(type, base, size) < 0)
- 			return -ENOMEM;
+-#define comedi_compat_ioctl 0	/* NULL */
++#define comedi_compat_ioctl	NULL
  
- 	for (i = 0; i < type->cnt; i++) {
+ #endif /* CONFIG_COMPAT */
+ 
 -- 
-1.7.5.4
+1.7.11
 
