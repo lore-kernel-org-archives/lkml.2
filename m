@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab2FRLhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:37:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57823 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab2FRLhV (ORCPT
+	id S1752246Ab2FRLh7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:37:59 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64578 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580Ab2FRLh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:37:21 -0400
-Date: Mon, 18 Jun 2012 12:37:16 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Will Deacon <will.deacon@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Ohad Ben-Cohen <ohad@wizery.com>,
-        Peter Crosthwaite <peter.crosthwaite@petalogix.com>
-Subject: Re: [RFC PATCH 8/8] ARM: vmlinux.lds: Setup correct entry point to
-	physical address
-Message-ID: <20120618113716.GG12029@n2100.arm.linux.org.uk>
-References: <1340019011-18642-1-git-send-email-monstr@monstr.eu> <1340019011-18642-9-git-send-email-monstr@monstr.eu>
+	Mon, 18 Jun 2012 07:37:57 -0400
+Message-ID: <4FDF1311.1050207@linaro.org>
+Date: Mon, 18 Jun 2012 12:37:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340019011-18642-9-git-send-email-monstr@monstr.eu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 2/3] ARM: ux500: Add i2c configurations to the Device
+ Tree for DB8500 based devices
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com> <4FD8BAE4.4050606@linaro.org> <CACRpkda2pH1by2hajpP20CJgdg+mWFF=QaGbeNdY=c8iOVtLUQ@mail.gmail.com>
+In-Reply-To: <CACRpkda2pH1by2hajpP20CJgdg+mWFF=QaGbeNdY=c8iOVtLUQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 01:30:11PM +0200, Michal Simek wrote:
-> linker script setups entry point to virtual address.
-> 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-> 
-> ---
-> Not sure what is the reason to setup entry point to virtual address.
-> ---
->  arch/arm/kernel/vmlinux.lds.S |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-> index b996bc0..de43b01 100644
-> --- a/arch/arm/kernel/vmlinux.lds.S
-> +++ b/arch/arm/kernel/vmlinux.lds.S
-> @@ -39,7 +39,7 @@
->  #endif
->  
->  OUTPUT_ARCH(arm)
-> -ENTRY(stext)
-> +ENTRY(arm_start)
+On 18/06/12 12:29, Linus Walleij wrote:
+> On Wed, Jun 13, 2012 at 6:08 PM, Lee Jones<lee.jones@linaro.org>  wrote:
+>
+>> +                       clock-frequency =<100000>;
+>> +                       stericsson,slsu =<0xe>;
+>> +                       stericsson,tft =<1>;
+>> +                       stericsson,rft =<8>;
+>> +                       stericsson,timeout =<200>;
+>> +                       stericsson,i2c_freq_mode_fast;
+>
+> In the context of my patch to the board file, we conclude that the
+> clock-frequency should be set to 400000 instead.
 
-stext etc better stay as the virtual address through this change.  The
-kernel makes use of all stext/etext etc symbols as virtual addresses.
+Right, I have already changed that in my patch-set.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
