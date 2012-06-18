@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab2FRRu4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 13:50:56 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39480 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2FRRuz (ORCPT
+	id S1752909Ab2FRSFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 14:05:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39957 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab2FRSFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 13:50:55 -0400
+	Mon, 18 Jun 2012 14:05:22 -0400
+Message-ID: <4FDF6DDE.3020306@wwwdotorg.org>
+Date: Mon, 18 Jun 2012 12:05:18 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <s5h8vfkn2bb.wl%tiwai@suse.de>
-References: <1339444731-15678-1-git-send-email-elezegarcia@gmail.com>
-	<1339444731-15678-2-git-send-email-elezegarcia@gmail.com>
-	<s5h8vfkn2bb.wl%tiwai@suse.de>
-Date: Mon, 18 Jun 2012 14:50:53 -0300
-Message-ID: <CALF0-+Ukw2+whn5zpA4R6PjN0BoLm5aUhQKUNQt0rpWM1vNXFA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] swarm_cs4297: Rename AC97 registers to use
- sound/ac97_codec.h definitions
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Ralf Baechle <ralf@linux-mips.org>, Jaroslav Kysela <perex@perex.cz>,
-        Clemens Ladisch <clemens@ladisch.de>
+To: Devendra Naga <devendra.aaru@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] pinctrl/pinctrl-tegra: remove IS_ERR checking of
+ pmx->pctl
+References: <1340041471-30122-1-git-send-email-devendra.aaru@gmail.com>
+In-Reply-To: <1340041471-30122-1-git-send-email-devendra.aaru@gmail.com>
+X-Enigmail-Version: 1.5pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
+On 06/18/2012 11:44 AM, Devendra Naga wrote:
+> pinctrl_register returns a pointer of struct type struct pinctrl_dev,
+> if successfully registered to pinctrl subsystem, otherwise returns
+> NULL, and there wont' be any pointers which are not dereferencible.
+> 
+> They are not type of pointer addresses but are kind of error
+> codes rather actual addresses, but are a kind of return
+> codes of functions returning integer types.
+> 
+> return -ENODEV if device registration fails.
+> 
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 
-On Mon, Jun 18, 2012 at 11:04 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Mon, 11 Jun 2012 16:58:50 -0300,
-> Ezequiel Garcia wrote:
->>
->> This patch removes the last usage of linux/ac97_codec.h
->> by renaming ac97 registers to use sound/ac97_codec.h definitions.
->> This will enable us to remove linux/ac97_codec.h.
->>
->> Not even compilation tested.
->>
->> Cc: Ralf Baechle <ralf@linux-mips.org>
->> Cc: Jaroslav Kysela <perex@perex.cz>
->> Cc: Takashi Iwai <tiwai@suse.de>
->> Cc: Clemens Ladisch <clemens@ladisch.de>
->> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
->> ---
->> Hi all,
->>
->> This patch is important so we can remove linux/ac97_codec.h usage.
->> Since this driver is mips related, I can't test it until I install
->> a mips toolchain.
->> If someone can compile this for me, or even test it with real
->> hardware I think it would be better.
->> If not then I can install a mips toolchain and compile it myself,
->> but I won't be able to test it on real hardware.
->>
->> This patch should be treated with carefully and be applied only
->> if someone manages to test it.
->
-> A slight concern by this change is that the driver includes
-> sound/ac97_codec.h although it's based on OSS framework.
-> sound/ac97_codec.h is the header for ALSA ac97 structs, and this can't
-> be mixed up with OSS.
->
-> If the intention is only about AC97 register definition, we may split
-> ac97_codec.h into ac97_regs.h and ac97_codecs.h where the former
-> contains only the register definitions (thus framework-neutral) and
-> the latter includes the former.
->
->
+Oops.
 
-Yes, splitting sounds good to me. It could be useful for other ac97
-drivers (e.g. em28xx).
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
 
-I wonder if anyone is using this swarm driver (and/or can test).
-
-Also, is there any date scheduled for OSS removal?
-
-Thanks for reviewing,
-Ezequiel.
+Probably Cc stable since this is wrong back as far as 3.4.
