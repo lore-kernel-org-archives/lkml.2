@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab2FROmh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 10:42:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50116 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab2FROmf (ORCPT
+	id S1752590Ab2FROsl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 10:48:41 -0400
+Received: from exht1.emulex.com ([138.239.113.183]:16696 "EHLO
+	exht1.ad.emulex.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751220Ab2FROsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 10:42:35 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 2/2]staging "slicoss" Fix a typo. 
-Date: Mon, 18 Jun 2012 07:42:24 -0700
-Message-Id: <1340030544-21245-2-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1340030544-21245-1-git-send-email-justinmattock@gmail.com>
-References: <1340030544-21245-1-git-send-email-justinmattock@gmail.com>
+	Mon, 18 Jun 2012 10:48:39 -0400
+Message-ID: <4FDF3FB2.2060300@emulex.com>
+Date: Mon, 18 Jun 2012 10:48:18 -0400
+From: James Smart <james.smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Driver scsi/lpfc breaks build since 3.4.1
+References: <4FDE71A4.2090807@mni.thm.de> <20120618012401.GA13192@kroah.com>
+In-Reply-To: <20120618012401.GA13192@kroah.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+fyi - the patch to lpfc to resolve this were submitted a while ago:
+http://marc.info/?l=linux-scsi&m=133661285100503&w=2
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+-- james s
 
----
 
-The below patch fixes a typo found while reading through "staging" "slicoss"
+On 6/17/2012 9:24 PM, Greg KH wrote:
+> On Mon, Jun 18, 2012 at 02:09:08AM +0200, Tobias Klausmann wrote:
+>> Hello there,
+>> since 3.4.1 the driver scsi/lpfc breaks my build for some unused variables:
+>> drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_bpl’:
+>> drivers/scsi/lpfc/lpfc_scsi.c:1900:11: error: unused variable ‘rc’
+>> [-Werror=unused-variable]
+>> drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_bpl_prot’:
+>> drivers/scsi/lpfc/lpfc_scsi.c:2037:11: error: unused variable ‘rc’
+>> [-Werror=unused-variable]
+>> drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_sgl’:
+>> drivers/scsi/lpfc/lpfc_scsi.c:2256:11: error: unused variable ‘rc’
+>> [-Werror=unused-variable]
+>> drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_sgl_prot’:
+>> drivers/scsi/lpfc/lpfc_scsi.c:2386:11: error: unused variable ‘rc’
+>> [-Werror=unused-variable]
+>> cc1: all warnings being treated as errors
+>>
+>>  From the drivers makefile:
+>> ccflags-y += -Werror <- this causes the bad behavior.
+> As has been stated before, this ccflags setting is what needs to be
+> fixed, not trying to fix up the warnings here (although that is a good
+> goal overall.)
+>
+> Also, this isn't how to submit a patch to the stable kernel tree, please
+> read Documentation/stable_kernel_rules.txt for how to properly do that.
+>
+> thanks,
+>
+> greg k-h
 
- drivers/staging/slicoss/slicoss.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index 77a0751..d2b82a7 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -47,7 +47,7 @@
-  *      Oasis cards (single and dual port PCI-x Gigabit) copper and fiber
-  *      Kalahari cards (dual and quad port PCI-e Gigabit) copper and fiber
-  *
-- * The driver was acutally tested on Oasis and Kalahari cards.
-+ * The driver was actually tested on Oasis and Kalahari cards.
-  *
-  *
-  * NOTE: This is the standard, non-accelerated version of Alacritech's
--- 
-1.7.5.4
 
