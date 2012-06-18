@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab2FRMqN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:46:13 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60705 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086Ab2FRMqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:46:12 -0400
-Message-ID: <4FDF227B.3080601@parallels.com>
-Date: Mon, 18 Jun 2012 16:43:39 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1751589Ab2FRMuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:50:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36445 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751016Ab2FRMuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 08:50:07 -0400
+Date: Mon, 18 Jun 2012 13:50:05 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: sameo@linux.intel.com, "'Liam Girdwood'" <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] regualtor: Add samsung s2mps11 regulator driver
+Message-ID: <20120618125005.GN3974@opensource.wolfsonmicro.com>
+References: <067801cd4d45$a743e820$f5cbb860$@com>
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-mm@kvack.org>, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v4 23/25] memcg: propagate kmem limiting information to
- children
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-24-git-send-email-glommer@parallels.com> <4FDF20ED.4090401@jp.fujitsu.com>
-In-Reply-To: <4FDF20ED.4090401@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lBqJz4CGKwlWe7/k"
+Content-Disposition: inline
+In-Reply-To: <067801cd4d45$a743e820$f5cbb860$@com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 04:37 PM, Kamezawa Hiroyuki wrote:
-> (2012/06/18 19:28), Glauber Costa wrote:
->> The current memcg slab cache management fails to present satisfatory hierarchical
->> behavior in the following scenario:
->>
->> ->  /cgroups/memory/A/B/C
->>
->> * kmem limit set at A
->> * A and B empty taskwise
->> * bash in C does find /
->>
->> Because kmem_accounted is a boolean that was not set for C, no accounting
->> would be done. This is, however, not what we expect.
->>
-> 
-> Hmm....do we need this new routines even while we have mem_cgroup_iter() ?
-> 
-> Doesn't this work ?
-> 
-> 	struct mem_cgroup {
-> 		.....
-> 		bool kmem_accounted_this;
-> 		atomic_t kmem_accounted;
-> 		....
-> 	}
-> 
-> at set limit
-> 
-> 	....set_limit(memcg) {
-> 
-> 		if (newly accounted) {
-> 			mem_cgroup_iter() {
-> 				atomic_inc(&iter->kmem_accounted)
-> 			}
-> 		} else {
-> 			mem_cgroup_iter() {
-> 				atomic_dec(&iter->kmem_accounted);
-> 			}
-> 	}
-> 
-> 
-> hm ? Then, you can see kmem is accounted or not by atomic_read(&memcg->kmem_accounted);
-> 
 
-Accounted by itself / parent is still useful, and I see no reason to use
-an atomic + bool if we can use a pair of bits.
+--lBqJz4CGKwlWe7/k
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-As for the routine, I guess mem_cgroup_iter will work... It does a lot
-more than I need, but for the sake of using what's already in there, I
-can switch to it with no problems.
+On Mon, Jun 18, 2012 at 08:29:41PM +0900, Sangbeom Kim wrote:
 
+> +static int s2mps11_list_voltage(struct regulator_dev *rdev,
+> +				unsigned int selector)
+> +{
 
+Please take a look at the new helper functions which have been added to
+the regulator core for factoring out things like table based and linear
+maps.  This and quite a bit of the rest of the code can probably be
+converted to use those.
 
+> +	case S2MPS11_AP_EN32KHZ:
+> +		mask = 0x01;
+> +		break;
+> +	case S2MPS11_CP_EN32KHZ:
+> +		mask = 0x02;
+> +		break;
+> +	case S2MPS11_BT_EN32KHZ:
+> +		mask = 0x04;
+> +		break;
+
+Use the clk API for clocks.
+
+--lBqJz4CGKwlWe7/k
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP3yP0AAoJEBus8iNuMP3dtX4P/iIF1KFdXzYZPNpPZLLWHALb
+3o7tQqvvOa86erOj9cum9/ybPIht0YcP84TfHfjDOTohcC/FILAHeuwfI9Q/P1EX
+IFRjkE+DBFNlc573hrwcNPFs3PqMeNNXqJs1r2he6Cp79jTzdP1ZPZdZq8A/uXjO
+M1709kIrpsJ4HBnmY/bcmZrPQyUi2mkalGn4uu74YK/BFMIUj9UwR9Wor0bzTmAy
+fVsKB24zmKnXE133aVA7pJH0I9d6i1fIEu2BIs1Ow+SsWAq7cC+vn6IG1zWi7DeJ
+ad5XqVidRkjRVXosp0wzZbvXtXKBVve/tpmky+Sp87f3mmgCPByQlWlDT5cfbBZL
+5NnVZ0r4zJIKjH37JW8mfKDWj48C+zBZOYQXAzDJfxaTNZ7/jTJepFErqX1gK9ql
+lPCi9RUOLfpSKM9A/sEpmJwOaf+TuhqyYyXTPNCJgH0mC1ZKA6F9Mp12fCVlAkPb
+IR6wmhYC0lQib3w1oZ/Ahdwno7l0J8/HAUf3/s/LSGLoP+EeyJ4r20dFTP8yXvGh
+IjmkZLJwo4ftBbFItlHbGQKw1Dca86xK1yZ85rJSRIUHD9hV4FkGO9D4X5XmfGp3
+u7b+d+YgbjU8cXF0Kll+YYZhvoelYezG5M0dupiYJZeoPtwkOYORDhEp9g09BDio
+WCpgM11ZA5yQjpcsmYPR
+=saWX
+-----END PGP SIGNATURE-----
+
+--lBqJz4CGKwlWe7/k--
