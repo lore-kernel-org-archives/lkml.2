@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab2FRMEy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:04:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41472 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2FRMEx (ORCPT
+	id S1752049Ab2FRMFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:05:38 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36413 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751277Ab2FRMFh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:04:53 -0400
+	Mon, 18 Jun 2012 08:05:37 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
+Subject: RE: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Thread-Topic: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Thread-Index: AQHNSRRxSJBCL2eqoUaZnppvZVbxc5b39csQgAf6AbD//7R+gIAAAawAgABcflA=
+Date: Mon, 18 Jun 2012 12:05:31 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9D844D@DBDE01.ent.ti.com>
+References: <1339558031.26190.4.camel@phoenix>
+ <331ABD5ECB02734CA317220B2BBEABC13E9D83E7@DBDE01.ent.ti.com>
+ <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com>
+ <20120618120158.GJ3974@opensource.wolfsonmicro.com>
+In-Reply-To: <20120618120158.GJ3974@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CACRpkda5nYmAT3-fkxdYQEGpi6U=L-kphQEu3naoxPzO9a-7pQ@mail.gmail.com>
-References: <CAHdPZaNF-Tgz_ncnrJp7xsCbGWEgcfmj_yuY0Q8EiWRt-g0rFw@mail.gmail.com>
-	<CACRpkda5nYmAT3-fkxdYQEGpi6U=L-kphQEu3naoxPzO9a-7pQ@mail.gmail.com>
-Date: Mon, 18 Jun 2012 17:34:53 +0530
-Message-ID: <CAHdPZaPFtO1bRC3TdLx8MSgFMznr5FBXV5DdUyasNAcF34s3mQ@mail.gmail.com>
-Subject: Re: Q: return of pinctrl_register and handing at drivers that use
- this function
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Mark,
 
-On Mon, Jun 18, 2012 at 5:22 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Jun 18, 2012 at 1:47 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
->
->> since the pinctrl_register returns a pointer of structure type "struct
->> pinctrl_dev" or NULL if it was failed to register the pinctrl driver,
->> so IS_ERR checking is not required?
->
-> Yes. (Unless I did something wrong.)
->
-So checking the return value of pinctrl_register with IS_ERR is not required.
-There are drivers in pinctrl subsystem which uses the IS_ERR and may (not)
-check whether its null or not.
+On Mon, Jun 18, 2012 at 17:31:58, Mark Brown wrote:
+> On Mon, Jun 18, 2012 at 07:55:59PM +0800, Axel Lin wrote:
+> 
+> > Since this patch is target for 3.6, this is not required.
+> > The regulator core will set it automatically.
+> 
+> Do we need to fix it for 3.5?
 
-you can expect a patchset of those fixes. :)
-> Yours,
-> Linus Walleij
+Yes, it's required for 3.5.
 
-Thanks,
-Devendra.
+Regards
+AnilKumar
