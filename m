@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab2FRI1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 04:27:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37963 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab2FRI1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 04:27:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="166866140"
-Date: Mon, 18 Jun 2012 11:28:32 +0300
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: Masatake YAMATO <yamato@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH 1/8] /proc/net/ entries for bluetooth protocols
-Message-ID: <20120618082826.GA2898@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	Masatake YAMATO <yamato@redhat.com>, linux-kernel@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org
-References: <20120615.021553.2062569361246467656.yamato@redhat.com>
- <20120615080007.GD7205@aemeltch-MOBL1>
- <20120617.092637.2171077367789127221.yamato@redhat.com>
+	id S1752246Ab2FRIcx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 04:32:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56585 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab2FRIcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 04:32:52 -0400
+Message-ID: <4FDEE7B0.9070208@linaro.org>
+Date: Mon, 18 Jun 2012 09:32:48 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120617.092637.2171077367789127221.yamato@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall
+ time
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <201206121259.38807.arnd@arndb.de> <4FD742C9.7090603@linaro.org> <201206121449.22978.arnd@arndb.de>
+In-Reply-To: <201206121449.22978.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masatake,
-
-On Sun, Jun 17, 2012 at 09:26:37AM +0900, Masatake YAMATO wrote:
-> Hi,
-> 
-> Thank you for reviewing.
-> I have a question.
-> 
-> >> +		sk = sk_entry(v);
-> >> +		bt = bt_sk(sk);
-> >> +		seq_printf(seq, "%pK %-6d %-6u %-6u %-6u %-6lu",
-> >> +			   sk,
-> >> +			   atomic_read(&sk->sk_refcnt),
-> >> +			   sk_rmem_alloc_get(sk),
-> >> +			   sk_wmem_alloc_get(sk),
-> >> +			   sock_i_uid(sk),
-> >> +			   sock_i_ino(sk)
-> >> +			);
-> >> +		seq_puts(seq, batostr(&bt->src));
-> > 
-> > batostr looks OK now but this will be outdated soon by %pMR.
-> 
-> As far as reading Documentation/printk-formats.txt and 
-> pointer() in lib/vsprintf.c, %pMR is not defined.
-> I guess you mean %pM, don't you?
-
-Sorry for confusion, I meant my patch adding new printf specifier which
-is not yet in the tree. I think it will take longer time to be accepted 
-then your patch.
-
-> I've tried following code, and it works as expected.
-> 
-> 		baswap(&src_baswapped, &bt->src);
-> 		baswap(&dst_baswapped, &bt->dst);
-> 
-> 		seq_printf(seq, "%pK %-6d %-6u %-6u %-6u %-6lu %pM %pM %-6lu",
-> 			   sk,
-> 			   atomic_read(&sk->sk_refcnt),
-> 			   sk_rmem_alloc_get(sk),
-> 			   sk_wmem_alloc_get(sk),
-> 			   sock_i_uid(sk),
-> 			   sock_i_ino(sk),
-> 			   &src_baswapped,
-> 			   &dst_baswapped,
-> 			   bt->parent? sock_i_ino(bt->parent): 0LU);
+On 12/06/12 15:49, Arnd Bergmann wrote:
+> On Tuesday 12 June 2012, Lee Jones wrote:
+>> But your suggestion above involves some heavy refactoring of how Device
+>> Tree works. Meanwhile the ab8500 will not work as an IRQ controller
+>> until we either complete the work or use the same solution as we did for
+>> the Nomadik GPIO controller. I think for now at least we should continue
+>> to work on enablement and leave the 'nice to have's until last. We are
+>> doing nothing new here, just bringing the ab8500 IRQ controller into
+>> line with the Nomadik one.
 >
+> Right, I didn't say we should not take your patch, but we should be
+> aware that it's not the solution we want to use in the long run.
 
-Please use whatever method best suits for you although I prefer second
-solution since it is easier to change to %pMR later.
+So is it only for this and the other one to go in now?
 
-Best regards 
-Andrei Emeltchenko 
+If so, can I have acks for them please, so I may place them in my 
+up-coming pull-request?
 
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
