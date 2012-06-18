@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab2FRLkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 07:40:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62210 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab2FRLkp (ORCPT
+	id S1752327Ab2FRLl7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 07:41:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60483 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab2FRLl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 07:40:45 -0400
-Date: Mon, 18 Jun 2012 19:48:41 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Why does ionice(1) ban the user to set back to 'none' class?
-Message-ID: <20120618114841.GA4855@gmail.com>
-Mail-Followup-To: Jens Axboe <axboe@kernel.dk>,
-	Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	Mon, 18 Jun 2012 07:41:57 -0400
+Message-ID: <4FDF1400.6090402@monstr.eu>
+Date: Mon, 18 Jun 2012 13:41:52 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Will Deacon <will.deacon@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Ohad Ben-Cohen <ohad@wizery.com>,
+        Peter Crosthwaite <peter.crosthwaite@petalogix.com>
+Subject: Re: [RFC PATCH 1/8] ARM: gic: Support forcing cpumask for possible
+ cpus in the system
+References: <1340019011-18642-1-git-send-email-monstr@monstr.eu> <1340019011-18642-2-git-send-email-monstr@monstr.eu> <20120618113339.GC12029@n2100.arm.linux.org.uk>
+In-Reply-To: <20120618113339.GC12029@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On 06/18/2012 01:33 PM, Russell King - ARM Linux wrote:
+> On Mon, Jun 18, 2012 at 01:30:04PM +0200, Michal Simek wrote:
+>> gic_set_affinity doesn't support force option. Force option
+>> should work with all possible cpus in the system not only with
+>> online cpus.
+>
+> Neither does x86.  Why do you want this?  Offline CPUs are unable to
+> receive the interrupt in any case (and must not receive interrupts in
+> the bringup path until they are online.)
 
-I meet a problem when I use ionice(1) to adjust a process's io priority.
-I do the following operations:
+The whole reason for all these changes in AMP on dual core Cortex A9 where
+on one cpu runs Linux and on the second RTOS/standlone.
 
-$ ionice -p${pid}
-none: prio 0
-$ ionice -p${pid} -c2 -n4
-$ ionice -p${pid}
-best-effort: prio 4
-$ ionice -p${pid} -c0 -n0
-$ ionice -p${pid}
-best-effort: prio 0
+It means that the second cpu is from Linux point of view offline all the time.
+But GIC has to be (and can be) setup to forward IRQ directly to the second cpu.
+GIC should be controlled by Linux.
 
-So I cannot set scheduling class back to 'none'.  If I call ioprio_set(2)
-directly, it will be fine.  But if I use ionice(1), I cannot change it.  I
-read the docs about ionice in [1].  I notice this code:
+Thanks,
+Michal
 
-switch (ioprio_class) {
-	case IOPRIO_CLASS_NONE:
-		ioprio_class = IOPRIO_CLASS_BE;
-                               ^^^^^^^^^^^^^^^^
-                               *It means that we cannot set back to none.*
-		break;
-	case IOPRIO_CLASS_RT:
-	case IOPRIO_CLASS_BE:
-		break;
-	case IOPRIO_CLASS_IDLE:
-		ioprio = 7;
-		break;
-	default:
-		printf("bad prio class %d\n", ioprio_class);
-		return 1;
-}
 
-My question is why we need to ban the user to set back to 'none'.  Is there
-some reasons?  Thank you.
 
-[Sorry, I don't subscribe linux-doc and linux-kernel mailing list.
-Please CC to me.]
 
-1. ${linux_src}/Documentation/block/ioprio.txt.
-
-Regards,
-Zheng
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
