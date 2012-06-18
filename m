@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab2FRMBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:01:53 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33542 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2FRMBw (ORCPT
+	id S1751961Ab2FRMCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:02:03 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40854 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751738Ab2FRMB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:01:52 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FDF1830.1000504@jp.fujitsu.com>
-Date: Mon, 18 Jun 2012 20:59:44 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 18 Jun 2012 08:01:59 -0400
+Date: Mon, 18 Jun 2012 13:01:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
+Subject: Re: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Message-ID: <20120618120158.GJ3974@opensource.wolfsonmicro.com>
+References: <1339558031.26190.4.camel@phoenix>
+ <331ABD5ECB02734CA317220B2BBEABC13E9D83E7@DBDE01.ent.ti.com>
+ <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-mm <linux-mm@kvack.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 2/2] memcg: clean up force_empty_list() return value check
-References: <4FDF17A3.9060202@jp.fujitsu.com>
-In-Reply-To: <4FDF17A3.9060202@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7PTD44AewjTsiSV"
+Content-Disposition: inline
+In-Reply-To: <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-By commit "memcg: move charges to root cgroup if use_hierarchy=0"
-mem_cgroup_move_parent() only returns -EBUSY, -EINVAL.
-So, we can remove -ENOMEM and -EINTR checks.
+--C7PTD44AewjTsiSV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+On Mon, Jun 18, 2012 at 07:55:59PM +0800, Axel Lin wrote:
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index cf8a0f6..726b7c6 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3847,8 +3847,6 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
- 		pc = lookup_page_cgroup(page);
- 
- 		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
--		if (ret == -ENOMEM || ret == -EINTR)
--			break;
- 
- 		if (ret == -EBUSY || ret == -EINVAL) {
- 			/* found lock contention or "pc" is obsolete. */
-@@ -3910,9 +3908,6 @@ move_account:
- 		}
- 		mem_cgroup_end_move(memcg);
- 		memcg_oom_recover(memcg);
--		/* it seems parent cgroup doesn't have enough mem */
--		if (ret == -ENOMEM)
--			goto try_to_free;
- 		cond_resched();
- 	/* "ret" should also be checked to ensure all lists are empty. */
- 	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0 || ret);
--- 
-1.7.4.1
+> Since this patch is target for 3.6, this is not required.
+> The regulator core will set it automatically.
 
+Do we need to fix it for 3.5?
 
+--C7PTD44AewjTsiSV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP3xirAAoJEBus8iNuMP3doTwP/jmP6zH3lxuLmQucIevQikl2
+cYPepIJ9aFLBZXqo2CwE+Qiot4cwjQgXVHadujzclxAHaQ8mk5R2YfF5amlPoPmX
+SZbjHeD2CCeYdcevB5nvWkFexssdi66YBwSILURqcYX8gVHZFjOveOgEVTbA0ULl
+Kludmvh6kXzW+Jy9yiD406I1LnJhLRTgj4ZPVTjQdbqMnbvdsevx8KHrlusWpDoF
+wk2C7J3PPDnl4jiceVYhL99zLF4k07lgO6rIMDBiBr5Lryc6xh8k+Pib+k8VoelU
+m8TfN6boq9aB3dWnUi+InC3X1ewQoQy3+gt1kjW4j0m0kQe4qF1QGiI5zlvy4Ko6
+omVZO4pMUpCDmXIbVL+i011z1CqW8KsJETbBlcbnGRlIkPlEHMRJY2/R/lt9ZdLQ
+bOUra74fPFE51GpjyZXvviR5drEzU4w8qn0Pl/VvBpv4bL+8w9lw26AUBKZjwwVr
+W+yF202rcHnxNQF+2yi1+cfewGV4nD/mpgO26EdSmQSMa9G85a5qBe0YOu3ejyb8
+zZraZXmW+KcfhsOJ2IS0NMttV2JnArWIgFtlWC1nYw1cbETJgy50ma6z0P2xcNKl
+P67x29byfqtbDZtdQs96B7GDWbSwdBc2FWfG4yBJbxynczQ9SQh0aamDRSScvUv7
+HvvkZ+jH3XNiCw76yCq/
+=AkeI
+-----END PGP SIGNATURE-----
+
+--C7PTD44AewjTsiSV--
