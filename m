@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab2FRMGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 08:06:36 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51909 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab2FRMGf (ORCPT
+	id S1752134Ab2FRMGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 08:06:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53281 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab2FRMGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 08:06:35 -0400
+	Mon, 18 Jun 2012 08:06:43 -0400
+Message-ID: <4FDF19CF.8010303@gmail.com>
+Date: Mon, 18 Jun 2012 07:06:39 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20120618120158.GJ3974@opensource.wolfsonmicro.com>
-References: <1339558031.26190.4.camel@phoenix> <331ABD5ECB02734CA317220B2BBEABC13E9D83E7@DBDE01.ent.ti.com>
- <CAF+7xWkh6CHvcur2iDs0Nwp_nO8i=6tYyTVauL6qtyrrMctjjA@mail.gmail.com> <20120618120158.GJ3974@opensource.wolfsonmicro.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 18 Jun 2012 20:06:14 +0800
-Message-ID: <CAF+7xWkdpGFLg5Dwj4sLp9ttocOFbREwLAEpd9MJ-ChDeJcenA@mail.gmail.com>
-Subject: Re: [PATCH RFT] regulator: tps65217: Convert to regulator_[is_enabled|get_voltage_sel]_regmap
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, John.Linn@xilinx.com, arnd@arndb.de
+Subject: Re: [PATCH] arm: zynq: Support GIC OF initialization
+References: <1340017873-18170-1-git-send-email-monstr@monstr.eu>
+In-Reply-To: <1340017873-18170-1-git-send-email-monstr@monstr.eu>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/18 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Mon, Jun 18, 2012 at 07:55:59PM +0800, Axel Lin wrote:
->
->> Since this patch is target for 3.6, this is not required.
->> The regulator core will set it automatically.
->
-> Do we need to fix it for 3.5?
-No. In current Linus' tree, this driver does not use
-regulator_[is_enabled|get_voltage_sel]_regmap.
+On 06/18/2012 06:11 AM, Michal Simek wrote:
+> Zynq is OF driven platfrom which requires OF initialization.
+> 
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+> ---
+>  arch/arm/mach-zynq/common.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+> index 17d68d6..7941544 100644
+> --- a/arch/arm/mach-zynq/common.c
+> +++ b/arch/arm/mach-zynq/common.c
+> @@ -56,12 +56,17 @@ static void __init xilinx_init_machine(void)
+>  	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
+>  }
+>  
+> +static const struct of_device_id zynq_dt_irq_match[] __initconst = {
+> +	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init },
+> +	{ }
+> +};
+> +
+>  /**
+>   * xilinx_irq_init() - Interrupt controller initialization for the GIC.
+>   */
+>  static void __init xilinx_irq_init(void)
+>  {
+> -	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
 
-Regards,
-Axel
+And delete the corresponding defines?
+
+Rob
+
+> +	of_irq_init(zynq_dt_irq_match);
+>  }
+>  
+>  /* The minimum devices needed to be mapped before the VM system is up and
+
