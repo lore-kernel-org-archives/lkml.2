@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab2FRCyr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Jun 2012 22:54:47 -0400
+	id S1754118Ab2FRCzj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Jun 2012 22:55:39 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53084 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab2FRCyo (ORCPT
+	with ESMTP id S1753794Ab2FRCyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Jun 2012 22:54:44 -0400
-X-AuditID: 9c93016f-b7c35ae00000135b-c6-4fde986a7085
+	Sun, 17 Jun 2012 22:54:35 -0400
+X-AuditID: 9c93016f-b7c35ae00000135b-b0-4fde9868a755
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH v2 5/5] scripts/tags.sh: Teach [ce]tags about libtraceeevent error codes
-Date: Mon, 18 Jun 2012 11:50:51 +0900
-Message-Id: <1339987851-22491-5-git-send-email-namhyung@kernel.org>
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH v2 2/5] tools lib traceevent: Do not link broken field arg for an old ftrace event
+Date: Mon, 18 Jun 2012 11:50:48 +0900
+Message-Id: <1339987851-22491-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1339987851-22491-1-git-send-email-namhyung@kernel.org>
 References: <1339987851-22491-1-git-send-email-namhyung@kernel.org>
@@ -28,42 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-As we use a macro trick to sync each error codes with its
-description string, teach [ce]tags to process them properly.
+Defer linking a newly allocated arg to print_fmt.args until
+all of its field is setup so that later access to ->field.name
+cannot be NULL.
 
-Suggested-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Link: http://lkml.kernel.org/n/tip-qt5fv4pzigr2nnl27ydimg4h@git.kernel.org
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/n/tip-7zlkindw0qqqe5h117u59ood@git.kernel.org
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- scripts/tags.sh |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ tools/lib/traceevent/event-parse.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index cf7b12fee573..cff8faad73d1 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -153,7 +153,8 @@ exuberant()
- 	--regex-c++='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
- 	--regex-c++='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/'	\
- 	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
--	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
-+	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
-+	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 4f667fdc5fae..ae172e2ee958 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -4658,20 +4658,20 @@ int pevent_parse_event(struct pevent *pevent,
+ 		struct print_arg *arg, **list;
  
- 	all_kconfigs | xargs $1 -a                              \
- 	--langdef=kconfig --language-force=kconfig              \
-@@ -195,7 +196,8 @@ emacs()
- 	--regex='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
- 	--regex='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/' \
- 	--regex='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
--	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
-+	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
-+	--regex='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
- 
- 	all_kconfigs | xargs $1 -a                              \
- 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
+ 		/* old ftrace had no args */
+-
+ 		list = &event->print_fmt.args;
+ 		for (field = event->format.fields; field; field = field->next) {
+ 			arg = alloc_arg();
+-			*list = arg;
+-			list = &arg->next;
+ 			arg->type = PRINT_FIELD;
+ 			arg->field.name = strdup(field->name);
+ 			if (!arg->field.name) {
+ 				do_warning("failed to allocate field name");
+ 				event->flags |= EVENT_FL_FAILED;
++				free_arg(arg);
+ 				return -1;
+ 			}
+ 			arg->field.field = field;
++			*list = arg;
++			list = &arg->next;
+ 		}
+ 		return 0;
+ 	}
 -- 
 1.7.10.2
 
