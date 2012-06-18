@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab2FRUdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 16:33:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61288 "EHLO mx1.redhat.com"
+	id S1753242Ab2FRUfV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 16:35:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25621 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751802Ab2FRUdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 16:33:20 -0400
-Message-ID: <4FDF908C.6010404@redhat.com>
-Date: Mon, 18 Jun 2012 17:33:16 -0300
+	id S1751802Ab2FRUfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 16:35:20 -0400
+Message-ID: <4FDF90FE.1050809@redhat.com>
+Date: Mon, 18 Jun 2012 17:35:10 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [GIT PULL for 3.5-rc4] EDAC fixes
-Content-Type: text/plain; charset=UTF-8
+To: Kim Phillips <kim.phillips@freescale.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Chris Zankel <chris@zankel.net>
+Subject: Re: Build regressions/improvements in v3.5-rc3
+References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org> <CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com> <20120618152758.3a0a28c7f68615e9e2599ee3@freescale.com>
+In-Reply-To: <20120618152758.3a0a28c7f68615e9e2599ee3@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Em 18-06-2012 17:27, Kim Phillips escreveu:
+> On Sun, 17 Jun 2012 21:56:59 +0200
+> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> 
+>>    + drivers/edac/mpc85xx_edac.c: error: too few arguments to function
+>> 'edac_mc_alloc':  => 983:90
+>>
+>> powerpc-randconfig
+> 
+> fixed in linux-next commit b9bc5dd, should have been upstreamed by
+> now [1] - Mauro?
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
+Just sent it a few mins ago. I was waiting for Linus to return back 
+from his trip.
 
-For some fixes for EDAC.
-
-Thanks,
+Regards,
 Mauro
 
-Latest commit at the branch: 
-8447c4d15e357a458c9051ddc84aa6c8b9c27000 edac: Do alignment logic properly in edac_align_ptr()
-The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
+> 
+> Kim
+> 
+> [1] http://marc.info/?l=linux-edac&m=133942731507920&w=2
+> 
 
-  Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
-
-for you to fetch changes up to 8447c4d15e357a458c9051ddc84aa6c8b9c27000:
-
-  edac: Do alignment logic properly in edac_align_ptr() (2012-06-11 12:43:16 -0300)
-
-----------------------------------------------------------------
-Chen Gong (2):
-      edac: avoid mce decoding crash after edac driver unloaded
-      edac: fix the error about memory type detection on SandyBridge
-
-Chris Metcalf (1):
-      edac: Do alignment logic properly in edac_align_ptr()
-
-Kim Phillips (1):
-      mpc85xx_edac: fix error: too few arguments to function 'edac_mc_alloc'
-
- drivers/edac/edac_mc.c      |    2 +-
- drivers/edac/i7core_edac.c  |   15 ++++-----------
- drivers/edac/mpc85xx_edac.c |    3 ++-
- drivers/edac/sb_edac.c      |   10 +++++-----
- 4 files changed, 12 insertions(+), 18 deletions(-)
 
