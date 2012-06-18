@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2FRQUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 12:20:48 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47847 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753225Ab2FRQTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 12:19:42 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
-        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
-        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
-        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 18/22] UBI: Fastmap: Rename "early PEB" to "anchor PEB".
-Date: Mon, 18 Jun 2012 18:19:01 +0200
-Message-Id: <1340036345-96726-19-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1340036345-96726-1-git-send-email-richard@nod.at>
-References: <1340036345-96726-1-git-send-email-richard@nod.at>
+	id S1753479Ab2FRQVD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 12:21:03 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47827 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753225Ab2FRQVB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 12:21:01 -0400
+Date: Mon, 18 Jun 2012 17:20:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/2 v2] regulator: support multiple dummy fixed regulators
+Message-ID: <20120618162058.GT3974@opensource.wolfsonmicro.com>
+References: <Pine.LNX.4.64.1206181017360.23884@axis700.grange>
+ <20120618094145.GC3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181145520.23884@axis700.grange>
+ <20120618100657.GG3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181212180.23884@axis700.grange>
+ <20120618115738.GI3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181755370.23884@axis700.grange>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lpUp1egui7PDlNtH"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1206181755370.23884@axis700.grange>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"early PEB" is a very bad name.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/fastmap.c |    8 ++++----
- drivers/mtd/ubi/wl.c      |    8 ++++----
- 2 files changed, 8 insertions(+), 8 deletions(-)
+--lpUp1egui7PDlNtH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index 65fd7ee..bea9446 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -1404,18 +1404,18 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 	spin_unlock(&ubi->wl_lock);
- 
- 	if (old_fm) {
--		/* no fresh early PEB was found, reuse the old one */
-+		/* no fresh anchor PEB was found, reuse the old one */
- 		if (!tmp_e) {
- 			ret = erase_block(ubi, old_fm->e[0]->pnum);
- 			if (ret < 0) {
--				ubi_err("could not erase old early PEB");
-+				ubi_err("could not erase old anchor PEB");
- 				goto err;
- 			}
- 
- 			new_fm->e[0]->pnum = old_fm->e[0]->pnum;
- 			new_fm->e[0]->ec = ret;
- 		} else {
--			/* we've got a new early PEB, return the old one */
-+			/* we've got a new anchor PEB, return the old one */
- 			ubi_wl_put_fm_peb(ubi, old_fm->e[0],
- 					  old_fm->to_be_tortured[0]);
- 
-@@ -1429,7 +1429,7 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 					  old_fm->to_be_tortured[i]);
- 	} else {
- 		if (!tmp_e) {
--			ubi_err("could not find an early PEB");
-+			ubi_err("could not find an anchor PEB");
- 			ret = -ENOSPC;
- 			goto err;
- 		}
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index be847d4..e5ab683 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -388,12 +388,12 @@ static struct ubi_wl_entry *find_mean_wl_entry(struct rb_root *root)
- }
- 
- /**
-- * find_early_wl_entry - find wear-leveling entry with the lowest pnum.
-+ * find_anchor_wl_entry - find wear-leveling entry to used as anchor PEB.
-  * @root: the RB-tree where to look for
-  * @max_pnum: highest possible pnum
-  */
--static struct ubi_wl_entry *find_early_wl_entry(struct rb_root *root,
--						int max_pnum)
-+static struct ubi_wl_entry *find_anchor_wl_entry(struct rb_root *root,
-+						 int max_pnum)
- {
- 	struct rb_node *p;
- 	struct ubi_wl_entry *e, *victim = NULL;
-@@ -433,7 +433,7 @@ struct ubi_wl_entry *ubi_wl_get_fm_peb(struct ubi_device *ubi, int max_pnum)
- 	if (max_pnum < 0)
- 		e = find_mean_wl_entry(&ubi->free);
- 	else
--		e = find_early_wl_entry(&ubi->free, max_pnum);
-+		e = find_anchor_wl_entry(&ubi->free, max_pnum);
- 
- 	if (!e)
- 		goto out;
--- 
-1.7.6.5
+On Mon, Jun 18, 2012 at 05:57:24PM +0200, Guennadi Liakhovetski wrote:
+> Currently regulator_register_fixed() uses a constant name to register a
+> fixed dummy regulator. This is sufficient in principle, since there is no
+> reason to register multiple such regulators. The user can simply supply a=
+ll
+> consumers in one array and use it to initialise such a regulator. However,
+> in some cases it can be convenient to register multiple such regulators.
+> This is also easy to achieve by appending the device ID to the name. It is
 
+None of this seems terribly obvious to me.  Once we're getting into
+allowing the user to specify a voltage (and possibly other parameters)
+for the regulator it's hopefully going to refer to an actual thing we
+can point at on the board rather than a virtual thing we've got to
+satisfy software so giving it a useful name seems more useful (like a
+name correspoding to the relevant supply on the schematic). =20
+
+There's also the fact that there shouldn't be any need for unique
+regulator names internally so if it really doesn't matter we should be
+able to give everything the same name happily enough.
+
+> also consistent with the current behaviour of the code, that fixes a name
+> itself without giving the user a possibility to provide a custom one.
+
+This is done on the basis that it's an entirely virtual regulator which
+doesn't have any meaningful mapping into the hardware.  If it's got a
+voltage then that's no longer true.
+
+--lpUp1egui7PDlNtH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP31VjAAoJEBus8iNuMP3dGoMP/32h9KvdwPy/NT6360tMnwNm
+e5QODte14CRyvcV53xxxjAuDMZyIK+hYz3n7ONefe5mUpgKS48XHHKVdHMLLpJy8
+ndxEL0zhlYbprNLNKEdBP8+skM+3apolwbjfB+4dOI9fZwUywKgqRoEL6wCID1Ci
+X159+I899FYof8/E7TtzaK8siq5MrRAxbil0SQYmI0ADVWsy0e9wRAiQQi9dcGdx
+ypFmUDhqJ7d87UeY79yI0hFBGTlLhvbMm8pVs9mcsj4/bFhVrnVMZ1ASaoQwac0Z
+t9hYyXfW+y7i1dEBeFTCI+mcJv0OOIecp8FXQJlmefQud5oU7phsPJWGDmagTBQ+
+0cEUee5owb7xazO9+0ylT45kW8szvG5/TOnbj1d2MxEEWPiPxaV4+Zpt3yvbtKb3
+pupJdE9vZVNOrKvzOgl8gPa5Ft9wtOqh5qjZJb6yluFeCvGfXK6ILUzYb5dKE/Yq
+IQpCJ10XoexSlvHYUFd4o72Kf7VMIA9Qj1SyjVSvigkv34s0adxWuK8SWtP/jnzj
+IHDFcNla43EfuSOYfUrIZ8eNqjM8PYXX8kXy0iEbO+TP84Byq5QdNBI/CGqIbSSS
+5lyxQTs1uU71XojjJ0ftsx2HPdvw3JKe1q88jDNdHXxTouT6omUCrjXitLcu6OSc
+vU3KHKptzQcsbZ5kRXoY
+=US29
+-----END PGP SIGNATURE-----
+
+--lpUp1egui7PDlNtH--
