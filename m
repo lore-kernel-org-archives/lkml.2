@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab2FSWAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 18:00:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36153 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171Ab2FSWAP (ORCPT
+	id S1755225Ab2FSWBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 18:01:17 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36428 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755171Ab2FSWBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 18:00:15 -0400
-Date: Tue, 19 Jun 2012 15:00:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH -mm] memcg: prevent from OOM with too many dirty pages
-Message-Id: <20120619150014.1ebc108c.akpm@linux-foundation.org>
-In-Reply-To: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
-References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 19 Jun 2012 18:01:15 -0400
+Date: Tue, 19 Jun 2012 23:04:46 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH V3] pch_uart: Add eg20t_port lock field, avoid recursive
+ spinlocks
+Message-ID: <20120619230446.2b933b3b@pyramind.ukuu.org.uk>
+In-Reply-To: <34b5e216a6dbd83d282dad22c2644136c652c34a.1340139586.git.dvhart@linux.intel.com>
+References: <34b5e216a6dbd83d282dad22c2644136c652c34a.1340139586.git.dvhart@linux.intel.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -29,107 +30,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jun 2012 16:50:04 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+On Tue, 19 Jun 2012 14:00:18 -0700
+Darren Hart <dvhart@linux.intel.com> wrote:
 
-> Current implementation of dirty pages throttling is not memcg aware which makes
-> it easy to have LRUs full of dirty pages which might lead to memcg OOM if the
-> hard limit is small and so the lists are scanned faster than pages written
-> back.
+> pch_uart_interrupt() takes priv->port.lock which leads to two recursive
+> spinlock calls if low_latency==1 or CONFIG_PREEMPT_RT_FULL=y (one
+> otherwise):
+> 
+> pch_uart_interrupt
+>   spin_lock_irqsave(priv->port.lock, flags)
+>   case PCH_UART_IID_RDR_TO (data ready)
+>   handle_rx_to
+>     push_rx
+>       tty_port_tty_get
+>         spin_lock_irqsave(&port->lock, flags) <--- already hold this lock
+>         ...
+>       tty_flip_buffer_push
+>         ...
+>         flush_to_ldisc
+>           spin_lock_irqsave(&tty->buf.lock)
+>             spin_lock_irqsave(&tty->buf.lock)
+>             disc->ops->receive_buf(tty, char_buf)
+>               n_tty_receive_buf
+>                 tty->ops->flush_chars()
+>                 uart_flush_chars
+>                   uart_start
+>                     spin_lock_irqsave(&port->lock) <--- already hold this lock
+> 
+> Avoid this by using a dedicated lock to protect the eg20t_port structure
+> and IO access to its membase. This is more consistent with the 8250
+> driver.  Ensure priv->lock is always take prior to priv->port.lock when
+> taken at the same time.
+> 
+> V2: Remove inadvertent whitespace change.
+> V3: Account for oops_in_progress for the private lock in
+>     pch_console_write().
+> 
+> Note: Like the 8250 driver, if a printk is introduced anywhere inside
+>       the pch_console_write() critical section, the kernel will hang
+>       on a recursive spinlock on the private lock. The oops case is
+>       handled by using a trylock in the oops_in_progress case.
+> 
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+> CC: Feng Tang <feng.tang@intel.com>
+> CC: Alexander Stein <alexander.stein@systec-electronic.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: Alan Cox <alan@linux.intel.com>
+> CC: linux-serial@vger.kernel.org
 
-This is a bit hard to parse.  I changed it to
-
-: The current implementation of dirty pages throttling is not memcg aware
-: which makes it easy to have memcg LRUs full of dirty pages.  Without
-: throttling, these LRUs can be scanned faster than the rate of writeback,
-: leading to memcg OOM conditions when the hard limit is small.
-
-does that still say what you meant to say?
-
-> The solution is far from being ideal - long term solution is memcg aware
-> dirty throttling - but it is meant to be a band aid until we have a real
-> fix.
-
-Fair enough I guess.  The fix is small and simple and if it makes the
-kernel better, why not?
-
-Would like to see a few more acks though.  Why hasn't everyone been
-hitting this?
-
-> We are seeing this happening during nightly backups which are placed into
-> containers to prevent from eviction of the real working set.
-
-Well that's a trick which we want to work well.  It's a killer
-featurelet for people who wonder what all this memcg crap is for ;)
-
-> The change affects only memcg reclaim and only when we encounter PageReclaim
-> pages which is a signal that the reclaim doesn't catch up on with the writers
-> so somebody should be throttled. This could be potentially unfair because it
-> could be somebody else from the group who gets throttled on behalf of the
-> writer but as writers need to allocate as well and they allocate in higher rate
-> the probability that only innocent processes would be penalized is not that
-> high.
-
-OK.
-
-> ...
->
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -720,9 +720,20 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
->  
->  		if (PageWriteback(page)) {
-> -			nr_writeback++;
-> -			unlock_page(page);
-> -			goto keep;
-> +			/*
-> +			 * memcg doesn't have any dirty pages throttling so we
-> +			 * could easily OOM just because too many pages are in
-> +			 * writeback from reclaim and there is nothing else to
-> +			 * reclaim.
-> +			 */
-> +			if (PageReclaim(page)
-> +					&& may_enter_fs && !global_reclaim(sc))
-> +				wait_on_page_writeback(page);
-> +			else {
-> +				nr_writeback++;
-> +				unlock_page(page);
-> +				goto keep;
-> +			}
-
-A couple of things here.
-
-With my gcc and CONFIG_CGROUP_MEM_RES_CTLR=n (for gawd's sake can we
-please rename this to CONFIG_MEMCG?), this:
-
---- a/mm/vmscan.c~memcg-prevent-from-oom-with-too-many-dirty-pages-fix
-+++ a/mm/vmscan.c
-@@ -726,8 +726,8 @@ static unsigned long shrink_page_list(st
- 			 * writeback from reclaim and there is nothing else to
- 			 * reclaim.
- 			 */
--			if (PageReclaim(page)
--					&& may_enter_fs && !global_reclaim(sc))
-+			if (!global_reclaim(sc) && PageReclaim(page) &&
-+					may_enter_fs)
- 				wait_on_page_writeback(page);
- 			else {
- 				nr_writeback++;
-
-
-reduces vmscan.o's .text by 48 bytes(!).  Because the compiler can
-avoid generating any code for PageReclaim() and perhaps the
-may_enter_fs test.  Because global_reclaim() evaluates to constant
-true.  Do you think that's an improvement?
-
-Also, why do we test may_enter_fs here?  I should have been able to
-work out your reasoning from either code comments or changelogging but
-I cannot (bad).  I don't *think* there's a deadlock issue here?  If the
-page is now under writeback, that writeback *will* complete?
-
-Finally, I wonder if there should be some timeout of that wait.  I
-don't know why, but I wouldn't be surprised if we hit some glitch which
-causes us to add one!
-
-
+Acked-by: Alan Cox <alan@linux.intel.com>
