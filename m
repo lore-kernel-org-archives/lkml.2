@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081Ab2FSFnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 01:43:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40090 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab2FSFno convert rfc822-to-8bit (ORCPT
+	id S1753268Ab2FSFo5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 01:44:57 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58144 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab2FSFo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 01:43:44 -0400
+	Tue, 19 Jun 2012 01:44:56 -0400
+X-AuditID: 9c930197-b7b87ae000000e4d-0b-4fe011d5d601
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, namhyung.kim@lge.com,
+        mingo@kernel.org, peterz@infradead.org
+Subject: Re: [RFC PATCH 0/2] libtraceevent/perf: Add support for trace-cmd plugins
+References: <1339695333-64591-1-git-send-email-dsahern@gmail.com>
+	<87lijlhv9v.fsf@sejong.aot.lge.com> <4FDF3D5C.1030209@gmail.com>
+	<87d34wi0y3.fsf@sejong.aot.lge.com>
+	<1340067793.25903.158.camel@gandalf.stny.rr.com>
+	<878vfkhzr8.fsf@sejong.aot.lge.com>
+	<1340069162.25903.176.camel@gandalf.stny.rr.com>
+	<874nq8hyfa.fsf@sejong.aot.lge.com>
+	<1340072171.25903.181.camel@gandalf.stny.rr.com>
+Date: Tue, 19 Jun 2012 14:41:31 +0900
+In-Reply-To: <1340072171.25903.181.camel@gandalf.stny.rr.com> (Steven
+	Rostedt's message of "Mon, 18 Jun 2012 22:16:11 -0400")
+Message-ID: <87vcinhn90.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120619041154.GA28651@shangw>
-References: <1339623535.3321.4.camel@lappy>
-	<20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1339667440.3321.7.camel@lappy>
-	<20120618223203.GE32733@google.com>
-	<1340059850.3416.3.camel@lappy>
-	<20120619041154.GA28651@shangw>
-Date: Mon, 18 Jun 2012 22:43:44 -0700
-X-Google-Sender-Auth: oc1ywx2lxDtE_8hLjW1XY-WBvwc
-Message-ID: <CAE9FiQVitg0ODjph96LnPD6pnWSSN8QkFngEwbUX9-nT-sdy+g@mail.gmail.com>
-Subject: Re: Early boot panic on machine with lots of memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 9:11 PM, Gavin Shan <shangw@linux.vnet.ibm.com> wrote:
-> :
-> [    0.000000]    memblock_free: [0x0000102febc080-0x0000102febf080] memblock_free_reserved_regions+0x37/0x39
+On Mon, 18 Jun 2012 22:16:11 -0400, Steven Rostedt wrote:
+> We can be a bit better at the raw print, sure. Here's the format that's
+> there:
 >
-> Here, [0x0000102febc080-0x0000102febf080] was released to available memory block
-> by function free_low_memory_core_early(). I'm not sure the release memblock might
-> be taken by bootmem, but I think it's worthy to have a try of removing following
-> 2 lines: memblock_free_reserved_regions() and memblock_reserve_reserved_regions()
+> 	field:__u64 rip;	offset:16;	size:8;	signed:0;
+> 	field:__u32 csbase;	offset:24;	size:4;	signed:0;
+> 	field:__u8 len;	offset:28;	size:1;	signed:0;
+> 	field:__u8 insn[15];	offset:29;	size:15;	signed:0;
+> 	field:__u8 flags;	offset:44;	size:1;	signed:0;
+> 	field:__u8 failed;	offset:45;	size:1;	signed:0;
+>
+> It treated __u* as decimal numbers, but it also saw that insn[15] was an
+> array, and with single bytes at that. So it thought it was a string, and
+> tried to print it out as such.
+>
+> We can change the heuristics of this to make it more readable.
+>
 
-if it was taken, should have print out about that.
+Right. The current heuristic treats an u8 array as a string:
 
-Yinghai
+static int field_is_string(struct format_field *field)
+{
+	if ((field->flags & FIELD_IS_ARRAY) &&
+	    (strstr(field->type, "char") || strstr(field->type, "u8") ||
+	     strstr(field->type, "s8")))
+		return 1;
+
+	return 0;
+}
+
+Do you want to get rid of u8 from the function? Or is there a
+better way?
+
+Thanks,
+Namhyung
