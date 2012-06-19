@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab2FSEaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 00:30:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44158 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab2FSEaP convert rfc822-to-8bit (ORCPT
+	id S1752325Ab2FSEyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 00:54:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38648 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab2FSEyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 00:30:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120619000150.GA4208@kroah.com>
-References: <1339940861-18258-1-git-send-email-devendra.aaru@gmail.com>
-	<20120619000150.GA4208@kroah.com>
-Date: Tue, 19 Jun 2012 10:00:15 +0530
-Message-ID: <CAHdPZaOPB_ruWGTa7vid9+_P_GiSQC02J=Q5e=2us7NGrCVKiQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] staging/rtl8192u: cleanup coding style problems
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Jun 2012 00:54:17 -0400
+Date: Tue, 19 Jun 2012 14:54:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Anton Vorontsov <avorontsov@ru.mvista.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jenny TC <jenny.tc@intel.com>
+Subject: linux-next: build warning after merge of the battery tree
+Message-Id: <20120619145408.4c68bff2ed75b52fdba66eff@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__19_Jun_2012_14_54_08_+1000_XuMRex53BAudd2oI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+--Signature=_Tue__19_Jun_2012_14_54_08_+1000_XuMRex53BAudd2oI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for spending your valuable time in reviewing the patch,
+Hi Anton,
 
-On Tue, Jun 19, 2012 at 5:31 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sun, Jun 17, 2012 at 07:17:40PM +0530, Devendra Naga wrote:
->> The following warnings / errors were cleaned
->>
->> drivers/staging/rtl8192u/r8180_93cx6.c:25: ERROR: space required before the open parenthesis '('
->> drivers/staging/rtl8192u/r8180_93cx6.c:28: ERROR: do not use C99 // comments
->> drivers/staging/rtl8192u/r8180_93cx6.c:30: WARNING: line over 80 characters
->> drivers/staging/rtl8192u/r8180_93cx6.c:31: ERROR: do not use C99 // comments
->> drivers/staging/rtl8192u/r8180_93cx6.c:41: ERROR: space required after that ',' (ctx:VxV)
->> drivers/staging/rtl8192u/r8180_93cx6.c:45: ERROR: need consistent spacing a round '&' (ctx:WxO)
->> drivers/staging/rtl8192u/r8180_93cx6.c:45: ERROR: space prohibited after that '~' (ctx:OxW)
->> drivers/staging/rtl8192u/r8180_93cx6.c:51: ERROR: space required after that ',' (ctx:VxV)
->> drivers/staging/rtl8192u/r8180_93cx6.c:53: ERROR: space required before the open parenthesis '('
->> drivers/staging/rtl8192u/r8180_93cx6.c:55: ERROR: space required after that ',' (ctx:VxV)
->> drivers/staging/rtl8192u/r8180_93cx6.c:57: ERROR: space required after that ',' (ctx:VxV)
->> drivers/staging/rtl8192u/r8180_93cx6.c:69: ERROR: spaces required around that '=' (ctx:VxV)
->> drivers/staging/rtl8192u/r8180_93cx6.c:69: ERROR: space prohibited before that close parenthesis ')'
->> drivers/staging/rtl8192u/r8180_93cx6.c:72: ERROR: space required before the open parenthesis '('
->> drivers/staging/rtl8192u/r8180_93cx6.c:72: ERROR: trailing statements should be on next line
->>
->> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
->
-> It's good you broke this down as to what you were fixing, but I don't
-> like this change:
->
->> -     if(bit) return 1;
->> -     return 0;
->> +     return bit ? 1: 0;
->
-> Please don't use ? : if you can help it, it is just hard to read.
-Ok.
->
-> Care to redo this one and resend both patches?
->
-You can expect a V2 of your comments :-),
-and the second patch will be broken into little more pieces.
-> thanks,
->
-> greg k-h
+After merging the battery tree, today's linux-next build (i386 defconfig)
+produced this warning:
+
+drivers/power/power_supply_core.c: In function 'psy_register_thermal':
+drivers/power/power_supply_core.c:204:6: warning: passing argument 1 of 'th=
+ermal_zone_device_register' discards 'const' qualifier from pointer target =
+type [enabled by default]
+include/linux/thermal.h:149:29: note: expected 'char *' but argument is of =
+type 'const char *'
+
+Introduced by commit 3be330bf8860 ("power_supply: Register battery as a
+thermal zone").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__19_Jun_2012_14_54_08_+1000_XuMRex53BAudd2oI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP4AXwAAoJEECxmPOUX5FEy+EP/0NcdqkOM+1vp1phhrmZ1Zc2
+5V7NO7/wQnR1mX82qUOG8+zBywExmT8IC62Wi4bTaeEmOHDBozFA6d42ra6LWCMJ
+W047sO5nwRsA64hZuVNuDF47+Ioqn4JKJD8KVL4dPZMDIroVYcYR5TMW5ELg+nct
+oSLQM6s56CeqBG2g7vd/5fuRn4TtA2hZhq83mS9+RRpeeuyqI61O9bOgNJRsUNL2
+kkw7TqTs5lRTPzX1zEnC0D3RIe2w4oCyZ88uHa+2vDiB/+XMI8KzQZU+9Kgr6NZg
+TtSYFHKOe/eQY9NvWnTJpolcUL+UWnzZWV2PeMjB9Eln6CBsQC1STPR96ni/Nadw
+aC0mRo/ykrCZ68vrj2/S1wX9fI4jAEtDaNB9hrakwWtBRgw1qXGPqnFIMfBFBXmD
+AMelSES9DwSPKVNBdI4f1801SF5V/fD6uJ5Qeul90rwZMbSLjFUsrNwlAvjDxMka
+Grq87nJufwMNnrsH1YQzhx8DLu1sTIzj8SkPpxEvpjPaj4MReQraCtVWlZBT0sze
+0H+UraGMiNuhG9GbO3mN9pLVqYl6ssyPJdAyvVhl8EFYZDTygA5QgOFohG2iWzMq
+8BKA1GbP6yjFt3fSZF36N7koM5/4a2C9SRP3PCOiQvPSiZ7ZCiAlKaKlLvpITtsy
+XJ0vrUTythti+9b4+V4J
+=8M+P
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__19_Jun_2012_14_54_08_+1000_XuMRex53BAudd2oI--
