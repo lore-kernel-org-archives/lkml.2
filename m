@@ -1,172 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab2FSIiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 04:38:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49657 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100Ab2FSIiI convert rfc822-to-8bit (ORCPT
+	id S1753930Ab2FSInz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 04:43:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57737 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab2FSInw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 04:38:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <1338880312-17561-1-git-send-email-minchan@kernel.org>
-References: <1338880312-17561-1-git-send-email-minchan@kernel.org>
-Date: Tue, 19 Jun 2012 17:38:07 +0900
-X-Google-Sender-Auth: Ja6SQAJOndpG1rfO3YQFyiSk8KI
-Message-ID: <CAEwNFnBAC1OKCA3MnT0VHX+y9gfLDPhCO-=SVD_-sVipoAX4ag@mail.gmail.com>
-Subject: Re: [PATCH] [RESEND] arm: limit memblock base address for early_pte_alloc
-From: Minchan Kim <minchan@kernel.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nico@linaro.org>, Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jongsung Kim <neidhard.kim@lge.com>, Chanho Min <chanho.min@lge.com>,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Jun 2012 04:43:52 -0400
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, Rob Landley <rob@landley.net>,
+        Bernhard Voelker <mail@bernhard-voelker.de>,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: [PATCH] docs: block: update ioprio.txt
+Date: Tue, 19 Jun 2012 16:51:37 +0800
+Message-Id: <1340095897-9014-1-git-send-email-wenqing.lz@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resend.
+From: Zheng Liu <wenqing.lz@taobao.com>
 
-Could you please see this problem?
+The ionice.c in ioprio.txt document needed updating for the latest util-linux
+version.
 
-Thanks.
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Rob Landley <rob@landley.net>
+CC: Bernhard Voelker <mail@bernhard-voelker.de>
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+---
+ Documentation/block/ioprio.txt |  174 +++++++++++++++++++++++++---------------
+ 1 files changed, 109 insertions(+), 65 deletions(-)
 
-On Tue, Jun 5, 2012 at 4:11 PM, Minchan Kim <minchan@kernel.org> wrote:
-> If we do arm_memblock_steal with a page which is not aligned with section size,
-> panic can happen during boot by page fault in map_lowmem.
->
-> Detail:
->
-> 1) mdesc->reserve can steal a page which is allocated at 0x1ffff000 by memblock
->   which prefers tail pages of regions.
-> 2) map_lowmem maps 0x00000000 - 0x1fe00000
-> 3) map_lowmem try to map 0x1fe00000 but it's not aligned by section due to 1.
-> 4) calling alloc_init_pte allocates a new page for new pte by memblock_alloc
-> 5) allocated memory for pte is 0x1fffe000 -> it's not mapped yet.
-> 6) memset(ptr, 0, sz) in early_alloc_aligned got PANICed!
->
-> This patch fix it by limiting memblock to mapped memory range.
->
-> Reported-by: Jongsung Kim <neidhard.kim@lge.com>
-> Suggested-by: Chanho Min <chanho.min@lge.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  arch/arm/mm/mmu.c |   37 ++++++++++++++++++++++---------------
->  1 file changed, 22 insertions(+), 15 deletions(-)
->
-> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> index e5dad60..a15aafe 100644
-> --- a/arch/arm/mm/mmu.c
-> +++ b/arch/arm/mm/mmu.c
-> @@ -594,7 +594,7 @@ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
->
->  static void __init alloc_init_section(pud_t *pud, unsigned long addr,
->                                      unsigned long end, phys_addr_t phys,
-> -                                     const struct mem_type *type)
-> +                                     const struct mem_type *type, bool lowmem)
->  {
->        pmd_t *pmd = pmd_offset(pud, addr);
->
-> @@ -619,6 +619,8 @@ static void __init alloc_init_section(pud_t *pud, unsigned long addr,
->
->                flush_pmd_entry(p);
->        } else {
-> +               if (lowmem)
-> +                       memblock_set_current_limit(__pa(addr));
->                /*
->                 * No need to loop; pte's aren't interested in the
->                 * individual L1 entries.
-> @@ -628,14 +630,15 @@ static void __init alloc_init_section(pud_t *pud, unsigned long addr,
->  }
->
->  static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
-> -       unsigned long end, unsigned long phys, const struct mem_type *type)
-> +                               unsigned long end, unsigned long phys,
-> +                               const struct mem_type *type, bool lowmem)
->  {
->        pud_t *pud = pud_offset(pgd, addr);
->        unsigned long next;
->
->        do {
->                next = pud_addr_end(addr, end);
-> -               alloc_init_section(pud, addr, next, phys, type);
-> +               alloc_init_section(pud, addr, next, phys, type, lowmem);
->                phys += next - addr;
->        } while (pud++, addr = next, addr != end);
->  }
-> @@ -702,14 +705,7 @@ static void __init create_36bit_mapping(struct map_desc *md,
->  }
->  #endif /* !CONFIG_ARM_LPAE */
->
-> -/*
-> - * Create the page directory entries and any necessary
-> - * page tables for the mapping specified by `md'.  We
-> - * are able to cope here with varying sizes and address
-> - * offsets, and we take full advantage of sections and
-> - * supersections.
-> - */
-> -static void __init create_mapping(struct map_desc *md)
-> +static inline void __create_mapping(struct map_desc *md, bool lowmem)
->  {
->        unsigned long addr, length, end;
->        phys_addr_t phys;
-> @@ -759,7 +755,7 @@ static void __init create_mapping(struct map_desc *md)
->        do {
->                unsigned long next = pgd_addr_end(addr, end);
->
-> -               alloc_init_pud(pgd, addr, next, phys, type);
-> +               alloc_init_pud(pgd, addr, next, phys, type, lowmem);
->
->                phys += next - addr;
->                addr = next;
-> @@ -767,6 +763,18 @@ static void __init create_mapping(struct map_desc *md)
->  }
->
->  /*
-> + * Create the page directory entries and any necessary
-> + * page tables for the mapping specified by `md'.  We
-> + * are able to cope here with varying sizes and address
-> + * offsets, and we take full advantage of sections and
-> + * supersections.
-> + */
-> +static void __init create_mapping(struct map_desc *md)
-> +{
-> +       __create_mapping(md, false);
-> +}
-> +
-> +/*
->  * Create the architecture specific mappings
->  */
->  void __init iotable_init(struct map_desc *io_desc, int nr)
-> @@ -1111,7 +1119,7 @@ static void __init map_lowmem(void)
->                map.length = end - start;
->                map.type = MT_MEMORY;
->
-> -               create_mapping(&map);
-> +               __create_mapping(&map, true);
->        }
->  }
->
-> @@ -1123,11 +1131,10 @@ void __init paging_init(struct machine_desc *mdesc)
->  {
->        void *zero_page;
->
-> -       memblock_set_current_limit(arm_lowmem_limit);
-> -
->        build_mem_type_table();
->        prepare_page_table();
->        map_lowmem();
-> +       memblock_set_current_limit(arm_lowmem_limit);
->        dma_contiguous_remap();
->        devicemaps_init(mdesc);
->        kmap_init();
-> --
-> 1.7.9.5
->
-
-
-
+diff --git a/Documentation/block/ioprio.txt b/Documentation/block/ioprio.txt
+index 8ed8c59..4aa59d6 100644
+--- a/Documentation/block/ioprio.txt
++++ b/Documentation/block/ioprio.txt
+@@ -64,36 +64,19 @@ will change pid 100 to run at the realtime scheduling class, at priority 2.
+ #include <errno.h>
+ #include <getopt.h>
+ #include <unistd.h>
+-#include <sys/ptrace.h>
+-#include <asm/unistd.h>
+-
+-extern int sys_ioprio_set(int, int, int);
+-extern int sys_ioprio_get(int, int);
+-
+-#if defined(__i386__)
+-#define __NR_ioprio_set		289
+-#define __NR_ioprio_get		290
+-#elif defined(__ppc__)
+-#define __NR_ioprio_set		273
+-#define __NR_ioprio_get		274
+-#elif defined(__x86_64__)
+-#define __NR_ioprio_set		251
+-#define __NR_ioprio_get		252
+-#elif defined(__ia64__)
+-#define __NR_ioprio_set		1274
+-#define __NR_ioprio_get		1275
+-#else
+-#error "Unsupported arch"
+-#endif
++#include <sys/syscall.h>
++#include <ctype.h>
++
++static int tolerant;
+ 
+ static inline int ioprio_set(int which, int who, int ioprio)
+ {
+-	return syscall(__NR_ioprio_set, which, who, ioprio);
++	return syscall(SYS_ioprio_set, which, who, ioprio);
+ }
+ 
+ static inline int ioprio_get(int which, int who)
+ {
+-	return syscall(__NR_ioprio_get, which, who);
++	return syscall(SYS_ioprio_get, which, who);
+ }
+ 
+ enum {
+@@ -109,72 +92,133 @@ enum {
+ 	IOPRIO_WHO_USER,
+ };
+ 
+-#define IOPRIO_CLASS_SHIFT	13
++#define IOPRIO_CLASS_SHIFT	(13)
++#define IOPRIO_PRIO_MASK	((1UL << IOPRIO_CLASS_SHIFT) - 1)
+ 
+-const char *to_prio[] = { "none", "realtime", "best-effort", "idle", };
++#define IOPRIO_PRIO_CLASS(mask)	((mask) >> IOPRIO_CLASS_SHIFT)
++#define IOPRIO_PRIO_DATA(mask)	((mask) & IOPRIO_PRIO_MASK)
++#define IOPRIO_PRIO_VALUE(class, data)	(((class) << IOPRIO_CLASS_SHIFT) | data)
+ 
+-int main(int argc, char *argv[])
+-{
+-	int ioprio = 4, set = 0, ioprio_class = IOPRIO_CLASS_BE;
+-	int c, pid = 0;
++const char *to_prio[] = {
++	[IOPRIO_CLASS_NONE] = "none",
++	[IOPRIO_CLASS_RT]   = "realtime",
++	[IOPRIO_CLASS_BE]   = "best-effort",
++	[IOPRIO_CLASS_IDLE] = "idle"
++};
+ 
+-	while ((c = getopt(argc, argv, "+n:c:p:")) != EOF) {
++int main(int argc, char **argv)
++{
++	int data = 4, set = 0, ioclass = IOPRIO_CLASS_BE, c;
++	pid_t pid = 0;
++
++	static const struct option longopts[] = {
++		{ "classdata", required_argument, NULL, 'n' },
++		{ "class",     required_argument, NULL, 'c' },
++		{ "help",      no_argument,       NULL, 'h' },
++		{ "ignore",    no_argument,       NULL, 't' },
++		{ "pid",       required_argument, NULL, 'p' },
++		{ "version",   no_argument,       NULL, 'V' },
++		{ NULL, 0, NULL, 0 }
++	};
++
++	setlocale(LC_ALL, "");
++	bindtextdomain(PACKAGE, LOCALEDIR);
++	textdomain(PACKAGE);
++	atexit(close_stdout);
++
++	while ((c = getopt_long(argc, argv, "+n:c:p:tVh", longopts, NULL)) != EOF)
+ 		switch (c) {
+ 		case 'n':
+-			ioprio = strtol(optarg, NULL, 10);
+-			set = 1;
++			data = strtos32_or_err(optarg, _("invalid class data argument"));
++			set |= 1;
+ 			break;
+ 		case 'c':
+-			ioprio_class = strtol(optarg, NULL, 10);
+-			set = 1;
++			if (isdigit(*optarg))
++				ioclass = strtos32_or_err(optarg,
++						_("invalid class argument"));
++			else {
++				ioclass = parse_ioclass(optarg);
++				if (ioclass < 0)
++					errx(EXIT_FAILURE,
++						_("unknown scheduling class: '%s'"),
++						optarg);
++			}
++			set |= 2;
+ 			break;
+ 		case 'p':
+-			pid = strtol(optarg, NULL, 10);
++			pid = strtos32_or_err(optarg, _("invalid PID argument"));
+ 			break;
++		case 't':
++			tolerant = 1;
++			break;
++		case 'V':
++			printf(_("%s from %s\n"),
++				program_invocation_short_name, PACKAGE_STRING);
++			return EXIT_SUCCESS;
++		case 'h':
++			usage(stdout);
++		default:
++			usage(stderr);
+ 		}
+-	}
+ 
+-	switch (ioprio_class) {
++	switch (ioclass) {
+ 		case IOPRIO_CLASS_NONE:
+-			ioprio_class = IOPRIO_CLASS_BE;
++			if ((set & 1) && !tolerant)
++				warnx(_("ignoring given class data for none class"));
++			data = 0;
+ 			break;
+ 		case IOPRIO_CLASS_RT:
+ 		case IOPRIO_CLASS_BE:
+ 			break;
+ 		case IOPRIO_CLASS_IDLE:
+-			ioprio = 7;
++			if ((set & 1) && !tolerant)
++				warnx(_("ignoring given class data for idle class"));
++			data = 7;
+ 			break;
+ 		default:
+-			printf("bad prio class %d\n", ioprio_class);
+-			return 1;
++			if (!tolerant)
++				warnx(_("unknown prio class %d"), ioclass);
++			break;
+ 	}
+ 
+-	if (!set) {
+-		if (!pid && argv[optind])
+-			pid = strtol(argv[optind], NULL, 10);
+-
+-		ioprio = ioprio_get(IOPRIO_WHO_PROCESS, pid);
+-
+-		printf("pid=%d, %d\n", pid, ioprio);
+-
+-		if (ioprio == -1)
+-			perror("ioprio_get");
+-		else {
+-			ioprio_class = ioprio >> IOPRIO_CLASS_SHIFT;
+-			ioprio = ioprio & 0xff;
+-			printf("%s: prio %d\n", to_prio[ioprio_class], ioprio);
++	if (!set && !pid && optind == argc)
++		/*
++		 * ionice without options, print the current ioprio
++		 */
++		ioprio_print(0);
++
++	else if (!set && pid) {
++		/*
++		 * ionice -p PID [PID ...]
++		 */
++		ioprio_print(pid);
++
++		for(; argv[optind]; ++optind) {
++			pid = strtos32_or_err(argv[optind], _("invalid PID argument"));
++			ioprio_print(pid);
+ 		}
+-	} else {
+-		if (ioprio_set(IOPRIO_WHO_PROCESS, pid, ioprio | ioprio_class << IOPRIO_CLASS_SHIFT) == -1) {
+-			perror("ioprio_set");
+-			return 1;
++	} else if (set && pid) {
++		/*
++		 * ionice -c CLASS -p PID [PID ...]
++		 */
++		ioprio_setpid(pid, ioclass, data);
++
++		for(; argv[optind]; ++optind) {
++			pid = strtos32_or_err(argv[optind], _("invalid PID argument"));
++			ioprio_setpid(pid, ioclass, data);
+ 		}
+-
+-		if (argv[optind])
+-			execvp(argv[optind], &argv[optind]);
+-	}
+-
+-	return 0;
++	} else if (argv[optind]) {
++		/*
++		 * ionice [-c CLASS] COMMAND
++		 */
++		ioprio_setpid(0, ioclass, data);
++		execvp(argv[optind], &argv[optind]);
++		err(EXIT_FAILURE, _("executing %s failed"), argv[optind]);
++	} else
++		usage(stderr);
++
++
++	return EXIT_SUCCESS;
+ }
+ 
+ ---> snip ionice.c tool <---
 -- 
-Kind regards,
-Minchan Kim
+1.7.4.1
+
