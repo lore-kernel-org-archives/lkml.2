@@ -1,158 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab2FSXnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 19:43:24 -0400
+	id S1755349Ab2FSXn3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 19:43:29 -0400
 Received: from mga01.intel.com ([192.55.52.88]:43102 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411Ab2FSXnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 19:43:23 -0400
+	id S1755274Ab2FSXn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 19:43:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="167760067"
+   d="scan'208";a="167760094"
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: Alexander Gordeev <agordeev@redhat.com>, Ingo Molnar <mingo@kernel.org>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>, yinghai@kernel.org,
         linux-kernel@vger.kernel.org, x86@kernel.org, gorcunov@openvz.org
-Subject: [PATCH 1/2] x86, apic: optimize cpu traversal in __assign_irq_vector() using domain membership
-Date: Tue, 19 Jun 2012 16:43:30 -0700
-Message-Id: <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
+Subject: [PATCH 2/2] x86, x2apic: limit the vector reservation to the user specified mask
+Date: Tue, 19 Jun 2012 16:43:31 -0700
+Message-Id: <1340149411-2972-2-git-send-email-suresh.b.siddha@intel.com>
 X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1340067097.3696.6.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
 References: <1340067097.3696.6.camel@sbsiddha-desk.sc.intel.com>
+ <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently __assign_irq_vector() goes through each cpu in the specified mask
-until it finds a free vector in all the cpu's that are part of the same
-interrupt domain. We visit all the interrupt domain sibling cpus to reserve
-the free vector. So, when we fail to find a free vector in an interrupt
-domain, it is safe to continue our search with a cpu belonging to a new
-interrupt domain. No need to go through each cpu, if the domain
-containing that cpu is already visited.
+For the x2apic cluster mode, vector for an interrupt is currently reserved on
+all the cpu's that are part of the x2apic cluster. But the interrupts will
+be routed only to the cluster (derived from the first cpu in the mask) members
+specified in the mask. So there is no need to reserve the vector in the unused
+cluster members.
 
-Use the irq_cfg's old_domain to track the visited domains and optimize
-the cpu traversal while finding a free vector in the given cpumask.
-
-NOTE: We can also optimize the search by using for_each_cpu and skip the
-current cpu, if it is not the first cpu in the mask returned by the
-vector_allocation_domain(). But re-using the cfg->old_domain to track
-the visited domains will be slightly faster.
+Modify __assign_irq_vector() to reserve the vectors based on the user
+specified irq destination mask and the corresponding vector domain specified
+by the apic driver.
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- arch/x86/include/asm/apic.h           |    8 +++-----
- arch/x86/kernel/apic/apic_noop.c      |    3 +--
- arch/x86/kernel/apic/io_apic.c        |   15 ++++++++-------
- arch/x86/kernel/apic/x2apic_cluster.c |    3 +--
- 4 files changed, 13 insertions(+), 16 deletions(-)
+ arch/x86/include/asm/apic.h           |   14 +++++++++---
+ arch/x86/kernel/apic/apic_noop.c      |    5 +++-
+ arch/x86/kernel/apic/io_apic.c        |   36 ++++++++++++++++++++++-----------
+ arch/x86/kernel/apic/x2apic_cluster.c |    8 ++++--
+ 4 files changed, 43 insertions(+), 20 deletions(-)
 
 diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 8619a87..b37fa12 100644
+index b37fa12..7746acb 100644
 --- a/arch/x86/include/asm/apic.h
 +++ b/arch/x86/include/asm/apic.h
-@@ -306,7 +306,7 @@ struct apic {
+@@ -306,7 +306,9 @@ struct apic {
  	unsigned long (*check_apicid_used)(physid_mask_t *map, int apicid);
  	unsigned long (*check_apicid_present)(int apicid);
  
--	bool (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
-+	void (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
+-	void (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
++	void (*vector_allocation_domain)(const struct cpumask *mask,
++					 struct cpumask *retmask,
++					 const struct cpumask *prevmask);
  	void (*init_apic_ldr)(void);
  
  	void (*ioapic_phys_id_map)(physid_mask_t *phys_map, physid_mask_t *retmap);
-@@ -614,7 +614,7 @@ default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
- 			       const struct cpumask *andmask,
+@@ -615,7 +617,9 @@ default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
  			       unsigned int *apicid);
  
--static inline bool
-+static inline void
- flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+ static inline void
+-flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
++flat_vector_allocation_domain(const struct cpumask *mask,
++			      struct cpumask *retmask,
++			      const struct cpumask *prevmask)
  {
  	/* Careful. Some cpus do not strictly honor the set of cpus
-@@ -627,14 +627,12 @@ flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
- 	 */
- 	cpumask_clear(retmask);
- 	cpumask_bits(retmask)[0] = APIC_ALL_CPUS;
--	return false;
+ 	 * specified in the interrupt destination when using lowest
+@@ -630,9 +634,11 @@ flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
  }
  
--static inline bool
-+static inline void
- default_vector_allocation_domain(int cpu, struct cpumask *retmask)
+ static inline void
+-default_vector_allocation_domain(int cpu, struct cpumask *retmask)
++default_vector_allocation_domain(const struct cpumask *mask,
++				 struct cpumask *retmask,
++				 const struct cpumask *prevmask)
  {
- 	cpumask_copy(retmask, cpumask_of(cpu));
--	return true;
+-	cpumask_copy(retmask, cpumask_of(cpu));
++	cpumask_copy(retmask, cpumask_of(cpumask_first(retmask)));
  }
  
  static inline unsigned long default_check_apicid_used(physid_mask_t *map, int apicid)
 diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-index 65c07fc..08c337b 100644
+index 08c337b..847ece1 100644
 --- a/arch/x86/kernel/apic/apic_noop.c
 +++ b/arch/x86/kernel/apic/apic_noop.c
-@@ -100,12 +100,11 @@ static unsigned long noop_check_apicid_present(int bit)
+@@ -100,8 +100,11 @@ static unsigned long noop_check_apicid_present(int bit)
  	return physid_isset(bit, phys_cpu_present_map);
  }
  
--static bool noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+static void noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
+-static void noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
++static void noop_vector_allocation_domain(const struct cpumask *mask,
++					  struct cpumask *retmask,
++					  const struct cpumask *prevmask)
  {
++	int cpu = cpumask_first(retmask);
  	if (cpu != 0)
  		pr_warning("APIC: Vector allocated for non-BSP cpu\n");
  	cpumask_copy(retmask, cpumask_of(cpu));
--	return true;
- }
- 
- static u32 noop_apic_read(u32 reg)
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 99a794d..7a945f8 100644
+index 7a945f8..0a55eb8 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1134,12 +1134,13 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+@@ -1097,6 +1097,22 @@ void unlock_vector_lock(void)
+ 	raw_spin_unlock(&vector_lock);
+ }
+ 
++/*
++ * New cpu mask using the vector is a subset of the current in use mask.
++ * So cleanup the vector allocation for the members that are not used anymore.
++ */
++static inline int
++cleanup_unused_subset(struct cpumask *mask, struct irq_cfg *cfg)
++{
++	if (!cpumask_equal(mask, cfg->domain)) {
++		cpumask_andnot(cfg->old_domain, cfg->domain, mask);
++		cfg->move_in_progress = 1;
++		cpumask_and(cfg->domain, cfg->domain, mask);
++	}
++	free_cpumask_var(mask);
++	return 0;
++}
++
+ static int
+ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ {
+@@ -1126,10 +1142,9 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ 	old_vector = cfg->vector;
+ 	if (old_vector) {
+ 		cpumask_and(tmp_mask, mask, cpu_online_mask);
+-		if (cpumask_subset(tmp_mask, cfg->domain)) {
+-			free_cpumask_var(tmp_mask);
+-			return 0;
+-		}
++		apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
++		if (cpumask_subset(tmp_mask, cfg->domain))
++			return cleanup_unused_subset(tmp_mask, cfg);
+ 	}
  
  	/* Only try and allocate irqs on cpus that are present */
- 	err = -ENOSPC;
--	for_each_cpu_and(cpu, mask, cpu_online_mask) {
-+	cpumask_clear(cfg->old_domain);
-+	cpu = cpumask_first_and(mask, cpu_online_mask);
-+	while (cpu < nr_cpu_ids) {
- 		int new_cpu;
- 		int vector, offset;
--		bool more_domains;
+@@ -1137,15 +1152,12 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ 	cpumask_clear(cfg->old_domain);
+ 	cpu = cpumask_first_and(mask, cpu_online_mask);
+ 	while (cpu < nr_cpu_ids) {
+-		int new_cpu;
+-		int vector, offset;
++		int new_cpu, vector, offset;
  
--		more_domains = apic->vector_allocation_domain(cpu, tmp_mask);
-+		apic->vector_allocation_domain(cpu, tmp_mask);
+-		apic->vector_allocation_domain(cpu, tmp_mask);
+-
+-		if (cpumask_subset(tmp_mask, cfg->domain)) {
+-			free_cpumask_var(tmp_mask);
+-			return 0;
+-		}
++		cpumask_copy(tmp_mask, cpumask_of(cpu));
++		apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
++		if (cpumask_subset(tmp_mask, cfg->domain))
++			return cleanup_unused_subset(tmp_mask, cfg);
  
- 		if (cpumask_subset(tmp_mask, cfg->domain)) {
- 			free_cpumask_var(tmp_mask);
-@@ -1156,10 +1157,10 @@ next:
- 		}
- 
- 		if (unlikely(current_vector == vector)) {
--			if (more_domains)
--				continue;
--			else
--				break;
-+			cpumask_or(cfg->old_domain, cfg->old_domain, tmp_mask);
-+			cpumask_andnot(tmp_mask, mask, cfg->old_domain);
-+			cpu = cpumask_first_and(tmp_mask, cpu_online_mask);
-+			continue;
- 		}
- 
- 		if (test_bit(vector, used_vectors))
+ 		vector = current_vector;
+ 		offset = current_offset;
 diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index 943d03f..b5d889b 100644
+index b5d889b..4d49512 100644
 --- a/arch/x86/kernel/apic/x2apic_cluster.c
 +++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -212,11 +212,10 @@ static int x2apic_cluster_probe(void)
+@@ -212,10 +212,12 @@ static int x2apic_cluster_probe(void)
  /*
   * Each x2apic cluster is an allocation domain.
   */
--static bool cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+static void cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
+-static void cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
++static void cluster_vector_allocation_domain(const struct cpumask *mask,
++					     struct cpumask *retmask,
++					     const struct cpumask *prevmask)
  {
- 	cpumask_clear(retmask);
- 	cpumask_copy(retmask, per_cpu(cpus_in_cluster, cpu));
--	return true;
+-	cpumask_clear(retmask);
+-	cpumask_copy(retmask, per_cpu(cpus_in_cluster, cpu));
++	int cpu = cpumask_first(retmask);
++	cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
  }
  
  static struct apic apic_x2apic_cluster = {
