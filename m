@@ -1,100 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab2FSWo5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 18:44:57 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:19918 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548Ab2FSWo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 18:44:56 -0400
-X-IronPort-AV: E=Sophos;i="4.77,439,1336374000"; 
-   d="scan'208";a="656575870"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: nfs3 problem with -rc{2,3} : blame
-Thread-Topic: nfs3 problem with -rc{2,3} : blame
-Thread-Index: AQHNTbfMQXPaY40l50mll7MzWrSjoJcCSNMAgAAAxYCAAAjvAIAADkmAgAAegwCAADTLgA==
-Date: Tue, 19 Jun 2012 22:44:38 +0000
-Message-ID: <1340145877.3754.39.camel@lade.trondhjem.org>
-References: <20120618160005.GA10169@milliways>
-	 <20120618200525.GA15654@milliways> <20120618215323.GA17561@milliways>
-	 <1340057002.20570.31.camel@lade.trondhjem.org>
-	 <20120618221052.GA18341@milliways> <20120619010641.GA22288@milliways>
-	 <1340122836.3754.9.camel@lade.trondhjem.org>
-	 <1340123001.3754.11.camel@lade.trondhjem.org>
-	 <20120619165520.GA11015@milliways>
-	 <1340127987.3754.16.camel@lade.trondhjem.org>
-	 <20120619193540.GA14702@milliways>
-In-Reply-To: <20120619193540.GA14702@milliways>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D27CBA6B07ADD1479CA73E29E205794E@tahoe.netapp.com>
+	id S1753837Ab2FSW6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 18:58:30 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:56940 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab2FSW5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 18:57:53 -0400
 MIME-Version: 1.0
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Tue, 19 Jun 2012 19:57:32 -0300
+Message-ID: <CAMOw1v5=TRPgk0PyW3sS=+ak4O28mqU6ujO8yf-WZYaKSutc5Q@mail.gmail.com>
+Subject: [ANNOUNCE] kmod 9
+To: linux-modules <linux-modules@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-hotplug <linux-hotplug@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5JMj2fm030897
 
-On Tue, 2012-06-19 at 20:35 +0100, Ken Moffat wrote:
->  Unfortunately, no difference (on top of -rc3).
-> 
->  FWIW, after rsync stalled I tried a download from firefox, to a
-> different nfs mount, and that too appeared to lock up firefox.
+Hey!
 
-OK, I think I see what the problem is...
+kmod 9 is out:
 
-Does the following patch work for you?
+ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-9.tar.xz
+ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-9.tar.sign
 
-Cheers
-  Trond
-8<------------------------------------------------------
->From 1a0de48ae56b5cdb9a46b3d3a0b578dd7f787f22 Mon Sep 17 00:00:00 2001
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date: Tue, 19 Jun 2012 18:38:56 -0400
-Subject: [PATCH] NFS: Initialise commit_info.rpc_out when
- !defined(CONFIG_NFS_V4)
+Mainly improvements to the testsuite but users will mostly notice the
+bugfixes and that now depmod checks for errors while writing the
+indexes. Also some small fixes to libkmod while dealing with
+compressed modules. Check the NEWS file fora additional information.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Fred Isaman <iisaman@netapp.com>
+Shortlog is below
+
+Lucas De Marchi
+
 ---
- fs/nfs/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index e605d69..f729698 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1530,7 +1530,6 @@ static inline void nfs4_init_once(struct nfs_inode *nfsi)
- 	nfsi->delegation_state = 0;
- 	init_rwsem(&nfsi->rwsem);
- 	nfsi->layout = NULL;
--	atomic_set(&nfsi->commit_info.rpcs_out, 0);
- #endif
- }
- 
-@@ -1545,6 +1544,7 @@ static void init_once(void *foo)
- 	INIT_LIST_HEAD(&nfsi->commit_info.list);
- 	nfsi->npages = 0;
- 	nfsi->commit_info.ncommit = 0;
-+	atomic_set(&nfsi->commit_info.rpcs_out, 0);
- 	atomic_set(&nfsi->silly_count, 1);
- 	INIT_HLIST_HEAD(&nfsi->silly_list);
- 	init_waitqueue_head(&nfsi->waitqueue);
--- 
-1.7.10.2
+Dan McGee (3):
+      testsuite: ship testsuite/rootfs unzipped
+      test-conversion: convert test-blacklist to new infrastructure
+      test-conversion: convert test-get-dependencies to new infrastructure
 
+Dave Reisner (4):
+      libkmod-file: gracefully handle errors from zlib
+      depmod: report failures in loading symbols
+      bootstrap-configure: quote command line arg expansion
+      bootstrap: remove unnecessary echo
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Josh Boyer (1):
+      doc: Don't reference /etc/modprobe.conf
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Lucas De Marchi (44):
+      Remove dead assignment
+      Return error instead of always 0
+      Remove dead increment
+      Revert "libkmod: make sure to export kmod_log"
+      build: remove private symbol from linker script
+      build-sys: distribute testsuite
+      build-sys: copy rootfs to another directory
+      libkmod-util: copy macros for unaligned access from BlueZ
+      libkmod-hash: use generic function for unaligned access
+      libkmod-index: use generic function for unaligned access
+      Don't use __ for attribute defines
+      Silence clang warnings with __unused__ attribute
+      testsuite: fix find_module() finding wrong module
+      build-sys: provide --sysconfdir to make distcheck flags
+      testsuite: rename rootfs dir
+      libkmod-util: add missing stdbool.h include
+      testsuite: separate insert and delete rootfs from modinfo
+      testsuite: check if rootfs dir is dirty before running
+      testsuite: trap calls to mkdir
+      testsuite: add mkdir_p implementation
+      testsuite: create initstate file upon fake init_module()
+      testsuite: set default init_module behavior to mimic kernel's
+      testsuite: check if module is in kernel for return code
+      testsuite: add test for softdep loops
+      libkmod-util: split function for usec conversion
+      testsuite: create additional pipe to monitor child
+      testsuite: add timeout for each test
+      testsuite: allow to export custom env vars
+      testsuite: add test for install-commands loop
+      libkmod-index: protect ourselves from corrupted indexes
+      testsuite: Fix test description
+      TODO: update tasks
+      libkmod-config: refactor functions to get config
+      tools: rename source files
+      build-sys: add missing header to fix distcheck
+      Remove ifdef for building tools not bundled
+      depmod: don't return error if modules.builtin don't exist
+      depmod: fail if any index could not be created
+      depmod: fix coding-style issue in array declaration
+      depmod: return error when index is truncated due to ENOSPC
+      depmod: use ferror and fclose to check for error
+      build-sys: Make dirs writable on rootfs creation
+      build-sys: allow compressed modules in testsuite
+      kmod 9
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Mike Frysinger (2):
+      libkmod: make sure to export kmod_log
+      libkmod: move function to the only file using it
