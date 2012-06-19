@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab2FSKkk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 06:40:40 -0400
-Received: from gate.crashing.org ([63.228.1.57]:49618 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab2FSKki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 06:40:38 -0400
-Message-ID: <1340102401.28143.12.camel@pasglop>
-Subject: Re: [PATCH v2 0/7] IOMMU: Groups support
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        iommu@lists.linux-foundation.org, bhelgaas@google.com,
-        david@gibson.dropbear.id.au, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        gregkh@linuxfoundation.org, ddutile@redhat.com, liuj97@gmail.com
-Date: Tue, 19 Jun 2012 20:40:01 +1000
-In-Reply-To: <20120619094918.GH2624@amd.com>
-References: <20120530201424.31527.33142.stgit@bling.home>
-	 <20120606110514.GG757@amd.com> <1339429021.24037.8.camel@bling.home>
-	 <1340040703.17272.2.camel@bling.home> <20120619094918.GH2624@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754166Ab2FSKkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 06:40:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:65075 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217Ab2FSKkw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 06:40:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1340102050-12697-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1339743913-6236-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1340102050-12697-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 19 Jun 2012 11:40:51 +0100
+Message-ID: <CAOh2x==6J3g75+2grTv6HcA3JVboKGAhfA5Fo=kiOipJ_uPQ=w@mail.gmail.com>
+Subject: Re: [PATCHv2 00/10] dw_dmac: set of cleanups and small fixes
+From: viresh kumar <viresh.linux@gmail.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-19 at 11:49 +0200, Joerg Roedel wrote:
-> Well, we can't hold up things forever. Given that the POWER guys had
-> long discussions with you about previous versions but not about this one
-> counts as a silent Ack for me ;)
+On Tue, Jun 19, 2012 at 11:34 AM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> This patchset provides set of the cleanups and small fixes against the
+> DesignWare DMA controller driver. It's a first portion of the patches to make
+> the driver usable on other platforms.
+>
+> since v1:
+>  - add dwc_chan_reset
+>  - disable block interrupts only in probe (discussed with Viresh Kumar)
+>  - fix comment line in probe in patch 6
+>
+> Andy Shevchenko (10):
+>  dw_dmac: fix constant in the comment
+>  dw_dmac: use proper casting to print dma_addr_t values
+>  dw_dmac: introduce dwc_dump_chan_regs to dump registers
+>  dw_dmac: print correct number of scanned descriptors
+>  dw_dmac: use __func__ constant in the debug prints
+>  dw_dmac: disable dma in optimal way in probe
+>  dw_dmac: disable BLOCK interrupts
+>  dw_dmac: introduce dwc_fast_fls()
+>  dw_dmac: move from __init to __devinit
+>  dw_dmac: introduce dwc_chan_reset
 
-Everybody was waiting for me and I was out for 3 weeks following some
-surgery ... I'll review that stuff ASAP (as in tomorrow if I can, else
-before end of the week).
+Leaving minor comment on Patch 10/10, It Looks good.
 
-> So I already applied the patches into my local tree yesterday and gave
-> them some additional testing. All looks good so far. I think I will push
-> the result soon to get this into linux-next.
-> 
-> I'll probably rebase to add the Cc's to the commits before pushing it
-> out.
-
-Cheers,
-Ben.
-
-
+Acked-by: Viresh Kumar <viresh.linux@gmail.com>
