@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab2FSTT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 15:19:58 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52357 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753658Ab2FSTT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 15:19:57 -0400
-Message-ID: <1340133595.27131.6.camel@joe2Laptop>
-Subject: Re: [PATCH V2 3/3] staging/rtl8192u: use for loop to assign bit
- shifted addr
-From: Joe Perches <joe@perches.com>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Tue, 19 Jun 2012 12:19:55 -0700
-In-Reply-To: <1340132894-19003-1-git-send-email-devendra.aaru@gmail.com>
-References: <1340132894-19003-1-git-send-email-devendra.aaru@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754763Ab2FSTUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 15:20:47 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:56689 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab2FSTUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 15:20:46 -0400
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>
+Cc: Ezequiel Garcia <elezegarcia@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH 1/2] swarm_cs4297: Provide definitions for AC97 registers
+Date: Tue, 19 Jun 2012 16:20:23 -0300
+Message-Id: <1340133624-3670-1-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 00:38 +0530, Devendra Naga wrote:
-> this change is a rewrite of that bitshifted addr copying
-> logic with for loop, which can easily understandable.
-> 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> ---
->  drivers/staging/rtl8192u/r8180_93cx6.c |   27 +++++++++------------------
->  1 file changed, 9 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8192u/r8180_93cx6.c b/drivers/staging/rtl8192u/r8180_93cx6.c
-> index a72bbd4..815b0f3 100644
-> --- a/drivers/staging/rtl8192u/r8180_93cx6.c
-> +++ b/drivers/staging/rtl8192u/r8180_93cx6.c
-> @@ -102,25 +102,16 @@ u32 eprom_read(struct net_device *dev, u32 addr)
->  	force_pci_posting(dev);
->  	udelay(EPROM_DELAY);
->  
-> -	if (priv->epromtype==EPROM_93c56){
-> -		addr_str[7]=addr & 1;
-> -		addr_str[6]=addr & (1<<1);
-> -		addr_str[5]=addr & (1<<2);
-> -		addr_str[4]=addr & (1<<3);
-> -		addr_str[3]=addr & (1<<4);
-> -		addr_str[2]=addr & (1<<5);
-> -		addr_str[1]=addr & (1<<6);
-> -		addr_str[0]=addr & (1<<7);
-> -		addr_len=8;
-> -	}else{
-> -		addr_str[5]=addr & 1;
-> -		addr_str[4]=addr & (1<<1);
-> -		addr_str[3]=addr & (1<<2);
-> -		addr_str[2]=addr & (1<<3);
-> -		addr_str[1]=addr & (1<<4);
-> -		addr_str[0]=addr & (1<<5);
-> -		addr_len=6;
-> +	if (priv->epromtype == EPROM_93c56) {
-> +		addr_len = 8;
-> +		for (i = 0; i < addr_len; i++)
-> +			addr_str[i] = addr & (1 << (addr_len - (i + 1)));
-> +	} else {
-> +		addr_len = 6;
-> +		for (i = 0; i < addr_len; i++)
-> +			addr_str[i] = addr & (1 << (addr_len - (i + 1)));
->  	}
+This patch removes the last usage of linux/ac97_codec.h by
+re-defining used AC97 registers.
+We can't use sound/ac97_codec.h here, since it is an OSS driver.
 
-It's also got a bit of code duplication.
-Maybe something like:
+Not even compilation tested.
 
-	if (priv->epromtype == EPROM_93c56) {
-		addr_len = 8;
-	else
-		addr_len = 6;
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+---
+ sound/oss/swarm_cs4297a.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-	test_bit = 1 << (addr_len - 1);
-	for (i = 0; i < addr_len; i++) {
-		addr_str[i] = addr & test_bit;
-		test_bit >>= 1;
-	}
-
+diff --git a/sound/oss/swarm_cs4297a.c b/sound/oss/swarm_cs4297a.c
+index 09d4648..bd75f54 100644
+--- a/sound/oss/swarm_cs4297a.c
++++ b/sound/oss/swarm_cs4297a.c
+@@ -69,7 +69,6 @@
+ #include <linux/sound.h>
+ #include <linux/slab.h>
+ #include <linux/soundcard.h>
+-#include <linux/ac97_codec.h>
+ #include <linux/pci.h>
+ #include <linux/bitops.h>
+ #include <linux/interrupt.h>
+@@ -199,6 +198,22 @@ static const char invalid_magic[] =
+         }                                          \
+ })
+ 
++/* AC97 registers */
++#define AC97_MASTER_VOL_STEREO   0x0002      /* Line Out		*/
++#define AC97_PCBEEP_VOL          0x000a      /* none			*/
++#define AC97_PHONE_VOL           0x000c      /* TAD Input (mono)	*/
++#define AC97_MIC_VOL             0x000e      /* MIC Input (mono)	*/
++#define AC97_LINEIN_VOL          0x0010      /* Line Input (stereo)	*/
++#define AC97_CD_VOL              0x0012      /* CD Input (stereo)	*/
++#define AC97_AUX_VOL             0x0016      /* Aux Input (stereo)	*/
++#define AC97_PCMOUT_VOL          0x0018      /* Wave Output (stereo)	*/
++#define AC97_RECORD_SELECT       0x001a      /*			*/
++#define AC97_RECORD_GAIN         0x001c
++#define AC97_GENERAL_PURPOSE     0x0020
++#define AC97_3D_CONTROL          0x0022
++#define AC97_POWER_CONTROL       0x0026
++#define AC97_VENDOR_ID1           0x007c
++
+ struct list_head cs4297a_devs = { &cs4297a_devs, &cs4297a_devs };
+ 
+ typedef struct serdma_descr_s {
+-- 
+1.7.4.4
 
