@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab2FSFtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 01:49:04 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42116 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab2FSFtC (ORCPT
+	id S1753308Ab2FSFuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 01:50:04 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:36306 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608Ab2FSFuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 01:49:02 -0400
-X-AuditID: 9c930197-b7b87ae000000e4d-e7-4fe012cc1e1a
-Message-ID: <4FE012CD.6010605@kernel.org>
-Date: Tue, 19 Jun 2012 14:49:01 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>
-Subject: RFC:  Easy-Reclaimable LRU list
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 19 Jun 2012 01:50:01 -0400
+X-AuditID: cbfee60c-b7fe66d0000058a5-8f-4fe012f80aaf
+Date: Tue, 19 Jun 2012 05:49:44 +0000 (GMT)
+From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
+Subject: Re: RE: RE: Re: [PATCH 1/2] PM: devfreq: add freq table and
+ available_freqs
+To: Xiaoguang Chen <chenxg@marvell.com>,
+        Xiaoguang Chen <chenxg.marvell@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120619054934475@myungjoo.ham
+Msgkey: 20120619054934475@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120619054934475@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <5366749.590331340084982845.JavaMail.weblogic@epml24>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t/tmbo/hB74G1zeJGJxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgynjf0sBcsYq149mMycwNjD2sXIyeHkIC6xKIlJ9lAbAkBE4ld
+	v7cxQdhiEhfurQeKcwHVzGeUOPb5NTtIgkVAVeLAt/ssXYwcHGwC5hL3ZwSBhIUFQiR657eC
+	zRERiJBYu+MzM0gvs0Abk0Rv7wk2iGVKEmv2vWIBsXkFBCVOznzCArFMVWLnoResEHE1iRnT
+	jkMdISExa/oFVgibV2JG+1OoejmJaV/XMEPY0hLnZ21ghDl68ffHUHF+iWO3dzCB3AnS++R+
+	MMyY3Zu/QP0rIDH1zEGoVi2Js88fQK3ik1iz8C3YKmYBRYkp3Q/ZIWwtiS8/9rGhO59XwFHi
+	8fptzBMYZWYhSc1C0j4LSTuymgWMLKsYRVMLkguKk9JTjfSKE3OLS/PS9ZLzczcxguP2Gc8O
+	xjkNFocYBTgYlXh4hfke+AuxJpYVV+YeYpTgYFYS4V31/76/EG9KYmVValF+fFFpTmrxIUZp
+	DhYlcd7J1hf8hQTSE0tSs1NTC1KLYLJMHJxSDYwBmzcWsZh0ZEfUq+jdcun+PWWn0mqWV+KL
+	infxvr9e9GERv4vovryp//0bYkvZ9beVrnmwQWbNpR9ZrKaLPK/vS6pm9duazm9vuExymtCS
+	9cu2uyvU1f05/OaQfo1XcFT13h13NsYunLHb++IR0faZpfNOi7b9jV/5PqD42LotpU+fvb6o
+	oGCoxFKckWioxVxUnAgAdMXF6NcCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5J5o98C026124
 
-Hi everybody!
+> OK, I get it.
+> Another question, do you guys ever want to add the devfreq governor dynamic change feature?
+> 
+> I mean we can switch governors for one devfreq driver dynamically in devfreq framework. current framework only supports statically compile the governor and can't change it dynamically. 
+> 
+> Thanks
+> Xiaoguang
 
-Recently, there are some efforts to handle system memory pressure.
+Yes, that's on the TODO list.
 
-1) low memory notification - [1]
-2) fallocate(VOLATILE) - [2]
-3) fadvise(NOREUSE) - [3]
+But, we have done nothing to support it, yet, as you can see in git.infradead.org repository.
 
-For them, I would like to add new LRU list, aka "Ereclaimable" which is opposite of "unevictable".
-Reclaimable LRU list includes _easy_ reclaimable pages.
-For example, easy reclaimable pages are following as. 
 
-1. invalidated but remained LRU list.
-2. pageout pages for reclaim(PG_reclaim pages)
-3. fadvise(NOREUSE)
-4. fallocate(VOLATILE)
+Cheers!
+MyungJoo
 
-Their pages shouldn't stir normal LRU list and compaction might not migrate them, even.
-Reclaimer can reclaim Ereclaimable pages before normal lru list and will avoid unnecessary
-swapout in anon pages in easy-reclaimable LRU list.
-It also can make admin measure how many we have available pages at the moment without latency.
-It's very important in recent mobile systems because page reclaim/writeback is very critical
-of application latency. Of course, it could affect normal desktop, too.
-With it, we can calculate fast-available pages more exactly with NR_FREE_PAGES + NR_ERECLAIMABLE_PAGES,
-for example. If it's below threshold we defined, we could trigger 1st level notification
-if we really need prototying low memory notification.
-
-We may change madvise(DONTNEED) implementation instead of zapping page immediately.
-If memory pressure doesn't happen, pages are in memory so we can avoid so many minor fault.
-Of course, we can discard instead of swap out if system memory pressure happens.
-We might implement it madvise(VOLATILE) instead of DONTNEED, but anyway it's off-topic in this thread.
-
-As a another example, we can implement CFLRU(Clean-First LRU) which reclaims unmapped-clean cache page firstly.
-The rationale is that in non-rotation device, read/write cost is much asynchronous.
-Read is very fast while write is very slow so it would be a gain while we can avoid writeback of dirty pages
-if possible although we need several reads. It can be implemented easily with Ereclaimable pages, too.
-
-Anyway, it's just a brain-storming phase and never implemented yet but decide posting before it's too late.
-I hope listen others opinion before get into the code.
-
-Any comment are welcome.
-Thanks.
-
-[1] http://lkml.org/lkml/2012/5/1/97
-[2] https://lkml.org/lkml/2012/6/1/322
-[3] https://lkml.org/lkml/2011/6/24/136
-
--- 
-Kind regards,
-Minchan Kim
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
