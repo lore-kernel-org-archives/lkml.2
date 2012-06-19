@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab2FSFLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 01:11:00 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40135 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab2FSFK7 (ORCPT
+	id S1752732Ab2FSFMZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 01:12:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58856 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab2FSFMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 01:10:59 -0400
-Date: Tue, 19 Jun 2012 07:11:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-Message-ID: <20120619051116.GB31591@aftab.osrc.amd.com>
-References: <20120613010413.GA28174@khazad-dum.debian.net>
- <20120613065119.GB15661@aftab.osrc.amd.com>
- <20120613123649.GA26012@khazad-dum.debian.net>
- <20120613161139.GA18450@aftab.osrc.amd.com>
- <20120615123749.GC6083@aftab.osrc.amd.com>
- <1339764161.2559.63.camel@twins>
- <20120615125240.GD6083@aftab.osrc.amd.com>
- <20120615165231.GA9169@aftab.osrc.amd.com>
- <20120619024639.GB6186@khazad-dum.debian.net>
- <4FDFF27C.5000205@zytor.com>
+	Tue, 19 Jun 2012 01:12:23 -0400
+Date: Mon, 18 Jun 2012 22:10:32 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Len Brown <lenb@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Durgadoss R <durgadoss.r@intel.com>,
+        Jenny TC <jenny.tc@intel.com>
+Subject: Re: linux-next: build failure after merge of the final tree (acpi
+ and battery trees related)
+Message-ID: <20120619051032.GB16286@lizard>
+References: <20120619145425.6f825e142856ca808927ca45@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4FDFF27C.5000205@zytor.com>
+In-Reply-To: <20120619145425.6f825e142856ca808927ca45@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 08:31:08PM -0700, H. Peter Anvin wrote:
-> On 06/18/2012 07:46 PM, Henrique de Moraes Holschuh wrote:
-> > 
-> > It is a pity this one is much harder to backport to 3.2 and 3.0.  I'd
-> > really like to have the new interface there.  But it looks good, and we
-> > will support the new /sys/devices/system/cpu/microcode/reload sysfs node
-> > in Debian for the benefit of anyone using a newer kernel than the
-> > distro's (which will be based on 3.2).
-> > 
-> > So, fwiw, you have my:
-> > Acked-by-unimportant-person: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> > 
+On Tue, Jun 19, 2012 at 02:54:25PM +1000, Stephen Rothwell wrote:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig, i386 defconfig) failed like this:
 > 
-> I have to admit to being slightly questioning to the whole "sysfs
-> trigger, request_firmware" interface... it seems royally backwards to me
-> (it makes sense for the initial firmware load, I guess, but that is
-> better done early.)
+> drivers/power/power_supply_core.c:204:6: error: too few arguments to function 'thermal_zone_device_register'
+> 
+> Caused by commit a9e7402dd2e4 ("ACPI-Thermal: Make Thermal trip points
+> writeable") from the acpi tree interacting with commit 3be330bf8860
+> ("power_supply: Register battery as a thermal zone") from the battery
+> tree.
+> 
+> I have added the following patch and will carry it as a merge fix to the
+> battery tree:
 
-Two reasons:
+Thanks for noticing, Stephen! Although, I wonder what would be the
+best way to fix this?.. I would happily cherry-pick the ACPI change
+into my tree and then re-apply the battery thermal zone support patch,
+but ACPI change doesn't apply cleanly on the battery tree. Heh.
 
-1. There are those guys who like to run their systems for years without
-upgrading the kernel (you know who you are :)) and in such cases, you
-want to be able to upgrade the microcode you loaded early with a newer
-version which the hw vendor released in the meantime.
+Is there thermal zone git tree? Or maybe I would just let ACPI
+folks take the battery patch in question?
 
- [ Which makes the whole ucode-load-early deal not the solution to all
- problems since we need to be able to load ucode without rebooting too,
- if possible. ]
+Thanks,
 
-2. Right, we can do that by
-
-$ rmmod microcode; modprobe microcode
-
-but then the same guys come :-) and say they don't want to reload
-modules for security reasons.
-
-Thus the sysfs interface and sysfs is the proper thing we have for such
-things so ...
-
-... and I'm always open for better ideas, btw.
-
-> Either way I don't have a hugely strong preference.
-
-I'll run the patches here and send them out maybe later today if all
-looks good.
-
-Thanks.
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 19 Jun 2012 14:46:17 +1000
+> Subject: [PATCH] ACPI-Thermal: fix for an API change
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/power/power_supply_core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+> index ff990d2..85689fb 100644
+> --- a/drivers/power/power_supply_core.c
+> +++ b/drivers/power/power_supply_core.c
+> @@ -201,7 +201,7 @@ static int psy_register_thermal(struct power_supply *psy)
+>  	for (i = 0; i < psy->num_properties; i++) {
+>  		if (psy->properties[i] == POWER_SUPPLY_PROP_TEMP) {
+>  			psy->tzd = thermal_zone_device_register(psy->name, 0,
+> -					psy, &psy_tzd_ops, 0, 0, 0, 0);
+> +					0, psy, &psy_tzd_ops, 0, 0, 0, 0);
+>  			if (IS_ERR(psy->tzd))
+>  				return PTR_ERR(psy->tzd);
+>  			break;
+> -- 
+> 1.7.10.280.gaa39
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
