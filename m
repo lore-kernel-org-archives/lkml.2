@@ -1,146 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab2FSSAX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:00:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43332 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab2FSSAP (ORCPT
+	id S1754620Ab2FSSBr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:01:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33415 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754342Ab2FSSBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:00:15 -0400
+	Tue, 19 Jun 2012 14:01:44 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, David Ahern <dsahern@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Shan Wei <davidshan@tencent.com>,
+        Stephane Eranian <eranian@google.com>, Sunjin Yang <fan4326@gmail.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/20] perf ui/gtk: Introduce struct perf_gtk_context
-Date: Tue, 19 Jun 2012 14:50:04 -0300
-Message-Id: <1340128221-17348-4-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 00/20] perf/core improvements
+Date: Tue, 19 Jun 2012 14:50:01 -0300
+Message-Id: <1340128221-17348-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1340128221-17348-1-git-send-email-acme@infradead.org>
-References: <1340128221-17348-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@gmail.com>
+Hi Ingo,
 
-The struct perf_gtk_context is for tracking current state of GTK window
-and/or other things. This is a preparation of next changes.
+	Please consider pulling,
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338265382-6872-5-git-send-email-namhyung@gmail.com
+- Arnaldo
+
+The following changes since commit e227051b13956b8f71c0abecc41ad351e64671c8:
+
+  uprobes: Remove the unnecessary initialization in add_utask() (2012-06-16 09:10:52 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to c0a58fb2bdf033df433cad9009c7dac4c6b872b0:
+
+  perf annotate: Check null of sym pointer before using it (2012-06-19 14:30:26 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes
+
+. Replace event_name with perf_evsel__name, that handles the event modifiers
+  and doesn't use static variables.
+
+. GTK browser improvements, from Namhyung Kim
+
+. Fix possible NULL pointer deref in the TUI annotate browser, from Samuel Liao
+
+. Add sort by source file:line number, using addr2line.
+
+. Allow printing histogram text snapshots at any point in top/report.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/gtk/browser.c |    8 +++++++-
- tools/perf/ui/gtk/gtk.h     |   17 +++++++++++++++++
- tools/perf/ui/gtk/util.c    |   23 +++++++++++++++++++++++
- 3 files changed, 47 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 0656c38..33ab1ae 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -11,8 +11,8 @@
- 
- static void perf_gtk__signal(int sig)
- {
-+	perf_gtk__exit(false);
- 	psignal(sig, "perf");
--	gtk_main_quit();
- }
- 
- static void perf_gtk__resize_window(GtkWidget *window)
-@@ -143,6 +143,10 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 
- 	g_signal_connect(window, "delete_event", gtk_main_quit, NULL);
- 
-+	pgctx = perf_gtk__activate_context(window);
-+	if (!pgctx)
-+		return -1;
-+
- 	notebook = gtk_notebook_new();
- 
- 	list_for_each_entry(pos, &evlist->entries, node) {
-@@ -174,5 +178,7 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 
- 	gtk_main();
- 
-+	perf_gtk__deactivate_context(&pgctx);
-+
- 	return 0;
- }
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index 75177ee..34fbca6 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -1,8 +1,25 @@
- #ifndef _PERF_GTK_H_
- #define _PERF_GTK_H_ 1
- 
-+#include <stdbool.h>
-+
- #pragma GCC diagnostic ignored "-Wstrict-prototypes"
- #include <gtk/gtk.h>
- #pragma GCC diagnostic error "-Wstrict-prototypes"
- 
-+
-+struct perf_gtk_context {
-+	GtkWidget *main_window;
-+};
-+
-+extern struct perf_gtk_context *pgctx;
-+
-+static inline bool perf_gtk__is_active_context(struct perf_gtk_context *ctx)
-+{
-+	return ctx && ctx->main_window;
-+}
-+
-+struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
-+int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
-+
- #endif /* _PERF_GTK_H_ */
-diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-index a727fe3..6fe13fd 100644
---- a/tools/perf/ui/gtk/util.c
-+++ b/tools/perf/ui/gtk/util.c
-@@ -3,6 +3,29 @@
- #include "gtk.h"
- 
- 
-+struct perf_gtk_context *pgctx;
-+
-+struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window)
-+{
-+	struct perf_gtk_context *ctx;
-+
-+	ctx = malloc(sizeof(*pgctx));
-+	if (ctx)
-+		ctx->main_window = window;
-+
-+	return ctx;
-+}
-+
-+int perf_gtk__deactivate_context(struct perf_gtk_context **ctx)
-+{
-+	if (!perf_gtk__is_active_context(*ctx))
-+		return -1;
-+
-+	free(*ctx);
-+	*ctx = NULL;
-+	return 0;
-+}
-+
- /*
-  * FIXME: Functions below should be implemented properly.
-  *        For now, just add stubs for NO_NEWT=1 build.
--- 
-1.7.1
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (13):
+      perf tools: Add sort by src line/number
+      perf lib: Introduce rtrim
+      perf hists browser: Implement printing snapshots to files
+      perf evsel: Carve out event modifier formatting
+      perf tools: Reconstruct hw cache event with modifiers from perf_event_attr
+      perf tools: Reconstruct sw event with modifiers from perf_event_attr
+      perf evsel: Handle all event types in perf_evsel__name
+      perf tools: Move all users of event_name to perf_evsel__name
+      perf script: Replace __event_name uses with perf_evsel__name
+      perf tools: Don't access evsel->name directly
+      perf tools: Remove __event_name
+      perf evsel: Reconstruct raw event with modifiers from perf_event_attr
+      perf evsel: Make some methods private
 
+Jiri Olsa (1):
+      perf tools: Remove unused evsel parameter from machine__resolve_callchain
+
+Namhyung Kim (5):
+      perf ui: Introduce struct perf_error_ops
+      perf ui/gtk: Introduce struct perf_gtk_context
+      perf ui/gtk: Add GTK statusbar widget to browser window
+      perf ui/gtk: Add GTK info_bar widget to browser window
+      perf ui/gtk: Use struct perf_error_ops
+
+Samuel Liao (1):
+      perf annotate: Check null of sym pointer before using it
+
+ tools/perf/Documentation/perf-report.txt |    2 +-
+ tools/perf/Documentation/perf-top.txt    |    2 +-
+ tools/perf/Makefile                      |    6 +
+ tools/perf/builtin-evlist.c              |    2 +-
+ tools/perf/builtin-record.c              |    4 +-
+ tools/perf/builtin-report.c              |   10 +-
+ tools/perf/builtin-sched.c               |    2 +-
+ tools/perf/builtin-script.c              |   42 ++---
+ tools/perf/builtin-stat.c                |   12 +-
+ tools/perf/builtin-test.c                |    2 +-
+ tools/perf/builtin-top.c                 |   12 +-
+ tools/perf/config/feature-tests.mak      |   13 ++
+ tools/perf/ui/browsers/annotate.c        |    4 +-
+ tools/perf/ui/browsers/hists.c           |  210 ++++++++++++++++++++--
+ tools/perf/ui/gtk/browser.c              |   69 +++++++-
+ tools/perf/ui/gtk/gtk.h                  |   31 ++++
+ tools/perf/ui/gtk/setup.c                |    5 +
+ tools/perf/ui/gtk/util.c                 |  129 ++++++++++++++
+ tools/perf/ui/tui/setup.c                |    6 +
+ tools/perf/ui/tui/util.c                 |  243 ++++++++++++++++++++++++++
+ tools/perf/ui/util.c                     |  277 ++++++------------------------
+ tools/perf/ui/util.h                     |    9 +-
+ tools/perf/util/debug.c                  |    2 +-
+ tools/perf/util/debug.h                  |   23 ++-
+ tools/perf/util/evsel.c                  |  196 ++++++++++++++++++---
+ tools/perf/util/evsel.h                  |   15 +-
+ tools/perf/util/header.c                 |    2 +-
+ tools/perf/util/hist.h                   |    1 +
+ tools/perf/util/map.h                    |    2 +-
+ tools/perf/util/parse-events-test.c      |    4 +-
+ tools/perf/util/parse-events.c           |  203 ++--------------------
+ tools/perf/util/parse-events.h           |    2 -
+ tools/perf/util/session.c                |    9 +-
+ tools/perf/util/session.h                |    4 +-
+ tools/perf/util/sort.c                   |   49 ++++++
+ tools/perf/util/sort.h                   |    2 +
+ tools/perf/util/string.c                 |   22 +++
+ tools/perf/util/top.c                    |    2 +-
+ tools/perf/util/util.h                   |    2 +
+ 39 files changed, 1118 insertions(+), 514 deletions(-)
+ create mode 100644 tools/perf/ui/gtk/util.c
+ create mode 100644 tools/perf/ui/tui/util.c
