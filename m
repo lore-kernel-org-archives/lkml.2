@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab2FSTS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 15:18:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42658 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2FSTSz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 15:18:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo5182ZzmmQXci=n=YZrktS6hUWq=Dq9bqDpA9KFpP3VnQ@mail.gmail.com>
-References: <alpine.LFD.2.02.1206152313310.3086@ionos> <CAErSpo5182ZzmmQXci=n=YZrktS6hUWq=Dq9bqDpA9KFpP3VnQ@mail.gmail.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Tue, 19 Jun 2012 12:18:33 -0700
-X-Google-Sender-Auth: vDTwJFhO8AWa4kumQl6JHuFes3Q
-Message-ID: <CAG4TOxM68FqsXCjJJji_hcPq25Wfg0jQDLXfV3hU=P9F3x65Tw@mail.gmail.com>
-Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the question!
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        ksummit-2012-discuss@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754772Ab2FSTT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 15:19:58 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52357 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753658Ab2FSTT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 15:19:57 -0400
+Message-ID: <1340133595.27131.6.camel@joe2Laptop>
+Subject: Re: [PATCH V2 3/3] staging/rtl8192u: use for loop to assign bit
+ shifted addr
+From: Joe Perches <joe@perches.com>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Jun 2012 12:19:55 -0700
+In-Reply-To: <1340132894-19003-1-git-send-email-devendra.aaru@gmail.com>
+References: <1340132894-19003-1-git-send-email-devendra.aaru@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 8:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> We can try to address this by "educating developers" or "documenting
-> the design better" or "delegating to submaintainers" or whatever.
-> Those are valuable, but in some way they're cop-outs.  A more
-> effective fix would be to remove the landmines, reduce complexity, and
-> improve the design.  If we have coherent code that follows the
-> hardware architecture and matches people's intuition about how things
-> "should work," I think we'll get patches with fewer issues.
->
-> Sorry, I think I just reiterated what you, Greg KH, Alan, et al have
-> already said :)
+On Wed, 2012-06-20 at 00:38 +0530, Devendra Naga wrote:
+> this change is a rewrite of that bitshifted addr copying
+> logic with for loop, which can easily understandable.
+> 
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> ---
+>  drivers/staging/rtl8192u/r8180_93cx6.c |   27 +++++++++------------------
+>  1 file changed, 9 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8192u/r8180_93cx6.c b/drivers/staging/rtl8192u/r8180_93cx6.c
+> index a72bbd4..815b0f3 100644
+> --- a/drivers/staging/rtl8192u/r8180_93cx6.c
+> +++ b/drivers/staging/rtl8192u/r8180_93cx6.c
+> @@ -102,25 +102,16 @@ u32 eprom_read(struct net_device *dev, u32 addr)
+>  	force_pci_posting(dev);
+>  	udelay(EPROM_DELAY);
+>  
+> -	if (priv->epromtype==EPROM_93c56){
+> -		addr_str[7]=addr & 1;
+> -		addr_str[6]=addr & (1<<1);
+> -		addr_str[5]=addr & (1<<2);
+> -		addr_str[4]=addr & (1<<3);
+> -		addr_str[3]=addr & (1<<4);
+> -		addr_str[2]=addr & (1<<5);
+> -		addr_str[1]=addr & (1<<6);
+> -		addr_str[0]=addr & (1<<7);
+> -		addr_len=8;
+> -	}else{
+> -		addr_str[5]=addr & 1;
+> -		addr_str[4]=addr & (1<<1);
+> -		addr_str[3]=addr & (1<<2);
+> -		addr_str[2]=addr & (1<<3);
+> -		addr_str[1]=addr & (1<<4);
+> -		addr_str[0]=addr & (1<<5);
+> -		addr_len=6;
+> +	if (priv->epromtype == EPROM_93c56) {
+> +		addr_len = 8;
+> +		for (i = 0; i < addr_len; i++)
+> +			addr_str[i] = addr & (1 << (addr_len - (i + 1)));
+> +	} else {
+> +		addr_len = 6;
+> +		for (i = 0; i < addr_len; i++)
+> +			addr_str[i] = addr & (1 << (addr_len - (i + 1)));
+>  	}
 
-No, I don't think that's just reiteration, I think it's an important point :)
+It's also got a bit of code duplication.
+Maybe something like:
 
-There is a certain strain of thinking in our community that is resistant
-to working on design improvements as you describe.  And I think without
-improving in that direction, we're going to drown in subtly broken patches.
+	if (priv->epromtype == EPROM_93c56) {
+		addr_len = 8;
+	else
+		addr_len = 6;
 
- - R.
+	test_bit = 1 << (addr_len - 1);
+	for (i = 0; i < addr_len; i++) {
+		addr_str[i] = addr & test_bit;
+		test_bit >>= 1;
+	}
+
+
