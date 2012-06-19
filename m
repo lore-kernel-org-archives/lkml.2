@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478Ab2FSJlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 05:41:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58814 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab2FSJli convert rfc822-to-8bit (ORCPT
+	id S1751549Ab2FSJnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 05:43:55 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6705 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab2FSJnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 05:41:38 -0400
+	Tue, 19 Jun 2012 05:43:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 19 Jun 2012 02:41:05 -0700
+Message-ID: <4FE04788.5040008@nvidia.com>
+Date: Tue, 19 Jun 2012 15:04:00 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20120619085137.337838c0@xenia.leun.net>
-References: <20120619085137.337838c0@xenia.leun.net>
-Date: Tue, 19 Jun 2012 15:11:38 +0530
-Message-ID: <CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
-Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: Michael Leun <lkml20120218@newton.leun.net>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: support for regulator match by regulator-compatible
+References: <1340085087-6608-1-git-send-email-ldewangan@nvidia.com> <1340085087-6608-2-git-send-email-ldewangan@nvidia.com> <20120619093211.GB3974@opensource.wolfsonmicro.com>
+In-Reply-To: <20120619093211.GB3974@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tuesday 19 June 2012 03:02 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Tue, Jun 19, 2012 at 11:21:26AM +0530, Laxman Dewangan wrote:
+>> Add API to match the chip regulator's id by the
+>> property of "regulator-compatible" on regulator node.
+> We shouldn't have two different methods for doing this, we should
+> standardise this over all regulator drivers (or at the very least those
+> using the existing framework code) - having the old framework in place
+> will at best be confusing for authors of new drivers.  We either need to
+> make it clear which framework to use or (ideally) remove the old
+> framework.
 
-On Tue, Jun 19, 2012 at 12:21 PM, Michael Leun
-<lkml20120218@newton.leun.net> wrote:
-> Hi,
->
-> ne-wlan1@elektra:/home/ml4> ping 192.168.2.1
-> PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
-> 64 bytes from 192.168.2.1: icmp_seq=1 ttl=64 time=2010 ms
-> 64 bytes from 192.168.2.1: icmp_seq=2 ttl=64 time=1011 ms
-> 64 bytes from 192.168.2.1: icmp_seq=3 ttl=64 time=11.5 ms
-> 64 bytes from 192.168.2.1: icmp_seq=4 ttl=64 time=1.12 ms
-> 64 bytes from 192.168.2.1: icmp_seq=5 ttl=64 time=1002 ms
-> 64 bytes from 192.168.2.1: icmp_seq=6 ttl=64 time=3.83 ms
-> 64 bytes from 192.168.2.1: icmp_seq=7 ttl=64 time=1003 ms
-> 64 bytes from 192.168.2.1: icmp_seq=8 ttl=64 time=4.10 ms
-> 64 bytes from 192.168.2.1: icmp_seq=9 ttl=64 time=1003 ms
-> 64 bytes from 192.168.2.1: icmp_seq=10 ttl=64 time=3.95 ms
-> 64 bytes from 192.168.2.1: icmp_seq=11 ttl=64 time=1003 ms
-> 64 bytes from 192.168.2.1: icmp_seq=12 ttl=64 time=3.78 ms
->
->
-> Please note the additional delay of ~1000ms every 2nd packet. This is
-> Kernel 3.4.3, have seen it in 3.4.2 also. Does NOT happen in 3.3.1.
->
-> Is this Issue already known? If so, I can save the work bisecting...
+Agree. Currently following regulators are using this (based on grep)
+mfd/tps6586x.c
+regulator/ab8500.c
+regulator/db8500-prcmu.c
+and regulator/tps65910.
 
-looks like some one reported this bug in kernel bugzilla. would be
-saving us lot of time
-if you can bisect it!
+If the related change in tps65910 is fine and there is no more 
+concern/feedback on the approach then I can create a series of patch to 
+modify the other regulator and related dts file to follow the same.
 
->
-> Happens with two different ath9k_htc cards:
->
-> Bus 002 Device 012: ID 0846:9018 NetGear, Inc. WNDA3200 802.11abgn Wireless Adapter [Atheros AR7010+AR9280]
-> Bus 002 Device 004: ID 0cf3:7015 Atheros Communications, Inc. TP-Link TL-WN821N v3 802.11n [Atheros AR7010+AR9287]
->
-> Does NOT happen with an atk9k (mini pci express) card.
+If you want, I can make the new changes as part of this series or can 
+start with new series.
 
-thanks for the info!
+I like to go with new series patch for other change once this is accepted.
 
->
-> --
-> MfG,
->
-> Michael Leun
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-thanks,
-shafi
