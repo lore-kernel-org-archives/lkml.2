@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab2FSGm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 02:42:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59256 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab2FSGmZ convert rfc822-to-8bit (ORCPT
+	id S1752499Ab2FSGvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 02:51:13 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57663 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab2FSGvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 02:42:25 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "axel.lin@gmail.com" <axel.lin@gmail.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>
-Subject: RE: [PATCH v2] regulator: add new regulator driver for lp872x
-Thread-Topic: [PATCH v2] regulator: add new regulator driver for lp872x
-Thread-Index: Ac1K013lgBKp+AGARUeXJs2xlf9z8P//330A//m62lA=
-Date: Tue, 19 Jun 2012 06:42:19 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FB880@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998FB5C6@DQHE02.ent.ti.com>
- <CAF+7xWnM9Z2eBAiuSidW9AUfo+M4-JHHzN3jgn+1bwH3he3rAQ@mail.gmail.com>
-In-Reply-To: <CAF+7xWnM9Z2eBAiuSidW9AUfo+M4-JHHzN3jgn+1bwH3he3rAQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Jun 2012 02:51:06 -0400
+Message-ID: <4FE02155.2010505@monstr.eu>
+Date: Tue, 19 Jun 2012 08:51:01 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Al Viro <viro@zeniv.linux.org.uk>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jun 4
+References: <20120604154053.31c23de0a68defd4a9f773fc@canb.auug.org.au>
+In-Reply-To: <20120604154053.31c23de0a68defd4a9f773fc@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> LP872X_MAX_REGULATORS is 9.
-> But for LP8720, the LP8720_NUM_REGULATORS is 6.
-> So this should be:
->         for (i = 0 ; i < lp->num_regulators  ; i++)
+On 06/04/2012 07:40 AM, Stephen Rothwell wrote:
+> Hi all,
+>
+> Changes since 20120601:
+>
+> New tree: leds
 
-Thanks for your opinion.
-In the patch v3, max loop count will be variable in case of PMU.
+Haven't tracked which branch contains it but there are two new patches
+for Microblaze where at least one is wrong (compilation failure).
+(Firstly merged Jun 4).
+Based on that I think that these changes are not even tested on hw.
 
-static struct regulator_init_data
-*lp872x_find_regulator_init_data(int idx, struct lp872x *lp)
-{
-	int max_regulators;
+microblaze: fix the horror with restarts of sigreturn()
+microblaze: fix handling of multiple pending signals
 
-	switch (lp->chipid) {
-	case LP8720:
-		max_regulators = LP8720_NUM_REGULATORS;
-		break;
-	case LP8725:
-		max_regulators = LP8725_NUM_REGULATORS;
-		break;
-	default:
-		return NULL;
-	}
+Al: Can you please give me some information about?
+They should definitely go through my tree and has to be tested.
+Please remove them from your branch which is merged to linux-next and send them as standard patches
+to LKML and CC me.
 
-	for (i = 0 ; i < max_regulators ; i++)
+Thanks,
+Michal
 
-...
 
-Thanks & BR
-Milo -
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
