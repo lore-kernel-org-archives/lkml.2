@@ -1,58 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab2FSTto (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 15:49:44 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22204 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830Ab2FSTtn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 15:49:43 -0400
+	id S1754921Ab2FSTt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 15:49:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754797Ab2FSTt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 15:49:56 -0400
+Date: Tue, 19 Jun 2012 21:47:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/5] uprobes: cleanup and document
+	write_opcode()->lock_page(old_page)
+Message-ID: <20120619194743.GD30146@redhat.com>
+References: <20120619194636.GA30137@redhat.com>
 MIME-Version: 1.0
-Message-ID: <c10bcaf9-aa56-4d6a-bc2c-310096b4198b@default>
-Date: Tue, 19 Jun 2012 12:49:13 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: RE: [PATCH 02/10] zcache: fix refcount leak
-References: <4FE0392E.3090300@linux.vnet.ibm.com>
- <4FE03949.4080308@linux.vnet.ibm.com> <4FE08C9A.3010701@linux.vnet.ibm.com>
-In-Reply-To: <4FE08C9A.3010701@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120619194636.GA30137@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Sent: Tuesday, June 19, 2012 8:29 AM
-> To: Xiao Guangrong
-> Cc: Andrew Morton; Dan Magenheimer; LKML; linux-mm@kvack.org
-> Subject: Re: [PATCH 02/10] zcache: fix refcount leak
-> 
-> On 06/19/2012 03:33 AM, Xiao Guangrong wrote:
-> 
-> > In zcache_get_pool_by_id, the refcount of zcache_host is not increased, but
-> > it is always decreased in zcache_put_pool
-> >
-> > Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> 
-> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+The comment above write_opcode()->lock_page(old_page) tells about
+the race with do_wp_page(). I don't really understand which exactly
+race it means, but afaics this lock_page() was not enough to close
+all races with do_wp_page().
 
-(Nitin Gupta and Konrad Wilk cc'ed to call their attention
-to this patch sequence...)
+Anyway, since 77fc4af1 this code is always called with ->mmap_sem
+hold for writing so we can forget about do_wp_page().
 
-My preference would be to fix it the opposite way, by
-checking and ignoring zcache_host in zcache_put_pool.
-The ref-counting is to ensure that a client isn't
-accidentally destroyed while in use (for multiple-client
-users such as ramster and kvm) and since zcache_host is a static
-struct, it should never be deleted so need not be ref-counted.
+However, we can't simply remove this lock_page(), and the only
+(afaics) reason is __replace_page()->try_to_free_swap().
 
-Dan
+Nothing in write_opcode() needs it, move it into __replace_page()
+and fix the comment.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |   27 ++++++++++++++-------------
+ 1 files changed, 14 insertions(+), 13 deletions(-)
+
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 16a3b69..442064d 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -138,10 +138,15 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	spinlock_t *ptl;
+ 	pte_t *ptep;
++	int err;
+ 
++	/* freeze PageSwapCache() for try_to_free_swap() below */
++	lock_page(page);
++
++	err = -EAGAIN;
+ 	ptep = page_check_address(page, mm, addr, &ptl, 0);
+ 	if (!ptep)
+-		return -EAGAIN;
++		goto unlock;
+ 
+ 	get_page(kpage);
+ 	page_add_new_anon_rmap(kpage, vma, addr);
+@@ -161,7 +166,10 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	put_page(page);
+ 	pte_unmap_unlock(ptep, ptl);
+ 
+-	return 0;
++	err = 0;
++ unlock:
++	unlock_page(page);
++	return err;
+ }
+ 
+ /**
+@@ -215,15 +223,10 @@ retry:
+ 	ret = -ENOMEM;
+ 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
+ 	if (!new_page)
+-		goto put_out;
++		goto put_old;
+ 
+ 	__SetPageUptodate(new_page);
+ 
+-	/*
+-	 * lock page will serialize against do_wp_page()'s
+-	 * PageAnon() handling
+-	 */
+-	lock_page(old_page);
+ 	/* copy the page now that we've got it stable */
+ 	vaddr_old = kmap_atomic(old_page);
+ 	vaddr_new = kmap_atomic(new_page);
+@@ -236,15 +239,13 @@ retry:
+ 
+ 	ret = anon_vma_prepare(vma);
+ 	if (ret)
+-		goto unlock_out;
++		goto put_new;
+ 
+ 	ret = __replace_page(vma, vaddr, old_page, new_page);
+ 
+-unlock_out:
+-	unlock_page(old_page);
++put_new:
+ 	page_cache_release(new_page);
+-
+-put_out:
++put_old:
+ 	put_page(old_page);
+ 
+ 	if (unlikely(ret == -EAGAIN))
+-- 
+1.5.5.1
+
+
