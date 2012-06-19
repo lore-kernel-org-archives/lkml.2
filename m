@@ -1,85 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab2FSVJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 17:09:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34677 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab2FSVJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 17:09:32 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Wanpeng Li <liwp.linux@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH V2] writeback: fix hung_task alarm when sync block
-References: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com>
-	<x49txyf8exl.fsf@segfault.boston.devel.redhat.com>
-	<20120613144840.GA3055@localhost>
-	<x49lijr8bur.fsf@segfault.boston.devel.redhat.com>
-	<20120614133600.GB14883@localhost>
-	<x491ulbjbzb.fsf@segfault.boston.devel.redhat.com>
-	<20120619210212.GN25389@dastard>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 19 Jun 2012 17:09:22 -0400
-In-Reply-To: <20120619210212.GN25389@dastard> (Dave Chinner's message of "Wed,
-	20 Jun 2012 07:02:12 +1000")
-Message-ID: <x49vcinhuv1.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753571Ab2FSVOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 17:14:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51343 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab2FSVOd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 17:14:33 -0400
+From: mathieu.poirier@linaro.org
+To: linux-input@vger.kernel.org
+Cc: mathieu.poirier@linaro.org, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        kernel-team@android.com, dmitry.torokhov@gmail.com
+Subject: [PATCH] input: Add keyreset driver.
+Date: Tue, 19 Jun 2012 15:13:34 -0600
+Message-Id: <1340140414-9720-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+From: Arve Hjønnevåg <arve@android.com>
 
-> On Tue, Jun 19, 2012 at 04:14:16PM -0400, Jeff Moyer wrote:
->> Fengguang Wu <fengguang.wu@intel.com> writes:
->> 
->> > Good idea! Yes we can do some estimation and adaptively extend the
->> > hang timeout for the current writeback_inodes_sb_nr()/sync_inodes_sb()
->> > call.
->> >
->> > Note that it's not going to reliably get rid of false warnings due to
->> > estimation errors, which could be pretty large and unavoidable on
->> > change of workload. But still, it would be a net improvement and
->> > perhaps enough to get rid of most false warnings, while still being
->> > able to catch livelock or other kind of task hang.
->> 
->> Hi, Fengguang,
->> 
->> I didn't see a patch from you for this, so I went ahead and threw
->> something together.  Let me know what you think of it.  I wasn't sure
->> how to estimate the total I/O that will be issued for syncing out an
->> entire superblock, though, so I didn't do that part.
->
-> As I said to the original patch - having a hang check timeout on a
-> system that is overloaded w.r.t. IO is an important piece of
-> information when it comes to debugging problems. Often the hangcheck
-> timer is the first piece of information that we will get that
-> indicates a problem somewhere in a production system.
+This patch originates from the Android tree and is being submitted
+for review and inclusion in the mainline kernel.
 
-So, you believe that we should always check at 2 minute intervals (or
-whatever is configured), even if we know there is more than that much
-I/O queued?  In case there is any confusion, here, the patch I posted
-ensured that we would eventually spew a warning, but only if the process
-was blocked for longer than we (the kernel) expected.
+Add a platform device in the board file to specify a reset key-combo.
+The first time the key-combo is detected a work function that syncs
+the filesystems is scheduled. If all the keys are released and then
+pressed again, it calls panic. Reboot on panic should be set for
+this to work.
 
-> Removing it does not magically fix the underlying problem - it
-> simply means that we don't hear about them until someone complains
-> that unmount is taking hours....
+Cc: kernel-team@android.com
+Cc: dmitry.torokhov@gmail.com
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/input/Kconfig    |    9 ++
+ drivers/input/Makefile   |    1 +
+ drivers/input/keyreset.c |  239 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/keyreset.h |   28 ++++++
+ 4 files changed, 277 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/keyreset.c
+ create mode 100644 include/linux/keyreset.h
 
-There isn't necessarily an underlying problem.  This is very much a gray
-area, Dave.  We get plenty of false positives in this code.  I was
-trying to reduce *that* problem.  Do you have a better idea on how to
-address the issue?
+diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
+index 55f7e57..771b64cd 100644
+--- a/drivers/input/Kconfig
++++ b/drivers/input/Kconfig
+@@ -174,6 +174,15 @@ config INPUT_APMPOWER
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called apm-power.
+ 
++config INPUT_KEYRESET
++	tristate "Reset key"
++	depends on INPUT
++	---help---
++	  Say Y here if you want to reboot when some keys are pressed;
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called keyreset.
++
+ comment "Input Device Drivers"
+ 
+ source "drivers/input/keyboard/Kconfig"
+diff --git a/drivers/input/Makefile b/drivers/input/Makefile
+index 5ca3f63..191ea43 100644
+--- a/drivers/input/Makefile
++++ b/drivers/input/Makefile
+@@ -25,3 +25,4 @@ obj-$(CONFIG_INPUT_TOUCHSCREEN)	+= touchscreen/
+ obj-$(CONFIG_INPUT_MISC)	+= misc/
+ 
+ obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
++obj-$(CONFIG_INPUT_KEYRESET)	+= keyreset.o
+diff --git a/drivers/input/keyreset.c b/drivers/input/keyreset.c
+new file mode 100644
+index 0000000..36208fe
+--- /dev/null
++++ b/drivers/input/keyreset.c
+@@ -0,0 +1,239 @@
++/* drivers/input/keyreset.c
++ *
++ * Copyright (C) 2008 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/input.h>
++#include <linux/keyreset.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/reboot.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/syscalls.h>
++
++
++struct keyreset_state {
++	struct input_handler input_handler;
++	unsigned long keybit[BITS_TO_LONGS(KEY_CNT)];
++	unsigned long upbit[BITS_TO_LONGS(KEY_CNT)];
++	unsigned long key[BITS_TO_LONGS(KEY_CNT)];
++	spinlock_t lock;
++	int key_down_target;
++	int key_down;
++	int key_up;
++	int restart_disabled;
++	int (*reset_fn)(void);
++};
++
++int restart_requested;
++static void deferred_restart(struct work_struct *dummy)
++{
++	restart_requested = 2;
++	sys_sync();
++	restart_requested = 3;
++	kernel_restart(NULL);
++}
++static DECLARE_WORK(restart_work, deferred_restart);
++
++static void keyreset_event(struct input_handle *handle, unsigned int type,
++			   unsigned int code, int value)
++{
++	unsigned long flags;
++	struct keyreset_state *state = handle->private;
++
++	if (type != EV_KEY)
++		return;
++
++	if (code >= KEY_MAX)
++		return;
++
++	if (!test_bit(code, state->keybit))
++		return;
++
++	spin_lock_irqsave(&state->lock, flags);
++	if (!test_bit(code, state->key) == !value)
++		goto done;
++	__change_bit(code, state->key);
++	if (test_bit(code, state->upbit)) {
++		if (value) {
++			state->restart_disabled = 1;
++			state->key_up++;
++		} else
++			state->key_up--;
++	} else {
++		if (value)
++			state->key_down++;
++		else
++			state->key_down--;
++	}
++	if (state->key_down == 0 && state->key_up == 0)
++		state->restart_disabled = 0;
++
++	pr_debug("reset key changed %d %d new state %d-%d-%d\n", code, value,
++		 state->key_down, state->key_up, state->restart_disabled);
++
++	if (value && !state->restart_disabled &&
++	    state->key_down == state->key_down_target) {
++		state->restart_disabled = 1;
++		if (restart_requested)
++			panic("keyboard reset failed, %d", restart_requested);
++		if (state->reset_fn) {
++			restart_requested = state->reset_fn();
++		} else {
++			pr_info("keyboard reset\n");
++			schedule_work(&restart_work);
++			restart_requested = 1;
++		}
++	}
++done:
++	spin_unlock_irqrestore(&state->lock, flags);
++}
++
++static int keyreset_connect(struct input_handler *handler,
++					  struct input_dev *dev,
++					  const struct input_device_id *id)
++{
++	int i;
++	int ret;
++	struct input_handle *handle;
++	struct keyreset_state *state =
++		container_of(handler, struct keyreset_state, input_handler);
++
++	for (i = 0; i < KEY_MAX; i++) {
++		if (test_bit(i, state->keybit) && test_bit(i, dev->keybit))
++			break;
++	}
++	if (i == KEY_MAX)
++		return -ENODEV;
++
++	handle = kzalloc(sizeof(*handle), GFP_KERNEL);
++	if (!handle)
++		return -ENOMEM;
++
++	handle->dev = dev;
++	handle->handler = handler;
++	handle->name = "keyreset";
++	handle->private = state;
++
++	ret = input_register_handle(handle);
++	if (ret)
++		goto err_input_register_handle;
++
++	ret = input_open_device(handle);
++	if (ret)
++		goto err_input_open_device;
++
++	pr_info("using input dev %s for key reset\n", dev->name);
++
++	return 0;
++
++err_input_open_device:
++	input_unregister_handle(handle);
++err_input_register_handle:
++	kfree(handle);
++	return ret;
++}
++
++static void keyreset_disconnect(struct input_handle *handle)
++{
++	input_close_device(handle);
++	input_unregister_handle(handle);
++	kfree(handle);
++}
++
++static const struct input_device_id keyreset_ids[] = {
++	{
++		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
++		.evbit = { BIT_MASK(EV_KEY) },
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(input, keyreset_ids);
++
++static int keyreset_probe(struct platform_device *pdev)
++{
++	int ret;
++	int key, *keyp;
++	struct keyreset_state *state;
++	struct keyreset_platform_data *pdata = pdev->dev.platform_data;
++
++	if (!pdata)
++		return -EINVAL;
++
++	state = kzalloc(sizeof(*state), GFP_KERNEL);
++	if (!state)
++		return -ENOMEM;
++
++	spin_lock_init(&state->lock);
++	keyp = pdata->keys_down;
++	while ((key = *keyp++)) {
++		if (key >= KEY_MAX)
++			continue;
++		state->key_down_target++;
++		__set_bit(key, state->keybit);
++	}
++	if (pdata->keys_up) {
++		keyp = pdata->keys_up;
++		while ((key = *keyp++)) {
++			if (key >= KEY_MAX)
++				continue;
++			__set_bit(key, state->keybit);
++			__set_bit(key, state->upbit);
++		}
++	}
++
++	if (pdata->reset_fn)
++		state->reset_fn = pdata->reset_fn;
++
++	state->input_handler.event = keyreset_event;
++	state->input_handler.connect = keyreset_connect;
++	state->input_handler.disconnect = keyreset_disconnect;
++	state->input_handler.name = KEYRESET_NAME;
++	state->input_handler.id_table = keyreset_ids;
++	ret = input_register_handler(&state->input_handler);
++	if (ret) {
++		kfree(state);
++		return ret;
++	}
++	platform_set_drvdata(pdev, state);
++	return 0;
++}
++
++int keyreset_remove(struct platform_device *pdev)
++{
++	struct keyreset_state *state = platform_get_drvdata(pdev);
++	input_unregister_handler(&state->input_handler);
++	kfree(state);
++	return 0;
++}
++
++
++struct platform_driver keyreset_driver = {
++	.driver.name = KEYRESET_NAME,
++	.probe = keyreset_probe,
++	.remove = keyreset_remove,
++};
++
++static int __init keyreset_init(void)
++{
++	return platform_driver_register(&keyreset_driver);
++}
++
++static void __exit keyreset_exit(void)
++{
++	return platform_driver_unregister(&keyreset_driver);
++}
++
++module_init(keyreset_init);
++module_exit(keyreset_exit);
+diff --git a/include/linux/keyreset.h b/include/linux/keyreset.h
+new file mode 100644
+index 0000000..a2ac49e
+--- /dev/null
++++ b/include/linux/keyreset.h
+@@ -0,0 +1,28 @@
++/*
++ * include/linux/keyreset.h - platform data structure for resetkeys driver
++ *
++ * Copyright (C) 2008 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _LINUX_KEYRESET_H
++#define _LINUX_KEYRESET_H
++
++#define KEYRESET_NAME "keyreset"
++
++struct keyreset_platform_data {
++	int (*reset_fn)(void);
++	int *keys_up;
++	int keys_down[]; /* 0 terminated */
++};
++
++#endif /* _LINUX_KEYRESET_H */
+-- 
+1.7.5.4
 
-Maybe this discussion requires looking at specific instances of the
-problem so we're all on the same page.  What do you think is the best
-way forward, here?
-
-Cheers,
-Jeff
