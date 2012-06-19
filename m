@@ -1,349 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669Ab2FSEMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 00:12:07 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:49649 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998Ab2FSEME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 00:12:04 -0400
-Date: Tue, 19 Jun 2012 12:11:54 +0800
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Early boot panic on machine with lots of memory
-Message-ID: <20120619041154.GA28651@shangw>
-Reply-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-References: <1339623535.3321.4.camel@lappy>
- <20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
- <1339667440.3321.7.camel@lappy>
- <20120618223203.GE32733@google.com>
- <1340059850.3416.3.camel@lappy>
+	id S1751966Ab2FSEaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 00:30:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44158 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab2FSEaP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 00:30:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340059850.3416.3.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061904-1976-0000-0000-00000E4D2D1E
+In-Reply-To: <20120619000150.GA4208@kroah.com>
+References: <1339940861-18258-1-git-send-email-devendra.aaru@gmail.com>
+	<20120619000150.GA4208@kroah.com>
+Date: Tue, 19 Jun 2012 10:00:15 +0530
+Message-ID: <CAHdPZaOPB_ruWGTa7vid9+_P_GiSQC02J=Q5e=2us7NGrCVKiQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] staging/rtl8192u: cleanup coding style problems
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> * Can you please post disassembly of the whole function?  It seems
->>   like rsv->regions[] was corrupt.  I want to verify other registers
->>   too.
+Hi Greg,
 
-I'm not sure that it was caused by some kind of conflicting here. It seems
-that the memory used by reserved regions was deallocated before the crash
-as following log indicates.
+Thanks for spending your valuable time in reviewing the patch,
 
-[    0.000000] memblock: reserved array is doubled to 256 at [0x102febf080-0x102fec087f]
-[    0.000000] memblock_reserve: [0x0000102febf080-0x0000102fec0880] memblock_double_array+0x1c5/0x1e2
-:
-:
-[    0.000000] memblock: reserved array is doubled to 512 at [0x102febc080-0x102febf07f]
-[    0.000000]    memblock_free: [0x0000102febf080-0x0000102fec0880] memblock_double_array+0x1b0/0x1e2
-[    0.000000] memblock_reserve: [0x0000102febc080-0x0000102febf080] memblock_double_array+0x1c5/0x1e2
-:
-:
-[    0.000000]    memblock_free: [0x0000102febc080-0x0000102febf080] memblock_free_reserved_regions+0x37/0x39
-
-Here, [0x0000102febc080-0x0000102febf080] was released to available memory block
-by function free_low_memory_core_early(). I'm not sure the release memblock might
-be taken by bootmem, but I think it's worthy to have a try of removing following
-2 lines: memblock_free_reserved_regions() and memblock_reserve_reserved_regions()
-
-unsigned long __init free_low_memory_core_early(int nodeid)
-{
-        unsigned long count = 0;
-        phys_addr_t start, end;
-        u64 i;
-
-        /* free reserved array temporarily so that it's treated as free area */
-        /* memblock_free_reserved_regions(); -REMOVED */
-
-        for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
-                unsigned long start_pfn = PFN_UP(start);
-                unsigned long end_pfn = min_t(unsigned long,
-                                              PFN_DOWN(end), max_low_pfn);
-                if (start_pfn < end_pfn) {
-                        __free_pages_memory(start_pfn, end_pfn);
-                        count += end_pfn - start_pfn;
-                }
-        }
-
-        /* put region array back? */
-        /* memblock_reserve_reserved_regions(); -REMOVED */
-
-        return count;
-}
-
-Thanks,
-Gavin
-
+On Tue, Jun 19, 2012 at 5:31 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Sun, Jun 17, 2012 at 07:17:40PM +0530, Devendra Naga wrote:
+>> The following warnings / errors were cleaned
+>>
+>> drivers/staging/rtl8192u/r8180_93cx6.c:25: ERROR: space required before the open parenthesis '('
+>> drivers/staging/rtl8192u/r8180_93cx6.c:28: ERROR: do not use C99 // comments
+>> drivers/staging/rtl8192u/r8180_93cx6.c:30: WARNING: line over 80 characters
+>> drivers/staging/rtl8192u/r8180_93cx6.c:31: ERROR: do not use C99 // comments
+>> drivers/staging/rtl8192u/r8180_93cx6.c:41: ERROR: space required after that ',' (ctx:VxV)
+>> drivers/staging/rtl8192u/r8180_93cx6.c:45: ERROR: need consistent spacing a round '&' (ctx:WxO)
+>> drivers/staging/rtl8192u/r8180_93cx6.c:45: ERROR: space prohibited after that '~' (ctx:OxW)
+>> drivers/staging/rtl8192u/r8180_93cx6.c:51: ERROR: space required after that ',' (ctx:VxV)
+>> drivers/staging/rtl8192u/r8180_93cx6.c:53: ERROR: space required before the open parenthesis '('
+>> drivers/staging/rtl8192u/r8180_93cx6.c:55: ERROR: space required after that ',' (ctx:VxV)
+>> drivers/staging/rtl8192u/r8180_93cx6.c:57: ERROR: space required after that ',' (ctx:VxV)
+>> drivers/staging/rtl8192u/r8180_93cx6.c:69: ERROR: spaces required around that '=' (ctx:VxV)
+>> drivers/staging/rtl8192u/r8180_93cx6.c:69: ERROR: space prohibited before that close parenthesis ')'
+>> drivers/staging/rtl8192u/r8180_93cx6.c:72: ERROR: space required before the open parenthesis '('
+>> drivers/staging/rtl8192u/r8180_93cx6.c:72: ERROR: trailing statements should be on next line
+>>
+>> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 >
->Here it is, with the patch you've asked to be tested applied if it matters any:
+> It's good you broke this down as to what you were fixing, but I don't
+> like this change:
 >
->0000000000000000 <__next_free_mem_range>:
-> * in lockstep and returns each intersection.
-> */
->void __init_memblock __next_free_mem_range(u64 *idx, int nid,
->					   phys_addr_t *out_start,
->					   phys_addr_t *out_end, int *out_nid)
->{
->   0:	55                   	push   %rbp
->   1:	48 89 e5             	mov    %rsp,%rbp
->   4:	41 57                	push   %r15
->   6:	41 56                	push   %r14
->		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
->			continue;
+>> -     if(bit) return 1;
+>> -     return 0;
+>> +     return bit ? 1: 0;
 >
->		/* scan areas before each reservation for intersection */
->		for ( ; ri < rsv->cnt + 1; ri++) {
->			struct memblock_region *r = &rsv->regions[ri];
->   8:	45 31 f6             	xor    %r14d,%r14d
-> * in lockstep and returns each intersection.
-> */
->void __init_memblock __next_free_mem_range(u64 *idx, int nid,
->					   phys_addr_t *out_start,
->					   phys_addr_t *out_end, int *out_nid)
->{
->   b:	41 55                	push   %r13
->   d:	41 54                	push   %r12
->   f:	53                   	push   %rbx
->  10:	48 83 ec 38          	sub    $0x38,%rsp
->  14:	48 89 55 b0          	mov    %rdx,-0x50(%rbp)
->  18:	48 89 4d a8          	mov    %rcx,-0x58(%rbp)
->  1c:	48 89 7d b8          	mov    %rdi,-0x48(%rbp)
->  20:	4c 89 45 a0          	mov    %r8,-0x60(%rbp)
->	struct memblock_type *mem = &memblock.memory;
->	struct memblock_type *rsv = &memblock.reserved;
->	int mi = *idx & 0xffffffff;
->	int ri = *idx >> 32;
+> Please don't use ? : if you can help it, it is just hard to read.
+Ok.
 >
->	for ( ; mi < mem->cnt; mi++) {
->  24:	48 8b 0d 00 00 00 00 	mov    0x0(%rip),%rcx        # 2b <__next_free_mem_range+0x2b>
->			27: R_X86_64_PC32	memblock+0x4
->					   phys_addr_t *out_start,
->					   phys_addr_t *out_end, int *out_nid)
->{
->	struct memblock_type *mem = &memblock.memory;
->	struct memblock_type *rsv = &memblock.reserved;
->	int mi = *idx & 0xffffffff;
->  2b:	48 8b 07             	mov    (%rdi),%rax
->		/* only memory regions are associated with nodes, check it */
->		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
->			continue;
+> Care to redo this one and resend both patches?
 >
->		/* scan areas before each reservation for intersection */
->		for ( ; ri < rsv->cnt + 1; ri++) {
->  2e:	4c 8b 1d 00 00 00 00 	mov    0x0(%rip),%r11        # 35 <__next_free_mem_range+0x35>
->			31: R_X86_64_PC32	memblock+0x24
->					   phys_addr_t *out_end, int *out_nid)
->{
->	struct memblock_type *mem = &memblock.memory;
->	struct memblock_type *rsv = &memblock.reserved;
->	int mi = *idx & 0xffffffff;
->	int ri = *idx >> 32;
->  35:	48 89 c2             	mov    %rax,%rdx
->					   phys_addr_t *out_start,
->					   phys_addr_t *out_end, int *out_nid)
->{
->	struct memblock_type *mem = &memblock.memory;
->	struct memblock_type *rsv = &memblock.reserved;
->	int mi = *idx & 0xffffffff;
->  38:	48 89 45 d0          	mov    %rax,-0x30(%rbp)
->	int ri = *idx >> 32;
->  3c:	48 c1 ea 20          	shr    $0x20,%rdx
+You can expect a V2 of your comments :-),
+and the second patch will be broken into little more pieces.
+> thanks,
 >
->	for ( ; mi < mem->cnt; mi++) {
->		struct memblock_region *m = &mem->regions[mi];
->  40:	48 8b 05 00 00 00 00 	mov    0x0(%rip),%rax        # 47 <__next_free_mem_range+0x47>
->			43: R_X86_64_PC32	memblock+0x1c
->	struct memblock_type *mem = &memblock.memory;
->	struct memblock_type *rsv = &memblock.reserved;
->	int mi = *idx & 0xffffffff;
->	int ri = *idx >> 32;
->
->	for ( ; mi < mem->cnt; mi++) {
->  47:	48 89 4d c8          	mov    %rcx,-0x38(%rbp)
->		struct memblock_region *m = &mem->regions[mi];
->  4b:	48 89 45 c0          	mov    %rax,-0x40(%rbp)
->		/* only memory regions are associated with nodes, check it */
->		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
->			continue;
->
->		/* scan areas before each reservation for intersection */
->		for ( ; ri < rsv->cnt + 1; ri++) {
->  4f:	49 8d 5b 01          	lea    0x1(%r11),%rbx
->			struct memblock_region *r = &rsv->regions[ri];
->  53:	4c 8b 25 00 00 00 00 	mov    0x0(%rip),%r12        # 5a <__next_free_mem_range+0x5a>
->			56: R_X86_64_PC32	memblock+0x3c
->	struct memblock_type *mem = &memblock.memory;
->	struct memblock_type *rsv = &memblock.reserved;
->	int mi = *idx & 0xffffffff;
->	int ri = *idx >> 32;
->
->	for ( ; mi < mem->cnt; mi++) {
->  5a:	e9 c8 00 00 00       	jmpq   127 <__next_free_mem_range+0x127>
->		struct memblock_region *m = &mem->regions[mi];
->  5f:	4d 6b ed 18          	imul   $0x18,%r13,%r13
->  63:	4c 03 6d c0          	add    -0x40(%rbp),%r13
->		phys_addr_t m_start = m->base;
->  67:	4d 8b 4d 00          	mov    0x0(%r13),%r9
->		phys_addr_t m_end = m->base + m->size;
->  6b:	4d 89 ca             	mov    %r9,%r10
->  6e:	4d 03 55 08          	add    0x8(%r13),%r10
->
->		/* only memory regions are associated with nodes, check it */
->		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
->  72:	81 fe 00 04 00 00    	cmp    $0x400,%esi
->  78:	0f 84 9a 00 00 00    	je     118 <__next_free_mem_range+0x118>
->	r->nid = nid;
->}
->
->static inline int memblock_get_region_node(const struct memblock_region *r)
->{
->	return r->nid;
->  7e:	41 3b 75 10          	cmp    0x10(%r13),%esi
->  82:	0f 85 9c 00 00 00    	jne    124 <__next_free_mem_range+0x124>
->  88:	e9 8b 00 00 00       	jmpq   118 <__next_free_mem_range+0x118>
->			continue;
->
->		/* scan areas before each reservation for intersection */
->		for ( ; ri < rsv->cnt + 1; ri++) {
->			struct memblock_region *r = &rsv->regions[ri];
->  8d:	4c 6b c0 18          	imul   $0x18,%rax,%r8
->			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
->  91:	31 c9                	xor    %ecx,%ecx
->		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
->			continue;
->
->		/* scan areas before each reservation for intersection */
->		for ( ; ri < rsv->cnt + 1; ri++) {
->			struct memblock_region *r = &rsv->regions[ri];
->  93:	4f 8d 04 04          	lea    (%r12,%r8,1),%r8
->			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
->  97:	85 d2                	test   %edx,%edx
->  99:	74 08                	je     a3 <__next_free_mem_range+0xa3>
->  9b:	49 8b 48 f0          	mov    -0x10(%r8),%rcx
->  9f:	49 03 48 e8          	add    -0x18(%r8),%rcx
->			phys_addr_t r_end = ri < rsv->cnt ? r->base : ULLONG_MAX;
->  a3:	48 83 cf ff          	or     $0xffffffffffffffff,%rdi
->  a7:	4c 39 d8             	cmp    %r11,%rax
->  aa:	73 03                	jae    af <__next_free_mem_range+0xaf>
->  ac:	49 8b 38             	mov    (%r8),%rdi
->
->			/* if ri advanced past mi, break out to advance mi */
->			if (r_start >= m_end)
->  af:	4c 39 d1             	cmp    %r10,%rcx
->  b2:	73 70                	jae    124 <__next_free_mem_range+0x124>
->				break;
->			/* if the two regions intersect, we're done */
->			if (m_start < r_end) {
->  b4:	4c 39 cf             	cmp    %r9,%rdi
->  b7:	76 5d                	jbe    116 <__next_free_mem_range+0x116>
->				if (out_start)
->  b9:	48 83 7d b0 00       	cmpq   $0x0,-0x50(%rbp)
->  be:	74 0e                	je     ce <__next_free_mem_range+0xce>
->					*out_start = max(m_start, r_start);
->  c0:	4c 39 c9             	cmp    %r9,%rcx
->  c3:	48 8b 45 b0          	mov    -0x50(%rbp),%rax
->  c7:	49 0f 42 c9          	cmovb  %r9,%rcx
->  cb:	48 89 08             	mov    %rcx,(%rax)
->				if (out_end)
->  ce:	48 83 7d a8 00       	cmpq   $0x0,-0x58(%rbp)
->  d3:	74 11                	je     e6 <__next_free_mem_range+0xe6>
->					*out_end = min(m_end, r_end);
->  d5:	4c 39 d7             	cmp    %r10,%rdi
->  d8:	4c 89 d0             	mov    %r10,%rax
->  db:	48 8b 4d a8          	mov    -0x58(%rbp),%rcx
->  df:	48 0f 46 c7          	cmovbe %rdi,%rax
->  e3:	48 89 01             	mov    %rax,(%rcx)
->				if (out_nid)
->  e6:	48 83 7d a0 00       	cmpq   $0x0,-0x60(%rbp)
->  eb:	74 0a                	je     f7 <__next_free_mem_range+0xf7>
->					*out_nid = memblock_get_region_node(m);
->  ed:	41 8b 45 10          	mov    0x10(%r13),%eax
->  f1:	48 8b 4d a0          	mov    -0x60(%rbp),%rcx
->  f5:	89 01                	mov    %eax,(%rcx)
->				/*
->				 * The region which ends first is advanced
->				 * for the next iteration.
->				 */
->				if (m_end <= r_end)
->  f7:	4c 39 d7             	cmp    %r10,%rdi
->  fa:	72 05                	jb     101 <__next_free_mem_range+0x101>
->					mi++;
->  fc:	41 ff c7             	inc    %r15d
->  ff:	eb 02                	jmp    103 <__next_free_mem_range+0x103>
->				else
->					ri++;
-> 101:	ff c2                	inc    %edx
->				*idx = (u32)mi | (u64)ri << 32;
-> 103:	48 c1 e2 20          	shl    $0x20,%rdx
-> 107:	45 89 ff             	mov    %r15d,%r15d
-> 10a:	48 8b 45 b8          	mov    -0x48(%rbp),%rax
-> 10e:	4c 09 fa             	or     %r15,%rdx
-> 111:	48 89 10             	mov    %rdx,(%rax)
->				return;
-> 114:	eb 30                	jmp    146 <__next_free_mem_range+0x146>
->		/* only memory regions are associated with nodes, check it */
->		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
->			continue;
->
->		/* scan areas before each reservation for intersection */
->		for ( ; ri < rsv->cnt + 1; ri++) {
-> 116:	ff c2                	inc    %edx
-> 118:	48 63 c2             	movslq %edx,%rax
-> 11b:	48 39 d8             	cmp    %rbx,%rax
-> 11e:	0f 82 69 ff ff ff    	jb     8d <__next_free_mem_range+0x8d>
-> 124:	41 ff c6             	inc    %r14d
-> 127:	8b 4d d0             	mov    -0x30(%rbp),%ecx
-> 12a:	45 8d 3c 0e          	lea    (%r14,%rcx,1),%r15d
->	struct memblock_type *mem = &memblock.memory;
->	struct memblock_type *rsv = &memblock.reserved;
->	int mi = *idx & 0xffffffff;
->	int ri = *idx >> 32;
->
->	for ( ; mi < mem->cnt; mi++) {
-> 12e:	4d 63 ef             	movslq %r15d,%r13
-> 131:	4c 3b 6d c8          	cmp    -0x38(%rbp),%r13
-> 135:	0f 82 24 ff ff ff    	jb     5f <__next_free_mem_range+0x5f>
->			}
->		}
->	}
->
->	/* signal end of iteration */
->	*idx = ULLONG_MAX;
-> 13b:	48 8b 45 b8          	mov    -0x48(%rbp),%rax
-> 13f:	48 c7 00 ff ff ff ff 	movq   $0xffffffffffffffff,(%rax)
->}
-> 146:	48 83 c4 38          	add    $0x38,%rsp
-> 14a:	5b                   	pop    %rbx
-> 14b:	41 5c                	pop    %r12
-> 14d:	41 5d                	pop    %r13
-> 14f:	41 5e                	pop    %r14
-> 151:	41 5f                	pop    %r15
-> 153:	c9                   	leaveq 
-> 154:	c3                   	retq
->
->> * Can you please try the following patch?
->> 
->>   https://lkml.org/lkml/2012/6/15/510
->
->The patch didn't seem to help.
->
->Since this is pretty easy to reproduce, let me know if adding any debug code will prove to be helpful in further analysis.
->
->
->--
->To unsubscribe, send a message with 'unsubscribe linux-mm' in
->the body to majordomo@kvack.org.  For more info on Linux MM,
->see: http://www.linux-mm.org/ .
->Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-
+> greg k-h
