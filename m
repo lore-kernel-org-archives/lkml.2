@@ -1,409 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab2FSL3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:29:55 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51999 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab2FSL3y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:29:54 -0400
+	id S1753886Ab2FSLdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:33:16 -0400
+Received: from [213.199.154.143] ([213.199.154.143]:58998 "EHLO
+	db3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751511Ab2FSLdP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 07:33:15 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371I1432Izz1202hzz8275bh8275dhz2dh668h839hd25hf0ah)
+X-WSS-ID: 0M5V41D-01-6Q7-02
+X-M-MSG: 
+Date: Tue, 19 Jun 2012 13:31:58 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, <stable@vger.kernel.org>
+Subject: Re: [PATCH] perf stat: Fix default logfd to use stderr
+Message-ID: <20120619113158.GB1478@erda.amd.com>
+References: <1317336490-19437-1-git-send-email-acme@infradead.org>
+ <1317336490-19437-8-git-send-email-acme@infradead.org>
+ <20120618145108.GG5046@erda.amd.com>
+ <87zk80giag.fsf@sejong.aot.lge.com>
+ <CABPqkBQA+CDxzp_g2Lu=Uoet5oqOq5E_1eiATGfoX=d7xEO49g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <e7edc69762637ef2e68e38ec83e3b44f.squirrel@www.codeaurora.org>
-References: <007c01cd4d15$b7ca1aa0$275e4fe0$%jun@samsung.com>
-	<21efe0f84cde4f8317a4ebb4de0b8207.squirrel@www.codeaurora.org>
-	<CAKYAXd9_szMcE=pPWBrOw_7j6XMvpVQhBq9-HfwJq92BEV9Lcg@mail.gmail.com>
-	<e7edc69762637ef2e68e38ec83e3b44f.squirrel@www.codeaurora.org>
-Date: Tue, 19 Jun 2012 20:29:52 +0900
-Message-ID: <CAKYAXd9eakYoyDH131K6m7RkXgK0rHWjGecpKycSB+cvkQgFNA@mail.gmail.com>
-Subject: Re: [PATCH RESEND v7 3/3] mmc: core: Support packed read command for
- eMMC4.5 device
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: merez@codeaurora.org
-Cc: Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        "S, Venkatraman" <svenkatr@ti.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQA+CDxzp_g2Lu=Uoet5oqOq5E_1eiATGfoX=d7xEO49g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/19, merez@codeaurora.org <merez@codeaurora.org>:
-> Hi Namjae,
->
-> We have seen that read packing causes degradation to read performance and
-> also got reports for the same from card vendors.
-> When vendors will improve this feature and it will be proven to be
-> beneficial we can open the discussion on it again.
-> Until then, there is no point in merging a massive amount of code that
-> will be disabled.
+On 19.06.12 08:09:31, Stephane Eranian wrote:
+> On Tue, Jun 19, 2012 at 4:13 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> > Hi, Robert
+> >
+> > On Mon, 18 Jun 2012 16:51:08 +0200, Robert Richter wrote:
+> >> On 29.09.11 18:48:01, Arnaldo Carvalho de Melo wrote:
+> >>> From: Jim Cromie <jim.cromie@gmail.com>
+> >>>
+> >>> This perf stat option emulates valgrind's --log-fd option, allowing the
+> >>> user to send perf results elsewhere, and leaving stderr for use by the
+> >>> program under test.  This complements --output file option, and is
+> >>> mutually exclusive with it.
+> >>>
+> >>>    3>results  perf stat --log-fd 3          -- $cmd
+> >>>    3>>results perf stat --log-fd 3 --append -- $cmd
+> >>>
+> >>> The perl distro's make test.valgrind target uses valgrind's --log-fd
+> >>> option, I've adapted it to invoke perf also, and tested this patch
+> >>> there.
+> >>>
+> >>> Link: http://lkml.kernel.org/r/1315437244-3788-2-git-send-email-jim.cromie@gmail.com
+> >>> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> >>> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> >>> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> >>
+> >> With certain shell redirections this (56f3bae) fails with a log fd
+> >> setup failure. Fix below.
+> >>
+> >
+> > It looks somewhat related to Stephane's patch. Can you we check it too?
+> >
+> > http://lkml.indiana.edu/hypermail/linux/kernel/1205.1/04232.html
 
-Okay, I agree about big changing. As I know, packed read speed on
-sequecial read is better than original. random read is not. because of
-overhead of header sector tranfering and error checking.
+I applied the patch to my tree and this works too. Both patches
+basically avoid fdopen() if a log-fd option is not given.
 
-Hi. Seungwon.
-When you measure packed read performance using lmdd, Is there any
-improved performance ?
+After reviewing the code again I noticed my code breaks the -o option.
+So Stephane's patch is fine for me too, except for the fact that
+--log-fd 0 is ignored. Maybe we change this by initializing output_fd
+with -1 and modify the checks of output_fd?
 
-Thanks.
+> Yes, my patch is needed and it was posted over a month ago now.....
+> Arnaldo, please apply my patch.
 
->
-> Thanks,
-> Maya
-> On Mon, June 18, 2012 7:22 am, Namjae Jeon wrote:
->> 2012/6/18  <merez@codeaurora.org>:
->>> I would prefer that you didn't submit this.
->>> Let's wait with packed read until it is proven to be beneficial.
->> Hi. Merez.
->> I have reported packed read speed issue was because of firmware of mmc
->> card before.
->> And host can select packed read and write cmd by each performance.
->> mmc vendors willl be considering to improve packed read cmd.
->>
->> Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
->>
->> Thanks.
->>>
->>> Thanks,
->>> Maya
->>> On Sun, June 17, 2012 10:46 pm, Seungwon Jeon wrote:
->>>> Add the packed read command for issuing data. Unlike the
->>>> packed write, command header is handled separately.
->>>>
->>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
->>>> ---
->>>>  drivers/mmc/card/block.c |  134
->>>> +++++++++++++++++++++++++++++++++++++++++++---
->>>>  drivers/mmc/card/queue.c |    6 ++-
->>>>  drivers/mmc/card/queue.h |    2 +
->>>>  3 files changed, 133 insertions(+), 9 deletions(-)
->>>>
->>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->>>> index eb99e35..25f42e8 100644
->>>> --- a/drivers/mmc/card/block.c
->>>> +++ b/drivers/mmc/card/block.c
->>>> @@ -62,6 +62,7 @@ MODULE_ALIAS("mmc:block");
->>>>                       (req->cmd_flags & REQ_META)) && \
->>>>                       (rq_data_dir(req) == WRITE))
->>>>  #define PACKED_CMD_VER               0x01
->>>> +#define PACKED_CMD_RD                0x01
->>>>  #define PACKED_CMD_WR                0x02
->>>>
->>>>  static DEFINE_MUTEX(block_mutex);
->>>> @@ -104,6 +105,7 @@ struct mmc_blk_data {
->>>>  #define MMC_BLK_WRITE                BIT(1)
->>>>  #define MMC_BLK_DISCARD              BIT(2)
->>>>  #define MMC_BLK_SECDISCARD   BIT(3)
->>>> +#define MMC_BLK_WR_HDR               BIT(4)
->>>>
->>>>       /*
->>>>        * Only set in main mmc_blk_data associated
->>>> @@ -1062,7 +1064,8 @@ static int mmc_blk_err_check(struct mmc_card
->>>> *card,
->>>>        * kind.  If it was a write, we may have transitioned to
->>>>        * program mode, which we have to wait for it to complete.
->>>>        */
->>>> -     if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
->>>> +     if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
->>>> ||
->>>> +                     (mq_mrq->packed_cmd ==
->>>> MMC_PACKED_WR_HDR)) {
->>>>               u32 status;
->>>>               do {
->>>>                       int err = get_card_status(card,
->>>> &status, 5);
->>>> @@ -1087,7 +1090,8 @@ static int mmc_blk_err_check(struct mmc_card
->>>> *card,
->>>>                      (unsigned)blk_rq_sectors(req),
->>>>                      brq->cmd.resp[0], brq->stop.resp[0]);
->>>>
->>>> -             if (rq_data_dir(req) == READ) {
->>>> +             if (rq_data_dir(req) == READ &&
->>>> +                             mq_mrq->packed_cmd !=
->>>> MMC_PACKED_WR_HDR) {
->>>>                       if (ecc_err)
->>>>                               return MMC_BLK_ECC_ERR;
->>>>                       return MMC_BLK_DATA_ERR;
->>>> @@ -1330,6 +1334,9 @@ static u8 mmc_blk_prep_packed_list(struct
->>>> mmc_queue
->>>> *mq, struct request *req)
->>>>       if ((rq_data_dir(cur) == WRITE) &&
->>>>                       (card->host->caps2 &
->>>> MMC_CAP2_PACKED_WR))
->>>>               max_packed_rw = card->ext_csd.max_packed_writes;
->>>> +     else if ((rq_data_dir(cur) == READ) &&
->>>> +                     (card->host->caps2 &
->>>> MMC_CAP2_PACKED_RD))
->>>> +             max_packed_rw = card->ext_csd.max_packed_reads;
->>>>
->>>>       if (max_packed_rw == 0)
->>>>               goto no_packed;
->>>> @@ -1426,13 +1433,16 @@ static void mmc_blk_packed_hdr_wrq_prep(struct
->>>> mmc_queue_req *mqrq,
->>>>       u32 *packed_cmd_hdr = mqrq->packed_cmd_hdr;
->>>>       u8 i = 1;
->>>>
->>>> -     mqrq->packed_cmd = MMC_PACKED_WRITE;
->>>> +     mqrq->packed_cmd = (rq_data_dir(req) == READ) ?
->>>> +             MMC_PACKED_WR_HDR : MMC_PACKED_WRITE;
->>>>       mqrq->packed_blocks = 0;
->>>>       mqrq->packed_fail_idx = MMC_PACKED_N_IDX;
->>>>
->>>>       memset(packed_cmd_hdr, 0, sizeof(mqrq->packed_cmd_hdr));
->>>>       packed_cmd_hdr[0] = (mqrq->packed_num << 16) |
->>>> -             (PACKED_CMD_WR << 8) | PACKED_CMD_VER;
->>>> +             (((rq_data_dir(req) == READ) ?
->>>> +               PACKED_CMD_RD : PACKED_CMD_WR) << 8) |
->>>> +             PACKED_CMD_VER;
->>>>
->>>>       /*
->>>>        * Argument for each entry of packed group
->>>> @@ -1464,7 +1474,8 @@ static void mmc_blk_packed_hdr_wrq_prep(struct
->>>> mmc_queue_req *mqrq,
->>>>       brq->mrq.stop = &brq->stop;
->>>>
->>>>       brq->sbc.opcode = MMC_SET_BLOCK_COUNT;
->>>> -     brq->sbc.arg = MMC_CMD23_ARG_PACKED | (mqrq->packed_blocks +
->>>> 1);
->>>> +     brq->sbc.arg = MMC_CMD23_ARG_PACKED |
->>>> +             ((rq_data_dir(req) == READ) ? 1 :
->>>> mqrq->packed_blocks + 1);
->>>>       brq->sbc.flags = MMC_RSP_R1 | MMC_CMD_AC;
->>>>
->>>>       brq->cmd.opcode = MMC_WRITE_MULTIPLE_BLOCK;
->>>> @@ -1474,7 +1485,12 @@ static void mmc_blk_packed_hdr_wrq_prep(struct
->>>> mmc_queue_req *mqrq,
->>>>       brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
->>>>
->>>>       brq->data.blksz = 512;
->>>> -     brq->data.blocks = mqrq->packed_blocks + 1;
->>>> +     /*
->>>> +      * Write separately the packd command header only for packed
->>>> read.
->>>> +      * In case of packed write, header is sent with blocks of
->>>> data.
->>>> +      */
->>>> +     brq->data.blocks = (rq_data_dir(req) == READ) ?
->>>> +             1 : mqrq->packed_blocks + 1;
->>>>       brq->data.flags |= MMC_DATA_WRITE;
->>>>
->>>>       brq->stop.opcode = MMC_STOP_TRANSMISSION;
->>>> @@ -1487,6 +1503,45 @@ static void mmc_blk_packed_hdr_wrq_prep(struct
->>>> mmc_queue_req *mqrq,
->>>>       brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
->>>>
->>>>       mqrq->mmc_active.mrq = &brq->mrq;
->>>> +     mqrq->mmc_active.err_check = (rq_data_dir(req) == READ) ?
->>>> +             mmc_blk_err_check : mmc_blk_packed_err_check;
->>>> +
->>>> +     mmc_queue_bounce_pre(mqrq);
->>>> +}
->>>> +
->>>> +static void mmc_blk_packed_rrq_prep(struct mmc_queue_req *mqrq,
->>>> +                                 struct mmc_card
->>>> *card,
->>>> +                                 struct mmc_queue *mq)
->>>> +{
->>>> +     struct mmc_blk_request *brq = &mqrq->brq;
->>>> +     struct request *req = mqrq->req;
->>>> +
->>>> +     mqrq->packed_cmd = MMC_PACKED_READ;
->>>> +
->>>> +     memset(brq, 0, sizeof(struct mmc_blk_request));
->>>> +     brq->mrq.cmd = &brq->cmd;
->>>> +     brq->mrq.data = &brq->data;
->>>> +     brq->mrq.stop = &brq->stop;
->>>> +
->>>> +     brq->cmd.opcode = MMC_READ_MULTIPLE_BLOCK;
->>>> +     brq->cmd.arg = blk_rq_pos(req);
->>>> +     if (!mmc_card_blockaddr(card))
->>>> +             brq->cmd.arg <<= 9;
->>>> +     brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
->>>> +     brq->data.blksz = 512;
->>>> +     brq->data.blocks = mqrq->packed_blocks;
->>>> +     brq->data.flags |= MMC_DATA_READ;
->>>> +
->>>> +     brq->stop.opcode = MMC_STOP_TRANSMISSION;
->>>> +     brq->stop.arg = 0;
->>>> +     brq->stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
->>>> +
->>>> +     mmc_set_data_timeout(&brq->data, card);
->>>> +
->>>> +     brq->data.sg = mqrq->sg;
->>>> +     brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
->>>> +
->>>> +     mqrq->mmc_active.mrq = &brq->mrq;
->>>>       mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
->>>>
->>>>       mmc_queue_bounce_pre(mqrq);
->>>> @@ -1521,6 +1576,56 @@ static int mmc_blk_cmd_err(struct mmc_blk_data
->>>> *md,
->>>> struct mmc_card *card,
->>>>       return ret;
->>>>  }
->>>>
->>>> +static int mmc_blk_chk_hdr_err(struct mmc_queue *mq, int status)
->>>> +{
->>>> +     struct mmc_blk_data *md = mq->data;
->>>> +     struct mmc_card *card = md->queue.card;
->>>> +     int type = MMC_BLK_WR_HDR, err = 0;
->>>> +
->>>> +     switch (status) {
->>>> +     case MMC_BLK_PARTIAL:
->>>> +     case MMC_BLK_RETRY:
->>>> +             err = 0;
->>>> +             break;
->>>> +     case MMC_BLK_CMD_ERR:
->>>> +     case MMC_BLK_ABORT:
->>>> +     case MMC_BLK_DATA_ERR:
->>>> +     case MMC_BLK_ECC_ERR:
->>>> +             err = mmc_blk_reset(md, card->host, type);
->>>> +             if (!err)
->>>> +                     mmc_blk_reset_success(md, type);
->>>> +             break;
->>>> +     }
->>>> +
->>>> +     return err;
->>>> +}
->>>> +
->>>> +static int mmc_blk_issue_packed_rd(struct mmc_queue *mq,
->>>> +                                struct mmc_queue_req
->>>> *mq_rq)
->>>> +{
->>>> +     struct mmc_blk_data *md = mq->data;
->>>> +     struct mmc_card *card = md->queue.card;
->>>> +     int status, ret, retry = 2;
->>>> +
->>>> +     do {
->>>> +             mmc_start_req(card->host, NULL, (int *) &status);
->>>> +             if (status) {
->>>> +                     ret = mmc_blk_chk_hdr_err(mq, status);
->>>> +                     if (ret)
->>>> +                             break;
->>>> +                     mmc_blk_packed_hdr_wrq_prep(mq_rq,
->>>> card, mq);
->>>> +                     mmc_start_req(card->host,
->>>> &mq_rq->mmc_active, NULL);
->>>> +             } else {
->>>> +                     mmc_blk_packed_rrq_prep(mq_rq, card,
->>>> mq);
->>>> +                     mmc_start_req(card->host,
->>>> &mq_rq->mmc_active, NULL);
->>>> +                     ret = 0;
->>>> +                     break;
->>>> +             }
->>>> +     } while (retry-- > 0);
->>>> +
->>>> +     return ret;
->>>> +}
->>>> +
->>>>  static int mmc_blk_end_packed_req(struct mmc_queue_req *mq_rq)
->>>>  {
->>>>       struct request *prq;
->>>> @@ -1626,8 +1731,12 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
->>>> *mq, struct request *rqc)
->>>>               } else
->>>>                       areq = NULL;
->>>>               areq = mmc_start_req(card->host, areq, (int *)
->>>> &status);
->>>> -             if (!areq)
->>>> -                     return 0;
->>>> +             if (!areq) {
->>>> +                     if (mq->mqrq_cur->packed_cmd ==
->>>> MMC_PACKED_WR_HDR)
->>>> +                             goto snd_packed_rd;
->>>> +                     else
->>>> +                             return 0;
->>>> +             }
->>>>
->>>>               mq_rq = container_of(areq, struct mmc_queue_req,
->>>> mmc_active);
->>>>               brq = &mq_rq->brq;
->>>> @@ -1726,10 +1835,19 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
->>>> *mq, struct request *rqc)
->>>>
->>>> mmc_blk_packed_hdr_wrq_prep(mq_rq, card, mq);
->>>>                               mmc_start_req(card->host,
->>>>
->>>> &mq_rq->mmc_active, NULL);
->>>> +                             if (mq_rq->packed_cmd ==
->>>> MMC_PACKED_WR_HDR) {
->>>> +                                     if
->>>> (mmc_blk_issue_packed_rd(mq, mq_rq))
->>>> +
->>>> goto cmd_abort;
->>>> +                             }
->>>>                       }
->>>>               }
->>>>       } while (ret);
->>>>
->>>> +snd_packed_rd:
->>>> +     if (mq->mqrq_cur->packed_cmd == MMC_PACKED_WR_HDR) {
->>>> +             if (mmc_blk_issue_packed_rd(mq, mq->mqrq_cur))
->>>> +                     goto start_new_req;
->>>> +     }
->>>>       return 1;
->>>>
->>>>   cmd_abort:
->>>> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
->>>> index 165d85a..277905e 100644
->>>> --- a/drivers/mmc/card/queue.c
->>>> +++ b/drivers/mmc/card/queue.c
->>>> @@ -389,11 +389,15 @@ static unsigned int
->>>> mmc_queue_packed_map_sg(struct
->>>> mmc_queue *mq,
->>>>
->>>>       cmd = mqrq->packed_cmd;
->>>>
->>>> -     if (cmd == MMC_PACKED_WRITE) {
->>>> +     if (cmd == MMC_PACKED_WR_HDR || cmd == MMC_PACKED_WRITE) {
->>>>               __sg = sg;
->>>>               sg_set_buf(__sg, mqrq->packed_cmd_hdr,
->>>>
->>>> sizeof(mqrq->packed_cmd_hdr));
->>>>               sg_len++;
->>>> +             if (cmd == MMC_PACKED_WR_HDR) {
->>>> +                     sg_mark_end(__sg);
->>>> +                     return sg_len;
->>>> +             }
->>>>               __sg->page_link &= ~0x02;
->>>>       }
->>>>
->>>> diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
->>>> index 5e04938..a8cad1f 100644
->>>> --- a/drivers/mmc/card/queue.h
->>>> +++ b/drivers/mmc/card/queue.h
->>>> @@ -14,7 +14,9 @@ struct mmc_blk_request {
->>>>
->>>>  enum mmc_packed_cmd {
->>>>       MMC_PACKED_NONE = 0,
->>>> +     MMC_PACKED_WR_HDR,
->>>>       MMC_PACKED_WRITE,
->>>> +     MMC_PACKED_READ,
->>>>  };
->>>>
->>>>  struct mmc_queue_req {
->>>> --
->>>> 1.7.0.4
->>>>
->>>>
->>>>
->>>
->>>
->>> --
->>> Sent by consultant of Qualcomm Innovation Center, Inc.
->>> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
->
-> --
-> Sent by consultant of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
->
->
+It is in the pull request for Ingo.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
