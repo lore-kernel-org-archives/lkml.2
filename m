@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab2FSIa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 04:30:28 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:32912 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab2FSIaZ (ORCPT
+	id S1754013Ab2FSIbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 04:31:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48771 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab2FSIaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 04:30:25 -0400
+	Tue, 19 Jun 2012 04:30:18 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org
 Cc: linux@arm.linux.org.uk, a.p.zijlstra@chello.nl, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v2 5/5] sched: cpu_power: enable ARCH_POWER
-Date: Tue, 19 Jun 2012 10:28:56 +0200
-Message-Id: <1340094536-20873-6-git-send-email-vincent.guittot@linaro.org>
+        rob.herring@calxeda.com
+Subject: [PATCH v2 4/5] sched, x86: Remove broken power estimation
+Date: Tue, 19 Jun 2012 10:28:55 +0200
+Message-Id: <1340094536-20873-5-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
 References: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
@@ -22,27 +22,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heteregeneous ARM platform uses arch_scale_freq_power function
-to reflect the relative capacity of each core
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+The x86 sched power implementation has been broken forever and gets in
+the way of other stuff, remove it.
+
+For archaeological interest, fixing this code would require dealing with
+the cross-cpu calling of these functions and more importantly, we need
+to filter idle time out of the a/m-perf stuff because the ratio will go
+down to 0 when idle, giving a 0 capacity which is not what we'd want.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-wjjwelpti8f8k7i1pdnzmdr8@git.kernel.org
 ---
- kernel/sched/features.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/Makefile |    2 +-
+ arch/x86/kernel/cpu/sched.c  |   55 ------------------------------------------
+ 2 files changed, 1 insertion(+), 56 deletions(-)
+ delete mode 100644 arch/x86/kernel/cpu/sched.c
 
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index de00a48..d98ae90 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -42,7 +42,7 @@ SCHED_FEAT(CACHE_HOT_BUDDY, true)
- /*
-  * Use arch dependent cpu power functions
-  */
--SCHED_FEAT(ARCH_POWER, false)
-+SCHED_FEAT(ARCH_POWER, true)
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 6ab6aa2..c598126 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -14,7 +14,7 @@ CFLAGS_common.o		:= $(nostackp)
  
- SCHED_FEAT(HRTICK, false)
- SCHED_FEAT(DOUBLE_TICK, false)
+ obj-y			:= intel_cacheinfo.o scattered.o topology.o
+ obj-y			+= proc.o capflags.o powerflags.o common.o
+-obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
++obj-y			+= vmware.o hypervisor.o mshyperv.o
+ obj-y			+= rdrand.o
+ obj-y			+= match.o
+ 
+diff --git a/arch/x86/kernel/cpu/sched.c b/arch/x86/kernel/cpu/sched.c
+deleted file mode 100644
+index a640ae5..0000000
+--- a/arch/x86/kernel/cpu/sched.c
++++ /dev/null
+@@ -1,55 +0,0 @@
+-#include <linux/sched.h>
+-#include <linux/math64.h>
+-#include <linux/percpu.h>
+-#include <linux/irqflags.h>
+-
+-#include <asm/cpufeature.h>
+-#include <asm/processor.h>
+-
+-#ifdef CONFIG_SMP
+-
+-static DEFINE_PER_CPU(struct aperfmperf, old_perf_sched);
+-
+-static unsigned long scale_aperfmperf(void)
+-{
+-	struct aperfmperf val, *old = &__get_cpu_var(old_perf_sched);
+-	unsigned long ratio, flags;
+-
+-	local_irq_save(flags);
+-	get_aperfmperf(&val);
+-	local_irq_restore(flags);
+-
+-	ratio = calc_aperfmperf_ratio(old, &val);
+-	*old = val;
+-
+-	return ratio;
+-}
+-
+-unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
+-{
+-	/*
+-	 * do aperf/mperf on the cpu level because it includes things
+-	 * like turbo mode, which are relevant to full cores.
+-	 */
+-	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
+-		return scale_aperfmperf();
+-
+-	/*
+-	 * maybe have something cpufreq here
+-	 */
+-
+-	return default_scale_freq_power(sd, cpu);
+-}
+-
+-unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
+-{
+-	/*
+-	 * aperf/mperf already includes the smt gain
+-	 */
+-	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
+-		return SCHED_LOAD_SCALE;
+-
+-	return default_scale_smt_power(sd, cpu);
+-}
+-
+-#endif
 -- 
 1.7.9.5
 
