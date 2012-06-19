@@ -1,71 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab2FSCYb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 22:24:31 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:50983 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab2FSCY3 (ORCPT
+	id S1753822Ab2FSCZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 22:25:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50381 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab2FSCZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 22:24:29 -0400
-Message-ID: <4FDFE2D6.1010706@linux.vnet.ibm.com>
-Date: Tue, 19 Jun 2012 10:24:22 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 18 Jun 2012 22:25:12 -0400
+Date: Mon, 18 Jun 2012 21:24:56 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dvhart@linux.intel.com, a.p.zijlstra@chello.nl, jkosina@suse.cz,
+        ebiederm@xmission.com, dhowells@redhat.com, keescook@chromium.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] futex: Do not leak robust list to
+ unprivileged process
+Message-ID: <20120619022456.GA2949@sergelap>
+References: <20120319231253.GA20893@www.outflux.net>
+ <tip-bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8@git.kernel.org>
+ <4FDFD8AF.6030209@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 5/6] KVM: introduce gfn_to_hva_read/kvm_read_hva/kvm_read_hva_atomic
-References: <4FD6ADA6.40008@linux.vnet.ibm.com> <4FD6AE1B.7080501@linux.vnet.ibm.com> <4FDF0005.3050300@redhat.com>
-In-Reply-To: <4FDF0005.3050300@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12061816-0260-0000-0000-0000015CA1AE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FDFD8AF.6030209@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 06:16 PM, Avi Kivity wrote:
-
-> On 06/12/2012 05:48 AM, Xiao Guangrong wrote:
->> This set of functions is only used to read data from host space, read is
->> a special case in the later patch
->>
->>
->> +/*
->> + * The hva returned by this function is only allowed to be read.
->> + * It should pair with kvm_read_hva() or kvm_read_hva_atomic().
->> + */
->> +static unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn)
->> +{
->> +	return gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL);
->> +}
->> +
->> +static int kvm_read_hva(void *data, void *hva, int len)
->> +{
->> +	return __copy_from_user(data, (void __user *)hva, len);
->> +
->> +}
->> +
->> +static int kvm_read_hva_atomic(void *data, void *hva, int len)
->> +{
->> +	return __copy_from_user_inatomic(data, (void __user *)hva, len);
->> +
->> +}
+Quoting Wanlong Gao (gaowanlong@cn.fujitsu.com):
+> On 03/29/2012 05:55 PM, tip-bot for Kees Cook wrote:
+> > Commit-ID:  bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8
+> > Gitweb:     http://git.kernel.org/tip/bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8
+> > Author:     Kees Cook <keescook@chromium.org>
+> > AuthorDate: Mon, 19 Mar 2012 16:12:53 -0700
+> > Committer:  Thomas Gleixner <tglx@linutronix.de>
+> > CommitDate: Thu, 29 Mar 2012 11:37:17 +0200
+> > 
+> > futex: Do not leak robust list to unprivileged process
+> > 
+> > It was possible to extract the robust list head address from a setuid
+> > process if it had used set_robust_list(), allowing an ASLR info leak. This
+> > changes the permission checks to be the same as those used for similar
+> > info that comes out of /proc.
+> > 
+> > Running a setuid program that uses robust futexes would have had:
+> >   cred->euid != pcred->euid
+> >   cred->euid == pcred->uid
+> > so the old permissions check would allow it. I'm not aware of any setuid
+> > programs that use robust futexes, so this is just a preventative measure.
+> > 
 > 
-> Why cast to __user?  Make it __user in the first place.
+> I'm not sure this change prevents the unprivileged process.
+> Please refer to LTP test, recently I saw that this change broke
+> the following test.
 > 
+> https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/syscalls/get_robust_list/get_robust_list01.c#L155
+> 		if (seteuid(1) == -1)
+> 			tst_brkm(TBROK|TERRNO, cleanup, "seteuid(1) failed");
+> 
+> 		TEST(retval = syscall(__NR_get_robust_list, 1,
+> 				      (struct robust_list_head *)&head,
+> 				      &len_ptr));
+> 
+> We set the euid to an unprivileged user, and expect to FAIL with EPERM,
+> without this patch, it FAIL as we expected, but with it, this call succeed.
 
+This relates to a question I asked - I believe in this thread, maybe in
+another thread - about ptrace_may_access.  That code goes back further than
+our git history, and for so long has used current->uid and ->gid, not
+euid and gid, for permission checks.  I asked if that's what we really
+want, but at the same am not sure we want to change something that's
+been like that for so long.
 
-Okay.
+But that's why it succeeded - you changed your euid, not your uid.
 
-> Also these are just simple wrappers, why to them at all?
-
-
-For gfn_to_hva_read(), they will call gfn_to_hva_many(...write = false)
-in the later patch.
-
-For kvm_read_hva() and kvm_read_hva_atomic(), they are pure wrappers,
-i think its name is a good hint to let gfn_to_hva_read to pair with
-kvm_read_hva()/kvm_read_hva_atomic().
-
+> Seems that we leaked the check of (cred->euid == pcred->euid && cred->euid == pcred->uid),
+> I'm not sure which one is right, can you please give an explanation?
+> 
+> 
+> Thanks in advance,
+> Wanlong Gao
+> 
+> > (This patch is based on changes from grsecurity.)
+> > 
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> > Cc: Darren Hart <dvhart@linux.intel.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Jiri Kosina <jkosina@suse.cz>
+> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+> > Cc: David Howells <dhowells@redhat.com>
+> > Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+> > Cc: kernel-hardening@lists.openwall.com
+> > Cc: spender@grsecurity.net
+> > Link: http://lkml.kernel.org/r/20120319231253.GA20893@www.outflux.net
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  kernel/futex.c        |   36 +++++++++++++-----------------------
+> >  kernel/futex_compat.c |   36 +++++++++++++-----------------------
+> >  2 files changed, 26 insertions(+), 46 deletions(-)
+> > 
+> > diff --git a/kernel/futex.c b/kernel/futex.c
+> > index 72efa1e..d701be5 100644
+> > --- a/kernel/futex.c
+> > +++ b/kernel/futex.c
+> > @@ -59,6 +59,7 @@
+> >  #include <linux/magic.h>
+> >  #include <linux/pid.h>
+> >  #include <linux/nsproxy.h>
+> > +#include <linux/ptrace.h>
+> >  
+> >  #include <asm/futex.h>
+> >  
+> > @@ -2443,40 +2444,29 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
+> >  {
+> >  	struct robust_list_head __user *head;
+> >  	unsigned long ret;
+> > -	const struct cred *cred = current_cred(), *pcred;
+> > +	struct task_struct *p;
+> >  
+> >  	if (!futex_cmpxchg_enabled)
+> >  		return -ENOSYS;
+> >  
+> > +	rcu_read_lock();
+> > +
+> > +	ret = -ESRCH;
+> >  	if (!pid)
+> > -		head = current->robust_list;
+> > +		p = current;
+> >  	else {
+> > -		struct task_struct *p;
+> > -
+> > -		ret = -ESRCH;
+> > -		rcu_read_lock();
+> >  		p = find_task_by_vpid(pid);
+> >  		if (!p)
+> >  			goto err_unlock;
+> > -		ret = -EPERM;
+> > -		pcred = __task_cred(p);
+> > -		/* If victim is in different user_ns, then uids are not
+> > -		   comparable, so we must have CAP_SYS_PTRACE */
+> > -		if (cred->user->user_ns != pcred->user->user_ns) {
+> > -			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+> > -				goto err_unlock;
+> > -			goto ok;
+> > -		}
+> > -		/* If victim is in same user_ns, then uids are comparable */
+> > -		if (cred->euid != pcred->euid &&
+> > -		    cred->euid != pcred->uid &&
+> > -		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+> > -			goto err_unlock;
+> > -ok:
+> > -		head = p->robust_list;
+> > -		rcu_read_unlock();
+> >  	}
+> >  
+> > +	ret = -EPERM;
+> > +	if (!ptrace_may_access(p, PTRACE_MODE_READ))
+> > +		goto err_unlock;
+> > +
+> > +	head = p->robust_list;
+> > +	rcu_read_unlock();
+> > +
+> >  	if (put_user(sizeof(*head), len_ptr))
+> >  		return -EFAULT;
+> >  	return put_user(head, head_ptr);
+> > diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+> > index 5f9e689..a9642d5 100644
+> > --- a/kernel/futex_compat.c
+> > +++ b/kernel/futex_compat.c
+> > @@ -10,6 +10,7 @@
+> >  #include <linux/compat.h>
+> >  #include <linux/nsproxy.h>
+> >  #include <linux/futex.h>
+> > +#include <linux/ptrace.h>
+> >  
+> >  #include <asm/uaccess.h>
+> >  
+> > @@ -136,40 +137,29 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+> >  {
+> >  	struct compat_robust_list_head __user *head;
+> >  	unsigned long ret;
+> > -	const struct cred *cred = current_cred(), *pcred;
+> > +	struct task_struct *p;
+> >  
+> >  	if (!futex_cmpxchg_enabled)
+> >  		return -ENOSYS;
+> >  
+> > +	rcu_read_lock();
+> > +
+> > +	ret = -ESRCH;
+> >  	if (!pid)
+> > -		head = current->compat_robust_list;
+> > +		p = current;
+> >  	else {
+> > -		struct task_struct *p;
+> > -
+> > -		ret = -ESRCH;
+> > -		rcu_read_lock();
+> >  		p = find_task_by_vpid(pid);
+> >  		if (!p)
+> >  			goto err_unlock;
+> > -		ret = -EPERM;
+> > -		pcred = __task_cred(p);
+> > -		/* If victim is in different user_ns, then uids are not
+> > -		   comparable, so we must have CAP_SYS_PTRACE */
+> > -		if (cred->user->user_ns != pcred->user->user_ns) {
+> > -			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+> > -				goto err_unlock;
+> > -			goto ok;
+> > -		}
+> > -		/* If victim is in same user_ns, then uids are comparable */
+> > -		if (cred->euid != pcred->euid &&
+> > -		    cred->euid != pcred->uid &&
+> > -		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+> > -			goto err_unlock;
+> > -ok:
+> > -		head = p->compat_robust_list;
+> > -		rcu_read_unlock();
+> >  	}
+> >  
+> > +	ret = -EPERM;
+> > +	if (!ptrace_may_access(p, PTRACE_MODE_READ))
+> > +		goto err_unlock;
+> > +
+> > +	head = p->compat_robust_list;
+> > +	rcu_read_unlock();
+> > +
+> >  	if (put_user(sizeof(*head), len_ptr))
+> >  		return -EFAULT;
+> >  	return put_user(ptr_to_compat(head), head_ptr);
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
+> 
