@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2FSK0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 06:26:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48732 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2FSK0W convert rfc822-to-8bit (ORCPT
+	id S1752327Ab2FSKaj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 06:30:39 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:51647 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab2FSKah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 06:26:22 -0400
-Message-ID: <1340101568.21745.37.camel@twins>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Date: Tue, 19 Jun 2012 12:26:08 +0200
-In-Reply-To: <20120619102250.GA787@aftab.osrc.amd.com>
-References: <20120613123649.GA26012@khazad-dum.debian.net>
-	 <20120613161139.GA18450@aftab.osrc.amd.com>
-	 <20120615123749.GC6083@aftab.osrc.amd.com> <1339764161.2559.63.camel@twins>
-	 <20120615125240.GD6083@aftab.osrc.amd.com>
-	 <20120615165231.GA9169@aftab.osrc.amd.com>
-	 <20120619024639.GB6186@khazad-dum.debian.net> <4FDFF27C.5000205@zytor.com>
-	 <20120619051116.GB31591@aftab.osrc.amd.com>
-	 <1340093864.21745.6.camel@twins> <20120619102250.GA787@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 19 Jun 2012 06:30:37 -0400
+X-AuditID: cbfee610-b7fcc6d00000671d-10-4fe054cc633b
+Date: Tue, 19 Jun 2012 10:30:36 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH 2/2] extcon: Convert extcon_gpio to devm_gpio_request_one
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Lockwood <lockwood@android.com>,
+        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>,
+        cw00.choi@samsung.com, kyungmin.park@samsung.com
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120619102954900@myungjoo.ham
+Msgkey: 20120619102954900@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120619102954900@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <30343544.601351340101836224.JavaMail.weblogic@epml24>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t/tGbpnQh74G1xfbWhxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgytvxrZStoY6m4fvkkWwPjF+YuRk4OIQF1iUVLTrKB2BICJhKb
+	juxmhLDFJC7cWw8U5wKqmc8oMaf5EitIgkVAVeLhz3aWLkYODjYBPYmZn5NBwsICvhJHpn5j
+	AbFFBFIkOifPZwfpZRa4wihxcccsqGVKEmv2vQIr4hUQlDg58wkLxDJViVPX9zFCxNUkDk66
+	xQQRl5CYNf0CK4TNKzGj/SlUvZzEtK9rmCFsaYnzszbAHb34+2OoOL/Esds7mEDuBOl9cj8Y
+	ZszuzV+g/hWQmHrmIFSrlsSazrdQrXwSaxa+ZYEZs+vUcrA4s4CixJTuh+wQtpbElx/72NC9
+	wivgJLFo+S3mCYyys5CkZiFpn4WkHVnNAkaWVYyiqQXJBcVJ6almesWJucWleel6yfm5mxjB
+	8fxMYAfjkgaLQ4wCHIxKPLw//B/4C7EmlhVX5h5ilOBgVhLhXfX/vr8Qb0piZVVqUX58UWlO
+	avEhRmkOFiVx3l7rC/5CAumJJanZqakFqUUwWSYOTqkGRtfrHvEefSYKTe93bdpnMMUg10xQ
+	6ZC3Z09vnIdu6d5Wy97fVS/O3jGceUKVa57BrSNTxZekJnxzjWY8f65rTZoW8/TFG19Gub3p
+	nXczsUr+cVex1JYGs7vB7HfEGEKCNtTYX0/kqzU5Gtu0NjvVcXPOJG++G7kKGRtmL35ae+7r
+	0TVCnxVLlFiKMxINtZiLihMBJxQbb+MCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5JAUikj027246
 
-On Tue, 2012-06-19 at 12:22 +0200, Borislav Petkov wrote:
+> Also remove unneeded devm_kfree calls.
 > 
-> But I haven't tested what happens when it is built in and I use the
-> reload interface, hehe something to play with today. 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-I couldn't easily find where to place the damn ucode image anyway, so I
-built in the old-style /dev interface and used the microcode.ctl package
-to load it.
-
-Fwiw, that works just fine when its built-in.
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
 
+Thanks!
+
+You will be able to see this patch along with other extcon patches at the infradead repository soon:
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
+
+Cheers!
+MyungJoo.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
