@@ -1,65 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab2FSWOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 18:14:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36612 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab2FSWOg (ORCPT
+	id S1755235Ab2FSWQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 18:16:22 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:45477 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab2FSWQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 18:14:36 -0400
-Date: Tue, 19 Jun 2012 15:14:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Greg Pearson <greg.pearson@hp.com>
-Cc: tj@kernel.org, hpa@linux.intel.com, shangw@linux.vnet.ibm.com,
-        mingo@elte.hu, yinghai@kernel.org, benh@kernel.crashing.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] mm/memblock: fix overlapping allocation when
- doubling reserved array
-Message-Id: <20120619151435.10c16aed.akpm@linux-foundation.org>
-In-Reply-To: <1340063278-31601-1-git-send-email-greg.pearson@hp.com>
-References: <1340063278-31601-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 19 Jun 2012 18:16:20 -0400
+Message-ID: <1340144178.29338.6.camel@shrek.rexursive.com>
+Subject: [PATCH]: PM: Print hibernation/thaw progress indicator one line at
+ a time
+From: Bojan Smojver <bojan@rexursive.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Date: Wed, 20 Jun 2012 08:16:18 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.2 (3.4.2-1.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jun 2012 17:47:58 -0600
-Greg Pearson <greg.pearson@hp.com> wrote:
+Hi Rafael,
 
-> The __alloc_memory_core_early() routine will ask memblock for a range
-> of memory then try to reserve it. If the reserved region array lacks
-> space for the new range, memblock_double_array() is called to allocate
-> more space for the array. If memblock is used to allocate memory for
-> the new array it can end up using a range that overlaps with the range
-> originally allocated in __alloc_memory_core_early(), leading to possible
-> data corruption.
+Here is the final version of the patch, with your latest suggestion
+implemented.
 
-OK, but we have no information about whether it *does* lead to data
-corruption.  Are there workloads which trigger this?  End users who are
-experiencing problems?
+------------------------------
+PM: Print hibernation/thaw progress indicator one line at a time.
 
-See, I (and others) need to work out whether this patch should be
-included in 3.5 or even earlier kernels.  To do that we often need the
-developer to tell us what the impact of the bug is upon users.  Please
-always include this info when fixing bugs.
+With the introduction of suspend to both into in-kernel hibernation
+code, dmesg was getting polluted with backspace characters printed as
+part of image saving progress indicator. This patch introduces printing
+of progress indicator on image save/load every 10% and one line at a
+time. As an additional benefit, all other messages emitted by the kernel
+during hibernation/thaw should now print cleanly as well.
 
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -399,7 +427,7 @@ repeat:
->  	 */
->  	if (!insert) {
->  		while (type->cnt + nr_new > type->max)
-> -			if (memblock_double_array(type) < 0)
-> +			if (memblock_double_array(type, obase, size) < 0)
->  				return -ENOMEM;
->  		insert = true;
->  		goto repeat;
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+---
+ kernel/power/swap.c |   54 +++++++++++++++++++++++++--------------------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
 
-Minor nit: it would be nicer to make memblock_double_array() return 0
-on success or a -ve errno, and then propagate that errno back.  This is
-more flexible than having the caller *assume* that the callee failed for a
-particular reason.
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 11e22c0..948f0d2 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -448,9 +448,9 @@ static int save_image(struct swap_map_handle *handle,
+ 	struct timeval start;
+ 	struct timeval stop;
+ 
+-	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
++	printk(KERN_INFO "PM: Saving image data pages (%u pages)...\n",
+ 		nr_to_write);
+-	m = nr_to_write / 100;
++	m = nr_to_write / 10;
+ 	if (!m)
+ 		m = 1;
+ 	nr_pages = 0;
+@@ -464,7 +464,8 @@ static int save_image(struct swap_map_handle *handle,
+ 		if (ret)
+ 			break;
+ 		if (!(nr_pages % m))
+-			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
++			printk(KERN_INFO "PM: Image saving progress: %3d%%\n",
++			       nr_pages / m * 10);
+ 		nr_pages++;
+ 	}
+ 	err2 = hib_wait_on_bio_chain(&bio);
+@@ -472,9 +473,7 @@ static int save_image(struct swap_map_handle *handle,
+ 	if (!ret)
+ 		ret = err2;
+ 	if (!ret)
+-		printk(KERN_CONT "\b\b\b\bdone\n");
+-	else
+-		printk(KERN_CONT "\n");
++		printk(KERN_INFO "PM: Image saving done.\n");
+ 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
+ 	return ret;
+ }
+@@ -668,9 +667,9 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 
+ 	printk(KERN_INFO
+ 		"PM: Using %u thread(s) for compression.\n"
+-		"PM: Compressing and saving image data (%u pages) ...     ",
++		"PM: Compressing and saving image data (%u pages)...\n",
+ 		nr_threads, nr_to_write);
+-	m = nr_to_write / 100;
++	m = nr_to_write / 10;
+ 	if (!m)
+ 		m = 1;
+ 	nr_pages = 0;
+@@ -690,8 +689,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 				       data_of(*snapshot), PAGE_SIZE);
+ 
+ 				if (!(nr_pages % m))
+-					printk(KERN_CONT "\b\b\b\b%3d%%",
+-				               nr_pages / m);
++					printk(KERN_INFO
++					       "PM: Image saving progress: "
++					       "%3d%%\n",
++				               nr_pages / m * 10);
+ 				nr_pages++;
+ 			}
+ 			if (!off)
+@@ -761,11 +762,8 @@ out_finish:
+ 	do_gettimeofday(&stop);
+ 	if (!ret)
+ 		ret = err2;
+-	if (!ret) {
+-		printk(KERN_CONT "\b\b\b\bdone\n");
+-	} else {
+-		printk(KERN_CONT "\n");
+-	}
++	if (!ret)
++		printk(KERN_INFO "PM: Image saving done.\n");
+ 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
+ out_clean:
+ 	if (crc) {
+@@ -973,9 +971,9 @@ static int load_image(struct swap_map_handle *handle,
+ 	int err2;
+ 	unsigned nr_pages;
+ 
+-	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
++	printk(KERN_INFO "PM: Loading image data pages (%u pages)...\n",
+ 		nr_to_read);
+-	m = nr_to_read / 100;
++	m = nr_to_read / 10;
+ 	if (!m)
+ 		m = 1;
+ 	nr_pages = 0;
+@@ -993,7 +991,8 @@ static int load_image(struct swap_map_handle *handle,
+ 		if (ret)
+ 			break;
+ 		if (!(nr_pages % m))
+-			printk("\b\b\b\b%3d%%", nr_pages / m);
++			printk(KERN_INFO "PM: Image loading progress: %3d%%\n",
++			       nr_pages / m * 10);
+ 		nr_pages++;
+ 	}
+ 	err2 = hib_wait_on_bio_chain(&bio);
+@@ -1001,12 +1000,11 @@ static int load_image(struct swap_map_handle *handle,
+ 	if (!ret)
+ 		ret = err2;
+ 	if (!ret) {
+-		printk("\b\b\b\bdone\n");
++		printk(KERN_INFO "PM: Image loading done.\n");
+ 		snapshot_write_finalize(snapshot);
+ 		if (!snapshot_image_loaded(snapshot))
+ 			ret = -ENODATA;
+-	} else
+-		printk("\n");
++	}
+ 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
+ 	return ret;
+ }
+@@ -1185,9 +1183,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 
+ 	printk(KERN_INFO
+ 		"PM: Using %u thread(s) for decompression.\n"
+-		"PM: Loading and decompressing image data (%u pages) ...     ",
++		"PM: Loading and decompressing image data (%u pages)...\n",
+ 		nr_threads, nr_to_read);
+-	m = nr_to_read / 100;
++	m = nr_to_read / 10;
+ 	if (!m)
+ 		m = 1;
+ 	nr_pages = 0;
+@@ -1319,7 +1317,10 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 				       data[thr].unc + off, PAGE_SIZE);
+ 
+ 				if (!(nr_pages % m))
+-					printk("\b\b\b\b%3d%%", nr_pages / m);
++					printk(KERN_INFO
++					       "PM: Image loading progress: "
++					       "%3d%%\n",
++					       nr_pages / m * 10);
+ 				nr_pages++;
+ 
+ 				ret = snapshot_write_next(snapshot);
+@@ -1344,7 +1345,7 @@ out_finish:
+ 	}
+ 	do_gettimeofday(&stop);
+ 	if (!ret) {
+-		printk("\b\b\b\bdone\n");
++		printk(KERN_INFO "PM: Image loading done.\n");
+ 		snapshot_write_finalize(snapshot);
+ 		if (!snapshot_image_loaded(snapshot))
+ 			ret = -ENODATA;
+@@ -1357,8 +1358,7 @@ out_finish:
+ 				}
+ 			}
+ 		}
+-	} else
+-		printk("\n");
++	}
+ 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
+ out_clean:
+ 	for (i = 0; i < ring_size; i++)
+------------------------------
+
+-- 
+Bojan
 
