@@ -1,110 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab2FSN6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 09:58:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52753 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab2FSN6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 09:58:41 -0400
-References: <1340090958.18760.17.camel@suxuemin>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1340090958.18760.17.camel@suxuemin>
+	id S1753347Ab2FSOAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 10:00:47 -0400
+Received: from kontorsmtp2.one.com ([195.47.247.17]:57689 "EHLO
+	kontorsmtp2.one.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab2FSOAq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 10:00:46 -0400
+X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Jun 2012 10:00:45 EDT
+Message-ID: <4FE083CE.20908@one.com>
+Date: Tue, 19 Jun 2012 15:51:10 +0200
+From: Emil Renner Berthing <erb@one.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] clear the frame pointer in copy_thread
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 19 Jun 2012 06:57:09 -0700
-To: "Su, Xuemin" <xuemin.su@intel.com>, akpm@linux-foundation.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
-        william.douglas@intel.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-CC: yanmin_zhang@linux.intel.com
-Message-ID: <eab3ba1a-bcd4-49a7-baab-d44e386e3ed3@email.android.com>
+To: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>
+CC: linux-kernel@vger.kernel.org, Jesper Dahl Nyerup <nyerup@one.com>,
+        Anders Saaby <as@one.com>
+Subject: Inotify scalability issue
+Content-Type: multipart/mixed;
+ boundary="------------070903080507040309090705"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It isn't clear to me this is the right thing to do this in the kernel.  A frame pointer isn't obligatory and doing this in user space seems more appropriate.
+This is a multi-part message in MIME format.
+--------------070903080507040309090705
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-"Su, Xuemin" <xuemin.su@intel.com> wrote:
+Hi,
 
->From: xueminsu <xuemin.su@intel.com>
->
->When creating a userspace thread, kernel copies all parent
->thread’s registers to the child thread, including bp register
->which is used to create stack frame. At this point, the bp
->register is pointing to the parent thread’s last stack frame.
->
->So, after the child thread is created, its bp register points
->to the parent thread’s stack area, and the value would be pushed
->to its own stack to form its first stack frame when it calls its
->first function.
->
->This would not be a problem if the child thread and the parent
->thread do not share the VM or if they share the VM and have the
->same stack. But if they share the VM and have different stacks,
->this would cause an issue: when we try to print the child thread’s
->stack trace, we would eventually walk into the parent thread’s
->stack area, and sometimes we will occasionally prints out the
->parent thread’s stack trace.
->
->Currently some version of libc clears the frame pointer just after
->the thread is created, but this is not guaranteed.
->
->Signed-off-by: xueminsu <xuemin.su@intel.com>
->---
-> arch/x86/kernel/process_32.c |    9 +++++++++
-> arch/x86/kernel/process_64.c |    9 +++++++++
-> 2 files changed, 18 insertions(+), 0 deletions(-)
->
->diff --git a/arch/x86/kernel/process_32.c
->b/arch/x86/kernel/process_32.c
->index 516fa18..b1b6d42 100644
->--- a/arch/x86/kernel/process_32.c
->+++ b/arch/x86/kernel/process_32.c
->@@ -139,6 +139,15 @@ int copy_thread(unsigned long clone_flags,
->unsigned long sp,
-> 	childregs->ax = 0;
-> 	childregs->sp = sp;
-> 
->+	/*
->+	 * If the child thread and the parent thread share the VM
->+	 * but have different stack, the child thread's bp register
->+	 * should be set to null, preventing it from pointing to
->+	 * the parent thread's stack area.
->+	 */
->+	if ((sp != regs->sp) && (clone_flags & CLONE_VM))
->+		childregs->bp = 0;
->+
-> 	p->thread.sp = (unsigned long) childregs;
-> 	p->thread.sp0 = (unsigned long) (childregs+1);
-> 
->diff --git a/arch/x86/kernel/process_64.c
->b/arch/x86/kernel/process_64.c
->index 61cdf7f..5acff83 100644
->--- a/arch/x86/kernel/process_64.c
->+++ b/arch/x86/kernel/process_64.c
->@@ -163,6 +163,15 @@ int copy_thread(unsigned long clone_flags,
->unsigned long sp,
-> 	else
-> 		childregs->sp = (unsigned long)childregs;
-> 
->+	/*
->+	 * If the child thread and the parent thread share the VM
->+	 * but have different stack, the child thread's bp register
->+	 * should be set to null, preventing it from pointing to
->+	 * the parent thread's stack area.
->+	 */
->+	if ((sp != regs->sp) && (clone_flags & CLONE_VM))
->+		childregs->bp = 0;
->+
-> 	p->thread.sp = (unsigned long) childregs;
-> 	p->thread.sp0 = (unsigned long) (childregs+1);
-> 	p->thread.usersp = me->thread.usersp;
->-- 
->1.7.6
+We're running Dovecot mailservers and are experiencing problems similar 
+to what is described here:
+http://old.nabble.com/Very-High-Load-on-Dovecot-2-and-Errors-in-mail.err.-tt33856207.html#a33856207
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+I've written two small programs to expose the problem.
+
+watcher.c:
+This program reads a filename from the commandline, creates a new 
+inotify handle and sets it up to watch IN_CLOSE_WRITE and IN_DELETE on 
+the file. It then writes a 'z' to stdout, and does a blocking read from 
+inotify. After receiving an event from inotify the program prints an 'x' 
+to stdout, closes the inotify handle and then prints a '.' to stdout 
+before exiting.
+
+test.c:
+This program creates 20 files and spawns 20 watchers to watch each of 
+them. For each watcher it waits between 1 and 2 seconds before touching 
+the file they watch (which should cause it to wake up and exit), and 
+then spawns a new watcher on the file, again waiting between 1 and 2 
+seconds before touching the file again etc.
+
+On my dualcore workstation running the test program behaves as you'd 
+expect. That is it prints
+zzzzzzzzzzzzzzzzzzzzx.zx.zx.zx.zx.zx.zx.zx.zx.zx.zx.zx.zx (etc.)
+
+However on a 16-core server it behaves very differently:
+zzzzzzzzzzzzzzzzzzzzxzxzxzxz.xzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxzxz......................................................................................................xzxzxzxzxz.xxzzxzxzxzxzxzxzxzxzxzxzxz.................xzxz.xz
+
+(sorry about the long line)
+That is watchers are spawned to watch their files, they're woken up by 
+inotify as they should be, but then they pile up in D-state waiting for 
+the close call to finish. Only at irregular intervals do they all return.
+
+They seem to be sleeping on the syncronize_srcu() call in 
+fsnotify_destroy_group() of fs/notify/group.c.
+
+We've tested this on various machines running kernels from 3.0 and up, 
+and the trend very clear: The more processors the worse it gets.
+However, I also tried it on one 48-core server running an old 2.6.32 
+debian kernels, and here the processes don't pile up.
+
+/Emil
+
+--------------070903080507040309090705
+Content-Type: text/x-c;
+ name="watcher.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="watcher.c"
+
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/inotify.h>
+#include <limits.h>
+
+#define log(...) fprintf(stderr, __VA_ARGS__)
+
+static void
+put(int c)
+{
+	putchar(c);
+	fflush(stdout);
+}
+
+int
+main(int argc, char *argv[])
+{
+	int ifd = -1;
+	int wd;
+	char buf[sizeof(struct inotify_event) + NAME_MAX + 1];
+
+	if (argc != 2) {
+		log("I need a file..\n");
+		goto error;
+	}
+
+	ifd = inotify_init();
+	if (ifd < 0) {
+		if (errno == EMFILE)
+			put('!');
+		else
+			log("Error initializing inotify: %s\n",
+				strerror(errno));
+		goto error;
+	}
+
+	wd = inotify_add_watch(ifd, argv[1], IN_CLOSE_WRITE | IN_DELETE);
+	if (wd < 0) {
+		log("Error adding watch on '%s': %s\n",
+				argv[1], strerror(errno));
+		goto error;
+	}
+
+	put('z');
+	if (read(ifd, buf, sizeof(buf)) < 0) {
+		log("Error reading inotify event: %s\n",
+				strerror(errno));
+		goto error;
+	}
+
+	put('x');
+	if (close(ifd)) {
+		log("Error closing inotify: %s\n",
+				strerror(errno));
+		ifd = -1;
+		goto error;
+	}
+	put('.');
+	return EXIT_SUCCESS;
+
+error:
+	if (ifd > 0)
+		close(ifd);
+	return EXIT_FAILURE;
+}
+
+--------------070903080507040309090705
+Content-Type: text/x-c;
+ name="test.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="test.c"
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/time.h>
+#include <signal.h>
+
+#define log(...) fprintf(stderr, __VA_ARGS__)
+#define WATCHER "watcher"
+
+static struct proc {
+	uint64_t deadline;
+	char filename[32 - sizeof(uint64_t)];
+} procs[NPROC];
+
+static pid_t
+spawn_watcher(char *filename)
+{
+	char *argv[3] = { WATCHER, filename, NULL };
+	pid_t pid;
+
+	pid = fork();
+	if (pid == 0) {
+		if (execv(WATCHER, argv)) {
+			log("Error spawning '%s': %s\n",
+					WATCHER, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (pid < 0)
+		log("Error forking: %s\n", strerror(errno));
+	
+	return pid;
+}
+
+static int
+touch(char *filename, int flags)
+{
+	int fd = open(filename, flags, 0644);
+	if (fd < 0 || close(fd)) {
+		log("Error touching '%s': %s\n",
+				filename, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+static uint64_t 
+now(void)
+{
+	struct timeval tv;
+	(void)gettimeofday(&tv, NULL);
+	return ((uint64_t)tv.tv_sec * 1000000) + (uint64_t)tv.tv_usec;
+}
+
+static uint64_t
+random_delay(void)
+{
+	return (uint64_t)DELAY_MIN + (random() / (RAND_MAX/(DELAY_MAX - DELAY_MIN)));
+}
+
+int
+main()
+{
+	unsigned int i;
+	struct proc *next;
+
+	if (signal(SIGCHLD, SIG_IGN)) {
+		log("Error setting SIGCHLD handler: %s\n",
+				strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+	for (i = 0; i < NPROC; i++) {
+		(void)sprintf(procs[i].filename, "%03u.tmp", i);
+		if (touch(procs[i].filename, O_WRONLY | O_CREAT)) {
+			log("Error creating file '%s': %s\n",
+					procs[i].filename, strerror(errno));
+			return EXIT_FAILURE;
+		}
+	}
+
+	next = &procs[0];
+	for (i = 0; i < NPROC; i++) {
+		if (spawn_watcher(procs[i].filename) < 0)
+			goto error;
+
+		procs[i].deadline = now() + random_delay();
+		if (procs[i].deadline < next->deadline)
+			next = &procs[i];
+	}
+
+	while (1) {
+		uint64_t n = now();
+
+		if (next->deadline > n) {
+			usleep(next->deadline - n);
+			continue;
+		}
+
+		if (touch(next->filename, O_WRONLY))
+			goto error;
+
+		if (spawn_watcher(next->filename) < 0)
+			goto error;
+
+		next->deadline = now() + random_delay();
+		for (i = 0; i < NPROC; i++) {
+			if (procs[i].deadline < next->deadline)
+				next = &procs[i];
+		}
+	}
+
+error:
+	for (i = 0; i < NPROC; i++)
+		(void)touch(procs[i].filename, O_WRONLY);
+
+	return EXIT_FAILURE;
+}
+
+--------------070903080507040309090705
+Content-Type: text/plain; charset=UTF-8;
+ name="Makefile"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="Makefile"
+
+TlBST0MgICAgID0gMjAKREVMQVlfTUlOID0gMTAwMDAwMApERUxBWV9NQVggPSAyMDAwMDAw
+CgpDQyA9IGdjYwpDRkxBR1MgPz0gLU8yIC1waXBlIC1nCkNGTEFHUyArPSAtc3RkPWdudTk5
+IC1XYWxsIC1XZXh0cmEgLXBlZGFudGljCgphbGw6IHRlc3Qgd2F0Y2hlcgoKdGVzdDogdGVz
+dC5jCgkkKENDKSAkKENGTEFHUykgLUROUFJPQz0kKE5QUk9DKSAtRERFTEFZX01JTj0kKERF
+TEFZX01JTikgLURERUxBWV9NQVg9JChERUxBWV9NQVgpICQoTERGTEFHUykgJDwgLW8gJEAK
+CndhdGNoZXI6IHdhdGNoZXIuYwoJJChDQykgJChDRkxBR1MpICQoTERGTEFHUykgJDwgLW8g
+JEAKCmNsZWFuOgoJcm0gLXJmIHRlc3Qgd2F0Y2hlciAqLnRtcAo=
+--------------070903080507040309090705--
