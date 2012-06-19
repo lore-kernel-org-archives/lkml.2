@@ -1,40 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab2FSSav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:30:51 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:42755 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753158Ab2FSSau (ORCPT
+	id S1754571Ab2FSSbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:31:51 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:42392 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752858Ab2FSSbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:30:50 -0400
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Jun 2012 14:30:50 EDT
-X-Sasl-enc: HBNg2qzR9wF4E16zWBw2bdupfAmfKdXwh8szgweLxN7G 1340130151
-Date: Tue, 19 Jun 2012 15:22:29 -0300
+	Tue, 19 Jun 2012 14:31:50 -0400
+X-Sasl-enc: eNxVIBBaZwD+lyHI9Yhw/mgSz8BUpKp936Mmf43hVawV 1340130415
+Date: Tue, 19 Jun 2012 15:26:52 -0300
 From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
+To: Borislav Petkov <bp@amd64.org>
+Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-Message-ID: <20120619182228.GA18816@khazad-dum.debian.net>
-References: <20120615123749.GC6083@aftab.osrc.amd.com>
- <1339764161.2559.63.camel@twins>
- <20120615125240.GD6083@aftab.osrc.amd.com>
- <20120615165231.GA9169@aftab.osrc.amd.com>
- <20120619024639.GB6186@khazad-dum.debian.net>
- <4FDFF27C.5000205@zytor.com>
- <20120619051116.GB31591@aftab.osrc.amd.com>
- <1340093864.21745.6.camel@twins>
- <20120619102250.GA787@aftab.osrc.amd.com>
- <1340101568.21745.37.camel@twins>
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+Message-ID: <20120619182652.GC18816@khazad-dum.debian.net>
+References: <1340121811-4477-1-git-send-email-bp@amd64.org>
+ <1340121811-4477-3-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340101568.21745.37.camel@twins>
+In-Reply-To: <1340121811-4477-3-git-send-email-bp@amd64.org>
 X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
  1CDB 0FE3
 User-Agent: Mutt/1.5.20 (2009-06-14)
@@ -42,32 +32,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jun 2012, Peter Zijlstra wrote:
-> On Tue, 2012-06-19 at 12:22 +0200, Borislav Petkov wrote:
-> > But I haven't tested what happens when it is built in and I use the
-> > reload interface, hehe something to play with today. 
+On Tue, 19 Jun 2012, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> I couldn't easily find where to place the damn ucode image anyway, so I
-> built in the old-style /dev interface and used the microcode.ctl package
-> to load it.
+> The reload interface should be per-system so that a full system ucode
+> reload happens (on each core) when doing
+> 
+> echo 1 > /sys/devices/system/cpu/microcode/reload
+> 
+> Move it to the cpu subsys directory instead of it being per-cpu.
+> 
+> Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 
-The firmware interface is fine *after the system boot*, we just needed a
-better way to trigger it through sysfs.  These patches address that.
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-The sysfs interface is useful to immediately apply a microcode update
-when a new one is made available, without the need for a reboot... most
-microcode updates are not of the sort the kernel is testing for their
-presence at boot.   The sysfs interface is also useful when the required
-microcode is not available at the time the microcode driver first
-requests it.
+We will use /sys/devices/system/cpu/microcode/reload in Debian.
 
-We still need a proper way to load microcode very very early (which
-requires that the microcode be available to the kernel  and THAT
-has nothing to do with sysfs :-)
-
-Even if we have the very early microcode facility, we *still* want the
-runtime one based on sysfs+request_firmware in order to update microcode
-without the need for a reboot.
+> ---
+>  arch/x86/kernel/microcode_core.c | 32 ++++++++++++++++++++++++++++----
+>  1 file changed, 28 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+> index 24b852b61be3..4c6f3b37ed3c 100644
+> --- a/arch/x86/kernel/microcode_core.c
+> +++ b/arch/x86/kernel/microcode_core.c
+> @@ -351,7 +351,6 @@ static DEVICE_ATTR(version, 0400, version_show, NULL);
+>  static DEVICE_ATTR(processor_flags, 0400, pf_show, NULL);
+>  
+>  static struct attribute *mc_default_attrs[] = {
+> -	&dev_attr_reload.attr,
+>  	&dev_attr_version.attr,
+>  	&dev_attr_processor_flags.attr,
+>  	NULL
+> @@ -528,6 +527,16 @@ static const struct x86_cpu_id microcode_id[] = {
+>  MODULE_DEVICE_TABLE(x86cpu, microcode_id);
+>  #endif
+>  
+> +static struct attribute *cpu_root_microcode_attrs[] = {
+> +	&dev_attr_reload.attr,
+> +	NULL
+> +};
+> +
+> +static struct attribute_group cpu_root_microcode_group = {
+> +	.name  = "microcode",
+> +	.attrs = cpu_root_microcode_attrs,
+> +};
+> +
+>  static int __init microcode_init(void)
+>  {
+>  	struct cpuinfo_x86 *c = &cpu_data(0);
+> @@ -559,9 +568,17 @@ static int __init microcode_init(void)
+>  	if (error)
+>  		goto out_pdev;
+>  
+> +	error = sysfs_create_group(&cpu_subsys.dev_root->kobj,
+> +				   &cpu_root_microcode_group);
+> +
+> +	if (error) {
+> +		pr_err("Error creating microcode group!\n");
+> +		goto out_driver;
+> +	}
+> +
+>  	error = microcode_dev_init();
+>  	if (error)
+> -		goto out_driver;
+> +		goto out_ucode_group;
+>  
+>  	register_syscore_ops(&mc_syscore_ops);
+>  	register_hotcpu_notifier(&mc_cpu_notifier);
+> @@ -571,7 +588,11 @@ static int __init microcode_init(void)
+>  
+>  	return 0;
+>  
+> -out_driver:
+> + out_ucode_group:
+> +	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
+> +			   &cpu_root_microcode_group);
+> +
+> + out_driver:
+>  	get_online_cpus();
+>  	mutex_lock(&microcode_mutex);
+>  
+> @@ -580,7 +601,7 @@ out_driver:
+>  	mutex_unlock(&microcode_mutex);
+>  	put_online_cpus();
+>  
+> -out_pdev:
+> + out_pdev:
+>  	platform_device_unregister(microcode_pdev);
+>  	return error;
+>  
+> @@ -596,6 +617,9 @@ static void __exit microcode_exit(void)
+>  	unregister_hotcpu_notifier(&mc_cpu_notifier);
+>  	unregister_syscore_ops(&mc_syscore_ops);
+>  
+> +	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
+> +			   &cpu_root_microcode_group);
+> +
+>  	get_online_cpus();
+>  	mutex_lock(&microcode_mutex);
+>  
 
 -- 
   "One disk to rule them all, One disk to find them. One disk to bring
