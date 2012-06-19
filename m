@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab2FSL4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:56:48 -0400
-Received: from mail.us.es ([193.147.175.20]:37858 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721Ab2FSL4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:56:47 -0400
-Date: Tue, 19 Jun 2012 13:56:40 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Fengguang Wu <wfg@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [net-next:master 49/50]
- net/netfilter/nfnetlink_queue_ct.c:23:18: sparse: incompatible types in
- comparison expression (different address spaces)
-Message-ID: <20120619115640.GA683@1984>
-References: <20120619060050.GA14867@localhost>
- <20120619112823.GB445@1984>
- <20120619114113.GA19526@localhost>
+	id S1754044Ab2FSL5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:57:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46487 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab2FSL5v convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 07:57:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120619114113.GA19526@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAF+7xWkopYu2CkPsdPeJ5Kr0NBbYcnf2ez-hC+RCj6QuOFcstw@mail.gmail.com>
+References: <1340092423-10073-1-git-send-email-yadi.brar@samsung.com>
+	<1340092423-10073-2-git-send-email-yadi.brar@samsung.com>
+	<CAF+7xWkopYu2CkPsdPeJ5Kr0NBbYcnf2ez-hC+RCj6QuOFcstw@mail.gmail.com>
+Date: Tue, 19 Jun 2012 17:27:51 +0530
+Message-ID: <CAKew6eXafa0n+dUcqa3EXEJQj4xNDM_Z2UNVhGu7rCSSEgiieQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] regulator: max77686: Implement .set_ramp_delay() callback.
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: axel.lin@gmail.com
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 07:41:13PM +0800, Fengguang Wu wrote:
-> On Tue, Jun 19, 2012 at 01:28:23PM +0200, Pablo Neira Ayuso wrote:
-> > On Tue, Jun 19, 2012 at 02:00:50PM +0800, wfg@linux.intel.com wrote:
-> > > Hi Pablo,
-> > > 
-> > > There are new sparse warnings show up in
-> > > 
-> > > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
-> > > head:   6bdc5f49e365a5403b9fdef01ceb37241ab00f9b
-> > > commit: 7c62234547255ce4c385a218915965bc2f14fe45 [49/50] netfilter: nfnetlink_queue: fix compilation with NF_CONNTRACK disabled
-> > > 
-> > > All sparse warnings:
-> > > 
-> > > net/netfilter/nfnetlink_queue_ct.c:23:18: sparse: incompatible types in comparison expression (different address spaces)
-> > > net/netfilter/nfnetlink_queue_ct.c:45:18: sparse: incompatible types in comparison expression (different address spaces)
-> > > net/netfilter/nfnetlink_queue_ct.c:63:18: sparse: incompatible types in comparison expression (different address spaces)
-> > > net/netfilter/nfnetlink_queue_ct.c:91:18: sparse: incompatible types in comparison expression (different address spaces)
-> > > net/netfilter/nf_conntrack_netlink.c:1100:27: sparse: incompatible types in comparison expression (different address spaces)
-> > > net/netfilter/nf_conntrack_netlink.c:1222:34: sparse: incompatible types in comparison expression (different address spaces)
-> > > net/netfilter/nf_conntrack_netlink.c:1222:34: sparse: incompatible types in comparison expression (different address spaces)
-> > > 
-> > > net/netfilter/nfnetlink_queue_ct.c:23:
-> > >     20		struct nf_conn *ct;
-> > >     21	
-> > >     22		/* rcu_read_lock()ed by __nf_queue already. */
-> > >   > 23		nfq_ct = rcu_dereference(nfq_ct_hook);
-> > >     24		if (nfq_ct == NULL)
-> > >     25			return NULL;
-> > >     26	
-> > 
-> > What CF options are you using to make sparse spot this? I cannot hit
-> > those message here.
-> 
-> I don't specify any options. I do use the sparse compiled from latest
-> git tree.
-> 
->         git://git.kernel.org/pub/scm/devel/sparse/chrisl/sparse.git
-> 
-> And changed its code to output "sparse:" rather than "error:"/"warning:"
-> so that they can be distinguished from the gcc error/warnings.
+On Tue, Jun 19, 2012 at 1:48 PM, Axel Lin <axel.lin@gmail.com> wrote:
+>>  static struct regulator_ops max77686_ops = {
+>>        .list_voltage           = regulator_list_voltage_linear,
+>>        .map_voltage            = regulator_map_voltage_linear,
+>> @@ -90,6 +114,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
 
-I don't hit those errors here with:
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+>>        .get_voltage_sel        = regulator_get_voltage_sel_regmap,
+>>        .set_voltage_sel        = regulator_set_voltage_sel_regmap,
+>>        .set_voltage_time_sel   = regulator_set_voltage_time_sel,
+>> +       .set_ramp_delay         = max77686_set_ramp_delay,
+>>  };
+>
+> I think what you want here is to set .set_ramp_delay callback for
+> max77686_buck_dvs_ops
+> rather than max77686_ops.
 
-make C=2 net/netfilter/nfnetlink_queue_ct.o
-
-using latest sparse from git tree.
-
-I guess it's related to some missing __rcu tag, but I need to make
-sure. I don't want to play whack-a-mole game ;-).
-
-> > I've got a fix but I don't want to send you an untested patch.
-> 
-> Appreciated!
-> 
-> I run a special service for this. If you push a patch to your git tree
-> containing the line
-> 
->         Reported-by: Fengguang Wu <wfg@linux.intel.com>
-
-yes, I always try to add that tag.
-
-> And not containing any "Tested-by:" line, my script will automatically
-> test it and send a success/failure notification back to you, normally
-> within one hour.
-
-Great to know.
+Now I have seen into my code after applying this patch again, yes its
+set for  max77686_buck_dvs_ops.
+I also missed to catch this in patch... :) ..
+Anyways, thanks for review and I think, we don't need to revise this patch.
