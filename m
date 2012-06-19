@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2FSIaI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 04:30:08 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48771 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab2FSI37 (ORCPT
+	id S1753942Ab2FSIaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 04:30:14 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:32912 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab2FSIaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 04:29:59 -0400
+	Tue, 19 Jun 2012 04:30:09 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org
 Cc: linux@arm.linux.org.uk, a.p.zijlstra@chello.nl, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v2 1/5] ARM: topology: Add arch_scale_freq_power function
-Date: Tue, 19 Jun 2012 10:28:52 +0200
-Message-Id: <1340094536-20873-2-git-send-email-vincent.guittot@linaro.org>
+        rob.herring@calxeda.com, Vincent Guittot <vincent.guittot@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: [PATCH v2 2/5] ARM: topology: factorize the update of sibling masks
+Date: Tue, 19 Jun 2012 10:28:53 +0200
+Message-Id: <1340094536-20873-3-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
 References: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
@@ -22,102 +23,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add infrastructure to be able to modify the cpu_power of each core
+This factorization has also been proposed in another patchset that has not been
+merged yet:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/080873.html
+So, this patch could be dropped depending of the state of the other one.
 
+Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- arch/arm/include/asm/topology.h |    2 ++
- arch/arm/kernel/topology.c      |   38 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 39 insertions(+), 1 deletion(-)
+ arch/arm/kernel/topology.c |   47 ++++++++++++++++++++++++--------------------
+ 1 file changed, 26 insertions(+), 21 deletions(-)
 
-diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
-index 58b8b84..78e4c85 100644
---- a/arch/arm/include/asm/topology.h
-+++ b/arch/arm/include/asm/topology.h
-@@ -27,11 +27,13 @@ void init_cpu_topology(void);
- void store_cpu_topology(unsigned int cpuid);
- const struct cpumask *cpu_coregroup_mask(int cpu);
- 
-+void set_power_scale(unsigned int cpu, unsigned long power);
- #else
- 
- static inline void init_cpu_topology(void) { }
- static inline void store_cpu_topology(unsigned int cpuid) { }
- 
-+static inline void set_power_scale(unsigned int cpu, unsigned long power) { }
- #endif
- 
- #include <asm-generic/topology.h>
 diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 8200dea..37e2e57 100644
+index 37e2e57..92c2fb3 100644
 --- a/arch/arm/kernel/topology.c
 +++ b/arch/arm/kernel/topology.c
-@@ -22,6 +22,37 @@
- #include <asm/cputype.h>
- #include <asm/topology.h>
- 
-+/*
-+ * cpu power scale management
-+ */
-+
-+/*
-+ * cpu power table
-+ * This per cpu data structure describes the relative capacity of each core.
-+ * On a heteregenous system, cores don't have the same computation capacity
-+ * and we reflect that difference in the cpu_power field so the scheduler can
-+ * take this difference into account during load balance. A per cpu structure
-+ * is preferred because each CPU updates its own cpu_power field during the
-+ * load balance except for idle cores. One idle core is selected to run the
-+ * rebalance_domains for all idle cores and the cpu_power can be updated
-+ * during this sequence.
-+ */
-+static DEFINE_PER_CPU(unsigned long, cpu_scale);
-+
-+unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
-+{
-+	return per_cpu(cpu_scale, cpu);
-+}
-+
-+void set_power_scale(unsigned int cpu, unsigned long power)
-+{
-+	per_cpu(cpu_scale, cpu) = power;
-+}
-+
-+/*
-+ * cpu topology management
-+ */
-+
- #define MPIDR_SMP_BITMASK (0x3 << 30)
- #define MPIDR_SMP_VALUE (0x2 << 30)
- 
-@@ -41,6 +72,9 @@
- #define MPIDR_LEVEL2_MASK 0xFF
- #define MPIDR_LEVEL2_SHIFT 16
- 
-+/*
-+ * cpu topology table
-+ */
- struct cputopo_arm cpu_topology[NR_CPUS];
- 
- const struct cpumask *cpu_coregroup_mask(int cpu)
-@@ -134,7 +168,7 @@ void init_cpu_topology(void)
- {
- 	unsigned int cpu;
- 
--	/* init core mask */
-+	/* init core mask and power*/
- 	for_each_possible_cpu(cpu) {
- 		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
- 
-@@ -143,6 +177,8 @@ void init_cpu_topology(void)
- 		cpu_topo->socket_id = -1;
- 		cpumask_clear(&cpu_topo->core_sibling);
- 		cpumask_clear(&cpu_topo->thread_sibling);
-+
-+		per_cpu(cpu_scale, cpu) = SCHED_POWER_SCALE;
- 	}
- 	smp_wmb();
+@@ -82,6 +82,31 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
+ 	return &cpu_topology[cpu].core_sibling;
  }
+ 
++void update_siblings_masks(unsigned int cpuid)
++{
++	struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
++	int cpu;
++	/* update core and thread sibling masks */
++	for_each_possible_cpu(cpu) {
++		cpu_topo = &cpu_topology[cpu];
++
++		if (cpuid_topo->socket_id == cpu_topo->socket_id) {
++			cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
++			if (cpu != cpuid)
++				cpumask_set_cpu(cpu, &cpuid_topo->core_sibling);
++
++			if (cpuid_topo->core_id == cpu_topo->core_id) {
++				cpumask_set_cpu(cpuid,
++					&cpu_topo->thread_sibling);
++				if (cpu != cpuid)
++					cpumask_set_cpu(cpu,
++						&cpuid_topo->thread_sibling);
++			}
++		}
++	}
++	smp_wmb();
++}
++
+ /*
+  * store_cpu_topology is called at boot when only one cpu is running
+  * and with the mutex cpu_hotplug.lock locked, when several cpus have booted,
+@@ -91,7 +116,6 @@ void store_cpu_topology(unsigned int cpuid)
+ {
+ 	struct cputopo_arm *cpuid_topo = &cpu_topology[cpuid];
+ 	unsigned int mpidr;
+-	unsigned int cpu;
+ 
+ 	/* If the cpu topology has been already set, just return */
+ 	if (cpuid_topo->core_id != -1)
+@@ -133,26 +157,7 @@ void store_cpu_topology(unsigned int cpuid)
+ 		cpuid_topo->socket_id = -1;
+ 	}
+ 
+-	/* update core and thread sibling masks */
+-	for_each_possible_cpu(cpu) {
+-		struct cputopo_arm *cpu_topo = &cpu_topology[cpu];
+-
+-		if (cpuid_topo->socket_id == cpu_topo->socket_id) {
+-			cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
+-			if (cpu != cpuid)
+-				cpumask_set_cpu(cpu,
+-					&cpuid_topo->core_sibling);
+-
+-			if (cpuid_topo->core_id == cpu_topo->core_id) {
+-				cpumask_set_cpu(cpuid,
+-					&cpu_topo->thread_sibling);
+-				if (cpu != cpuid)
+-					cpumask_set_cpu(cpu,
+-						&cpuid_topo->thread_sibling);
+-			}
+-		}
+-	}
+-	smp_wmb();
++	update_siblings_masks(cpuid);
+ 
+ 	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
+ 		cpuid, cpu_topology[cpuid].thread_id,
 -- 
 1.7.9.5
 
