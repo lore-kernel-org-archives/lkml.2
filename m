@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab2FSVXL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 17:23:11 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:60013 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab2FSVXJ (ORCPT
+	id S1755093Ab2FSVZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 17:25:25 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:48825 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab2FSVZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 17:23:09 -0400
-Subject: mmotm 2012-06-19-14-21 uploaded
+	Tue, 19 Jun 2012 17:25:23 -0400
+Subject: mmotm 2012-06-19-14-24 uploaded
 To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
         linux-next@vger.kernel.org
 From: akpm@linux-foundation.org
-Date: Tue, 19 Jun 2012 14:23:06 -0700
-Message-Id: <20120619212306.AE607A01BD@akpm.mtv.corp.google.com>
+Date: Tue, 19 Jun 2012 14:25:21 -0700
+Message-Id: <20120619212521.D53D6A01BD@akpm.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2012-06-19-14-21 has been uploaded to
+The mm-of-the-moment snapshot 2012-06-19-14-24 has been uploaded to
 
    http://www.ozlabs.org/~akpm/mmotm/
 
