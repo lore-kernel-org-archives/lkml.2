@@ -1,121 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab2FSKqw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 06:46:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38302 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab2FSKqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 06:46:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="113704002"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv2.1] dw_dmac: introduce dwc_chan_disable
-Date: Tue, 19 Jun 2012 13:46:32 +0300
-Message-Id: <1340102792-7633-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <CAOh2x=k024nEQ3_K03YTFw+inWerB3N+Tjvwh8RiqYA4qSieOg@mail.gmail.com>
-References: <CAOh2x=k024nEQ3_K03YTFw+inWerB3N+Tjvwh8RiqYA4qSieOg@mail.gmail.com>
+	id S1754246Ab2FSKq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 06:46:57 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12066 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2FSKqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 06:46:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 19 Jun 2012 03:46:49 -0700
+Message-ID: <4FE0564D.1030709@nvidia.com>
+Date: Tue, 19 Jun 2012 16:07:01 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: support for regulator match by regulator-compatible
+References: <1340085087-6608-1-git-send-email-ldewangan@nvidia.com> <1340085087-6608-2-git-send-email-ldewangan@nvidia.com> <20120619093211.GB3974@opensource.wolfsonmicro.com> <4FE04788.5040008@nvidia.com> <20120619104254.GD3974@opensource.wolfsonmicro.com>
+In-Reply-To: <20120619104254.GD3974@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This piece of code is used often. Make it as a separate function.
+On Tuesday 19 June 2012 04:13 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Tue, Jun 19, 2012 at 03:04:00PM +0530, Laxman Dewangan wrote:
+>
+>> I like to go with new series patch for other change once this is accepted.
+> I've no concerns with the interface or the code itself other than the
+> usability issue with partial deployment so if you could do the updates
+> for the other drivers that'd be great.  I'll hold off on applying this
+> until we've got everything else updated.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |   32 ++++++++++++++------------------
- 1 file changed, 14 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index d3845ef..cefc2c3b 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -219,6 +219,14 @@ static void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
- 		channel_readl(dwc, CTL_LO));
- }
- 
-+
-+static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
-+{
-+	channel_clear_bit(dw, CH_EN, dwc->mask);
-+	while (dma_readl(dw, CH_EN) & dwc->mask)
-+		cpu_relax();
-+}
-+
- /*----------------------------------------------------------------------*/
- 
- /* Called with dwc->lock held and bh disabled */
-@@ -314,9 +322,7 @@ static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 			"BUG: XFER bit set, but channel not idle!\n");
- 
- 		/* Try to continue after resetting the channel... */
--		channel_clear_bit(dw, CH_EN, dwc->mask);
--		while (dma_readl(dw, CH_EN) & dwc->mask)
--			cpu_relax();
-+		dwc_chan_disable(dw, dwc);
- 	}
- 
- 	/*
-@@ -398,9 +404,7 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		"BUG: All descriptors done, but channel not idle!\n");
- 
- 	/* Try to continue after resetting the channel... */
--	channel_clear_bit(dw, CH_EN, dwc->mask);
--	while (dma_readl(dw, CH_EN) & dwc->mask)
--		cpu_relax();
-+	dwc_chan_disable(dw, dwc);
- 
- 	if (!list_empty(&dwc->queue)) {
- 		list_move(dwc->queue.next, &dwc->active_list);
-@@ -516,9 +520,7 @@ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
- 
- 		dwc_dump_chan_regs(dwc);
- 
--		channel_clear_bit(dw, CH_EN, dwc->mask);
--		while (dma_readl(dw, CH_EN) & dwc->mask)
--			cpu_relax();
-+		dwc_chan_disable(dw, dwc);
- 
- 		/* make sure DMA does not restart by loading a new list */
- 		channel_writel(dwc, LLP, 0);
-@@ -948,9 +950,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	} else if (cmd == DMA_TERMINATE_ALL) {
- 		spin_lock_irqsave(&dwc->lock, flags);
- 
--		channel_clear_bit(dw, CH_EN, dwc->mask);
--		while (dma_readl(dw, CH_EN) & dwc->mask)
--			cpu_relax();
-+		dwc_chan_disable(dw, dwc);
- 
- 		dwc->paused = false;
- 
-@@ -1158,9 +1158,7 @@ void dw_dma_cyclic_stop(struct dma_chan *chan)
- 
- 	spin_lock_irqsave(&dwc->lock, flags);
- 
--	channel_clear_bit(dw, CH_EN, dwc->mask);
--	while (dma_readl(dw, CH_EN) & dwc->mask)
--		cpu_relax();
-+	dwc_chan_disable(dw, dwc);
- 
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- }
-@@ -1338,9 +1336,7 @@ void dw_dma_cyclic_free(struct dma_chan *chan)
- 
- 	spin_lock_irqsave(&dwc->lock, flags);
- 
--	channel_clear_bit(dw, CH_EN, dwc->mask);
--	while (dma_readl(dw, CH_EN) & dwc->mask)
--		cpu_relax();
-+	dwc_chan_disable(dw, dwc);
- 
- 	dma_writel(dw, CLEAR.ERROR, dwc->mask);
- 	dma_writel(dw, CLEAR.XFER, dwc->mask);
--- 
-1.7.10
+Great. I will send the patch  to reflect this policy for remaining 
+regulators.
 
