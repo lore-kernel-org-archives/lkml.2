@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab2FSGBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 02:01:45 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4040 "EHLO
+	id S1753512Ab2FSGBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 02:01:44 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4042 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab2FSGBm (ORCPT
+	with ESMTP id S1753305Ab2FSGBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Jun 2012 02:01:42 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 18 Jun 2012 23:01:35 -0700
+	by hqnvupgp07.nvidia.com on Mon, 18 Jun 2012 22:58:59 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
         <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
@@ -16,9 +16,9 @@ To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
 CC: <sameo@linux.intel.com>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/2] regulator: support for regulator match by regulator-compatible
-Date: Tue, 19 Jun 2012 11:21:26 +0530
-Message-ID: <1340085087-6608-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 2/2] regulator: tps65910: dt: identify regulator by regulator-compatible
+Date: Tue, 19 Jun 2012 11:21:27 +0530
+Message-ID: <1340085087-6608-3-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1340085087-6608-1-git-send-email-ldewangan@nvidia.com>
 References: <1340085087-6608-1-git-send-email-ldewangan@nvidia.com>
@@ -28,115 +28,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add API to match the chip regulator's id by the
-property of "regulator-compatible" on regulator node.
+Add the property of "regulator-compatible" for each
+regulator to match with the device regulators.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/regulator/of_regulator.c       |   61 ++++++++++++++++++++++++++++++++
- include/linux/regulator/of_regulator.h |   13 +++++++
- 2 files changed, 74 insertions(+), 0 deletions(-)
+ Documentation/devicetree/bindings/mfd/tps65910.txt |   54 +++++++++++++++-----
+ drivers/regulator/tps65910-regulator.c             |    3 +-
+ 2 files changed, 43 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index e2a7310..3dc9be1 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -136,3 +136,64 @@ int of_regulator_match(struct device *dev, struct device_node *node,
- 	return count;
- }
- EXPORT_SYMBOL_GPL(of_regulator_match);
-+
-+/**
-+ * of_regulator_match_by_compatible - extract regulator init data when
-+ * regulator-compatible matches.
-+ * @dev: device requesting the data
-+ * @node: parent device node of the regulators
-+ * @matches: match table for the regulators
-+ * @num_matches: number of entries in match table
-+ *
-+ * This function uses a match table specified by the regulator
-+ * driver and looks up the corresponding init data in the device
-+ * tree if regulator-compatible matches. Note that the match
-+ * table is modified in place.
-+ *
-+ * Returns the number of matches found or a negative error code on failure.
-+ */
-+int of_regulator_match_by_compatible(struct device *dev,
-+			struct device_node *node,
-+			struct of_regulator_match *matches,
-+			unsigned int num_matches)
-+{
-+	unsigned int count = 0;
-+	unsigned int i;
-+	const char *regulator_comp;
-+	struct device_node *child;
-+
-+	if (!dev || !node)
-+		return -EINVAL;
-+
-+	for_each_child_of_node(node, child) {
-+		regulator_comp = of_get_property(child,
-+					"regulator-compatible", NULL);
-+		if (!regulator_comp) {
-+			dev_err(dev, "regulator-compatible is missing for node %s\n",
-+				child->name);
-+			continue;
-+		}
-+		for (i = 0; i < num_matches; i++) {
-+			struct of_regulator_match *match = &matches[i];
-+			if (match->of_node)
-+				continue;
-+
-+			if (strcmp(match->name, regulator_comp))
-+				continue;
-+
-+			match->init_data =
-+				of_get_regulator_init_data(dev, child);
-+			if (!match->init_data) {
-+				dev_err(dev,
-+					"failed to parse DT for regulator %s\n",
-+					child->name);
-+				return -EINVAL;
-+			}
-+			match->of_node = child;
-+			count++;
-+		}
-+	}
-+
-+	return count;
-+}
-+EXPORT_SYMBOL_GPL(of_regulator_match_by_compatible);
-diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
-index f921796..e3469a0 100644
---- a/include/linux/regulator/of_regulator.h
-+++ b/include/linux/regulator/of_regulator.h
-@@ -20,6 +20,11 @@ extern struct regulator_init_data
- extern int of_regulator_match(struct device *dev, struct device_node *node,
- 			      struct of_regulator_match *matches,
- 			      unsigned int num_matches);
-+extern int of_regulator_match_by_compatible(struct device *dev,
-+			struct device_node *node,
-+			struct of_regulator_match *matches,
-+			unsigned int num_matches);
-+
- #else
- static inline struct regulator_init_data
- 	*of_get_regulator_init_data(struct device *dev,
-@@ -35,6 +40,14 @@ static inline int of_regulator_match(struct device *dev,
- {
- 	return 0;
- }
-+
-+static inline int of_regulator_match_by_compatible(struct device *dev,
-+			struct device_node *node,
-+			struct of_regulator_match *matches,
-+			unsigned int num_matches)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_OF */
+diff --git a/Documentation/devicetree/bindings/mfd/tps65910.txt b/Documentation/devicetree/bindings/mfd/tps65910.txt
+index 645f5ea..5407a10 100644
+--- a/Documentation/devicetree/bindings/mfd/tps65910.txt
++++ b/Documentation/devicetree/bindings/mfd/tps65910.txt
+@@ -17,8 +17,9 @@ Required properties:
+   device need to be present. The definition for each of these nodes is defined
+   using the standard binding for regulators found at
+   Documentation/devicetree/bindings/regulator/regulator.txt.
++  The regulator is matched with the regulator-compatible.
  
- #endif /* __LINUX_OF_REG_H */
+-  The valid names for regulators are:
++  The valid regulator-compatible for regulators are:
+   tps65910: vrtc, vio, vdd1, vdd2, vdd3, vdig1, vdig2, vpll, vdac, vaux1,
+             vaux2, vaux33, vmmc
+   tps65911: vrtc, vio, vdd1, vdd3, vddctrl, ldo1, ldo2, ldo3, ldo4, ldo5,
+@@ -57,73 +58,100 @@ Example:
+ 		ti,en-gpio-sleep = <0 0 1 0 0 0 0 0 0>;
+ 
+ 		regulators {
+-			vdd1_reg: vdd1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			vdd1_reg: regulator@0 {
++				regulator-compatible = "vdd1";
++				reg = <0>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			vdd2_reg: vdd2 {
++			vdd2_reg: regulator@1 {
++				regulator-compatible = "vdd2";
++				reg = <1>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <4>;
+ 			};
+-			vddctrl_reg: vddctrl {
++			vddctrl_reg: regulator@2 {
++				regulator-compatible = "vddctrl";
++				reg = <2>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1400000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			vio_reg: vio {
++			vio_reg: regulator@3 {
++				regulator-compatible = "vio";
++				reg = <3>;
+ 				regulator-min-microvolt = <1500000>;
+ 				regulator-max-microvolt = <1800000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <1>;
+ 			};
+-			ldo1_reg: ldo1 {
++			ldo1_reg: regulator@4 {
++				regulator-compatible = "ldo1";
++				reg = <4>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo2_reg: ldo2 {
++			ldo2_reg: regulator@5 {
++				regulator-compatible = "ldo2";
++				reg = <5>;
+ 				regulator-min-microvolt = <1050000>;
+ 				regulator-max-microvolt = <1050000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo3_reg: ldo3 {
++			ldo3_reg: regulator@6 {
++				regulator-compatible = "ldo3";
++				reg = <6>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo4_reg: ldo4 {
++			ldo4_reg: regulator@7 {
++				regulator-compatible = "ldo4";
++				reg = <7>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-always-on;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo5_reg: ldo5 {
++			ldo5_reg: regulator@8 {
++				regulator-compatible = "ldo5";
++				reg = <8>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo6_reg: ldo6 {
++			ldo6_reg: regulator@9 {
++				regulator-compatible = "ldo6";
++				reg = <9>;
+ 				regulator-min-microvolt = <1200000>;
+ 				regulator-max-microvolt = <1200000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo7_reg: ldo7 {
++			ldo7_reg: regulator@10 {
++				regulator-compatible = "ldo7";
++				reg = <10>;
+ 				regulator-min-microvolt = <1200000>;
+ 				regulator-max-microvolt = <1200000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <1>;
+ 			};
+-			ldo8_reg: ldo8 {
++			ldo8_reg: regulator@11 {
++				regulator-compatible = "ldo8";
++				reg = <11>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-always-on;
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index 6bf864b..c2ee450 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -1106,7 +1106,8 @@ static struct tps65910_board *tps65910_parse_dt_reg_data(
+ 		return NULL;
+ 	}
+ 
+-	ret = of_regulator_match(pdev->dev.parent, regulators, matches, count);
++	ret = of_regulator_match_by_compatible(pdev->dev.parent, regulators,
++			matches, count);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n",
+ 			ret);
 -- 
 1.7.1.1
 
