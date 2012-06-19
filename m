@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2FSSDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:03:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33396 "EHLO
+	id S1754725Ab2FSSDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:03:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33394 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2FSSAP (ORCPT
+	with ESMTP id S1753174Ab2FSSAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Jun 2012 14:00:15 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/20] perf ui/gtk: Use struct perf_error_ops
-Date: Tue, 19 Jun 2012 14:50:07 -0300
-Message-Id: <1340128221-17348-7-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 09/20] perf evsel: Carve out event modifier formatting
+Date: Tue, 19 Jun 2012 14:50:10 -0300
+Message-Id: <1340128221-17348-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1340128221-17348-1-git-send-email-acme@infradead.org>
 References: <1340128221-17348-1-git-send-email-acme@infradead.org>
@@ -26,152 +29,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Define and use perf_gtk_eops to provide a GTK2 message dialog for error
-reporting and a info_bar for warning.
+>From perf_evsel__hw_name, so that we can use it for the other kinds of
+events (tracepoints, software, hw cache, etc).
 
-As GtkInfoBar requires recent GTK+ libraries, provides a fallback
-implementation using statusbar widget too.
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338265382-6872-8-git-send-email-namhyung@gmail.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-9gmd5wewsrvtny8tzxjfp471@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/gtk/setup.c |    5 +++
- tools/perf/ui/gtk/util.c  |   86 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 91 insertions(+), 0 deletions(-)
+ tools/perf/util/evsel.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
-index 8295299..92879ce 100644
---- a/tools/perf/ui/gtk/setup.c
-+++ b/tools/perf/ui/gtk/setup.c
-@@ -1,12 +1,17 @@
- #include "gtk.h"
- #include "../../util/cache.h"
-+#include "../../util/debug.h"
-+
-+extern struct perf_error_ops perf_gtk_eops;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 9f6cebd..dab8938 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -86,16 +86,15 @@ const char *__perf_evsel__hw_name(u64 config)
+ 	return "unknown-hardware";
+ }
  
- int perf_gtk__init(void)
+-static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
++static int perf_evsel__add_modifiers(struct perf_evsel *evsel, char *bf, size_t size)
  {
-+	perf_error__register(&perf_gtk_eops);
- 	return gtk_init_check(NULL, NULL) ? 0 : -1;
+-	int colon = 0;
++	int colon = 0, r = 0;
+ 	struct perf_event_attr *attr = &evsel->attr;
+-	int r = scnprintf(bf, size, "%s", __perf_evsel__hw_name(attr->config));
+ 	bool exclude_guest_default = false;
+ 
+ #define MOD_PRINT(context, mod)	do {					\
+ 		if (!attr->exclude_##context) {				\
+-			if (!colon) colon = r++;			\
++			if (!colon) colon = ++r;			\
+ 			r += scnprintf(bf + r, size - r, "%c", mod);	\
+ 		} } while(0)
+ 
+@@ -108,7 +107,7 @@ static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
+ 
+ 	if (attr->precise_ip) {
+ 		if (!colon)
+-			colon = r++;
++			colon = ++r;
+ 		r += scnprintf(bf + r, size - r, "%.*s", attr->precise_ip, "ppp");
+ 		exclude_guest_default = true;
+ 	}
+@@ -119,10 +118,16 @@ static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
+ 	}
+ #undef MOD_PRINT
+ 	if (colon)
+-		bf[colon] = ':';
++		bf[colon - 1] = ':';
+ 	return r;
  }
  
- void perf_gtk__exit(bool wait_for_ok __used)
++static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
++{
++	int r = scnprintf(bf, size, "%s", __perf_evsel__hw_name(evsel->attr.config));
++	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
++}
++
+ int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size)
  {
-+	perf_error__unregister(&perf_gtk_eops);
- 	gtk_main_quit();
- }
-diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-index 6fe13fd..0ead373 100644
---- a/tools/perf/ui/gtk/util.c
-+++ b/tools/perf/ui/gtk/util.c
-@@ -2,6 +2,8 @@
- #include "../../util/debug.h"
- #include "gtk.h"
- 
-+#include <string.h>
-+
- 
- struct perf_gtk_context *pgctx;
- 
-@@ -26,6 +28,90 @@ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx)
- 	return 0;
- }
- 
-+static int perf_gtk__error(const char *format, va_list args)
-+{
-+	char *msg;
-+	GtkWidget *dialog;
-+
-+	if (!perf_gtk__is_active_context(pgctx) ||
-+	    vasprintf(&msg, format, args) < 0) {
-+		fprintf(stderr, "Error:\n");
-+		vfprintf(stderr, format, args);
-+		fprintf(stderr, "\n");
-+		return -1;
-+	}
-+
-+	dialog = gtk_message_dialog_new_with_markup(GTK_WINDOW(pgctx->main_window),
-+					GTK_DIALOG_DESTROY_WITH_PARENT,
-+					GTK_MESSAGE_ERROR,
-+					GTK_BUTTONS_CLOSE,
-+					"<b>Error</b>\n\n%s", msg);
-+	gtk_dialog_run(GTK_DIALOG(dialog));
-+
-+	gtk_widget_destroy(dialog);
-+	free(msg);
-+	return 0;
-+}
-+
-+#ifdef HAVE_GTK_INFO_BAR
-+static int perf_gtk__warning_info_bar(const char *format, va_list args)
-+{
-+	char *msg;
-+
-+	if (!perf_gtk__is_active_context(pgctx) ||
-+	    vasprintf(&msg, format, args) < 0) {
-+		fprintf(stderr, "Warning:\n");
-+		vfprintf(stderr, format, args);
-+		fprintf(stderr, "\n");
-+		return -1;
-+	}
-+
-+	gtk_label_set_text(GTK_LABEL(pgctx->message_label), msg);
-+	gtk_info_bar_set_message_type(GTK_INFO_BAR(pgctx->info_bar),
-+				      GTK_MESSAGE_WARNING);
-+	gtk_widget_show(pgctx->info_bar);
-+
-+	free(msg);
-+	return 0;
-+}
-+#else
-+static int perf_gtk__warning_statusbar(const char *format, va_list args)
-+{
-+	char *msg, *p;
-+
-+	if (!perf_gtk__is_active_context(pgctx) ||
-+	    vasprintf(&msg, format, args) < 0) {
-+		fprintf(stderr, "Warning:\n");
-+		vfprintf(stderr, format, args);
-+		fprintf(stderr, "\n");
-+		return -1;
-+	}
-+
-+	gtk_statusbar_pop(GTK_STATUSBAR(pgctx->statbar),
-+			  pgctx->statbar_ctx_id);
-+
-+	/* Only first line can be displayed */
-+	p = strchr(msg, '\n');
-+	if (p)
-+		*p = '\0';
-+
-+	gtk_statusbar_push(GTK_STATUSBAR(pgctx->statbar),
-+			   pgctx->statbar_ctx_id, msg);
-+
-+	free(msg);
-+	return 0;
-+}
-+#endif
-+
-+struct perf_error_ops perf_gtk_eops = {
-+	.error		= perf_gtk__error,
-+#ifdef HAVE_GTK_INFO_BAR
-+	.warning	= perf_gtk__warning_info_bar,
-+#else
-+	.warning	= perf_gtk__warning_statusbar,
-+#endif
-+};
-+
- /*
-  * FIXME: Functions below should be implemented properly.
-  *        For now, just add stubs for NO_NEWT=1 build.
+ 	int ret;
 -- 
 1.7.1
 
