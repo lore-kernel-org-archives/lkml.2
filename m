@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab2FSPud (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20746 "EHLO mx1.redhat.com"
+	id S1754854Ab2FSPuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 11:50:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64853 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754781Ab2FSPuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:50:20 -0400
+	id S1754781Ab2FSPug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 11:50:36 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,240 +14,190 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 21/23] perf, tool: Support for dwarf mode callchain on perf record
-Date: Tue, 19 Jun 2012 17:48:12 +0200
-Message-Id: <1340120894-9465-22-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 16/23] perf, tool: Add interface to arch registers sets
+Date: Tue, 19 Jun 2012 17:48:07 +0200
+Message-Id: <1340120894-9465-17-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables perf to use the dwarf unwind code.
+Adding header files to access unified API for arch registers.
+  util/perf_regs.h - global perf_reg declarations
+  arch/x86/include/perf_regs.h - x86 arch specific
 
-It extends the perf record '-g' option with following arguments:
-  'fp'           - provides framepointer based user
-                   stack backtrace
-  'dwarf[,size]' - provides dwarf (libunwind) based user stack
-                   backtrace. The size specifies the size of the
-                   user stack dump. If ommited it is 8192 by default.
+Adding perf_reg_name function to obtain register name based
+on the API ID value, and PERF_REGS_MASK macro with mask
+definition of all current arch registers (will be used in
+unwind patches).
 
-If libunwind is found during the perf build, then the 'dwarf'
-argument becomes available for record command. The 'fp' stays as
-default option in any case.
-
-Examples: (perf compiled with libunwind)
-
-   perf record -g dwarf ls
-      - provides dwarf unwind with 8192 as stack dump size
-
-   perf record -g dwarf,4096 ls
-      - provides dwarf unwind with 4096 as stack dump size
-
-   perf record -g -- ls
-   perf record -g fp ls
-      - provides frame pointer unwind
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-record.c |  106 ++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/perf.h           |    9 +++-
- tools/perf/util/evsel.c     |   12 +++++-
- 3 files changed, 123 insertions(+), 4 deletions(-)
+ tools/perf/Makefile                     |   13 +++++-
+ tools/perf/arch/x86/include/perf_regs.h |   80 +++++++++++++++++++++++++++++++
+ tools/perf/util/perf_regs.h             |   14 +++++
+ 3 files changed, 106 insertions(+), 1 deletions(-)
+ create mode 100644 tools/perf/arch/x86/include/perf_regs.h
+ create mode 100644 tools/perf/util/perf_regs.h
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f95840d..8bf3f5c 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -31,6 +31,15 @@
- #include <sched.h>
- #include <sys/mman.h>
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index e48b969..f412fb1 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -50,13 +50,15 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+ 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+ 				  -e s/sh[234].*/sh/ )
++NO_PERF_REGS := 1
  
-+#define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+ 
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),i386)
+-        ARCH := x86
++	ARCH := x86
++	NO_PERF_REGS := 0
+ endif
+ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+@@ -69,6 +71,7 @@ ifeq ($(ARCH),x86_64)
+ 		ARCH_CFLAGS := -DARCH_X86_64
+ 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+ 	endif
++	NO_PERF_REGS := 0
+ endif
+ 
+ # Treat warnings as errors unless directed not to
+@@ -320,6 +323,7 @@ LIB_H += util/cgroup.h
+ LIB_H += $(TRACE_EVENT_DIR)event-parse.h
+ LIB_H += util/target.h
+ LIB_H += util/vdso.h
++LIB_H += util/perf_regs.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -665,6 +669,13 @@ else
+ 	endif
+ endif
+ 
++ifeq ($(NO_PERF_REGS),0)
++	ifeq ($(ARCH),x86)
++		LIB_H += arch/x86/include/perf_regs.h
++	endif
++else
++	BASIC_CFLAGS += -DNO_PERF_REGS
++endif
+ 
+ ifdef NO_STRLCPY
+ 	BASIC_CFLAGS += -DNO_STRLCPY
+diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
+new file mode 100644
+index 0000000..ee5aff6
+--- /dev/null
++++ b/tools/perf/arch/x86/include/perf_regs.h
+@@ -0,0 +1,80 @@
++#ifndef ARCH_PERF_REGS_H
++#define ARCH_PERF_REGS_H
 +
-+#ifdef NO_LIBUNWIND_SUPPORT
-+static char callchain_help[] = CALLCHAIN_HELP "[fp]";
++#include <stdlib.h>
++#include "../../util/types.h"
++#include "../../../../../arch/x86/include/asm/perf_regs.h"
++
++#ifndef ARCH_X86_64
++#define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
 +#else
-+static unsigned long default_stack_dump_size = 8192;
-+static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
++#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
++		       (1ULL << PERF_REG_X86_ES) | \
++		       (1ULL << PERF_REG_X86_FS) | \
++		       (1ULL << PERF_REG_X86_GS))
++#define PERF_REGS_MASK (((1ULL << PERF_REG_X86_64_MAX) - 1) & ~REG_NOSUPPORT)
 +#endif
++#define PERF_REG_IP PERF_REG_X86_IP
++#define PERF_REG_SP PERF_REG_X86_SP
 +
- enum write_mode_t {
- 	WRITE_FORCE,
- 	WRITE_APPEND
-@@ -732,6 +741,98 @@ error:
- 	return ret;
- }
- 
-+static int get_stack_size(char *str, unsigned long *_size)
++static inline const char *perf_reg_name(int id)
 +{
-+	char *endptr;
-+	unsigned long size;
-+	unsigned long max_size = round_down(USHRT_MAX, sizeof(u64));
-+
-+	size = strtoul(str, &endptr, 0);
-+
-+	do {
-+		if (*endptr || !size)
-+			break;
-+
-+		size = round_up(size, sizeof(u64));
-+		if (size > max_size)
-+			break;
-+
-+		*_size = size;
-+		return 0;
-+
-+	} while (0);
-+
-+	pr_err("callchain: Incorrect stack dump size (max %ld): %s\n",
-+	       max_size, str);
-+	return -1;
-+}
-+
-+static int
-+parse_callchain_opt(const struct option *opt __used, const char *arg,
-+		    int unset)
-+{
-+	struct perf_record *rec = (struct perf_record *)opt->value;
-+	char *tok, *name, *saveptr = NULL;
-+	char buf[20];
-+	int ret = -1;
-+
-+	/* --no-call-graph */
-+	if (unset)
-+		return 0;
-+
-+	/* We specified default option if none is provided. */
-+	BUG_ON(!arg);
-+
-+	/* We need buffer that we know we can write to. */
-+	snprintf(buf, 20, "%s", arg);
-+
-+	tok = strtok_r((char *)buf, ",", &saveptr);
-+	name = tok ? : (char *)buf;
-+
-+	do {
-+		/* Framepointer style */
-+		if (!strncmp(name, "fp", sizeof("fp"))) {
-+			if (!strtok_r(NULL, ",", &saveptr)) {
-+				rec->opts.call_graph = CALLCHAIN_FP;
-+				ret = 0;
-+			} else
-+				pr_err("callchain: No more arguments "
-+				       "needed for -g fp\n");
-+			break;
-+
-+#ifndef NO_LIBUNWIND_SUPPORT
-+		/* Dwarf style */
-+		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
-+			ret = 0;
-+			rec->opts.call_graph = CALLCHAIN_DWARF;
-+			rec->opts.stack_dump_size = default_stack_dump_size;
-+
-+			tok = strtok_r(NULL, ",", &saveptr);
-+			if (tok) {
-+				unsigned long size = 0;
-+
-+				ret = get_stack_size(tok, &size);
-+				rec->opts.stack_dump_size = size;
-+			}
-+
-+			if (!ret)
-+				pr_debug("callchain: stack dump size %d\n",
-+					 rec->opts.stack_dump_size);
-+#endif
-+		} else {
-+			pr_err("callchain: Unknown -g option "
-+			       "value: %s\n", name);
-+			break;
-+		}
-+
-+	} while (0);
-+
-+	if (!ret)
-+		pr_debug("callchain: type %d\n", rec->opts.call_graph);
-+
-+	return ret;
-+}
-+
- static const char * const record_usage[] = {
- 	"perf record [<options>] [<command>]",
- 	"perf record [<options>] -- <command> [<options>]",
-@@ -803,8 +904,9 @@ const struct option record_options[] = {
- 		     "number of mmap data pages"),
- 	OPT_BOOLEAN(0, "group", &record.opts.group,
- 		    "put the counters into a counter group"),
--	OPT_BOOLEAN('g', "call-graph", &record.opts.call_graph,
--		    "do call-graph (stack chain/backtrace) recording"),
-+	OPT_CALLBACK_DEFAULT('g', "call-graph", &record, "mode,dump_size",
-+			     callchain_help, &parse_callchain_opt,
-+			     "fp"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index f960ccb..87f4ec6 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -209,9 +209,15 @@ void pthread__unblock_sigwinch(void);
- 
- #include "util/target.h"
- 
-+enum perf_call_graph_mode {
-+	CALLCHAIN_NONE,
-+	CALLCHAIN_FP,
-+	CALLCHAIN_DWARF
-+};
-+
- struct perf_record_opts {
- 	struct perf_target target;
--	bool	     call_graph;
-+	int	     call_graph;
- 	bool	     group;
- 	bool	     inherit_stat;
- 	bool	     no_delay;
-@@ -230,6 +236,7 @@ struct perf_record_opts {
- 	u64          branch_stack;
- 	u64	     default_interval;
- 	u64	     user_interval;
-+	u16	     stack_dump_size;
- };
- 
- #endif
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 6b90214..9ab6160 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -17,6 +17,7 @@
- #include "thread_map.h"
- #include "target.h"
- #include "../../include/linux/perf_event.h"
-+#include "perf_regs.h"
- 
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
-@@ -196,9 +197,18 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 		attr->mmap_data = track;
- 	}
- 
--	if (opts->call_graph)
-+	if (opts->call_graph) {
- 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
- 
-+		if (opts->call_graph == CALLCHAIN_DWARF) {
-+			attr->sample_type |= PERF_SAMPLE_REGS_USER |
-+					     PERF_SAMPLE_STACK_USER;
-+			attr->sample_regs_user = PERF_REGS_MASK;
-+			attr->sample_stack_user = opts->stack_dump_size;
-+			attr->exclude_callchain_user = 1;
-+		}
++	switch (id) {
++	case PERF_REG_X86_AX:
++		return "AX";
++	case PERF_REG_X86_BX:
++		return "BX";
++	case PERF_REG_X86_CX:
++		return "CX";
++	case PERF_REG_X86_DX:
++		return "DX";
++	case PERF_REG_X86_SI:
++		return "SI";
++	case PERF_REG_X86_DI:
++		return "DI";
++	case PERF_REG_X86_BP:
++		return "BP";
++	case PERF_REG_X86_SP:
++		return "SP";
++	case PERF_REG_X86_IP:
++		return "IP";
++	case PERF_REG_X86_FLAGS:
++		return "FLAGS";
++	case PERF_REG_X86_CS:
++		return "CS";
++	case PERF_REG_X86_DS:
++		return "DS";
++	case PERF_REG_X86_ES:
++		return "ES";
++	case PERF_REG_X86_FS:
++		return "FS";
++	case PERF_REG_X86_GS:
++		return "GS";
++#ifdef ARCH_X86_64
++	case PERF_REG_X86_R8:
++		return "R8";
++	case PERF_REG_X86_R9:
++		return "R9";
++	case PERF_REG_X86_R10:
++		return "R10";
++	case PERF_REG_X86_R11:
++		return "R11";
++	case PERF_REG_X86_R12:
++		return "R12";
++	case PERF_REG_X86_R13:
++		return "R13";
++	case PERF_REG_X86_R14:
++		return "R14";
++	case PERF_REG_X86_R15:
++		return "R15";
++	case PERF_REG_X86_SS:
++		return "SS";
++#endif /* ARCH_X86_64 */
++	default:
++		return NULL;
 +	}
 +
- 	if (perf_target__has_cpu(&opts->target))
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 
++	return NULL;
++}
++
++#endif /* ARCH_PERF_REGS_H */
+diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
+new file mode 100644
+index 0000000..3efb79a
+--- /dev/null
++++ b/tools/perf/util/perf_regs.h
+@@ -0,0 +1,14 @@
++#ifndef __PERF_REGS_H
++#define __PERF_REGS_H
++
++#ifndef NO_PERF_REGS_DEFS
++#include <perf_regs.h>
++#else
++#define PERF_REGS_MASK	0
++
++static inline const char *perf_reg_name(int id __used)
++{
++	return NULL;
++}
++#endif /* NO_PERF_REGS_DEFS */
++#endif /* __PERF_REGS_H */
 -- 
 1.7.7.6
 
