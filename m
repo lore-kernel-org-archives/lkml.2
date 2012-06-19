@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab2FSRx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 13:53:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43483 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751430Ab2FSRx6 (ORCPT
+	id S1753136Ab2FSSAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:00:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43316 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab2FSSAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 13:53:58 -0400
-Date: Tue, 19 Jun 2012 18:53:54 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, arnd@arndb.de, linus.walleij@linaro.org,
-        lrg@ti.com, lee.jones@linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/3] regulator: dt: add policy to have property
- "regulator-compatible"
-Message-ID: <20120619175354.GO3974@opensource.wolfsonmicro.com>
-References: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com>
- <1340116099-17629-3-git-send-email-ldewangan@nvidia.com>
- <4FE0BA5C.9020405@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9rkt7tfZQigMla7f"
-Content-Disposition: inline
-In-Reply-To: <4FE0BA5C.9020405@wwwdotorg.org>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Jun 2012 14:00:13 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 07/20] perf lib: Introduce rtrim
+Date: Tue, 19 Jun 2012 14:50:08 -0300
+Message-Id: <1340128221-17348-8-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1340128221-17348-1-git-send-email-acme@infradead.org>
+References: <1340128221-17348-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
---9rkt7tfZQigMla7f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Remove the trailing whitespaces.
 
-On Tue, Jun 19, 2012 at 11:43:56AM -0600, Stephen Warren wrote:
-> On 06/19/2012 08:28 AM, Laxman Dewangan wrote:
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-8bxozh5lyixgjmziqaxo9675@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/string.c |   22 ++++++++++++++++++++++
+ tools/perf/util/util.h   |    2 ++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
 
-> > +  The regulator is matched with the regulator-compatible.
+diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
+index d583638..199bc4d 100644
+--- a/tools/perf/util/string.c
++++ b/tools/perf/util/string.c
+@@ -313,3 +313,25 @@ int strtailcmp(const char *s1, const char *s2)
+ 	return 0;
+ }
+ 
++/**
++ * rtrim - Removes trailing whitespace from @s.
++ * @s: The string to be stripped.
++ *
++ * Note that the first trailing whitespace is replaced with a %NUL-terminator
++ * in the given string @s. Returns @s.
++ */
++char *rtrim(char *s)
++{
++	size_t size = strlen(s);
++	char *end;
++
++	if (!size)
++		return s;
++
++	end = s + size - 1;
++	while (end >= s && isspace(*end))
++		end--;
++	*(end + 1) = '\0';
++
++	return s;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 2daaedb..b13c733 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -264,4 +264,6 @@ bool is_power_of_2(unsigned long n)
+ 
+ size_t hex_width(u64 v);
+ 
++char *rtrim(char *s);
++
+ #endif
+-- 
+1.7.1
 
-> That last sentence should be true for any chip containing multiple
-> regulators and using the standard regulator binding. As such, shouldn't
-> that property be part of regulator.txt, rather than each individual
-> regulator chip's binding document?
-
-No, there's more than one way to skin this cat.  We can either have
-something like this where there's a single DT node for all regulators on
-the device or we can have an MFD where the regulators all appear
-separately.  This is certainly what the former case should be using but
-it's less clear for the latter.
-
---9rkt7tfZQigMla7f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP4LygAAoJEBus8iNuMP3d/TYP/3cDwZz61eH/awnDggZlfvGw
-uk2pUY1Q4gUKor+x01qefN6fAFTqkSvWu4sBGVj89UjbmeZH2cspGk7WzjdNDCuO
-pDQOuw+qLhR/tyqa41OJl/HoX7VqHFvX3agFcHTwr8eUvLKMXxNAM8OxmEQiTy2i
-KZJwZPDbqQ8KzDgDPy9s58NE++q141wLqECe6MvcX364p4qqUhdylTeeQVLaoNBt
-eI0YgsRkuB+lJkaR7pqF7/Pm+qcS/81R/nYe9Ctbke8+RT19VPcsrFmKa2MdjIzu
-6zIyEgGptKdPvqxjD04q144g62swh+EJet2mz9BJSROOBoUb7ItcTK8BFcc2eryr
-l8D7Z46TgPftGF8W5kzb8OdLR8lxgs5Ef5POXAGS+iGGihhx3jea21cYCkPJhWxd
-B7YbLJmzL/Y+G3X2MYTCUwP2gexTu/WIU+Y43FHT9ruDxhTHswaKX+K0kIEhFVzU
-/yAhGJgDI4C1KjWe3WycBtDwzOSOuagHH/yal3W2l990g/I4gHXAXoQcscz40dxn
-4WrXv4SmBVlLiubc7qskqROtBnLQ7y0sL7LGeXFftloZJB0rHIsJoSmzseCoj/0L
-Dtvzz4oUwUKtbCZ/goSYgzZtTe0ypMyP11e2PNaJGtKOvMXK7yuHAYgm7FmpHajQ
-NY0OW2BHIJJ6U0QBZGQ3
-=xxo4
------END PGP SIGNATURE-----
-
---9rkt7tfZQigMla7f--
