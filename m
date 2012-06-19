@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab2FSIVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 04:21:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49780 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab2FSIVD convert rfc822-to-8bit (ORCPT
+	id S1753553Ab2FSIXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 04:23:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42698 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab2FSIXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 04:21:03 -0400
+	Tue, 19 Jun 2012 04:23:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAF+7xWkopYu2CkPsdPeJ5Kr0NBbYcnf2ez-hC+RCj6QuOFcstw@mail.gmail.com>
-References: <1340092423-10073-1-git-send-email-yadi.brar@samsung.com>
-	<1340092423-10073-2-git-send-email-yadi.brar@samsung.com>
-	<CAF+7xWkopYu2CkPsdPeJ5Kr0NBbYcnf2ez-hC+RCj6QuOFcstw@mail.gmail.com>
-Date: Tue, 19 Jun 2012 13:51:03 +0530
-Message-ID: <CAKew6eUQXzGfgdFhKx9-DVRCsRcJCDOrTk4ihBLhkqcpRXgYWA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] regulator: max77686: Implement .set_ramp_delay() callback.
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: axel.lin@gmail.com
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1340078392.6871.6.camel@deadeye.wl.decadent.org.uk>
+References: <20120617175941.281333656@decadent.org.uk>
+	<20120617175941.924141588@decadent.org.uk>
+	<20120618215555.GD3263@herton-Z68MA-D2H-B3>
+	<4FDFA760.5040403@intel.com>
+	<1340078392.6871.6.camel@deadeye.wl.decadent.org.uk>
+Date: Tue, 19 Jun 2012 10:23:48 +0200
+Message-ID: <CAKMK7uEPNBDbBT4TEf9norZ_em9c+v89XRoFF_Yyam8pakYMOQ@mail.gmail.com>
+Subject: Re: [ 04/69] drm/i915: fix up ivb plane 3 pageflips
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 1:48 PM, Axel Lin <axel.lin@gmail.com> wrote:
->>  static struct regulator_ops max77686_ops = {
->>        .list_voltage           = regulator_list_voltage_linear,
->>        .map_voltage            = regulator_map_voltage_linear,
->> @@ -90,6 +114,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
->>        .get_voltage_sel        = regulator_get_voltage_sel_regmap,
->>        .set_voltage_sel        = regulator_set_voltage_sel_regmap,
->>        .set_voltage_time_sel   = regulator_set_voltage_time_sel,
->> +       .set_ramp_delay         = max77686_set_ramp_delay,
->>  };
->
-> I think what you want here is to set .set_ramp_delay callback for
-> max77686_buck_dvs_ops
-> rather than max77686_ops.
+On Tue, Jun 19, 2012 at 5:59 AM, Ben Hutchings <ben@decadent.org.uk>
+> So should I drop this until the second patch is upstream?
 
-Yes,  I will correct it.
-
-Thanks,
-Yadwinder.
+Nah, just merge it. It covers a truly impossible situation, and I've
+decided to not push Eugeni's fixup through -fixes because if that.
+Still, thanks for catching this.
+-Daniel
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
