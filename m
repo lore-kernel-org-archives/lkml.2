@@ -1,63 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab2FSBjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 21:39:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53648 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753583Ab2FSBjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 21:39:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="155156185"
-Message-ID: <4FDFD866.4080602@intel.com>
-Date: Tue, 19 Jun 2012 09:39:50 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+	id S1753928Ab2FSBmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 21:42:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56632 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753622Ab2FSBmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 21:42:40 -0400
+X-IronPort-AV: E=Sophos;i="4.77,433,1336320000"; 
+   d="scan'208";a="5219405"
+Message-ID: <4FDFD8AF.6030209@cn.fujitsu.com>
+Date: Tue, 19 Jun 2012 09:41:03 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 06/13] perf: Add Nehalem and Sandy Bridge uncore support
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com> <1339741902-8449-7-git-send-email-zheng.z.yan@intel.com> <1339780730.2559.92.camel@twins> <CABPqkBTuBnFWo0wpcmg_YR_C0Q_BAMBqs7nrFTHnag=_RMPddA@mail.gmail.com> <1339850780.15222.8.camel@twins> <CABPqkBQYRs9F2U3LVWcxip3-2ijxAE8+szj2TY8MKwO2w7se1A@mail.gmail.com>
-In-Reply-To: <CABPqkBQYRs9F2U3LVWcxip3-2ijxAE8+szj2TY8MKwO2w7se1A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        serge.hallyn@canonical.com, dvhart@linux.intel.com,
+        a.p.zijlstra@chello.nl, jkosina@suse.cz, ebiederm@xmission.com,
+        dhowells@redhat.com, keescook@chromium.org, tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] futex: Do not leak robust list to unprivileged
+ process
+References: <20120319231253.GA20893@www.outflux.net> <tip-bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8@git.kernel.org>
+In-Reply-To: <tip-bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8@git.kernel.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/19 09:43:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/19 09:43:04,
+	Serialize complete at 2012/06/19 09:43:04
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 05:23 PM, Stephane Eranian wrote:
-> On Sat, Jun 16, 2012 at 2:46 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> >
->> > On Fri, 2012-06-15 at 20:46 +0200, Stephane Eranian wrote:
->>> > > Yes, and let the parser be case insensitive.
->> >
->> > Right, I did the below on top..
->> >
->> > ---
->> > --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> > @@ -179,22 +179,17 @@ static struct attribute *snbep_uncore_pc
->> >  };
->> >
->> >  static struct uncore_event_desc snbep_uncore_imc_events[] = {
->> > -       INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
->> > -       /* read */
->> > -       INTEL_UNCORE_EVENT_DESC(CAS_COUNT_RD, "event=0x4,umask=0x3"),
->> > -       /* write */
->> > -       INTEL_UNCORE_EVENT_DESC(CAS_COUNT_WR, "event=0x4,umask=0xc"),
->> > +       INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0xff");
-> Just like for core, I would pick 0xff as the pseudo event code for
-> fixed uncore events
-> and use the umask value to determine which of the fixed events we want
-> to map to. There
-> is only one fixed counter so far. But more could be added later on, so
-> why not start with
-> umask=0x00 or umask=0x1 instead of umask=0xff?
+On 03/29/2012 05:55 PM, tip-bot for Kees Cook wrote:
+> Commit-ID:  bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8
+> Gitweb:     http://git.kernel.org/tip/bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8
+> Author:     Kees Cook <keescook@chromium.org>
+> AuthorDate: Mon, 19 Mar 2012 16:12:53 -0700
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Thu, 29 Mar 2012 11:37:17 +0200
+> 
+> futex: Do not leak robust list to unprivileged process
+> 
+> It was possible to extract the robust list head address from a setuid
+> process if it had used set_robust_list(), allowing an ASLR info leak. This
+> changes the permission checks to be the same as those used for similar
+> info that comes out of /proc.
+> 
+> Running a setuid program that uses robust futexes would have had:
+>   cred->euid != pcred->euid
+>   cred->euid == pcred->uid
+> so the old permissions check would allow it. I'm not aware of any setuid
+> programs that use robust futexes, so this is just a preventative measure.
 > 
 
-Good idea. I think changing the definition of UNCORE_FIXED_EVENT to 0xff and
-changing configure for the clockticks events to config=0xff are enough for now.
+I'm not sure this change prevents the unprivileged process.
+Please refer to LTP test, recently I saw that this change broke
+the following test.
 
-Regards
-Yan, Zheng
+https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/syscalls/get_robust_list/get_robust_list01.c#L155
+		if (seteuid(1) == -1)
+			tst_brkm(TBROK|TERRNO, cleanup, "seteuid(1) failed");
+
+		TEST(retval = syscall(__NR_get_robust_list, 1,
+				      (struct robust_list_head *)&head,
+				      &len_ptr));
+
+We set the euid to an unprivileged user, and expect to FAIL with EPERM,
+without this patch, it FAIL as we expected, but with it, this call succeed.
+
+Seems that we leaked the check of (cred->euid == pcred->euid && cred->euid == pcred->uid),
+I'm not sure which one is right, can you please give an explanation?
+
+
+Thanks in advance,
+Wanlong Gao
+
+> (This patch is based on changes from grsecurity.)
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: Darren Hart <dvhart@linux.intel.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Jiri Kosina <jkosina@suse.cz>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: kernel-hardening@lists.openwall.com
+> Cc: spender@grsecurity.net
+> Link: http://lkml.kernel.org/r/20120319231253.GA20893@www.outflux.net
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/futex.c        |   36 +++++++++++++-----------------------
+>  kernel/futex_compat.c |   36 +++++++++++++-----------------------
+>  2 files changed, 26 insertions(+), 46 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 72efa1e..d701be5 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -59,6 +59,7 @@
+>  #include <linux/magic.h>
+>  #include <linux/pid.h>
+>  #include <linux/nsproxy.h>
+> +#include <linux/ptrace.h>
+>  
+>  #include <asm/futex.h>
+>  
+> @@ -2443,40 +2444,29 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
+>  {
+>  	struct robust_list_head __user *head;
+>  	unsigned long ret;
+> -	const struct cred *cred = current_cred(), *pcred;
+> +	struct task_struct *p;
+>  
+>  	if (!futex_cmpxchg_enabled)
+>  		return -ENOSYS;
+>  
+> +	rcu_read_lock();
+> +
+> +	ret = -ESRCH;
+>  	if (!pid)
+> -		head = current->robust_list;
+> +		p = current;
+>  	else {
+> -		struct task_struct *p;
+> -
+> -		ret = -ESRCH;
+> -		rcu_read_lock();
+>  		p = find_task_by_vpid(pid);
+>  		if (!p)
+>  			goto err_unlock;
+> -		ret = -EPERM;
+> -		pcred = __task_cred(p);
+> -		/* If victim is in different user_ns, then uids are not
+> -		   comparable, so we must have CAP_SYS_PTRACE */
+> -		if (cred->user->user_ns != pcred->user->user_ns) {
+> -			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+> -				goto err_unlock;
+> -			goto ok;
+> -		}
+> -		/* If victim is in same user_ns, then uids are comparable */
+> -		if (cred->euid != pcred->euid &&
+> -		    cred->euid != pcred->uid &&
+> -		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+> -			goto err_unlock;
+> -ok:
+> -		head = p->robust_list;
+> -		rcu_read_unlock();
+>  	}
+>  
+> +	ret = -EPERM;
+> +	if (!ptrace_may_access(p, PTRACE_MODE_READ))
+> +		goto err_unlock;
+> +
+> +	head = p->robust_list;
+> +	rcu_read_unlock();
+> +
+>  	if (put_user(sizeof(*head), len_ptr))
+>  		return -EFAULT;
+>  	return put_user(head, head_ptr);
+> diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+> index 5f9e689..a9642d5 100644
+> --- a/kernel/futex_compat.c
+> +++ b/kernel/futex_compat.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/compat.h>
+>  #include <linux/nsproxy.h>
+>  #include <linux/futex.h>
+> +#include <linux/ptrace.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -136,40 +137,29 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+>  {
+>  	struct compat_robust_list_head __user *head;
+>  	unsigned long ret;
+> -	const struct cred *cred = current_cred(), *pcred;
+> +	struct task_struct *p;
+>  
+>  	if (!futex_cmpxchg_enabled)
+>  		return -ENOSYS;
+>  
+> +	rcu_read_lock();
+> +
+> +	ret = -ESRCH;
+>  	if (!pid)
+> -		head = current->compat_robust_list;
+> +		p = current;
+>  	else {
+> -		struct task_struct *p;
+> -
+> -		ret = -ESRCH;
+> -		rcu_read_lock();
+>  		p = find_task_by_vpid(pid);
+>  		if (!p)
+>  			goto err_unlock;
+> -		ret = -EPERM;
+> -		pcred = __task_cred(p);
+> -		/* If victim is in different user_ns, then uids are not
+> -		   comparable, so we must have CAP_SYS_PTRACE */
+> -		if (cred->user->user_ns != pcred->user->user_ns) {
+> -			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+> -				goto err_unlock;
+> -			goto ok;
+> -		}
+> -		/* If victim is in same user_ns, then uids are comparable */
+> -		if (cred->euid != pcred->euid &&
+> -		    cred->euid != pcred->uid &&
+> -		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+> -			goto err_unlock;
+> -ok:
+> -		head = p->compat_robust_list;
+> -		rcu_read_unlock();
+>  	}
+>  
+> +	ret = -EPERM;
+> +	if (!ptrace_may_access(p, PTRACE_MODE_READ))
+> +		goto err_unlock;
+> +
+> +	head = p->compat_robust_list;
+> +	rcu_read_unlock();
+> +
+>  	if (put_user(sizeof(*head), len_ptr))
+>  		return -EFAULT;
+>  	return put_user(ptr_to_compat(head), head_ptr);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
