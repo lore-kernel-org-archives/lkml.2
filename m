@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab2FSSlv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:41:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63632 "EHLO
+	id S1754580Ab2FSSoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:44:05 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38991 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab2FSSlu (ORCPT
+	with ESMTP id S1752787Ab2FSSoC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:41:50 -0400
+	Tue, 19 Jun 2012 14:44:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <1340072156-6225-3-git-send-email-anton.vorontsov@linaro.org>
+In-Reply-To: <1340072156-6225-4-git-send-email-anton.vorontsov@linaro.org>
 References: <20120619021050.GA19387@lizard>
-	<1340072156-6225-3-git-send-email-anton.vorontsov@linaro.org>
-Date: Tue, 19 Jun 2012 11:41:48 -0700
-X-Google-Sender-Auth: aatOI4U7SCtYBV9FvENAhH0JzqA
-Message-ID: <CAGXu5jLxh5ryQVeaEfdNBndmxgm5QU4-Ku_zyyXLs-ueX+gEqw@mail.gmail.com>
-Subject: Re: [PATCH 3/7] pstore/ram_core: Proper checking for post_init errors
- (e.g. improper ECC size)
+	<1340072156-6225-4-git-send-email-anton.vorontsov@linaro.org>
+Date: Tue, 19 Jun 2012 11:44:01 -0700
+X-Google-Sender-Auth: kUbwCAH0kPqKXjZquNcWf9a9jf4
+Message-ID: <CAGXu5jKEXSga7J1EVmishYnbbhfRHz2YEY9UJ7ZKnJ6f_0hbdA@mail.gmail.com>
+Subject: Re: [PATCH 4/7] pstore/ram_core: Better ECC size checking
 From: Kees Cook <keescook@chromium.org>
 To: Anton Vorontsov <anton.vorontsov@linaro.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -31,6 +30,7 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,11 +38,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Jun 18, 2012 at 7:15 PM, Anton Vorontsov
 <anton.vorontsov@linaro.org> wrote:
-> We will implement variable-sized ECC buffers soon, so post_init routine
-> might fail much more likely, so we'd better check for its errors.
+> - Instead of exploiting unsigned overflows (which doesn't work for all
+>  sizes), use straightforward checking for ECC total size not exceeding
+>  initial buffer size;
 >
-> To make error handling simple, modify persistent_ram_free() to it be safe
-> at all times.
+> - Printing overflowed buffer_size is not informative. Instead, print
+>  ecc_size and buffer_size;
+>
+> - No need for buffer_size argument in persistent_ram_init_ecc(),
+>  we can address prz->buffer_size directly.
 >
 > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
