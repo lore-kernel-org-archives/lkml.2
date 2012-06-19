@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab2FSBix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 21:38:53 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:44421 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab2FSBiv (ORCPT
+	id S1754017Ab2FSBjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 21:39:09 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:57967 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab2FSBjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 21:38:51 -0400
-Message-ID: <1340069925.7937.4.camel@phoenix>
-Subject: [PATCH RFC] regulator: Use list_voltage() to get voltage in
- regulator_set_voltage_time_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 19 Jun 2012 09:38:45 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 18 Jun 2012 21:39:07 -0400
+MIME-Version: 1.0
+Date: Tue, 19 Jun 2012 09:39:05 +0800
+Message-ID: <CAK9wHMQ7ZLtMTfBKWOb4A8wmjP9EQV8gA_moh5dXxvU0-b-vMQ@mail.gmail.com>
+Subject: pm runtime and system suspend resume
+From: chao xie <xiechao.linux@gmail.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        pavel@ucw.cz, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this change, regulator_set_voltage_time_sel() can be more generic and not
-limited to linear and table based mapping now.
-One side-effect of this change is that list_voltage() must be implemented.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/core.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 8008c865..e207b21 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2303,8 +2303,7 @@ EXPORT_SYMBOL_GPL(regulator_set_voltage_time);
-  * Provided with the starting and target voltage selectors, this function
-  * returns time in microseconds required to rise or fall to this new voltage
-  *
-- * Drivers providing uV_step or volt_table in their regulator_desc and
-- * ramp_delay in regulation_constraints can use this as their
-+ * Drivers providing ramp_delay in regulation_constraints can use this as their
-  * set_voltage_time_sel() operation.
-  */
- int regulator_set_voltage_time_sel(struct regulator_dev *rdev,
-@@ -2312,6 +2311,7 @@ int regulator_set_voltage_time_sel(struct regulator_dev *rdev,
- 				   unsigned int new_selector)
- {
- 	unsigned int ramp_delay = 0;
-+	int old_volt, new_volt;
- 
- 	if (rdev->constraints->ramp_delay)
- 		ramp_delay = rdev->constraints->ramp_delay;
-@@ -2323,19 +2323,14 @@ int regulator_set_voltage_time_sel(struct regulator_dev *rdev,
- 		return 0;
- 	}
- 
--	if (rdev->desc->uV_step) {
--		return DIV_ROUND_UP(rdev->desc->uV_step *
--				    abs(new_selector - old_selector),
--				    ramp_delay);
--	} else if (rdev->desc->volt_table) {
--		return DIV_ROUND_UP(abs(rdev->desc->volt_table[new_selector] -
--					rdev->desc->volt_table[old_selector]),
--				    ramp_delay);
--	} else {
--		rdev_warn(rdev, "Unsupported voltage mapping settings\n");
--	}
-+	/* sanity check */
-+	if (!rdev->desc->ops->list_voltage)
-+		return -EINVAL;
- 
--	return 0;
-+	old_volt = rdev->desc->ops->list_voltage(rdev, old_selector);
-+	new_volt = rdev->desc->ops->list_voltage(rdev, new_selector);
-+
-+	return DIV_ROUND_UP(abs(new_volt - old_volt), ramp_delay);
- }
- 
- /**
--- 
-1.7.9.5
-
-
-
+hi
+PM_RUNTIME provide a way for device driver do runtime PM. so for some
+devices, they have some surrounded logic. For example, the device may
+get clock from outside, or it need PHY support(USB is a example).
+To get these dependency out of device driver, i define a struct
+dev_pm_domain, and make dev.pm_domain point to it. So in the device
+driver, when the hardware should be enabled, we can call
+pm_runtime_get_sync while when the hardware is idle or does not work,
+we can call pm_runtime_put_sync.
+It seems work well, but i have question about the suspend/resume of
+device. When the whole system will go to deep idle, and it will
+suspend the devices. for the function do device suspend
+__device_suspend, it will call pm_runtime_get_noresume(dev). As i
+think it will make the device not do runtime suspend any more. Is that
+correct?
+There is the question, how device driver handle the logic surrounds
+it? I want to add pm_runtime_put_sync in dev->driver->pm->suspend
+function, and pm_runtime_get_sync in dev->driver->pm->resume. Because
+__device_suspend increase the usage_count, pm_runtime_put_sync will
+not do real work.
+So is that right that i directly call pm_runtime_suspend in
+dev->driver->pm->suspend and pm_runtime_resume in
+dev->driver->pm->resume?
+Thanks.
