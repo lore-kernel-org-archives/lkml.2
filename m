@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2FSSbv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:31:51 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:42392 "EHLO
+	id S1754645Ab2FSSb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:31:56 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:34154 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752858Ab2FSSbu (ORCPT
+	by vger.kernel.org with ESMTP id S1752858Ab2FSSbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:31:50 -0400
-X-Sasl-enc: eNxVIBBaZwD+lyHI9Yhw/mgSz8BUpKp936Mmf43hVawV 1340130415
-Date: Tue, 19 Jun 2012 15:26:52 -0300
+	Tue, 19 Jun 2012 14:31:51 -0400
+X-Sasl-enc: 70KgiJieHEbwMzvtKMDuYeSenmp977LypxZOvuEVWEhN 1340130330
+Date: Tue, 19 Jun 2012 15:25:27 -0300
 From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 To: Borislav Petkov <bp@amd64.org>
 Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,15 +16,16 @@ Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Borislav Petkov <borislav.petkov@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
-Message-ID: <20120619182652.GC18816@khazad-dum.debian.net>
+        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86, microcode: Sanitize per-cpu microcode
+ reloading interface
+Message-ID: <20120619182526.GB18816@khazad-dum.debian.net>
 References: <1340121811-4477-1-git-send-email-bp@amd64.org>
- <1340121811-4477-3-git-send-email-bp@amd64.org>
+ <1340121811-4477-2-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340121811-4477-3-git-send-email-bp@amd64.org>
+In-Reply-To: <1340121811-4477-2-git-send-email-bp@amd64.org>
 X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
  1CDB 0FE3
 User-Agent: Mutt/1.5.20 (2009-06-14)
@@ -35,105 +36,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Tue, 19 Jun 2012, Borislav Petkov wrote:
 > From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> The reload interface should be per-system so that a full system ucode
-> reload happens (on each core) when doing
+> Microcode reloading in a per-core manner is a very bad idea for both
+> major x86 vendors. And the thing is, we have such interface with which
+> we can end up with different microcode versions applied on different
+> cores of an otherwise homogeneous wrt (family,model,stepping) system.
 > 
-> echo 1 > /sys/devices/system/cpu/microcode/reload
+> So turn off the possibility of doing that per core and allow it only
+> system-wide.
 > 
-> Move it to the cpu subsys directory instead of it being per-cpu.
+> This is a minimal fix which we'd like to see in stable too thus the
+> more-or-less arbitrary decision to allow system-wide reloading only on
+> the BSP:
+> 
+> $ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
+> ...
+> 
+> and disable the interface on the other cores:
+> 
+> $ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
+> -bash: echo: write error: Invalid argument
+> 
+> Also, allowing the reload only from one CPU (the BSP in
+> that case) doesn't allow the reload procedure to degenerate
+> into an O(n^2) deal when triggering reloads from all
+> /sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
+> simultaneously.
+> 
+> A more generic fix will follow.
 > 
 > Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 > Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: stable@vger.kernel.org
 > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Tested-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-We will use /sys/devices/system/cpu/microcode/reload in Debian.
+Tested on Intel Xeon X5550.  Tested as a (trivial) 3.0-stable backport.
 
 > ---
->  arch/x86/kernel/microcode_core.c | 32 ++++++++++++++++++++++++++++----
->  1 file changed, 28 insertions(+), 4 deletions(-)
+>  arch/x86/kernel/microcode_core.c | 26 +++++++++++++++++++-------
+>  1 file changed, 19 insertions(+), 7 deletions(-)
 > 
 > diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-> index 24b852b61be3..4c6f3b37ed3c 100644
+> index fbdfc6917180..24b852b61be3 100644
 > --- a/arch/x86/kernel/microcode_core.c
 > +++ b/arch/x86/kernel/microcode_core.c
-> @@ -351,7 +351,6 @@ static DEVICE_ATTR(version, 0400, version_show, NULL);
->  static DEVICE_ATTR(processor_flags, 0400, pf_show, NULL);
->  
->  static struct attribute *mc_default_attrs[] = {
-> -	&dev_attr_reload.attr,
->  	&dev_attr_version.attr,
->  	&dev_attr_processor_flags.attr,
->  	NULL
-> @@ -528,6 +527,16 @@ static const struct x86_cpu_id microcode_id[] = {
->  MODULE_DEVICE_TABLE(x86cpu, microcode_id);
->  #endif
->  
-> +static struct attribute *cpu_root_microcode_attrs[] = {
-> +	&dev_attr_reload.attr,
-> +	NULL
-> +};
-> +
-> +static struct attribute_group cpu_root_microcode_group = {
-> +	.name  = "microcode",
-> +	.attrs = cpu_root_microcode_attrs,
-> +};
-> +
->  static int __init microcode_init(void)
+> @@ -298,19 +298,31 @@ static ssize_t reload_store(struct device *dev,
+>  			    const char *buf, size_t size)
 >  {
->  	struct cpuinfo_x86 *c = &cpu_data(0);
-> @@ -559,9 +568,17 @@ static int __init microcode_init(void)
->  	if (error)
->  		goto out_pdev;
->  
-> +	error = sysfs_create_group(&cpu_subsys.dev_root->kobj,
-> +				   &cpu_root_microcode_group);
+>  	unsigned long val;
+> -	int cpu = dev->id;
+> -	ssize_t ret = 0;
+> +	int cpu;
+> +	ssize_t ret = 0, tmp_ret;
 > +
-> +	if (error) {
-> +		pr_err("Error creating microcode group!\n");
-> +		goto out_driver;
-> +	}
+> +	/* allow reload only from the BSP */
+> +	if (boot_cpu_data.cpu_index != dev->id)
+> +		return -EINVAL;
+>  
+>  	ret = kstrtoul(buf, 0, &val);
+>  	if (ret)
+>  		return ret;
+>  
+> -	if (val == 1) {
+> -		get_online_cpus();
+> -		if (cpu_online(cpu))
+> -			ret = reload_for_cpu(cpu);
+> -		put_online_cpus();
+> +	if (val != 1)
+> +		return size;
 > +
->  	error = microcode_dev_init();
->  	if (error)
-> -		goto out_driver;
-> +		goto out_ucode_group;
->  
->  	register_syscore_ops(&mc_syscore_ops);
->  	register_hotcpu_notifier(&mc_cpu_notifier);
-> @@ -571,7 +588,11 @@ static int __init microcode_init(void)
->  
->  	return 0;
->  
-> -out_driver:
-> + out_ucode_group:
-> +	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
-> +			   &cpu_root_microcode_group);
+> +	get_online_cpus();
+> +	for_each_online_cpu(cpu) {
+> +		tmp_ret = reload_for_cpu(cpu);
+> +		if (tmp_ret != 0)
+> +			pr_warn("Error reloading microcode on CPU %d\n", cpu);
 > +
-> + out_driver:
->  	get_online_cpus();
->  	mutex_lock(&microcode_mutex);
+> +		/* save retval of the first encountered reload error */
+> +		if (!ret)
+> +			ret = tmp_ret;
+>  	}
+> +	put_online_cpus();
 >  
-> @@ -580,7 +601,7 @@ out_driver:
->  	mutex_unlock(&microcode_mutex);
->  	put_online_cpus();
->  
-> -out_pdev:
-> + out_pdev:
->  	platform_device_unregister(microcode_pdev);
->  	return error;
->  
-> @@ -596,6 +617,9 @@ static void __exit microcode_exit(void)
->  	unregister_hotcpu_notifier(&mc_cpu_notifier);
->  	unregister_syscore_ops(&mc_syscore_ops);
->  
-> +	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
-> +			   &cpu_root_microcode_group);
-> +
->  	get_online_cpus();
->  	mutex_lock(&microcode_mutex);
->  
+>  	if (!ret)
+>  		ret = size;
 
 -- 
   "One disk to rule them all, One disk to find them. One disk to bring
