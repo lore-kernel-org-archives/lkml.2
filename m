@@ -1,198 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab2FSCKB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 22:10:01 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:40360 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab2FSCJ7 (ORCPT
+	id S1752313Ab2FSCLd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 22:11:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52564 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab2FSCLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 22:09:59 -0400
-Message-ID: <1340071797.1666.24.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Borislav Petkov <bp@alien8.de>, Alan Stern <stern@rowland.harvard.edu>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Date: Tue, 19 Jun 2012 12:09:57 +1000
-In-Reply-To: <201206182328.19811.rjw@sisk.pl>
-References: <90304ca8-31ef-4919-bf9d-e0498b0de87b@email.android.com>
-	 <201206182229.32055.rjw@sisk.pl>
-	 <8c993882-5949-471d-a15c-0c91d3d2deb9@email.android.com>
-	 <201206182328.19811.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.2 (3.4.2-1.fc17) 
-Mime-Version: 1.0
+	Mon, 18 Jun 2012 22:11:31 -0400
+Message-ID: <4FDFDFCE.9010307@gmail.com>
+Date: Tue, 19 Jun 2012 10:11:26 +0800
+From: "gnehzuil.lzheng@gmail.com" <gnehzuil.lzheng@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, util-linux@vger.kernel.org
+Subject: Re: Why does ionice(1) ban the user to set back to 'none' class?
+References: <20120618114841.GA4855@gmail.com> <4FDF2D10.9050008@kernel.dk>
+In-Reply-To: <4FDF2D10.9050008@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-18 at 23:28 +0200, Rafael J. Wysocki wrote:
-> I think I'd prefer a full status line every 10%.  Or even maybe every
-> 20%.
+[CC'd to util-linux mailing list]
 
-Here is one that does a line every 10%:
-----------------
- kernel/power/swap.c |   51 ++++++++++++++++++++++++---------------------------
- 1 file changed, 24 insertions(+), 27 deletions(-)
+On 06/18/2012 09:28 PM, Jens Axboe wrote:
 
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 11e22c0..314fd75 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -448,9 +448,9 @@ static int save_image(struct swap_map_handle *handle,
- 	struct timeval start;
- 	struct timeval stop;
- 
--	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
-+	printk(KERN_INFO "PM: Saving image data pages (%u pages)...\n",
- 		nr_to_write);
--	m = nr_to_write / 100;
-+	m = nr_to_write / 10;
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
-@@ -464,7 +464,8 @@ static int save_image(struct swap_map_handle *handle,
- 		if (ret)
- 			break;
- 		if (!(nr_pages % m))
--			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
-+			printk(KERN_INFO "PM: Saved %3d%%...\n",
-+			       nr_pages / m * 10);
- 		nr_pages++;
- 	}
- 	err2 = hib_wait_on_bio_chain(&bio);
-@@ -472,9 +473,7 @@ static int save_image(struct swap_map_handle *handle,
- 	if (!ret)
- 		ret = err2;
- 	if (!ret)
--		printk(KERN_CONT "\b\b\b\bdone\n");
--	else
--		printk(KERN_CONT "\n");
-+		printk(KERN_INFO "PM: Saving image done.\n");
- 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
- 	return ret;
- }
-@@ -668,9 +667,9 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 
- 	printk(KERN_INFO
- 		"PM: Using %u thread(s) for compression.\n"
--		"PM: Compressing and saving image data (%u pages) ...     ",
-+		"PM: Compressing and saving image data (%u pages)...\n",
- 		nr_threads, nr_to_write);
--	m = nr_to_write / 100;
-+	m = nr_to_write / 10;
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
-@@ -690,8 +689,8 @@ static int save_image_lzo(struct swap_map_handle *handle,
- 				       data_of(*snapshot), PAGE_SIZE);
- 
- 				if (!(nr_pages % m))
--					printk(KERN_CONT "\b\b\b\b%3d%%",
--				               nr_pages / m);
-+					printk(KERN_INFO "PM: Saved %3d%%...\n",
-+				               nr_pages / m * 10);
- 				nr_pages++;
- 			}
- 			if (!off)
-@@ -761,11 +760,8 @@ out_finish:
- 	do_gettimeofday(&stop);
- 	if (!ret)
- 		ret = err2;
--	if (!ret) {
--		printk(KERN_CONT "\b\b\b\bdone\n");
--	} else {
--		printk(KERN_CONT "\n");
--	}
-+	if (!ret)
-+		printk(KERN_INFO "PM: Saving image done.\n");
- 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
- out_clean:
- 	if (crc) {
-@@ -973,9 +969,9 @@ static int load_image(struct swap_map_handle *handle,
- 	int err2;
- 	unsigned nr_pages;
- 
--	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
-+	printk(KERN_INFO "PM: Loading image data pages (%u pages)...\n",
- 		nr_to_read);
--	m = nr_to_read / 100;
-+	m = nr_to_read / 10;
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
-@@ -993,7 +989,8 @@ static int load_image(struct swap_map_handle *handle,
- 		if (ret)
- 			break;
- 		if (!(nr_pages % m))
--			printk("\b\b\b\b%3d%%", nr_pages / m);
-+			printk(KERN_INFO "PM: Loaded %3d%%...\n",
-+			       nr_pages / m * 10);
- 		nr_pages++;
- 	}
- 	err2 = hib_wait_on_bio_chain(&bio);
-@@ -1001,12 +998,11 @@ static int load_image(struct swap_map_handle *handle,
- 	if (!ret)
- 		ret = err2;
- 	if (!ret) {
--		printk("\b\b\b\bdone\n");
-+		printk(KERN_INFO "PM: Loading image done.\n");
- 		snapshot_write_finalize(snapshot);
- 		if (!snapshot_image_loaded(snapshot))
- 			ret = -ENODATA;
--	} else
--		printk("\n");
-+	}
- 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
- 	return ret;
- }
-@@ -1185,9 +1181,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
- 
- 	printk(KERN_INFO
- 		"PM: Using %u thread(s) for decompression.\n"
--		"PM: Loading and decompressing image data (%u pages) ...     ",
-+		"PM: Loading and decompressing image data (%u pages)...\n",
- 		nr_threads, nr_to_read);
--	m = nr_to_read / 100;
-+	m = nr_to_read / 10;
- 	if (!m)
- 		m = 1;
- 	nr_pages = 0;
-@@ -1319,7 +1315,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
- 				       data[thr].unc + off, PAGE_SIZE);
- 
- 				if (!(nr_pages % m))
--					printk("\b\b\b\b%3d%%", nr_pages / m);
-+					printk(KERN_INFO
-+					       "PM: Loaded %3d%%...\n",
-+					       nr_pages / m * 10);
- 				nr_pages++;
- 
- 				ret = snapshot_write_next(snapshot);
-@@ -1344,7 +1342,7 @@ out_finish:
- 	}
- 	do_gettimeofday(&stop);
- 	if (!ret) {
--		printk("\b\b\b\bdone\n");
-+		printk(KERN_INFO "PM: Loading image done.\n");
- 		snapshot_write_finalize(snapshot);
- 		if (!snapshot_image_loaded(snapshot))
- 			ret = -ENODATA;
-@@ -1357,8 +1355,7 @@ out_finish:
- 				}
- 			}
- 		}
--	} else
--		printk("\n");
-+	}
- 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
- out_clean:
- 	for (i = 0; i < ring_size; i++)
-----------------
+> On 06/18/2012 01:48 PM, Zheng Liu wrote:
+>> Hi Jens,
+>>
+>> I meet a problem when I use ionice(1) to adjust a process's io priority.
+>> I do the following operations:
+>>
+>> $ ionice -p${pid}
+>> none: prio 0
+>> $ ionice -p${pid} -c2 -n4
+>> $ ionice -p${pid}
+>> best-effort: prio 4
+>> $ ionice -p${pid} -c0 -n0
+>> $ ionice -p${pid}
+>> best-effort: prio 0
+>>
+>> So I cannot set scheduling class back to 'none'.  If I call ioprio_set(2)
+>> directly, it will be fine.  But if I use ionice(1), I cannot change it.  I
+>> read the docs about ionice in [1].  I notice this code:
+>>
+>> switch (ioprio_class) {
+>> 	case IOPRIO_CLASS_NONE:
+>> 		ioprio_class = IOPRIO_CLASS_BE;
+>>                                ^^^^^^^^^^^^^^^^
+>>                                *It means that we cannot set back to none.*
+>> 		break;
+>> 	case IOPRIO_CLASS_RT:
+>> 	case IOPRIO_CLASS_BE:
+>> 		break;
+>> 	case IOPRIO_CLASS_IDLE:
+>> 		ioprio = 7;
+>> 		break;
+>> 	default:
+>> 		printf("bad prio class %d\n", ioprio_class);
+>> 		return 1;
+>> }
+>>
+>> My question is why we need to ban the user to set back to 'none'.  Is there
+>> some reasons?  Thank you.
+> 
+> The kernel code does allow it, so it's only in the tool that this
+> restriction exists. I don't think we have a particularly good reason to
+> have it there. This is a tools question, though, not a kernel issue. I
+> suggest you take it up with the util-linux crew. I'm fine with removing
+> this restriction from ionice, especially since you could just roll your
+> own that did it.
+> 
 
--- 
-Bojan
 
+Thanks for your reply.  Hopefully we can get some feedbacks from
+util-linux crew.
+
+Regards,
+Zheng
