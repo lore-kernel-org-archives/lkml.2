@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab2FSP55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:57:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53678 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751508Ab2FSP5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:57:55 -0400
-Message-ID: <4FE0A160.9080103@zytor.com>
-Date: Tue, 19 Jun 2012 08:57:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-References: <20120615123749.GC6083@aftab.osrc.amd.com> <1339764161.2559.63.camel@twins> <20120615125240.GD6083@aftab.osrc.amd.com> <20120615165231.GA9169@aftab.osrc.amd.com> <20120619024639.GB6186@khazad-dum.debian.net> <4FDFF27C.5000205@zytor.com> <20120619051116.GB31591@aftab.osrc.amd.com> <1340093864.21745.6.camel@twins> <20120619102250.GA787@aftab.osrc.amd.com> <1340101568.21745.37.camel@twins> <20120619150619.GD1427@aftab.osrc.amd.com>
-In-Reply-To: <20120619150619.GD1427@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754555Ab2FSQB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 12:01:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19090 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab2FSQB5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 12:01:57 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=3ldaAh72wi8L6emFg5wA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340121714.27036.5.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.0.35-rt56
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 19 Jun 2012 12:01:54 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2012 08:06 AM, Borislav Petkov wrote:
-> 
-> Now we load the ucode driver very early if it is built-in (look at
-> printk timestamps):
-> 
-> [    3.651275] microcode: CPU0: patch_level=0x010000c4
-> [    3.664943] microcode: CPU1: patch_level=0x010000c4
-> [    3.670177] microcode: CPU2: patch_level=0x010000c4
-> [    3.675407] microcode: CPU3: patch_level=0x010000c4
-> ...
-> 
-> and then later, when we have userspace, we can use the reload thing to
-> re-request microcode. Which is also fine, I guess.
-> 
 
-Right, although we can push it much, much earlier than that.
+Dear RT Folks,
 
-	-hpa
+I'm pleased to announce the 3.0.35-rt56 stable release.
+
+
+This release is just an update to the new stable 3.0.35 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: b6bf2da8840ae58c746f970cfa85fd9070440fd0
+
+
+Or to build 3.0.35-rt56 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.35.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.35-rt56.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
