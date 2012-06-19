@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab2FSOjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 10:39:08 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13310 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754395Ab2FSOi1 (ORCPT
+	id S1754469Ab2FSOjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 10:39:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37856 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306Ab2FSOjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 10:38:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 19 Jun 2012 07:38:13 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <arnd@arndb.de>, <linus.walleij@linaro.org>,
-        <lrg@ti.com>, <lee.jones@linaro.org>, <swarren@wwwdotorg.org>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 0/3] regulator: dt: add policy to match regulator with prop "regulator-compatible"
-Date: Tue, 19 Jun 2012 19:58:16 +0530
-Message-ID: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Tue, 19 Jun 2012 10:39:45 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, namhyung.kim@lge.com,
+        mingo@kernel.org, peterz@infradead.org
+Subject: Re: [RFC PATCH 0/2] libtraceevent/perf: Add support for trace-cmd plugins
+References: <1339695333-64591-1-git-send-email-dsahern@gmail.com>
+	<87lijlhv9v.fsf@sejong.aot.lge.com> <4FDF3D5C.1030209@gmail.com>
+	<87d34wi0y3.fsf@sejong.aot.lge.com>
+	<1340067793.25903.158.camel@gandalf.stny.rr.com>
+	<878vfkhzr8.fsf@sejong.aot.lge.com>
+	<1340069162.25903.176.camel@gandalf.stny.rr.com>
+	<874nq8hyfa.fsf@sejong.aot.lge.com>
+	<1340072171.25903.181.camel@gandalf.stny.rr.com>
+	<87vcinhn90.fsf@sejong.aot.lge.com>
+	<1340106882.25903.206.camel@gandalf.stny.rr.com>
+Date: Tue, 19 Jun 2012 23:39:34 +0900
+In-Reply-To: <1340106882.25903.206.camel@gandalf.stny.rr.com> (Steven
+	Rostedt's message of "Tue, 19 Jun 2012 07:54:42 -0400")
+Message-ID: <87vcin9xi1.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on the discussion on patch
- [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
+On Tue, 19 Jun 2012 07:54:42 -0400, Steven Rostedt wrote:
+> We could simply check if all the characters in the array passes
+> 'isprint()' and if it does then print the string, otherwise print the
+> hex. Do this for all events, and if it one fails, then mark it always to
+> print hex.
+>
 
-and patch V1 of this series:
-add policy to match regulator with the property of "regulator-compatible" of each
-child regulator node with their hardware counterparts name.
-Modify documentation as well to reflect this change and dts files.
+Ok, checking it at parse time is not possible because we cannot access
+to its data. You meant something like this?
 
-Changes from V1:
-- Modify the existing of_regulator_match() to use the property 
-  "regulator-compatible" of each child node of regulator for
-   matching rather than child node name.
-- Documentation change to reflect this policy who are using the
-  of_regulator_match().
-- Modify the dts file to absorb this policy.
 
-Laxman Dewangan (3):
-  regulator: dt: regulator match by regulator-compatible
-  regulator: dt: add policy to have property "regulator-compatible"
-  ARM: dts: db8500: add node property "regulator-compatible" regulator
-    node
-
- Documentation/devicetree/bindings/mfd/tps65910.txt |   54 ++++++--
- .../devicetree/bindings/regulator/tps6586x.txt     |   60 +++++++---
- arch/arm/boot/dts/db8500.dtsi                      |  128 +++++++++++++++-----
- drivers/regulator/of_regulator.c                   |   50 +++++---
- 4 files changed, 215 insertions(+), 77 deletions(-)
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 853b604b6240..7dae44b74e0b 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -3655,6 +3655,16 @@ static void print_mac_arg(struct trace_seq *s, int mac, void *data, int size,
+        trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+ }
+ 
++static int is_printable_array(char *p, unsigned int len)
++{
++       unsigned int i;
++
++       for (i = 0; i < len && p[i]; i++)
++               if (!isprint(p[i]))
++                       return 0;
++       return 1;
++}
++
+ static void print_event_fields(struct trace_seq *s, void *data, int size,
+                               struct event_format *event)
+ {
+@@ -3674,7 +3684,8 @@ static void print_event_fields(struct trace_seq *s, void *data, int size,
+                                len = offset >> 16;
+                                offset &= 0xffff;
+                        }
+-                       if (field->flags & FIELD_IS_STRING) {
++                       if ((field->flags & FIELD_IS_STRING) &&
++                           is_printable_array(data + offset, len)) {
+                                trace_seq_printf(s, "%s", (char *)data + offset);
+                        } else {
+                                trace_seq_puts(s, "ARRAY[");
+@@ -3685,6 +3696,7 @@ static void print_event_fields(struct trace_seq *s, void *data, int size,
+                                                         *((unsigned char *)data + offset + i));
+                                }
+                                trace_seq_putc(s, ']');
++                               field->flags &= ~FIELD_IS_STRING;
+                        }
+                } else {
+                        val = pevent_read_number(event->pevent, data + field->offset,
 
