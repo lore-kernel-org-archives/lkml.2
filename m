@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2FSCS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 22:18:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43936 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab2FSCSW (ORCPT
+	id S1754059Ab2FSCSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 22:18:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50286 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab2FSCSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 22:18:22 -0400
+	Mon, 18 Jun 2012 22:18:34 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -21,9 +21,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 5/7] pstore/ram_core: Get rid of prz->ecc_symsize and prz->ecc_poly
-Date: Mon, 18 Jun 2012 19:15:54 -0700
-Message-Id: <1340072156-6225-5-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 7/7] pstore/ram_core: Get rid of prz->ecc enable/disable flag
+Date: Mon, 18 Jun 2012 19:15:56 -0700
+Message-Id: <1340072156-6225-7-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <20120619021050.GA19387@lizard>
 References: <20120619021050.GA19387@lizard>
@@ -31,64 +31,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The struct members were never used anywhere outside of
-persistent_ram_init_ecc(), so there's actually no need for them
-to be in the struct.
-
-If we ever want to make polynomial or symbol size configurable,
-it would make more sense to just pass initialized rs_decoder
-to the persistent_ram init functions.
+Nowadays we can use prz->ecc_size as a flag, no need for the special
+member in the prz struct.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- fs/pstore/ram_core.c       |    7 +++----
- include/linux/pstore_ram.h |    2 --
- 2 files changed, 3 insertions(+), 6 deletions(-)
+ fs/pstore/ram_core.c       |   10 ++++------
+ include/linux/pstore_ram.h |    1 -
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
 diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index a5a7b13..3f4d6e6 100644
+index 7e5a2a9..4dabbb8 100644
 --- a/fs/pstore/ram_core.c
 +++ b/fs/pstore/ram_core.c
-@@ -177,14 +177,14 @@ static int persistent_ram_init_ecc(struct persistent_ram_zone *prz)
- 	struct persistent_ram_buffer *buffer = prz->buffer;
- 	int ecc_blocks;
- 	size_t ecc_total;
-+	int ecc_symsize = 8;
-+	int ecc_poly = 0x11d;
+@@ -114,7 +114,7 @@ static void notrace persistent_ram_update_ecc(struct persistent_ram_zone *prz,
+ 	int ecc_size = prz->ecc_size;
+ 	int size = prz->ecc_block_size;
  
- 	if (!prz->ecc)
+-	if (!prz->ecc)
++	if (!prz->ecc_size)
+ 		return;
+ 
+ 	block = buffer->data + (start & ~(ecc_block_size - 1));
+@@ -133,7 +133,7 @@ static void persistent_ram_update_header_ecc(struct persistent_ram_zone *prz)
+ {
+ 	struct persistent_ram_buffer *buffer = prz->buffer;
+ 
+-	if (!prz->ecc)
++	if (!prz->ecc_size)
+ 		return;
+ 
+ 	persistent_ram_encode_rs8(prz, (uint8_t *)buffer, sizeof(*buffer),
+@@ -146,7 +146,7 @@ static void persistent_ram_ecc_old(struct persistent_ram_zone *prz)
+ 	uint8_t *block;
+ 	uint8_t *par;
+ 
+-	if (!prz->ecc)
++	if (!prz->ecc_size)
+ 		return;
+ 
+ 	block = buffer->data;
+@@ -181,7 +181,7 @@ static int persistent_ram_init_ecc(struct persistent_ram_zone *prz,
+ 	int ecc_symsize = 8;
+ 	int ecc_poly = 0x11d;
+ 
+-	if (!prz->ecc)
++	if (!ecc_size)
  		return 0;
  
  	prz->ecc_block_size = 128;
- 	prz->ecc_size = 16;
--	prz->ecc_symsize = 8;
--	prz->ecc_poly = 0x11d;
+@@ -395,8 +395,6 @@ static int __devinit persistent_ram_post_init(struct persistent_ram_zone *prz,
+ {
+ 	int ret;
  
- 	ecc_blocks = DIV_ROUND_UP(prz->buffer_size, prz->ecc_block_size);
- 	ecc_total = (ecc_blocks + 1) * prz->ecc_size;
-@@ -202,8 +202,7 @@ static int persistent_ram_init_ecc(struct persistent_ram_zone *prz)
- 	 * first consecutive root is 0
- 	 * primitive element to generate roots = 1
- 	 */
--	prz->rs_decoder = init_rs(prz->ecc_symsize, prz->ecc_poly, 0, 1,
--				  prz->ecc_size);
-+	prz->rs_decoder = init_rs(ecc_symsize, ecc_poly, 0, 1, prz->ecc_size);
- 	if (prz->rs_decoder == NULL) {
- 		pr_info("persistent_ram: init_rs failed\n");
- 		return -EINVAL;
+-	prz->ecc = ecc_size;
+-
+ 	ret = persistent_ram_init_ecc(prz, ecc_size);
+ 	if (ret)
+ 		return ret;
 diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index e681af9..a0975c0 100644
+index 94b79f1..dcf805f 100644
 --- a/include/linux/pstore_ram.h
 +++ b/include/linux/pstore_ram.h
-@@ -41,8 +41,6 @@ struct persistent_ram_zone {
- 	int bad_blocks;
- 	int ecc_block_size;
- 	int ecc_size;
--	int ecc_symsize;
--	int ecc_poly;
+@@ -33,7 +33,6 @@ struct persistent_ram_zone {
+ 	size_t buffer_size;
  
- 	char *old_log;
- 	size_t old_log_size;
+ 	/* ECC correction */
+-	bool ecc;
+ 	char *par_buffer;
+ 	char *par_header;
+ 	struct rs_control *rs_decoder;
 -- 
 1.7.10.4
 
