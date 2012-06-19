@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab2FSXUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 19:20:47 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:27713 "EHLO
+	id S1755258Ab2FSXVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 19:21:43 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:49103 "EHLO
 	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab2FSXUq (ORCPT
+	with ESMTP id S1754909Ab2FSXUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 19:20:46 -0400
+	Tue, 19 Jun 2012 19:20:47 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-160.messagelabs.com!1340148028!7218327!8
+X-Msg-Ref: server-15.tower-160.messagelabs.com!1340148028!7218327!10
 X-Originating-IP: [216.166.12.31]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/5] staging: comedi: remove CONFIG_COMEDI_PCI define
-Date: Tue, 19 Jun 2012 16:20:23 -0700
+Subject: [PATCH v2 5/5] staging: comedi: Kconfig: remove redundant depends on tests
+Date: Tue, 19 Jun 2012 16:20:31 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,57 +23,46 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201206191620.24205.hartleys@visionengravers.com>
+Message-ID: <201206191620.31551.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_COMEDI_PCI is not actually a Kconfig option. It is defined
-in the comedidev.h header based on another Kconfig option being
-enabled.
+The 'depends on COMEDI_ISA_DRIVERS' for COMEDI_AMPLC_DIO200_ISA is
+not needed. This option is alread in an if/endif block that will
+satisy the check.
 
-It is only referenced in the skel driver to conditionally compile
-in the PCI support code. Use the CONFIG_COMEDI_PCI_DRIVERS Kconfig
-option instead and remove the define.
+The 'depends on COMEDI' for COMEDI_NI_COMMON was missed when all
+the comedi options were wrapped in an if/endif block.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-hartman <gregkh@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/comedidev.h    | 7 -------
- drivers/staging/comedi/drivers/skel.c | 2 +-
- 2 files changed, 1 insertion(+), 8 deletions(-)
+ drivers/staging/comedi/Kconfig | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-index c93c87d..18f8f4c 100644
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -507,11 +507,4 @@ int comedi_usb_auto_config(struct usb_interface *intf,
- 			   struct comedi_driver *driver);
- void comedi_usb_auto_unconfig(struct usb_interface *intf);
+diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+index 974c668..0415520 100644
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -213,7 +213,6 @@ config COMEDI_PCM3730
+ config COMEDI_AMPLC_DIO200_ISA
+ 	tristate "Amplicon PC212E/PC214E/PC215E/PC218E/PC272E"
+ 	select COMEDI_AMPLC_DIO200
+-	depends on COMEDI_ISA_DRIVERS
+ 	---help---
+ 	  Enable support for Amplicon PC212E, PC214E, PC215E, PC218E and
+ 	  PC272E ISA DIO boards
+@@ -1236,7 +1235,6 @@ endif # COMEDI_USB_DRIVERS
  
--#ifdef CONFIG_COMEDI_PCI_DRIVERS
--#define CONFIG_COMEDI_PCI
--#endif
--#ifdef CONFIG_COMEDI_PCI_DRIVERS_MODULE
--#define CONFIG_COMEDI_PCI
--#endif
--
- #endif /* _COMEDIDEV_H */
-diff --git a/drivers/staging/comedi/drivers/skel.c b/drivers/staging/comedi/drivers/skel.c
-index 92d44c1..a9fed4b 100644
---- a/drivers/staging/comedi/drivers/skel.c
-+++ b/drivers/staging/comedi/drivers/skel.c
-@@ -614,7 +614,7 @@ static int skel_dio_insn_config(struct comedi_device *dev,
- 	return insn->n;
- }
- 
--#ifdef CONFIG_COMEDI_PCI
-+#ifdef CONFIG_COMEDI_PCI_DRIVERS
- static int __devinit driver_skel_pci_probe(struct pci_dev *dev,
- 					   const struct pci_device_id *ent)
- {
+ menuconfig COMEDI_NI_COMMON
+ 	tristate "Comedi National Instruments card support"
+-	depends on COMEDI
+ 	---help---
+ 	  Enable comedi support for National Instruments cards.
+ 	  Modules in this section are used by many comedi NI drivers.
 -- 
 1.7.11
 
