@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab2FSMkk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 08:40:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51387 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab2FSMki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 08:40:38 -0400
-Date: Tue, 19 Jun 2012 14:40:36 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/2] memcg: remove -EINTR at rmdir()
-Message-ID: <20120619124036.GB22254@tiehlicka.suse.cz>
-References: <4FDF17A3.9060202@jp.fujitsu.com>
- <20120618133012.GB2313@tiehlicka.suse.cz>
- <4FDFC34B.3010003@jp.fujitsu.com>
+	id S1754385Ab2FSMlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 08:41:32 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46987 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754266Ab2FSMlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 08:41:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FDFC34B.3010003@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5ha9zz97zw.wl%tiwai@suse.de>
+References: <1339444731-15678-1-git-send-email-elezegarcia@gmail.com>
+	<1339444731-15678-2-git-send-email-elezegarcia@gmail.com>
+	<s5h8vfkn2bb.wl%tiwai@suse.de>
+	<CALF0-+Ukw2+whn5zpA4R6PjN0BoLm5aUhQKUNQt0rpWM1vNXFA@mail.gmail.com>
+	<s5ha9zz97zw.wl%tiwai@suse.de>
+Date: Tue, 19 Jun 2012 09:41:30 -0300
+Message-ID: <CALF0-+WxqMmoPMGjMZBBiKq2NR5qPESo6mA0B4MPhdyc_KUNsw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] swarm_cs4297: Rename AC97 registers to use
+ sound/ac97_codec.h definitions
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Ralf Baechle <ralf@linux-mips.org>, Jaroslav Kysela <perex@perex.cz>,
+        Clemens Ladisch <clemens@ladisch.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 19-06-12 09:09:47, KAMEZAWA Hiroyuki wrote:
-> (2012/06/18 22:30), Michal Hocko wrote:
-> > On Mon 18-06-12 20:57:23, KAMEZAWA Hiroyuki wrote:
-> >> 2 follow-up patches for "memcg: move charges to root cgroup if use_hierarchy=0",
-> >> developped/tested onto memcg-devel tree. Maybe no HUNK with -next and -mm....
-> >> -Kame
-> >> ==
-> >> memcg: remove -EINTR at rmdir()
-> >>
-> >> By commit "memcg: move charges to root cgroup if use_hierarchy=0",
-> >> no memory reclaiming will occur at removing memory cgroup.
-> > 
-> > OK, so the there are only 2 reasons why move_parent could fail in this
-> > path. 1) it races with somebody else who is uncharging or moving the
-> > charge and 2) THP split.
-> > 1) works for us and 2) doens't seem to be serious enough to expect that
-> > it would stall rmdir on the group for unbound amount of time so the
-> > change is safe (can we make this into the changelog please?).
-> > 
-> 
-> Yes. But the failure of move_parent() (-EBUSY) will be retried.
-> 
-> Remaining problems are
->  - attaching task while pre_destroy() is called.
->  - creating child cgroup while pre_destroy() is called.
+On Tue, Jun 19, 2012 at 2:38 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Mon, 18 Jun 2012 14:50:53 -0300,
+> Ezequiel Garcia wrote:
+>>
+>> Hi Takashi,
+>>
+>> On Mon, Jun 18, 2012 at 11:04 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Mon, 11 Jun 2012 16:58:50 -0300,
+>> > Ezequiel Garcia wrote:
+>> >>
+>> >> This patch removes the last usage of linux/ac97_codec.h
+>> >> by renaming ac97 registers to use sound/ac97_codec.h definitions.
+>> >> This will enable us to remove linux/ac97_codec.h.
+>> >>
+>> >> Not even compilation tested.
+>> >>
+>> >> Cc: Ralf Baechle <ralf@linux-mips.org>
+>> >> Cc: Jaroslav Kysela <perex@perex.cz>
+>> >> Cc: Takashi Iwai <tiwai@suse.de>
+>> >> Cc: Clemens Ladisch <clemens@ladisch.de>
+>> >> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+>> >> ---
+>> >> Hi all,
+>> >>
+>> >> This patch is important so we can remove linux/ac97_codec.h usage.
+>> >> Since this driver is mips related, I can't test it until I install
+>> >> a mips toolchain.
+>> >> If someone can compile this for me, or even test it with real
+>> >> hardware I think it would be better.
+>> >> If not then I can install a mips toolchain and compile it myself,
+>> >> but I won't be able to test it on real hardware.
+>> >>
+>> >> This patch should be treated with carefully and be applied only
+>> >> if someone manages to test it.
+>> >
+>> > A slight concern by this change is that the driver includes
+>> > sound/ac97_codec.h although it's based on OSS framework.
+>> > sound/ac97_codec.h is the header for ALSA ac97 structs, and this can't
+>> > be mixed up with OSS.
+>> >
+>> > If the intention is only about AC97 register definition, we may split
+>> > ac97_codec.h into ac97_regs.h and ac97_codecs.h where the former
+>> > contains only the register definitions (thus framework-neutral) and
+>> > the latter includes the former.
+>> >
+>> >
+>>
+>> Yes, splitting sounds good to me. It could be useful for other ac97
+>> drivers (e.g. em28xx).
 
-I don't know why but I thought that tasks and subgroups are not alowed
-when pre_destroy is called. If this is possible then we probably want to
-check for pending signals or at least add cond_resched.
+On a second thought, I'm not sure splitting the header is the best way
+to proceed. Since swarm just uses some AC97 register definition
+maybe we could just duplicate those (less than ten) macros in swarm
+c file.
 
-> 
-> I think I need to make a patch for cgroup layer as I previously posted.
-> I'd like to try again.
-> 
-> Thanks,
-> -Kame
-> 
+It's a less intrusive aproach and it allows us to remove the unused
+linux/ac97_codec.h.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Regards,
+Ezequiel.
