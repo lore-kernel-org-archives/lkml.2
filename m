@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab2FSPw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:52:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1664 "EHLO mx1.redhat.com"
+	id S1754666Ab2FSPtk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 11:49:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23028 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754779Ab2FSPuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:50:20 -0400
+	id S1754650Ab2FSPth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 11:49:37 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,276 +14,79 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 22/23] perf, tool: Add dso data caching
-Date: Tue, 19 Jun 2012 17:48:13 +0200
-Message-Id: <1340120894-9465-23-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 06/23] perf: Add perf_output_skip function to skip bytes in sample
+Date: Tue, 19 Jun 2012 17:47:57 +0200
+Message-Id: <1340120894-9465-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding dso data caching so we dont need to open/read/close,
-each time we want dso data.
+Introducing perf_output_skip function to be able to skip
+data within the perf ring buffer.
 
-The DSO data caching affects following functions:
-  dso__data_read_offset
-  dso__data_read_addr
+When writing data into perf ring buffer we first reserve needed
+place in ring buffer and then copy the actual data.
 
-Each DSO read tries to find the data (based on offset) inside
-the cache. If it's not present it fills the cache from file,
-and returns the data. If it is present, data are returned
-with no file read.
+There's a possibility we won't be able to fill all the reserved
+size with data, so we need a way to skip the remaining bytes.
 
-Each data read is cached by reading cache page sized/alligned
-amount of DSO data. The cache page size is hardcoded to 4096.
-The cache is using RB tree with file offset as a sort key.
+This is going to be usefull when storing the user stack dump,
+where we might end up with less data than we originally requested.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/symbol.c |  154 ++++++++++++++++++++++++++++++++++++++++------
- tools/perf/util/symbol.h |   11 +++
- 2 files changed, 147 insertions(+), 18 deletions(-)
+ include/linux/perf_event.h  |    2 ++
+ kernel/events/internal.h    |    4 ++++
+ kernel/events/ring_buffer.c |    6 ++++++
+ 3 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 59012fc..8a66cce 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -29,6 +29,7 @@
- #define NT_GNU_BUILD_ID 3
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index cd40669..024a822 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1303,6 +1303,8 @@ extern int perf_output_begin(struct perf_output_handle *handle,
+ extern void perf_output_end(struct perf_output_handle *handle);
+ extern unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 			     const void *buf, unsigned int len);
++extern unsigned int perf_output_skip(struct perf_output_handle *handle,
++				     unsigned int len);
+ extern int perf_swevent_get_recursion_context(void);
+ extern void perf_swevent_put_recursion_context(int rctx);
+ extern void perf_event_enable(struct perf_event *event);
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 2206a0f..be1ef29 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -114,6 +114,10 @@ static inline int memcpy_common(void *dst, const void *src, size_t n)
+ 
+ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
+ 
++#define MEMCPY_SKIP(dst, src, n) (n)
++
++DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
++
+ #ifndef arch_perf_out_copy_user
+ #define arch_perf_out_copy_user __copy_from_user_inatomic
  #endif
- 
-+static void dso_cache__free(struct rb_root *root);
- static bool dso__build_id_equal(const struct dso *dso, u8 *build_id);
- static int elf_read_build_id(Elf *elf, void *bf, size_t size);
- static void dsos__add(struct list_head *head, struct dso *dso);
-@@ -342,6 +343,7 @@ struct dso *dso__new(const char *name)
- 		dso__set_short_name(dso, dso->name);
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
-+		dso->cache = RB_ROOT;
- 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
-@@ -377,6 +379,7 @@ void dso__delete(struct dso *dso)
- 		free((char *)dso->short_name);
- 	if (dso->lname_alloc)
- 		free(dso->long_name);
-+	dso_cache__free(&dso->cache);
- 	free(dso);
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index b4c2ad3..23cb34f 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -188,6 +188,12 @@ unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 	return __output_copy(handle, buf, len);
  }
  
-@@ -2934,22 +2937,87 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
- 	return -EINVAL;
- }
- 
--static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
--			      u8 *data __used, ssize_t size __used)
-+static void
-+dso_cache__free(struct rb_root *root)
- {
--	return -EINVAL;
-+	struct rb_node *next = rb_first(root);
-+
-+	while (next) {
-+		struct dso_cache *cache;
-+
-+		cache = rb_entry(next, struct dso_cache, rb_node);
-+		next = rb_next(&cache->rb_node);
-+		rb_erase(&cache->rb_node, root);
-+		free(cache);
-+	}
- }
- 
--static int dso_cache_add(struct dso *dso __used, u64 offset __used,
--			 u8 *data __used, ssize_t size __used)
-+static struct dso_cache*
-+dso_cache__find(struct rb_root *root, u64 offset)
- {
--	return 0;
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct dso_cache *cache;
-+
-+	while (*p != NULL) {
-+		u64 end;
-+
-+		parent = *p;
-+		cache = rb_entry(parent, struct dso_cache, rb_node);
-+		end = cache->offset + DSO__DATA_CACHE_SIZE;
-+
-+		if (offset < cache->offset)
-+			p = &(*p)->rb_left;
-+		else if (offset >= end)
-+			p = &(*p)->rb_right;
-+		else
-+			return cache;
-+	}
-+	return NULL;
++unsigned int perf_output_skip(struct perf_output_handle *handle,
++			      unsigned int len)
++{
++	return __output_skip(handle, NULL, len);
 +}
 +
-+static void
-+dso_cache__insert(struct rb_root *root, struct dso_cache *new)
-+{
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct dso_cache *cache;
-+	u64 offset = new->offset;
-+
-+	while (*p != NULL) {
-+		u64 end;
-+
-+		parent = *p;
-+		cache = rb_entry(parent, struct dso_cache, rb_node);
-+		end = cache->offset + DSO__DATA_CACHE_SIZE;
-+
-+		if (offset < cache->offset)
-+			p = &(*p)->rb_left;
-+		else if (offset >= end)
-+			p = &(*p)->rb_right;
-+	}
-+
-+	rb_link_node(&new->rb_node, parent, p);
-+	rb_insert_color(&new->rb_node, root);
-+}
-+
-+static ssize_t
-+dso_cache__memcpy(struct dso_cache *cache, u64 offset,
-+		  u8 *data, u64 size)
-+{
-+	u64 cache_offset = offset - cache->offset;
-+	u64 cache_size   = min(cache->size - cache_offset, size);
-+
-+	memcpy(data, cache->data + cache_offset, cache_size);
-+	return cache_size;
- }
- 
--static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
--		     u64 offset, u8 *data, ssize_t size)
-+static ssize_t
-+dso_cache__read(struct dso *dso, struct machine *machine,
-+		 u64 offset, u8 *data, ssize_t size)
+ void perf_output_end(struct perf_output_handle *handle)
  {
--	ssize_t rsize = -1;
-+	struct dso_cache *cache;
-+	ssize_t ret;
- 	int fd;
- 
- 	fd = dso__data_fd(dso, machine);
-@@ -2957,28 +3025,78 @@ static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
- 		return -1;
- 
- 	do {
--		if (-1 == lseek(fd, offset, SEEK_SET))
-+		u64 cache_offset;
-+
-+		ret = -ENOMEM;
-+
-+		cache = zalloc(sizeof(*cache) + DSO__DATA_CACHE_SIZE);
-+		if (!cache)
- 			break;
- 
--		rsize = read(fd, data, size);
--		if (-1 == rsize)
-+		cache_offset = offset & DSO__DATA_CACHE_MASK;
-+		ret = -EINVAL;
-+
-+		if (-1 == lseek(fd, cache_offset, SEEK_SET))
- 			break;
- 
--		if (dso_cache_add(dso, offset, data, size))
--			pr_err("Failed to add data int dso cache.");
-+		ret = read(fd, cache->data, DSO__DATA_CACHE_SIZE);
-+		if (ret <= 0)
-+			break;
-+
-+		cache->offset = cache_offset;
-+		cache->size   = ret;
-+		dso_cache__insert(&dso->cache, cache);
-+
-+		ret = dso_cache__memcpy(cache, offset, data, size);
- 
- 	} while (0);
- 
-+	if (ret <= 0)
-+		free(cache);
-+
- 	close(fd);
--	return rsize;
-+	return ret;
-+}
-+
-+static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
-+			      u64 offset, u8 *data, ssize_t size)
-+{
-+	struct dso_cache *cache;
-+
-+	cache = dso_cache__find(&dso->cache, offset);
-+	if (cache)
-+		return dso_cache__memcpy(cache, offset, data, size);
-+	else
-+		return dso_cache__read(dso, machine, offset, data, size);
- }
- 
- ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- 			      u64 offset, u8 *data, ssize_t size)
- {
--	if (dso_cache_read(dso, offset, data, size))
--		return read_dso_data(dso, machine, offset, data, size);
--	return 0;
-+	ssize_t r = 0;
-+	u8 *p = data;
-+
-+	do {
-+		ssize_t ret;
-+
-+		ret = dso_cache_read(dso, machine, offset, p, size);
-+		if (ret < 0)
-+			return ret;
-+
-+		/* Reached EOF, return what we have. */
-+		if (!ret)
-+			break;
-+
-+		BUG_ON(ret > size);
-+
-+		r      += ret;
-+		p      += ret;
-+		offset += ret;
-+		size   -= ret;
-+
-+	} while (size);
-+
-+	return r;
- }
- 
- ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 77044cb..67313f0 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -181,10 +181,21 @@ enum dso_swap_type {
- 	DSO_SWAP__YES,
- };
- 
-+#define DSO__DATA_CACHE_SIZE 4096
-+#define DSO__DATA_CACHE_MASK ~(DSO__DATA_CACHE_SIZE - 1)
-+
-+struct dso_cache {
-+	struct rb_node	rb_node;
-+	u64 offset;
-+	u64 size;
-+	char data[0];
-+};
-+
- struct dso {
- 	struct list_head node;
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
-+	struct rb_root	 cache;
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
+ 	perf_output_put_handle(handle);
 -- 
 1.7.7.6
 
