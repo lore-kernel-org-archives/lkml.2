@@ -1,119 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2FSIbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 04:31:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48771 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab2FSIaS (ORCPT
+	id S1753767Ab2FSIc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 04:32:58 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47587 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab2FSIcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 04:30:18 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux@arm.linux.org.uk, a.p.zijlstra@chello.nl, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Subject: [PATCH v2 4/5] sched, x86: Remove broken power estimation
-Date: Tue, 19 Jun 2012 10:28:55 +0200
-Message-Id: <1340094536-20873-5-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
-References: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
+	Tue, 19 Jun 2012 04:32:55 -0400
+Message-ID: <4FE0392E.3090300@linux.vnet.ibm.com>
+Date: Tue, 19 Jun 2012 16:32:46 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: [PATCH 01/10] zcache: fix preemptable memory allocation in atomic
+ context
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12061822-5490-0000-0000-0000019EECC3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+zcache_do_preload uses ZCACHE_GFP_MASK to allocate memory that will be sleep,
+but zcache_do_preload is called in zcache_put_page where IRQ is disabled
 
-The x86 sched power implementation has been broken forever and gets in
-the way of other stuff, remove it.
+Fix it by use GFP_ATOMIC flag
 
-For archaeological interest, fixing this code would require dealing with
-the cross-cpu calling of these functions and more importantly, we need
-to filter idle time out of the a/m-perf stuff because the ratio will go
-down to 0 when idle, giving a 0 capacity which is not what we'd want.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-wjjwelpti8f8k7i1pdnzmdr8@git.kernel.org
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kernel/cpu/Makefile |    2 +-
- arch/x86/kernel/cpu/sched.c  |   55 ------------------------------------------
- 2 files changed, 1 insertion(+), 56 deletions(-)
- delete mode 100644 arch/x86/kernel/cpu/sched.c
+ drivers/staging/zcache/zcache-main.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6ab6aa2..c598126 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -14,7 +14,7 @@ CFLAGS_common.o		:= $(nostackp)
- 
- obj-y			:= intel_cacheinfo.o scattered.o topology.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
--obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
-+obj-y			+= vmware.o hypervisor.o mshyperv.o
- obj-y			+= rdrand.o
- obj-y			+= match.o
- 
-diff --git a/arch/x86/kernel/cpu/sched.c b/arch/x86/kernel/cpu/sched.c
-deleted file mode 100644
-index a640ae5..0000000
---- a/arch/x86/kernel/cpu/sched.c
-+++ /dev/null
-@@ -1,55 +0,0 @@
--#include <linux/sched.h>
--#include <linux/math64.h>
--#include <linux/percpu.h>
--#include <linux/irqflags.h>
--
--#include <asm/cpufeature.h>
--#include <asm/processor.h>
--
--#ifdef CONFIG_SMP
--
--static DEFINE_PER_CPU(struct aperfmperf, old_perf_sched);
--
--static unsigned long scale_aperfmperf(void)
--{
--	struct aperfmperf val, *old = &__get_cpu_var(old_perf_sched);
--	unsigned long ratio, flags;
--
--	local_irq_save(flags);
--	get_aperfmperf(&val);
--	local_irq_restore(flags);
--
--	ratio = calc_aperfmperf_ratio(old, &val);
--	*old = val;
--
--	return ratio;
--}
--
--unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
--{
--	/*
--	 * do aperf/mperf on the cpu level because it includes things
--	 * like turbo mode, which are relevant to full cores.
--	 */
--	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
--		return scale_aperfmperf();
--
--	/*
--	 * maybe have something cpufreq here
--	 */
--
--	return default_scale_freq_power(sd, cpu);
--}
--
--unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
--{
--	/*
--	 * aperf/mperf already includes the smt gain
--	 */
--	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
--		return SCHED_LOAD_SCALE;
--
--	return default_scale_smt_power(sd, cpu);
--}
--
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 03f690b..d215fb4 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -45,13 +45,8 @@
+ #include <linux/frontswap.h>
+ #endif
+
+-#if 0
+ /* this is more aggressive but may cause other problems? */
+ #define ZCACHE_GFP_MASK	(GFP_ATOMIC | __GFP_NORETRY | __GFP_NOWARN)
+-#else
+-#define ZCACHE_GFP_MASK \
+-	(__GFP_FS | __GFP_NORETRY | __GFP_NOWARN | __GFP_NOMEMALLOC)
 -#endif
+
+ #define MAX_POOLS_PER_CLIENT 16
+
 -- 
-1.7.9.5
+1.7.7.6
 
