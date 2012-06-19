@@ -1,774 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab2FSSCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:02:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43340 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab2FSSAS (ORCPT
+	id S1753583Ab2FSSCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:02:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33399 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab2FSSAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Jun 2012 14:00:18 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/20] perf ui: Introduce struct perf_error_ops
-Date: Tue, 19 Jun 2012 14:50:03 -0300
-Message-Id: <1340128221-17348-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 01/20] perf tools: Add sort by src line/number
+Date: Tue, 19 Jun 2012 14:50:02 -0300
+Message-Id: <1340128221-17348-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1340128221-17348-1-git-send-email-acme@infradead.org>
 References: <1340128221-17348-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The struct perf_error_ops is for flexible error logging.
+Using addr2line for now, requires debuginfo, needs more work to support
+detached debuginfo, aka foo-debuginfo packages.
 
-We can register appropriate functions based on front-end.
+Example:
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
+	[root@sandy ~]# perf record -a sleep 3
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.555 MB perf.data (~24236 samples) ]
+	[root@sandy ~]# perf report -s dso,srcline 2>&1 | grep -v ^# | head -5
+	    22.41%  [kernel.kallsyms]  /home/git/linux/drivers/idle/intel_idle.c:280
+	     4.79%  [kernel.kallsyms]  /home/git/linux/drivers/cpuidle/cpuidle.c:148
+	     4.78%  [kernel.kallsyms]  /home/git/linux/arch/x86/include/asm/atomic64_64.h:121
+	     4.49%  [kernel.kallsyms]  /home/git/linux/kernel/sched/core.c:1690
+	     4.30%  [kernel.kallsyms]  /home/git/linux/include/linux/seqlock.h:90
+	[root@sandy ~]#
+
+[root@sandy ~]# perf top -U -s dso,symbol,srcline
+Samples: 1K of event 'cycles', Event count (approx.): 589617389
+ 18.66%  [kernel]  [k] copy_user_generic_unrolled   /home/git/linux/arch/x86/lib/copy_user_64.S:143
+  7.83%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:39
+  6.59%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:38
+  3.66%  [kernel]  [k] page_fault                   /home/git/linux/arch/x86/kernel/entry_64.S:1379
+  3.25%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:40
+  3.12%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:37
+  2.74%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:36
+  2.39%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:43
+  2.12%  [kernel]  [k] ioread32                     /home/git/linux/lib/iomap.c:90
+  1.51%  [kernel]  [k] copy_user_generic_unrolled   /home/git/linux/arch/x86/lib/copy_user_64.S:144
+  1.19%  [kernel]  [k] copy_user_generic_unrolled   /home/git/linux/arch/x86/lib/copy_user_64.S:154
+
+Suggested-by: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338265382-6872-4-git-send-email-namhyung@gmail.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-pdmqbng9twz06jzkbgtuwbp8@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile       |    3 +
- tools/perf/ui/gtk/util.c  |   20 ++++
- tools/perf/ui/tui/setup.c |    6 +
- tools/perf/ui/tui/util.c  |  243 +++++++++++++++++++++++++++++++++++++++
- tools/perf/ui/util.c      |  277 +++++++++------------------------------------
- tools/perf/ui/util.h      |    9 ++-
- tools/perf/util/debug.c   |    2 +-
- tools/perf/util/debug.h   |   23 ++++-
- 8 files changed, 357 insertions(+), 226 deletions(-)
- create mode 100644 tools/perf/ui/gtk/util.c
- create mode 100644 tools/perf/ui/tui/util.c
+ tools/perf/Documentation/perf-report.txt |    2 +-
+ tools/perf/Documentation/perf-top.txt    |    2 +-
+ tools/perf/util/hist.h                   |    1 +
+ tools/perf/util/sort.c                   |   49 ++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h                   |    2 +
+ 5 files changed, 54 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 0eee64c..c0ee917 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -503,6 +503,7 @@ else
- 		LIB_OBJS += $(OUTPUT)ui/progress.o
- 		LIB_OBJS += $(OUTPUT)ui/util.o
- 		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
-+		LIB_OBJS += $(OUTPUT)ui/tui/util.o
- 		LIB_H += ui/browser.h
- 		LIB_H += ui/browsers/map.h
- 		LIB_H += ui/helpline.h
-@@ -526,9 +527,11 @@ else
- 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
- 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
- 		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
-+		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
- 		# Make sure that it'd be included only once.
- 		ifneq ($(findstring -DNO_NEWT_SUPPORT,$(BASIC_CFLAGS)),)
- 			LIB_OBJS += $(OUTPUT)ui/setup.o
-+			LIB_OBJS += $(OUTPUT)ui/util.o
- 		endif
- 	endif
- endif
-diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-new file mode 100644
-index 0000000..a727fe3
---- /dev/null
-+++ b/tools/perf/ui/gtk/util.c
-@@ -0,0 +1,20 @@
-+#include "../util.h"
-+#include "../../util/debug.h"
-+#include "gtk.h"
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 2d89f02..495210a 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -57,7 +57,7 @@ OPTIONS
+ 
+ -s::
+ --sort=::
+-	Sort by key(s): pid, comm, dso, symbol, parent.
++	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
+ 
+ -p::
+ --parent=<regex>::
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 4a5680c..5b80d84 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -112,7 +112,7 @@ Default is to monitor all CPUS.
+ 
+ -s::
+ --sort::
+-	Sort by key(s): pid, comm, dso, symbol, parent
++	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
+ 
+ -n::
+ --show-nr-samples::
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 34bb556..0b096c2 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -47,6 +47,7 @@ enum hist_column {
+ 	HISTC_SYMBOL_TO,
+ 	HISTC_DSO_FROM,
+ 	HISTC_DSO_TO,
++	HISTC_SRCLINE,
+ 	HISTC_NR_COLS, /* Last entry */
+ };
+ 
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index a272374..0f5a0a4 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -241,6 +241,54 @@ struct sort_entry sort_sym = {
+ 	.se_width_idx	= HISTC_SYMBOL,
+ };
+ 
++/* --sort srcline */
 +
-+
-+/*
-+ * FIXME: Functions below should be implemented properly.
-+ *        For now, just add stubs for NO_NEWT=1 build.
-+ */
-+#ifdef NO_NEWT_SUPPORT
-+int ui_helpline__show_help(const char *format __used, va_list ap __used)
++static int64_t
++sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
 +{
-+	return 0;
++	return (int64_t)(right->ip - left->ip);
 +}
 +
-+void ui_progress__update(u64 curr __used, u64 total __used,
-+			 const char *title __used)
++static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
++				   size_t size, unsigned int width __used)
 +{
-+}
-+#endif
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-index d33e943..e813c1d 100644
---- a/tools/perf/ui/tui/setup.c
-+++ b/tools/perf/ui/tui/setup.c
-@@ -15,6 +15,8 @@ pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
- 
- static volatile int ui__need_resize;
- 
-+extern struct perf_error_ops perf_tui_eops;
++	FILE *fp;
++	char cmd[PATH_MAX + 2], *path = self->srcline, *nl;
++	size_t line_len;
 +
- void ui__refresh_dimensions(bool force)
- {
- 	if (force || ui__need_resize) {
-@@ -122,6 +124,8 @@ int ui__init(void)
- 	signal(SIGINT, ui__signal);
- 	signal(SIGQUIT, ui__signal);
- 	signal(SIGTERM, ui__signal);
++	if (path != NULL)
++		goto out_path;
 +
-+	perf_error__register(&perf_tui_eops);
- out:
- 	return err;
- }
-@@ -137,4 +141,6 @@ void ui__exit(bool wait_for_ok)
- 	SLsmg_refresh();
- 	SLsmg_reset_smg();
- 	SLang_reset_tty();
++	snprintf(cmd, sizeof(cmd), "addr2line -e %s %016" PRIx64,
++		 self->ms.map->dso->long_name, self->ip);
++	fp = popen(cmd, "r");
++	if (!fp)
++		goto out_ip;
 +
-+	perf_error__unregister(&perf_tui_eops);
- }
-diff --git a/tools/perf/ui/tui/util.c b/tools/perf/ui/tui/util.c
-new file mode 100644
-index 0000000..092902e
---- /dev/null
-+++ b/tools/perf/ui/tui/util.c
-@@ -0,0 +1,243 @@
-+#include "../../util/util.h"
-+#include <signal.h>
-+#include <stdbool.h>
-+#include <string.h>
-+#include <sys/ttydefaults.h>
++	if (getline(&path, &line_len, fp) < 0 || !line_len)
++		goto out_ip;
++	fclose(fp);
++	self->srcline = strdup(path);
++	if (self->srcline == NULL)
++		goto out_ip;
 +
-+#include "../../util/cache.h"
-+#include "../../util/debug.h"
-+#include "../browser.h"
-+#include "../keysyms.h"
-+#include "../helpline.h"
-+#include "../ui.h"
-+#include "../util.h"
-+#include "../libslang.h"
-+
-+static void ui_browser__argv_write(struct ui_browser *browser,
-+				   void *entry, int row)
-+{
-+	char **arg = entry;
-+	bool current_entry = ui_browser__is_current_entry(browser, row);
-+
-+	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
-+						       HE_COLORSET_NORMAL);
-+	slsmg_write_nstring(*arg, browser->width);
++	nl = strchr(self->srcline, '\n');
++	if (nl != NULL)
++		*nl = '\0';
++	path = self->srcline;
++out_path:
++	return repsep_snprintf(bf, size, "%s", path);
++out_ip:
++	return repsep_snprintf(bf, size, "%-#*llx", BITS_PER_LONG / 4, self->ip);
 +}
 +
-+static int popup_menu__run(struct ui_browser *menu)
-+{
-+	int key;
-+
-+	if (ui_browser__show(menu, " ", "ESC: exit, ENTER|->: Select option") < 0)
-+		return -1;
-+
-+	while (1) {
-+		key = ui_browser__run(menu, 0);
-+
-+		switch (key) {
-+		case K_RIGHT:
-+		case K_ENTER:
-+			key = menu->index;
-+			break;
-+		case K_LEFT:
-+		case K_ESC:
-+		case 'q':
-+		case CTRL('c'):
-+			key = -1;
-+			break;
-+		default:
-+			continue;
-+		}
-+
-+		break;
-+	}
-+
-+	ui_browser__hide(menu);
-+	return key;
-+}
-+
-+int ui__popup_menu(int argc, char * const argv[])
-+{
-+	struct ui_browser menu = {
-+		.entries    = (void *)argv,
-+		.refresh    = ui_browser__argv_refresh,
-+		.seek	    = ui_browser__argv_seek,
-+		.write	    = ui_browser__argv_write,
-+		.nr_entries = argc,
-+	};
-+
-+	return popup_menu__run(&menu);
-+}
-+
-+int ui_browser__input_window(const char *title, const char *text, char *input,
-+			     const char *exit_msg, int delay_secs)
-+{
-+	int x, y, len, key;
-+	int max_len = 60, nr_lines = 0;
-+	static char buf[50];
-+	const char *t;
-+
-+	t = text;
-+	while (1) {
-+		const char *sep = strchr(t, '\n');
-+
-+		if (sep == NULL)
-+			sep = strchr(t, '\0');
-+		len = sep - t;
-+		if (max_len < len)
-+			max_len = len;
-+		++nr_lines;
-+		if (*sep == '\0')
-+			break;
-+		t = sep + 1;
-+	}
-+
-+	max_len += 2;
-+	nr_lines += 8;
-+	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
-+	x = SLtt_Screen_Cols / 2 - max_len / 2;
-+
-+	SLsmg_set_color(0);
-+	SLsmg_draw_box(y, x++, nr_lines, max_len);
-+	if (title) {
-+		SLsmg_gotorc(y, x + 1);
-+		SLsmg_write_string((char *)title);
-+	}
-+	SLsmg_gotorc(++y, x);
-+	nr_lines -= 7;
-+	max_len -= 2;
-+	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
-+				   nr_lines, max_len, 1);
-+	y += nr_lines;
-+	len = 5;
-+	while (len--) {
-+		SLsmg_gotorc(y + len - 1, x);
-+		SLsmg_write_nstring((char *)" ", max_len);
-+	}
-+	SLsmg_draw_box(y++, x + 1, 3, max_len - 2);
-+
-+	SLsmg_gotorc(y + 3, x);
-+	SLsmg_write_nstring((char *)exit_msg, max_len);
-+	SLsmg_refresh();
-+
-+	x += 2;
-+	len = 0;
-+	key = ui__getch(delay_secs);
-+	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
-+		if (key == K_BKSPC) {
-+			if (len == 0)
-+				goto next_key;
-+			SLsmg_gotorc(y, x + --len);
-+			SLsmg_write_char(' ');
-+		} else {
-+			buf[len] = key;
-+			SLsmg_gotorc(y, x + len++);
-+			SLsmg_write_char(key);
-+		}
-+		SLsmg_refresh();
-+
-+		/* XXX more graceful overflow handling needed */
-+		if (len == sizeof(buf) - 1) {
-+			ui_helpline__push("maximum size of symbol name reached!");
-+			key = K_ENTER;
-+			break;
-+		}
-+next_key:
-+		key = ui__getch(delay_secs);
-+	}
-+
-+	buf[len] = '\0';
-+	strncpy(input, buf, len+1);
-+	return key;
-+}
-+
-+int ui__question_window(const char *title, const char *text,
-+			const char *exit_msg, int delay_secs)
-+{
-+	int x, y;
-+	int max_len = 0, nr_lines = 0;
-+	const char *t;
-+
-+	t = text;
-+	while (1) {
-+		const char *sep = strchr(t, '\n');
-+		int len;
-+
-+		if (sep == NULL)
-+			sep = strchr(t, '\0');
-+		len = sep - t;
-+		if (max_len < len)
-+			max_len = len;
-+		++nr_lines;
-+		if (*sep == '\0')
-+			break;
-+		t = sep + 1;
-+	}
-+
-+	max_len += 2;
-+	nr_lines += 4;
-+	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
-+	x = SLtt_Screen_Cols / 2 - max_len / 2;
-+
-+	SLsmg_set_color(0);
-+	SLsmg_draw_box(y, x++, nr_lines, max_len);
-+	if (title) {
-+		SLsmg_gotorc(y, x + 1);
-+		SLsmg_write_string((char *)title);
-+	}
-+	SLsmg_gotorc(++y, x);
-+	nr_lines -= 2;
-+	max_len -= 2;
-+	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
-+				   nr_lines, max_len, 1);
-+	SLsmg_gotorc(y + nr_lines - 2, x);
-+	SLsmg_write_nstring((char *)" ", max_len);
-+	SLsmg_gotorc(y + nr_lines - 1, x);
-+	SLsmg_write_nstring((char *)exit_msg, max_len);
-+	SLsmg_refresh();
-+	return ui__getch(delay_secs);
-+}
-+
-+int ui__help_window(const char *text)
-+{
-+	return ui__question_window("Help", text, "Press any key...", 0);
-+}
-+
-+int ui__dialog_yesno(const char *msg)
-+{
-+	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
-+}
-+
-+static int __ui__warning(const char *title, const char *format, va_list args)
-+{
-+	char *s;
-+
-+	if (vasprintf(&s, format, args) > 0) {
-+		int key;
-+
-+		pthread_mutex_lock(&ui__lock);
-+		key = ui__question_window(title, s, "Press any key...", 0);
-+		pthread_mutex_unlock(&ui__lock);
-+		free(s);
-+		return key;
-+	}
-+
-+	fprintf(stderr, "%s\n", title);
-+	vfprintf(stderr, format, args);
-+	return K_ESC;
-+}
-+
-+static int perf_tui__error(const char *format, va_list args)
-+{
-+	return __ui__warning("Error:", format, args);
-+}
-+
-+static int perf_tui__warning(const char *format, va_list args)
-+{
-+	return __ui__warning("Warning:", format, args);
-+}
-+
-+struct perf_error_ops perf_tui_eops = {
-+	.error		= perf_tui__error,
-+	.warning	= perf_tui__warning,
-+};
-diff --git a/tools/perf/ui/util.c b/tools/perf/ui/util.c
-index ad4374a..4f98977 100644
---- a/tools/perf/ui/util.c
-+++ b/tools/perf/ui/util.c
-@@ -1,250 +1,85 @@
--#include "../util.h"
--#include <signal.h>
--#include <stdbool.h>
--#include <string.h>
--#include <sys/ttydefaults.h>
--
--#include "../cache.h"
--#include "../debug.h"
--#include "browser.h"
--#include "keysyms.h"
--#include "helpline.h"
--#include "ui.h"
- #include "util.h"
--#include "libslang.h"
--
--static void ui_browser__argv_write(struct ui_browser *browser,
--				   void *entry, int row)
--{
--	char **arg = entry;
--	bool current_entry = ui_browser__is_current_entry(browser, row);
--
--	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
--						       HE_COLORSET_NORMAL);
--	slsmg_write_nstring(*arg, browser->width);
--}
--
--static int popup_menu__run(struct ui_browser *menu)
--{
--	int key;
--
--	if (ui_browser__show(menu, " ", "ESC: exit, ENTER|->: Select option") < 0)
--		return -1;
-+#include "../debug.h"
- 
--	while (1) {
--		key = ui_browser__run(menu, 0);
--
--		switch (key) {
--		case K_RIGHT:
--		case K_ENTER:
--			key = menu->index;
--			break;
--		case K_LEFT:
--		case K_ESC:
--		case 'q':
--		case CTRL('c'):
--			key = -1;
--			break;
--		default:
--			continue;
--		}
--
--		break;
--	}
--
--	ui_browser__hide(menu);
--	return key;
--}
- 
--int ui__popup_menu(int argc, char * const argv[])
-+/*
-+ * Default error logging functions
-+ */
-+static int perf_stdio__error(const char *format, va_list args)
- {
--	struct ui_browser menu = {
--		.entries    = (void *)argv,
--		.refresh    = ui_browser__argv_refresh,
--		.seek	    = ui_browser__argv_seek,
--		.write	    = ui_browser__argv_write,
--		.nr_entries = argc,
--	};
--
--	return popup_menu__run(&menu);
-+	fprintf(stderr, "Error:\n");
-+	vfprintf(stderr, format, args);
-+	return 0;
- }
- 
--int ui_browser__input_window(const char *title, const char *text, char *input,
--			     const char *exit_msg, int delay_secs)
-+static int perf_stdio__warning(const char *format, va_list args)
- {
--	int x, y, len, key;
--	int max_len = 60, nr_lines = 0;
--	static char buf[50];
--	const char *t;
--
--	t = text;
--	while (1) {
--		const char *sep = strchr(t, '\n');
--
--		if (sep == NULL)
--			sep = strchr(t, '\0');
--		len = sep - t;
--		if (max_len < len)
--			max_len = len;
--		++nr_lines;
--		if (*sep == '\0')
--			break;
--		t = sep + 1;
--	}
--
--	max_len += 2;
--	nr_lines += 8;
--	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
--	x = SLtt_Screen_Cols / 2 - max_len / 2;
--
--	SLsmg_set_color(0);
--	SLsmg_draw_box(y, x++, nr_lines, max_len);
--	if (title) {
--		SLsmg_gotorc(y, x + 1);
--		SLsmg_write_string((char *)title);
--	}
--	SLsmg_gotorc(++y, x);
--	nr_lines -= 7;
--	max_len -= 2;
--	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
--				   nr_lines, max_len, 1);
--	y += nr_lines;
--	len = 5;
--	while (len--) {
--		SLsmg_gotorc(y + len - 1, x);
--		SLsmg_write_nstring((char *)" ", max_len);
--	}
--	SLsmg_draw_box(y++, x + 1, 3, max_len - 2);
--
--	SLsmg_gotorc(y + 3, x);
--	SLsmg_write_nstring((char *)exit_msg, max_len);
--	SLsmg_refresh();
--
--	x += 2;
--	len = 0;
--	key = ui__getch(delay_secs);
--	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
--		if (key == K_BKSPC) {
--			if (len == 0)
--				goto next_key;
--			SLsmg_gotorc(y, x + --len);
--			SLsmg_write_char(' ');
--		} else {
--			buf[len] = key;
--			SLsmg_gotorc(y, x + len++);
--			SLsmg_write_char(key);
--		}
--		SLsmg_refresh();
--
--		/* XXX more graceful overflow handling needed */
--		if (len == sizeof(buf) - 1) {
--			ui_helpline__push("maximum size of symbol name reached!");
--			key = K_ENTER;
--			break;
--		}
--next_key:
--		key = ui__getch(delay_secs);
--	}
--
--	buf[len] = '\0';
--	strncpy(input, buf, len+1);
--	return key;
-+	fprintf(stderr, "Warning:\n");
-+	vfprintf(stderr, format, args);
-+	return 0;
- }
- 
--int ui__question_window(const char *title, const char *text,
--			const char *exit_msg, int delay_secs)
-+static struct perf_error_ops default_eops =
- {
--	int x, y;
--	int max_len = 0, nr_lines = 0;
--	const char *t;
--
--	t = text;
--	while (1) {
--		const char *sep = strchr(t, '\n');
--		int len;
--
--		if (sep == NULL)
--			sep = strchr(t, '\0');
--		len = sep - t;
--		if (max_len < len)
--			max_len = len;
--		++nr_lines;
--		if (*sep == '\0')
--			break;
--		t = sep + 1;
--	}
--
--	max_len += 2;
--	nr_lines += 4;
--	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
--	x = SLtt_Screen_Cols / 2 - max_len / 2;
--
--	SLsmg_set_color(0);
--	SLsmg_draw_box(y, x++, nr_lines, max_len);
--	if (title) {
--		SLsmg_gotorc(y, x + 1);
--		SLsmg_write_string((char *)title);
--	}
--	SLsmg_gotorc(++y, x);
--	nr_lines -= 2;
--	max_len -= 2;
--	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
--				   nr_lines, max_len, 1);
--	SLsmg_gotorc(y + nr_lines - 2, x);
--	SLsmg_write_nstring((char *)" ", max_len);
--	SLsmg_gotorc(y + nr_lines - 1, x);
--	SLsmg_write_nstring((char *)exit_msg, max_len);
--	SLsmg_refresh();
--	return ui__getch(delay_secs);
--}
-+	.error		= perf_stdio__error,
-+	.warning	= perf_stdio__warning,
-+};
- 
--int ui__help_window(const char *text)
--{
--	return ui__question_window("Help", text, "Press any key...", 0);
--}
-+static struct perf_error_ops *perf_eops = &default_eops;
- 
--int ui__dialog_yesno(const char *msg)
--{
--	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
--}
- 
--int __ui__warning(const char *title, const char *format, va_list args)
-+int ui__error(const char *format, ...)
- {
--	char *s;
--
--	if (use_browser > 0 && vasprintf(&s, format, args) > 0) {
--		int key;
-+	int ret;
-+	va_list args;
- 
--		pthread_mutex_lock(&ui__lock);
--		key = ui__question_window(title, s, "Press any key...", 0);
--		pthread_mutex_unlock(&ui__lock);
--		free(s);
--		return key;
--	}
-+	va_start(args, format);
-+	ret = perf_eops->error(format, args);
-+	va_end(args);
- 
--	fprintf(stderr, "%s:\n", title);
--	vfprintf(stderr, format, args);
--	return K_ESC;
-+	return ret;
- }
- 
- int ui__warning(const char *format, ...)
- {
--	int key;
-+	int ret;
- 	va_list args;
- 
- 	va_start(args, format);
--	key = __ui__warning("Warning", format, args);
-+	ret = perf_eops->warning(format, args);
- 	va_end(args);
--	return key;
-+
-+	return ret;
- }
- 
--int ui__error(const char *format, ...)
-+
-+/**
-+ * perf_error__register - Register error logging functions
-+ * @eops: The pointer to error logging function struct
-+ *
-+ * Register UI-specific error logging functions. Before calling this,
-+ * other logging functions should be unregistered, if any.
-+ */
-+int perf_error__register(struct perf_error_ops *eops)
- {
--	int key;
--	va_list args;
-+	if (perf_eops != &default_eops)
-+		return -1;
- 
--	va_start(args, format);
--	key = __ui__warning("Error", format, args);
--	va_end(args);
--	return key;
-+	perf_eops = eops;
-+	return 0;
-+}
-+
-+/**
-+ * perf_error__unregister - Unregister error logging functions
-+ * @eops: The pointer to error logging function struct
-+ *
-+ * Unregister already registered error logging functions.
-+ */
-+int perf_error__unregister(struct perf_error_ops *eops)
-+{
-+	if (perf_eops != eops)
-+		return -1;
-+
-+	perf_eops = &default_eops;
-+	return 0;
- }
-diff --git a/tools/perf/ui/util.h b/tools/perf/ui/util.h
-index 2d1738b..361f08c 100644
---- a/tools/perf/ui/util.h
-+++ b/tools/perf/ui/util.h
-@@ -9,6 +9,13 @@ int ui__help_window(const char *text);
- int ui__dialog_yesno(const char *msg);
- int ui__question_window(const char *title, const char *text,
- 			const char *exit_msg, int delay_secs);
--int __ui__warning(const char *title, const char *format, va_list args);
-+
-+struct perf_error_ops {
-+	int (*error)(const char *format, va_list args);
-+	int (*warning)(const char *format, va_list args);
++struct sort_entry sort_srcline = {
++	.se_header	= "Source:Line",
++	.se_cmp		= sort__srcline_cmp,
++	.se_snprintf	= hist_entry__srcline_snprintf,
++	.se_width_idx	= HISTC_SRCLINE,
 +};
 +
-+int perf_error__register(struct perf_error_ops *eops);
-+int perf_error__unregister(struct perf_error_ops *eops);
+ /* --sort parent */
  
- #endif /* _PERF_UI_UTIL_H_ */
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index efb1fce..4dfe0bb 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -47,7 +47,7 @@ int dump_printf(const char *fmt, ...)
- 	return ret;
- }
+ static int64_t
+@@ -439,6 +487,7 @@ static struct sort_dimension sort_dimensions[] = {
+ 	DIM(SORT_PARENT, "parent", sort_parent),
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+ 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
++	DIM(SORT_SRCLINE, "srcline", sort_srcline),
+ };
  
--#ifdef NO_NEWT_SUPPORT
-+#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
- int ui__warning(const char *format, ...)
- {
- 	va_list args;
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 6bebe7f..015c91d 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -12,8 +12,9 @@ int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
- void trace_event(union perf_event *event);
+ int sort_dimension__add(const char *tok)
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 472aa5a..e724b26 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -71,6 +71,7 @@ struct hist_entry {
+ 	char			level;
+ 	bool			used;
+ 	u8			filtered;
++	char			*srcline;
+ 	struct symbol		*parent;
+ 	union {
+ 		unsigned long	  position;
+@@ -93,6 +94,7 @@ enum sort_type {
+ 	SORT_SYM_FROM,
+ 	SORT_SYM_TO,
+ 	SORT_MISPREDICT,
++	SORT_SRCLINE,
+ };
  
- struct ui_progress;
-+struct perf_error_ops;
- 
--#ifdef NO_NEWT_SUPPORT
-+#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
- static inline int ui_helpline__show_help(const char *format __used, va_list ap __used)
- {
- 	return 0;
-@@ -23,12 +24,28 @@ static inline void ui_progress__update(u64 curr __used, u64 total __used,
- 				       const char *title __used) {}
- 
- #define ui__error(format, arg...) ui__warning(format, ##arg)
--#else
-+
-+static inline int
-+perf_error__register(struct perf_error_ops *eops __used)
-+{
-+	return 0;
-+}
-+
-+static inline int
-+perf_error__unregister(struct perf_error_ops *eops __used)
-+{
-+	return 0;
-+}
-+
-+#else /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
-+
- extern char ui_helpline__last_msg[];
- int ui_helpline__show_help(const char *format, va_list ap);
- #include "../ui/progress.h"
- int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
--#endif
-+#include "../ui/util.h"
-+
-+#endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
- 
- int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
- int ui__error_paranoid(void);
+ /*
 -- 
 1.7.1
 
