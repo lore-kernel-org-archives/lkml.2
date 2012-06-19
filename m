@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab2FSIfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 04:35:23 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:46767 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab2FSIfS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 04:35:18 -0400
-Message-ID: <4FE039BE.6010406@linux.vnet.ibm.com>
-Date: Tue, 19 Jun 2012 16:35:10 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754032Ab2FSIfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 04:35:37 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:38170 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753963Ab2FSIfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 04:35:32 -0400
+Message-ID: <4FE039CD.8070209@mev.co.uk>
+Date: Tue, 19 Jun 2012 09:35:25 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: [PATCH 05/10] zcache: mark zbud_init/zcache_comp_init as __init
-References: <4FE0392E.3090300@linux.vnet.ibm.com>
-In-Reply-To: <4FE0392E.3090300@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] staging: comedi: Kconfig: menuconfig options should
+ be bool not tristate
+References: <201206151520.04455.hartleys@visionengravers.com> <20120618235902.GA29679@kroah.com> <ADE657CA350FB648AAC2C43247A983F0020698DBD3D0@AUSP01VMBX24.collaborationhost.net> <20120619003047.GA25098@kroah.com> <ADE657CA350FB648AAC2C43247A983F0020698DBD3D9@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698DBD3D9@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12061822-5140-0000-0000-00000198E44D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions are called only when system is initializing, so mark __init
-for them to free memory
+On 2012-06-19 02:01, H Hartley Sweeten wrote:
+> On Monday, June 18, 2012 5:31 PM, Greg KH wrote:
+>> Below is the .config I use.  Apply your patch, and select 'y' for the
+>> different options it asks for when running 'make oldconfig' and then see
+>> the build errors.
+>
+> Ok. It looks like the patch below should fix it. Can you test it?
+>   config COMEDI_ADL_PCI7296
+>   	tristate "ADLink PCI-7296 96 ch. digital io board support"
+> +	select COMED_8255
+>   	---help---
+>   	  Enable support for ADlink PCI-7296 96 ch. digital io board support
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 82d752d..d194303 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -594,7 +594,7 @@ out:
- 	return;
- }
-
--static void zbud_init(void)
-+static void __init zbud_init(void)
- {
- 	int i;
-
-@@ -1974,7 +1974,7 @@ static int __init enable_zcache_compressor(char *s)
- __setup("zcache=", enable_zcache_compressor);
-
-
--static int zcache_comp_init(void)
-+static int __init zcache_comp_init(void)
- {
- 	int ret = 0;
+That one has a typo bug.
 
 -- 
-1.7.7.6
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+
 
