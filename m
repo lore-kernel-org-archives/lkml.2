@@ -1,68 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab2FSXAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 19:00:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37174 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab2FSXAD (ORCPT
+	id S1753812Ab2FSXJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 19:09:10 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40408 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab2FSXJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 19:00:03 -0400
-Date: Tue, 19 Jun 2012 16:00:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Pearson, Greg" <greg.pearson@hp.com>
-Cc: "tj@kernel.org" <tj@kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "shangw@linux.vnet.ibm.com" <shangw@linux.vnet.ibm.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] mm/memblock: fix overlapping allocation when
- doubling reserved array
-Message-Id: <20120619160001.0c58c7be.akpm@linux-foundation.org>
-In-Reply-To: <4FE0FE9B.8020401@hp.com>
-References: <1340063278-31601-1-git-send-email-greg.pearson@hp.com>
-	<20120619151435.10c16aed.akpm@linux-foundation.org>
-	<4FE0FE9B.8020401@hp.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Jun 2012 19:09:08 -0400
+MIME-Version: 1.0
+Date: Tue, 19 Jun 2012 18:09:07 -0500
+Message-ID: <CAB7xdik9-U_4ODdcGTfhPg+Ma2rZ11Q9ixnW-uH6AoORj=Zvwg@mail.gmail.com>
+Subject: how to map a host virtual address (hva) to guest address space (gva/gpa/gfn)
+From: sheng qiu <herbert1984106@gmail.com>
+To: kvm <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jun 2012 22:35:08 +0000
-"Pearson, Greg" <greg.pearson@hp.com> wrote:
+Hi all,
 
-> On 06/19/2012 04:14 PM, Andrew Morton wrote:
-> > On Mon, 18 Jun 2012 17:47:58 -0600
-> > Greg Pearson <greg.pearson@hp.com> wrote:
-> >
-> >> The __alloc_memory_core_early() routine will ask memblock for a range
-> >> of memory then try to reserve it. If the reserved region array lacks
-> >> space for the new range, memblock_double_array() is called to allocate
-> >> more space for the array. If memblock is used to allocate memory for
-> >> the new array it can end up using a range that overlaps with the range
-> >> originally allocated in __alloc_memory_core_early(), leading to possible
-> >> data corruption.
-> > OK, but we have no information about whether it *does* lead to data
-> > corruption.  Are there workloads which trigger this?  End users who are
-> > experiencing problems?
-> >
-> > See, I (and others) need to work out whether this patch should be
-> > included in 3.5 or even earlier kernels.  To do that we often need the
-> > developer to tell us what the impact of the bug is upon users.  Please
-> > always include this info when fixing bugs.
-> 
-> Andrew,
-> 
-> I'm currently working on a prototype system that exhibits the data 
-> corruption problem when doubling the reserved array while booting the 
-> system. This system will be a released product in the future.
+is there any existing function in KVM that can map a host virtual
+address (hva) to the guest address space. So that the guest VM can
+access it.
+i.e. translate hva to a gpa or gva or gfn, so the guest VM can use
+that converted address to access?
 
-OK.  I guess we can slip this fix into 3.5.  Do you think it should be
-backported?  I guess "yes", as you will probably want to run 3.4 or
-earlier kernels on that machine.
-
+Thanks,
+Sheng
