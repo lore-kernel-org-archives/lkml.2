@@ -1,151 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab2FSB2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 21:28:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11982 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab2FSB2s (ORCPT
+	id S1753945Ab2FSB3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 21:29:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55223 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677Ab2FSB3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 21:28:48 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=FlAZEPfbBygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=CjxXgO3LAAAA:8 a=GiJvo5EekGVZ82Dr2gwA:9 a=PUjeQqilurYA:10 a=Efwj4qSePvMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340069326.25903.177.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 18 Jun 2012 21:28:46 -0400
-In-Reply-To: <20120618230337.GB23627@kroah.com>
-References: <1339649173.13377.191.camel@gandalf.stny.rr.com>
-	 <20120614045930.GA10508@kroah.com>
-	 <1339671715.13377.209.camel@gandalf.stny.rr.com>
-	 <20120614154153.GD17140@kroah.com>
-	 <1339693625.13377.242.camel@gandalf.stny.rr.com>
-	 <20120615042233.GA10973@localhost> <20120615043017.GA9587@kroah.com>
-	 <20120615120430.GB23681@gmail.com> <20120615231318.GD8205@kroah.com>
-	 <1339804415.25903.63.camel@gandalf.stny.rr.com>
-	 <20120618230337.GB23627@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Jun 2012 21:29:47 -0400
+Date: Tue, 19 Jun 2012 11:29:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+Message-Id: <20120619112939.23c80aed8f1db9682e37be87@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__19_Jun_2012_11_29_39_+1000_YF7.=TiG=vAAy5UZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-18 at 16:03 -0700, Greg Kroah-Hartman wrote:
+--Signature=_Tue__19_Jun_2012_11_29_39_+1000_YF7.=TiG=vAAy5UZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > Actually, I think that patch really should go mainline, and give others
-> > some of the luxury that us -rt folks enjoy.
-> 
-> That would be good.
+Hi Mauro,
 
-Maybe I'll package that up if Ingo has no objections.
+Today's linux-next merge of the v4l-dvb tree got a conflict in
+drivers/hid/hid-ids.h between commit 9ed326951806 ("HID: multitouch: Add
+support for Baanto touchscreen") from Linus' tree and commit 110301833d6f
+("[media] radio/si470x: Add support for the Axentia ALERT FM USB
+Receiver") from the v4l-dvb tree.
 
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> > If other printks were interleaved and it didn't crash, we wouldn't care
-> > (or even notice). But if it did crash, I'll even argue seeing the
-> > interleaved printks would provide a hint to why it crashed.
-> 
-> Ok, so what do you want to do here?  Fix up your RFC patch to not have
-> the printk stamps?  Or something like the above rt patch?
-> 
+diff --cc drivers/hid/hid-ids.h
+index 6d3037e,70298d1..0000000
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@@ -160,9 -157,9 +160,12 @@@
+  #define USB_VENDOR_ID_AVERMEDIA		0x07ca
+  #define USB_DEVICE_ID_AVER_FM_MR800	0xb800
+ =20
++ #define USB_VENDOR_ID_AXENTIA		0x12cf
++ #define USB_DEVICE_ID_AXENTIA_FM_RADIO	0x7111
++=20
+ +#define USB_VENDOR_ID_BAANTO		0x2453
+ +#define USB_DEVICE_ID_BAANTO_MT_190W2	0x0100
+ +
+  #define USB_VENDOR_ID_BELKIN		0x050d
+  #define USB_DEVICE_ID_FLIP_KVM		0x3201
+ =20
 
-I'm fine with adding a printk_flush() or even as Joe suggested, making a
-pr_flush(), or printk(KERN_FLUSH "..." that will just do it. Maybe make
-that default with a switch.
+--Signature=_Tue__19_Jun_2012_11_29_39_+1000_YF7.=TiG=vAAy5UZ
+Content-Type: application/pgp-signature
 
-As to get rid of the time stamp issue, that may take a bit, as the code
-goes through layers where this information needs to be passed down. I
-ran 'trace-cmd record -p function_graph -g printk' to see how the flow
-works, mounted an NFS filesystem (to force a printk) and this is what I
-got:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  printk() {
-    vprintk_emit() {
-      _raw_spin_lock();
-      log_store();
-      console_trylock() {
-        down_trylock() {
-          _raw_spin_lock_irqsave();
-          _raw_spin_unlock_irqrestore();
-        }
-      }
-      console_unlock() {
-        _raw_spin_lock_irqsave();
-        log_from_idx();
-        msg_print_text() {
-          print_prefix();
-          print_prefix();
-        }
-        log_next();
-        serial8250_console_write() {
+iQIcBAEBCAAGBQJP39YDAAoJEECxmPOUX5FE50YP/jl8+qnxGtBwqaqsn1gOVPg7
+YoakT908VAZJqbkbSnJ/7rboVAM9nUmSNissE7XNgD4E90G1HqW8My6FPFfmzc3S
+ItjWzDhh+2vAdoRixhPMoh+rt0SLG4f6w1hmjNRLR++el0Xnv5f71hunN5qVDOLT
+zx1en3ZjviEJ4VY2h3yjrDIIOoPGbqdzaG8AHz4l1RNOGg+DLz/gs+wLMvGlMTHu
+JCcUefpIc3Q9QaCQXgTWYDDetJ5xqIwvnrHk6xQbLfTxyz1+fOrABjFs4WWf5cSj
+bfGPYNwiLf115jCCbo9CvfMJvMZMZn0VmAbWyA7TAUzcnYhoezEplG3E4FfZovzB
+3aJy0+L0QLdV1G0fnRLTzbTxOh2WctI7vp0SK9UDCzkdVDaqHBYxY9rubJPz2cw6
+7quyiKA3aLnZ1Sr6SfDkkekqjViaexJEJldmSFuVjRDkrdk4k579luXWn5XgN0mr
+Mw/mrcEgua1l/Pn48rgHHI8sceaih+6SrIIiCwPV0r+8RNPBRAlYMBvLbmXwWamp
+IfKS0wYOfjlCa8WdX3cLzC4Wz/L7ON6Eic5V7n38OSoNN7GijZ5XdYfVCkVWgU1M
+NM6Ii6RYSowKZE7Da/V71P1+UuKzrfoJIIQUEkTSr4OKUm11m9ZxhJNgZe6ZSUFs
+u5NHGRXrQWc4s1APYW/w
+=0qyu
+-----END PGP SIGNATURE-----
 
-What's missing (as are all lib/ functions are from function tracing) is
-the first call to vscnprintf() to get the string and all its args
-together.
-
-Then the '\n' is checked as well as the '<X>' notations. The prefix is
-set for everything but '<c>' which makes sense, as you don't want to add
-a prefix to a KERN_CONT line. But this 'prefix' variable just changes
-the logic, it doesn't really prevent the prefix from appearing as we
-will see.
-
-Now things are a bit different if there's a newline or not. In this
-trace, the newline was there, but first lets look at what happens when
-there's no newline.
-
-It checks this static variable called 'cont_len' which is set if we
-buffered the last line. cont_task is set to the task it buffered too. If
-cont_len is set but cont_task does not equal the current task, we call
-this log_store() thingy. Which is the next thing that would have
-happened if we did have a newline.
-
-Now if cont_len is zero, it updates the current cont_level and
-cont_task. Now it copies the printk into the cont_buf, which too is
-static.
-
-Finally, console_trylock() followed by console_unlock() which is done
-regardless if there was a newline or not.
-
-The console_unlock() is where the magic happens. Remember that
-log_store() thingy, that's what is going to be printed. But remember, it
-only was called if we had a newline, or we had buffered data and the
-current task is different. But the current printk line is still located
-in that cont_buf variable which happens to be static for vprintk_emit()
-and not available elsewhere.
-
-Once data is sent to the log_store() it always prints this prefix. This
-is why my printk_flush() caused the next (<c>) line to have a timestamp
-too. Because when that got flushed out, it got a timestamp on it, as all
-data that goes to the console gets a timestamp. The only reason it
-doesn't in the current method, is that it buffers it locally in the
-cont_buf[] array, before it sends it out to the console. When it does
-send it out to the console, it sends the entire buffer.
-
-I forgot to mention what happens when the line has a newline, and
-there's content in cont_buf[]. If the cont_task is the same as current,
-it appends the cont_buf to the new data that is about to be printed, and
-then sends that out to the log_store() which will get a timestamp at the
-beginning of the line before the buffered data.
-
-Oh, and one more thing. The vprintk_emit() strips the newline from the
-text even if it had one. The msg_print_text() called by console_unlock()
-and a bunch of syslog callers, adds the '\n' back. This is to all text
-going out. My patch added a msg flag to say "don't do that!"  We also
-need a flag to skip adding the timestamp, but that looks even more
-complex, as the timestamp is added by print_prefix() also called by
-msg_print_text() (three callers) and there's no comments to what the
-frick it's doing or why. We need a way to stop that from happening.
-
-
--- Steve
-
-
+--Signature=_Tue__19_Jun_2012_11_29_39_+1000_YF7.=TiG=vAAy5UZ--
