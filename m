@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2FSCHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 22:07:34 -0400
+	id S1753593Ab2FSCHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 22:07:44 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:49458 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab2FSCHd (ORCPT
+	with ESMTP id S1752227Ab2FSCHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 22:07:33 -0400
-Date: Tue, 19 Jun 2012 11:07:28 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 6/9] KVM: MMU: fast path of handling guest page fault
-Message-Id: <20120619110728.14504b91ec1c2ee9cd81b413@gmail.com>
-In-Reply-To: <20120618192120.GA2697@amt.cnet>
-References: <4FC470C7.5040700@linux.vnet.ibm.com>
-	<4FC471B8.3070204@linux.vnet.ibm.com>
-	<20120613224002.GE19290@amt.cnet>
-	<20120614102214.1c8a6e23.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120618192120.GA2697@amt.cnet>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 18 Jun 2012 22:07:41 -0400
+Message-ID: <4FDFDEE8.2030108@gmail.com>
+Date: Tue, 19 Jun 2012 10:07:36 +0800
+From: "gnehzuil.lzheng@gmail.com" <gnehzuil.lzheng@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Rob Landley <rob@landley.net>
+CC: Jens Axboe <axboe@kernel.dk>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Why does ionice(1) ban the user to set back to 'none' class?
+References: <20120618114841.GA4855@gmail.com> <4FDF3AAA.9020101@landley.net>
+In-Reply-To: <4FDF3AAA.9020101@landley.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jun 2012 16:21:20 -0300
-Marcelo Tosatti <mtosatti@redhat.com> wrote:
+On 06/18/2012 10:26 PM, Rob Landley wrote:
 
-> > [not about this patch]
-> > 
-> > EPT accessed/dirty bits will be used for more things in the future.
-> > Are there any rules for using these bits?
-> > 
-> > Same as other bits?
+> On 06/18/2012 06:48 AM, Zheng Liu wrote:
+>> Hi Jens,
+>>
+>> I meet a problem when I use ionice(1) to adjust a process's io priority.
+>> I do the following operations:
+>>
+>> $ ionice -p${pid}
+>> none: prio 0
+>> $ ionice -p${pid} -c2 -n4
+>> $ ionice -p${pid}
+>> best-effort: prio 4
+>> $ ionice -p${pid} -c0 -n0
+>> $ ionice -p${pid}
+>> best-effort: prio 0
+>>
+>> So I cannot set scheduling class back to 'none'.  If I call ioprio_set(2)
+>> directly, it will be fine.  But if I use ionice(1), I cannot change it.  I
+>> read the docs about ionice in [1].  I notice this code:
+>>
+>> switch (ioprio_class) {
+>> 	case IOPRIO_CLASS_NONE:
+>> 		ioprio_class = IOPRIO_CLASS_BE;
+>>                                ^^^^^^^^^^^^^^^^
+>>                                *It means that we cannot set back to none.*
+>> 		break;
+>> 	case IOPRIO_CLASS_RT:
+>> 	case IOPRIO_CLASS_BE:
+>> 		break;
+>> 	case IOPRIO_CLASS_IDLE:
+>> 		ioprio = 7;
+>> 		break;
+>> 	default:
+>> 		printf("bad prio class %d\n", ioprio_class);
+>> 		return 1;
+>> }
+>>
+>> My question is why we need to ban the user to set back to 'none'.  Is there
+>> some reasons?  Thank you.
 > 
-> Do you mean hardware rules or KVM rules?
+> Since I'm CC'd, I'll explicitly say I haven't a clue why it does this.
 
-KVM rules.
 
-Your concern was about "lock-less" v. "current EPT-A/D code".
-My question was what we should care not to break the former
-in the future.
+Thank you all the same. :-)
 
-	Takuya
+Regards,
+Zheng
