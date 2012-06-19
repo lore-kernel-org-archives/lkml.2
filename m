@@ -1,36 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab2FSCEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 22:04:42 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47559 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab2FSCEl (ORCPT
+	id S1752195Ab2FSCHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 22:07:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49458 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab2FSCHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 22:04:41 -0400
-Message-ID: <4FDFDE15.8020109@linux.vnet.ibm.com>
-Date: Tue, 19 Jun 2012 10:04:05 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
+	Mon, 18 Jun 2012 22:07:33 -0400
+Date: Tue, 19 Jun 2012 11:07:28 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
 To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
 Subject: Re: [PATCH v6 6/9] KVM: MMU: fast path of handling guest page fault
-References: <4FC470C7.5040700@linux.vnet.ibm.com> <4FC471B8.3070204@linux.vnet.ibm.com> <20120613224002.GE19290@amt.cnet> <4FD953BE.6020200@linux.vnet.ibm.com> <20120618193257.GB2697@amt.cnet>
-In-Reply-To: <20120618193257.GB2697@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <20120619110728.14504b91ec1c2ee9cd81b413@gmail.com>
+In-Reply-To: <20120618192120.GA2697@amt.cnet>
+References: <4FC470C7.5040700@linux.vnet.ibm.com>
+	<4FC471B8.3070204@linux.vnet.ibm.com>
+	<20120613224002.GE19290@amt.cnet>
+	<20120614102214.1c8a6e23.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120618192120.GA2697@amt.cnet>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12061815-6102-0000-0000-000001B7087D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2012 03:32 AM, Marcelo Tosatti wrote:
+On Mon, 18 Jun 2012 16:21:20 -0300
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
- 
-> Ok, if you/Avi want to avoid an atomic read-and-update, please
-> introduce it later an as optimization patch.
+> > [not about this patch]
+> > 
+> > EPT accessed/dirty bits will be used for more things in the future.
+> > Are there any rules for using these bits?
+> > 
+> > Same as other bits?
+> 
+> Do you mean hardware rules or KVM rules?
 
+KVM rules.
 
-Good to me, let's discus it in the separate patch. Thank you, Marcelo!
+Your concern was about "lock-less" v. "current EPT-A/D code".
+My question was what we should care not to break the former
+in the future.
 
+	Takuya
