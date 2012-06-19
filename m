@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab2FSS5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:57:41 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:55203 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753414Ab2FSS5k (ORCPT
+	id S1754656Ab2FSTAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 15:00:14 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:53443 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab2FSTAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:57:40 -0400
-X-Sasl-enc: GwKF5xX62oyCv9ouHQTI7jkbWYLhhZOG2k4QCAo1i4y+ 1340132259
-Date: Tue, 19 Jun 2012 15:57:36 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@amd64.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-Message-ID: <20120619185736.GD18816@khazad-dum.debian.net>
-References: <20120613010413.GA28174@khazad-dum.debian.net>
- <20120613065119.GB15661@aftab.osrc.amd.com>
- <20120613123649.GA26012@khazad-dum.debian.net>
- <20120613161139.GA18450@aftab.osrc.amd.com>
- <20120615123749.GC6083@aftab.osrc.amd.com>
- <1339764161.2559.63.camel@twins>
- <20120615125240.GD6083@aftab.osrc.amd.com>
- <20120615165231.GA9169@aftab.osrc.amd.com>
- <20120619024639.GB6186@khazad-dum.debian.net>
- <20120619050325.GA31591@aftab.osrc.amd.com>
+	Tue, 19 Jun 2012 15:00:10 -0400
+Date: Tue, 19 Jun 2012 21:00:08 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kbuild <linux-kbuild@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux/m68k <linux-m68k@vger.kernel.org>, kvm@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: asm/kvm_para.h from asm-generic (was: Re: linux-next: triage
+	for April 19, 2012)
+Message-ID: <20120619190008.GA11092@merkur.ravnborg.org>
+References: <CAMuHMdW9D4FZSUibcd+qrtM+is75FyJXj+RxK+sb33XEjczdyg@mail.gmail.com> <CAMuHMdVM3zn_OUAtGTV_O0d3yFWBM5b_6ORHxaMLVE27Cf_XrQ@mail.gmail.com> <20120619184803.GA31656@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120619050325.GA31591@aftab.osrc.amd.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120619184803.GA31656@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jun 2012, Borislav Petkov wrote:
-> On Mon, Jun 18, 2012 at 11:46:39PM -0300, Henrique de Moraes Holschuh wrote:
-> > On Fri, 15 Jun 2012, Borislav Petkov wrote:
-> > > From: Borislav Petkov <borislav.petkov@amd.com>
-> > > Date: Fri, 15 Jun 2012 18:46:05 +0200
-> > > Subject: [PATCH] x86, microcode: Make reload interface per system
-> > > 
-> > > The reload interface should be per-system so that a full system ucode
-> > > reload happens (on each core) when doing
-> > > 
-> > > echo 1 > /sys/devices/system/cpu/microcode/reload
-> > > 
-> > > Move it to the cpu subsys directory instead of it being per-cpu.
-> > > 
-> > > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > It is a pity this one is much harder to backport to 3.2 and 3.0.
+On Tue, Jun 19, 2012 at 08:48:03PM +0200, Sam Ravnborg wrote:
+> > >>
+> > >> I just noticed include/asm-generic/Kbuild.asm already had
+> > >>
+> > >> ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
+> > >>                  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
+> > >> header-y  += kvm_para.h
+> > >> endif
+> > >>
+> > >> but this doesn't seem to work.
+> > >>
+> > >> Kbuild people: which one is correct?
 > 
-> Yeah, not harder. It changes the sysfs interface and we can't do that
-> for already released kernels.
+> Any use of wildcards in include/asm-generic/Kbuild.asm is bogus.
+> We should:
+> 1) add explicit header-y for kvm.h + a.out.h to the relevant architectures.
+> 2) add explicit header-y for kvm_para.h for the archictectures that needs this file
+> 3) and drop header-y / dummy file fro the others.
 > 
-> But I think you meant that.
-
-Yeah.
-
-I was wondering whether it would be worthwhile to backport the new ABI for
-the Debian 3.2 kernel or not.  Probably not.
-
-Backporting to 3.2 and 3.0 is straigthforward, however it will look nasty as
-one has to "inappropriately touch" the cpu sysdev class to get the attribute
-group directly connected to /sys/devices/system/cpu.
-
-I did notice there were no stable backports of the error unwind during
-module init, but that one is a very rarely used codepath.  Maybe worth to
-backport a fix to stable, though.
-
-> > I'd really like to have the new interface there. But it looks good,
-> > and we will support the new /sys/devices/system/cpu/microcode/reload
-> > sysfs node in Debian for the benefit of anyone using a newer kernel
-> > than the distro's (which will be based on 3.2).
+> Anything else is just papering over the initial wrong doings.
 > 
-> Right, hopefully the next Debian release will have that nice shiny new
-> interface :-)
+> I actually coded up "header-n" support to explicitly say:
+> do not include this file for this arch - but looking at the
+> actual problem being solved this is just bogus so I killed
+> it off again.
 
-I sure hope so :)  Actually, I hope Debian will release a
-"stable-and-a-half" that will already have it.
+Just to be clear - I know this will break headers_check_all.
+I will try to take a look soon for a better generic solution.
 
-> > So, fwiw, you have my:
-> > Acked-by-unimportant-person: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> 
-> No, don't underestimate yourself. I think it helps a lot to have someone
-> look at the patch and even better: give comments whether what we're
-> doing is sane for userspace. So, I appreciate your comments a lot, keep
-> 'em coming :-)
-
-Well, my ack is unimportant in the "this is not an area of the kernel I have
-any authority to ack things" sense.  But we don't have a "I-wanna-that-by:"
-or even a "Thumbs-up-by:"...
-
-> Thanks for review and testing, I'll send out the patches soon.
-
-Thank you for addressing these issues and writing the patches!
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+	Sam
