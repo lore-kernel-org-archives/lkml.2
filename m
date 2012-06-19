@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab2FSKqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 06:46:35 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:3298 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752461Ab2FSKqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 06:46:34 -0400
-Message-ID: <1340102787.1936.19.camel@x61.thuisdomein>
-Subject: [PATCH] ARM: sa1100: remove lart.h
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 19 Jun 2012 12:46:27 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 19 Jun 2012 10:46:27.0345 (UTC) FILETIME=[C7442810:01CD4E08]
-X-RcptDomain: vger.kernel.org
+	id S1754201Ab2FSKqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 06:46:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38302 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751982Ab2FSKqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 06:46:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="113704002"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2.1] dw_dmac: introduce dwc_chan_disable
+Date: Tue, 19 Jun 2012 13:46:32 +0300
+Message-Id: <1340102792-7633-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <CAOh2x=k024nEQ3_K03YTFw+inWerB3N+Tjvwh8RiqYA4qSieOg@mail.gmail.com>
+References: <CAOh2x=k024nEQ3_K03YTFw+inWerB3N+Tjvwh8RiqYA4qSieOg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No file includes this header. It has never been included since at least
-v2.6.12-rc2. It can safely be removed.
+This piece of code is used often. Make it as a separate function.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
-0) Tested only by using various git commands on the (history of the)
-tree.
+ drivers/dma/dw_dmac.c |   32 ++++++++++++++------------------
+ 1 file changed, 14 insertions(+), 18 deletions(-)
 
-1) One other (potential) cleanup that I discovered while looking at the
-effects of removing this header can be found in
-arch/arm/mach-sa1100/lart.c:
-- outdated warning, referring to a header that (in short) got removed in
-commit c36167de652f8acdf0b374c78805e662646cd327 ("ide: remove dead
-<asm-arm/arch-sa1100/ide.h>");
-- quite a bit of code depends on macros that seem to be never defined
-anywhere (eg, LART_GREY_LCD).
-
-So that code is in need of some cleaning up. But does anyone still care
-about the LART related code? Especially that outdated warning suggests
-this code has seriously bit rotted.
-
-2) While I'm at it, I might as well add some more details on the history
-of lart.h, which are not really relevant for the commit explanation (or
-anything else, for that matter):
-- it got added in v2.4.9-pre1 and was only included by
-include/asm-arm/arch-sa1100/hardware.h;
-- its sole #include got removed in a patch called "[ARM] Clean up sa1100
-hardware specific headers.". That patch got merged in release v2.5.47.
-So it is actually unused since v2.5.47, ie it's unused for almost ten
-years!
-
- arch/arm/mach-sa1100/include/mach/lart.h |   13 -------------
- 1 files changed, 0 insertions(+), 13 deletions(-)
- delete mode 100644 arch/arm/mach-sa1100/include/mach/lart.h
-
-diff --git a/arch/arm/mach-sa1100/include/mach/lart.h b/arch/arm/mach-sa1100/include/mach/lart.h
-deleted file mode 100644
-index 8a5482d..0000000
---- a/arch/arm/mach-sa1100/include/mach/lart.h
-+++ /dev/null
-@@ -1,13 +0,0 @@
--#ifndef _INCLUDE_LART_H
--#define _INCLUDE_LART_H
--
--#define LART_GPIO_ETH0			GPIO_GPIO0
--#define LART_IRQ_ETH0			IRQ_GPIO0
--
--#define LART_GPIO_IDE			GPIO_GPIO1
--#define LART_IRQ_IDE			IRQ_GPIO1
--
--#define LART_GPIO_UCB1200		GPIO_GPIO18
--#define LART_IRQ_UCB1200		IRQ_GPIO18
--
--#endif
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index d3845ef..cefc2c3b 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -219,6 +219,14 @@ static void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
+ 		channel_readl(dwc, CTL_LO));
+ }
+ 
++
++static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
++{
++	channel_clear_bit(dw, CH_EN, dwc->mask);
++	while (dma_readl(dw, CH_EN) & dwc->mask)
++		cpu_relax();
++}
++
+ /*----------------------------------------------------------------------*/
+ 
+ /* Called with dwc->lock held and bh disabled */
+@@ -314,9 +322,7 @@ static void dwc_complete_all(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 			"BUG: XFER bit set, but channel not idle!\n");
+ 
+ 		/* Try to continue after resetting the channel... */
+-		channel_clear_bit(dw, CH_EN, dwc->mask);
+-		while (dma_readl(dw, CH_EN) & dwc->mask)
+-			cpu_relax();
++		dwc_chan_disable(dw, dwc);
+ 	}
+ 
+ 	/*
+@@ -398,9 +404,7 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 		"BUG: All descriptors done, but channel not idle!\n");
+ 
+ 	/* Try to continue after resetting the channel... */
+-	channel_clear_bit(dw, CH_EN, dwc->mask);
+-	while (dma_readl(dw, CH_EN) & dwc->mask)
+-		cpu_relax();
++	dwc_chan_disable(dw, dwc);
+ 
+ 	if (!list_empty(&dwc->queue)) {
+ 		list_move(dwc->queue.next, &dwc->active_list);
+@@ -516,9 +520,7 @@ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
+ 
+ 		dwc_dump_chan_regs(dwc);
+ 
+-		channel_clear_bit(dw, CH_EN, dwc->mask);
+-		while (dma_readl(dw, CH_EN) & dwc->mask)
+-			cpu_relax();
++		dwc_chan_disable(dw, dwc);
+ 
+ 		/* make sure DMA does not restart by loading a new list */
+ 		channel_writel(dwc, LLP, 0);
+@@ -948,9 +950,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	} else if (cmd == DMA_TERMINATE_ALL) {
+ 		spin_lock_irqsave(&dwc->lock, flags);
+ 
+-		channel_clear_bit(dw, CH_EN, dwc->mask);
+-		while (dma_readl(dw, CH_EN) & dwc->mask)
+-			cpu_relax();
++		dwc_chan_disable(dw, dwc);
+ 
+ 		dwc->paused = false;
+ 
+@@ -1158,9 +1158,7 @@ void dw_dma_cyclic_stop(struct dma_chan *chan)
+ 
+ 	spin_lock_irqsave(&dwc->lock, flags);
+ 
+-	channel_clear_bit(dw, CH_EN, dwc->mask);
+-	while (dma_readl(dw, CH_EN) & dwc->mask)
+-		cpu_relax();
++	dwc_chan_disable(dw, dwc);
+ 
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ }
+@@ -1338,9 +1336,7 @@ void dw_dma_cyclic_free(struct dma_chan *chan)
+ 
+ 	spin_lock_irqsave(&dwc->lock, flags);
+ 
+-	channel_clear_bit(dw, CH_EN, dwc->mask);
+-	while (dma_readl(dw, CH_EN) & dwc->mask)
+-		cpu_relax();
++	dwc_chan_disable(dw, dwc);
+ 
+ 	dma_writel(dw, CLEAR.ERROR, dwc->mask);
+ 	dma_writel(dw, CLEAR.XFER, dwc->mask);
 -- 
-1.7.7.6
+1.7.10
 
