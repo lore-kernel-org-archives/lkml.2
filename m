@@ -1,166 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab2FSSA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:00:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33391 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149Ab2FSSAP (ORCPT
+	id S1754561Ab2FSSAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:00:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43358 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab2FSSAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:00:15 -0400
+	Tue, 19 Jun 2012 14:00:31 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 14/20] perf script: Replace __event_name uses with perf_evsel__name
-Date: Tue, 19 Jun 2012 14:50:15 -0300
-Message-Id: <1340128221-17348-15-git-send-email-acme@infradead.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 18/20] perf tools: Remove unused evsel parameter from machine__resolve_callchain
+Date: Tue, 19 Jun 2012 14:50:19 -0300
+Message-Id: <1340128221-17348-19-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1340128221-17348-1-git-send-email-acme@infradead.org>
 References: <1340128221-17348-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-No logic change, just remove one more user of __event_name().
+Removing unused evsel parameter from machine__resolve_callchain
+function. Plus related header file and callers changes.
 
-Cc: David Ahern <dsahern@gmail.com>
+The evsel parameter is unused since following commit:
+  perf callchain: Make callchain cursors TLS
+  commit 472606458f3e1ced5fe3cc5f04e90a6b5a4732cf
+  Author: Namhyung Kim <namhyung.kim@lge.com>
+  Date:   Thu May 31 14:43:26 2012 +0900
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Frank Ch. Eigler <fche@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-e4f0vuy3283hmzfjjvkgm7fo@git.kernel.org
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Link: http://lkml.kernel.org/r/1339420814-7379-9-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c |   38 ++++++++++++++++++++------------------
- 1 files changed, 20 insertions(+), 18 deletions(-)
+ tools/perf/builtin-report.c |    4 ++--
+ tools/perf/builtin-script.c |    4 ++--
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/map.h       |    2 +-
+ tools/perf/util/session.c   |    7 +++----
+ tools/perf/util/session.h   |    4 ++--
+ 6 files changed, 11 insertions(+), 12 deletions(-)
 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index ea8ce8e..40b0ffc 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -69,7 +69,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+ 
+ 	if ((sort__has_parent || symbol_conf.use_callchain)
+ 	    && sample->callchain) {
+-		err = machine__resolve_callchain(machine, evsel, al->thread,
++		err = machine__resolve_callchain(machine, al->thread,
+ 						 sample->callchain, &parent);
+ 		if (err)
+ 			return err;
+@@ -140,7 +140,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	struct hist_entry *he;
+ 
+ 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
+-		err = machine__resolve_callchain(machine, evsel, al->thread,
++		err = machine__resolve_callchain(machine, al->thread,
+ 						 sample->callchain, &parent);
+ 		if (err)
+ 			return err;
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 8e395a5..8f9f9b6 100644
+index 8f9f9b6..8fecd3b 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -137,10 +137,11 @@ static const char *output_field2str(enum perf_output_field field)
- 
- #define PRINT_FIELD(x)  (output[attr->type].fields & PERF_OUTPUT_##x)
- 
--static int perf_event_attr__check_stype(struct perf_event_attr *attr,
--				  u64 sample_type, const char *sample_msg,
--				  enum perf_output_field field)
-+static int perf_evsel__check_stype(struct perf_evsel *evsel,
-+				   u64 sample_type, const char *sample_msg,
-+				   enum perf_output_field field)
- {
-+	struct perf_event_attr *attr = &evsel->attr;
- 	int type = attr->type;
- 	const char *evname;
- 
-@@ -148,7 +149,7 @@ static int perf_event_attr__check_stype(struct perf_event_attr *attr,
- 		return 0;
- 
- 	if (output[type].user_set) {
--		evname = __event_name(attr->type, attr->config);
-+		evname = perf_evsel__name(evsel);
- 		pr_err("Samples for '%s' event do not have %s attribute set. "
- 		       "Cannot print '%s' field.\n",
- 		       evname, sample_msg, output_field2str(field));
-@@ -157,7 +158,7 @@ static int perf_event_attr__check_stype(struct perf_event_attr *attr,
- 
- 	/* user did not ask for it explicitly so remove from the default list */
- 	output[type].fields &= ~field;
--	evname = __event_name(attr->type, attr->config);
-+	evname = perf_evsel__name(evsel);
- 	pr_debug("Samples for '%s' event do not have %s attribute set. "
- 		 "Skipping '%s' field.\n",
- 		 evname, sample_msg, output_field2str(field));
-@@ -175,8 +176,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
- 		return -EINVAL;
- 
- 	if (PRINT_FIELD(IP)) {
--		if (perf_event_attr__check_stype(attr, PERF_SAMPLE_IP, "IP",
--					   PERF_OUTPUT_IP))
-+		if (perf_evsel__check_stype(evsel, PERF_SAMPLE_IP, "IP",
-+					    PERF_OUTPUT_IP))
- 			return -EINVAL;
- 
- 		if (!no_callchain &&
-@@ -185,8 +186,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+@@ -389,7 +389,7 @@ static void print_sample_bts(union perf_event *event,
+ 			printf(" ");
+ 		else
+ 			printf("\n");
+-		perf_event__print_ip(event, sample, machine, evsel,
++		perf_event__print_ip(event, sample, machine,
+ 				     PRINT_FIELD(SYM), PRINT_FIELD(DSO),
+ 				     PRINT_FIELD(SYMOFFSET));
  	}
- 
- 	if (PRINT_FIELD(ADDR) &&
--		perf_event_attr__check_stype(attr, PERF_SAMPLE_ADDR, "ADDR",
--				       PERF_OUTPUT_ADDR))
-+		perf_evsel__check_stype(evsel, PERF_SAMPLE_ADDR, "ADDR",
-+					PERF_OUTPUT_ADDR))
- 		return -EINVAL;
- 
- 	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP) && !PRINT_FIELD(ADDR)) {
-@@ -208,18 +209,18 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+@@ -433,7 +433,7 @@ static void process_event(union perf_event *event __unused,
+ 			printf(" ");
+ 		else
+ 			printf("\n");
+-		perf_event__print_ip(event, sample, machine, evsel,
++		perf_event__print_ip(event, sample, machine,
+ 				     PRINT_FIELD(SYM), PRINT_FIELD(DSO),
+ 				     PRINT_FIELD(SYMOFFSET));
  	}
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 8090a28..e3cab5f 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -774,7 +774,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
  
- 	if ((PRINT_FIELD(PID) || PRINT_FIELD(TID)) &&
--		perf_event_attr__check_stype(attr, PERF_SAMPLE_TID, "TID",
--				       PERF_OUTPUT_TID|PERF_OUTPUT_PID))
-+		perf_evsel__check_stype(evsel, PERF_SAMPLE_TID, "TID",
-+					PERF_OUTPUT_TID|PERF_OUTPUT_PID))
- 		return -EINVAL;
+ 		if ((sort__has_parent || symbol_conf.use_callchain) &&
+ 		    sample->callchain) {
+-			err = machine__resolve_callchain(machine, evsel, al.thread,
++			err = machine__resolve_callchain(machine, al.thread,
+ 							 sample->callchain, &parent);
+ 			if (err)
+ 				return;
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 81371ba..c14c665 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -157,7 +157,7 @@ void machine__exit(struct machine *self);
+ void machine__delete(struct machine *self);
  
- 	if (PRINT_FIELD(TIME) &&
--		perf_event_attr__check_stype(attr, PERF_SAMPLE_TIME, "TIME",
--				       PERF_OUTPUT_TIME))
-+		perf_evsel__check_stype(evsel, PERF_SAMPLE_TIME, "TIME",
-+					PERF_OUTPUT_TIME))
- 		return -EINVAL;
+ int machine__resolve_callchain(struct machine *machine,
+-			       struct perf_evsel *evsel, struct thread *thread,
++			       struct thread *thread,
+ 			       struct ip_callchain *chain,
+ 			       struct symbol **parent);
+ int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 582ee38..febc0ae 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -289,7 +289,6 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
+ }
  
- 	if (PRINT_FIELD(CPU) &&
--		perf_event_attr__check_stype(attr, PERF_SAMPLE_CPU, "CPU",
--				       PERF_OUTPUT_CPU))
-+		perf_evsel__check_stype(evsel, PERF_SAMPLE_CPU, "CPU",
-+					PERF_OUTPUT_CPU))
- 		return -EINVAL;
- 
- 	return 0;
-@@ -258,9 +259,10 @@ static int perf_session__check_output_opt(struct perf_session *session)
- 
- static void print_sample_start(struct perf_sample *sample,
+ int machine__resolve_callchain(struct machine *self,
+-			       struct perf_evsel *evsel __used,
  			       struct thread *thread,
--			       struct perf_event_attr *attr)
-+			       struct perf_evsel *evsel)
+ 			       struct ip_callchain *chain,
+ 			       struct symbol **parent)
+@@ -1480,8 +1479,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ }
+ 
+ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+-			  struct machine *machine, struct perf_evsel *evsel,
+-			  int print_sym, int print_dso, int print_symoffset)
++			  struct machine *machine, int print_sym,
++			  int print_dso, int print_symoffset)
  {
- 	int type;
-+	struct perf_event_attr *attr = &evsel->attr;
- 	struct event_format *event;
- 	const char *evname = NULL;
- 	unsigned long secs;
-@@ -305,7 +307,7 @@ static void print_sample_start(struct perf_sample *sample,
- 			if (event)
- 				evname = event->name;
- 		} else
--			evname = __event_name(attr->type, attr->config);
-+			evname = perf_evsel__name(evsel);
+ 	struct addr_location al;
+ 	struct callchain_cursor_node *node;
+@@ -1495,7 +1494,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
  
- 		printf("%s: ", evname ? evname : "[unknown]");
- 	}
-@@ -412,7 +414,7 @@ static void process_event(union perf_event *event __unused,
- 	if (output[attr->type].fields == 0)
- 		return;
+ 	if (symbol_conf.use_callchain && sample->callchain) {
  
--	print_sample_start(sample, thread, attr);
-+	print_sample_start(sample, thread, evsel);
+-		if (machine__resolve_callchain(machine, evsel, al.thread,
++		if (machine__resolve_callchain(machine, al.thread,
+ 						sample->callchain, NULL) != 0) {
+ 			if (verbose)
+ 				error("Failed to resolve callchain. Skipping\n");
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 7a5434c..877d781 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -150,8 +150,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ 					    unsigned int type);
  
- 	if (is_bts_event(attr)) {
- 		print_sample_bts(event, sample, evsel, machine, thread);
+ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+-			  struct machine *machine, struct perf_evsel *evsel,
+-			  int print_sym, int print_dso, int print_symoffset);
++			  struct machine *machine, int print_sym,
++			  int print_dso, int print_symoffset);
+ 
+ int perf_session__cpu_bitmap(struct perf_session *session,
+ 			     const char *cpu_list, unsigned long *cpu_bitmap);
 -- 
 1.7.1
 
