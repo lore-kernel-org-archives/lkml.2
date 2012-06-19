@@ -1,60 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2FSP3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:29:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53353 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab2FSP3x (ORCPT
+	id S1753469Ab2FSPoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 11:44:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62077 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab2FSPoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:29:53 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Jarod Wilson <jarod@redhat.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        luis.henriques@canonical.com
-Subject: [PATCH 1/1] [media] ene_ir: Fix driver initialisation
-Date: Tue, 19 Jun 2012 16:29:49 +0100
-Message-Id: <1340119789-22887-1-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 19 Jun 2012 11:44:12 -0400
+Date: Tue, 19 Jun 2012 17:43:56 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: [PATCH 1/2 v3] regulator: support multiple dummy fixed regulators
+In-Reply-To: <20120618172808.GX3974@opensource.wolfsonmicro.com>
+Message-ID: <Pine.LNX.4.64.1206191742030.6204@axis700.grange>
+References: <20120618094145.GC3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181145520.23884@axis700.grange>
+ <20120618100657.GG3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181212180.23884@axis700.grange>
+ <20120618115738.GI3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181755370.23884@axis700.grange>
+ <20120618162058.GT3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181826210.23884@axis700.grange>
+ <20120618163758.GU3974@opensource.wolfsonmicro.com>
+ <Pine.LNX.4.64.1206181850280.23884@axis700.grange>
+ <20120618172808.GX3974@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:K8EhOXckxN9sCd2XRrZ33L+8L25/8PpxfPVb1tAVouP
+ 6lcpdDcbWx1Um5tBvT8QX77/hp3dD5pQMEjYSTcHuH9VtTMvxf
+ EJHDyhjsf/VSfOGNKnCQ6MXyDI8crDxaFpw2FUsK+tj1SLSIm8
+ uxBu+V13ebzowsk1Zk7R1EsszakOpA1vbxXjl21zwrCE9vrZY9
+ ejIe5um8AoZLaAqkpt7urQNyaMZEmpC6M62lCRWwklMoOJwN/3
+ +7l8ScNHcybJA/APlm49NRq2CE/jp4/psHNHAkNcc6rbxLQI3O
+ X6yD+17x0iSxu25C9vhi6TCfmKxN+y7dEck/HulHxGYdKPZ2do
+ /lIwtizHW1lQiadQ20mwr8bU42of+FjqDvK7NqbNkBqa3dTTFQ
+ JVYhDxZYX024g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 9ef449c6b31bb6a8e6dedc24de475a3b8c79be20 ("[media] rc: Postpone ISR
-registration") fixed an early ISR registration on several drivers.  It did
-however also introduced a bug by moving the invocation of pnp_port_start()
-to the end of the probe function.
+Currently regulator_register_fixed() uses a constant name to register a
+fixed dummy regulator. This is sufficient in principle, since there is no
+reason to register multiple such regulators. The user can simply supply all
+consumers in one array and use it to initialise such a regulator. However,
+in some cases it can be convenient to register multiple such regulators.
+This is also a prerequisite for the upcoming patch, that will add a voltage
+parameter to this function. The original function is provided as a wrapper
+macro.
 
-This patch fixes this issue by moving the invocation of pnp_port_start() to
-an earlier stage in the probe function.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 ---
- drivers/media/rc/ene_ir.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/rc/ene_ir.c b/drivers/media/rc/ene_ir.c
-index ed77c6d..5327061 100644
---- a/drivers/media/rc/ene_ir.c
-+++ b/drivers/media/rc/ene_ir.c
-@@ -1018,6 +1018,8 @@ static int ene_probe(struct pnp_dev *pnp_dev, const struct pnp_device_id *id)
+v3: Let user provide a name. Thanks to Mark for comments.
+
+ drivers/regulator/fixed-helper.c |   14 +++++++++++---
+ include/linux/regulator/fixed.h  |    7 +++++--
+ 2 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/regulator/fixed-helper.c b/drivers/regulator/fixed-helper.c
+index cacd33c..3aa268d 100644
+--- a/drivers/regulator/fixed-helper.c
++++ b/drivers/regulator/fixed-helper.c
+@@ -1,4 +1,5 @@
+ #include <linux/slab.h>
++#include <linux/string.h>
+ #include <linux/platform_device.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/fixed.h>
+@@ -13,16 +14,18 @@ static void regulator_fixed_release(struct device *dev)
+ {
+ 	struct fixed_regulator_data *data = container_of(dev,
+ 			struct fixed_regulator_data, pdev.dev);
++	kfree(data->cfg.supply_name);
+ 	kfree(data);
+ }
  
- 	spin_lock_init(&dev->hw_lock);
+ /**
+- * regulator_register_fixed - register a no-op fixed regulator
++ * regulator_register_fixed_name - register a no-op fixed regulator
+  * @id: platform device id
++ * @name: name to be used for the regulator
+  * @supplies: consumers for this regulator
+  * @num_supplies: number of consumers
+  */
+-struct platform_device *regulator_register_fixed(int id,
++struct platform_device *regulator_register_always_on(int id, const char *name,
+ 		struct regulator_consumer_supply *supplies, int num_supplies)
+ {
+ 	struct fixed_regulator_data *data;
+@@ -31,7 +34,12 @@ struct platform_device *regulator_register_fixed(int id,
+ 	if (!data)
+ 		return NULL;
  
-+	dev->hw_io = pnp_port_start(pnp_dev, 0);
+-	data->cfg.supply_name = "fixed-dummy";
++	data->cfg.supply_name = kstrdup(name, GFP_KERNEL);
++	if (!data->cfg.supply_name) {
++		kfree(data);
++		return NULL;
++	}
 +
- 	pnp_set_drvdata(pnp_dev, dev);
- 	dev->pnp_dev = pnp_dev;
+ 	data->cfg.microvolts = 0;
+ 	data->cfg.gpio = -EINVAL;
+ 	data->cfg.enabled_at_boot = 1;
+diff --git a/include/linux/regulator/fixed.h b/include/linux/regulator/fixed.h
+index f83f744..6b9325b 100644
+--- a/include/linux/regulator/fixed.h
++++ b/include/linux/regulator/fixed.h
+@@ -58,14 +58,17 @@ struct fixed_voltage_config {
+ struct regulator_consumer_supply;
  
-@@ -1072,7 +1074,6 @@ static int ene_probe(struct pnp_dev *pnp_dev, const struct pnp_device_id *id)
+ #if IS_ENABLED(CONFIG_REGULATOR)
+-struct platform_device *regulator_register_fixed(int id,
++struct platform_device *regulator_register_always_on(int id, const char *name,
+ 		struct regulator_consumer_supply *supplies, int num_supplies);
+ #else
+-static inline struct platform_device *regulator_register_fixed(int id,
++static inline struct platform_device *regulator_register_always_on(int id, const char *name,
+ 		struct regulator_consumer_supply *supplies, int num_supplies)
+ {
+ 	return NULL;
+ }
+ #endif
  
- 	/* claim the resources */
- 	error = -EBUSY;
--	dev->hw_io = pnp_port_start(pnp_dev, 0);
- 	if (!request_region(dev->hw_io, ENE_IO_SIZE, ENE_DRIVER_NAME)) {
- 		dev->hw_io = -1;
- 		dev->irq = -1;
++#define regulator_register_fixed(id, s, ns) regulator_register_always_on(id, \
++						"fixed-dummy", s, ns)
++
+ #endif
 -- 
-1.7.9.5
+1.7.2.5
 
