@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab2FSRcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 13:32:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60829 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab2FSRcR (ORCPT
+	id S1752818Ab2FSRfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 13:35:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15188 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab2FSRf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 13:32:17 -0400
-Message-ID: <4FE0B79D.4090201@wwwdotorg.org>
-Date: Tue, 19 Jun 2012 11:32:13 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Laxman Dewangan <ldewangan@nvidia.com>
-CC: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, arnd@arndb.de, linus.walleij@linaro.org,
-        lrg@ti.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 3/3] ARM: dts: db8500: add node property "regulator-compatible"
- regulator node
-References: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com> <1340116099-17629-4-git-send-email-ldewangan@nvidia.com> <4FE0A546.1010707@linaro.org>
-In-Reply-To: <4FE0A546.1010707@linaro.org>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=UTF-8
+	Tue, 19 Jun 2012 13:35:29 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=n0vNnt877cm6I0ScJAwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340127327.27036.37.camel@gandalf.stny.rr.com>
+Subject: [ANOUNCE] 3.4.3-rt11
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 19 Jun 2012 13:35:27 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2012 10:13 AM, Lee Jones wrote:
-> On 19/06/12 15:28, Laxman Dewangan wrote:
->> Device's regulator matches their hardware counterparts with the
->> property "regulator-compatible" of each child regulator node in
->> place of the child node.
->> Add the property "regulator-compatible" for each regulator with
->> their name.
->>
->> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
->> ---
->> Changes from V1:
->>   - This is new change in V2.
->>
->>   arch/arm/boot/dts/db8500.dtsi |  128
->> +++++++++++++++++++++++++++++++----------
->>   1 files changed, 97 insertions(+), 31 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/db8500.dtsi
->> b/arch/arm/boot/dts/db8500.dtsi
->> index 4ad5160..9548f80 100644
->> --- a/arch/arm/boot/dts/db8500.dtsi
->> +++ b/arch/arm/boot/dts/db8500.dtsi
->> @@ -203,107 +203,149 @@
->>
->>               db8500-prcmu-regulators {
->>                   compatible = "stericsson,db8500-prcmu-regulator";
->> +                #address-cells =<1>;
->> +                #size-cells =<0>;
-> 
-> Why are these and the reg properties required?
 
-DT nodes should be named after the type of object they describe (e.g.
-"regulator") rather than the name of the object they're describing (e.g.
-"vape").
+Dear RT Folks,
 
-Once you've made that change, you end up with many nodes with the same
-name in the same parent, so you need to make their names unique. You do
-this by adding a "unit address" to each of them - "@0", "@1", ... But,
-in order to be "allowed" to use such a unit address, you need a reg
-property that matches the unit address, and #address-cells/#size-cells
-in the parent node.
+I'm pleased to announce the 3.4.3-rt11 stable release.
 
->>                   // DB8500_REGULATOR_VAPE
->> -                db8500_vape_reg: db8500_vape {
->> +                db8500_vape_reg: regulator@0 {
->> +                    reg =<0>;
 
-Laxman, you need a space after the = sign for all these added reg
-properties, and #address-cells/#size-cells above.
+This release is just an update to the new stable 3.4.3 version
+and no RT specific changes have been made.
 
->> +                    regulator-compatible = "db8500_vape";
->>                       regulator-name = "db8500-vape";
->>                       regulator-always-on;
->>                   };
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: c26e9a2ef4d29d0256b4b158db998bb281cc9d55
+
+
+Or to build 3.4.3-rt11 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.3.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.3-rt11.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
