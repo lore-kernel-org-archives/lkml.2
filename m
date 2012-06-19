@@ -1,285 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab2FSSDN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:03:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43335 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab2FSSAP (ORCPT
+	id S1754749Ab2FSSDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:03:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33396 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab2FSSAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Jun 2012 14:00:15 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/20] perf hists browser: Implement printing snapshots to files
-Date: Tue, 19 Jun 2012 14:50:09 -0300
-Message-Id: <1340128221-17348-9-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 06/20] perf ui/gtk: Use struct perf_error_ops
+Date: Tue, 19 Jun 2012 14:50:07 -0300
+Message-Id: <1340128221-17348-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1340128221-17348-1-git-send-email-acme@infradead.org>
 References: <1340128221-17348-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Namhyung Kim <namhyung@gmail.com>
 
-To avoid having to resort to --stdio, that expands everything, instead
-allow the user to go on expanding the relevant callchains and then press
-'P' to print that view.
+Define and use perf_gtk_eops to provide a GTK2 message dialog for error
+reporting and a info_bar for warning.
 
-As the hists browser is used for both static (report) and dynamic (top)
-views, it prints to a 'perf.hists.N' sequence, i.e. multiple snapshots
-can be taken in report and top.
+As GtkInfoBar requires recent GTK+ libraries, provides a fallback
+implementation using statusbar widget too.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-wr9xx4ba0utrynu5j6wotd79@git.kernel.org
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1338265382-6872-8-git-send-email-namhyung@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c |  195 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 195 insertions(+), 0 deletions(-)
+ tools/perf/ui/gtk/setup.c |    5 +++
+ tools/perf/ui/gtk/util.c  |   86 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 91 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 53f6697..f556e5f 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -23,6 +23,7 @@ struct hist_browser {
- 	struct hists	    *hists;
- 	struct hist_entry   *he_selection;
- 	struct map_symbol   *selection;
-+	int		     print_seq;
- 	bool		     has_symbols;
- };
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
+index 8295299..92879ce 100644
+--- a/tools/perf/ui/gtk/setup.c
++++ b/tools/perf/ui/gtk/setup.c
+@@ -1,12 +1,17 @@
+ #include "gtk.h"
+ #include "../../util/cache.h"
++#include "../../util/debug.h"
++
++extern struct perf_error_ops perf_gtk_eops;
  
-@@ -800,6 +801,196 @@ do_offset:
- 	}
+ int perf_gtk__init(void)
+ {
++	perf_error__register(&perf_gtk_eops);
+ 	return gtk_init_check(NULL, NULL) ? 0 : -1;
  }
  
-+static int hist_browser__fprintf_callchain_node_rb_tree(struct hist_browser *browser,
-+							struct callchain_node *chain_node,
-+							u64 total, int level,
-+							FILE *fp)
+ void perf_gtk__exit(bool wait_for_ok __used)
+ {
++	perf_error__unregister(&perf_gtk_eops);
+ 	gtk_main_quit();
+ }
+diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
+index 6fe13fd..0ead373 100644
+--- a/tools/perf/ui/gtk/util.c
++++ b/tools/perf/ui/gtk/util.c
+@@ -2,6 +2,8 @@
+ #include "../../util/debug.h"
+ #include "gtk.h"
+ 
++#include <string.h>
++
+ 
+ struct perf_gtk_context *pgctx;
+ 
+@@ -26,6 +28,90 @@ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx)
+ 	return 0;
+ }
+ 
++static int perf_gtk__error(const char *format, va_list args)
 +{
-+	struct rb_node *node;
-+	int offset = level * LEVEL_OFFSET_STEP;
-+	u64 new_total, remaining;
-+	int printed = 0;
++	char *msg;
++	GtkWidget *dialog;
 +
-+	if (callchain_param.mode == CHAIN_GRAPH_REL)
-+		new_total = chain_node->children_hit;
-+	else
-+		new_total = total;
-+
-+	remaining = new_total;
-+	node = rb_first(&chain_node->rb_root);
-+	while (node) {
-+		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
-+		struct rb_node *next = rb_next(node);
-+		u64 cumul = callchain_cumul_hits(child);
-+		struct callchain_list *chain;
-+		char folded_sign = ' ';
-+		int first = true;
-+		int extra_offset = 0;
-+
-+		remaining -= cumul;
-+
-+		list_for_each_entry(chain, &child->val, list) {
-+			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
-+			const char *str;
-+			bool was_first = first;
-+
-+			if (first)
-+				first = false;
-+			else
-+				extra_offset = LEVEL_OFFSET_STEP;
-+
-+			folded_sign = callchain_list__folded(chain);
-+
-+			alloc_str = NULL;
-+			str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+			if (was_first) {
-+				double percent = cumul * 100.0 / new_total;
-+
-+				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
-+					str = "Not enough memory!";
-+				else
-+					str = alloc_str;
-+			}
-+
-+			printed += fprintf(fp, "%*s%c %s\n", offset + extra_offset, " ", folded_sign, str);
-+			free(alloc_str);
-+			if (folded_sign == '+')
-+				break;
-+		}
-+
-+		if (folded_sign == '-') {
-+			const int new_level = level + (extra_offset ? 2 : 1);
-+			printed += hist_browser__fprintf_callchain_node_rb_tree(browser, child, new_total,
-+										new_level, fp);
-+		}
-+
-+		node = next;
-+	}
-+
-+	return printed;
-+}
-+
-+static int hist_browser__fprintf_callchain_node(struct hist_browser *browser,
-+						struct callchain_node *node,
-+						int level, FILE *fp)
-+{
-+	struct callchain_list *chain;
-+	int offset = level * LEVEL_OFFSET_STEP;
-+	char folded_sign = ' ';
-+	int printed = 0;
-+
-+	list_for_each_entry(chain, &node->val, list) {
-+		char ipstr[BITS_PER_LONG / 4 + 1], *s;
-+
-+		folded_sign = callchain_list__folded(chain);
-+		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+		printed += fprintf(fp, "%*s%c %s\n", offset, " ", folded_sign, s);
-+	}
-+
-+	if (folded_sign == '-')
-+		printed += hist_browser__fprintf_callchain_node_rb_tree(browser, node,
-+									browser->hists->stats.total_period,
-+									level + 1,  fp);
-+	return printed;
-+}
-+
-+static int hist_browser__fprintf_callchain(struct hist_browser *browser,
-+					   struct rb_root *chain, int level, FILE *fp)
-+{
-+	struct rb_node *nd;
-+	int printed = 0;
-+
-+	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
-+		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
-+
-+		printed += hist_browser__fprintf_callchain_node(browser, node, level, fp);
-+	}
-+
-+	return printed;
-+}
-+
-+static int hist_browser__fprintf_entry(struct hist_browser *browser,
-+				       struct hist_entry *he, FILE *fp)
-+{
-+	char s[8192];
-+	double percent;
-+	int printed = 0;
-+	char folded_sign = ' ';
-+
-+	if (symbol_conf.use_callchain)
-+		folded_sign = hist_entry__folded(he);
-+
-+	hist_entry__snprintf(he, s, sizeof(s), browser->hists);
-+	percent = (he->period * 100.0) / browser->hists->stats.total_period;
-+
-+	if (symbol_conf.use_callchain)
-+		printed += fprintf(fp, "%c ", folded_sign);
-+
-+	printed += fprintf(fp, " %5.2f%%", percent);
-+
-+	if (symbol_conf.show_nr_samples)
-+		printed += fprintf(fp, " %11u", he->nr_events);
-+
-+	if (symbol_conf.show_total_period)
-+		printed += fprintf(fp, " %12" PRIu64, he->period);
-+
-+	printed += fprintf(fp, "%s\n", rtrim(s));
-+
-+	if (folded_sign == '-')
-+		printed += hist_browser__fprintf_callchain(browser, &he->sorted_chain, 1, fp);
-+
-+	return printed;
-+}
-+
-+static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
-+{
-+	struct rb_node *nd = hists__filter_entries(rb_first(browser->b.entries));
-+	int printed = 0;
-+
-+	while (nd) {
-+		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+
-+		printed += hist_browser__fprintf_entry(browser, h, fp);
-+		nd = hists__filter_entries(rb_next(nd));
-+	}
-+
-+	return printed;
-+}
-+
-+static int hist_browser__dump(struct hist_browser *browser)
-+{
-+	char filename[64];
-+	FILE *fp;
-+
-+	while (1) {
-+		scnprintf(filename, sizeof(filename), "perf.hist.%d", browser->print_seq);
-+		if (access(filename, F_OK))
-+			break;
-+		/*
-+ 		 * XXX: Just an arbitrary lazy upper limit
-+ 		 */
-+		if (++browser->print_seq == 8192) {
-+			ui_helpline__fpush("Too many perf.hist.N files, nothing written!");
-+			return -1;
-+		}
-+	}
-+
-+	fp = fopen(filename, "w");
-+	if (fp == NULL) {
-+		char bf[64];
-+		strerror_r(errno, bf, sizeof(bf));
-+		ui_helpline__fpush("Couldn't write to %s: %s", filename, bf);
++	if (!perf_gtk__is_active_context(pgctx) ||
++	    vasprintf(&msg, format, args) < 0) {
++		fprintf(stderr, "Error:\n");
++		vfprintf(stderr, format, args);
++		fprintf(stderr, "\n");
 +		return -1;
 +	}
 +
-+	++browser->print_seq;
-+	hist_browser__fprintf(browser, fp);
-+	fclose(fp);
-+	ui_helpline__fpush("%s written!", filename);
++	dialog = gtk_message_dialog_new_with_markup(GTK_WINDOW(pgctx->main_window),
++					GTK_DIALOG_DESTROY_WITH_PARENT,
++					GTK_MESSAGE_ERROR,
++					GTK_BUTTONS_CLOSE,
++					"<b>Error</b>\n\n%s", msg);
++	gtk_dialog_run(GTK_DIALOG(dialog));
 +
++	gtk_widget_destroy(dialog);
++	free(msg);
 +	return 0;
 +}
 +
- static struct hist_browser *hist_browser__new(struct hists *hists)
- {
- 	struct hist_browser *browser = zalloc(sizeof(*browser));
-@@ -937,6 +1128,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			    browser->selection->map->dso->annotate_warned)
- 				continue;
- 			goto do_annotate;
-+		case 'P':
-+			hist_browser__dump(browser);
-+			continue;
- 		case 'd':
- 			goto zoom_dso;
- 		case 't':
-@@ -969,6 +1163,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 					"E             Expand all callchains\n"
- 					"d             Zoom into current DSO\n"
- 					"t             Zoom into current Thread\n"
-+					"P             Print histograms to perf.hist.N\n"
- 					"/             Filter symbol by name");
- 			continue;
- 		case K_ENTER:
++#ifdef HAVE_GTK_INFO_BAR
++static int perf_gtk__warning_info_bar(const char *format, va_list args)
++{
++	char *msg;
++
++	if (!perf_gtk__is_active_context(pgctx) ||
++	    vasprintf(&msg, format, args) < 0) {
++		fprintf(stderr, "Warning:\n");
++		vfprintf(stderr, format, args);
++		fprintf(stderr, "\n");
++		return -1;
++	}
++
++	gtk_label_set_text(GTK_LABEL(pgctx->message_label), msg);
++	gtk_info_bar_set_message_type(GTK_INFO_BAR(pgctx->info_bar),
++				      GTK_MESSAGE_WARNING);
++	gtk_widget_show(pgctx->info_bar);
++
++	free(msg);
++	return 0;
++}
++#else
++static int perf_gtk__warning_statusbar(const char *format, va_list args)
++{
++	char *msg, *p;
++
++	if (!perf_gtk__is_active_context(pgctx) ||
++	    vasprintf(&msg, format, args) < 0) {
++		fprintf(stderr, "Warning:\n");
++		vfprintf(stderr, format, args);
++		fprintf(stderr, "\n");
++		return -1;
++	}
++
++	gtk_statusbar_pop(GTK_STATUSBAR(pgctx->statbar),
++			  pgctx->statbar_ctx_id);
++
++	/* Only first line can be displayed */
++	p = strchr(msg, '\n');
++	if (p)
++		*p = '\0';
++
++	gtk_statusbar_push(GTK_STATUSBAR(pgctx->statbar),
++			   pgctx->statbar_ctx_id, msg);
++
++	free(msg);
++	return 0;
++}
++#endif
++
++struct perf_error_ops perf_gtk_eops = {
++	.error		= perf_gtk__error,
++#ifdef HAVE_GTK_INFO_BAR
++	.warning	= perf_gtk__warning_info_bar,
++#else
++	.warning	= perf_gtk__warning_statusbar,
++#endif
++};
++
+ /*
+  * FIXME: Functions below should be implemented properly.
+  *        For now, just add stubs for NO_NEWT=1 build.
 -- 
 1.7.1
 
