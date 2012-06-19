@@ -1,58 +1,1149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab2FSHHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 03:07:44 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:46451 "EHLO serv04.lahn.de"
+	id S1753540Ab2FSHIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 03:08:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39174 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752251Ab2FSHHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 03:07:42 -0400
-X-Greylist: delayed 952 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Jun 2012 03:07:42 EDT
-Date: Tue, 19 Jun 2012 08:51:37 +0200
-From: Michael Leun <lkml20120218@newton.leun.net>
-To: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
-Message-ID: <20120619085137.337838c0@xenia.leun.net>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753048Ab2FSHIa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 03:08:30 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "axel.lin@gmail.com" <axel.lin@gmail.com>
+Subject: [PATCH v3] regulator: add new regulator driver for lp872x
+Thread-Topic: [PATCH v3] regulator: add new regulator driver for lp872x
+Thread-Index: Ac1N6k+8rdcuqwkrRjm9mEp0xwdKMQ==
+Date: Tue, 19 Jun 2012 07:08:22 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FB8C8@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This driver supports TI/National LP8720, LP8725 PMIC.
 
-ne-wlan1@elektra:/home/ml4> ping 192.168.2.1
-PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
-64 bytes from 192.168.2.1: icmp_seq=1 ttl=64 time=2010 ms
-64 bytes from 192.168.2.1: icmp_seq=2 ttl=64 time=1011 ms
-64 bytes from 192.168.2.1: icmp_seq=3 ttl=64 time=11.5 ms
-64 bytes from 192.168.2.1: icmp_seq=4 ttl=64 time=1.12 ms
-64 bytes from 192.168.2.1: icmp_seq=5 ttl=64 time=1002 ms
-64 bytes from 192.168.2.1: icmp_seq=6 ttl=64 time=3.83 ms
-64 bytes from 192.168.2.1: icmp_seq=7 ttl=64 time=1003 ms
-64 bytes from 192.168.2.1: icmp_seq=8 ttl=64 time=4.10 ms
-64 bytes from 192.168.2.1: icmp_seq=9 ttl=64 time=1003 ms
-64 bytes from 192.168.2.1: icmp_seq=10 ttl=64 time=3.95 ms
-64 bytes from 192.168.2.1: icmp_seq=11 ttl=64 time=1003 ms
-64 bytes from 192.168.2.1: icmp_seq=12 ttl=64 time=3.78 ms
+patch v3
 
+(a) replace few if-statements with switch-statements
+(b) use devm_gpio_request_one() for configuring dvs gpio
+: replace gpio_request() and gpio_direction_output() with devm_gpio_request_one()
+  remove gpio_free() code
 
-Please note the additional delay of ~1000ms every 2nd packet. This is
-Kernel 3.4.3, have seen it in 3.4.2 also. Does NOT happen in 3.3.1.
+(c) enhanced code on finding matched regulator init data
+: change max loop count. fixed loop count (9) -> variable count (6 or 9)
 
-Is this Issue already known? If so, I can save the work bisecting...
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/regulator/Kconfig        |    7 +
+ drivers/regulator/Makefile       |    1 +
+ drivers/regulator/lp872x.c       |  957 ++++++++++++++++++++++++++++++++++++++
+ include/linux/regulator/lp872x.h |   90 ++++
+ 4 files changed, 1055 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/lp872x.c
+ create mode 100644 include/linux/regulator/lp872x.h
 
-Happens with two different ath9k_htc cards:
-
-Bus 002 Device 012: ID 0846:9018 NetGear, Inc. WNDA3200 802.11abgn Wireless Adapter [Atheros AR7010+AR9280]
-Bus 002 Device 004: ID 0cf3:7015 Atheros Communications, Inc. TP-Link TL-WN821N v3 802.11n [Atheros AR7010+AR9287]
-
-Does NOT happen with an atk9k (mini pci express) card.
-
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 00ffe05..870f730 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -224,6 +224,13 @@ config REGULATOR_LP3972
+ 	 Say Y here to support the voltage regulators and convertors
+ 	 on National Semiconductors LP3972 PMIC
+ 
++config REGULATOR_LP872X
++	tristate "TI/National Semiconductor LP8720/LP8725 voltage regulators"
++	depends on I2C
++	select REGMAP_I2C
++	help
++	  This driver supports LP8720/LP8725 PMIC
++
+ config REGULATOR_PCF50633
+ 	tristate "NXP PCF50633 regulator driver"
+         depends on MFD_PCF50633
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index d854453..e6f7007 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -23,6 +23,7 @@ obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
+ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
+ obj-$(CONFIG_REGULATOR_LP3971) += lp3971.o
+ obj-$(CONFIG_REGULATOR_LP3972) += lp3972.o
++obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
+ obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
+ obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
+ obj-$(CONFIG_REGULATOR_MAX8660) += max8660.o
+diff --git a/drivers/regulator/lp872x.c b/drivers/regulator/lp872x.c
+new file mode 100644
+index 0000000..d51d098
+--- /dev/null
++++ b/drivers/regulator/lp872x.c
+@@ -0,0 +1,957 @@
++/*
++ * Copyright 2012 Texas Instruments
++ *
++ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/regmap.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/regulator/lp872x.h>
++#include <linux/regulator/driver.h>
++#include <linux/platform_device.h>
++
++/* Registers : LP8720/8725 shared */
++#define LP872X_GENERAL_CFG		0x00
++#define LP872X_LDO1_VOUT		0x01
++#define LP872X_LDO2_VOUT		0x02
++#define LP872X_LDO3_VOUT		0x03
++#define LP872X_LDO4_VOUT		0x04
++#define LP872X_LDO5_VOUT		0x05
++
++/* Registers : LP8720 */
++#define LP8720_BUCK_VOUT1		0x06
++#define LP8720_BUCK_VOUT2		0x07
++#define LP8720_ENABLE			0x08
++
++/* Registers : LP8725 */
++#define LP8725_LILO1_VOUT		0x06
++#define LP8725_LILO2_VOUT		0x07
++#define LP8725_BUCK1_VOUT1		0x08
++#define LP8725_BUCK1_VOUT2		0x09
++#define LP8725_BUCK2_VOUT1		0x0A
++#define LP8725_BUCK2_VOUT2		0x0B
++#define LP8725_BUCK_CTRL		0x0C
++#define LP8725_LDO_CTRL			0x0D
++
++/* Mask/shift : LP8720/LP8725 shared */
++#define LP872X_VOUT_M			0x1F
++#define LP872X_START_DELAY_M		0xE0
++#define LP872X_START_DELAY_S		5
++#define LP872X_EN_LDO1_M		BIT(0)
++#define LP872X_EN_LDO2_M		BIT(1)
++#define LP872X_EN_LDO3_M		BIT(2)
++#define LP872X_EN_LDO4_M		BIT(3)
++#define LP872X_EN_LDO5_M		BIT(4)
++
++/* Mask/shift : LP8720 */
++#define LP8720_TIMESTEP_S		0		/* Addr 00h */
++#define LP8720_TIMESTEP_M		BIT(0)
++#define LP8720_EXT_DVS_M		BIT(2)
++#define LP8720_BUCK_FPWM_S		5		/* Addr 07h */
++#define LP8720_BUCK_FPWM_M		BIT(5)
++#define LP8720_EN_BUCK_M		BIT(5)		/* Addr 08h */
++#define LP8720_DVS_SEL_M		BIT(7)
++
++/* Mask/shift : LP8725 */
++#define LP8725_TIMESTEP_M		0xC0		/* Addr 00h */
++#define LP8725_TIMESTEP_S		6
++#define LP8725_BUCK1_EN_M		BIT(0)
++#define LP8725_DVS1_M			BIT(2)
++#define LP8725_DVS2_M			BIT(3)
++#define LP8725_BUCK2_EN_M		BIT(4)
++#define LP8725_BUCK_CL_M		0xC0		/* Addr 09h, 0Bh */
++#define LP8725_BUCK_CL_S		6
++#define LP8725_BUCK1_FPWM_S		1		/* Addr 0Ch */
++#define LP8725_BUCK1_FPWM_M		BIT(1)
++#define LP8725_BUCK2_FPWM_S		5
++#define LP8725_BUCK2_FPWM_M		BIT(5)
++#define LP8725_EN_LILO1_M		BIT(5)		/* Addr 0Dh */
++#define LP8725_EN_LILO2_M		BIT(6)
++
++/* PWM mode */
++#define LP872X_FORCE_PWM		1
++#define LP872X_AUTO_PWM			0
++
++#define LP8720_NUM_REGULATORS		6
++#define LP8725_NUM_REGULATORS		9
++#define EXTERN_DVS_USED			0
++#define MAX_DELAY			6
++
++/* dump registers in regmap-debugfs */
++#define MAX_REGISTERS			0x0F
++
++enum lp872x_id {
++	LP8720,
++	LP8725,
++};
++
++struct lp872x {
++	struct regmap *regmap;
++	struct device *dev;
++	enum lp872x_id chipid;
++	struct lp872x_platform_data *pdata;
++	struct regulator_dev **regulators;
++	int num_regulators;
++	enum lp872x_dvs_state dvs_pin;
++	int dvs_gpio;
++};
++
++/* LP8720/LP8725 shared voltage table for LDOs */
++static const unsigned int lp872x_ldo_vtbl[] = {
++	1200000, 1250000, 1300000, 1350000, 1400000, 1450000, 1500000, 1550000,
++	1600000, 1650000, 1700000, 1750000, 1800000, 1850000, 1900000, 2000000,
++	2100000, 2200000, 2300000, 2400000, 2500000, 2600000, 2650000, 2700000,
++	2750000, 2800000, 2850000, 2900000, 2950000, 3000000, 3100000, 3300000,
++};
++
++/* LP8720 LDO4 voltage table */
++static const unsigned int lp8720_ldo4_vtbl[] = {
++	 800000,  850000,  900000, 1000000, 1100000, 1200000, 1250000, 1300000,
++	1350000, 1400000, 1450000, 1500000, 1550000, 1600000, 1650000, 1700000,
++	1750000, 1800000, 1850000, 1900000, 2000000, 2100000, 2200000, 2300000,
++	2400000, 2500000, 2600000, 2650000, 2700000, 2750000, 2800000, 2850000,
++};
++
++/* LP8725 LILO(Low Input Low Output) voltage table */
++static const unsigned int lp8725_lilo_vtbl[] = {
++	 800000,  850000,  900000,  950000, 1000000, 1050000, 1100000, 1150000,
++	1200000, 1250000, 1300000, 1350000, 1400000, 1500000, 1600000, 1700000,
++	1800000, 1900000, 2000000, 2100000, 2200000, 2300000, 2400000, 2500000,
++	2600000, 2700000, 2800000, 2850000, 2900000, 3000000, 3100000, 3300000,
++};
++
++/* LP8720 BUCK voltage table */
++#define EXT_R		0	/* external resistor divider */
++static const unsigned int lp8720_buck_vtbl[] = {
++	  EXT_R,  800000,  850000,  900000,  950000, 1000000, 1050000, 1100000,
++	1150000, 1200000, 1250000, 1300000, 1350000, 1400000, 1450000, 1500000,
++	1550000, 1600000, 1650000, 1700000, 1750000, 1800000, 1850000, 1900000,
++	1950000, 2000000, 2050000, 2100000, 2150000, 2200000, 2250000, 2300000,
++};
++
++/* LP8725 BUCK voltage table */
++static const unsigned int lp8725_buck_vtbl[] = {
++	 800000,  850000,  900000,  950000, 1000000, 1050000, 1100000, 1150000,
++	1200000, 1250000, 1300000, 1350000, 1400000, 1500000, 1600000, 1700000,
++	1750000, 1800000, 1850000, 1900000, 2000000, 2100000, 2200000, 2300000,
++	2400000, 2500000, 2600000, 2700000, 2800000, 2850000, 2900000, 3000000,
++};
++
++/* LP8725 BUCK current limit */
++static const unsigned int lp8725_buck_uA[] = {
++	460000, 780000, 1050000, 1370000,
++};
++
++static int lp872x_read_byte(struct lp872x *lp, u8 addr, u8 *data)
++{
++	int ret;
++	unsigned int val;
++
++	ret = regmap_read(lp->regmap, addr, &val);
++	if (ret < 0) {
++		dev_err(lp->dev, "failed to read 0x%.2x\n", addr);
++		return ret;
++	}
++
++	*data = (u8)val;
++	return 0;
++}
++
++static inline int lp872x_write_byte(struct lp872x *lp, u8 addr, u8 data)
++{
++	return regmap_write(lp->regmap, addr, data);
++}
++
++static inline int lp872x_update_bits(struct lp872x *lp, u8 addr,
++				unsigned int mask, u8 data)
++{
++	return regmap_update_bits(lp->regmap, addr, mask, data);
++}
++
++static int _rdev_to_offset(struct regulator_dev *rdev)
++{
++	enum lp872x_regulator_id id = rdev_get_id(rdev);
++
++	switch (id) {
++	case LP8720_ID_LDO1 ... LP8720_ID_BUCK:
++		return id;
++	case LP8725_ID_LDO1 ... LP8725_ID_BUCK2:
++		return id - LP8725_ID_BASE;
++	default:
++		return -EINVAL;
++	}
++}
++
++static int lp872x_get_timestep_usec(struct lp872x *lp)
++{
++	enum lp872x_id chip = lp->chipid;
++	u8 val, mask, shift;
++	int *time_usec, size, ret;
++	int lp8720_time_usec[] = { 25, 50 };
++	int lp8725_time_usec[] = { 32, 64, 128, 256 };
++
++	switch (chip) {
++	case LP8720:
++		mask = LP8720_TIMESTEP_M;
++		shift = LP8720_TIMESTEP_S;
++		time_usec = &lp8720_time_usec[0];
++		size = ARRAY_SIZE(lp8720_time_usec);
++		break;
++	case LP8725:
++		mask = LP8725_TIMESTEP_M;
++		shift = LP8725_TIMESTEP_S;
++		time_usec = &lp8725_time_usec[0];
++		size = ARRAY_SIZE(lp8725_time_usec);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	ret = lp872x_read_byte(lp, LP872X_GENERAL_CFG, &val);
++	if (ret)
++		return -EINVAL;
++
++	val = (val & mask) >> shift;
++	if (val >= size)
++		return -EINVAL;
++
++	return *(time_usec + val);
++}
++
++static int lp872x_regulator_enable_time(struct regulator_dev *rdev)
++{
++	struct lp872x *lp = rdev_get_drvdata(rdev);
++	enum lp872x_regulator_id regulator = rdev_get_id(rdev);
++	int time_step_us = lp872x_get_timestep_usec(lp);
++	int ret, offset;
++	u8 addr, val;
++
++	if (time_step_us < 0)
++		return -EINVAL;
++
++	switch (regulator) {
++	case LP8720_ID_LDO1 ... LP8720_ID_LDO5:
++	case LP8725_ID_LDO1 ... LP8725_ID_LILO2:
++		offset = _rdev_to_offset(rdev);
++		if (offset < 0)
++			return -EINVAL;
++
++		addr = LP872X_LDO1_VOUT + offset;
++		break;
++	case LP8720_ID_BUCK:
++		addr = LP8720_BUCK_VOUT1;
++		break;
++	case LP8725_ID_BUCK1:
++		addr = LP8725_BUCK1_VOUT1;
++		break;
++	case LP8725_ID_BUCK2:
++		addr = LP8725_BUCK2_VOUT1;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	ret = lp872x_read_byte(lp, addr, &val);
++	if (ret)
++		return ret;
++
++	val = (val & LP872X_START_DELAY_M) >> LP872X_START_DELAY_S;
++
++	return val > MAX_DELAY ? 0 : val * time_step_us;
++}
++
++static void lp872x_set_dvs(struct lp872x *lp, int gpio)
++{
++	enum lp872x_dvs_sel dvs_sel = lp->pdata->dvs->vsel;
++	enum lp872x_dvs_state state;
++
++	state = dvs_sel == SEL_V1 ? DVS_HIGH : DVS_LOW;
++	gpio_set_value(gpio, state);
++	lp->dvs_pin = state;
++}
++
++static u8 lp872x_select_buck_vout_addr(struct lp872x *lp,
++				enum lp872x_regulator_id buck)
++{
++	u8 val, addr;
++
++	if (lp872x_read_byte(lp, LP872X_GENERAL_CFG, &val))
++		return 0;
++
++	switch (buck) {
++	case LP8720_ID_BUCK:
++		if (val & LP8720_EXT_DVS_M) {
++			addr = (lp->dvs_pin == DVS_HIGH) ?
++				LP8720_BUCK_VOUT1 : LP8720_BUCK_VOUT2;
++		} else {
++			if (lp872x_read_byte(lp, LP8720_ENABLE, &val))
++				return 0;
++
++			addr = val & LP8720_DVS_SEL_M ?
++				LP8720_BUCK_VOUT1 : LP8720_BUCK_VOUT2;
++		}
++		break;
++	case LP8725_ID_BUCK1:
++		if (val & LP8725_DVS1_M)
++			addr = LP8725_BUCK1_VOUT1;
++		else
++			addr = (lp->dvs_pin == DVS_HIGH) ?
++				LP8725_BUCK1_VOUT1 : LP8725_BUCK1_VOUT2;
++		break;
++	case LP8725_ID_BUCK2:
++		addr =  val & LP8725_DVS2_M ?
++			LP8725_BUCK2_VOUT1 : LP8725_BUCK2_VOUT2;
++		break;
++	default:
++		return 0;
++	}
++
++	return addr;
++}
++
++static bool lp872x_is_valid_buck_addr(u8 addr)
++{
++	switch (addr) {
++	case LP8720_BUCK_VOUT1:
++	case LP8720_BUCK_VOUT2:
++	case LP8725_BUCK1_VOUT1:
++	case LP8725_BUCK1_VOUT2:
++	case LP8725_BUCK2_VOUT1:
++	case LP8725_BUCK2_VOUT2:
++		return true;
++	default:
++		return false;
++	}
++}
++
++static int lp872x_buck_set_voltage_sel(struct regulator_dev *rdev,
++					unsigned selector)
++{
++	struct lp872x *lp = rdev_get_drvdata(rdev);
++	enum lp872x_regulator_id buck = rdev_get_id(rdev);
++	u8 addr, mask = LP872X_VOUT_M;
++	struct lp872x_dvs *dvs = lp->pdata->dvs;
++
++	if (dvs && gpio_is_valid(dvs->gpio))
++		lp872x_set_dvs(lp, dvs->gpio);
++
++	addr = lp872x_select_buck_vout_addr(lp, buck);
++	if (!lp872x_is_valid_buck_addr(addr))
++		return -EINVAL;
++
++	return lp872x_update_bits(lp, addr, mask, selector);
++}
++
++static int lp872x_buck_get_voltage_sel(struct regulator_dev *rdev)
++{
++	struct lp872x *lp = rdev_get_drvdata(rdev);
++	enum lp872x_regulator_id buck = rdev_get_id(rdev);
++	u8 addr, val;
++	int ret;
++
++	addr = lp872x_select_buck_vout_addr(lp, buck);
++	if (!lp872x_is_valid_buck_addr(addr))
++		return -EINVAL;
++
++	ret = lp872x_read_byte(lp, addr, &val);
++	if (ret)
++		return ret;
++
++	return val & LP872X_VOUT_M;
++}
++
++static int lp8725_buck_set_current_limit(struct regulator_dev *rdev,
++					int min_uA, int max_uA)
++{
++	struct lp872x *lp = rdev_get_drvdata(rdev);
++	enum lp872x_regulator_id buck = rdev_get_id(rdev);
++	int i, max = ARRAY_SIZE(lp8725_buck_uA);
++	u8 addr, val;
++
++	switch (buck) {
++	case LP8725_ID_BUCK1:
++		addr = LP8725_BUCK1_VOUT2;
++		break;
++	case LP8725_ID_BUCK2:
++		addr = LP8725_BUCK2_VOUT2;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	for (i = 0 ; i < max ; i++)
++		if (lp8725_buck_uA[i] >= min_uA &&
++			lp8725_buck_uA[i] <= max_uA)
++			break;
++
++	if (i == max)
++		return -EINVAL;
++
++	val = i << LP8725_BUCK_CL_S;
++
++	return lp872x_update_bits(lp, addr, LP8725_BUCK_CL_M, val);
++}
++
++static int lp8725_buck_get_current_limit(struct regulator_dev *rdev)
++{
++	struct lp872x *lp = rdev_get_drvdata(rdev);
++	enum lp872x_regulator_id buck = rdev_get_id(rdev);
++	u8 addr, val;
++	int ret;
++
++	switch (buck) {
++	case LP8725_ID_BUCK1:
++		addr = LP8725_BUCK1_VOUT2;
++		break;
++	case LP8725_ID_BUCK2:
++		addr = LP8725_BUCK2_VOUT2;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	ret = lp872x_read_byte(lp, addr, &val);
++	if (ret)
++		return ret;
++
++	val = (val & LP8725_BUCK_CL_M) >> LP8725_BUCK_CL_S;
++
++	return (val < ARRAY_SIZE(lp8725_buck_uA)) ?
++			lp8725_buck_uA[val] : -EINVAL;
++}
++
++static int lp872x_buck_set_mode(struct regulator_dev *rdev, unsigned int mode)
++{
++	struct lp872x *lp = rdev_get_drvdata(rdev);
++	enum lp872x_regulator_id buck = rdev_get_id(rdev);
++	u8 addr, mask, shift, val;
++
++	switch (buck) {
++	case LP8720_ID_BUCK:
++		addr = LP8720_BUCK_VOUT2;
++		mask = LP8720_BUCK_FPWM_M;
++		shift = LP8720_BUCK_FPWM_S;
++		break;
++	case LP8725_ID_BUCK1:
++		addr = LP8725_BUCK_CTRL;
++		mask = LP8725_BUCK1_FPWM_M;
++		shift = LP8725_BUCK1_FPWM_S;
++		break;
++	case LP8725_ID_BUCK2:
++		addr = LP8725_BUCK_CTRL;
++		mask = LP8725_BUCK2_FPWM_M;
++		shift = LP8725_BUCK2_FPWM_S;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	if (mode == REGULATOR_MODE_FAST)
++		val = LP872X_FORCE_PWM << shift;
++	else if (mode == REGULATOR_MODE_NORMAL)
++		val = LP872X_AUTO_PWM << shift;
++	else
++		return -EINVAL;
++
++	return lp872x_update_bits(lp, addr, mask, val);
++}
++
++static unsigned int lp872x_buck_get_mode(struct regulator_dev *rdev)
++{
++	struct lp872x *lp = rdev_get_drvdata(rdev);
++	enum lp872x_regulator_id buck = rdev_get_id(rdev);
++	u8 addr, mask, val;
++	int ret;
++
++	switch (buck) {
++	case LP8720_ID_BUCK:
++		addr = LP8720_BUCK_VOUT2;
++		mask = LP8720_BUCK_FPWM_M;
++		break;
++	case LP8725_ID_BUCK1:
++		addr = LP8725_BUCK_CTRL;
++		mask = LP8725_BUCK1_FPWM_M;
++		break;
++	case LP8725_ID_BUCK2:
++		addr = LP8725_BUCK_CTRL;
++		mask = LP8725_BUCK2_FPWM_M;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	ret = lp872x_read_byte(lp, addr, &val);
++	if (ret)
++		return ret;
++
++	return val & mask ? REGULATOR_MODE_FAST : REGULATOR_MODE_NORMAL;
++}
++
++static struct regulator_ops lp872x_ldo_ops = {
++	.list_voltage = regulator_list_voltage_table,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable_time = lp872x_regulator_enable_time,
++};
++
++static struct regulator_ops lp8720_buck_ops = {
++	.list_voltage = regulator_list_voltage_table,
++	.set_voltage_sel = lp872x_buck_set_voltage_sel,
++	.get_voltage_sel = lp872x_buck_get_voltage_sel,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable_time = lp872x_regulator_enable_time,
++	.set_mode = lp872x_buck_set_mode,
++	.get_mode = lp872x_buck_get_mode,
++};
++
++static struct regulator_ops lp8725_buck_ops = {
++	.list_voltage = regulator_list_voltage_table,
++	.set_voltage_sel = lp872x_buck_set_voltage_sel,
++	.get_voltage_sel = lp872x_buck_get_voltage_sel,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable_time = lp872x_regulator_enable_time,
++	.set_mode = lp872x_buck_set_mode,
++	.get_mode = lp872x_buck_get_mode,
++	.set_current_limit = lp8725_buck_set_current_limit,
++	.get_current_limit = lp8725_buck_get_current_limit,
++};
++
++static struct regulator_desc lp8720_regulator_desc[] = {
++	{
++		.name = "ldo1",
++		.id = LP8720_ID_LDO1,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO1_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8720_ENABLE,
++		.enable_mask = LP872X_EN_LDO1_M,
++	},
++	{
++		.name = "ldo2",
++		.id = LP8720_ID_LDO2,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO2_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8720_ENABLE,
++		.enable_mask = LP872X_EN_LDO2_M,
++	},
++	{
++		.name = "ldo3",
++		.id = LP8720_ID_LDO3,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO3_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8720_ENABLE,
++		.enable_mask = LP872X_EN_LDO3_M,
++	},
++	{
++		.name = "ldo4",
++		.id = LP8720_ID_LDO4,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp8720_ldo4_vtbl),
++		.volt_table = lp8720_ldo4_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO4_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8720_ENABLE,
++		.enable_mask = LP872X_EN_LDO4_M,
++	},
++	{
++		.name = "ldo5",
++		.id = LP8720_ID_LDO5,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO5_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8720_ENABLE,
++		.enable_mask = LP872X_EN_LDO5_M,
++	},
++	{
++		.name = "buck",
++		.id = LP8720_ID_BUCK,
++		.ops = &lp8720_buck_ops,
++		.n_voltages = ARRAY_SIZE(lp8720_buck_vtbl),
++		.volt_table = lp8720_buck_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.enable_reg = LP8720_ENABLE,
++		.enable_mask = LP8720_EN_BUCK_M,
++	},
++};
++
++static struct regulator_desc lp8725_regulator_desc[] = {
++	{
++		.name = "ldo1",
++		.id = LP8725_ID_LDO1,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO1_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8725_LDO_CTRL,
++		.enable_mask = LP872X_EN_LDO1_M,
++	},
++	{
++		.name = "ldo2",
++		.id = LP8725_ID_LDO2,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO2_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8725_LDO_CTRL,
++		.enable_mask = LP872X_EN_LDO2_M,
++	},
++	{
++		.name = "ldo3",
++		.id = LP8725_ID_LDO3,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO3_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8725_LDO_CTRL,
++		.enable_mask = LP872X_EN_LDO3_M,
++	},
++	{
++		.name = "ldo4",
++		.id = LP8725_ID_LDO4,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO4_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8725_LDO_CTRL,
++		.enable_mask = LP872X_EN_LDO4_M,
++	},
++	{
++		.name = "ldo5",
++		.id = LP8725_ID_LDO5,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp872x_ldo_vtbl),
++		.volt_table = lp872x_ldo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP872X_LDO5_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8725_LDO_CTRL,
++		.enable_mask = LP872X_EN_LDO5_M,
++	},
++	{
++		.name = "lilo1",
++		.id = LP8725_ID_LILO1,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp8725_lilo_vtbl),
++		.volt_table = lp8725_lilo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP8725_LILO1_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8725_LDO_CTRL,
++		.enable_mask = LP8725_EN_LILO1_M,
++	},
++	{
++		.name = "lilo2",
++		.id = LP8725_ID_LILO2,
++		.ops = &lp872x_ldo_ops,
++		.n_voltages = ARRAY_SIZE(lp8725_lilo_vtbl),
++		.volt_table = lp8725_lilo_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.vsel_reg = LP8725_LILO2_VOUT,
++		.vsel_mask = LP872X_VOUT_M,
++		.enable_reg = LP8725_LDO_CTRL,
++		.enable_mask = LP8725_EN_LILO2_M,
++	},
++	{
++		.name = "buck1",
++		.id = LP8725_ID_BUCK1,
++		.ops = &lp8725_buck_ops,
++		.n_voltages = ARRAY_SIZE(lp8725_buck_vtbl),
++		.volt_table = lp8725_buck_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.enable_reg = LP872X_GENERAL_CFG,
++		.enable_mask = LP8725_BUCK1_EN_M,
++	},
++	{
++		.name = "buck2",
++		.id = LP8725_ID_BUCK2,
++		.ops = &lp8725_buck_ops,
++		.n_voltages = ARRAY_SIZE(lp8725_buck_vtbl),
++		.volt_table = lp8725_buck_vtbl,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++		.enable_reg = LP872X_GENERAL_CFG,
++		.enable_mask = LP8725_BUCK2_EN_M,
++	},
++};
++
++static int lp872x_check_dvs_validity(struct lp872x *lp)
++{
++	struct lp872x_dvs *dvs = lp->pdata->dvs;
++	u8 val = 0;
++	int ret;
++
++	ret = lp872x_read_byte(lp, LP872X_GENERAL_CFG, &val);
++	if (ret)
++		return ret;
++
++	ret = 0;
++	if (lp->chipid == LP8720) {
++		if (val & LP8720_EXT_DVS_M)
++			ret = dvs ? 0 : -EINVAL;
++	} else {
++		if ((val & LP8725_DVS1_M) == EXTERN_DVS_USED)
++			ret = dvs ? 0 : -EINVAL;
++	}
++
++	return ret;
++}
++
++static int lp872x_init_dvs(struct lp872x *lp)
++{
++	int ret, gpio;
++	struct lp872x_dvs *dvs = lp->pdata->dvs;
++	enum lp872x_dvs_state pinstate;
++
++	ret = lp872x_check_dvs_validity(lp);
++	if (ret) {
++		dev_warn(lp->dev, "invalid dvs data: %d\n", ret);
++		return ret;
++	}
++
++	gpio = dvs->gpio;
++	if (!gpio_is_valid(gpio)) {
++		dev_err(lp->dev, "invalid gpio: %d\n", gpio);
++		return -EINVAL;
++	}
++
++	pinstate = dvs->init_state;
++	ret = devm_gpio_request_one(lp->dev, gpio, pinstate, "LP872X DVS");
++	if (ret) {
++		dev_err(lp->dev, "gpio request err: %d\n", ret);
++		return ret;
++	}
++
++	lp->dvs_pin = pinstate;
++	lp->dvs_gpio = gpio;
++
++	return 0;
++}
++
++static int lp872x_config(struct lp872x *lp)
++{
++	struct lp872x_platform_data *pdata = lp->pdata;
++	int ret;
++
++	if (!pdata) {
++		dev_warn(lp->dev, "no platform data\n");
++		return 0;
++	}
++
++	if (!pdata->update_config)
++		return 0;
++
++	ret = lp872x_write_byte(lp, LP872X_GENERAL_CFG, pdata->general_config);
++	if (ret)
++		return ret;
++
++	return lp872x_init_dvs(lp);
++}
++
++static struct regulator_init_data
++*lp872x_find_regulator_init_data(int idx, struct lp872x *lp)
++{
++	int i, base, id, max_regulators;
++
++	switch (lp->chipid) {
++	case LP8720:
++		base = LP8720_ID_BASE;
++		max_regulators = LP8720_NUM_REGULATORS;
++		break;
++	case LP8725:
++		base = LP8725_ID_BASE;
++		max_regulators = LP8725_NUM_REGULATORS;
++		break;
++	default:
++		return NULL;
++	}
++
++	id = base + idx;
++	for (i = 0 ; i < max_regulators ; i++)
++		if (lp->pdata->regulator_data[i].id == id)
++			break;
++
++	return (i == max_regulators) ? NULL :
++			lp->pdata->regulator_data[i].init_data;
++}
++
++static int lp872x_regulator_register(struct lp872x *lp)
++{
++	struct regulator_desc *desc;
++	struct regulator_config cfg = { };
++	struct regulator_dev *rdev;
++	int i, ret;
++
++	for (i = 0 ; i < lp->num_regulators ; i++) {
++		desc = (lp->chipid == LP8720) ? &lp8720_regulator_desc[i] :
++						&lp8725_regulator_desc[i];
++
++		cfg.dev = lp->dev;
++		cfg.init_data = lp872x_find_regulator_init_data(i, lp);
++		cfg.driver_data = lp;
++		cfg.regmap = lp->regmap;
++
++		rdev = regulator_register(desc, &cfg);
++		if (IS_ERR(rdev)) {
++			dev_err(lp->dev, "regulator register err");
++			ret =  PTR_ERR(rdev);
++			goto err;
++		}
++
++		*(lp->regulators + i) = rdev;
++	}
++
++	return 0;
++err:
++	while (--i >= 0) {
++		rdev = *(lp->regulators + i);
++		regulator_unregister(rdev);
++	}
++	return ret;
++}
++
++static void lp872x_regulator_unregister(struct lp872x *lp)
++{
++	struct regulator_dev *rdev;
++	int i;
++
++	for (i = 0 ; i < lp->num_regulators ; i++) {
++		rdev = *(lp->regulators + i);
++		regulator_unregister(rdev);
++	}
++}
++
++static const struct regmap_config lp872x_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = MAX_REGISTERS,
++};
++
++static int lp872x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
++{
++	struct lp872x *lp;
++	struct lp872x_platform_data *pdata = cl->dev.platform_data;
++	int ret, size, num_regulators;
++	const int lp872x_num_regulators[] = {
++		[LP8720] = LP8720_NUM_REGULATORS,
++		[LP8725] = LP8725_NUM_REGULATORS,
++	};
++
++	lp = devm_kzalloc(&cl->dev, sizeof(struct lp872x), GFP_KERNEL);
++	if (!lp)
++		goto err_mem;
++
++	num_regulators = lp872x_num_regulators[id->driver_data];
++	size = sizeof(struct regulator_dev *) * num_regulators;
++
++	lp->regulators = devm_kzalloc(&cl->dev, size, GFP_KERNEL);
++	if (!lp->regulators)
++		goto err_mem;
++
++	lp->regmap = devm_regmap_init_i2c(cl, &lp872x_regmap_config);
++	if (IS_ERR(lp->regmap)) {
++		ret = PTR_ERR(lp->regmap);
++		dev_err(&cl->dev, "regmap init i2c err: %d\n", ret);
++		goto err_dev;
++	}
++
++	lp->dev = &cl->dev;
++	lp->pdata = pdata;
++	lp->chipid = id->driver_data;
++	lp->num_regulators = num_regulators;
++	i2c_set_clientdata(cl, lp);
++
++	ret = lp872x_config(lp);
++	if (ret)
++		goto err_dev;
++
++	return lp872x_regulator_register(lp);
++
++err_mem:
++	return -ENOMEM;
++err_dev:
++	return ret;
++}
++
++static int __devexit lp872x_remove(struct i2c_client *cl)
++{
++	struct lp872x *lp = i2c_get_clientdata(cl);
++
++	lp872x_regulator_unregister(lp);
++	return 0;
++}
++
++static const struct i2c_device_id lp872x_ids[] = {
++	{"lp8720", LP8720},
++	{"lp8725", LP8725},
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, lp872x_ids);
++
++static struct i2c_driver lp872x_driver = {
++	.driver = {
++		.name = "lp872x",
++		.owner = THIS_MODULE,
++	},
++	.probe = lp872x_probe,
++	.remove = __devexit_p(lp872x_remove),
++	.id_table = lp872x_ids,
++};
++
++module_i2c_driver(lp872x_driver);
++
++MODULE_DESCRIPTION("TI/National Semiconductor LP872x PMU Regulator Driver");
++MODULE_AUTHOR("Milo Kim");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/regulator/lp872x.h b/include/linux/regulator/lp872x.h
+new file mode 100644
+index 0000000..132e05c
+--- /dev/null
++++ b/include/linux/regulator/lp872x.h
+@@ -0,0 +1,90 @@
++/*
++ * Copyright 2012 Texas Instruments
++ *
++ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef __LP872X_REGULATOR_H__
++#define __LP872X_REGULATOR_H__
++
++#include <linux/regulator/machine.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++
++#define LP872X_MAX_REGULATORS		9
++
++enum lp872x_regulator_id {
++	LP8720_ID_BASE,
++	LP8720_ID_LDO1 = LP8720_ID_BASE,
++	LP8720_ID_LDO2,
++	LP8720_ID_LDO3,
++	LP8720_ID_LDO4,
++	LP8720_ID_LDO5,
++	LP8720_ID_BUCK,
++
++	LP8725_ID_BASE,
++	LP8725_ID_LDO1 = LP8725_ID_BASE,
++	LP8725_ID_LDO2,
++	LP8725_ID_LDO3,
++	LP8725_ID_LDO4,
++	LP8725_ID_LDO5,
++	LP8725_ID_LILO1,
++	LP8725_ID_LILO2,
++	LP8725_ID_BUCK1,
++	LP8725_ID_BUCK2,
++
++	LP872X_ID_MAX,
++};
++
++enum lp872x_dvs_state {
++	DVS_LOW  = GPIOF_OUT_INIT_LOW,
++	DVS_HIGH = GPIOF_OUT_INIT_HIGH,
++};
++
++enum lp872x_dvs_sel {
++	SEL_V1,
++	SEL_V2,
++};
++
++/**
++ * lp872x_dvs
++ * @gpio       : gpio pin number for dvs control
++ * @vsel       : dvs selector for buck v1 or buck v2 register
++ * @init_state : initial dvs pin state
++ */
++struct lp872x_dvs {
++	int gpio;
++	enum lp872x_dvs_sel vsel;
++	enum lp872x_dvs_state init_state;
++};
++
++/**
++ * lp872x_regdata
++ * @id        : regulator id
++ * @init_data : init data for each regulator
++ */
++struct lp872x_regulator_data {
++	enum lp872x_regulator_id id;
++	struct regulator_init_data *init_data;
++};
++
++/**
++ * lp872x_platform_data
++ * @general_config    : the value of LP872X_GENERAL_CFG register
++ * @update_config     : if LP872X_GENERAL_CFG register is updated, set true
++ * @regulator_data    : platform regulator id and init data
++ * @dvs               : dvs data for buck voltage control
++ */
++struct lp872x_platform_data {
++	u8 general_config;
++	bool update_config;
++	struct lp872x_regulator_data regulator_data[LP872X_MAX_REGULATORS];
++	struct lp872x_dvs *dvs;
++};
++
++#endif
 -- 
-MfG,
+1.7.2.5
 
-Michael Leun
+
+Best Regards,
+Milo (Woogyom) Kim
 
