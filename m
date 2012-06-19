@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab2FSK0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 06:26:10 -0400
-Received: from [89.21.227.130] ([89.21.227.130]:52692 "EHLO
-	mail.epsilon.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751768Ab2FSK0H (ORCPT
+	id S1752382Ab2FSK0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 06:26:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48732 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab2FSK0W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 06:26:07 -0400
-Message-ID: <4FE053BD.2090605@itdev.co.uk>
-Date: Tue, 19 Jun 2012 11:26:05 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Yufeng Shen <miletus@google.com>
-CC: Daniel Kurtz <djkurtz@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, linux-input@vger.kernel.org,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
-        "Bowens, Alan" <Alan.Bowens@atmel.com>
-Subject: Re: [PATCH 14/22 v4] Input: atmel_mxt_ts - don't re-read matrix after
- applying pdata
-References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org> <1339992522-22073-15-git-send-email-djkurtz@chromium.org> <4FDF4345.40508@itdev.co.uk> <CAPDwgkMATDg5_FyJhR2aDCOzHu9DQbxzPHMn7MCC8KmBsS2bhg@mail.gmail.com>
-In-Reply-To: <CAPDwgkMATDg5_FyJhR2aDCOzHu9DQbxzPHMn7MCC8KmBsS2bhg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Jun 2012 06:26:22 -0400
+Message-ID: <1340101568.21745.37.camel@twins>
+Subject: Re: [PATCH] x86, microcode: Make reload interface per system
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Date: Tue, 19 Jun 2012 12:26:08 +0200
+In-Reply-To: <20120619102250.GA787@aftab.osrc.amd.com>
+References: <20120613123649.GA26012@khazad-dum.debian.net>
+	 <20120613161139.GA18450@aftab.osrc.amd.com>
+	 <20120615123749.GC6083@aftab.osrc.amd.com> <1339764161.2559.63.camel@twins>
+	 <20120615125240.GD6083@aftab.osrc.amd.com>
+	 <20120615165231.GA9169@aftab.osrc.amd.com>
+	 <20120619024639.GB6186@khazad-dum.debian.net> <4FDFF27C.5000205@zytor.com>
+	 <20120619051116.GB31591@aftab.osrc.amd.com>
+	 <1340093864.21745.6.camel@twins> <20120619102250.GA787@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yufeng Shen wrote:
-> On Mon, Jun 18, 2012 at 11:03 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
->> Daniel Kurtz wrote:
->>> The matrix x/y size in the Info ID Block represents the number of x/y
->>> trace lines on the device.  There is no need to re-read them after
->>> applying pdata config, since pdata only configures the object table
->>> etnries.  The matrix size read from the ID can only be updated by a
->>> firmware update.
->>
->> This isn't correct. For example, mXT224 can be configured as 16x14, 17x13,
->> 18x12, etc. This only takes effect when the chip is reset, which is why it
->> is necessary to re-read them after applying the config.
+On Tue, 2012-06-19 at 12:22 +0200, Borislav Petkov wrote:
 > 
-> so look at structure mxt_info
-> 
->  struct mxt_info {
->           u8 family_id;
->           u8 variant_id;
->           u8 version;
->           u8 build;
->           u8 matrix_xsize;
->           u8 matrix_ysize;
->           u8 object_num;
-> };
-> 
-> I think it is meant to be corresponding to Information Block of the
-> device, of which
-> the matrix_xsize and matrix_ysize mean "The size of the matrix the
-> device supports",
-> which should be fixed for a certain chip.
+> But I haven't tested what happens when it is built in and I use the
+> reload interface, hehe something to play with today. 
 
-As I said, it's not fixed, there is a mode setting (T28 byte 2) which
-alters the matrix size. This is documented in the protocol guide, if you
-have it.
+I couldn't easily find where to place the damn ucode image anyway, so I
+built in the old-style /dev interface and used the microcode.ctl package
+to load it.
 
-You can also verify this if you want: change mode setting, backup, reset,
-and read the information block, you'll see the matrix size changes. I've
-just checked that myself on an mXT224.
+Fwiw, that works just fine when its built-in.
 
-I also asked the guys at Atmel that I work with, and they confirm that this
-behaviour is as designed.
 
-> The configurable matrix size is in T9 XSIZE/YSIZE, which, if ever
-> needed to be read back,
-> probably read back into something other than mxt_info struct.
-
-The position of the touchscreen within the matrix is a separate
-configurable setting, you're confusing the two.
-
-cheers
-
--- 
-Nick Dyer
-Software Engineer, ITDev Ltd
-Hardware and Software Development Consultancy
-Website: http://www.itdev.co.uk
