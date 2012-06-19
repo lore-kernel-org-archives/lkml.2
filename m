@@ -1,143 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab2FSWRg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 18:17:36 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:64349 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab2FSWRe (ORCPT
+	id S1755259Ab2FSWSC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 18:18:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59509 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753925Ab2FSWSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 18:17:34 -0400
-Message-ID: <4FE0FA7B.7020407@gmail.com>
-Date: Tue, 19 Jun 2012 18:17:31 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 19 Jun 2012 18:18:00 -0400
+Date: Tue, 19 Jun 2012 23:17:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "axel.lin@gmail.com" <axel.lin@gmail.com>
+Subject: Re: [PATCH v3] regulator: add new regulator driver for lp872x
+Message-ID: <20120619221756.GA4064@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FB8C8@DQHE02.ent.ti.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Aaditya Kumar <aaditya.kumar.30@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, Nick Piggin <npiggin@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, frank.rowand@am.sony.com,
-        tim.bird@am.sony.com, takuzo.ohara@ap.sony.com,
-        kan.iibuchi@jp.sony.com
-Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
-References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com> <20120614145716.GA2097@barrios> <CAHGf_=qcA5OfuNgk0BiwyshcLftNWoPfOO_VW9H6xQTX2tAbuA@mail.gmail.com> <4FDAE3CC.60801@kernel.org> <CAEtiSavv8nRAFk6VZEgeCMYicjBPy4244+2KQhng5Pq9bxcX5A@mail.gmail.com> <4FDE79CF.4050702@kernel.org>
-In-Reply-To: <4FDE79CF.4050702@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FB8C8@DQHE02.ent.ti.com>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/17/12 8:43 PM), Minchan Kim wrote:
-> On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
-> 
->> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
->>
->>>>
->>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
->>>> if node has multiple zones. Hm ok, I realized my descriptions was
->>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
->>>> pgdat_balanced()
->>>> every priority. Most easy case is, movable zone has a lot of free pages and
->>>> normal zone has no reclaimable page.
->>>>
->>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
->>>> sleep only if every zones have much free pages than high water mark
->>>> _and_ 25% of present pages in node are free.
->>>>
->>>
->>>
->>> Sorry. I can't understand your point.
->>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
->>> It seems I am missing your point.
->>> Please anybody correct me.
->>
->> Since currently direct reclaim is given up based on
->> zone->all_unreclaimable flag,
->> so for e.g in one of the scenarios:
->>
->> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
->> hot-remove the all the pages of the MOVABLE zone.
->>
->> While migrating pages during memory hot-unplugging, the allocation function
->> (for new page to which the page in MOVABLE zone would be moved)  can end up
->> looping in direct reclaim path for ever.
->>
->> This is so because when most of the pages in the MOVABLE zone have
->> been migrated,
->> the zone now contains lots of free memory (basically above low watermark)
->> BUT all are in MIGRATE_ISOLATE list of the buddy list.
->>
->> So kswapd() would not balance this zone as free pages are above low watermark
->> (but all are in isolate list). So zone->all_unreclaimable flag would
->> never be set for this zone
->> and allocation function would end up looping forever. (assuming the
->> zone NORMAL is
->> left with no reclaimable memory)
->>
-> 
-> 
-> Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
-> But I don't see it's a problem of kswapd.
-> 
-> a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
-> but we can't allocate it. :(
-> It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
-> Kswapd is just one of them confused.
-> As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too. 
-> 
-> This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
-> and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
-> free_area[order].nr_free exactly. 
-> 
-> Any thought?
-> 
-> Side Note: I still need KOSAKI's patch with fixed description regardless of this problem because set zone->all_unreclaimable of only kswapd is very fragile.
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 4403009..19de56c 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5593,8 +5593,10 @@ int set_migratetype_isolate(struct page *page)
->  
->  out:
->         if (!ret) {
-> +               int pages_moved;
->                 set_pageblock_migratetype(page, MIGRATE_ISOLATE);
-> -               move_freepages_block(zone, page, MIGRATE_ISOLATE);
-> +               pages_moved = move_freepages_block(zone, page, MIGRATE_ISOLATE);
-> +               __mod_zone_page_state(zone, NR_FREE_PAGES, -pages_moved);
->         }   
->  
->         spin_unlock_irqrestore(&zone->lock, flags);
-> @@ -5607,12 +5609,14 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
->  {
->         struct zone *zone;
->         unsigned long flags;
-> +       int pages_moved;
->         zone = page_zone(page);
->         spin_lock_irqsave(&zone->lock, flags);
->         if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
->                 goto out;
->         set_pageblock_migratetype(page, migratetype);
-> -       move_freepages_block(zone, page, migratetype);
-> +       pages_moved = move_freepages_block(zone, page, migratetype);
-> +       __mod_zone_page_state(zone, NR_FREE_PAGES, pages_moved);
->  out:
->         spin_unlock_irqrestore(&zone->lock, flags);
->  }
 
-Unfortunately, this doesn't work. there are two reasons. 1) when memory hotplug occue, we have
-two scenarios. a) free page -> page block change into isolate b) page block change into isolate
--> free page. The above patch only care scenario (a). Thus it lead to confusing NR_FREE_PAGES value.
-_if_ we put a new branch free page hotpath, we can solve scenario (b). but I don't like it. because of,
-zero hotpath overhead is one of memory hotplug design principle. 2) event if we can solve above issue,
-all_unreclaimable logic still broken. because of, __alloc_pages_slowpath() wake up kswapd only once and
-don't wake up when "goto rebalance" path. But, wake_all_kswapd() is racy and no guarantee to wake up
-kswapd. It mean direct reclaim should work fine w/o background reclaim.
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Jun 19, 2012 at 07:08:22AM +0000, Kim, Milo wrote:
+> This driver supports TI/National LP8720, LP8725 PMIC.
 
+Applied, thanks.
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP4PphAAoJEBus8iNuMP3dRX8P/R4JLPVFnym/fTYakwf3T4dn
+fVZHb53a+bsxwDZnCv4MQJgZ861v8nqCCCWl7mtNztwx+vXtS1Zl+yXkBTg6SHod
+u7vlG0pPWlv1oenVJu0YJd2Do1DMT70Wx0xnlklKsj9qdyxCwa3pFr6xiVTX7TKW
+Ihd3QrErkh9UptJvpwhzqWk3+tOpnp4M8hTq95oMwXiNBmaCkMrGmjSa4QayWFAH
+Gt57HQTnz2naRU1Yp0nFPIJUXtNv+HwhGXktdnAJA1P+hbG/3as8VgMT7u1n6fkL
+JrQxwPC8ABQKCVxwu5SwVBDTylGXqIP4hlOuYkMD8FdMJo1nfWr+Nb1Yv1+npe+q
+kSr5E/2cTFrmgLCfCiTIu5IMFaRT+EP640FAXQoPRuPj+bcI3ISQBA64b78LSChx
+s0ver6U7rt9J4ElCOQ85F0x7D459k8MvZPRUiUUZPGIOiDRIjZx1yeJYowekr/nc
+Sjg8dqnPd+nvRMm4c6JzouKnF8UAqV7KAWn3RZ2oRGXyv2BjA4nelN/5jzLQJi6z
+g6ahD+7OZnHyNLtOcWXwXFORuCw95qtSLUw78XFQ/IxxKUDBYa3MB5lAdeafJz7q
+w0lQ9/OCe6wLKpZL9Q2O9UVF4eEH45P1PyRgyUmgmSQK6ECCIShfP4ugmZAirk2s
+Yi0nuH2h/9orzoAXeHd5
+=jmBG
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
