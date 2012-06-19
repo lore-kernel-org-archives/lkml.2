@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab2FSCOj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 22:14:39 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:47209 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab2FSCOi (ORCPT
+	id S1752371Ab2FSCQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 22:16:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27835 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab2FSCQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 22:14:38 -0400
-Message-ID: <4FDFE085.8040205@linux.vnet.ibm.com>
-Date: Tue, 19 Jun 2012 10:14:29 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 6/6] KVM: introduce readonly memslot
-References: <4FD6ADA6.40008@linux.vnet.ibm.com> <4FD6AE3B.9020508@linux.vnet.ibm.com> <4FDEFEB8.9000001@redhat.com>
-In-Reply-To: <4FDEFEB8.9000001@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12061816-1396-0000-0000-00000169717A
+	Mon, 18 Jun 2012 22:16:13 -0400
+X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ARy8Wg5PTaYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=pGLkceISAAAA:8 a=vgjkmybt65Fzzus6ckkA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340072171.25903.181.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC PATCH 0/2] libtraceevent/perf: Add support for trace-cmd
+ plugins
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, namhyung.kim@lge.com,
+        mingo@kernel.org, peterz@infradead.org
+Date: Mon, 18 Jun 2012 22:16:11 -0400
+In-Reply-To: <874nq8hyfa.fsf@sejong.aot.lge.com>
+References: <1339695333-64591-1-git-send-email-dsahern@gmail.com>
+	 <87lijlhv9v.fsf@sejong.aot.lge.com> <4FDF3D5C.1030209@gmail.com>
+	 <87d34wi0y3.fsf@sejong.aot.lge.com>
+	 <1340067793.25903.158.camel@gandalf.stny.rr.com>
+	 <878vfkhzr8.fsf@sejong.aot.lge.com>
+	 <1340069162.25903.176.camel@gandalf.stny.rr.com>
+	 <874nq8hyfa.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 06:11 PM, Avi Kivity wrote:
+[ I'm tired of getting error messages from sending to some stranger at
+weisbec@gmail.com, I might as well send it to someone I know. Someone
+with an 'f' ]
 
 
->>  static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
->>  {
->> -	if (mem->flags & ~KVM_MEM_LOG_DIRTY_PAGES)
->> +	if (mem->flags & ~(KVM_MEM_LOG_DIRTY_PAGES | KVM_MEM_READONLY))
->>  		return -EINVAL;
-> 
-> Only x86 supports readonly so far.
-> 
+On Tue, 2012-06-19 at 10:40 +0900, Namhyung Kim wrote:
+> On Mon, 18 Jun 2012 21:26:02 -0400, Steven Rostedt wrote:
+> > On Tue, 2012-06-19 at 10:11 +0900, Namhyung Kim wrote:
+> >
+> >> > trace-cmd report -N
+> >> > [...]
+> >> >              kvm-6172  [000] 14669573.114126: kvm_entry:            vcpu 0
+> >> >              kvm-6172  [000] 14669573.114127: kvm_exit:             [FAILED TO PARSE] exit_reason=30 guest_rip=0xffff357a isa=1 info1=217841672 info2=0
+> >> >              kvm-6172  [000] 14669573.114130: kvm_emulate_insn:     [FAILED TO PARSE] rip=4294915450 csbase=0 len=1 insn=ì[ÃWVS<89>Ã<89>Ö¨^Gu^Q^O^E flags=5 failed=0
+> >> >              kvm-6172  [000] 14669573.114130: kvm_pio:              pio_read at 0xcfc size 1 count 1
+> >> >              kvm-6172  [000] 14669573.114131: kvm_userspace_exit:   reason KVM_EXIT_IO (2)
+> >> >              kvm-6172  [000] 14669573.114134: kvm_entry:            vcpu 0
+> >> >
+> >> 
 
+> Ok. Then how about using __print_hex() for __print_insn? AFAICS
+> ftrace_print_hex_seq() looks almost same as __print_insn() and as it's a
+> generic function we can add its handler in libtraceevnt.
 
-Right, will fix.
+We can be a bit better at the raw print, sure. Here's the format that's
+there:
 
->>
->> -static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
->> -				     gfn_t *nr_pages)
->> +static unsigned long __gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
->> +				     gfn_t *nr_pages, bool write)
->>  {
->> -	if (!slot || slot->flags & KVM_MEMSLOT_INVALID)
->> +	if (!slot || slot->flags & KVM_MEMSLOT_INVALID ||
->> +	      ((slot->flags & KVM_MEM_READONLY) && write))
->>  		return bad_hva();
->>
->>  	if (nr_pages)
->> @@ -1045,6 +1046,12 @@ static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
->>  	return gfn_to_hva_memslot(slot, gfn);
->>  }
->>
->> +static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
->> +				     gfn_t *nr_pages)
->> +{
->> +	return __gfn_to_hva_many(slot, gfn, nr_pages, true);
->> +}
-> 
-> We have dozens of translation functions: read/write guest virtual, guest
-> physical (nested and non nested), host virtual, host physical,
-> atomic/nonatomic, sync/async, with/without slot lookup, and probably a
-> few more I forgot.
-> 
+	field:__u64 rip;	offset:16;	size:8;	signed:0;
+	field:__u32 csbase;	offset:24;	size:4;	signed:0;
+	field:__u8 len;	offset:28;	size:1;	signed:0;
+	field:__u8 insn[15];	offset:29;	size:15;	signed:0;
+	field:__u8 flags;	offset:44;	size:1;	signed:0;
+	field:__u8 failed;	offset:45;	size:1;	signed:0;
 
+It treated __u* as decimal numbers, but it also saw that insn[15] was an
+array, and with single bytes at that. So it thought it was a string, and
+tried to print it out as such.
 
-Yes, they make me confused me too.
+We can change the heuristics of this to make it more readable.
 
-> I think we should refactor this into a series of on-step translations:
-> 
->    /*
->     * Translate gva/len write access to a number of tlb entries
->     * (due to cross-page splits) or a fault
->     */
->    gva_to_tlb(gva, len, ACCESS_WRITE, &translation);
->    /*
->     * Translate tlb entries to callbacks that do I/O (either directly
->     * or through KVM_EXIT_MMIO, provided there is no exception pending
->     */
->    tlb_to_io(&translation, &iolist, IO_ATOMIC);
->    /*
->     * Initiate I/O (if no exception)
->     */
->    run_iolist(&iolist, data);
-> 
->    struct gpa_scatterlist {
->        unsigned nr_entries;
->        struct {
->            gpa_t gpa;
->            unsigned len;
->        } entry[2];
->        struct x86_exception exception;
->    };
-> 
->    struct kvm_iolist {
->        unsigned nr_entries;
->        struct kvm_ioentry {
->            struct kvm_memslot *slot;  /* NULL for mmio */
->            struct something *kernel_iodevice;
->            gfn_t page_in_slot;
->            unsigned offset_in_page;
->            unsigned len;
->            void (*iofunc)(struct kvm_ioentry *entry, void *data);
->        } entry[2];
->        struct x86_exception execption;
->    };
-> 
-> This is of course outside the scope of this patchset, just something to
-> think about (and write opinions on).
-
-
-I will think it more and try to do it based on you idea after this patchset,
-thank you, Avi!
+-- Steve
+ 
 
