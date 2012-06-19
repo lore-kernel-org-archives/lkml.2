@@ -1,82 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab2FSWBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 18:01:17 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36428 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171Ab2FSWBP (ORCPT
+	id S1755219Ab2FSWC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 18:02:29 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:10185 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab2FSWC2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 18:01:15 -0400
-Date: Tue, 19 Jun 2012 23:04:46 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH V3] pch_uart: Add eg20t_port lock field, avoid recursive
- spinlocks
-Message-ID: <20120619230446.2b933b3b@pyramind.ukuu.org.uk>
-In-Reply-To: <34b5e216a6dbd83d282dad22c2644136c652c34a.1340139586.git.dvhart@linux.intel.com>
-References: <34b5e216a6dbd83d282dad22c2644136c652c34a.1340139586.git.dvhart@linux.intel.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
+	Tue, 19 Jun 2012 18:02:28 -0400
+From: "Pearson, Greg" <greg.pearson@hp.com>
+To: Tejun Heo <tj@kernel.org>
+CC: "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "shangw@linux.vnet.ibm.com" <shangw@linux.vnet.ibm.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] mm/memblock: fix overlapping allocation when
+ doubling reserved array
+Thread-Topic: [PATCH v4] mm/memblock: fix overlapping allocation when
+ doubling reserved array
+Thread-Index: AQHNTazT7gA1rM+IWEu4nQq9TARp25cCKuuAgAAHkoA=
+Date: Tue, 19 Jun 2012 22:00:22 +0000
+Message-ID: <4FE0F675.3050201@hp.com>
+References: <1340063278-31601-1-git-send-email-greg.pearson@hp.com>
+ <20120619213315.GL32733@google.com>
+In-Reply-To: <20120619213315.GL32733@google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120618
+ Thunderbird/14.0
+x-originating-ip: [16.210.48.13]
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-ID: <8613882F5EF552468CE6D260E66434F3@Compaq.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jun 2012 14:00:18 -0700
-Darren Hart <dvhart@linux.intel.com> wrote:
+On 06/19/2012 03:33 PM, Tejun Heo wrote:
+> On Mon, Jun 18, 2012 at 05:47:58PM -0600, Greg Pearson wrote:
+>> The __alloc_memory_core_early() routine will ask memblock for a range
+>> of memory then try to reserve it. If the reserved region array lacks
+>> space for the new range, memblock_double_array() is called to allocate
+>> more space for the array. If memblock is used to allocate memory for
+>> the new array it can end up using a range that overlaps with the range
+>> originally allocated in __alloc_memory_core_early(), leading to possible
+>> data corruption.
+>>
+>> With this patch memblock_double_array() now calls memblock_find_in_range()
+>> with a narrowed candidate range (in cases where the reserved.regions array
+>> is being doubled) so any memory allocated will not overlap with the original
+>> range that was being reserved. The range is narrowed by passing in the
+>> starting address and size of the previously allocated range. Then the
+>> range above the ending address is searched and if a candidate is not
+>> found, the range below the starting address is searched.
+>>
+>> Changes from v1 to v2 (based on comments from Yinghai Lu):
+>> - use obase instead of base in memblock_add_region() for excluding start address
+>> - pass in both the starting and ending address of the exclude range to
+>>    memblock_double_array()
+>> - have memblock_double_array() search above the exclude ending address
+>>    and below the exclude starting address for a free range
+>>
+>> Changes from v2 to v3 (based on comments from Yinghai Lu):
+>> - pass in exclude_start and exclude_size to memblock_double_array()
+>> - only exclude a range if doubling the reserved.regions array
+>> - make sure narrowed range passed to memblock_find_in_range() is accessible
+>> - to make the code less confusing, change memblock_isolate_range() to
+>>    pass in exclude_start and exclude_size
+>> - remove unneeded comment in memblock_add_region() between while and
+>>    one line loop body
+>>
+>> Changes from v3 to v4 (based on comments from Tejun Heo):
+>> - change parameter names passed to memblock_double_array() so they
+>>    are not misleading and better signify the reason why the array is
+>>    being doubled
+>> - add function comment block to memblock_double_arry() to ensure
+>>    the details of the possible overlap are explained
+>>
+>> Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+>> Cc: Tejun Heo <tj@kernel.org>
+>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Acked-by: Tejun Heo <tj@kernel.org>
+>
+> The SOB tag from Yinghai is a bit weird tho.  SOB indicates the chain
+> of custody for the patch, so the above SOBs indicate that the patch is
+> originally from Greg and then routed (rolled into series or branch) by
+> Yinghai which isn't the case here.  I suppose it's either Reviewed-by:
+> or Acked-by:?
+>
+> Thanks.
+>
 
-> pch_uart_interrupt() takes priv->port.lock which leads to two recursive
-> spinlock calls if low_latency==1 or CONFIG_PREEMPT_RT_FULL=y (one
-> otherwise):
-> 
-> pch_uart_interrupt
->   spin_lock_irqsave(priv->port.lock, flags)
->   case PCH_UART_IID_RDR_TO (data ready)
->   handle_rx_to
->     push_rx
->       tty_port_tty_get
->         spin_lock_irqsave(&port->lock, flags) <--- already hold this lock
->         ...
->       tty_flip_buffer_push
->         ...
->         flush_to_ldisc
->           spin_lock_irqsave(&tty->buf.lock)
->             spin_lock_irqsave(&tty->buf.lock)
->             disc->ops->receive_buf(tty, char_buf)
->               n_tty_receive_buf
->                 tty->ops->flush_chars()
->                 uart_flush_chars
->                   uart_start
->                     spin_lock_irqsave(&port->lock) <--- already hold this lock
-> 
-> Avoid this by using a dedicated lock to protect the eg20t_port structure
-> and IO access to its membase. This is more consistent with the 8250
-> driver.  Ensure priv->lock is always take prior to priv->port.lock when
-> taken at the same time.
-> 
-> V2: Remove inadvertent whitespace change.
-> V3: Account for oops_in_progress for the private lock in
->     pch_console_write().
-> 
-> Note: Like the 8250 driver, if a printk is introduced anywhere inside
->       the pch_console_write() critical section, the kernel will hang
->       on a recursive spinlock on the private lock. The oops case is
->       handled by using a trylock in the oops_in_progress case.
-> 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-> CC: Feng Tang <feng.tang@intel.com>
-> CC: Alexander Stein <alexander.stein@systec-electronic.com>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: Alan Cox <alan@linux.intel.com>
-> CC: linux-serial@vger.kernel.org
+Tejun,
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+I wasn't quite sure what to do about that at first either, I read 
+"Documentation/SubmittingPatches" and it says:
+
+"The Signed-off-by: tag indicates that the signer was involved in the
+development of the patch, or that he/she was in the patch's delivery path."
+
+Since Yinghai contributed some code that is in the current version of 
+the patch I thought the "Signed-off-by" tag would be ok, but if 
+something else is more appropriate I have no problem re-cutting the 
+patch to make the chain of custody more clear.
+
+Thanks
+
+--
+Greg
