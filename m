@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab2FSKDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 06:03:44 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:48650 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2FSKDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 06:03:43 -0400
+	id S1751907Ab2FSKGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 06:06:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40477 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180Ab2FSKGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 06:06:22 -0400
+Date: Tue, 19 Jun 2012 12:06:12 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>
+Subject: Re: linux-next: manual merge of the v4l-dvb tree with Linus' tree
+In-Reply-To: <20120619112939.23c80aed8f1db9682e37be87@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1206191205190.15308@pobox.suse.cz>
+References: <20120619112939.23c80aed8f1db9682e37be87@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CALq1K=LXVqfiyrLjn+_p+NTU3X5RjyQzvKdVRf09zXk-RqbkrQ@mail.gmail.com>
-References: <1340037743-12924-1-git-send-email-stigge@antcom.de>
-	<1340037743-12924-2-git-send-email-stigge@antcom.de>
-	<CAAAP30G1qzDn+NKT1is+GJ9K2DS3Sm3QY+=n7s-P-Rop2b7FPQ@mail.gmail.com>
-	<CALq1K=LXVqfiyrLjn+_p+NTU3X5RjyQzvKdVRf09zXk-RqbkrQ@mail.gmail.com>
-Date: Tue, 19 Jun 2012 07:03:41 -0300
-Message-ID: <CAAAP30FoHAbA1HcUCGQxorFymVDed19N1PPe-ZH0x0s3M+W8bg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] sound: tegra_alc5632: Adjust to of_get_named_gpio() change
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Leon Romanovsky <leon@leon.nu>
-Cc: Roland Stigge <stigge@antcom.de>, swarren@wwwdotorg.org, cjb@laptop.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
-        linus.walleij@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        broonie@opensource.wolfsonmicro.com, lrg@ti.com, perex@perex.cz,
-        tiwai@suse.de, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 3:29 AM, Leon Romanovsky <leon@leon.nu> wrote:
-> On Mon, Jun 18, 2012 at 8:28 PM, Alexandre Pereira da Silva
-> <aletes.xgr@gmail.com> wrote:
->> On Mon, Jun 18, 2012 at 1:42 PM, Roland Stigge <stigge@antcom.de> wrote:
->>> of_get_named_gpio() was changed to return -EPROBE_DEFER in case of
->>> gpios not probed yet. This patch adjusts tegra_alc5632 to this.
->>>
->>> Signed-off-by: Roland Stigge <stigge@antcom.de>
->> Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-> Hi Alexandre,
-> Sorry to be rude, but can you explain me why did you "Acked-by" on this patch ?
-> I don't see your name in git log for tegra_alc5632.c file:
-> http://git.kernel.org/?p=linux/kernel/git/broonie/sound.git;a=history;f=sound/soc/tegra/tegra_alc5632.c;h=d684df294c0c5c80458b6de591c16965027db14b;hb=refs/heads/for-next
+On Tue, 19 Jun 2012, Stephen Rothwell wrote:
 
-I'm tracking Roland's work on Probe defer.
+> Hi Mauro,
+> 
+> Today's linux-next merge of the v4l-dvb tree got a conflict in
+> drivers/hid/hid-ids.h between commit 9ed326951806 ("HID: multitouch: Add
+> support for Baanto touchscreen") from Linus' tree and commit 110301833d6f
+> ("[media] radio/si470x: Add support for the Axentia ALERT FM USB
+> Receiver") from the v4l-dvb tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc drivers/hid/hid-ids.h
+> index 6d3037e,70298d1..0000000
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@@ -160,9 -157,9 +160,12 @@@
+>   #define USB_VENDOR_ID_AVERMEDIA		0x07ca
+>   #define USB_DEVICE_ID_AVER_FM_MR800	0xb800
+>   
+> + #define USB_VENDOR_ID_AXENTIA		0x12cf
+> + #define USB_DEVICE_ID_AXENTIA_FM_RADIO	0x7111
+> + 
+>  +#define USB_VENDOR_ID_BAANTO		0x2453
+>  +#define USB_DEVICE_ID_BAANTO_MT_190W2	0x0100
+>  +
+>   #define USB_VENDOR_ID_BELKIN		0x050d
+>   #define USB_DEVICE_ID_FLIP_KVM		0x3201
+
+Thanks for reporting this, Stephen.
+
+Hmmm ... Mauro, Hans, do you feel it's actually proper to add the device 
+ids to hid-ids.h? I am using this file usually solely for the drivers on 
+the HID bus, which radio-si470x is not, I believe.
+
+-- 
+Jiri Kosina
+SUSE Labs
