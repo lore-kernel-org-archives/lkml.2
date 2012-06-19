@@ -1,129 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab2FSFVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 01:21:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34603 "EHLO mga14.intel.com"
+	id S1753338Ab2FSF1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 01:27:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48099 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab2FSFU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 01:20:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="157978588"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
-        Zheng Yan <zheng.z.yan@intel.com>
-Subject: [PATCH -v6 2/4] PCIe, PM, Add runtime PM support to PCIe port
-Date: Tue, 19 Jun 2012 13:20:47 +0800
-Message-Id: <1340083249-16266-3-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1340083249-16266-1-git-send-email-ying.huang@intel.com>
-References: <1340083249-16266-1-git-send-email-ying.huang@intel.com>
+	id S1752473Ab2FSF1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 01:27:46 -0400
+Message-ID: <4FE00DBF.7080405@suse.com>
+Date: Tue, 19 Jun 2012 10:57:27 +0530
+From: Suresh Jayaraman <sjayaraman@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>, Justin Lecher <jlec@gentoo.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-cachefs@redhat.com
+Subject: Re: [PATCH] [RESEND] fs: cachefiles: Add support for large files
+ in filesystem caching
+References: <4FD5844D.4010900@suse.com> <20120618160408.8d0dd792.akpm@linux-foundation.org>
+In-Reply-To: <20120618160408.8d0dd792.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On 06/19/2012 04:34 AM, Andrew Morton wrote:
+>> From: Justin Lecher <jlec@gentoo.org>
+>>
+>> Support the caching of large files.
+>>
+>> https://bugzilla.kernel.org/show_bug.cgi?id=31182
+>>
+>> Signed-off-by: Justin Lecher <jlec@gentoo.org>
+>> Tested-by: Suresh Jayaraman <sjayaraman@suse.com>
+>> ---
+>>  fs/cachefiles/rdwr.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+>> index 0e3c092..d136686 100644
+>> --- a/fs/cachefiles/rdwr.c
+>> +++ b/fs/cachefiles/rdwr.c
+>> @@ -919,7 +919,7 @@ int cachefiles_write_page(struct fscache_storage *op, struct page *page)
+>>  	dget(object->backer);
+>>  	mntget(cache->mnt);
+>>  	file = dentry_open(object->backer, cache->mnt, O_RDWR,
+>> -			   cache->cache_cred);
+>> +			   (O_RDWR | O_LARGEFILE), cache->cache_cred);
+> 
+> Doesn't compile.
 
-This patch adds runtime PM support to PCIe port.  This is needed by
-PCIe D3cold support, where PCIe device without ACPI node may be
-powered on/off by PCIe port.
+Oops, my bad. While refreshing the original patch against the latest
+kernel, I seemed to have introduced an extra argument while attempting
+to limit the characters to 80. Extremely sorry about that.
 
-Because runtime suspend is broken for some chipsets, a black list is
-used to disable runtime PM support for these chipsets.
+> How extensively was this change tested?  Please describe the testing
+> which was performed?
+> 
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+The original patch was tested by mounting a NFS share with fscache
+option enabled, do a md5sum on a nfs file larger than 2GB and ensure
+that the file is getting cached by fscache (watch cache size growing)
+on x86_64. 
+
+Please find below the fixed one.
+
+
+From: Justin Lecher <jlec@gentoo.org>
+Subject: [PATCH] fs: cachefiles: Add support for large files in filesystem caching
+
+Support the caching of large files.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=31182
+
+Tested by mounting a NFS share with fscache option enabled, do a
+md5sum on a nfs file larger than 2GB and ensure that the file is getting
+cached by fscache (watch cache size growing) on x86_64.
+
+Signed-off-by: Justin Lecher <jlec@gentoo.org>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.com>
+Tested-by: Suresh Jayaraman <sjayaraman@suse.com>
+Cc: David Howells <dhowells@redhat.com>
+Acked-by: David Howells <dhowells@redhat.com>
 ---
- drivers/pci/pci.c              |   10 ++++++++++
- drivers/pci/pcie/portdrv_pci.c |   24 ++++++++++++++++++++++++
- 2 files changed, 34 insertions(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1518,6 +1518,16 @@ static void pci_pme_list_scan(struct wor
- 	if (!list_empty(&pci_pme_list)) {
- 		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
- 			if (pme_dev->dev->pme_poll) {
-+				struct pci_dev *bridge;
-+
-+				bridge = pme_dev->dev->bus->self;
-+				/*
-+				 * If bridge is in low power state, the
-+				 * configuration space of subordinate devices
-+				 * may be not accessible
-+				 */
-+				if (bridge && bridge->current_state != PCI_D0)
-+					continue;
- 				pci_pme_wakeup(pme_dev->dev, NULL);
- 			} else {
- 				list_del(&pme_dev->list);
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -11,6 +11,7 @@
- #include <linux/kernel.h>
- #include <linux/errno.h>
- #include <linux/pm.h>
-+#include <linux/pm_runtime.h>
- #include <linux/init.h>
- #include <linux/pcieport_if.h>
- #include <linux/aer.h>
-@@ -99,6 +100,15 @@ static int pcie_port_resume_noirq(struct
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static int pcie_port_runtime_pm(struct device *dev)
-+{
-+	return 0;
-+}
-+#else
-+#define pcie_port_runtime_pm	NULL
-+#endif
-+
- static const struct dev_pm_ops pcie_portdrv_pm_ops = {
- 	.suspend	= pcie_port_device_suspend,
- 	.resume		= pcie_port_device_resume,
-@@ -107,6 +117,8 @@ static const struct dev_pm_ops pcie_port
- 	.poweroff	= pcie_port_device_suspend,
- 	.restore	= pcie_port_device_resume,
- 	.resume_noirq	= pcie_port_resume_noirq,
-+	.runtime_suspend = pcie_port_runtime_pm,
-+	.runtime_resume = pcie_port_runtime_pm,
- };
- 
- #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-@@ -117,6 +129,14 @@ static const struct dev_pm_ops pcie_port
- #endif /* !PM */
- 
- /*
-+ * PCIe port runtime suspend is broken for some chipsets, so use a
-+ * black list to disable runtime PM for these chipsets.
-+ */
-+static const struct pci_device_id port_runtime_pm_black_list[] = {
-+	{ /* end: all zeroes */ }
-+};
-+
-+/*
-  * pcie_portdrv_probe - Probe PCI-Express port devices
-  * @dev: PCI-Express port device being probed
-  *
-@@ -144,12 +164,16 @@ static int __devinit pcie_portdrv_probe(
- 		return status;
- 
- 	pci_save_state(dev);
-+	if (!pci_match_id(port_runtime_pm_black_list, dev))
-+		pm_runtime_put_noidle(&dev->dev);
- 
- 	return 0;
- }
- 
- static void pcie_portdrv_remove(struct pci_dev *dev)
- {
-+	if (!pci_match_id(port_runtime_pm_black_list, dev))
-+		pm_runtime_get_noresume(&dev->dev);
- 	pcie_port_device_remove(dev);
- 	pci_disable_device(dev);
- }
+ fs/cachefiles/rdwr.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index 0e3c092..cc7ef95 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -918,7 +918,7 @@ int cachefiles_write_page(struct fscache_storage *op, struct page *page)
+ 	 * own time */
+ 	dget(object->backer);
+ 	mntget(cache->mnt);
+-	file = dentry_open(object->backer, cache->mnt, O_RDWR,
++	file = dentry_open(object->backer, cache->mnt, (O_RDWR | O_LARGEFILE),
+ 			   cache->cache_cred);
+ 	if (IS_ERR(file)) {
+ 		ret = PTR_ERR(file);
