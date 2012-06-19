@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab2FSWfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 18:35:50 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:32998 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2FSWft (ORCPT
+	id S1753517Ab2FSWhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 18:37:36 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:37474 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab2FSWhf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 18:35:49 -0400
-Message-ID: <1340145346.29338.13.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Borislav Petkov <bp@alien8.de>, Alan Stern <stern@rowland.harvard.edu>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Jun 2012 08:35:46 +1000
-In-Reply-To: <201206182328.19811.rjw@sisk.pl>
-References: <90304ca8-31ef-4919-bf9d-e0498b0de87b@email.android.com>
-	 <201206182229.32055.rjw@sisk.pl>
-	 <8c993882-5949-471d-a15c-0c91d3d2deb9@email.android.com>
-	 <201206182328.19811.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.2 (3.4.2-1.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Jun 2012 18:37:35 -0400
+From: "Pearson, Greg" <greg.pearson@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "tj@kernel.org" <tj@kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        "shangw@linux.vnet.ibm.com" <shangw@linux.vnet.ibm.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] mm/memblock: fix overlapping allocation when
+ doubling reserved array
+Thread-Topic: [PATCH v4] mm/memblock: fix overlapping allocation when
+ doubling reserved array
+Thread-Index: AQHNTazT7gA1rM+IWEu4nQq9TARp25cCNneAgAAFvYA=
+Date: Tue, 19 Jun 2012 22:35:08 +0000
+Message-ID: <4FE0FE9B.8020401@hp.com>
+References: <1340063278-31601-1-git-send-email-greg.pearson@hp.com>
+ <20120619151435.10c16aed.akpm@linux-foundation.org>
+In-Reply-To: <20120619151435.10c16aed.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120618
+ Thunderbird/14.0
+x-originating-ip: [16.210.48.11]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <3177E2BB60E9DF4792AAA88EEC01117A@Compaq.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-18 at 23:28 +0200, Rafael J. Wysocki wrote:
-> > PS. Yeah, the current printout with \b is a hack and I do not
-> particularly
-> > like it either. Proper way would be with plymouth or something like
-> that, but
-> > I got no joy with that on that list. One day, maybe...
-> 
-> I'm not sure what you mean?
+On 06/19/2012 04:14 PM, Andrew Morton wrote:
+> On Mon, 18 Jun 2012 17:47:58 -0600
+> Greg Pearson <greg.pearson@hp.com> wrote:
+>
+>> The __alloc_memory_core_early() routine will ask memblock for a range
+>> of memory then try to reserve it. If the reserved region array lacks
+>> space for the new range, memblock_double_array() is called to allocate
+>> more space for the array. If memblock is used to allocate memory for
+>> the new array it can end up using a range that overlaps with the range
+>> originally allocated in __alloc_memory_core_early(), leading to possible
+>> data corruption.
+> OK, but we have no information about whether it *does* lead to data
+> corruption.  Are there workloads which trigger this?  End users who are
+> experiencing problems?
+>
+> See, I (and others) need to work out whether this patch should be
+> included in 3.5 or even earlier kernels.  To do that we often need the
+> developer to tell us what the impact of the bug is upon users.  Please
+> always include this info when fixing bugs.
 
-Sorry, I never answered your question here.
+Andrew,
 
-Plymouth (and other such software) provides graphical boot support. We
-should be sending stuff to it to display nice, graphical
-hibernation/thaw progress indicator. An exercise for the future,
-perhaps.
+I'm currently working on a prototype system that exhibits the data 
+corruption problem when doubling the reserved array while booting the 
+system. This system will be a released product in the future. I'll 
+remember to include this information in the patch next time.
 
--- 
-Bojan
+Thanks
 
+--
+Greg
