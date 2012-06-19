@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab2FSSAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:00:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43316 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2FSSAN (ORCPT
+	id S1754515Ab2FSSA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:00:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33391 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab2FSSAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:00:13 -0400
+	Tue, 19 Jun 2012 14:00:15 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,14 +16,14 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/20] perf lib: Introduce rtrim
-Date: Tue, 19 Jun 2012 14:50:08 -0300
-Message-Id: <1340128221-17348-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 14/20] perf script: Replace __event_name uses with perf_evsel__name
+Date: Tue, 19 Jun 2012 14:50:15 -0300
+Message-Id: <1340128221-17348-15-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1340128221-17348-1-git-send-email-acme@infradead.org>
 References: <1340128221-17348-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,7 +31,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Remove the trailing whitespaces.
+No logic change, just remove one more user of __event_name().
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -41,54 +41,126 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-8bxozh5lyixgjmziqaxo9675@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-e4f0vuy3283hmzfjjvkgm7fo@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/string.c |   22 ++++++++++++++++++++++
- tools/perf/util/util.h   |    2 ++
- 2 files changed, 24 insertions(+), 0 deletions(-)
+ tools/perf/builtin-script.c |   38 ++++++++++++++++++++------------------
+ 1 files changed, 20 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index d583638..199bc4d 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -313,3 +313,25 @@ int strtailcmp(const char *s1, const char *s2)
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 8e395a5..8f9f9b6 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -137,10 +137,11 @@ static const char *output_field2str(enum perf_output_field field)
+ 
+ #define PRINT_FIELD(x)  (output[attr->type].fields & PERF_OUTPUT_##x)
+ 
+-static int perf_event_attr__check_stype(struct perf_event_attr *attr,
+-				  u64 sample_type, const char *sample_msg,
+-				  enum perf_output_field field)
++static int perf_evsel__check_stype(struct perf_evsel *evsel,
++				   u64 sample_type, const char *sample_msg,
++				   enum perf_output_field field)
+ {
++	struct perf_event_attr *attr = &evsel->attr;
+ 	int type = attr->type;
+ 	const char *evname;
+ 
+@@ -148,7 +149,7 @@ static int perf_event_attr__check_stype(struct perf_event_attr *attr,
+ 		return 0;
+ 
+ 	if (output[type].user_set) {
+-		evname = __event_name(attr->type, attr->config);
++		evname = perf_evsel__name(evsel);
+ 		pr_err("Samples for '%s' event do not have %s attribute set. "
+ 		       "Cannot print '%s' field.\n",
+ 		       evname, sample_msg, output_field2str(field));
+@@ -157,7 +158,7 @@ static int perf_event_attr__check_stype(struct perf_event_attr *attr,
+ 
+ 	/* user did not ask for it explicitly so remove from the default list */
+ 	output[type].fields &= ~field;
+-	evname = __event_name(attr->type, attr->config);
++	evname = perf_evsel__name(evsel);
+ 	pr_debug("Samples for '%s' event do not have %s attribute set. "
+ 		 "Skipping '%s' field.\n",
+ 		 evname, sample_msg, output_field2str(field));
+@@ -175,8 +176,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(IP)) {
+-		if (perf_event_attr__check_stype(attr, PERF_SAMPLE_IP, "IP",
+-					   PERF_OUTPUT_IP))
++		if (perf_evsel__check_stype(evsel, PERF_SAMPLE_IP, "IP",
++					    PERF_OUTPUT_IP))
+ 			return -EINVAL;
+ 
+ 		if (!no_callchain &&
+@@ -185,8 +186,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 	}
+ 
+ 	if (PRINT_FIELD(ADDR) &&
+-		perf_event_attr__check_stype(attr, PERF_SAMPLE_ADDR, "ADDR",
+-				       PERF_OUTPUT_ADDR))
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_ADDR, "ADDR",
++					PERF_OUTPUT_ADDR))
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP) && !PRINT_FIELD(ADDR)) {
+@@ -208,18 +209,18 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 	}
+ 
+ 	if ((PRINT_FIELD(PID) || PRINT_FIELD(TID)) &&
+-		perf_event_attr__check_stype(attr, PERF_SAMPLE_TID, "TID",
+-				       PERF_OUTPUT_TID|PERF_OUTPUT_PID))
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_TID, "TID",
++					PERF_OUTPUT_TID|PERF_OUTPUT_PID))
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(TIME) &&
+-		perf_event_attr__check_stype(attr, PERF_SAMPLE_TIME, "TIME",
+-				       PERF_OUTPUT_TIME))
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_TIME, "TIME",
++					PERF_OUTPUT_TIME))
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(CPU) &&
+-		perf_event_attr__check_stype(attr, PERF_SAMPLE_CPU, "CPU",
+-				       PERF_OUTPUT_CPU))
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_CPU, "CPU",
++					PERF_OUTPUT_CPU))
+ 		return -EINVAL;
+ 
  	return 0;
- }
+@@ -258,9 +259,10 @@ static int perf_session__check_output_opt(struct perf_session *session)
  
-+/**
-+ * rtrim - Removes trailing whitespace from @s.
-+ * @s: The string to be stripped.
-+ *
-+ * Note that the first trailing whitespace is replaced with a %NUL-terminator
-+ * in the given string @s. Returns @s.
-+ */
-+char *rtrim(char *s)
-+{
-+	size_t size = strlen(s);
-+	char *end;
-+
-+	if (!size)
-+		return s;
-+
-+	end = s + size - 1;
-+	while (end >= s && isspace(*end))
-+		end--;
-+	*(end + 1) = '\0';
-+
-+	return s;
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 2daaedb..b13c733 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -264,4 +264,6 @@ bool is_power_of_2(unsigned long n)
+ static void print_sample_start(struct perf_sample *sample,
+ 			       struct thread *thread,
+-			       struct perf_event_attr *attr)
++			       struct perf_evsel *evsel)
+ {
+ 	int type;
++	struct perf_event_attr *attr = &evsel->attr;
+ 	struct event_format *event;
+ 	const char *evname = NULL;
+ 	unsigned long secs;
+@@ -305,7 +307,7 @@ static void print_sample_start(struct perf_sample *sample,
+ 			if (event)
+ 				evname = event->name;
+ 		} else
+-			evname = __event_name(attr->type, attr->config);
++			evname = perf_evsel__name(evsel);
  
- size_t hex_width(u64 v);
+ 		printf("%s: ", evname ? evname : "[unknown]");
+ 	}
+@@ -412,7 +414,7 @@ static void process_event(union perf_event *event __unused,
+ 	if (output[attr->type].fields == 0)
+ 		return;
  
-+char *rtrim(char *s);
-+
- #endif
+-	print_sample_start(sample, thread, attr);
++	print_sample_start(sample, thread, evsel);
+ 
+ 	if (is_bts_event(attr)) {
+ 		print_sample_bts(event, sample, evsel, machine, thread);
 -- 
 1.7.1
 
