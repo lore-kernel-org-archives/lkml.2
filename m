@@ -1,140 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab2FSIiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 04:38:07 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34561 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab2FSIiE (ORCPT
+	id S1754109Ab2FSIiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 04:38:14 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49657 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab2FSIiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 04:38:04 -0400
-Message-ID: <4FE03A55.7070503@linux.vnet.ibm.com>
-Date: Tue, 19 Jun 2012 16:37:41 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 19 Jun 2012 04:38:08 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: [PATCH 10/10] cleanup the code between tmem_obj_init and tmem_obj_find
-References: <4FE0392E.3090300@linux.vnet.ibm.com>
-In-Reply-To: <4FE0392E.3090300@linux.vnet.ibm.com>
+In-Reply-To: <1338880312-17561-1-git-send-email-minchan@kernel.org>
+References: <1338880312-17561-1-git-send-email-minchan@kernel.org>
+Date: Tue, 19 Jun 2012 17:38:07 +0900
+X-Google-Sender-Auth: Ja6SQAJOndpG1rfO3YQFyiSk8KI
+Message-ID: <CAEwNFnBAC1OKCA3MnT0VHX+y9gfLDPhCO-=SVD_-sVipoAX4ag@mail.gmail.com>
+Subject: Re: [PATCH] [RESEND] arm: limit memblock base address for early_pte_alloc
+From: Minchan Kim <minchan@kernel.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@linaro.org>, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jongsung Kim <neidhard.kim@lge.com>, Chanho Min <chanho.min@lge.com>,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12061908-8878-0000-0000-000002F256C1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tmem_obj_find and insertion tmem-obj have the some logic, we can integrate
-the code
+Resend.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- drivers/staging/zcache/tmem.c |   58 +++++++++++++++++++++-------------------
- 1 files changed, 30 insertions(+), 28 deletions(-)
+Could you please see this problem?
 
-diff --git a/drivers/staging/zcache/tmem.c b/drivers/staging/zcache/tmem.c
-index 1ca66ea..cdf2d3c 100644
---- a/drivers/staging/zcache/tmem.c
-+++ b/drivers/staging/zcache/tmem.c
-@@ -72,33 +72,48 @@ void tmem_register_pamops(struct tmem_pamops *m)
-  * the hashbucket lock must be held.
-  */
+Thanks.
 
--/* searches for object==oid in pool, returns locked object if found */
--static struct tmem_obj *tmem_obj_find(struct tmem_hashbucket *hb,
--					struct tmem_oid *oidp)
-+static struct tmem_obj
-+*__tmem_obj_find(struct tmem_hashbucket*hb, struct tmem_oid *oidp,
-+		 struct rb_node *parent, struct rb_node **link)
- {
--	struct rb_node *rbnode;
-+	struct rb_node **rbnode;
- 	struct tmem_obj *obj;
+On Tue, Jun 5, 2012 at 4:11 PM, Minchan Kim <minchan@kernel.org> wrote:
+> If we do arm_memblock_steal with a page which is not aligned with section size,
+> panic can happen during boot by page fault in map_lowmem.
+>
+> Detail:
+>
+> 1) mdesc->reserve can steal a page which is allocated at 0x1ffff000 by memblock
+>   which prefers tail pages of regions.
+> 2) map_lowmem maps 0x00000000 - 0x1fe00000
+> 3) map_lowmem try to map 0x1fe00000 but it's not aligned by section due to 1.
+> 4) calling alloc_init_pte allocates a new page for new pte by memblock_alloc
+> 5) allocated memory for pte is 0x1fffe000 -> it's not mapped yet.
+> 6) memset(ptr, 0, sz) in early_alloc_aligned got PANICed!
+>
+> This patch fix it by limiting memblock to mapped memory range.
+>
+> Reported-by: Jongsung Kim <neidhard.kim@lge.com>
+> Suggested-by: Chanho Min <chanho.min@lge.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  arch/arm/mm/mmu.c |   37 ++++++++++++++++++++++---------------
+>  1 file changed, 22 insertions(+), 15 deletions(-)
+>
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index e5dad60..a15aafe 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -594,7 +594,7 @@ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
+>
+>  static void __init alloc_init_section(pud_t *pud, unsigned long addr,
+>                                      unsigned long end, phys_addr_t phys,
+> -                                     const struct mem_type *type)
+> +                                     const struct mem_type *type, bool lowmem)
+>  {
+>        pmd_t *pmd = pmd_offset(pud, addr);
+>
+> @@ -619,6 +619,8 @@ static void __init alloc_init_section(pud_t *pud, unsigned long addr,
+>
+>                flush_pmd_entry(p);
+>        } else {
+> +               if (lowmem)
+> +                       memblock_set_current_limit(__pa(addr));
+>                /*
+>                 * No need to loop; pte's aren't interested in the
+>                 * individual L1 entries.
+> @@ -628,14 +630,15 @@ static void __init alloc_init_section(pud_t *pud, unsigned long addr,
+>  }
+>
+>  static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+> -       unsigned long end, unsigned long phys, const struct mem_type *type)
+> +                               unsigned long end, unsigned long phys,
+> +                               const struct mem_type *type, bool lowmem)
+>  {
+>        pud_t *pud = pud_offset(pgd, addr);
+>        unsigned long next;
+>
+>        do {
+>                next = pud_addr_end(addr, end);
+> -               alloc_init_section(pud, addr, next, phys, type);
+> +               alloc_init_section(pud, addr, next, phys, type, lowmem);
+>                phys += next - addr;
+>        } while (pud++, addr = next, addr != end);
+>  }
+> @@ -702,14 +705,7 @@ static void __init create_36bit_mapping(struct map_desc *md,
+>  }
+>  #endif /* !CONFIG_ARM_LPAE */
+>
+> -/*
+> - * Create the page directory entries and any necessary
+> - * page tables for the mapping specified by `md'.  We
+> - * are able to cope here with varying sizes and address
+> - * offsets, and we take full advantage of sections and
+> - * supersections.
+> - */
+> -static void __init create_mapping(struct map_desc *md)
+> +static inline void __create_mapping(struct map_desc *md, bool lowmem)
+>  {
+>        unsigned long addr, length, end;
+>        phys_addr_t phys;
+> @@ -759,7 +755,7 @@ static void __init create_mapping(struct map_desc *md)
+>        do {
+>                unsigned long next = pgd_addr_end(addr, end);
+>
+> -               alloc_init_pud(pgd, addr, next, phys, type);
+> +               alloc_init_pud(pgd, addr, next, phys, type, lowmem);
+>
+>                phys += next - addr;
+>                addr = next;
+> @@ -767,6 +763,18 @@ static void __init create_mapping(struct map_desc *md)
+>  }
+>
+>  /*
+> + * Create the page directory entries and any necessary
+> + * page tables for the mapping specified by `md'.  We
+> + * are able to cope here with varying sizes and address
+> + * offsets, and we take full advantage of sections and
+> + * supersections.
+> + */
+> +static void __init create_mapping(struct map_desc *md)
+> +{
+> +       __create_mapping(md, false);
+> +}
+> +
+> +/*
+>  * Create the architecture specific mappings
+>  */
+>  void __init iotable_init(struct map_desc *io_desc, int nr)
+> @@ -1111,7 +1119,7 @@ static void __init map_lowmem(void)
+>                map.length = end - start;
+>                map.type = MT_MEMORY;
+>
+> -               create_mapping(&map);
+> +               __create_mapping(&map, true);
+>        }
+>  }
+>
+> @@ -1123,11 +1131,10 @@ void __init paging_init(struct machine_desc *mdesc)
+>  {
+>        void *zero_page;
+>
+> -       memblock_set_current_limit(arm_lowmem_limit);
+> -
+>        build_mem_type_table();
+>        prepare_page_table();
+>        map_lowmem();
+> +       memblock_set_current_limit(arm_lowmem_limit);
+>        dma_contiguous_remap();
+>        devicemaps_init(mdesc);
+>        kmap_init();
+> --
+> 1.7.9.5
+>
 
--	rbnode = hb->obj_rb_root.rb_node;
--	while (rbnode) {
--		BUG_ON(RB_EMPTY_NODE(rbnode));
--		obj = rb_entry(rbnode, struct tmem_obj, rb_tree_node);
-+	rbnode = &hb->obj_rb_root.rb_node;
-+	while (*rbnode) {
-+		BUG_ON(RB_EMPTY_NODE(*rbnode));
-+		obj = rb_entry(*rbnode, struct tmem_obj,
-+			       rb_tree_node);
- 		switch (tmem_oid_compare(oidp, &obj->oid)) {
- 		case 0: /* equal */
- 			goto out;
- 		case -1:
--			rbnode = rbnode->rb_left;
-+			rbnode = &(*rbnode)->rb_left;
- 			break;
- 		case 1:
--			rbnode = rbnode->rb_right;
-+			rbnode = &(*rbnode)->rb_right;
- 			break;
- 		}
- 	}
-+
-+	if (parent)
-+		parent = &obj->rb_tree_node;
-+	if (link)
-+		link = rbnode;
-+
- 	obj = NULL;
- out:
- 	return obj;
- }
 
-+
-+/* searches for object==oid in pool, returns locked object if found */
-+static struct tmem_obj *tmem_obj_find(struct tmem_hashbucket *hb,
-+					struct tmem_oid *oidp)
-+{
-+	return __tmem_obj_find(hb, oidp, NULL, NULL);
-+}
-+
- static void tmem_pampd_destroy_all_in_obj(struct tmem_obj *);
 
- /* free an object that has no more pampds in it */
-@@ -131,8 +146,7 @@ static void tmem_obj_init(struct tmem_obj *obj, struct tmem_hashbucket *hb,
- 					struct tmem_oid *oidp)
- {
- 	struct rb_root *root = &hb->obj_rb_root;
--	struct rb_node **new = &(root->rb_node), *parent = NULL;
--	struct tmem_obj *this;
-+	struct rb_node **new = NULL, *parent = NULL;
-
- 	BUG_ON(pool == NULL);
- 	atomic_inc(&pool->obj_count);
-@@ -144,22 +158,10 @@ static void tmem_obj_init(struct tmem_obj *obj, struct tmem_hashbucket *hb,
- 	obj->pampd_count = 0;
- 	(*tmem_pamops.new_obj)(obj);
- 	SET_SENTINEL(obj, OBJ);
--	while (*new) {
--		BUG_ON(RB_EMPTY_NODE(*new));
--		this = rb_entry(*new, struct tmem_obj, rb_tree_node);
--		parent = *new;
--		switch (tmem_oid_compare(oidp, &this->oid)) {
--		case 0:
--			BUG(); /* already present; should never happen! */
--			break;
--		case -1:
--			new = &(*new)->rb_left;
--			break;
--		case 1:
--			new = &(*new)->rb_right;
--			break;
--		}
--	}
-+
-+	if (__tmem_obj_find(hb, oidp, parent, new))
-+		BUG();
-+
- 	rb_link_node(&obj->rb_tree_node, parent, new);
- 	rb_insert_color(&obj->rb_tree_node, root);
- }
 -- 
-1.7.7.6
-
+Kind regards,
+Minchan Kim
