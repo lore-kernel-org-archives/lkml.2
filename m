@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab2FSKc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 06:32:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60454 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab2FSKc4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 06:32:56 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <22448380.601061340101146820.JavaMail.weblogic@epml24>
-References: <22448380.601061340101146820.JavaMail.weblogic@epml24>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 19 Jun 2012 18:32:35 +0800
-Message-ID: <CAF+7xW=+yHy3x6mPyG7VqsE3drwweGU_bLZn8VStOmCT2x0gpw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] extcon: Set platform drvdata in gpio_extcon_probe()
- and fix irq leak
-To: myungjoo.ham@samsung.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Lockwood <lockwood@android.com>,
-        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753202Ab2FSKea (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 06:34:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45792 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751924Ab2FSKe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 06:34:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="182050939"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 00/10] dw_dmac: set of cleanups and small fixes
+Date: Tue, 19 Jun 2012 13:34:00 +0300
+Message-Id: <1340102050-12697-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1339743913-6236-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1339743913-6236-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/19 함명주 <myungjoo.ham@samsung.com>:
->> Add missing platform_set_drvdata() in gpio_extcon_probe(), otherwise calling
->> platform_get_drvdata in gpio_extcon_remove() returns NULL.
->>
->> Also add missing free_irq call in gpio_extcon_remove().
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> Thanks!
->
->
-> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->
-> I'll apply this patch to the extcon-for-next.
-> I would appear in http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next soon after syncing servers.
+This patchset provides set of the cleanups and small fixes against the
+DesignWare DMA controller driver. It's a first portion of the patches to make
+the driver usable on other platforms.
 
-Hi MyungJoo,
-These patches are already in today's linux-next tree.
-It's already picked up by Greg.
+since v1:
+ - add dwc_chan_reset
+ - disable block interrupts only in probe (discussed with Viresh Kumar)
+ - fix comment line in probe in patch 6
 
-Regards,
-Axel
+Andy Shevchenko (10):
+  dw_dmac: fix constant in the comment
+  dw_dmac: use proper casting to print dma_addr_t values
+  dw_dmac: introduce dwc_dump_chan_regs to dump registers
+  dw_dmac: print correct number of scanned descriptors
+  dw_dmac: use __func__ constant in the debug prints
+  dw_dmac: disable dma in optimal way in probe
+  dw_dmac: disable BLOCK interrupts
+  dw_dmac: introduce dwc_fast_fls()
+  dw_dmac: move from __init to __devinit
+  dw_dmac: introduce dwc_chan_reset
+
+ drivers/dma/dw_dmac.c      |  183 ++++++++++++++++++++------------------------
+ drivers/dma/dw_dmac_regs.h |    2 +-
+ 2 files changed, 85 insertions(+), 100 deletions(-)
+
+-- 
+1.7.10
+
