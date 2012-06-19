@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab2FSLIo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:08:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33430 "EHLO
+	id S1753496Ab2FSLJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:09:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33437 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751376Ab2FSLIn (ORCPT
+	by vger.kernel.org with ESMTP id S1751376Ab2FSLJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:08:43 -0400
-Date: Tue, 19 Jun 2012 12:08:42 +0100
+	Tue, 19 Jun 2012 07:09:25 -0400
+Date: Tue, 19 Jun 2012 12:09:24 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Anuj Aggarwal <anuj.aggarwal@ti.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT 2/3] regulator: tps65023: Convert to get_voltage_sel
-Message-ID: <20120619110841.GG3974@opensource.wolfsonmicro.com>
-References: <1340097138.28289.1.camel@phoenix>
- <1340097193.28289.2.camel@phoenix>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: "'Liam Girdwood'" <lrg@ti.com>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, sbkim01@gmail.com
+Subject: Re: [PATCH-Resend] regulator: s5m8767a: Support AP watchdog reset
+ operation
+Message-ID: <20120619110924.GH3974@opensource.wolfsonmicro.com>
+References: <065701cd4cec$3252ea60$96f8bf20$@com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jOtImjXIA9XXnHrK"
+	protocol="application/pgp-signature"; boundary="b2u6xDyV6U2OU5E0"
 Content-Disposition: inline
-In-Reply-To: <1340097193.28289.2.camel@phoenix>
+In-Reply-To: <065701cd4cec$3252ea60$96f8bf20$@com>
 X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,35 +28,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---jOtImjXIA9XXnHrK
+--b2u6xDyV6U2OU5E0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Jun 19, 2012 at 05:13:13PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Mon, Jun 18, 2012 at 09:49:20AM +0900, Sangbeom Kim wrote:
+> The S5M8767A can't know status of ap reset.
+> So, After AP watchdog reset, AP can't boot normally.
 
 Applied, thanks.
 
---jOtImjXIA9XXnHrK
+--b2u6xDyV6U2OU5E0
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP4F2zAAoJEBus8iNuMP3dbwQQAIw3mnX/OW9jeEGlp9TX3+qK
-DWRlKoVtlQRIiZ1QgnpW1XivB4+pY1hqwzbHbIkmJuhQ7HlD7bxO4gze+OfEHoZc
-CZeIwefkls943rDNx90UQH6+NmZAfUSi6SgqtWYL7ialJ5ynB2dCK4HQOOzH/EN+
-UcKyH0hPdGuBVDtLpWsZJaJHWTJFCqy83vvNr3hNjb33d5g5Uuo51rJAVpJYLsZF
-jdSEV23H3qY9g7r3FPeFL5O8YkpTZHr9JpljErZJak8jekfdT5pZtkOy+GTj7ZZn
-NPUxElrKsX9gaUTQFyvnDLeJXTh0U2Kw49XzwPbliLBUqCrwfVsdgsUltDnJhudU
-aew8L0mOTqcTFBQmAeZwUf2nQx2TZarcIcx7rPM91bgfjyKltWL9Ws31z1k2taHi
-cFajm6Q/cr6ZA8dJaCav6GOcIVHj5hksNUCB2MLySpRNDWVH0n6K1DZWyrIpN01+
-6xq5GiFrn6JuT2aUIJ+R3VDZ3bJNCJ/P6xlpSqY49bP57PbW2ja9XPcb3ri/gibD
-KqgibxamC3m8jQGBFjpfMz1qlvcjLHkH9zttUBWO8BFBCZTr/D1c40org7h8+u1d
-+ChcuVStob/PW+Ecz4mvIoX4nk9HKnmCRAfR95TOYFVybX5CwTSuHFTE5BWEuxKB
-G0Q0nNEgNwfigCP4XH4Y
-=fnbo
+iQIcBAEBAgAGBQJP4F3aAAoJEBus8iNuMP3dcscP/2mhZ91grB29d3dsecX3WLpE
+uaJjt3OIutvWOYRpAXO1hwqb3VgMa16CiKeC5QEJ1Y+HBIZNqeJCmbF/sjE5L0yU
+zDi2kmm2ORCyYp1WCsI5X4gBbSQWmJ7sanu8tQFOk767SCxpB49Mlh3Gr9lPfi6H
+YBSvSHzAgnOuuNlX4RxqsljJx+KzadvdTzH1eLY8UtIFOJuhvPKS9yk5J0zESbBO
+THuh9xufdmGL8Wah+Q+tGKaLtP8O/i16ib7oVSw6lY3vcCPSHYei8fN1LrYK7AoN
+MuKRskmSm836cw6FdwuKA+Qc65OyeZWq2usKrBzQzvRpfokXebCcFxzagv2XnnzZ
+u2wgGp2ChUEXJTT9iPCPaFTatV13oDxExCgF8Om54xUz4V7z87/B7SL3v8rK1o5h
+WLwber9jyoqb2DJRtyuhLuei5HmKGpi4oC8srWPBNhsUlOZgPH2qR6D0/MAHfYB4
+A3xGgHd/SBR3pDYPpvFVfF0ZSRnq+XjcD0QDsOLtXmHItH6Z111ekGn6uu+0HEED
+/MYoyUeRDO2CLuE0bFhKA4s9sr/w3gkzTSSUqQFZaw97TmbpHCC4RC516mpyNakl
+6uOCmi1dqRUMevxAV4/vXD5ZBLdJdzpLXSzvHxGgDvhT4WhqpmcT7QwcL80w+nJH
+KgbFb3z9+PzUTEzxN9Ik
+=ZBz9
 -----END PGP SIGNATURE-----
 
---jOtImjXIA9XXnHrK--
+--b2u6xDyV6U2OU5E0--
