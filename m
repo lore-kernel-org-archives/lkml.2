@@ -1,52 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab2FSDbs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 23:31:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48921 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545Ab2FSDbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 23:31:47 -0400
-Message-ID: <4FDFF27C.5000205@zytor.com>
-Date: Mon, 18 Jun 2012 20:31:08 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753855Ab2FSDhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 23:37:14 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45806 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629Ab2FSDhM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 23:37:12 -0400
+Date: Tue, 19 Jun 2012 00:37:06 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2012-06-19
+Message-ID: <20120619033706.GF1679@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-References: <1339521996.31548.95.camel@twins> <20120612173506.GB4802@aftab.osrc.amd.com> <20120613010413.GA28174@khazad-dum.debian.net> <20120613065119.GB15661@aftab.osrc.amd.com> <20120613123649.GA26012@khazad-dum.debian.net> <20120613161139.GA18450@aftab.osrc.amd.com> <20120615123749.GC6083@aftab.osrc.amd.com> <1339764161.2559.63.camel@twins> <20120615125240.GD6083@aftab.osrc.amd.com> <20120615165231.GA9169@aftab.osrc.amd.com> <20120619024639.GB6186@khazad-dum.debian.net>
-In-Reply-To: <20120619024639.GB6186@khazad-dum.debian.net>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 07:46 PM, Henrique de Moraes Holschuh wrote:
-> 
-> It is a pity this one is much harder to backport to 3.2 and 3.0.  I'd
-> really like to have the new interface there.  But it looks good, and we
-> will support the new /sys/devices/system/cpu/microcode/reload sysfs node
-> in Debian for the benefit of anyone using a newer kernel than the
-> distro's (which will be based on 3.2).
-> 
-> So, fwiw, you have my:
-> Acked-by-unimportant-person: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> 
 
-I have to admit to being slightly questioning to the whole "sysfs
-trigger, request_firmware" interface... it seems royally backwards to me
-(it makes sense for the initial firmware load, I guess, but that is
-better done early.)
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Either way I don't have a hugely strong preference.
+Hi John,=20
 
-	-hpa
+Five fixed to 3.5. There 2 new usb devices id commits, one driver fix and t=
+wo
+other fixes for the core, one for L2CAP and other in MGMT interface.
 
+Please pull, or let me know of any problems. Thanks :)
+
+	Gustavo
+
+---
+The following changes since commit 1c2e004183178e1947882cd2e74f37826f45230e:
+
+  Bluetooth: Add support for encryption key refresh (2012-06-08 21:00:40 -0=
+300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth for-ups=
+tream
+
+for you to fetch changes up to ea1e76a3f92f8565d395c549b9ca836c7eaa44b9:
+
+  Bluetooth: btmrvl: Do not send vendor events to bluetooth stack (2012-06-=
+19 00:19:11 -0300)
+
+----------------------------------------------------------------
+Andrei Emeltchenko (1):
+      Bluetooth: btmrvl: Do not send vendor events to bluetooth stack
+
+Giancarlo Formicuccia (1):
+      Bluetooth: add support for atheros 0930:0219
+
+Marek Vasut (1):
+      Bluetooth: Support AR3011 in Acer Iconia Tab W500
+
+Szymon Janc (1):
+      Bluetooth: Fix using uninitialized option in RFCMode
+
+Vishal Agarwal (1):
+      Bluetooth: Fix sending HCI_Disconnect only when connected
+
+ drivers/bluetooth/ath3k.c       |    3 +++
+ drivers/bluetooth/btmrvl_drv.h  |    2 +-
+ drivers/bluetooth/btmrvl_main.c |   14 ++++++++++++--
+ drivers/bluetooth/btmrvl_sdio.c |    8 +++++---
+ drivers/bluetooth/btusb.c       |    2 ++
+ net/bluetooth/l2cap_core.c      |   14 ++++++++------
+ net/bluetooth/mgmt.c            |    2 +-
+ 7 files changed, 32 insertions(+), 13 deletions(-)
+
+
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP3/PiAAoJEPs3PUX4s20oLNkQAJyLAnJ/C/I7SEuNLxzRTudi
+xaG80sTMxGJuR22wqJ9heyClUh+ND1uQjL6Pn2tfIla7SccyCsihtQqMtiSlwvli
+VgGY0i/qPquURdIbLDNQbEr519ddOfp5LpVFK4Rn2s+55RE23z5eF80b17Gn2Q1c
+XlRSXDyn5WvX2xa86cXcvqbLPbVkgFxU+Q4/jUFIILL56geOOZxuM71quL4NHBw2
+7GtzYZBB3cKElr9Y7L1kPrRhCUHMBHIa0Am1DfjoHC4mmtJfnvcBryaMWYBRQIMH
+XOaL2luAysRbxXP2N31RjLQoYCK25z5W3m+ZcqbpZdxpvR8l2BDya8EGzAYl0+nP
+QMGoMGdT35BR8mMSoJBlL3p480TDqH/AmM03qAAfIlDO2kxd6rF+heI+LZFJhSfW
+oUzXfmAakUxaHGh5O2y1+4ABbxU3okTK2vpm4D1q7BVpkf56gUVFMgWSMxSmPu7i
+OxifqGhIiwBKRURwPjb0N5eCxpql2KfdO9ztOfBd9HWv8YciX/WK3wYwEueEeVM1
+OXFNDW3VFH6mJICwMy8jQoKHV8PQ9Ka3i+htruTBtMz5srT6BZcLYtvEYQWDdHQU
+AAygNHOlr1sRq0nZBEh6TJcPGV9epnr513S/Oc7osJ4NfSxnh5jTU5C88wWv1jvV
+OJbk33m3afJCEf/vLwsr
+=2+u+
+-----END PGP SIGNATURE-----
+
+--MGYHOYXEY6WxJCY8--
