@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab2FSMSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 08:18:30 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42596 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab2FSMS2 (ORCPT
+	id S1754112Ab2FSMU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 08:20:59 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:44564 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab2FSMU6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 08:18:28 -0400
-Message-ID: <4FE06DDE.7000403@linux.vnet.ibm.com>
-Date: Tue, 19 Jun 2012 17:47:34 +0530
-From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 19 Jun 2012 08:20:58 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>, efault@gmx.de,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] sched: reorder lb_env struct members to reduce its size
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <CAKew6eXafa0n+dUcqa3EXEJQj4xNDM_Z2UNVhGu7rCSSEgiieQ@mail.gmail.com>
+References: <1340092423-10073-1-git-send-email-yadi.brar@samsung.com>
+ <1340092423-10073-2-git-send-email-yadi.brar@samsung.com> <CAF+7xWkopYu2CkPsdPeJ5Kr0NBbYcnf2ez-hC+RCj6QuOFcstw@mail.gmail.com>
+ <CAKew6eXafa0n+dUcqa3EXEJQj4xNDM_Z2UNVhGu7rCSSEgiieQ@mail.gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 19 Jun 2012 20:20:37 +0800
+Message-ID: <CAF+7xWmFZTa8=mDW3gJwivkb0vDOj113u8bC-jP9x5BwYxFkLg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] regulator: max77686: Implement .set_ramp_delay() callback.
+To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061912-1780-0000-0000-000006963A7B
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000282; HX=3.00000190; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00149396; UDB=6.00033989; UTC=2012-06-19
- 12:18:27
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Members of lb_env struct are not in appropriate order to reuse compiler
-added padding on 64bit architectures. In this patch we reorder those struct
-members and help reduce the size of the structure from 96 bytes to 80
-bytes on 64 bit architectures.
+2012/6/19 Yadwinder Singh Brar <yadi.brar01@gmail.com>:
+> On Tue, Jun 19, 2012 at 1:48 PM, Axel Lin <axel.lin@gmail.com> wrote:
+>>>  static struct regulator_ops max77686_ops = {
+>>>        .list_voltage           = regulator_list_voltage_linear,
+>>>        .map_voltage            = regulator_map_voltage_linear,
+>>> @@ -90,6 +114,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
+>
+>    ^^^^^^^^^^^^^^^^^^^^^^^^^
+>>>        .get_voltage_sel        = regulator_get_voltage_sel_regmap,
+>>>        .set_voltage_sel        = regulator_set_voltage_sel_regmap,
+>>>        .set_voltage_time_sel   = regulator_set_voltage_time_sel,
+>>> +       .set_ramp_delay         = max77686_set_ramp_delay,
+>>>  };
+>>
+>> I think what you want here is to set .set_ramp_delay callback for
+>> max77686_buck_dvs_ops
+>> rather than max77686_ops.
+>
+> Now I have seen into my code after applying this patch again, yes its
+> set for  max77686_buck_dvs_ops.
+> I also missed to catch this in patch... :) ..
+> Anyways, thanks for review and I think, we don't need to revise this patch.
 
-Suggested-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
----
+oh, sorry, my bad.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 939fd63..96e36fb 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3102,18 +3102,18 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
- struct lb_env {
- 	struct sched_domain	*sd;
- 
--	int			src_cpu;
- 	struct rq		*src_rq;
-+	int			src_cpu;
- 
- 	int			dst_cpu;
- 	struct rq		*dst_rq;
- 
- 	enum cpu_idle_type	idle;
- 	long			imbalance;
--	unsigned int		flags;
- 
- 	struct list_head	*tasks;
- 
-+	unsigned int		flags;
- 	unsigned int		loop;
- 	unsigned int		loop_break;
- 	unsigned int		loop_max;
+Just try to apply your patch, I found
 
++       return regmap_update_bits(rdev->regmap, MAX77686_REG_BUCK2CTRL1 +
++                                 (rdev->desc->id - MAX77686_BUCK2) * 10,
++                                 MAX77686_RAMP_RATE_MASK, ramp_value << 6);
+
+can be simplified to:
+
+return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+                          ramp_value << 6);
+
+How do you think?
+
+Regards,
+Axel
