@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab2FSPuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:50:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64853 "EHLO mx1.redhat.com"
+	id S1754861Ab2FSPur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 11:50:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65472 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754781Ab2FSPug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:50:36 -0400
+	id S1754781Ab2FSPum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 11:50:42 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,190 +14,271 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 16/23] perf, tool: Add interface to arch registers sets
-Date: Tue, 19 Jun 2012 17:48:07 +0200
-Message-Id: <1340120894-9465-17-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 15/23] perf, tool: Back [vdso] DSO with real data
+Date: Tue, 19 Jun 2012 17:48:06 +0200
+Message-Id: <1340120894-9465-16-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding header files to access unified API for arch registers.
-  util/perf_regs.h - global perf_reg declarations
-  arch/x86/include/perf_regs.h - x86 arch specific
+Storing data for VDSO shared object, because we need it for
+the unwind process.
 
-Adding perf_reg_name function to obtain register name based
-on the API ID value, and PERF_REGS_MASK macro with mask
-definition of all current arch registers (will be used in
-unwind patches).
+The idea is that VDSO shared object is same for all process
+on a running system, so it makes no difference if we store
+it inside the tracer - perf.
+
+The record command:
+When [vdso] map memory is hit, we retrieve [vdso] DSO image
+and store it into temporary file. During the build-id
+processing the [vdso] DSO image is stored in build-id db,
+and build-id refference is made inside perf.data. The temporary
+file is removed when record is finished.
+
+The report command:
+We read build-id from perf.data and store [vdso] DSO object.
+This object is refferenced and attached to map when the MMAP
+events are processed. Thus during the SAMPLE event processing
+we have correct mmap/dso attached.
+
+Adding following API for vdso object:
+  vdso__file
+    - vdso temp file path
+
+  vdso__get_file
+    - finds and store VDSO image into temp file,
+      the temp file path is returned
+
+  vdso__exit
+    - removes temporary VDSO image if there's any
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile                     |   13 +++++-
- tools/perf/arch/x86/include/perf_regs.h |   80 +++++++++++++++++++++++++++++++
- tools/perf/util/perf_regs.h             |   14 +++++
- 3 files changed, 106 insertions(+), 1 deletions(-)
- create mode 100644 tools/perf/arch/x86/include/perf_regs.h
- create mode 100644 tools/perf/util/perf_regs.h
+ tools/perf/Makefile       |    2 +
+ tools/perf/util/map.c     |   23 ++++++++++-
+ tools/perf/util/session.c |    2 +
+ tools/perf/util/vdso.c    |   90 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/vdso.h    |    8 ++++
+ 5 files changed, 123 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/util/vdso.c
+ create mode 100644 tools/perf/util/vdso.h
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e48b969..f412fb1 100644
+index 0eee64c..e48b969 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -50,13 +50,15 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
- 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
- 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
- 				  -e s/sh[234].*/sh/ )
-+NO_PERF_REGS := 1
- 
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
- 
- # Additional ARCH settings for x86
- ifeq ($(ARCH),i386)
--        ARCH := x86
-+	ARCH := x86
-+	NO_PERF_REGS := 0
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -69,6 +71,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_CFLAGS := -DARCH_X86_64
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
-+	NO_PERF_REGS := 0
- endif
- 
- # Treat warnings as errors unless directed not to
-@@ -320,6 +323,7 @@ LIB_H += util/cgroup.h
+@@ -319,6 +319,7 @@ LIB_H += $(ARCH_INCLUDE)
+ LIB_H += util/cgroup.h
  LIB_H += $(TRACE_EVENT_DIR)event-parse.h
  LIB_H += util/target.h
- LIB_H += util/vdso.h
-+LIB_H += util/perf_regs.h
++LIB_H += util/vdso.h
  
  LIB_OBJS += $(OUTPUT)util/abspath.o
  LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -665,6 +669,13 @@ else
- 	endif
- endif
+@@ -382,6 +383,7 @@ LIB_OBJS += $(OUTPUT)util/xyarray.o
+ LIB_OBJS += $(OUTPUT)util/cpumap.o
+ LIB_OBJS += $(OUTPUT)util/cgroup.o
+ LIB_OBJS += $(OUTPUT)util/target.o
++LIB_OBJS += $(OUTPUT)util/vdso.o
  
-+ifeq ($(NO_PERF_REGS),0)
-+	ifeq ($(ARCH),x86)
-+		LIB_H += arch/x86/include/perf_regs.h
-+	endif
-+else
-+	BASIC_CFLAGS += -DNO_PERF_REGS
-+endif
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  
- ifdef NO_STRLCPY
- 	BASIC_CFLAGS += -DNO_STRLCPY
-diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
-new file mode 100644
-index 0000000..ee5aff6
---- /dev/null
-+++ b/tools/perf/arch/x86/include/perf_regs.h
-@@ -0,0 +1,80 @@
-+#ifndef ARCH_PERF_REGS_H
-+#define ARCH_PERF_REGS_H
-+
-+#include <stdlib.h>
-+#include "../../util/types.h"
-+#include "../../../../../arch/x86/include/asm/perf_regs.h"
-+
-+#ifndef ARCH_X86_64
-+#define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
-+#else
-+#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
-+		       (1ULL << PERF_REG_X86_ES) | \
-+		       (1ULL << PERF_REG_X86_FS) | \
-+		       (1ULL << PERF_REG_X86_GS))
-+#define PERF_REGS_MASK (((1ULL << PERF_REG_X86_64_MAX) - 1) & ~REG_NOSUPPORT)
-+#endif
-+#define PERF_REG_IP PERF_REG_X86_IP
-+#define PERF_REG_SP PERF_REG_X86_SP
-+
-+static inline const char *perf_reg_name(int id)
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 35ae568..1649ea0 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -7,6 +7,7 @@
+ #include <stdio.h>
+ #include <unistd.h>
+ #include "map.h"
++#include "vdso.h"
+ 
+ const char *map_type__name[MAP__NR_TYPES] = {
+ 	[MAP__FUNCTION] = "Functions",
+@@ -18,10 +19,14 @@ static inline int is_anon_memory(const char *filename)
+ 	return strcmp(filename, "//anon") == 0;
+ }
+ 
++static inline int is_vdso_memory(const char *filename)
 +{
-+	switch (id) {
-+	case PERF_REG_X86_AX:
-+		return "AX";
-+	case PERF_REG_X86_BX:
-+		return "BX";
-+	case PERF_REG_X86_CX:
-+		return "CX";
-+	case PERF_REG_X86_DX:
-+		return "DX";
-+	case PERF_REG_X86_SI:
-+		return "SI";
-+	case PERF_REG_X86_DI:
-+		return "DI";
-+	case PERF_REG_X86_BP:
-+		return "BP";
-+	case PERF_REG_X86_SP:
-+		return "SP";
-+	case PERF_REG_X86_IP:
-+		return "IP";
-+	case PERF_REG_X86_FLAGS:
-+		return "FLAGS";
-+	case PERF_REG_X86_CS:
-+		return "CS";
-+	case PERF_REG_X86_DS:
-+		return "DS";
-+	case PERF_REG_X86_ES:
-+		return "ES";
-+	case PERF_REG_X86_FS:
-+		return "FS";
-+	case PERF_REG_X86_GS:
-+		return "GS";
-+#ifdef ARCH_X86_64
-+	case PERF_REG_X86_R8:
-+		return "R8";
-+	case PERF_REG_X86_R9:
-+		return "R9";
-+	case PERF_REG_X86_R10:
-+		return "R10";
-+	case PERF_REG_X86_R11:
-+		return "R11";
-+	case PERF_REG_X86_R12:
-+		return "R12";
-+	case PERF_REG_X86_R13:
-+		return "R13";
-+	case PERF_REG_X86_R14:
-+		return "R14";
-+	case PERF_REG_X86_R15:
-+		return "R15";
-+	case PERF_REG_X86_SS:
-+		return "SS";
-+#endif /* ARCH_X86_64 */
-+	default:
-+		return NULL;
++	return !strcmp(filename, "[vdso]");
++}
++
+ static inline int is_no_dso_memory(const char *filename)
+ {
+ 	return !strcmp(filename, "[stack]") ||
+-	       !strcmp(filename, "[vdso]")  ||
+ 	       !strcmp(filename, "[heap]");
+ }
+ 
+@@ -50,9 +55,10 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 	if (self != NULL) {
+ 		char newfilename[PATH_MAX];
+ 		struct dso *dso;
+-		int anon, no_dso;
++		int anon, no_dso, vdso;
+ 
+ 		anon = is_anon_memory(filename);
++		vdso = is_vdso_memory(filename);
+ 		no_dso = is_no_dso_memory(filename);
+ 
+ 		if (anon) {
+@@ -60,10 +66,23 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 			filename = newfilename;
+ 		}
+ 
++		if (vdso) {
++			filename = (char *) vdso__file;
++			pgoff = 0;
++		}
++
+ 		dso = __dsos__findnew(dsos__list, filename);
+ 		if (dso == NULL)
+ 			goto out_delete;
+ 
++		if (vdso && !dso->has_build_id) {
++			char *file_vdso = vdso__get_file();
++			if (file_vdso)
++				dso__set_long_name(dso, file_vdso);
++			else
++				no_dso = 1;
++		}
++
+ 		map__init(self, type, start, start + len, pgoff, dso);
+ 
+ 		if (anon || no_dso) {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index eb2f900..680fc15 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -14,6 +14,7 @@
+ #include "sort.h"
+ #include "util.h"
+ #include "cpumap.h"
++#include "vdso.h"
+ 
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+@@ -209,6 +210,7 @@ void perf_session__delete(struct perf_session *self)
+ 	machine__exit(&self->host_machine);
+ 	close(self->fd);
+ 	free(self);
++	vdso__exit();
+ }
+ 
+ void machine__remove_thread(struct machine *self, struct thread *th)
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+new file mode 100644
+index 0000000..e964482
+--- /dev/null
++++ b/tools/perf/util/vdso.c
+@@ -0,0 +1,90 @@
++
++#include <unistd.h>
++#include <stdio.h>
++#include <string.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <linux/kernel.h>
++#include "vdso.h"
++#include "util.h"
++
++const char vdso__file[] = "/tmp/vdso.so";
++static bool vdso_found;
++
++static int find_vdso_map(void **start, void **end)
++{
++	FILE *maps;
++	char line[128];
++	int found = 0;
++
++	maps = fopen("/proc/self/maps", "r");
++	if (!maps) {
++		pr_err("vdso: cannot open maps\n");
++		return -1;
 +	}
 +
-+	return NULL;
++	while (!found && fgets(line, sizeof(line), maps)) {
++		int m = -1;
++
++		/* We care only about private r-x mappings. */
++		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
++				start, end, &m))
++			continue;
++		if (m < 0)
++			continue;
++
++		if (!strncmp(&line[m], "[vdso]", 6))
++			found = 1;
++	}
++
++	fclose(maps);
++	return !found;
 +}
 +
-+#endif /* ARCH_PERF_REGS_H */
-diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
-new file mode 100644
-index 0000000..3efb79a
---- /dev/null
-+++ b/tools/perf/util/perf_regs.h
-@@ -0,0 +1,14 @@
-+#ifndef __PERF_REGS_H
-+#define __PERF_REGS_H
-+
-+#ifndef NO_PERF_REGS_DEFS
-+#include <perf_regs.h>
-+#else
-+#define PERF_REGS_MASK	0
-+
-+static inline const char *perf_reg_name(int id __used)
++char *vdso__get_file(void)
 +{
-+	return NULL;
++	char *vdso = NULL;
++	char *buf = NULL;
++	void *start, *end;
++
++	do {
++		int fd, size;
++
++		if (vdso_found) {
++			vdso = (char *) vdso__file;
++			break;
++		}
++
++		if (find_vdso_map(&start, &end))
++			break;
++
++		size = end - start;
++		buf = malloc(size);
++		if (!buf)
++			break;
++
++		memcpy(buf, start, size);
++
++		fd = open(vdso__file, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
++		if (fd < 0)
++			break;
++
++		if (size == write(fd, buf, size))
++			vdso = (char *) vdso__file;
++
++		close(fd);
++	} while (0);
++
++	if (buf)
++		free(buf);
++
++	vdso_found = (vdso != NULL);
++	return vdso;
 +}
-+#endif /* NO_PERF_REGS_DEFS */
-+#endif /* __PERF_REGS_H */
++
++void vdso__exit(void)
++{
++	if (vdso_found)
++		unlink(vdso__file);
++}
+diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
+new file mode 100644
+index 0000000..908b041
+--- /dev/null
++++ b/tools/perf/util/vdso.h
+@@ -0,0 +1,8 @@
++#ifndef __VDSO__
++#define __VDSO__
++
++extern const char vdso__file[];
++char *vdso__get_file(void);
++void  vdso__exit(void);
++
++#endif /* __VDSO__ */
 -- 
 1.7.7.6
 
