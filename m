@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab2FSQDh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 12:03:37 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42312 "EHLO
+	id S1754576Ab2FSQDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 12:03:36 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42305 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab2FSQDe (ORCPT
+	with ESMTP id S1751413Ab2FSQDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Jun 2012 12:03:34 -0400
 From: Borislav Petkov <bp@amd64.org>
@@ -13,39 +13,100 @@ Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 0/2] x86, microcode: Reload ucode only per-system
-Date: Tue, 19 Jun 2012 18:03:29 +0200
-Message-Id: <1340121811-4477-1-git-send-email-bp@amd64.org>
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
+Subject: [PATCH 1/2] x86, microcode: Sanitize per-cpu microcode reloading interface
+Date: Tue, 19 Jun 2012 18:03:30 +0200
+Message-Id: <1340121811-4477-2-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.11.rc1
+In-Reply-To: <1340121811-4477-1-git-send-email-bp@amd64.org>
+References: <1340121811-4477-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Once upon a time there was this microcode reloading interface
-/sys/devices/system/cpu/cpuX/microcode/reload, where X is an online
-cpu on the system, which allowed the loading of microcode in a per-cpu
-manner.
+Microcode reloading in a per-core manner is a very bad idea for both
+major x86 vendors. And the thing is, we have such interface with which
+we can end up with different microcode versions applied on different
+cores of an otherwise homogeneous wrt (family,model,stepping) system.
 
-This had problems like having different ucode revisions on an otherwise
-homogeneous system and needed O(n^2) overhead when tracking minimum
-microcode revision per-core.
+So turn off the possibility of doing that per core and allow it only
+system-wide.
 
-So make this interface per-system so that it does microcode reloading on
-the whole system only.
+This is a minimal fix which we'd like to see in stable too thus the
+more-or-less arbitrary decision to allow system-wide reloading only on
+the BSP:
 
-Single commit messages have more info too.
+$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
+...
 
-The first patch has a stable tag which I'd like to see in stable but
-since it is not fixing a direct regression, I'd like to not push it
-upstream now but have it get tested in linux-next and go upstream during
-the next merge window from where it can trickle slowly to stable.
+and disable the interface on the other cores:
 
-Patches have been tested on all AMD families, it wouldn't hurt if it saw
-some Intel testing too, although it should just work.
+$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
+-bash: echo: write error: Invalid argument
 
-Holler if you see regressions/problems with it.
+Also, allowing the reload only from one CPU (the BSP in
+that case) doesn't allow the reload procedure to degenerate
+into an O(n^2) deal when triggering reloads from all
+/sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
+simultaneously.
 
-Thanks.
+A more generic fix will follow.
+
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/microcode_core.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index fbdfc6917180..24b852b61be3 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -298,19 +298,31 @@ static ssize_t reload_store(struct device *dev,
+ 			    const char *buf, size_t size)
+ {
+ 	unsigned long val;
+-	int cpu = dev->id;
+-	ssize_t ret = 0;
++	int cpu;
++	ssize_t ret = 0, tmp_ret;
++
++	/* allow reload only from the BSP */
++	if (boot_cpu_data.cpu_index != dev->id)
++		return -EINVAL;
+ 
+ 	ret = kstrtoul(buf, 0, &val);
+ 	if (ret)
+ 		return ret;
+ 
+-	if (val == 1) {
+-		get_online_cpus();
+-		if (cpu_online(cpu))
+-			ret = reload_for_cpu(cpu);
+-		put_online_cpus();
++	if (val != 1)
++		return size;
++
++	get_online_cpus();
++	for_each_online_cpu(cpu) {
++		tmp_ret = reload_for_cpu(cpu);
++		if (tmp_ret != 0)
++			pr_warn("Error reloading microcode on CPU %d\n", cpu);
++
++		/* save retval of the first encountered reload error */
++		if (!ret)
++			ret = tmp_ret;
+ 	}
++	put_online_cpus();
+ 
+ 	if (!ret)
+ 		ret = size;
+-- 
+1.7.11.rc1
+
