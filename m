@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab2FSSWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:22:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52682 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867Ab2FSSWt (ORCPT
+	id S1754338Ab2FSS3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:29:34 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:35135 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab2FSS3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:22:49 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Jiri Kosina <trivial@kernel.org>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] leds: [trivial]Remove unnecesary return
-Date: Tue, 19 Jun 2012 23:52:39 +0530
-Message-Id: <1340130159-10408-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 19 Jun 2012 14:29:33 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiBRAJfE4E9V5qg+PGdsb2JhbABFihKrVxkBAQEBNzSCGAEBBAE6HBESBQsIAw44FCUKGogZCblkFJBUYAOVJIVkjHw
+X-IronPort-AV: E=Sophos;i="4.77,438,1336341600"; 
+   d="scan'208";a="138435647"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 19 Jun 2012 20:31:53 +0200
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: hid-generic regression on existing distros
+Message-ID: <20120619183153.GA2429@polaris.bitmath.org>
+References: <4FE09A3A020000780008A9D0@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE09A3A020000780008A9D0@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the ret is got the status returned by the
-led_classdev_register, returning ret if the
-led_classdev_register fails and returning 0
-if the led_classdev_register success, can be done
-by doing just "return ret" at the end.
+Hi Jan,
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
+> commit 8215d557e5f3a70e50e07c857d35c250fee62a73 results
+> in no keyboard or mouse during early boot on systems where
+> those are USB-based and HID=m, since nothing there can
+> possibly be aware that this new driver needs to be manually
+> loaded for e.g. interactive startup mode to be useful, as it would
+> have to make it into initrd, yet the mkinitrd machinery can't
+> reasonably know of it.
 
-Tested by build with the gcc linaro (arm-linux-gnueabihf) (4.7.1).
+This is obviously distro-specific, since there are ramdisk programs
+which make use of udev (mkinitcpio, for one).  The mkinitrd machinery
+cannot reasonably know about HID either, and some distributions use
+HID=y, which creates its own set of problems. Either way, your
+question really boils down to whether module name changes and the
+like, which affect manual initrd setups, are considered user-space
+breakage or not. I will leave that question to Jiri.
 
- drivers/leds/leds-s3c24xx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> Imo, with the functionality having been previously provided
+> by usbhid.ko, that module should cause hid-generic to be
+> pulled in automatically.
 
-diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
-index bd0a5ed..e6ee105 100644
---- a/drivers/leds/leds-s3c24xx.c
-+++ b/drivers/leds/leds-s3c24xx.c
-@@ -106,10 +106,9 @@ static int s3c24xx_led_probe(struct platform_device *dev)
-	if (ret < 0) {
-		dev_err(&dev->dev, "led_classdev_register failed\n");
-		kfree(led);
--		return ret;
-	}
+The split was made especially to avoid this. The "hid" module used to
+contain both the bus driver and the generic hid driver. It is now only
+a bus driver, and the rest of the hid drivers optionally (and
+automatically, using udev) hook on to that bus. Saying that all hid
+devices carried over usb must load a certain driver is the same as
+saying that all pci-based devices must be handled be the same
+driver. Convenient, perhaps, but not very practical.
 
--	return 0;
-+	return ret;
- }
+> (Also, just as a side note, a Kconfig default of 'y' is pointless
+> for a tristate option that depends on another tristate one,
+> when that one was already set to 'm' - the default really
+> should be the value of the depended upon symbol.)
 
- static struct platform_driver s3c24xx_led_driver = {
---
-1.7.9.5
+Thanks, overall the Kconfig seems to need updating. I will look into it.
+
+Henrik
