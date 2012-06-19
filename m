@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2FSPxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:53:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44700 "EHLO mx1.redhat.com"
+	id S1754690Ab2FSPx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 11:53:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34382 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754667Ab2FSPtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:49:40 -0400
+	id S1754653Ab2FSPtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 11:49:39 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -13,72 +13,246 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
-        Jiri Olsa <jolsa@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: [RFC 09/23] x86_64: Store userspace rsp in system_call fastpath
-Date: Tue, 19 Jun 2012 17:48:00 +0200
-Message-Id: <1340120894-9465-10-git-send-email-jolsa@redhat.com>
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 02/23] perf: Unified API to record selective sets of arch registers
+Date: Tue, 19 Jun 2012 17:47:53 +0200
+Message-Id: <1340120894-9465-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-I'd need help with this change.. basically it works, but I guess
-I could alter the FIXUP_TOP_OF_STACK macro as well, so the rsp is
-not initialized twice in slowpath.
+This brings a new API to help the selective dump of registers on
+event sampling, and its implementation for x86 arch.
 
-But it seems quite complex.. so not really sure at the moment ;)
+Added HAVE_PERF_REGS config option to determine if the architecture
+provides perf registers ABI.
 
-ideas?
+The information about desired registers will be passed in u64 mask.
+It's up to the architecture to map the registers into the mask bits.
 
-thanks,
-jirka
+For the x86 arch implementation, both 32 and 64 bit registers
+bits are defined within single enum to ensure 64 bit system can
+provide register dump for compat task if needed in the future.
 
----
-Storing the userspace rsp into the pt_regs struct for the
-system_call fastpath (syscall instruction handler).
-
-Following part of the pt_regs is allocated on stack:
-(via KERNEL_STACK_OFFSET)
-
-    unsigned long ip;
-    unsigned long cs;
-    unsigned long flags;
-    unsigned long sp;
-    unsigned long ss;
-
-but only ip is actually saved for fastpath.
-
-For perf post unwind we need at least ip and sp to be able to
-start the unwind, so storing the old_rsp value to the sp.
-
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Roland McGrath <roland@hack.frob.com>
 ---
- arch/x86/kernel/entry_64.S |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ arch/Kconfig                     |    6 +++
+ arch/x86/Kconfig                 |    1 +
+ arch/x86/include/asm/perf_regs.h |   34 ++++++++++++++
+ arch/x86/kernel/Makefile         |    2 +
+ arch/x86/kernel/perf_regs.c      |   90 ++++++++++++++++++++++++++++++++++++++
+ include/linux/perf_regs.h        |   19 ++++++++
+ 6 files changed, 152 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/perf_regs.h
+ create mode 100644 arch/x86/kernel/perf_regs.c
+ create mode 100644 include/linux/perf_regs.h
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 111f6bb..0444917 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -516,6 +516,11 @@ GLOBAL(system_call_after_swapgs)
- 	SAVE_ARGS 8,0
- 	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
- 	movq  %rcx,RIP-ARGOFFSET(%rsp)
-+#ifdef CONFIG_PERF_EVENTS
-+	/* We need rsp in fast path for perf post unwind. */
-+	movq  PER_CPU_VAR(old_rsp), %rcx
-+	movq  %rcx,RSP-ARGOFFSET(%rsp)
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 8c3d957..32f4873 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -222,6 +222,12 @@ config HAVE_PERF_EVENTS_NMI
+ 	  subsystem.  Also has support for calculating CPU cycle events
+ 	  to determine how many clock cycles in a given period.
+ 
++config HAVE_PERF_REGS
++	bool
++	help
++	  Support selective register dumps for perf events. This includes
++	  bit-mapping of each registers and a unique architecture id.
++
+ config HAVE_ARCH_JUMP_LABEL
+ 	bool
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d35438e..457d8d6 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -60,6 +60,7 @@ config X86
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+ 	select PERF_EVENTS
+ 	select HAVE_PERF_EVENTS_NMI
++	select HAVE_PERF_REGS
+ 	select ANON_INODES
+ 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
+ 	select HAVE_CMPXCHG_LOCAL if !M386
+diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
+new file mode 100644
+index 0000000..0397bfc
+--- /dev/null
++++ b/arch/x86/include/asm/perf_regs.h
+@@ -0,0 +1,34 @@
++#ifndef _ASM_X86_PERF_REGS_H
++#define _ASM_X86_PERF_REGS_H
++
++enum perf_event_x86_regs {
++	PERF_REG_X86_AX,
++	PERF_REG_X86_BX,
++	PERF_REG_X86_CX,
++	PERF_REG_X86_DX,
++	PERF_REG_X86_SI,
++	PERF_REG_X86_DI,
++	PERF_REG_X86_BP,
++	PERF_REG_X86_SP,
++	PERF_REG_X86_IP,
++	PERF_REG_X86_FLAGS,
++	PERF_REG_X86_CS,
++	PERF_REG_X86_DS,
++	PERF_REG_X86_ES,
++	PERF_REG_X86_FS,
++	PERF_REG_X86_GS,
++	PERF_REG_X86_R8,
++	PERF_REG_X86_R9,
++	PERF_REG_X86_R10,
++	PERF_REG_X86_R11,
++	PERF_REG_X86_R12,
++	PERF_REG_X86_R13,
++	PERF_REG_X86_R14,
++	PERF_REG_X86_R15,
++	PERF_REG_X86_SS,
++
++	/* non ABI */
++	PERF_REG_X86_64_MAX = PERF_REG_X86_SS + 1,
++	PERF_REG_X86_32_MAX = PERF_REG_X86_GS + 1,
++};
++#endif /* _ASM_X86_PERF_REGS_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..8d7a619 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -100,6 +100,8 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ obj-$(CONFIG_OF)			+= devicetree.o
+ obj-$(CONFIG_UPROBES)			+= uprobes.o
+ 
++obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
++
+ ###
+ # 64 bit specific files
+ ifeq ($(CONFIG_X86_64),y)
+diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
+new file mode 100644
+index 0000000..e4ffbb4
+--- /dev/null
++++ b/arch/x86/kernel/perf_regs.c
+@@ -0,0 +1,90 @@
++
++#include <linux/kernel.h>
++#include <linux/bug.h>
++#include <linux/stddef.h>
++#include <asm/perf_regs.h>
++#include <asm/ptrace.h>
++
++#ifdef CONFIG_X86_32
++#define PERF_REG_X86_MAX PERF_REG_X86_32_MAX
++#else
++#define PERF_REG_X86_MAX PERF_REG_X86_64_MAX
 +#endif
- 	CFI_REL_OFFSET rip,RIP-ARGOFFSET
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz tracesys
++
++#define PT_REGS_OFFSET(id, r) [id] = offsetof(struct pt_regs, r)
++
++static unsigned int pt_regs_offset[PERF_REG_X86_MAX] = {
++	PT_REGS_OFFSET(PERF_REG_X86_AX, ax),
++	PT_REGS_OFFSET(PERF_REG_X86_BX, bx),
++	PT_REGS_OFFSET(PERF_REG_X86_CX, cx),
++	PT_REGS_OFFSET(PERF_REG_X86_DX, dx),
++	PT_REGS_OFFSET(PERF_REG_X86_SI, si),
++	PT_REGS_OFFSET(PERF_REG_X86_DI, di),
++	PT_REGS_OFFSET(PERF_REG_X86_BP, bp),
++	PT_REGS_OFFSET(PERF_REG_X86_SP, sp),
++	PT_REGS_OFFSET(PERF_REG_X86_IP, ip),
++	PT_REGS_OFFSET(PERF_REG_X86_FLAGS, flags),
++	PT_REGS_OFFSET(PERF_REG_X86_CS, cs),
++#ifdef CONFIG_X86_32
++	PT_REGS_OFFSET(PERF_REG_X86_DS, ds),
++	PT_REGS_OFFSET(PERF_REG_X86_ES, es),
++	PT_REGS_OFFSET(PERF_REG_X86_FS, fs),
++	PT_REGS_OFFSET(PERF_REG_X86_GS, gs),
++#else
++	/*
++	 * The pt_regs struct does not store
++	 * ds, es, fs, gs in 64 bit mode.
++	 */
++	(unsigned int) -1,
++	(unsigned int) -1,
++	(unsigned int) -1,
++	(unsigned int) -1,
++#endif
++#ifdef CONFIG_X86_64
++	PT_REGS_OFFSET(PERF_REG_X86_R8, r8),
++	PT_REGS_OFFSET(PERF_REG_X86_R9, r9),
++	PT_REGS_OFFSET(PERF_REG_X86_R10, r10),
++	PT_REGS_OFFSET(PERF_REG_X86_R11, r11),
++	PT_REGS_OFFSET(PERF_REG_X86_R12, r12),
++	PT_REGS_OFFSET(PERF_REG_X86_R13, r13),
++	PT_REGS_OFFSET(PERF_REG_X86_R14, r14),
++	PT_REGS_OFFSET(PERF_REG_X86_R15, r15),
++	PT_REGS_OFFSET(PERF_REG_X86_SS, ss),
++#endif
++};
++
++u64 perf_reg_value(struct pt_regs *regs, int idx)
++{
++	if (WARN_ON_ONCE(idx > ARRAY_SIZE(pt_regs_offset)))
++		return 0;
++
++	return regs_get_register(regs, pt_regs_offset[idx]);
++}
++
++#define REG_RESERVED (~((1ULL << PERF_REG_X86_MAX) - 1ULL))
++
++#ifdef CONFIG_X86_32
++int perf_reg_validate(u64 mask)
++{
++	if (!mask || mask & REG_RESERVED)
++		return -EINVAL;
++
++	return 0;
++}
++#else /* CONFIG_X86_64 */
++#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
++		       (1ULL << PERF_REG_X86_ES) | \
++		       (1ULL << PERF_REG_X86_FS) | \
++		       (1ULL << PERF_REG_X86_GS))
++
++int perf_reg_validate(u64 mask)
++{
++	if (!mask || mask & REG_RESERVED)
++		return -EINVAL;
++
++	if (mask & REG_NOSUPPORT)
++		return -EINVAL;
++
++	return 0;
++}
++#endif /* CONFIG_X86_32 */
+diff --git a/include/linux/perf_regs.h b/include/linux/perf_regs.h
+new file mode 100644
+index 0000000..a2f1a98
+--- /dev/null
++++ b/include/linux/perf_regs.h
+@@ -0,0 +1,19 @@
++#ifndef _LINUX_PERF_REGS_H
++#define _LINUX_PERF_REGS_H
++
++#ifdef CONFIG_HAVE_PERF_REGS
++#include <asm/perf_regs.h>
++u64 perf_reg_value(struct pt_regs *regs, int idx);
++int perf_reg_validate(u64 mask);
++#else
++static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
++{
++	return 0;
++}
++
++static inline int perf_reg_validate(u64 mask)
++{
++	return mask ? -ENOSYS : 0;
++}
++#endif /* CONFIG_HAVE_PERF_REGS */
++#endif /* _LINUX_PERF_REGS_H */
 -- 
 1.7.7.6
 
