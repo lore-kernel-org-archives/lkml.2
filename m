@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab2FSFMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 01:12:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58856 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab2FSFMX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 01:12:23 -0400
-Date: Mon, 18 Jun 2012 22:10:32 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Len Brown <lenb@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Durgadoss R <durgadoss.r@intel.com>,
-        Jenny TC <jenny.tc@intel.com>
-Subject: Re: linux-next: build failure after merge of the final tree (acpi
- and battery trees related)
-Message-ID: <20120619051032.GB16286@lizard>
-References: <20120619145425.6f825e142856ca808927ca45@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120619145425.6f825e142856ca808927ca45@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752870Ab2FSFUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 01:20:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:34603 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab2FSFUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 01:20:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="157978572"
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        Zheng Yan <zheng.z.yan@intel.com>
+Subject: [PATCH -v6 0/4] PCIe, PM, Add PCIe runtime D3cold support
+Date: Tue, 19 Jun 2012 13:20:45 +0800
+Message-Id: <1340083249-16266-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 02:54:25PM +1000, Stephen Rothwell wrote:
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig, i386 defconfig) failed like this:
-> 
-> drivers/power/power_supply_core.c:204:6: error: too few arguments to function 'thermal_zone_device_register'
-> 
-> Caused by commit a9e7402dd2e4 ("ACPI-Thermal: Make Thermal trip points
-> writeable") from the acpi tree interacting with commit 3be330bf8860
-> ("power_supply: Register battery as a thermal zone") from the battery
-> tree.
-> 
-> I have added the following patch and will carry it as a merge fix to the
-> battery tree:
+Changelog:
 
-Thanks for noticing, Stephen! Although, I wonder what would be the
-best way to fix this?.. I would happily cherry-pick the ACPI change
-into my tree and then re-apply the battery thermal zone support patch,
-but ACPI change doesn't apply cleanly on the battery tree. Heh.
+v6:
 
-Is there thermal zone git tree? Or maybe I would just let ACPI
-folks take the battery patch in question?
+- Disable device D3cold during system suspend/hibernate with a new method per Rafeal's comments
 
-Thanks,
+v5:
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 19 Jun 2012 14:46:17 +1000
-> Subject: [PATCH] ACPI-Thermal: fix for an API change
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/power/power_supply_core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-> index ff990d2..85689fb 100644
-> --- a/drivers/power/power_supply_core.c
-> +++ b/drivers/power/power_supply_core.c
-> @@ -201,7 +201,7 @@ static int psy_register_thermal(struct power_supply *psy)
->  	for (i = 0; i < psy->num_properties; i++) {
->  		if (psy->properties[i] == POWER_SUPPLY_PROP_TEMP) {
->  			psy->tzd = thermal_zone_device_register(psy->name, 0,
-> -					psy, &psy_tzd_ops, 0, 0, 0, 0);
-> +					0, psy, &psy_tzd_ops, 0, 0, 0, 0);
->  			if (IS_ERR(psy->tzd))
->  				return PTR_ERR(psy->tzd);
->  			break;
-> -- 
-> 1.7.10.280.gaa39
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+- Disable device D3cold during system suspend/hibernate per Rafael's comments
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+v4:
+
+- Minors fixes based on comments from Rafael
+
+v3:
+
+- Drop device.power.power_must_be_on, use pci_dev.no_d3cold instead
+- Drop device.power.power_off_user, use pci_dev.d3cold_allowed instead
+- Use black list instead of white list in pcie port runtime support per request from Bjorn
+- Various fixes based on comments from Rafael
+
+v2:
+
+- Refreshed based on comments from Rafael
+
+[PATCH -v6 1/4] ACPI, PM, Specify lowest allowed state for device sleep
+[PATCH -v6 2/4] PCIe, PM, Add runtime PM support to PCIe port
+[PATCH -v6 3/4] PCI, PM, Do not call pci_set_power_state with PCI_D3cold
+[PATCH -v6 4/4] PCIe, PM, Add PCIe runtime D3cold support
+
+Best Regards,
+Huang Ying
