@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab2FSLeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:34:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51812 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752190Ab2FSLeW (ORCPT
+	id S1753857Ab2FSLer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:34:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37324 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab2FSLep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:34:22 -0400
-Date: Tue, 19 Jun 2012 12:34:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Anuj Aggarwal <anuj.aggarwal@ti.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT 3/3] regulator: tps65023: Convert tps65023_ldo_ops to
- regulator_[get|set]_voltage_sel_regmap
-Message-ID: <20120619113420.GK3974@opensource.wolfsonmicro.com>
-References: <1340097138.28289.1.camel@phoenix>
- <1340097271.28289.4.camel@phoenix>
+	Tue, 19 Jun 2012 07:34:45 -0400
+Date: Tue, 19 Jun 2012 08:34:34 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jim Cromie <jim.cromie@gmail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] perf stat: Fix default logfd to use stderr
+Message-ID: <20120619113434.GB6560@infradead.org>
+References: <1317336490-19437-1-git-send-email-acme@infradead.org>
+ <1317336490-19437-8-git-send-email-acme@infradead.org>
+ <20120618145108.GG5046@erda.amd.com>
+ <87zk80giag.fsf@sejong.aot.lge.com>
+ <CABPqkBQA+CDxzp_g2Lu=Uoet5oqOq5E_1eiATGfoX=d7xEO49g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUaMdvPJwViBZG9r"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340097271.28289.4.camel@phoenix>
-X-Cookie: Your domestic life may be harmonious.
+In-Reply-To: <CABPqkBQA+CDxzp_g2Lu=Uoet5oqOq5E_1eiATGfoX=d7xEO49g@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Tue, Jun 19, 2012 at 08:09:31AM +0200, Stephane Eranian escreveu:
+> On Tue, Jun 19, 2012 at 4:13 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> > On Mon, 18 Jun 2012 16:51:08 +0200, Robert Richter wrote:
+> >> With certain shell redirections this (56f3bae) fails with a log fd
+> >> setup failure. Fix below.
 
---SUaMdvPJwViBZG9r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > It looks somewhat related to Stephane's patch. Can you we check it too?
 
-On Tue, Jun 19, 2012 at 05:14:31PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > http://lkml.indiana.edu/hypermail/linux/kernel/1205.1/04232.html
 
-Applied, thanks.
+> Yes, my patch is needed and it was posted over a month ago now.....
+> Arnaldo, please apply my patch.
 
---SUaMdvPJwViBZG9r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+It was applied a week ago, was merged already by Ingo, should go to
+Linus soon:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commit;h=fc3e4d077d5c7a7bc1ad5bc143895b4e070e5a8b
 
-iQIcBAEBAgAGBQJP4GOvAAoJEBus8iNuMP3dZPsP/RAfSsdjwfrvEmB3REAcAl8+
-0nRpDmHGucJg9E3fIQsTRk1K/llCzD6Pvvp2nEvll+F/liOnclw2SeSdNB0docZd
-+BHC+scXOv+39U8NQkWh5e+l6D4klJhLiyGslps3tcQnkF0sFght+rWQ/ifbTPxA
-HNnOdSZZxrUK+HkdXQmbxeDQ9LpsNmEn4LdrLf+MBBAr6AdGAtdd9NIrEW+iS548
-r174GpcX52j3k2k9+bBiGKtXocOjl5ahFBlKY8K5AWxJkmRVU7nYLFgojMlqieSU
-evK4hmaIhN3IQ5UckxGTCvixxMKOim6HJbqMXsEJDgsCZtkFzwy8cDHtOUstlsGP
-N9Gg9PEZ19rNp0FNtX+J1MBf+vjU8vDmlnPgIya0LtoinhBPoOD/3r9bycD/O+hf
-2wS8EixU5zS7FP4Cay3BFDadCC3IHk3/3M4u5MwZVF8nWxVWcxuGfL8SHAEVSSPn
-liz0C5OkgjXP85QWxvC8sFAahKo4qGOVnciSm3dsHMkMPPcbn19uU5GqLM4RdNva
-xDIh7rZe/lLCosXJdtl+Yi7J4Hg2rVW0rY01YNuSE7UFhmmoa9A6lAlsw/F+BlbU
-IM57ntlTxEV2CaAZ4OdhqERyyDaprXLKdsbOOHulNl7KaS+Tf5/aCYG9Cr87KwaC
-fPw1UhCNm27toGN/j7KE
-=qENK
------END PGP SIGNATURE-----
-
---SUaMdvPJwViBZG9r--
+- Arnaldo
