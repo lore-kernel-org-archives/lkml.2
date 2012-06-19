@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab2FSU3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 16:29:35 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36986 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab2FSU3e (ORCPT
+	id S1755044Ab2FSUkG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 16:40:06 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:11300 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754957Ab2FSUkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 16:29:34 -0400
-Message-ID: <4FE0DBDD.2090005@linux.vnet.ibm.com>
-Date: Tue, 19 Jun 2012 15:06:53 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 19 Jun 2012 16:40:04 -0400
+Message-ID: <4FE0E3A2.8070008@tilera.com>
+Date: Tue, 19 Jun 2012 16:40:02 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 02/10] zcache: fix refcount leak
-References: <4FE0392E.3090300@linux.vnet.ibm.com> <4FE03949.4080308@linux.vnet.ibm.com> <4FE08C9A.3010701@linux.vnet.ibm.com> <c10bcaf9-aa56-4d6a-bc2c-310096b4198b@default>
-In-Reply-To: <c10bcaf9-aa56-4d6a-bc2c-310096b4198b@default>
-Content-Type: text/plain; charset=UTF-8
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 3/3] arch/tile: tilegx PCI root complex support
+References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com> <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com> <CAMuHMdX_XYQLs7gmzYS=dNmXxkQQiU3GBNW5b6EZso9bia5JqQ@mail.gmail.com> <CAE9FiQUBh-cWnQ4MQ2Cy_BH3wn0+9GV+9AfrV-zHD0nHh3T2mA@mail.gmail.com>
+In-Reply-To: <CAE9FiQUBh-cWnQ4MQ2Cy_BH3wn0+9GV+9AfrV-zHD0nHh3T2mA@mail.gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061920-1780-0000-0000-0000069B54CC
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000282; HX=3.00000190; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00149494; UDB=6.00034005; UTC=2012-06-19
- 20:29:32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2012 02:49 PM, Dan Magenheimer wrote:
+On 6/19/2012 4:07 PM, Yinghai Lu wrote:
+> On Tue, Jun 19, 2012 at 12:50 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> Hi Chris,
+>>
+>> On Sat, Apr 7, 2012 at 11:10 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>>> This change implements PCIe root complex support for tilegx using
+>>> the kernel support layer for accessing the TRIO hardware shim.
+>>> --- /dev/null
+>>> +++ b/arch/tile/kernel/pci_gx.c
+>>> +               bus = pci_scan_bus(0, controller->ops, controller);
+>>> +               controller->root_bus = bus;
+>>> +               controller->last_busno = bus->subordinate;
+>> As of commit 3527ed81ca01bbaf09df952e68528377a9cd092f
+>> ("PCI: remove secondary/subordinate in struct pci_bus") in linux-next, the
+>> "subordinate" field no longer exists:
+>>
+>> http://kisskb.ellerman.id.au/kisskb/buildresult/6546355/
+>> arch/tile/kernel/pci_gx.c:852:31: error: 'struct pci_bus' has no
+>> member named 'subordinate'
+>> make[3]: *** [arch/tile/kernel/pci_gx.o] Error 1
+> could changed to be
+>                    contoller->last_busno = bus->busn.end;
 
-> My preference would be to fix it the opposite way, by
-> checking and ignoring zcache_host in zcache_put_pool.
-> The ref-counting is to ensure that a client isn't
-> accidentally destroyed while in use (for multiple-client
-> users such as ramster and kvm) and since zcache_host is a static
-> struct, it should never be deleted so need not be ref-counted.
+Yes, I saw this build failure in the linux-next logs, but I'm not sure what
+to do about it.  I can't adopt Yinghai's solution in my tree since my tree
+is based off of Linus's tree which doesn't have "bus->busn".  I suppose I
+could publish two trees to linux-next, one based off of Bjorn's "pci" tree
+(I assume) and one with all the non-PCI arch/tile stuff (my current
+linux-next tree).
 
+I admit I was lazily assuming I would just fix this once the trees collided
+during the 3.6 merge window :-)
 
-If we do that, we'll need to comment it.  If we don't, it won't be
-obvious why we are refcounting every zcache client except one.  It'll
-look like a bug.
-
---
-Seth
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
