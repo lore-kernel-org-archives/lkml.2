@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab2FSLjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:39:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41177 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751532Ab2FSLjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:39:04 -0400
-Date: Tue, 19 Jun 2012 12:39:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] regulator fixes for 3.5
-Message-ID: <20120619113902.GM3974@opensource.wolfsonmicro.com>
+	id S1753723Ab2FSLlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:41:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14212 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751875Ab2FSLlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 07:41:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="167476370"
+Date: Tue, 19 Jun 2012 19:41:13 +0800
+From: Fengguang Wu <wfg@linux.intel.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [net-next:master 49/50]
+ net/netfilter/nfnetlink_queue_ct.c:23:18: sparse: incompatible types in
+ comparison expression (different address spaces)
+Message-ID: <20120619114113.GA19526@localhost>
+References: <20120619060050.GA14867@localhost>
+ <20120619112823.GB445@1984>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m8RPluiNA7RIyL8J"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Cookie: Your domestic life may be harmonious.
+In-Reply-To: <20120619112823.GB445@1984>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 19, 2012 at 01:28:23PM +0200, Pablo Neira Ayuso wrote:
+> On Tue, Jun 19, 2012 at 02:00:50PM +0800, wfg@linux.intel.com wrote:
+> > Hi Pablo,
+> > 
+> > There are new sparse warnings show up in
+> > 
+> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
+> > head:   6bdc5f49e365a5403b9fdef01ceb37241ab00f9b
+> > commit: 7c62234547255ce4c385a218915965bc2f14fe45 [49/50] netfilter: nfnetlink_queue: fix compilation with NF_CONNTRACK disabled
+> > 
+> > All sparse warnings:
+> > 
+> > net/netfilter/nfnetlink_queue_ct.c:23:18: sparse: incompatible types in comparison expression (different address spaces)
+> > net/netfilter/nfnetlink_queue_ct.c:45:18: sparse: incompatible types in comparison expression (different address spaces)
+> > net/netfilter/nfnetlink_queue_ct.c:63:18: sparse: incompatible types in comparison expression (different address spaces)
+> > net/netfilter/nfnetlink_queue_ct.c:91:18: sparse: incompatible types in comparison expression (different address spaces)
+> > net/netfilter/nf_conntrack_netlink.c:1100:27: sparse: incompatible types in comparison expression (different address spaces)
+> > net/netfilter/nf_conntrack_netlink.c:1222:34: sparse: incompatible types in comparison expression (different address spaces)
+> > net/netfilter/nf_conntrack_netlink.c:1222:34: sparse: incompatible types in comparison expression (different address spaces)
+> > 
+> > net/netfilter/nfnetlink_queue_ct.c:23:
+> >     20		struct nf_conn *ct;
+> >     21	
+> >     22		/* rcu_read_lock()ed by __nf_queue already. */
+> >   > 23		nfq_ct = rcu_dereference(nfq_ct_hook);
+> >     24		if (nfq_ct == NULL)
+> >     25			return NULL;
+> >     26	
+> 
+> What CF options are you using to make sparse spot this? I cannot hit
+> those message here.
 
---m8RPluiNA7RIyL8J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I don't specify any options. I do use the sparse compiled from latest
+git tree.
 
-The following changes since commit 0bdc81e4e944781a2bcc971f9e3cf24ac7030939:
+        git://git.kernel.org/pub/scm/devel/sparse/chrisl/sparse.git
 
-  regulator: core: Properly handle the case min_uV < rdev->desc->min_uV in map_voltage_linear (2012-06-08 07:15:55 +0800)
+And changed its code to output "sparse:" rather than "error:"/"warning:"
+so that they can be distinguished from the gcc error/warnings.
 
-are available in the git repository at:
+> I've got a fix but I don't want to send you an untested patch.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-3.5
+Appreciated!
 
-for you to fetch changes up to ea851f4f08eb366e829abb8f1b2f1741a19ed696:
+I run a special service for this. If you push a patch to your git tree
+containing the line
 
-  regulator: Change db8500-prcmu match names to reflect Device Tree (2012-06-17 18:27:49 +0100)
+        Reported-by: Fengguang Wu <wfg@linux.intel.com>
 
-----------------------------------------------------------------
-regulator: Fixes for 3.5
+And not containing any "Tested-by:" line, my script will automatically
+test it and send a success/failure notification back to you, normally
+within one hour.
 
-One small bug fix, plus a rename of all the ST Ericsson regulators in
-the device tree since all the device trees had been written with
-different names and some infelicities in the test proceedures meant that
-the device tree code had apparently never actually been run against the
-upstream device tree.
-
-----------------------------------------------------------------
-Lee Jones (2):
-      regulator: Change ab8500 match names to reflect Device Tree
-      regulator: Change db8500-prcmu match names to reflect Device Tree
-
-Sangbeom Kim (1):
-      regulator: Fix the s5m8767a problem of the division by null
-
- drivers/regulator/ab8500.c       |   22 ++++++++++-----------
- drivers/regulator/db8500-prcmu.c |   40 +++++++++++++++++++-------------------
- drivers/regulator/s5m8767.c      |    2 +-
- 3 files changed, 32 insertions(+), 32 deletions(-)
-
---m8RPluiNA7RIyL8J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP4GTPAAoJEBus8iNuMP3dMskP/jQ+0Avk8ptcLTjgUq0xD3TW
-bW3P7Bz7Seyqu4nrgwDFgzWMyZVI5HsQnKZX66AAmqNrkkDk3tJm9vmKklpqStF5
-P2beYQODE2839wsDN47z+PDDf4NxKQaO5dizK68laURY9p3F4opg0iw24xYfiuE5
-OI5RqUgxFWBBmgGsx66/ZkuUmcEeAydvXwjW3nLurHfwV31gsFN6RLgkv2pcAtXa
-k2bKQNJ0mqC5QH01o/U8uXUS27YMUsW0KPTmYcGcOrZoAWm3Pn9EDTAJ49xQIy6A
-VTu4402B5380YL2Lwlw7aPOlIATznIMxiwQiJI3zZc5wVJOKIriLrrsLmZQbfo+y
-96ubTvtQf5zaEyttamNntYzqXN2oeYfe36YCUiEiZ+OysWVRF1tvOAtu+/dA+Kv2
-FT9blktSYff6RtscH4r0NVkIm14YeplSr9CDC6PNa5VpL4zOLT8PPSPy8xRVIznN
-5GLaz59lzL+IwfNLL4Sz6uCJ9269sHrDb1B72+O8CR+hUnrGEOhZrKc0Q+oppk08
-YYOBOI455YCEME9jp8ua6y9ubqbbRv3dyR08JTafDaOEPV1Yn1Tr3S3IBCeuyay5
-01gEcF8kHa9HYaOdP9K0VsIGZod3/KSGy5pVNCEwmeykcXPVWvTps355ALVGZYVE
-u9nzKNMss1rZpyb45ue7
-=zTKO
------END PGP SIGNATURE-----
-
---m8RPluiNA7RIyL8J--
+Thanks,
+Fengguang
