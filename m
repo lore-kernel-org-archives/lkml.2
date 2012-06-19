@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2FSMU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 08:20:59 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:44564 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab2FSMU6 convert rfc822-to-8bit (ORCPT
+	id S1754135Ab2FSMWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 08:22:36 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:40433 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab2FSMWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 08:20:58 -0400
+	Tue, 19 Jun 2012 08:22:35 -0400
+Message-ID: <4FE06EEF.2090709@linux.vnet.ibm.com>
+Date: Tue, 19 Jun 2012 17:52:07 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <CAKew6eXafa0n+dUcqa3EXEJQj4xNDM_Z2UNVhGu7rCSSEgiieQ@mail.gmail.com>
-References: <1340092423-10073-1-git-send-email-yadi.brar@samsung.com>
- <1340092423-10073-2-git-send-email-yadi.brar@samsung.com> <CAF+7xWkopYu2CkPsdPeJ5Kr0NBbYcnf2ez-hC+RCj6QuOFcstw@mail.gmail.com>
- <CAKew6eXafa0n+dUcqa3EXEJQj4xNDM_Z2UNVhGu7rCSSEgiieQ@mail.gmail.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 19 Jun 2012 20:20:37 +0800
-Message-ID: <CAF+7xWmFZTa8=mDW3gJwivkb0vDOj113u8bC-jP9x5BwYxFkLg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] regulator: max77686: Implement .set_ramp_delay() callback.
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
+To: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>, efault@gmx.de,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] sched: reset loop counters if all tasks are pinned and we
+ need to redo load balance
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061912-7408-0000-0000-000005FC71C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/19 Yadwinder Singh Brar <yadi.brar01@gmail.com>:
-> On Tue, Jun 19, 2012 at 1:48 PM, Axel Lin <axel.lin@gmail.com> wrote:
->>>  static struct regulator_ops max77686_ops = {
->>>        .list_voltage           = regulator_list_voltage_linear,
->>>        .map_voltage            = regulator_map_voltage_linear,
->>> @@ -90,6 +114,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
->
->    ^^^^^^^^^^^^^^^^^^^^^^^^^
->>>        .get_voltage_sel        = regulator_get_voltage_sel_regmap,
->>>        .set_voltage_sel        = regulator_set_voltage_sel_regmap,
->>>        .set_voltage_time_sel   = regulator_set_voltage_time_sel,
->>> +       .set_ramp_delay         = max77686_set_ramp_delay,
->>>  };
->>
->> I think what you want here is to set .set_ramp_delay callback for
->> max77686_buck_dvs_ops
->> rather than max77686_ops.
->
-> Now I have seen into my code after applying this patch again, yes its
-> set for  max77686_buck_dvs_ops.
-> I also missed to catch this in patch... :) ..
-> Anyways, thanks for review and I think, we don't need to revise this patch.
+While load balancing, if all tasks on the source runqueue are pinned,
+we retry after excluding the corresponding source cpu. However, loop counters
+env.loop and env.loop_break are not reset before retrying, which can lead
+to failure in moving the tasks. In this patch we reset env.loop and
+env.loop_break to their inital values before we retry.
 
-oh, sorry, my bad.
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+---
 
-Just try to apply your patch, I found
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 939fd63..60f8b66 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4520,8 +4520,11 @@ more_balance:
+ 		/* All tasks on this runqueue were pinned by CPU affinity */
+ 		if (unlikely(env.flags & LBF_ALL_PINNED)) {
+ 			cpumask_clear_cpu(cpu_of(busiest), cpus);
+-			if (!cpumask_empty(cpus))
++			if (!cpumask_empty(cpus)) {
++				env.loop = 0;
++				env.loop_break = sched_nr_migrate_break;
+ 				goto redo;
++			}
+ 			goto out_balanced;
+ 		}
+ 	}
 
-+       return regmap_update_bits(rdev->regmap, MAX77686_REG_BUCK2CTRL1 +
-+                                 (rdev->desc->id - MAX77686_BUCK2) * 10,
-+                                 MAX77686_RAMP_RATE_MASK, ramp_value << 6);
-
-can be simplified to:
-
-return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-                          ramp_value << 6);
-
-How do you think?
-
-Regards,
-Axel
