@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab2FSUkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 16:40:06 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:11300 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754957Ab2FSUkE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 16:40:04 -0400
-Message-ID: <4FE0E3A2.8070008@tilera.com>
-Date: Tue, 19 Jun 2012 16:40:02 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Myron Stowe <myron.stowe@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 3/3] arch/tile: tilegx PCI root complex support
-References: <201204072316.q37NGv8d019280@farm-0023.internal.tilera.com> <201204072319.q37NJlNp019384@farm-0023.internal.tilera.com> <CAMuHMdX_XYQLs7gmzYS=dNmXxkQQiU3GBNW5b6EZso9bia5JqQ@mail.gmail.com> <CAE9FiQUBh-cWnQ4MQ2Cy_BH3wn0+9GV+9AfrV-zHD0nHh3T2mA@mail.gmail.com>
-In-Reply-To: <CAE9FiQUBh-cWnQ4MQ2Cy_BH3wn0+9GV+9AfrV-zHD0nHh3T2mA@mail.gmail.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1755033Ab2FSUvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 16:51:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751776Ab2FSUvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 16:51:31 -0400
+Date: Tue, 19 Jun 2012 16:51:04 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kvm: handle last_boosted_vcpu = 0 case
+Message-ID: <20120619165104.2a4574f8@annuminas.surriel.com>
+In-Reply-To: <20120619202047.26191.40429.sendpatchset@codeblue>
+References: <20120619202047.26191.40429.sendpatchset@codeblue>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/19/2012 4:07 PM, Yinghai Lu wrote:
-> On Tue, Jun 19, 2012 at 12:50 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> Hi Chris,
->>
->> On Sat, Apr 7, 2012 at 11:10 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
->>> This change implements PCIe root complex support for tilegx using
->>> the kernel support layer for accessing the TRIO hardware shim.
->>> --- /dev/null
->>> +++ b/arch/tile/kernel/pci_gx.c
->>> +               bus = pci_scan_bus(0, controller->ops, controller);
->>> +               controller->root_bus = bus;
->>> +               controller->last_busno = bus->subordinate;
->> As of commit 3527ed81ca01bbaf09df952e68528377a9cd092f
->> ("PCI: remove secondary/subordinate in struct pci_bus") in linux-next, the
->> "subordinate" field no longer exists:
->>
->> http://kisskb.ellerman.id.au/kisskb/buildresult/6546355/
->> arch/tile/kernel/pci_gx.c:852:31: error: 'struct pci_bus' has no
->> member named 'subordinate'
->> make[3]: *** [arch/tile/kernel/pci_gx.o] Error 1
-> could changed to be
->                    contoller->last_busno = bus->busn.end;
+On Wed, 20 Jun 2012 01:50:50 +0530
+Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
 
-Yes, I saw this build failure in the linux-next logs, but I'm not sure what
-to do about it.  I can't adopt Yinghai's solution in my tree since my tree
-is based off of Linus's tree which doesn't have "bus->busn".  I suppose I
-could publish two trees to linux-next, one based off of Bjorn's "pci" tree
-(I assume) and one with all the non-PCI arch/tile stuff (my current
-linux-next tree).
+> 
+> In ple handler code, last_boosted_vcpu (lbv) variable is
+> serving as reference point to start when we enter.
 
-I admit I was lazily assuming I would just fix this once the trees collided
-during the 3.6 merge window :-)
+> Also statistical analysis (below) is showing lbv is not very well
+> distributed with current approach.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+You are the second person to spot this bug today (yes, today).
+
+Due to time zones, the first person has not had a chance yet to
+test the patch below, which might fix the issue...
+
+Please let me know how it goes.
+
+====8<====
+
+If last_boosted_vcpu == 0, then we fall through all test cases and
+may end up with all VCPUs pouncing on vcpu 0.  With a large enough
+guest, this can result in enormous runqueue lock contention, which
+can prevent vcpu0 from running, leading to a livelock.
+
+Changing < to <= makes sure we properly handle that case.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ virt/kvm/kvm_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 7e14068..1da542b 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1586,7 +1586,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 	 */
+ 	for (pass = 0; pass < 2 && !yielded; pass++) {
+ 		kvm_for_each_vcpu(i, vcpu, kvm) {
+-			if (!pass && i < last_boosted_vcpu) {
++			if (!pass && i <= last_boosted_vcpu) {
+ 				i = last_boosted_vcpu;
+ 				continue;
+ 			} else if (pass && i > last_boosted_vcpu)
 
