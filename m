@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab2FSKq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 06:46:57 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12066 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2FSKqy (ORCPT
+	id S1754230Ab2FSKwY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 06:52:24 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:46831 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab2FSKwX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 06:46:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 19 Jun 2012 03:46:49 -0700
-Message-ID: <4FE0564D.1030709@nvidia.com>
-Date: Tue, 19 Jun 2012 16:07:01 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Tue, 19 Jun 2012 06:52:23 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lrg@ti.com" <lrg@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] regulator: support for regulator match by regulator-compatible
-References: <1340085087-6608-1-git-send-email-ldewangan@nvidia.com> <1340085087-6608-2-git-send-email-ldewangan@nvidia.com> <20120619093211.GB3974@opensource.wolfsonmicro.com> <4FE04788.5040008@nvidia.com> <20120619104254.GD3974@opensource.wolfsonmicro.com>
-In-Reply-To: <20120619104254.GD3974@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1340102792-7633-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <CAOh2x=k024nEQ3_K03YTFw+inWerB3N+Tjvwh8RiqYA4qSieOg@mail.gmail.com>
+	<1340102792-7633-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 19 Jun 2012 11:52:22 +0100
+Message-ID: <CAOh2x==s4Mj3b1_KNVhArVfaW7KJuXF30hqw90i1938bEA469g@mail.gmail.com>
+Subject: Re: [PATCHv2.1] dw_dmac: introduce dwc_chan_disable
+From: viresh kumar <viresh.linux@gmail.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 June 2012 04:13 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
+On Tue, Jun 19, 2012 at 11:46 AM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> This piece of code is used often. Make it as a separate function.
 >
-> On Tue, Jun 19, 2012 at 03:04:00PM +0530, Laxman Dewangan wrote:
->
->> I like to go with new series patch for other change once this is accepted.
-> I've no concerns with the interface or the code itself other than the
-> usability issue with partial deployment so if you could do the updates
-> for the other drivers that'd be great.  I'll hold off on applying this
-> until we've got everything else updated.
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/dma/dw_dmac.c |   32 ++++++++++++++------------------
+>  1 file changed, 14 insertions(+), 18 deletions(-)
 
-Great. I will send the patch  to reflect this policy for remaining 
-regulators.
+Perfect.
 
+Acked-by: Viresh Kumar <viresh.linux@gmail.com>
