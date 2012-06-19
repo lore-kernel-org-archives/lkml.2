@@ -1,128 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab2FSSb4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:31:56 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:34154 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752858Ab2FSSbv (ORCPT
+	id S1754676Ab2FSScX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:32:23 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:32985 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753101Ab2FSScV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:31:51 -0400
-X-Sasl-enc: 70KgiJieHEbwMzvtKMDuYeSenmp977LypxZOvuEVWEhN 1340130330
-Date: Tue, 19 Jun 2012 15:25:27 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@amd64.org>
-Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86, microcode: Sanitize per-cpu microcode
- reloading interface
-Message-ID: <20120619182526.GB18816@khazad-dum.debian.net>
-References: <1340121811-4477-1-git-send-email-bp@amd64.org>
- <1340121811-4477-2-git-send-email-bp@amd64.org>
+	Tue, 19 Jun 2012 14:32:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340121811-4477-2-git-send-email-bp@amd64.org>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 20 Jun 2012 00:02:19 +0530
+Message-ID: <CAEtiSauEdKP3Jsi_O6Q=yc9AWkSKDvNrLe0faicQWJGqdKxLwg@mail.gmail.com>
+Subject: [RFC][RT][PATCH] mm: Do not use stop_machine() for
+ __zone_pcp_udpate() for CONFIG_PREEMPT_RT_FULL
+From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, mingo@kernel.org,
+        C.Emde@osadl.org, jkacur@redhat.com, frank.rowand@am.sony.com,
+        tim.bird@am.sony.com, takuzo.ohara@ap.sony.com,
+        kan.iibuchi@jp.sony.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jun 2012, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Microcode reloading in a per-core manner is a very bad idea for both
-> major x86 vendors. And the thing is, we have such interface with which
-> we can end up with different microcode versions applied on different
-> cores of an otherwise homogeneous wrt (family,model,stepping) system.
-> 
-> So turn off the possibility of doing that per core and allow it only
-> system-wide.
-> 
-> This is a minimal fix which we'd like to see in stable too thus the
-> more-or-less arbitrary decision to allow system-wide reloading only on
-> the BSP:
-> 
-> $ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
-> ...
-> 
-> and disable the interface on the other cores:
-> 
-> $ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
-> -bash: echo: write error: Invalid argument
-> 
-> Also, allowing the reload only from one CPU (the BSP in
-> that case) doesn't allow the reload procedure to degenerate
-> into an O(n^2) deal when triggering reloads from all
-> /sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
-> simultaneously.
-> 
-> A more generic fix will follow.
-> 
-> Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+The code path of __zone_pcp_update() has following locks, which in
+CONFIG_PREEMPT_RT_FULL=y are rt-mutex.
+  - pa_lock locked by cpu_lock_irqsave()
+  - zone->lock locked by free_pcppages_bulk()
 
-Tested-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Since __zone_pcp_update() is called from stop_machine(), so with
+CONFIG_PREEMPT_RT_FULL=y
+we get following backtrace when __zone_pcp_update() is called during
+memory hot plugging while
+doing heavy file I/O.
 
-Tested on Intel Xeon X5550.  Tested as a (trivial) 3.0-stable backport.
+I think stop_machine() may not be required for calling __zone_pcp_update()
+in case of CONFIG_PREEMPT_RT_FULL=y as acquiring pa_lock in __zone_pcp_update()
+should be sufficient to isolate pcp pages and to setup per cpu pagesets.
 
-> ---
->  arch/x86/kernel/microcode_core.c | 26 +++++++++++++++++++-------
->  1 file changed, 19 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-> index fbdfc6917180..24b852b61be3 100644
-> --- a/arch/x86/kernel/microcode_core.c
-> +++ b/arch/x86/kernel/microcode_core.c
-> @@ -298,19 +298,31 @@ static ssize_t reload_store(struct device *dev,
->  			    const char *buf, size_t size)
->  {
->  	unsigned long val;
-> -	int cpu = dev->id;
-> -	ssize_t ret = 0;
-> +	int cpu;
-> +	ssize_t ret = 0, tmp_ret;
-> +
-> +	/* allow reload only from the BSP */
-> +	if (boot_cpu_data.cpu_index != dev->id)
-> +		return -EINVAL;
->  
->  	ret = kstrtoul(buf, 0, &val);
->  	if (ret)
->  		return ret;
->  
-> -	if (val == 1) {
-> -		get_online_cpus();
-> -		if (cpu_online(cpu))
-> -			ret = reload_for_cpu(cpu);
-> -		put_online_cpus();
-> +	if (val != 1)
-> +		return size;
-> +
-> +	get_online_cpus();
-> +	for_each_online_cpu(cpu) {
-> +		tmp_ret = reload_for_cpu(cpu);
-> +		if (tmp_ret != 0)
-> +			pr_warn("Error reloading microcode on CPU %d\n", cpu);
-> +
-> +		/* save retval of the first encountered reload error */
-> +		if (!ret)
-> +			ret = tmp_ret;
->  	}
-> +	put_online_cpus();
->  
->  	if (!ret)
->  		ret = size;
+Can someone please let me know if am missing anything here?
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+
+The backtrace that this patch fixes:
+ BUG: scheduling while atomic: migration/0/7/0x00000002
+ Modules linked in: v2p
+ Backtrace:
+ [<800111a0>] (dump_backtrace+0x0/0x10c) from [<802d7b7c>]
+(dump_stack+0x18/0x1c)
+  r6:80c8fc28 r5:80c8f9a0 r4:00000000 r3:60000013
+ [<802d7b64>] (dump_stack+0x0/0x1c) from [<8001e81c>] (__schedule_bug+0x64/0x74)
+ [<8001e7b8>] (__schedule_bug+0x0/0x74) from [<802d7fa0>]
+(__schedule+0x68/0x604)
+  r4:8051bf00 r3:00000000
+ [<802d7f38>] (__schedule+0x0/0x604) from [<802d8a78>] (schedule+0x98/0xbc)
+ [<802d89e0>] (schedule+0x0/0xbc) from [<802d9e14>]
+(rt_spin_lock_slowlock+0x168/0x240)
+  r4:805228f4 r3:00000000
+ [<802d9cac>] (rt_spin_lock_slowlock+0x0/0x240) from [<802da234>]
+(rt_spin_lock+0x10/0x14)
+ [<802da224>] (rt_spin_lock+0x0/0x14) from [<8008694c>]
+(__zone_pcp_update+0x58/0xd8)
+ [<800868f4>] (__zone_pcp_update+0x0/0xd8) from [<800603ec>]
+(stop_machine_cpu_stop+0xb0/0x104)
+ [<8006033c>] (stop_machine_cpu_stop+0x0/0x104) from [<80060200>]
+(cpu_stopper_thread+0xd4/0x188)
+
+
+Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+
+---
+ mm/page_alloc.c |    4 	4 +	0 -	0 !
+ 1 file changed, 4 insertions(+)
+
+Index: b/mm/page_alloc.c
+===================================================================
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3868,7 +3868,11 @@ static int __zone_pcp_update(void *data)
+
+ void zone_pcp_update(struct zone *zone)
+ {
++#ifndef CONFIG_PREEMPT_RT_FULL
+ 	stop_machine(__zone_pcp_update, zone, NULL);
++#else
++	__zone_pcp_update(zone);
++#endif
+ }
+
+ static __meminit void zone_pcp_init(struct zone *zone)
