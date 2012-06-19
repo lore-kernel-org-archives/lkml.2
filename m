@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2FSWbG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 18:31:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49898 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751137Ab2FSWbE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 18:31:04 -0400
-Date: Tue, 19 Jun 2012 23:31:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: core: Export regulator_set_voltage_time_sel()
-Message-ID: <20120619223102.GD4064@opensource.wolfsonmicro.com>
-References: <1340090932.13155.0.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/unnNtmY43mpUSKx"
-Content-Disposition: inline
-In-Reply-To: <1340090932.13155.0.camel@phoenix>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753392Ab2FSWdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 18:33:45 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:46137 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751610Ab2FSWdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 18:33:44 -0400
+Date: Wed, 20 Jun 2012 00:33:15 +0200
+From: Michael Leun <lkml20120218@newton.leun.net>
+To: Mohammed Shafi <shafi.wireless@gmail.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
+Message-ID: <20120620003315.2eaf6460@xenia.leun.net>
+In-Reply-To: <CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
+References: <20120619085137.337838c0@xenia.leun.net>
+	<CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 19 Jun 2012 15:11:38 +0530
+Mohammed Shafi <shafi.wireless@gmail.com> wrote:
 
---/unnNtmY43mpUSKx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Hi,
+> 
+> On Tue, Jun 19, 2012 at 12:21 PM, Michael Leun
+> <lkml20120218@newton.leun.net> wrote:
+> > Hi,
+> >
+> > ne-wlan1@elektra:/home/ml4> ping 192.168.2.1
+> > PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
+> > 64 bytes from 192.168.2.1: icmp_seq=1 ttl=64 time=2010 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=2 ttl=64 time=1011 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=3 ttl=64 time=11.5 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=4 ttl=64 time=1.12 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=5 ttl=64 time=1002 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=6 ttl=64 time=3.83 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=7 ttl=64 time=1003 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=8 ttl=64 time=4.10 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=9 ttl=64 time=1003 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=10 ttl=64 time=3.95 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=11 ttl=64 time=1003 ms
+> > 64 bytes from 192.168.2.1: icmp_seq=12 ttl=64 time=3.78 ms
+> >
+> >
+> > Please note the additional delay of ~1000ms every 2nd packet. This
+> > is Kernel 3.4.3, have seen it in 3.4.2 also. Does NOT happen in
+> > 3.3.1.
+> >
+> > Is this Issue already known? If so, I can save the work bisecting...
+> 
+> looks like some one reported this bug in kernel bugzilla. would be
+> saving us lot of time
+> if you can bisect it!
+> 
 
-On Tue, Jun 19, 2012 at 03:28:52PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 is the first bad commit
+commit 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45
+Author: Johannes Berg <johannes.berg@intel.com>
+Date:   Thu Mar 8 15:02:06 2012 +0100
 
-Applied, thanks.
+    mac80211: remove spurious BSSID change flag
 
---/unnNtmY43mpUSKx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+    The BSSID has been set a lot earlier already and
+    didn't change again in ieee80211_set_associated().
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+    Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-iQIcBAEBAgAGBQJP4P1RAAoJEBus8iNuMP3dd+oP/1Yi5avBKnYJGN4RBz6iUfkf
-tfurQygtGjzWo9T8uturlgseiEbhc9iE3HpEEbAe+9AXyR6jzJ9vm2TWTF3daNfw
-GUHtUCYRpVwTq8zQFOYMvLV6lBjdlPOOw6U42BCBDJDgkbj2vbTPT2x8ZmdKM6c3
-W+saknCz4vcrBh7fxNlY0DijFYVN2W5GLGFS414zjl2WyUNk9wp1MZ/VIjWjZEYd
-UmuirSzeG7whsQ3QxYzTVVdvCOuEwT73E+mfhdHgMJTHlV2gjv0qMcVVGLnn0MHl
-8yff2RVZKc0tOhPP614yDi73bnNpcsfIWr0UamtLT4vgOsFIavV3LkYq+vpe5FEk
-i7UCTCcNHZ70AJN9++OSFGZaVjp/4doG9rAd5gT2tj3nXWvsJvjJRudxL7W93h4y
-FWj2vE3fcc834yWNXhFoOX/GoJFEAHyJ0t7putYJICp6U3I51uz9P/rRvuxrlEyC
-mh6HcHlDVrVK/iyl1cL7i029Fk2JYiyCzi6RY6OLEYHkDgm1Hy2cZIYAB624FPg8
-VdWSV40m37mgpqXzJS/pUHi7x+fh7GT3wb85DxYBhkhDbFeKR68MfQRMYywpFNqx
-DkzBOBLJ5ywIGZOsYbs8mM4F3XRy/1b6LybDIwN/wcdrIwdB2KfU5DiBrYsttxb2
-UkWmzYYbSA3VvhmJTFNI
-=EYrj
------END PGP SIGNATURE-----
+:040000 040000 67a19a39e4b04c16921a3758ddd2362e02e81dd3 4a7cbd327b59345b83fa613f893770fbf44220bb M      net
 
---/unnNtmY43mpUSKx--
+Reverting 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 from 3.4.3 fixes the issue.
+
+
+-- 
+MfG,
+
+Michael Leun
+
