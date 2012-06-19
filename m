@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2FSQDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 12:03:36 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42305 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2FSQDe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 12:03:34 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: X86-ML <x86@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
-Subject: [PATCH 1/2] x86, microcode: Sanitize per-cpu microcode reloading interface
-Date: Tue, 19 Jun 2012 18:03:30 +0200
-Message-Id: <1340121811-4477-2-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.11.rc1
-In-Reply-To: <1340121811-4477-1-git-send-email-bp@amd64.org>
-References: <1340121811-4477-1-git-send-email-bp@amd64.org>
+	id S1754445Ab2FSQKj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 12:10:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22452 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742Ab2FSQKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 12:10:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="159581074"
+Message-ID: <1340122445.13910.55.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: m25p80: Add support for m25pe20
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Jun 2012 19:14:05 +0300
+In-Reply-To: <1339530160-23579-1-git-send-email-aletes.xgr@gmail.com>
+References: <1339530160-23579-1-git-send-email-aletes.xgr@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ZlEtgt3wp3/Fr/4Ewq5Y"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
 
-Microcode reloading in a per-core manner is a very bad idea for both
-major x86 vendors. And the thing is, we have such interface with which
-we can end up with different microcode versions applied on different
-cores of an otherwise homogeneous wrt (family,model,stepping) system.
+--=-ZlEtgt3wp3/Fr/4Ewq5Y
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-So turn off the possibility of doing that per core and allow it only
-system-wide.
+On Tue, 2012-06-12 at 16:42 -0300, Alexandre Pereira da Silva wrote:
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-This is a minimal fix which we'd like to see in stable too thus the
-more-or-less arbitrary decision to allow system-wide reloading only on
-the BSP:
+Pushed to l2-mtd.git, thanks!
 
-$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
-...
+--=20
+Best Regards,
+Artem Bityutskiy
 
-and disable the interface on the other cores:
+--=-ZlEtgt3wp3/Fr/4Ewq5Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
--bash: echo: write error: Invalid argument
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Also, allowing the reload only from one CPU (the BSP in
-that case) doesn't allow the reload procedure to degenerate
-into an O(n^2) deal when triggering reloads from all
-/sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
-simultaneously.
+iQIcBAABAgAGBQJP4KVNAAoJECmIfjd9wqK0GxQP/AtmKu9ukRR8GggDxO/XWGtE
+EpyYDzP0B3/vHIqolVD0/QubVt7GFvsTUKDHXeUt2L0H95jqqCenQtA4HqizyviC
+OWVI70Rs6TS1W+s0Pae3HkVZcnHSH03y97TGe9IEaI+o2VyBSewbU/6oUBVgZAk/
+K+H1Y+LAk78ZowEBKwVxLvw1d/enhg+bT2Xrf70F/o3gjoOov3g+7jEwzNlRp0tz
+z4BySrUmIpo4ddjtuEF3vBetSq3tJDW+AsWchMYNSAX9OD+YA3rTE2Vl0nmDzYag
+TAzBZGmute+nyr7L92xYHRUBgFyE7ZZc1+49zfhwz1OmCrN0oARaSsqIgHzXHHwY
+VXaghM/tXnv1m7iRNhMFrNY2jlPIJ+mDOkbbtz1MwCEL9EM+Ujh+75nH2VQsmbF8
+shomPxUqxzrmtfbeg7YbTW9tSI/CxUgSPWLj4jauq3QuX9KhgMQCYRrz6hv0ni8X
+hrLzvoQreH7WOewdFpYVB1myZHOYYTUjXcQ5VjIWjbNApq29g1nVcNwVDLeeHVwx
+AgYXr97ZKypJ4/gtAYswJCFN5nZOs2oOquh+ETrQBS7P5l7pEPvtf+W5ndOm79K5
+nYgAgmWZp5QAaoCVnteIS/PFYI8MNleAebcmu46QWnh1rd+XEXVHcH+XA4LIiGFR
+MktDNYGnJptTK2sTUxPO
+=BGTN
+-----END PGP SIGNATURE-----
 
-A more generic fix will follow.
-
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: stable@vger.kernel.org
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/microcode_core.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index fbdfc6917180..24b852b61be3 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -298,19 +298,31 @@ static ssize_t reload_store(struct device *dev,
- 			    const char *buf, size_t size)
- {
- 	unsigned long val;
--	int cpu = dev->id;
--	ssize_t ret = 0;
-+	int cpu;
-+	ssize_t ret = 0, tmp_ret;
-+
-+	/* allow reload only from the BSP */
-+	if (boot_cpu_data.cpu_index != dev->id)
-+		return -EINVAL;
- 
- 	ret = kstrtoul(buf, 0, &val);
- 	if (ret)
- 		return ret;
- 
--	if (val == 1) {
--		get_online_cpus();
--		if (cpu_online(cpu))
--			ret = reload_for_cpu(cpu);
--		put_online_cpus();
-+	if (val != 1)
-+		return size;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu) {
-+		tmp_ret = reload_for_cpu(cpu);
-+		if (tmp_ret != 0)
-+			pr_warn("Error reloading microcode on CPU %d\n", cpu);
-+
-+		/* save retval of the first encountered reload error */
-+		if (!ret)
-+			ret = tmp_ret;
- 	}
-+	put_online_cpus();
- 
- 	if (!ret)
- 		ret = size;
--- 
-1.7.11.rc1
+--=-ZlEtgt3wp3/Fr/4Ewq5Y--
 
