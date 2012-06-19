@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab2FSPvv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:51:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17395 "EHLO mx1.redhat.com"
+	id S1754844Ab2FSPw1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 11:52:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754808Ab2FSPua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:50:30 -0400
+	id S1754779Ab2FSPuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 11:50:20 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,224 +14,276 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 23/23] perf, tool: Add dso data caching tests
-Date: Tue, 19 Jun 2012 17:48:14 +0200
-Message-Id: <1340120894-9465-24-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 22/23] perf, tool: Add dso data caching
+Date: Tue, 19 Jun 2012 17:48:13 +0200
+Message-Id: <1340120894-9465-23-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding automated test for DSO data reading. Testing raw/cached
-reads from different file/cache locations.
+Adding dso data caching so we dont need to open/read/close,
+each time we want dso data.
+
+The DSO data caching affects following functions:
+  dso__data_read_offset
+  dso__data_read_addr
+
+Each DSO read tries to find the data (based on offset) inside
+the cache. If it's not present it fills the cache from file,
+and returns the data. If it is present, data are returned
+with no file read.
+
+Each data read is cached by reading cache page sized/alligned
+amount of DSO data. The cache page size is hardcoded to 4096.
+The cache is using RB tree with file offset as a sort key.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile             |    1 +
- tools/perf/builtin-test.c       |    4 +
- tools/perf/util/dso-test-data.c |  154 +++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h        |    1 +
- 4 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/util/dso-test-data.c
+ tools/perf/util/symbol.c |  154 ++++++++++++++++++++++++++++++++++++++++------
+ tools/perf/util/symbol.h |   11 +++
+ 2 files changed, 147 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 92c3f8f..503ed03 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -362,6 +362,7 @@ LIB_OBJS += $(OUTPUT)util/usage.o
- LIB_OBJS += $(OUTPUT)util/wrapper.o
- LIB_OBJS += $(OUTPUT)util/sigchain.o
- LIB_OBJS += $(OUTPUT)util/symbol.o
-+LIB_OBJS += $(OUTPUT)util/dso-test-data.o
- LIB_OBJS += $(OUTPUT)util/color.o
- LIB_OBJS += $(OUTPUT)util/pager.o
- LIB_OBJS += $(OUTPUT)util/header.o
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 8d3ed01..16cbf1a 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -1142,6 +1142,10 @@ static struct test {
- 		.func = test__perf_pmu,
- 	},
- 	{
-+		.desc = "Test dso data interface",
-+		.func = dso__test_data,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/util/dso-test-data.c b/tools/perf/util/dso-test-data.c
-new file mode 100644
-index 0000000..ec62977
---- /dev/null
-+++ b/tools/perf/util/dso-test-data.c
-@@ -0,0 +1,154 @@
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 59012fc..8a66cce 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -29,6 +29,7 @@
+ #define NT_GNU_BUILD_ID 3
+ #endif
+ 
++static void dso_cache__free(struct rb_root *root);
+ static bool dso__build_id_equal(const struct dso *dso, u8 *build_id);
+ static int elf_read_build_id(Elf *elf, void *bf, size_t size);
+ static void dsos__add(struct list_head *head, struct dso *dso);
+@@ -342,6 +343,7 @@ struct dso *dso__new(const char *name)
+ 		dso__set_short_name(dso, dso->name);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
++		dso->cache = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+@@ -377,6 +379,7 @@ void dso__delete(struct dso *dso)
+ 		free((char *)dso->short_name);
+ 	if (dso->lname_alloc)
+ 		free(dso->long_name);
++	dso_cache__free(&dso->cache);
+ 	free(dso);
+ }
+ 
+@@ -2934,22 +2937,87 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
+ 	return -EINVAL;
+ }
+ 
+-static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
+-			      u8 *data __used, ssize_t size __used)
++static void
++dso_cache__free(struct rb_root *root)
+ {
+-	return -EINVAL;
++	struct rb_node *next = rb_first(root);
 +
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <string.h>
++	while (next) {
++		struct dso_cache *cache;
 +
-+#include "symbol.h"
-+
-+#define TEST_ASSERT_VAL(text, cond) \
-+do { \
-+	if (!(cond)) { \
-+		pr_debug("FAILED %s:%d %s\n", __FILE__, __LINE__, text); \
-+		return -1; \
-+	} \
-+} while (0)
-+
-+static char *test_file(int size)
-+{
-+	static char buf_templ[] = "/tmp/test-XXXXXX";
-+	char *templ = buf_templ;
-+	int fd, i;
-+	unsigned char *buf;
-+
-+	fd = mkostemp(templ, O_CREAT|O_WRONLY|O_TRUNC);
-+
-+	buf = malloc(size);
-+	if (!buf) {
-+		close(fd);
-+		return NULL;
++		cache = rb_entry(next, struct dso_cache, rb_node);
++		next = rb_next(&cache->rb_node);
++		rb_erase(&cache->rb_node, root);
++		free(cache);
 +	}
+ }
+ 
+-static int dso_cache_add(struct dso *dso __used, u64 offset __used,
+-			 u8 *data __used, ssize_t size __used)
++static struct dso_cache*
++dso_cache__find(struct rb_root *root, u64 offset)
+ {
+-	return 0;
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct dso_cache *cache;
 +
-+	for (i = 0; i < size; i++)
-+		buf[i] = (unsigned char) ((int) i % 10);
++	while (*p != NULL) {
++		u64 end;
 +
-+	if (size != write(fd, buf, size))
-+		templ = NULL;
++		parent = *p;
++		cache = rb_entry(parent, struct dso_cache, rb_node);
++		end = cache->offset + DSO__DATA_CACHE_SIZE;
 +
-+	close(fd);
-+	return templ;
++		if (offset < cache->offset)
++			p = &(*p)->rb_left;
++		else if (offset >= end)
++			p = &(*p)->rb_right;
++		else
++			return cache;
++	}
++	return NULL;
 +}
 +
-+#define TEST_FILE_SIZE (DSO__DATA_CACHE_SIZE * 20)
-+
-+struct test_data__offset {
-+	off_t offset;
-+	u8 data[10];
-+	int size;
-+};
-+
-+struct test_data__offset offsets[] = {
-+	/* Fill first cache page. */
-+	{
-+		.offset = 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read first cache page. */
-+	{
-+		.offset = 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Fill cache boundary pages. */
-+	{
-+		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read cache boundary pages. */
-+	{
-+		.offset = DSO__DATA_CACHE_SIZE - DSO__DATA_CACHE_SIZE % 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Fill final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 10,
-+		.data   = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-+		.size   = 10,
-+	},
-+	/* Read final cache page. */
-+	{
-+		.offset = TEST_FILE_SIZE - 3,
-+		.data   = { 7, 8, 9, 0, 0, 0, 0, 0, 0, 0 },
-+		.size   = 3,
-+	},
-+};
-+
-+#define OFFSETS_CNT (sizeof(offsets) / sizeof(struct test_data__offset))
-+
-+int dso__test_data(void)
++static void
++dso_cache__insert(struct rb_root *root, struct dso_cache *new)
 +{
-+	struct machine machine;
-+	struct dso *dso;
-+	char *file = test_file(TEST_FILE_SIZE);
-+	int i;
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct dso_cache *cache;
++	u64 offset = new->offset;
 +
-+	TEST_ASSERT_VAL("No test file", file);
++	while (*p != NULL) {
++		u64 end;
 +
-+	memset(&machine, 0, sizeof(machine));
++		parent = *p;
++		cache = rb_entry(parent, struct dso_cache, rb_node);
++		end = cache->offset + DSO__DATA_CACHE_SIZE;
 +
-+	dso = dso__new((const char *)file);
-+
-+	/* Basic 10 bytes tests. */
-+	for (i = 0; i < (int) OFFSETS_CNT; i++) {
-+		struct test_data__offset *data = &offsets[i];
-+		ssize_t size;
-+		u8 buf[10];
-+
-+		memset(buf, 0, 10);
-+		size = dso__data_read_offset(dso, &machine, data->offset,
-+				     buf, 10);
-+
-+		TEST_ASSERT_VAL("Wrong size", size == data->size);
-+		TEST_ASSERT_VAL("Wrong data", !memcmp(buf, data->data, 10));
++		if (offset < cache->offset)
++			p = &(*p)->rb_left;
++		else if (offset >= end)
++			p = &(*p)->rb_right;
 +	}
 +
-+	/* Read cross multiple cache pages. */
-+	{
-+		ssize_t size;
-+		int c;
-+		u8 *buf;
-+
-+		buf = malloc(TEST_FILE_SIZE);
-+		TEST_ASSERT_VAL("ENOMEM\n", buf);
-+
-+		/* First iteration to fill caches, second one to read them. */
-+		for (c = 0; c < 2; c++) {
-+			memset(buf, 0, TEST_FILE_SIZE);
-+			size = dso__data_read_offset(dso, &machine, 10,
-+						     buf, TEST_FILE_SIZE);
-+
-+			TEST_ASSERT_VAL("Wrong size",
-+				size == (TEST_FILE_SIZE - 10));
-+
-+			for (i = 0; i < size; i++)
-+				TEST_ASSERT_VAL("Wrong data",
-+					buf[i] == (i % 10));
-+		}
-+
-+		free(buf);
-+	}
-+
-+	dso__delete(dso);
-+	unlink(file);
-+	return 0;
++	rb_link_node(&new->rb_node, parent, p);
++	rb_insert_color(&new->rb_node, root);
 +}
++
++static ssize_t
++dso_cache__memcpy(struct dso_cache *cache, u64 offset,
++		  u8 *data, u64 size)
++{
++	u64 cache_offset = offset - cache->offset;
++	u64 cache_size   = min(cache->size - cache_offset, size);
++
++	memcpy(data, cache->data + cache_offset, cache_size);
++	return cache_size;
+ }
+ 
+-static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
+-		     u64 offset, u8 *data, ssize_t size)
++static ssize_t
++dso_cache__read(struct dso *dso, struct machine *machine,
++		 u64 offset, u8 *data, ssize_t size)
+ {
+-	ssize_t rsize = -1;
++	struct dso_cache *cache;
++	ssize_t ret;
+ 	int fd;
+ 
+ 	fd = dso__data_fd(dso, machine);
+@@ -2957,28 +3025,78 @@ static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
+ 		return -1;
+ 
+ 	do {
+-		if (-1 == lseek(fd, offset, SEEK_SET))
++		u64 cache_offset;
++
++		ret = -ENOMEM;
++
++		cache = zalloc(sizeof(*cache) + DSO__DATA_CACHE_SIZE);
++		if (!cache)
+ 			break;
+ 
+-		rsize = read(fd, data, size);
+-		if (-1 == rsize)
++		cache_offset = offset & DSO__DATA_CACHE_MASK;
++		ret = -EINVAL;
++
++		if (-1 == lseek(fd, cache_offset, SEEK_SET))
+ 			break;
+ 
+-		if (dso_cache_add(dso, offset, data, size))
+-			pr_err("Failed to add data int dso cache.");
++		ret = read(fd, cache->data, DSO__DATA_CACHE_SIZE);
++		if (ret <= 0)
++			break;
++
++		cache->offset = cache_offset;
++		cache->size   = ret;
++		dso_cache__insert(&dso->cache, cache);
++
++		ret = dso_cache__memcpy(cache, offset, data, size);
+ 
+ 	} while (0);
+ 
++	if (ret <= 0)
++		free(cache);
++
+ 	close(fd);
+-	return rsize;
++	return ret;
++}
++
++static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size)
++{
++	struct dso_cache *cache;
++
++	cache = dso_cache__find(&dso->cache, offset);
++	if (cache)
++		return dso_cache__memcpy(cache, offset, data, size);
++	else
++		return dso_cache__read(dso, machine, offset, data, size);
+ }
+ 
+ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 			      u64 offset, u8 *data, ssize_t size)
+ {
+-	if (dso_cache_read(dso, offset, data, size))
+-		return read_dso_data(dso, machine, offset, data, size);
+-	return 0;
++	ssize_t r = 0;
++	u8 *p = data;
++
++	do {
++		ssize_t ret;
++
++		ret = dso_cache_read(dso, machine, offset, p, size);
++		if (ret < 0)
++			return ret;
++
++		/* Reached EOF, return what we have. */
++		if (!ret)
++			break;
++
++		BUG_ON(ret > size);
++
++		r      += ret;
++		p      += ret;
++		offset += ret;
++		size   -= ret;
++
++	} while (size);
++
++	return r;
+ }
+ 
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
 diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 67313f0..17a7e8f 100644
+index 77044cb..67313f0 100644
 --- a/tools/perf/util/symbol.h
 +++ b/tools/perf/util/symbol.h
-@@ -324,4 +324,5 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
- 			    struct machine *machine, u64 addr,
- 			    u8 *data, ssize_t size);
-+int dso__test_data(void);
- #endif /* __PERF_SYMBOL */
+@@ -181,10 +181,21 @@ enum dso_swap_type {
+ 	DSO_SWAP__YES,
+ };
+ 
++#define DSO__DATA_CACHE_SIZE 4096
++#define DSO__DATA_CACHE_MASK ~(DSO__DATA_CACHE_SIZE - 1)
++
++struct dso_cache {
++	struct rb_node	rb_node;
++	u64 offset;
++	u64 size;
++	char data[0];
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
++	struct rb_root	 cache;
+ 	enum dso_kernel_type	kernel;
+ 	enum dso_swap_type	needs_swap;
+ 	enum dso_binary_type	symtab_type;
 -- 
 1.7.7.6
 
