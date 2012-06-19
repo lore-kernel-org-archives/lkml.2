@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab2FSD0G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 23:26:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44904 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab2FSD0E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 23:26:04 -0400
+	id S1753872Ab2FSDbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 23:31:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48921 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752545Ab2FSDbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 23:31:47 -0400
+Message-ID: <4FDFF27C.5000205@zytor.com>
+Date: Mon, 18 Jun 2012 20:31:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZUxYP0Mbe+heEwrZE5VC+J42g_-QAusrOsUuBPT324Hw@mail.gmail.com>
-References: <1312780773-23142-1-git-send-email-Baohua.Song@csr.com>
- <20110808081552.GI32513@linux-sh.org> <CACxGe6ssT4=kxApaKhv+=7nDcEFVW+oyByFQ_hzcfyZ4gw2C3g@mail.gmail.com>
- <CAH9JG2V-66Wn7nwJz6tOkESoQAUJzAg-47YeMY0vzwu6T9O=Rg@mail.gmail.com>
- <4E40912C.5040801@codeaurora.org> <CACRpkdZUxYP0Mbe+heEwrZE5VC+J42g_-QAusrOsUuBPT324Hw@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Tue, 19 Jun 2012 11:25:43 +0800
-Message-ID: <CAGsJ_4y38KBDfjZS_k-QfDUUFAtEwE-ciUgNOA0U2juOBeoXEA@mail.gmail.com>
-Subject: Re: [PATCH] GPIOLIB: add generic gpio_set_pull API
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Richard Woo <richard.wu@lianlab.org>, Paul Mundt <lethal@linux-sh.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH] x86, microcode: Make reload interface per system
+References: <1339521996.31548.95.camel@twins> <20120612173506.GB4802@aftab.osrc.amd.com> <20120613010413.GA28174@khazad-dum.debian.net> <20120613065119.GB15661@aftab.osrc.amd.com> <20120613123649.GA26012@khazad-dum.debian.net> <20120613161139.GA18450@aftab.osrc.amd.com> <20120615123749.GC6083@aftab.osrc.amd.com> <1339764161.2559.63.camel@twins> <20120615125240.GD6083@aftab.osrc.amd.com> <20120615165231.GA9169@aftab.osrc.amd.com> <20120619024639.GB6186@khazad-dum.debian.net>
+In-Reply-To: <20120619024639.GB6186@khazad-dum.debian.net>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-it seems people still use self-defined structure and APIs to set GPIO
-pull, for example:
+On 06/18/2012 07:46 PM, Henrique de Moraes Holschuh wrote:
+> 
+> It is a pity this one is much harder to backport to 3.2 and 3.0.  I'd
+> really like to have the new interface there.  But it looks good, and we
+> will support the new /sys/devices/system/cpu/microcode/reload sysfs node
+> in Debian for the benefit of anyone using a newer kernel than the
+> distro's (which will be based on 3.2).
+> 
+> So, fwiw, you have my:
+> Acked-by-unimportant-person: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> 
 
-drivers/pinctrl/pinctrl-nomadik.c:
+I have to admit to being slightly questioning to the whole "sysfs
+trigger, request_firmware" interface... it seems royally backwards to me
+(it makes sense for the initial firmware load, I guess, but that is
+better done early.)
 
- 48 /* Pull up/down values */
- 49 enum nmk_gpio_pull {
- 50         NMK_GPIO_PULL_NONE,
- 51         NMK_GPIO_PULL_UP,
- 52         NMK_GPIO_PULL_DOWN,
- 53 };
+Either way I don't have a hugely strong preference.
 
-int nmk_gpio_set_pull(int gpio, enum nmk_gpio_pull pull)
+	-hpa
 
-or actually you mean use "pin_config_get" and "pin_config_set" with
-self-defined configuration to set pull?
-
-but i think at least the macros of GPIO_PULL_NONE, GPIO_PULL_UP and
-GPIO_PULL_DOWN should be standardized.
-
-2011/8/9 Linus Walleij <linus.walleij@linaro.org>
->
-> On Tue, Aug 9, 2011 at 3:45 AM, Rohit Vaswani <rvaswani@codeaurora.org>
-> wrote:
->
-> > If we add this API - the remaining gpio controls like drive strength and
-> > function select could also be added,
->
-> I agree.
->
-> > which eats into the pinmux domain.
->
-> That's not so bad, since the pinctrl/pinmux subsystem is just a prototype
-> people may want to wrap up their drivers into gpio_chip/gpiolib as
-> they stand today to atleast get some isolation. Later on they can
-> refactor and migrate to a pinctrl/pinmux subsystem.
->
-> The latter will take some time to provide anyway, since I have been
-> asked to restructure it so as not to use a global pin number space.
->
-> > Linus W. had a patch earlier which added an API for a gpio config to be
-> > specified through gpiolib. " gpio: add a custom configuration mechanism
-> > to
-> > gpiolib" which is sort of an extensible model of this API.
->
-> Yes I think I have already suggested a bunch of ways to skin this
-> cat but somehow none of them seem to win general approval.
->
-> Yours,
-> Linus Walleij
-
--barry
