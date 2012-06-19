@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab2FSGQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 02:16:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62107 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab2FSGQ2 (ORCPT
+	id S1753810Ab2FSGUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 02:20:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54204 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473Ab2FSGUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 02:16:28 -0400
-Date: Tue, 19 Jun 2012 08:16:06 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Roland Stigge <stigge@antcom.de>, riku.voipio@iki.fi,
-        bryan.wu@canonical.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] leds: Add DT support for leds-pca9532
-Message-ID: <20120619061606.GA32193@avionic-0098.mockup.avionic-design.de>
-References: <1339855851-9171-1-git-send-email-stigge@antcom.de>
- <4FDCA0FC.5000409@wwwdotorg.org>
- <4FDDC4A9.1040706@antcom.de>
- <4FDE1BCF.60109@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
-Content-Disposition: inline
-In-Reply-To: <4FDE1BCF.60109@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:tOPlVNRnWgiDbMY23Z5x9/0ecqMLo2hwFU4/fPgrYAK
- iSlThjT8zUKTxCVBoUWAYl6PbcR7lgmKKQferQ5zunHg2EZo/b
- hjML3yVGgC5nIOpyJNCjRr+P9Lf5gi4EskXfoPeI1I4sTlPoxR
- 4HGvp7ddFD7B88h/5spoZvai1jgpmzJR81GJHV/dQNpO+ZoREt
- VgACmuaywtHtuwIzR8+cSK2y1Zsym7vXUBGGUBGsa8pjVRdUJT
- vkuNuVQVvzWhZjdr2aW9LdoN3UnCSgJp1JRKtYvksulSZpC7YL
- E6E8yKjzp4IXasFS8YGUM2t6/BsmCvxMdPu9MmcovL2UupWSEq
- onZ1ORkc0TDfjaXtBaReZR4/v1QlzOJiA/uvUhy2oY7/mlGFPj
- GuB3/LP+1e5DVM3GtTLFkLg2ZUIXhgHE4E=
+	Tue, 19 Jun 2012 02:20:08 -0400
+Message-ID: <1340086797.9329.1.camel@phoenix>
+Subject: [PATCH] regulator: mc13xxx: Remove mc13xxx_sw_regulator_is_enabled
+ function
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Yong Shen <yong.shen@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 19 Jun 2012 14:19:57 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If .is_enabled callback is not implemented, regulator core assumes that the
+regulator is always on. Thus we don't need mc13xxx_sw_regulator_is_enabled
+function.
 
---GvXjxJ+pjyke8COw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/mc13892-regulator.c      |    1 -
+ drivers/regulator/mc13xxx-regulator-core.c |    6 ------
+ drivers/regulator/mc13xxx.h                |    1 -
+ 3 files changed, 8 deletions(-)
 
-On Sun, Jun 17, 2012 at 12:02:55PM -0600, Stephen Warren wrote:
-> On 06/17/2012 05:51 AM, Roland Stigge wrote:
-> > Hi,
-> >=20
-> > On 16/06/12 17:06, Stephen Warren wrote:
-> >>> +- nxp,typecodes: groups of 2 bits for each of the 16 pins:
-> >>> +  0: None
-> >>> +  1: LED
-> >>> +  2: Beep
-> >>> +  3: GPIO
-> >>> +- nxp,statecodes: groups of 2 bits for each of the 16 pins:
-> >>> +  0: off
-> >>> +  1: on
-> >>> +  2: pwm0
-> >>> +  3: pwm1
-> >>> +
-> >>> +Optional properties:
-> >>> +- nxp,psc: array of 2 numbers: PSC values for the two PWM channels (=
-see datasheet)
-> >>> +- nxp,pwm: array of 2 numbers: PWM values for the two PWM channels (=
-see datasheet)
-> >>
-> >> Shouldn't that all be exposed using a combination of the pinctrl
-> >> bindings that are in 3.5, and the PWM bindings that should be coming i=
-n 3.6?
-> >=20
-> > Thanks for the note! I found a pwm tree that should have this at
-> >=20
-> > http://gitorious.org/linux-pwm/linux-pwm
-> >=20
-> > but it gives me server errors. Is there a place where I can have a look?
->=20
-> That URL (with http:// replace with git://) did work for me. It seemed a
-> little slow at first, but did work without issue. I Cc'd Thierry in case
-> there's any other location available.
+diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
+index 6329723..b388b74 100644
+--- a/drivers/regulator/mc13892-regulator.c
++++ b/drivers/regulator/mc13892-regulator.c
+@@ -469,7 +469,6 @@ err:
+ }
+ 
+ static struct regulator_ops mc13892_sw_regulator_ops = {
+-	.is_enabled = mc13xxx_sw_regulator_is_enabled,
+ 	.list_voltage = regulator_list_voltage_table,
+ 	.set_voltage_sel = mc13892_sw_regulator_set_voltage_sel,
+ 	.get_voltage = mc13892_sw_regulator_get_voltage,
+diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
+index 8a6b050..d6eda28 100644
+--- a/drivers/regulator/mc13xxx-regulator-core.c
++++ b/drivers/regulator/mc13xxx-regulator-core.c
+@@ -170,12 +170,6 @@ struct regulator_ops mc13xxx_fixed_regulator_ops = {
+ };
+ EXPORT_SYMBOL_GPL(mc13xxx_fixed_regulator_ops);
+ 
+-int mc13xxx_sw_regulator_is_enabled(struct regulator_dev *rdev)
+-{
+-	return 1;
+-}
+-EXPORT_SYMBOL_GPL(mc13xxx_sw_regulator_is_enabled);
+-
+ #ifdef CONFIG_OF
+ int __devinit mc13xxx_get_num_regulators_dt(struct platform_device *pdev)
+ {
+diff --git a/drivers/regulator/mc13xxx.h b/drivers/regulator/mc13xxx.h
+index 9a8f72c..8343a25 100644
+--- a/drivers/regulator/mc13xxx.h
++++ b/drivers/regulator/mc13xxx.h
+@@ -33,7 +33,6 @@ struct mc13xxx_regulator_priv {
+ };
+ 
+ extern int mc13xxx_sw_regulator(struct regulator_dev *rdev);
+-extern int mc13xxx_sw_regulator_is_enabled(struct regulator_dev *rdev);
+ extern int mc13xxx_fixed_regulator_set_voltage(struct regulator_dev *rdev,
+ 		int min_uV, int max_uV, unsigned *selector);
+ extern int mc13xxx_fixed_regulator_get_voltage(struct regulator_dev *rdev);
+-- 
+1.7.9.5
 
-There isn't. IIRC, back when I finalized the PWM subsystem during the last
-cycle, Arnd Bergmann suggested that I request an account and repository on
-kernel.org back when the subsystem was ready. At the time I didn't think
-it necessary, but reading this, perhaps it wouldn't be such a bad idea.
-kernel.org should have better availability than gitorious.
 
-Thierry
 
---GvXjxJ+pjyke8COw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAk/gGSYACgkQZ+BJyKLjJp9VdgCfSGX+hZg+s6/mvrGolU1Y6Ero
-ij8AoKJMlCIBUDPmt54EyZg6fI8OsLze
-=3irR
------END PGP SIGNATURE-----
-
---GvXjxJ+pjyke8COw--
