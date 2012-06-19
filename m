@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab2FSLJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:09:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33437 "EHLO
+	id S1753591Ab2FSLK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:10:29 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33448 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751376Ab2FSLJZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751532Ab2FSLK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:09:25 -0400
-Date: Tue, 19 Jun 2012 12:09:24 +0100
+	Tue, 19 Jun 2012 07:10:29 -0400
+Date: Tue, 19 Jun 2012 12:10:27 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sangbeom Kim <sbkim73@samsung.com>
-Cc: "'Liam Girdwood'" <lrg@ti.com>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, sbkim01@gmail.com
-Subject: Re: [PATCH-Resend] regulator: s5m8767a: Support AP watchdog reset
- operation
-Message-ID: <20120619110924.GH3974@opensource.wolfsonmicro.com>
-References: <065701cd4cec$3252ea60$96f8bf20$@com>
+To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>, Axel Lin <axel.lin@gmail.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: Re: [PATCH 1/2] regulator: max77686: Convert driver to use
+ regulator_set_voltage_time_sel.
+Message-ID: <20120619111026.GI3974@opensource.wolfsonmicro.com>
+References: <1340092423-10073-1-git-send-email-yadi.brar@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="b2u6xDyV6U2OU5E0"
+	protocol="application/pgp-signature"; boundary="MRqhvNSJsMAynmoC"
 Content-Disposition: inline
-In-Reply-To: <065701cd4cec$3252ea60$96f8bf20$@com>
+In-Reply-To: <1340092423-10073-1-git-send-email-yadi.brar@samsung.com>
 X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,36 +32,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---b2u6xDyV6U2OU5E0
+--MRqhvNSJsMAynmoC
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Mon, Jun 18, 2012 at 09:49:20AM +0900, Sangbeom Kim wrote:
-> The S5M8767A can't know status of ap reset.
-> So, After AP watchdog reset, AP can't boot normally.
+On Tue, Jun 19, 2012 at 01:23:42PM +0530, Yadwinder Singh Brar wrote:
+> This patch converts the driver to use regulator_set_voltage_time_sel() as
+> .set_voltage_time_sel() callback. It also sets ramp_delay as 100000 uV/us for
+> LDOs & normal BUCKs and 27500 uV/us(default/reset value) for BUCKs[2/3/4] in
+> regulator_desc[].
 
 Applied, thanks.
 
---b2u6xDyV6U2OU5E0
+--MRqhvNSJsMAynmoC
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP4F3aAAoJEBus8iNuMP3dcscP/2mhZ91grB29d3dsecX3WLpE
-uaJjt3OIutvWOYRpAXO1hwqb3VgMa16CiKeC5QEJ1Y+HBIZNqeJCmbF/sjE5L0yU
-zDi2kmm2ORCyYp1WCsI5X4gBbSQWmJ7sanu8tQFOk767SCxpB49Mlh3Gr9lPfi6H
-YBSvSHzAgnOuuNlX4RxqsljJx+KzadvdTzH1eLY8UtIFOJuhvPKS9yk5J0zESbBO
-THuh9xufdmGL8Wah+Q+tGKaLtP8O/i16ib7oVSw6lY3vcCPSHYei8fN1LrYK7AoN
-MuKRskmSm836cw6FdwuKA+Qc65OyeZWq2usKrBzQzvRpfokXebCcFxzagv2XnnzZ
-u2wgGp2ChUEXJTT9iPCPaFTatV13oDxExCgF8Om54xUz4V7z87/B7SL3v8rK1o5h
-WLwber9jyoqb2DJRtyuhLuei5HmKGpi4oC8srWPBNhsUlOZgPH2qR6D0/MAHfYB4
-A3xGgHd/SBR3pDYPpvFVfF0ZSRnq+XjcD0QDsOLtXmHItH6Z111ekGn6uu+0HEED
-/MYoyUeRDO2CLuE0bFhKA4s9sr/w3gkzTSSUqQFZaw97TmbpHCC4RC516mpyNakl
-6uOCmi1dqRUMevxAV4/vXD5ZBLdJdzpLXSzvHxGgDvhT4WhqpmcT7QwcL80w+nJH
-KgbFb3z9+PzUTEzxN9Ik
-=ZBz9
+iQIbBAEBAgAGBQJP4F35AAoJEBus8iNuMP3djuoP9iQTFyE4w9YAYjQgc3GGqccZ
+qfC6JXrcSIhIMyqQfRhFeF7D9cA4rdWS+h7KdQJNHzMXcLpleOY/kZOtzfOUR3BN
+av40RAqV03x1QV3STYDomRmnT6LE1A7HmowIogD+15/1PjqHDsei1aAHycBiYMV3
+FMP60EpHN7hFMuqVkFLBrcbOeFo9hG4KuAi0sh75rdJ4ZAeFMckeWulqzVsMTc4H
+49zJ58j76FEmYdvz3joITJDLYhM0nUeXtfJH53515Ze9IU7tVPxsK7WugPxrK8+u
+xkRyETvc5K03NHyIvpN5b4LAk41bFKCYeYIHRVxaOO0uJNE1NUlje1NXPWUudDBu
+WC1UAQbY/lAU+3E9PCydbyybiHMdCo1iFqjPufuH5WmS+AiukEjfkRihm4WALI+K
+nlc1Lhc3CV75lTKeoFQ4S6OVJ4iAeVHtxpHc/ShrTbQma1YUYKGv5izfILms9GeO
+FNllcnV261rihvj8Za4upIT+VQZWlzZD1+eXq17EQzqQPnd3x2TbC+LLz+++7WOg
+F/wrDAUuWy662vsKAmaHOC4LOYKD1v+MWdqJ1sCqc8bWLk0e7DK6JhZo5Dg6W0Fu
+GvlTYqQy0Qt5MsWjZhYBEVUWoozNtJclvaX9IRXsF8lNitGsgivQ1dah+WJa6tEp
+7aFC7NmMqIiUmvkmQ24=
+=9Crd
 -----END PGP SIGNATURE-----
 
---b2u6xDyV6U2OU5E0--
+--MRqhvNSJsMAynmoC--
