@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab2FSU1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 16:27:44 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55273 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab2FSU1n (ORCPT
+	id S1755008Ab2FSU3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 16:29:35 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36986 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab2FSU3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 16:27:43 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, shawn.guo@linaro.org, marex@denx.de,
-        kernel@pengutronix.de, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] clk: mxs: Fix the GPMI clock name
-Date: Tue, 19 Jun 2012 17:27:32 -0300
-Message-Id: <1340137652-2227-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 19 Jun 2012 16:29:34 -0400
+Message-ID: <4FE0DBDD.2090005@linux.vnet.ibm.com>
+Date: Tue, 19 Jun 2012 15:06:53 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 02/10] zcache: fix refcount leak
+References: <4FE0392E.3090300@linux.vnet.ibm.com> <4FE03949.4080308@linux.vnet.ibm.com> <4FE08C9A.3010701@linux.vnet.ibm.com> <c10bcaf9-aa56-4d6a-bc2c-310096b4198b@default>
+In-Reply-To: <c10bcaf9-aa56-4d6a-bc2c-310096b4198b@default>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061920-1780-0000-0000-0000069B54CC
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000282; HX=3.00000190; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00149494; UDB=6.00034005; UTC=2012-06-19
+ 20:29:32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On 06/19/2012 02:49 PM, Dan Magenheimer wrote:
 
-The correct name for the GPMI clock is 'gpmi-nand'.
+> My preference would be to fix it the opposite way, by
+> checking and ignoring zcache_host in zcache_put_pool.
+> The ref-counting is to ensure that a client isn't
+> accidentally destroyed while in use (for multiple-client
+> users such as ramster and kvm) and since zcache_host is a static
+> struct, it should never be deleted so need not be ref-counted.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/clk/mxs/clk-imx23.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/clk/mxs/clk-imx23.c b/drivers/clk/mxs/clk-imx23.c
-index f7be225..40ad638 100644
---- a/drivers/clk/mxs/clk-imx23.c
-+++ b/drivers/clk/mxs/clk-imx23.c
-@@ -106,7 +106,7 @@ static struct clk_lookup lcdif_lookups[] __initdata = {
- 
- static struct clk_lookup gpmi_lookups[] __initdata = {
- 	{ .dev_id = "imx23-gpmi-nand", },
--	{ .dev_id = "8000c000.gpmi", },
-+	{ .dev_id = "8000c000.gpmi-nand", },
- };
- 
- static const char *sel_pll[]  __initconst = { "pll", "ref_xtal", };
--- 
-1.7.1
+If we do that, we'll need to comment it.  If we don't, it won't be
+obvious why we are refcounting every zcache client except one.  It'll
+look like a bug.
+
+--
+Seth
 
