@@ -1,260 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab2FSCja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 22:39:30 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:4912 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752009Ab2FSCj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 22:39:28 -0400
-X-IronPort-AV: E=Sophos;i="4.77,434,1336320000"; 
-   d="scan'208";a="5219863"
-Message-ID: <4FDFE4B1.80500@cn.fujitsu.com>
-Date: Tue, 19 Jun 2012 10:32:17 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753393Ab2FSCm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 22:42:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45527 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751136Ab2FSCm4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 22:42:56 -0400
+X-Sasl-enc: zSR83CrUVpANQE8tdxigKt+5LnIC3KEjyQKKrhJoXM7c 1340073774
+Date: Mon, 18 Jun 2012 23:42:50 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@amd64.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+Message-ID: <20120619024250.GA6186@khazad-dum.debian.net>
+References: <20120612171734.GI8404@aftab.osrc.amd.com>
+ <1339521493.31548.93.camel@twins>
+ <20120612172352.GA4802@aftab.osrc.amd.com>
+ <1339521996.31548.95.camel@twins>
+ <20120612173506.GB4802@aftab.osrc.amd.com>
+ <20120613010413.GA28174@khazad-dum.debian.net>
+ <20120613065119.GB15661@aftab.osrc.amd.com>
+ <20120613123649.GA26012@khazad-dum.debian.net>
+ <20120613161139.GA18450@aftab.osrc.amd.com>
+ <20120615123749.GC6083@aftab.osrc.amd.com>
 MIME-Version: 1.0
-To: Serge Hallyn <serge.hallyn@canonical.com>
-CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, a.p.zijlstra@chello.nl, jkosina@suse.cz,
-        ebiederm@xmission.com, dhowells@redhat.com, keescook@chromium.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] futex: Do not leak robust list to unprivileged
- process
-References: <20120319231253.GA20893@www.outflux.net> <tip-bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8@git.kernel.org> <4FDFD8AF.6030209@cn.fujitsu.com> <20120619022456.GA2949@sergelap>
-In-Reply-To: <20120619022456.GA2949@sergelap>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/19 10:34:15,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/19 10:34:41,
-	Serialize complete at 2012/06/19 10:34:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120615123749.GC6083@aftab.osrc.amd.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2012 10:24 AM, Serge Hallyn wrote:
-> Quoting Wanlong Gao (gaowanlong@cn.fujitsu.com):
->> On 03/29/2012 05:55 PM, tip-bot for Kees Cook wrote:
->>> Commit-ID:  bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8
->>> Gitweb:     http://git.kernel.org/tip/bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8
->>> Author:     Kees Cook <keescook@chromium.org>
->>> AuthorDate: Mon, 19 Mar 2012 16:12:53 -0700
->>> Committer:  Thomas Gleixner <tglx@linutronix.de>
->>> CommitDate: Thu, 29 Mar 2012 11:37:17 +0200
->>>
->>> futex: Do not leak robust list to unprivileged process
->>>
->>> It was possible to extract the robust list head address from a setuid
->>> process if it had used set_robust_list(), allowing an ASLR info leak. This
->>> changes the permission checks to be the same as those used for similar
->>> info that comes out of /proc.
->>>
->>> Running a setuid program that uses robust futexes would have had:
->>>   cred->euid != pcred->euid
->>>   cred->euid == pcred->uid
->>> so the old permissions check would allow it. I'm not aware of any setuid
->>> programs that use robust futexes, so this is just a preventative measure.
->>>
->>
->> I'm not sure this change prevents the unprivileged process.
->> Please refer to LTP test, recently I saw that this change broke
->> the following test.
->>
->> https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/syscalls/get_robust_list/get_robust_list01.c#L155
->> 		if (seteuid(1) == -1)
->> 			tst_brkm(TBROK|TERRNO, cleanup, "seteuid(1) failed");
->>
->> 		TEST(retval = syscall(__NR_get_robust_list, 1,
->> 				      (struct robust_list_head *)&head,
->> 				      &len_ptr));
->>
->> We set the euid to an unprivileged user, and expect to FAIL with EPERM,
->> without this patch, it FAIL as we expected, but with it, this call succeed.
+On Fri, 15 Jun 2012, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> Date: Fri, 15 Jun 2012 14:19:55 +0200
+> Subject: [PATCH] x86, microcode: Sanitize per-cpu microcode reloading
+>  interface
 > 
-> This relates to a question I asked - I believe in this thread, maybe in
-> another thread - about ptrace_may_access.  That code goes back further than
-> our git history, and for so long has used current->uid and ->gid, not
-> euid and gid, for permission checks.  I asked if that's what we really
-> want, but at the same am not sure we want to change something that's
-> been like that for so long.
+> Microcode reloading in a per-core manner is a very bad idea for both
+> major x86 vendors. And the thing is, we have such interface with which
+> we can end up with different microcode versions applied on different
+> cores of an otherwise homogeneous wrt (family,model,stepping) system.
 > 
-> But that's why it succeeded - you changed your euid, not your uid.
-
-Yeah, I known what I'm doing. I just wonder which is the right thing.
-Should we check euid or uid ? You mean that checking uid instead of
-checking euid for a long time, right?
-
-Thanks,
-Wanlong Gao
-
-
+> So turn off the possibility of doing that per core and allow it only
+> system-wide.
 > 
->> Seems that we leaked the check of (cred->euid == pcred->euid && cred->euid == pcred->uid),
->> I'm not sure which one is right, can you please give an explanation?
->>
->>
->> Thanks in advance,
->> Wanlong Gao
->>
->>> (This patch is based on changes from grsecurity.)
->>>
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>> Cc: Darren Hart <dvhart@linux.intel.com>
->>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->>> Cc: Jiri Kosina <jkosina@suse.cz>
->>> Cc: Eric W. Biederman <ebiederm@xmission.com>
->>> Cc: David Howells <dhowells@redhat.com>
->>> Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
->>> Cc: kernel-hardening@lists.openwall.com
->>> Cc: spender@grsecurity.net
->>> Link: http://lkml.kernel.org/r/20120319231253.GA20893@www.outflux.net
->>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->>> ---
->>>  kernel/futex.c        |   36 +++++++++++++-----------------------
->>>  kernel/futex_compat.c |   36 +++++++++++++-----------------------
->>>  2 files changed, 26 insertions(+), 46 deletions(-)
->>>
->>> diff --git a/kernel/futex.c b/kernel/futex.c
->>> index 72efa1e..d701be5 100644
->>> --- a/kernel/futex.c
->>> +++ b/kernel/futex.c
->>> @@ -59,6 +59,7 @@
->>>  #include <linux/magic.h>
->>>  #include <linux/pid.h>
->>>  #include <linux/nsproxy.h>
->>> +#include <linux/ptrace.h>
->>>  
->>>  #include <asm/futex.h>
->>>  
->>> @@ -2443,40 +2444,29 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
->>>  {
->>>  	struct robust_list_head __user *head;
->>>  	unsigned long ret;
->>> -	const struct cred *cred = current_cred(), *pcred;
->>> +	struct task_struct *p;
->>>  
->>>  	if (!futex_cmpxchg_enabled)
->>>  		return -ENOSYS;
->>>  
->>> +	rcu_read_lock();
->>> +
->>> +	ret = -ESRCH;
->>>  	if (!pid)
->>> -		head = current->robust_list;
->>> +		p = current;
->>>  	else {
->>> -		struct task_struct *p;
->>> -
->>> -		ret = -ESRCH;
->>> -		rcu_read_lock();
->>>  		p = find_task_by_vpid(pid);
->>>  		if (!p)
->>>  			goto err_unlock;
->>> -		ret = -EPERM;
->>> -		pcred = __task_cred(p);
->>> -		/* If victim is in different user_ns, then uids are not
->>> -		   comparable, so we must have CAP_SYS_PTRACE */
->>> -		if (cred->user->user_ns != pcred->user->user_ns) {
->>> -			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
->>> -				goto err_unlock;
->>> -			goto ok;
->>> -		}
->>> -		/* If victim is in same user_ns, then uids are comparable */
->>> -		if (cred->euid != pcred->euid &&
->>> -		    cred->euid != pcred->uid &&
->>> -		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
->>> -			goto err_unlock;
->>> -ok:
->>> -		head = p->robust_list;
->>> -		rcu_read_unlock();
->>>  	}
->>>  
->>> +	ret = -EPERM;
->>> +	if (!ptrace_may_access(p, PTRACE_MODE_READ))
->>> +		goto err_unlock;
->>> +
->>> +	head = p->robust_list;
->>> +	rcu_read_unlock();
->>> +
->>>  	if (put_user(sizeof(*head), len_ptr))
->>>  		return -EFAULT;
->>>  	return put_user(head, head_ptr);
->>> diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
->>> index 5f9e689..a9642d5 100644
->>> --- a/kernel/futex_compat.c
->>> +++ b/kernel/futex_compat.c
->>> @@ -10,6 +10,7 @@
->>>  #include <linux/compat.h>
->>>  #include <linux/nsproxy.h>
->>>  #include <linux/futex.h>
->>> +#include <linux/ptrace.h>
->>>  
->>>  #include <asm/uaccess.h>
->>>  
->>> @@ -136,40 +137,29 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
->>>  {
->>>  	struct compat_robust_list_head __user *head;
->>>  	unsigned long ret;
->>> -	const struct cred *cred = current_cred(), *pcred;
->>> +	struct task_struct *p;
->>>  
->>>  	if (!futex_cmpxchg_enabled)
->>>  		return -ENOSYS;
->>>  
->>> +	rcu_read_lock();
->>> +
->>> +	ret = -ESRCH;
->>>  	if (!pid)
->>> -		head = current->compat_robust_list;
->>> +		p = current;
->>>  	else {
->>> -		struct task_struct *p;
->>> -
->>> -		ret = -ESRCH;
->>> -		rcu_read_lock();
->>>  		p = find_task_by_vpid(pid);
->>>  		if (!p)
->>>  			goto err_unlock;
->>> -		ret = -EPERM;
->>> -		pcred = __task_cred(p);
->>> -		/* If victim is in different user_ns, then uids are not
->>> -		   comparable, so we must have CAP_SYS_PTRACE */
->>> -		if (cred->user->user_ns != pcred->user->user_ns) {
->>> -			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
->>> -				goto err_unlock;
->>> -			goto ok;
->>> -		}
->>> -		/* If victim is in same user_ns, then uids are comparable */
->>> -		if (cred->euid != pcred->euid &&
->>> -		    cred->euid != pcred->uid &&
->>> -		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
->>> -			goto err_unlock;
->>> -ok:
->>> -		head = p->compat_robust_list;
->>> -		rcu_read_unlock();
->>>  	}
->>>  
->>> +	ret = -EPERM;
->>> +	if (!ptrace_may_access(p, PTRACE_MODE_READ))
->>> +		goto err_unlock;
->>> +
->>> +	head = p->compat_robust_list;
->>> +	rcu_read_unlock();
->>> +
->>>  	if (put_user(sizeof(*head), len_ptr))
->>>  		return -EFAULT;
->>>  	return put_user(ptr_to_compat(head), head_ptr);
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->>
+> This is a minimal fix which we'd like to see in stable too thus the
+> more-or-less arbitrary decision to allow system-wide reloading only on
+> the BSP:
 > 
+> $ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
+> ...
+> 
+> and disable the interface on the other cores:
+> 
+> $ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
+> -bash: echo: write error: Invalid argument
+> 
+> A more generic fix will follow.
+> 
+> Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 
+Tested-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
+I've actually backported this to 3.0 (trivial) and tested it there.
+
+> ---
+>  arch/x86/kernel/microcode_core.c | 26 +++++++++++++++++++-------
+>  1 file changed, 19 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+> index fbdfc6917180..24b852b61be3 100644
+> --- a/arch/x86/kernel/microcode_core.c
+> +++ b/arch/x86/kernel/microcode_core.c
+> @@ -298,19 +298,31 @@ static ssize_t reload_store(struct device *dev,
+>  			    const char *buf, size_t size)
+>  {
+>  	unsigned long val;
+> -	int cpu = dev->id;
+> -	ssize_t ret = 0;
+> +	int cpu;
+> +	ssize_t ret = 0, tmp_ret;
+> +
+> +	/* allow reload only from the BSP */
+> +	if (boot_cpu_data.cpu_index != dev->id)
+> +		return -EINVAL;
+>  
+>  	ret = kstrtoul(buf, 0, &val);
+>  	if (ret)
+>  		return ret;
+>  
+> -	if (val == 1) {
+> -		get_online_cpus();
+> -		if (cpu_online(cpu))
+> -			ret = reload_for_cpu(cpu);
+> -		put_online_cpus();
+> +	if (val != 1)
+> +		return size;
+> +
+> +	get_online_cpus();
+> +	for_each_online_cpu(cpu) {
+> +		tmp_ret = reload_for_cpu(cpu);
+> +		if (tmp_ret != 0)
+> +			pr_warn("Error reloading microcode on CPU %d\n", cpu);
+> +
+> +		/* save retval of the first encountered reload error */
+> +		if (!ret)
+> +			ret = tmp_ret;
+>  	}
+> +	put_online_cpus();
+>  
+>  	if (!ret)
+>  		ret = size;
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
