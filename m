@@ -1,139 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2FSSNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 14:13:36 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:16356 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752892Ab2FSSLL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 14:11:11 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M5VMIG-01-1O7-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 01/10] perf, amd: Rework northbridge event constraints handler
-Date: Tue, 19 Jun 2012 20:10:39 +0200
-Message-ID: <1340129448-8690-2-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
-References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
+	id S1753224Ab2FSSRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 14:17:23 -0400
+Received: from edge.cmeerw.net ([84.200.12.152]:36284 "EHLO edge.cmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab2FSSRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 14:17:22 -0400
+Date: Tue, 19 Jun 2012 20:17:11 +0200
+From: Christof Meerwald <cmeerw@cmeerw.org>
+To: "Paton J. Lewis" <palewis@adobe.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jason Baron <jbaron@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>
+Subject: Re: [PATCH] epoll: Improved support for multi-threaded clients
+Message-ID: <20120619181711.GE1281@edge.cmeerw.net>
+References: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
+ <20120616184707.GA22656@edge.cmeerw.net>
+ <6.2.5.6.2.20120618161807.031eb6c8@adobe.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6.2.5.6.2.20120618161807.031eb6c8@adobe.com>
+X-PGP-Key: 1024D/2B10BE68, 1998-06-29
+X-PGP-Fingerprint: 0289 5466 C1F5 B03C DBA7  6304 8CAF 9782 2B10 BE68
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is in preparation of family 15h northbridge event implementation.
-Current code relies on continuous northbridge counter masks with no
-holes. In family 15h northbridge counters are separate from other
-counters and thus only a subset of all generic counters. This patch
-changes the code so that it can later work with counter masks.
+Hi Paton,
 
-No functional changes.
+On Mon, Jun 18, 2012 at 04:24:35PM -0700, Paton J. Lewis wrote:
+> We believe that EPOLLONESHOT is required in order to make any
+> sensible use of calling epoll_wait on a single epoll set
+> concurrently in multiple threads.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/kernel/cpu/perf_event_amd.c |   68 +++++++++++++---------------------
- 1 files changed, 26 insertions(+), 42 deletions(-)
+I guess we have to disagree here - though it might be more difficult.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 11a4eb9..194ca0b 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -256,9 +256,8 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct amd_nb *nb = cpuc->amd_nb;
--	struct perf_event *old = NULL;
--	int max = x86_pmu.num_counters;
--	int i, j, k = -1;
-+	struct perf_event *old;
-+	int idx, new = -1;
- 
- 	/*
- 	 * if not NB event or no NB, then no constraints
-@@ -276,48 +275,33 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- 	 * because of successive calls to x86_schedule_events() from
- 	 * hw_perf_group_sched_in() without hw_perf_enable()
- 	 */
--	for (i = 0; i < max; i++) {
--		/*
--		 * keep track of first free slot
--		 */
--		if (k == -1 && !nb->owners[i])
--			k = i;
-+	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
-+		if (new == -1 || hwc->idx == idx)
-+			/* assign free slot, prefer hwc->idx */
-+			old = cmpxchg(nb->owners + idx, NULL, event);
-+		else if (nb->owners[idx] == event)
-+			/* event already present */
-+			old = event;
-+		else
-+			continue;
-+
-+		if (old && old != event)
-+			continue;
-+
-+		/* reassign to this slot */
-+		if (new != -1)
-+			cmpxchg(nb->owners + new, event, NULL);
-+		new = idx;
- 
- 		/* already present, reuse */
--		if (nb->owners[i] == event)
--			goto done;
--	}
--	/*
--	 * not present, so grab a new slot
--	 * starting either at:
--	 */
--	if (hwc->idx != -1) {
--		/* previous assignment */
--		i = hwc->idx;
--	} else if (k != -1) {
--		/* start from free slot found */
--		i = k;
--	} else {
--		/*
--		 * event not found, no slot found in
--		 * first pass, try again from the
--		 * beginning
--		 */
--		i = 0;
--	}
--	j = i;
--	do {
--		old = cmpxchg(nb->owners+i, NULL, event);
--		if (!old)
-+		if (old == event)
- 			break;
--		if (++i == max)
--			i = 0;
--	} while (i != j);
--done:
--	if (!old)
--		return &nb->event_constraints[i];
--
--	return &emptyconstraint;
-+	}
-+
-+	if (new == -1)
-+		return &emptyconstraint;
-+
-+	return &nb->event_constraints[new];
- }
- 
- static struct amd_nb *amd_alloc_nb(int cpu)
+
+> >On Mon, 11 Jun 2012 15:34:49 -0700, Paton Lewis wrote:
+> >> This patch introduces the new epoll_ctl command EPOLL_CTL_DISABLE, which
+> >> disables the associated epoll item and returns -EBUSY if the
+> >epoll item is not
+> >> currently in the epoll ready queue. This allows multiple threads to use a
+> >> mutex to determine when it is safe to delete an epoll item and
+> >its associated
+> >> resources. This allows epoll items to be deleted and closed efficiently and
+> >> without error.
+
+Maybe I am missing something here (as I am not really familiar with
+the kernel internals), but I don't really understand the logic behind
+your patch. Isn't the "expected" case that the item is not on the
+ready list and no I/O is being processed for that item?
+
+So I think instead of checking for the item being on the ready list,
+checking for the event mask would make more sense for me, e.g.
+
+  if (!(epi->event.events & ~EP_PRIVATE_BITS))
+
+
+But, taking one step back - wouldn't an alternative approach be to add
+some mechanism to allow a thread to post a user-event for an fd? So in
+delete_epoll_item you would post a user event (e.g. EPOLLUSER) for the
+fd which you can then handle in your epoll_wait processing thread -
+with no additional synchronisation necessary.
+
+However, this would still require EPOLLONESHOT to be useful for memory
+management.
+
+
+Christof
+
 -- 
-1.7.8.4
 
-
+http://cmeerw.org                              sip:cmeerw at cmeerw.org
+mailto:cmeerw at cmeerw.org                   xmpp:cmeerw at cmeerw.org
