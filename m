@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab2FSIsb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 04:48:31 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56868 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718Ab2FSIs3 convert rfc822-to-8bit (ORCPT
+	id S1754003Ab2FSIut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 04:50:49 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:8764 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab2FSIur convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 04:48:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339435331.31548.19.camel@twins>
-References: <1337857490.7300.19.camel@marge.simpson.net> <1337865431.9783.148.camel@laptop>
- <1338906621.6110.30.camel@marge.simpson.net> <1339433835.7358.30.camel@marge.simpson.net>
- <1339435331.31548.19.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 19 Jun 2012 01:47:57 -0700
-Message-ID: <CAPM31RLQRa6z4H6oXOC=2xFSH=X9ACpyKRt5zm=wpKXY4c5MjQ@mail.gmail.com>
-Subject: Re: [patch v3] sched: fix select_idle_sibling() induced bouncing
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>, lkml <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Arjan Van De Ven <arjan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 19 Jun 2012 04:50:47 -0400
+X-AuditID: cbfee61a-b7f9f6d0000016a8-67-4fe03d66a1bd
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Paul Bolle'" <pebolle@tiscali.nl>
+Cc: "'Russell King'" <rmk+kernel@arm.linux.org.uk>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "'Ben Dooks'" <ben-linux@fluff.org>, linux-kernel@vger.kernel.org
+References: <1335090082.1814.27.camel@x61.thuisdomein>
+ <4F973FB2.1050004@samsung.com> <1339322235.30984.35.camel@x61.thuisdomein>
+In-reply-to: <1339322235.30984.35.camel@x61.thuisdomein>
+Subject: RE: arch/arm/mach-s3c2410/Kconfig is unsourced
+Date: Tue, 19 Jun 2012 17:50:45 +0900
+Message-id: <019b01cd4df8$9dbc8ba0$d935a2e0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1G72ua99LsFSAqRgWeje6t84NhvgHB1MNw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd002wf+BoeWSVhc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGWs6d7KWLBWoGLBl2msDYxtvF2MHBwSAiYSE6fJdjFy
+	ApliEhfurWfrYuTiEBJYxCjRfn8RI4Tzl1Fi1vprjCBVbAIaEoffP2MHsUUEVCU2fv7ADFLE
+	LLCPUeLSq82sEB3NjBJdj64zg1RxClhIrOh+zQpiCwuYSzzs7WADsVmAuhvfvGUBsXkFbCV2
+	NF1ihbAFJX5MvgcWZxZQl5g0bxEzhK0t8eTdBVaIs9UlHv3VhTjCSOL0i3usECUiEvtevGOc
+	wCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgoP6mdQOxpUN
+	FocYBTgYlXh4D8o98BdiTSwrrsw9xCjBwawkwrvq/31/Id6UxMqq1KL8+KLSnNTiQ4zSHCxK
+	4rxN1hf8hQTSE0tSs1NTC1KLYLJMHJxSDYzKC0pCmJ7LR+Qd1NjIub9b+qtEQstOm/QFTsZH
+	DQL5pnvF28n2NS9bUJpn1uDqsfiSyQuV+/JHTl9j75vHaVOysWeb9pLgCfMvv/x51qGcoT9o
+	xiM/rpbgdv6Jm6PZ71k6LvWp/jppCleW7T+z0CXuJwP4c+1+8ChYPXZI28Vuu3EqT+isx0os
+	xRmJhlrMRcWJAJiAOdpmAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 10:22 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Mon, 2012-06-11 at 18:57 +0200, Mike Galbraith wrote:
->
->> Traversing an entire package is not only expensive, it also leads to tasks
->> bouncing all over a partially idle and possible quite large package.  Fix
->> that up by assigning a 'buddy' CPU to try to motivate.  Each buddy may try
->> to motivate that one other CPU, if it's busy, tough, it may then try it's
->> SMT sibling, but that's all this optimization is allowed to cost.
->>
->> Sibling cache buddies are cross-wired to prevent bouncing.
->>
->> Signed-off-by: Mike Galbraith <efault@gmx.de>
->
-> The patch could do with a little comment on how you achieve the
-> cross-wiring because staring at the code I go cross-eyed again ;-)
->
-> Anyway, I think I'll grab it since nobody seems to have any objections
-> and the numbers seem good.
->
-> PJT any progress on your load-tracking stuff? Arjan is interested in the
-> avg runtime estimation it has to make the whole wake an idle thing
-> conditional on.
+Paul Bolle wrote:
+> 
+> On Tue, 2012-04-24 at 17:05 -0700, Kukjin Kim wrote:
+> > Paul Bolle wrote:
+> > > 0) commit 85fd6d63bf2927b9da7ab1b0d46723bfdb13808c ("ARM: S3C2410:
+> move
+> > > mach-s3c2410/* into mach-s3c24xx/") orphaned
+> > > arch/arm/mach-s3c2410/Kconfig: currently nothing sources that file in
+> > > Linus' tree.
+> > >
+> > Oops, you're right.
+> >
+> > > 1) I haven't looked in depth at this, but this made S3C2410_PLLTABLE
+> > > disappear from the build system (ie, arch/arm/mach-s3c2410/pll.c is
+> dead
+> > > code now). Moreover, this basically turned both "select
+> S3C2410_CPUFREQ
+> > > if CPU_FREQ_S3C24XX", under "config CPU_S3C2410", and "select
+> > > S3C2410_IOTIMING if S3C2410_CPUFREQ", under "config ARCH_BAST", into
+> > > nops (both in arch/arm/mach-s3c24xx/Kconfig).
+> > >
+> > > 2) So to me it seems the move has only been done half: either more
+> > > things needs to be moved or those things can be removed entirely. But
+> > > perhaps arch/arm/mach-s3c2410/Kconfig should just be sourced again.
+> > >
+> > Yes, I think, would be better right now, if we could add just sourcing
+> > mach-s3c2410/Kconfig but as you said, I need to remove entire mach-s3c24
+> > stuff.
+> >
+> > Thanks for your pointing out and let me fix it.
+> 
+> I reported this issue just after v3.4-rc4 was released. We're now at
+> v3.5-rc2 and arch/arm/mach-s3c2410/Kconfig is still unsourced. I'm
+> tempted to submit a clean up patch (though I haven't checked what
+> currently can be removed because that Kconfig file is still unsourced).
+> But perhaps there's a fix pending in some development branch.
+> 
+Yeah, I'm working on moving s3c24xx cpufreq into drivers/cpufreq/ and then the arch/arm/mach-s3c2410/ will be removed. But I lost the chance in the last time :( and this will be cleared from v3.6 with my patch.
 
-I'm still pretty much completely clobbered with internal stuff :( but
-it's on my agenda to put some cycles towards this week (and weekend).
-I'll say by Monday/Tuesday with a hopefully by-Friday.
+So I think, your cleanup patch would be nice now.
 
-We've gotten a lot of of test hours on it internally so I'm
-comfortable posting a non-RFC mergable series.
+Thanks.
 
-- Paul
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
