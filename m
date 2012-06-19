@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab2FSLlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:41:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14212 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875Ab2FSLlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:41:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="167476370"
-Date: Tue, 19 Jun 2012 19:41:13 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [net-next:master 49/50]
- net/netfilter/nfnetlink_queue_ct.c:23:18: sparse: incompatible types in
- comparison expression (different address spaces)
-Message-ID: <20120619114113.GA19526@localhost>
-References: <20120619060050.GA14867@localhost>
- <20120619112823.GB445@1984>
+	id S1753231Ab2FSLmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:42:36 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:48890 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751954Ab2FSLmd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 07:42:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120619112823.GB445@1984>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 19 Jun 2012 17:12:29 +0530
+Message-ID: <CADysL2apkpGLcSgrTwGqYLM5k8zKH5QYDq25HEz5C7pH6+8tsw@mail.gmail.com>
+Subject: [RESEND][PATCH v2 0/4] OMAP:IOMMU:Add L1 and L2 cache flush
+From: "Gupta, Ramesh" <grgupta@ti.com>
+To: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, tony@atomide.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 01:28:23PM +0200, Pablo Neira Ayuso wrote:
-> On Tue, Jun 19, 2012 at 02:00:50PM +0800, wfg@linux.intel.com wrote:
-> > Hi Pablo,
-> > 
-> > There are new sparse warnings show up in
-> > 
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
-> > head:   6bdc5f49e365a5403b9fdef01ceb37241ab00f9b
-> > commit: 7c62234547255ce4c385a218915965bc2f14fe45 [49/50] netfilter: nfnetlink_queue: fix compilation with NF_CONNTRACK disabled
-> > 
-> > All sparse warnings:
-> > 
-> > net/netfilter/nfnetlink_queue_ct.c:23:18: sparse: incompatible types in comparison expression (different address spaces)
-> > net/netfilter/nfnetlink_queue_ct.c:45:18: sparse: incompatible types in comparison expression (different address spaces)
-> > net/netfilter/nfnetlink_queue_ct.c:63:18: sparse: incompatible types in comparison expression (different address spaces)
-> > net/netfilter/nfnetlink_queue_ct.c:91:18: sparse: incompatible types in comparison expression (different address spaces)
-> > net/netfilter/nf_conntrack_netlink.c:1100:27: sparse: incompatible types in comparison expression (different address spaces)
-> > net/netfilter/nf_conntrack_netlink.c:1222:34: sparse: incompatible types in comparison expression (different address spaces)
-> > net/netfilter/nf_conntrack_netlink.c:1222:34: sparse: incompatible types in comparison expression (different address spaces)
-> > 
-> > net/netfilter/nfnetlink_queue_ct.c:23:
-> >     20		struct nf_conn *ct;
-> >     21	
-> >     22		/* rcu_read_lock()ed by __nf_queue already. */
-> >   > 23		nfq_ct = rcu_dereference(nfq_ct_hook);
-> >     24		if (nfq_ct == NULL)
-> >     25			return NULL;
-> >     26	
-> 
-> What CF options are you using to make sparse spot this? I cannot hit
-> those message here.
+>From 639d8228c118f884e0d04d33331338bf9561700e Mon Sep 17 00:00:00 2001
+From: Ramesh Gupta G <grgupta@ti.com>
+Date: Fri, 15 Jun 2012 17:06:14 +0530
+Subject: [PATCH v2 0/4] OMAP:IOMMU:Add L1 and L2 cache flush
 
-I don't specify any options. I do use the sparse compiled from latest
-git tree.
+This patch series is second version to
+- add a new cache maintenance api to flush L1 cache.
+- flush both L1 and L2 caches from iommu whenever the pagetable memory
+  is updated.
 
-        git://git.kernel.org/pub/scm/devel/sparse/chrisl/sparse.git
+Added the new api support for ARMv6 and ARMv7
+based on the dma functions. The implementation of the
+new api is based on the approach[1] discussed some time back.
 
-And changed its code to output "sparse:" rather than "error:"/"warning:"
-so that they can be distinguished from the gcc error/warnings.
+[1]http://marc.info/?l=linux-kernel&m=131316512713815&w=2
 
-> I've got a fix but I don't want to send you an untested patch.
+These patches have been validated on Panda Board.
 
-Appreciated!
+Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
 
-I run a special service for this. If you push a patch to your git tree
-containing the line
+Ramesh Gupta G (4):
+  ARM: new cache maintenance api for iommu mem flush
+  ARM: add flush_mem api for ARMv6
+  ARM: add flush_mem api for ARMv7
+  OMAP:IOMMU: flush L1 and L2 caches
 
-        Reported-by: Fengguang Wu <wfg@linux.intel.com>
+ arch/arm/include/asm/cacheflush.h |   17 +++++++++++++++++
+ arch/arm/include/asm/glue-cache.h |    1 +
+ arch/arm/mm/cache-v6.S            |   28 ++++++++++++++++++++++++++++
+ arch/arm/mm/cache-v7.S            |   21 +++++++++++++++++++++
+ arch/arm/mm/proc-macros.S         |    1 +
+ drivers/iommu/omap-iommu.c        |   26 +++++++++-----------------
+ 6 files changed, 77 insertions(+), 17 deletions(-)
 
-And not containing any "Tested-by:" line, my script will automatically
-test it and send a success/failure notification back to you, normally
-within one hour.
 
-Thanks,
-Fengguang
+--
+regards
+Ramesh Gupta G
