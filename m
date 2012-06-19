@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2FSLVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:21:15 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:60925 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751758Ab2FSLVN (ORCPT
+	id S1753943Ab2FSLV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:21:27 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:50479 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753673Ab2FSLVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:21:13 -0400
+	Tue, 19 Jun 2012 07:21:20 -0400
 MIME-Version: 1.0
-Date: Tue, 19 Jun 2012 16:51:07 +0530
-Message-ID: <CADysL2aFufYzmxWOHp2xUt_TkqOQpX883za+7it5h2qd=PMwwA@mail.gmail.com>
-Subject: [PATCH v2 1/4] ARM: new cache maintenance api for iommu mem flush
+Date: Tue, 19 Jun 2012 16:51:16 +0530
+Message-ID: <CADysL2acF3ttJ-TR2as+GT66MfJiK4YyWYaAiP5j8yQ+YLBGYQ@mail.gmail.com>
+Subject: [PATCH v2 2/4] ARM: add flush_mem api for ARMv6
 From: "Gupta, Ramesh" <grgupta@ti.com>
 To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
@@ -20,102 +20,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 785a1f2854002ce7c1c8880bc5d8d92a7868bf1c Mon Sep 17 00:00:00 2001
+>From 630a3a8f341eb7f58f9a63bf786d732b5bdfd01e Mon Sep 17 00:00:00 2001
 From: Ramesh Gupta G <grgupta@ti.com>
-Date: Fri, 15 Jun 2012 16:37:20 +0530
-Subject: [PATCH v2 1/4] ARM: new cache maintenance api for iommu mem flush
+Date: Fri, 15 Jun 2012 16:39:21 +0530
+Subject: [PATCH v2 2/4] ARM: add flush_mem api for ARMv6
 
-non-coherent IOMMUs need to make sure that the
-data held in the caches need to be visible for the
-MMU hardware. A new L1 cache maintenance api has been
-created to handle this. Thanks to RMK's suggestions on
-creating a dedicated API for this purpose.
-
-ref:
-http://marc.info/?l=linux-kernel&m=131316512713815&w=2
+Added flush_mem cache maintenance api for ARMv6.
+The implementation is based on dma_flush_range.
 
 Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
 ---
- arch/arm/include/asm/cacheflush.h |   17 +++++++++++++++++
- arch/arm/include/asm/glue-cache.h |    1 +
- arch/arm/mm/proc-macros.S         |    1 +
- 3 files changed, 19 insertions(+), 0 deletions(-)
+ arch/arm/mm/cache-v6.S |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/cacheflush.h
-b/arch/arm/include/asm/cacheflush.h
-index d5d8d5c..2b4f5aa 100644
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -84,6 +84,11 @@
-  *		- kaddr  - page address
-  *		- size   - region size
-  *
-+ *     flush_mem(start, end)
-+ *
-+ *             Clean and invalidate the specified virtual address range.
-+ *             - start  - virtual start address
-+ *             - end    - virtual end address
-  *	DMA Cache Coherency
-  *	===================
-  *
-@@ -108,6 +113,7 @@ struct cpu_cache_fns {
- 	void (*dma_unmap_area)(const void *, size_t, int);
+diff --git a/arch/arm/mm/cache-v6.S b/arch/arm/mm/cache-v6.S
+index 74c2e5a..f91d847 100644
+--- a/arch/arm/mm/cache-v6.S
++++ b/arch/arm/mm/cache-v6.S
+@@ -328,6 +328,34 @@ ENTRY(v6_dma_unmap_area)
+ 	mov	pc, lr
+ ENDPROC(v6_dma_unmap_area)
 
- 	void (*dma_flush_range)(const void *, const void *);
-+	void (*flush_mem)(const void *, const void *);
- };
-
- /*
-@@ -135,6 +141,12 @@ extern struct cpu_cache_fns cpu_cache;
- #define dmac_unmap_area			cpu_cache.dma_unmap_area
- #define dmac_flush_range		cpu_cache.dma_flush_range
-
-+/* This API is to support non-coherent IOMMUs. The purpose of
-+ * this API is to ensure that data held in the cache is visible
-+ * to MMU.
++/*
++ *	v6_flush_mem(start,end)
++ *	- start   - virtual start address of region
++ *	- end     - virtual end address of region
 + */
-+#define flush_mem			cpu_cache.flush_mem
-+
- #else
++ENTRY(v6_flush_mem)
++#ifdef CONFIG_DMA_CACHE_RWFO
++	ldrb	r2, [r0]		@ read for ownership
++	strb	r2, [r0]		@ write for ownership
++#endif
++	bic	r0, r0, #D_CACHE_LINE_SIZE - 1
++1:
++#ifdef HARVARD_CACHE
++	mcr	p15, 0, r0, c7, c14, 1		@ clean & invalidate D line
++#else
++	mcr	p15, 0, r0, c7, c15, 1		@ clean & invalidate line
++#endif
++	add	r0, r0, #D_CACHE_LINE_SIZE
++	cmp	r0, r1
++#ifdef CONFIG_DMA_CACHE_RWFO
++	ldrlob	r2, [r0]			@ read for ownership
++	strlob	r2, [r0]			@ write for ownership
++#endif
++	blo	1b
++	mov	r0, #0
++	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
++	mov	pc, lr
++ENDPROC(v6_flush_mem)
+ 	__INITDATA
 
- extern void __cpuc_flush_icache_all(void);
-@@ -155,6 +167,11 @@ extern void dmac_map_area(const void *, size_t, int);
- extern void dmac_unmap_area(const void *, size_t, int);
- extern void dmac_flush_range(const void *, const void *);
-
-+/* This API is to support non-coherent IOMMUs. The purpose of
-+ * this API is to ensure that data held in the cache is visible
-+ * to MMU.
-+ */
-+extern void flush_mem(const void *, const void *);
- #endif
-
- /*
-diff --git a/arch/arm/include/asm/glue-cache.h
-b/arch/arm/include/asm/glue-cache.h
-index 7e30874..59818a4 100644
---- a/arch/arm/include/asm/glue-cache.h
-+++ b/arch/arm/include/asm/glue-cache.h
-@@ -141,6 +141,7 @@
- #define dmac_map_area			__glue(_CACHE,_dma_map_area)
- #define dmac_unmap_area			__glue(_CACHE,_dma_unmap_area)
- #define dmac_flush_range		__glue(_CACHE,_dma_flush_range)
-+#define flush_mem			__glue(_CACHE,_flush_mem)
- #endif
-
- #endif
-diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
-index 2d8ff3a..f48a5ab 100644
---- a/arch/arm/mm/proc-macros.S
-+++ b/arch/arm/mm/proc-macros.S
-@@ -307,6 +307,7 @@ ENTRY(\name\()_cache_fns)
- 	.long	\name\()_dma_map_area
- 	.long	\name\()_dma_unmap_area
- 	.long	\name\()_dma_flush_range
-+	.long	\name\()_flush_mem
- 	.size	\name\()_cache_fns, . - \name\()_cache_fns
- .endm
-
+ 	@ define struct cpu_cache_fns (see <asm/cacheflush.h> and proc-macros.S)
 -- 
 1.7.0.4
 
