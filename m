@@ -1,219 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab2FSNG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 09:06:57 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53940 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab2FSNG4 (ORCPT
+	id S1754241Ab2FSNSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 09:18:05 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57231 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab2FSNSC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 09:06:56 -0400
-From: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH Stable 3.4.x] HID: hid-multitouch: fix wrong protocol detection
-Date: Tue, 19 Jun 2012 15:06:46 +0200
-Message-Id: <1340111206-11659-1-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.10.2
+	Tue, 19 Jun 2012 09:18:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FDE79CF.4050702@kernel.org>
+References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
+	<20120614145716.GA2097@barrios>
+	<CAHGf_=qcA5OfuNgk0BiwyshcLftNWoPfOO_VW9H6xQTX2tAbuA@mail.gmail.com>
+	<4FDAE3CC.60801@kernel.org>
+	<CAEtiSavv8nRAFk6VZEgeCMYicjBPy4244+2KQhng5Pq9bxcX5A@mail.gmail.com>
+	<4FDE79CF.4050702@kernel.org>
+Date: Tue, 19 Jun 2012 18:48:00 +0530
+Message-ID: <CAEtiSav8uLfWq0Ee4Nub-5QqyB7MhtfpWGKPdMYSRJd=iz+5gg@mail.gmail.com>
+Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
+From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@linux-foundation.org,
+        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, frank.rowand@am.sony.com,
+        tim.bird@am.sony.com, takuzo.ohara@ap.sony.com,
+        kan.iibuchi@jp.sony.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+On Mon, Jun 18, 2012 at 6:13 AM, Minchan Kim <minchan@kernel.org> wrote:
+> On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
+>
+>> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
+>>
+>>>>
+>>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
+>>>> if node has multiple zones. Hm ok, I realized my descriptions was
+>>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
+>>>> pgdat_balanced()
+>>>> every priority. Most easy case is, movable zone has a lot of free pages and
+>>>> normal zone has no reclaimable page.
+>>>>
+>>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
+>>>> sleep only if every zones have much free pages than high water mark
+>>>> _and_ 25% of present pages in node are free.
+>>>>
+>>>
+>>>
+>>> Sorry. I can't understand your point.
+>>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
+>>> It seems I am missing your point.
+>>> Please anybody correct me.
+>>
+>> Since currently direct reclaim is given up based on
+>> zone->all_unreclaimable flag,
+>> so for e.g in one of the scenarios:
+>>
+>> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
+>> hot-remove the all the pages of the MOVABLE zone.
+>>
+>> While migrating pages during memory hot-unplugging, the allocation function
+>> (for new page to which the page in MOVABLE zone would be moved)  can end up
+>> looping in direct reclaim path for ever.
+>>
+>> This is so because when most of the pages in the MOVABLE zone have
+>> been migrated,
+>> the zone now contains lots of free memory (basically above low watermark)
+>> BUT all are in MIGRATE_ISOLATE list of the buddy list.
+>>
+>> So kswapd() would not balance this zone as free pages are above low watermark
+>> (but all are in isolate list). So zone->all_unreclaimable flag would
+>> never be set for this zone
+>> and allocation function would end up looping forever. (assuming the
+>> zone NORMAL is
+>> left with no reclaimable memory)
+>>
+>
+>
+> Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
+> But I don't see it's a problem of kswapd.
 
-The previous implementation introduced a randomness in the splitting
-of the different touches reported by the device. This version is more
-robust as we don't rely on hi->input->absbit, but on our own structure.
+Hi Kim,
 
-This also prepares hid-multitouch to better support Win8 devices.
+Yes I agree it is not a problem of kswapd.
 
-[commit 3ac36d15557d1bedfb1151d9911b9587b2d40759 in Linus' tree]
+> a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
+> but we can't allocate it. :(
+> It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
+> Kswapd is just one of them confused.
+> As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too.
+>
+> This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
 
-Hi Jiri,
+I assume that by the inconsistency you mention above, you mean
+temporary inconsistency.
 
-This patch is a port of the one included in the future 3.5.
-I already had users complaining about the broken behavior in 3.4, then this
-respin for 3.4. Kernels 3.3 and below are not impacted by the bug.
+Sorry, but IMHO as for memory hot plug the main issue with this patch
+is that the inconsistency you mentioned above would NOT be a temporary
+inconsistency.
 
-Cheers,
-Benjamin
+Every time say 'x' number of page frames are off lined, they will
+introduce a difference of 'x' pages between
+NR_FREE_PAGES and SumOf[free_area[order].nr_free].
+(So for e.g. if we do a frequent offline/online it will make
+NR_FREE_PAGES  negative)
 
- drivers/hid/hid-multitouch.c |   58 +++++++++++++++++++++++++++++++++---------
- 1 file changed, 46 insertions(+), 12 deletions(-)
+This is so because, unset_migratetype_isolate() is called from
+offlining  code (to set the migrate type of off lined pages again back
+to MIGRATE_MOVABLE)
+after the pages have been off lined and removed from the buddy list.
+Since the pages for which unset_migratetype_isolate() is called are
+not buddy pages so move_freepages_block() does not move any page, and
+thus introducing a permanent inconsistency.
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 1d5b941..543896d 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -70,9 +70,16 @@ struct mt_class {
- 	bool is_indirect;	/* true for touchpads */
- };
- 
-+struct mt_fields {
-+	unsigned usages[HID_MAX_FIELDS];
-+	unsigned int length;
-+};
-+
- struct mt_device {
- 	struct mt_slot curdata;	/* placeholder of incoming data */
- 	struct mt_class mtclass;	/* our mt device class */
-+	struct mt_fields *fields;	/* temporary placeholder for storing the
-+					   multitouch fields */
- 	unsigned last_field_index;	/* last field index of the report */
- 	unsigned last_slot_field;	/* the last field of a slot */
- 	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
-@@ -275,11 +282,15 @@ static void set_abs(struct input_dev *input, unsigned int code,
- 	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
- }
- 
--static void set_last_slot_field(struct hid_usage *usage, struct mt_device *td,
-+static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
- 		struct hid_input *hi)
- {
--	if (!test_bit(usage->hid, hi->input->absbit))
--		td->last_slot_field = usage->hid;
-+	struct mt_fields *f = td->fields;
-+
-+	if (f->length >= HID_MAX_FIELDS)
-+		return;
-+
-+	f->usages[f->length++] = usage->hid;
- }
- 
- static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-@@ -330,7 +341,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_move);
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_X, field, cls->sn_move);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_GD_Y:
-@@ -340,7 +351,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_move);
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_Y, field, cls->sn_move);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		}
-@@ -349,24 +360,24 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	case HID_UP_DIGITIZER:
- 		switch (usage->hid) {
- 		case HID_DG_INRANGE:
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONFIDENCE:
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPSWITCH:
- 			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
- 			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTID:
- 			if (!td->maxcontacts)
- 				td->maxcontacts = MT_DEFAULT_MAXCONTACT;
- 			input_mt_init_slots(hi->input, td->maxcontacts);
--			td->last_slot_field = usage->hid;
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			td->touches_by_report++;
- 			return 1;
-@@ -375,7 +386,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 					EV_ABS, ABS_MT_TOUCH_MAJOR);
- 			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
- 				cls->sn_width);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_HEIGHT:
-@@ -385,7 +396,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_height);
- 			input_set_abs_params(hi->input,
- 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPPRESSURE:
-@@ -396,7 +407,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_PRESSURE, field,
- 				cls->sn_pressure);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTCOUNT:
-@@ -635,6 +646,16 @@ static void mt_set_maxcontacts(struct hid_device *hdev)
- 	}
- }
- 
-+static void mt_post_parse(struct mt_device *td)
-+{
-+	struct mt_fields *f = td->fields;
-+
-+	if (td->touches_by_report > 0) {
-+		int field_count_per_touch = f->length / td->touches_by_report;
-+		td->last_slot_field = f->usages[field_count_per_touch - 1];
-+	}
-+}
-+
- static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- {
- 	int ret, i;
-@@ -666,6 +687,13 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	td->maxcontact_report_id = -1;
- 	hid_set_drvdata(hdev, td);
- 
-+	td->fields = kzalloc(sizeof(struct mt_fields), GFP_KERNEL);
-+	if (!td->fields) {
-+		dev_err(&hdev->dev, "cannot allocate multitouch fields data\n");
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
-+
- 	ret = hid_parse(hdev);
- 	if (ret != 0)
- 		goto fail;
-@@ -674,6 +702,8 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	if (ret)
- 		goto fail;
- 
-+	mt_post_parse(td);
-+
- 	if (!id && td->touches_by_report == 1) {
- 		/* the device has been sent by hid-generic */
- 		mtclass = &td->mtclass;
-@@ -697,9 +727,13 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	mt_set_maxcontacts(hdev);
- 	mt_set_input_mode(hdev);
- 
-+	kfree(td->fields);
-+	td->fields = NULL;
-+
- 	return 0;
- 
- fail:
-+	kfree(td->fields);
- 	kfree(td);
- 	return ret;
- }
--- 
-1.7.10.2
+> and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
+> free_area[order].nr_free exactly.
+>
+> Any thought?
 
+As for fixing move_freepages_block(), At least for memory hot plug,
+the pages stay in MIGRATE_ISOLATE list only for duration
+offline_pages() function,
+I mean only temporarily. Since fixing move_freepages_block() for will
+introduce some overhead, So I am not very sure whether that overhead
+is justified
+for a temporary condition. What do you think?
+
+
+> Side Note: I still need KOSAKI's patch with fixed description regardless of this problem because set zone->all_unreclaimable of only kswapd is very fragile.
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 4403009..19de56c 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5593,8 +5593,10 @@ int set_migratetype_isolate(struct page *page)
+>
+>  out:
+>        if (!ret) {
+> +               int pages_moved;
+>                set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+> -               move_freepages_block(zone, page, MIGRATE_ISOLATE);
+> +               pages_moved = move_freepages_block(zone, page, MIGRATE_ISOLATE);
+> +               __mod_zone_page_state(zone, NR_FREE_PAGES, -pages_moved);
+>        }
+>
+>        spin_unlock_irqrestore(&zone->lock, flags);
+> @@ -5607,12 +5609,14 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
+>  {
+>        struct zone *zone;
+>        unsigned long flags;
+> +       int pages_moved;
+>        zone = page_zone(page);
+>        spin_lock_irqsave(&zone->lock, flags);
+>        if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+>                goto out;
+>        set_pageblock_migratetype(page, migratetype);
+> -       move_freepages_block(zone, page, migratetype);
+> +       pages_moved = move_freepages_block(zone, page, migratetype);
+> +       __mod_zone_page_state(zone, NR_FREE_PAGES, pages_moved);
+>  out:
+>        spin_unlock_irqrestore(&zone->lock, flags);
+>  }
+>
+>
+>>
+>> Regards,
+>> Aaditya Kumar
+>> Sony India Software Centre,
+>> Bangalore.
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+>
+>
+>
+> --
+> Kind regards,
+> Minchan Kim
+
+Regards,
+Aaditya Kumar
+Sony India Software Centre,
+Bangalore.
