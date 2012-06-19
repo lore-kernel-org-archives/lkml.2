@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab2FSHBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 03:01:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60208 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab2FSHBi convert rfc822-to-8bit (ORCPT
+	id S1753627Ab2FSHHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 03:07:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37716 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752852Ab2FSHHn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 03:01:38 -0400
+	Tue, 19 Jun 2012 03:07:43 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>
-Subject: RE: [PATCH v2] regulator: add new regulator driver for lp872x
-Thread-Topic: [PATCH v2] regulator: add new regulator driver for lp872x
-Thread-Index: Ac1K013lgBKp+AGARUeXJs2xlf9z8P//xrWA//mbS6A=
-Date: Tue, 19 Jun 2012 07:01:30 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FB8A7@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998FB5C6@DQHE02.ent.ti.com>
- <20120615132130.GH4482@opensource.wolfsonmicro.com>
-In-Reply-To: <20120615132130.GH4482@opensource.wolfsonmicro.com>
+To: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] gpio: add EXPORT_SYMBOL() for devm_gpio_request_one
+Thread-Topic: [PATCH] gpio: add EXPORT_SYMBOL() for devm_gpio_request_one
+Thread-Index: Ac1N6jIXz2GfX+sQTTq8b0EPu/tYxg==
+Date: Tue, 19 Jun 2012 07:07:35 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FB8B9@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -31,43 +29,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> > +	if (chip == LP8720) {
-> > +		mask = LP8720_TIMESTEP_M;
-> > +		shift = LP8720_TIMESTEP_S;
-> > +		time_usec = &lp8720_time_usec[0];
-> > +		size = ARRAY_SIZE(lp8720_time_usec);
-> > +	} else if (chip == LP8725) {
-> > +		mask = LP8725_TIMESTEP_M;
-> > +		shift = LP8725_TIMESTEP_S;
-> > +		time_usec = &lp8725_time_usec[0];
-> > +		size = ARRAY_SIZE(lp8725_time_usec);
-> > +	} else {
-> > +		return -EINVAL;
-> > +	}
-> 
-> This should be a switch statement.
-> 
-> > +static int lp8725_buck_set_current_limit(struct regulator_dev *rdev,
-> > +					int min_uA, int max_uA)
-> > +{
-> > +	struct lp872x *lp = rdev_get_drvdata(rdev);
-> > +	enum lp872x_regulator_id buck = rdev_get_id(rdev);
-> > +	int i, max = ARRAY_SIZE(lp8725_buck_uA);
-> > +	u8 addr, val;
-> > +
-> > +	if (buck == LP8725_ID_BUCK1)
-> > +		addr = LP8725_BUCK1_VOUT2;
-> > +	else if (buck == LP8725_ID_BUCK2)
-> > +		addr = LP8725_BUCK2_VOUT2;
-> > +	else
-> > +		return -EINVAL;
-> 
-> Again, switch statement.
-> 
+devm_gpio_request_one() can be used by dynamically loaded modules,
+so it should be exported.
 
-In patch v3, some if-statements will be replaced with switch-statements.
-Thank you.
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/gpio/devres.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpio/devres.c b/drivers/gpio/devres.c
+index 9e9947c..1077754 100644
+--- a/drivers/gpio/devres.c
++++ b/drivers/gpio/devres.c
+@@ -98,6 +98,7 @@ int devm_gpio_request_one(struct device *dev, unsigned gpio,
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(devm_gpio_request_one);
+ 
+ /**
+  *      devm_gpio_free - free an interrupt
+-- 
+1.7.2.5
+
 
 Best Regards,
-Milo
+Milo (Woogyom) Kim
+
+
+
