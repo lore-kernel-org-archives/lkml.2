@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab2FSXVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 19:21:07 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:42908 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750814Ab2FSXVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 19:21:04 -0400
-Date: Tue, 19 Jun 2012 18:21:02 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        hughd@google.com, npiggin@gmail.com, cl@linux.com,
-        lee.schermerhorn@hp.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH v2] tmpfs not interleaving properly
-Message-ID: <20120619232102.GA5698@gulag1.americas.sgi.com>
-References: <20120531143916.GA16162@gulag1.americas.sgi.com> <4FC7CFEB.5040009@gmail.com> <20120531132515.6af60152.akpm@linux-foundation.org> <4FC7D629.3090801@gmail.com> <20120601142437.GA13739@gulag1.americas.sgi.com> <4FC8FA47.70001@gmail.com>
+	id S1755213Ab2FSXUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 19:20:47 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:27713 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab2FSXUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 19:20:46 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-15.tower-160.messagelabs.com!1340148028!7218327!8
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 3/5] staging: comedi: remove CONFIG_COMEDI_PCI define
+Date: Tue, 19 Jun 2012 16:20:23 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4FC8FA47.70001@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Message-ID: <201206191620.24205.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 01:22:15PM -0400, KOSAKI Motohiro wrote:
-> (6/1/12 10:24 AM), Nathan Zimmer wrote:
->> On Thu, May 31, 2012 at 04:35:53PM -0400, KOSAKI Motohiro wrote:
->>> (5/31/12 4:25 PM), Andrew Morton wrote:
->>>> On Thu, 31 May 2012 16:09:15 -0400
->>>> KOSAKI Motohiro<kosaki.motohiro@gmail.com>   wrote:
->>>>
->>>>>> --- a/mm/shmem.c
->>>>>> +++ b/mm/shmem.c
->>>>>> @@ -929,7 +929,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
->>>>>>     	/*
->>>>>>     	 * alloc_page_vma() will drop the shared policy reference
->>>>>>     	 */
->>>>>> -	return alloc_page_vma(gfp,&pvma, 0);
->>>>>> +	return alloc_page_vma(gfp,&pvma, info->node_offset<<    PAGE_SHIFT );
->>>>>
->>>>> 3rd argument of alloc_page_vma() is an address. This is type error.
->>>>
->>>> Well, it's an unsigned long...
->>>>
->>>> But yes, it is conceptually wrong and *looks* weird.  I think we can
->>>> address that by overcoming our peculair aversion to documenting our
->>>> code, sigh.  This?
->>>
->>> Sorry, no.
->>>
->>> addr agrument of alloc_pages_vma() have two meanings.
->>>
->>> 1) interleave node seed
->>> 2) look-up key of shmem policy
->>>
->>> I think this patch break (2). shmem_get_policy(pol, addr) assume caller honor to
->>> pass correct address.
->>
->> But the pseudo vma we generated in shmem_alloc_page the vm_ops are set to NULL.
->> So get_vma_policy will return the policy provided by the pseudo vma and not reach
->> the shmem_get_policy.
->
-> yes, and it is bug source. we may need to change soon. I guess the right way is
-> to make vm_ops->interleave and interleave_nid uses it if povided.
->
+CONFIG_COMEDI_PCI is not actually a Kconfig option. It is defined
+in the comedidev.h header based on another Kconfig option being
+enabled.
 
-If we provide vm_ops then won't shmem_get_policy get called?
-That would be an issue since shmem_get_policy assumes vm_file is non NULL.
+It is only referenced in the skel driver to conditionally compile
+in the PCI support code. Use the CONFIG_COMEDI_PCI_DRIVERS Kconfig
+option instead and remove the define.
 
-> btw, I don't think node_random() is good idea. it is random(pid + jiffies + cycle).
-> current->cpuset_mem_spread_rotor is per-thread value. but you now need per-inode
-> interleave offset. maybe, just inode addition is enough. Why do you need randomness?
->
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/comedidev.h    | 7 -------
+ drivers/staging/comedi/drivers/skel.c | 2 +-
+ 2 files changed, 1 insertion(+), 8 deletions(-)
 
-I don't really need the randomness, the rotor should be good enough.
-The correct way to get that is cpuset_mem_spread_node(), yes?
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index c93c87d..18f8f4c 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -507,11 +507,4 @@ int comedi_usb_auto_config(struct usb_interface *intf,
+ 			   struct comedi_driver *driver);
+ void comedi_usb_auto_unconfig(struct usb_interface *intf);
+ 
+-#ifdef CONFIG_COMEDI_PCI_DRIVERS
+-#define CONFIG_COMEDI_PCI
+-#endif
+-#ifdef CONFIG_COMEDI_PCI_DRIVERS_MODULE
+-#define CONFIG_COMEDI_PCI
+-#endif
+-
+ #endif /* _COMEDIDEV_H */
+diff --git a/drivers/staging/comedi/drivers/skel.c b/drivers/staging/comedi/drivers/skel.c
+index 92d44c1..a9fed4b 100644
+--- a/drivers/staging/comedi/drivers/skel.c
++++ b/drivers/staging/comedi/drivers/skel.c
+@@ -614,7 +614,7 @@ static int skel_dio_insn_config(struct comedi_device *dev,
+ 	return insn->n;
+ }
+ 
+-#ifdef CONFIG_COMEDI_PCI
++#ifdef CONFIG_COMEDI_PCI_DRIVERS
+ static int __devinit driver_skel_pci_probe(struct pci_dev *dev,
+ 					   const struct pci_device_id *ent)
+ {
+-- 
+1.7.11
 
-Also apologies for such a delay in my response.
