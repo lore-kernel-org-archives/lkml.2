@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab2FSLwo (ORCPT <rfc822;w@1wt.eu>);
+	id S1753981Ab2FSLwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:52:46 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:3991 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753550Ab2FSLwo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Jun 2012 07:52:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46956 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344Ab2FSLwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:52:43 -0400
-Date: Tue, 19 Jun 2012 13:52:31 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-In-Reply-To: <4FE0678C.2050205@redhat.com>
-Message-ID: <alpine.LNX.2.00.1206191351590.23121@pobox.suse.cz>
-References: <20120619112939.23c80aed8f1db9682e37be87@canb.auug.org.au> <alpine.LNX.2.00.1206191205190.15308@pobox.suse.cz> <4FE0678C.2050205@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <1340106762.1936.25.camel@x61.thuisdomein>
+Subject: [PATCH] mtd: chips: reorganize Kconfig help on swapping
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Jun 2012 13:52:42 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 19 Jun 2012 11:52:42.0882 (UTC) FILETIME=[08DEF620:01CD4E12]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jun 2012, Hans de Goede wrote:
+The Kconfig help on "Flash cmd/query data swapping" still mentions
+LART_ENDIAN_BYTE. That option used to be relevant for setting
+CONFIG_MTD_CFI_LART_BIT_SWAP. That option and macro got both removed in
+v2.4.11-pre4. So, although LART endianness sounds intriguing, that part
+of the help text can be removed.
 
-> > > diff --cc drivers/hid/hid-ids.h
-> > > index 6d3037e,70298d1..0000000
-> > > --- a/drivers/hid/hid-ids.h
-> > > +++ b/drivers/hid/hid-ids.h
-> > > @@@ -160,9 -157,9 +160,12 @@@
-> > >    #define USB_VENDOR_ID_AVERMEDIA		0x07ca
-> > >    #define USB_DEVICE_ID_AVER_FM_MR800	0xb800
-> > > 
-> > > + #define USB_VENDOR_ID_AXENTIA		0x12cf
-> > > + #define USB_DEVICE_ID_AXENTIA_FM_RADIO	0x7111
-> > > +
-> > >   +#define USB_VENDOR_ID_BAANTO		0x2453
-> > >   +#define USB_DEVICE_ID_BAANTO_MT_190W2	0x0100
-> > >   +
-> > >    #define USB_VENDOR_ID_BELKIN		0x050d
-> > >    #define USB_DEVICE_ID_FLIP_KVM		0x3201
-> > 
-> > Thanks for reporting this, Stephen.
-> > 
-> > Hmmm ... Mauro, Hans, do you feel it's actually proper to add the device
-> > ids to hid-ids.h? I am using this file usually solely for the drivers on
-> > the HID bus, which radio-si470x is not, I believe.
-> 
-> Not sure what you mean with "drivers on the HID bus", radio-si470x drivers
-> do use a USB-HID class interface, but the driver itself does not use
-> the kernel hid framework. The ids in hid-ids are used for adding this device
-> to the hid-core "blacklist" to avoid usb-hid from binding to it, so that
-> radio-si470x-usn can bind to it.
+And, while we're touching this choice, move the help text up one level.
+Currently it's available under the "NO" option, while it's relevant for
+all three options.
 
-Gah, sorry, ENOTENOUGHCOFFEE, I have missed that hunk. All is fine then.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Tested only with "make menuconfig".
 
+1) Triggers a checkpatch warning: "please write a paragraph that
+describes the config symbol fully". That's a bit of a false positive
+here (also see the comment starting at line 1708 in checkpatch.pl).
+
+ drivers/mtd/chips/Kconfig |   11 ++---------
+ 1 files changed, 2 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/mtd/chips/Kconfig b/drivers/mtd/chips/Kconfig
+index b1e3c26..e469b01 100644
+--- a/drivers/mtd/chips/Kconfig
++++ b/drivers/mtd/chips/Kconfig
+@@ -43,9 +43,6 @@ choice
+ 	prompt "Flash cmd/query data swapping"
+ 	depends on MTD_CFI_ADV_OPTIONS
+ 	default MTD_CFI_NOSWAP
+-
+-config MTD_CFI_NOSWAP
+-	bool "NO"
+ 	---help---
+ 	  This option defines the way in which the CPU attempts to arrange
+ 	  data bits when writing the 'magic' commands to the chips. Saying
+@@ -55,12 +52,8 @@ config MTD_CFI_NOSWAP
+ 	  Specific arrangements are possible with the BIG_ENDIAN_BYTE and
+ 	  LITTLE_ENDIAN_BYTE, if the bytes are reversed.
+ 
+-	  If you have a LART, on which the data (and address) lines were
+-	  connected in a fashion which ensured that the nets were as short
+-	  as possible, resulting in a bit-shuffling which seems utterly
+-	  random to the untrained eye, you need the LART_ENDIAN_BYTE option.
+-
+-	  Yes, there really exists something sicker than PDP-endian :)
++config MTD_CFI_NOSWAP
++	bool "NO"
+ 
+ config MTD_CFI_BE_BYTE_SWAP
+ 	bool "BIG_ENDIAN_BYTE"
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.7.6
+
