@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab2FSPtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:49:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
+	id S1754720Ab2FSPtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 11:49:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11735 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754685Ab2FSPtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:49:42 -0400
+	id S1754685Ab2FSPtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 11:49:49 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,151 +14,131 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 11/23] perf, tool: Remove unsused evsel parameter from machine__resolve_callchain
-Date: Tue, 19 Jun 2012 17:48:02 +0200
-Message-Id: <1340120894-9465-12-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 17/23] perf, tool: Add libunwind dependency for dwarf cfi unwinding
+Date: Tue, 19 Jun 2012 17:48:08 +0200
+Message-Id: <1340120894-9465-18-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing unsused evsel parameter from machine__resolve_callchain
-function. Plus related header file and callers changes.
+Adding libunwind to be linked with perf if available. It's required
+for the to get dwarf cfi unwinding support.
 
-The evsel parameter is unused since following commit:
-  perf callchain: Make callchain cursors TLS
-  commit 472606458f3e1ced5fe3cc5f04e90a6b5a4732cf
-  Author: Namhyung Kim <namhyung.kim@lge.com>
-  Date:   Thu May 31 14:43:26 2012 +0900
+Also building perf with the dwarf call frame informations by default,
+so that we can unwind callchains in perf itself.
 
+Adding LIBUNWIND_DIR Makefile variable allowing user to specify
+the directory with libunwind to be linked. This is used for
+debug purposes.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-report.c |    4 ++--
- tools/perf/builtin-script.c |    4 ++--
- tools/perf/builtin-top.c    |    2 +-
- tools/perf/util/map.h       |    2 +-
- tools/perf/util/session.c   |    7 +++----
- tools/perf/util/session.h   |    4 ++--
- 6 files changed, 11 insertions(+), 12 deletions(-)
+ tools/perf/Makefile                 |   27 ++++++++++++++++++++++++++-
+ tools/perf/config/feature-tests.mak |   25 +++++++++++++++++++++++++
+ 2 files changed, 51 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 25249f7..d20ef95 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -69,7 +69,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index f412fb1..4993a97 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -59,6 +59,7 @@ AR = $(CROSS_COMPILE)ar
+ ifeq ($(ARCH),i386)
+ 	ARCH := x86
+ 	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86
+ endif
+ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+@@ -72,6 +73,7 @@ ifeq ($(ARCH),x86_64)
+ 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+ 	endif
+ 	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+ endif
  
- 	if ((sort__has_parent || symbol_conf.use_callchain)
- 	    && sample->callchain) {
--		err = machine__resolve_callchain(machine, evsel, al->thread,
-+		err = machine__resolve_callchain(machine, al->thread,
- 						 sample->callchain, &parent);
- 		if (err)
- 			return err;
-@@ -140,7 +140,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	struct hist_entry *he;
+ # Treat warnings as errors unless directed not to
+@@ -92,7 +94,7 @@ ifdef PARSER_DEBUG
+ 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
+ endif
  
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
--		err = machine__resolve_callchain(machine, evsel, al->thread,
-+		err = machine__resolve_callchain(machine, al->thread,
- 						 sample->callchain, &parent);
- 		if (err)
- 			return err;
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 8e395a5..05aa2bb 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -387,7 +387,7 @@ static void print_sample_bts(union perf_event *event,
- 			printf(" ");
- 		else
- 			printf("\n");
--		perf_event__print_ip(event, sample, machine, evsel,
-+		perf_event__print_ip(event, sample, machine,
- 				     PRINT_FIELD(SYM), PRINT_FIELD(DSO),
- 				     PRINT_FIELD(SYMOFFSET));
- 	}
-@@ -431,7 +431,7 @@ static void process_event(union perf_event *event __unused,
- 			printf(" ");
- 		else
- 			printf("\n");
--		perf_event__print_ip(event, sample, machine, evsel,
-+		perf_event__print_ip(event, sample, machine,
- 				     PRINT_FIELD(SYM), PRINT_FIELD(DSO),
- 				     PRINT_FIELD(SYMOFFSET));
- 	}
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 6bb0277..79cabe4 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -774,7 +774,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+-CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
++CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ ALL_LDFLAGS = $(LDFLAGS)
+@@ -458,6 +460,21 @@ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+ endif # Dwarf support
+ endif # NO_DWARF
  
- 		if ((sort__has_parent || symbol_conf.use_callchain) &&
- 		    sample->callchain) {
--			err = machine__resolve_callchain(machine, evsel, al.thread,
-+			err = machine__resolve_callchain(machine, al.thread,
- 							 sample->callchain, &parent);
- 			if (err)
- 				return;
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 81371ba..c14c665 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -157,7 +157,7 @@ void machine__exit(struct machine *self);
- void machine__delete(struct machine *self);
++ifndef NO_LIBUNWIND
++# for linking with debug library, run like:
++# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++ifdef LIBUNWIND_DIR
++	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
++	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
++endif
++
++FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
++ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
++	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
++	NO_LIBUNWIND := 1
++endif # Libunwind support
++endif # NO_LIBUNWIND
++
+ -include arch/$(ARCH)/Makefile
  
- int machine__resolve_callchain(struct machine *machine,
--			       struct perf_evsel *evsel, struct thread *thread,
-+			       struct thread *thread,
- 			       struct ip_callchain *chain,
- 			       struct symbol **parent);
- int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index c3e399b..eb2f900 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -289,7 +289,6 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
+ ifneq ($(OUTPUT),)
+@@ -489,6 +506,14 @@ else
+ endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ 
++ifdef NO_LIBUNWIND
++	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
++else
++	EXTLIBS += $(LIBUNWIND_LIBS)
++	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
++	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
++endif
++
+ ifdef NO_NEWT
+ 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
+ else
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index d9084e0..51cd201 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -141,3 +141,28 @@ int main(void)
+ 	return 0;
  }
- 
- int machine__resolve_callchain(struct machine *self,
--			       struct perf_evsel *evsel __used,
- 			       struct thread *thread,
- 			       struct ip_callchain *chain,
- 			       struct symbol **parent)
-@@ -1490,8 +1489,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- }
- 
- void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
--			  struct machine *machine, struct perf_evsel *evsel,
--			  int print_sym, int print_dso, int print_symoffset)
-+			  struct machine *machine, int print_sym,
-+			  int print_dso, int print_symoffset)
- {
- 	struct addr_location al;
- 	struct callchain_cursor_node *node;
-@@ -1505,7 +1504,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
- 
- 	if (symbol_conf.use_callchain && sample->callchain) {
- 
--		if (machine__resolve_callchain(machine, evsel, al.thread,
-+		if (machine__resolve_callchain(machine, al.thread,
- 						sample->callchain, NULL) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 0c702e3..c71a1a7 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -151,8 +151,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 					    unsigned int type);
- 
- void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
--			  struct machine *machine, struct perf_evsel *evsel,
--			  int print_sym, int print_dso, int print_symoffset);
-+			  struct machine *machine, int print_sym,
-+			  int print_dso, int print_symoffset);
- 
- int perf_session__cpu_bitmap(struct perf_session *session,
- 			     const char *cpu_list, unsigned long *cpu_bitmap);
+ endef
++
++ifndef NO_LIBUNWIND
++define SOURCE_LIBUNWIND
++#include <libunwind.h>
++#include <stdlib.h>
++
++extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
++                                      unw_word_t ip,
++                                      unw_dyn_info_t *di,
++                                      unw_proc_info_t *pi,
++                                      int need_unwind_info, void *arg);
++
++
++#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
++
++int main(void)
++{
++	unw_addr_space_t addr_space;
++	addr_space = unw_create_addr_space(NULL, 0);
++	unw_init_remote(NULL, addr_space, NULL);
++	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
++	return 0;
++}
++endef
++endif
 -- 
 1.7.7.6
 
