@@ -1,56 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab2FSGJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 02:09:55 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:38134 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab2FSGJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 02:09:54 -0400
-Date: Tue, 19 Jun 2012 14:09:45 +0800
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Early boot panic on machine with lots of memory
-Message-ID: <20120619060945.GA8724@shangw>
-Reply-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-References: <1339623535.3321.4.camel@lappy>
- <20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
- <1339667440.3321.7.camel@lappy>
- <20120618223203.GE32733@google.com>
- <1340059850.3416.3.camel@lappy>
- <20120619041154.GA28651@shangw>
- <CAE9FiQVitg0ODjph96LnPD6pnWSSN8QkFngEwbUX9-nT-sdy+g@mail.gmail.com>
+	id S1753584Ab2FSGMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 02:12:41 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35164 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab2FSGMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 02:12:40 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: peterz@infradead.org, mingo@elte.hu, avi@redhat.com,
+        raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
+        vatsa@linux.vnet.ibm.com, hpa@zytor.com
+Subject: Re: [PATCH v2 3/7] KVM: Add paravirt kvm_flush_tlb_others
+In-Reply-To: <20120612230218.GD1973@amt.cnet>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050629.4560.85284.stgit@abhimanyu.in.ibm.com> <20120612230218.GD1973@amt.cnet>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 19 Jun 2012 11:41:54 +0530
+Message-ID: <87a9zzsudx.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQVitg0ODjph96LnPD6pnWSSN8QkFngEwbUX9-nT-sdy+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061906-6078-0000-0000-00000C3F6B14
+Content-Type: text/plain
+x-cbid: 12061820-0260-0000-0000-0000015CF76B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> :
->> [    0.000000]    memblock_free: [0x0000102febc080-0x0000102febf080] memblock_free_reserved_regions+0x37/0x39
->>
->> Here, [0x0000102febc080-0x0000102febf080] was released to available memory block
->> by function free_low_memory_core_early(). I'm not sure the release memblock might
->> be taken by bootmem, but I think it's worthy to have a try of removing following
->> 2 lines: memblock_free_reserved_regions() and memblock_reserve_reserved_regions()
->
->if it was taken, should have print out about that.
->
+Hi Marcelo,
 
-Yinghai, it's possible the memory block returned to bootmem and get used/corrupted
-by other CPU cores?
+Thanks for the review.
 
-Thanks,
-Gavin
+On Tue, 12 Jun 2012 20:02:18 -0300, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Mon, Jun 04, 2012 at 10:37:24AM +0530, Nikunj A. Dadhania wrote:
+> > flush_tlb_others_ipi depends on lot of statics in tlb.c.  Replicated
+> > the flush_tlb_others_ipi as kvm_flush_tlb_others to further adapt to
+> > paravirtualization.
+> > 
+> > Use the vcpu state information inside the kvm_flush_tlb_others to
+> > avoid sending ipi to pre-empted vcpus.
+> > 
+> > * Do not send ipi's to offline vcpus and set flush_on_enter flag
+> > * For online vcpus: Wait for them to clear the flag
+> > 
+> > The approach was discussed here: https://lkml.org/lkml/2012/2/20/157
+> > 
+> > Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+> 
+> Why not reintroduce the hypercall to flush TLBs? 
+Sure, I will get a version with this.
+
+> No waiting, no entry/exit trickery.
+> 
+Are you also suggesting to get rid of vcpu-running information?
+We would atleast need this to raise a flushTLB hypercall on the sleeping
+vcpu.
+
+> This is half-way-there paravirt with all the downsides. 
+Some more details on what are the downsides would help us reach to a
+better solution.
+
+> Even though the guest running information might be useful in other
+> cases.
+> 
+Yes, that was one of the things on the mind.
+
+> > Pseudo Algo:
+> > 
+> >    Write()
+> >    ======
+> > 
+> > 	   guest_exit()
+> > 		   flush_on_enter[i]=0;
+> > 		   running[i] = 0;
+> > 
+> > 	   guest_enter()
+> > 		   running[i] = 1;
+> > 		   smp_mb();
+> > 		   if(flush_on_enter[i]) {
+> > 			   tlb_flush()
+> > 			   flush_on_enter[i]=0;
+> > 		   }
+> > 
+> > 
+> >    Read()
+> >    ======
+> > 
+> > 	   GUEST                                                KVM-HV
+> > 
+> >    f->flushcpumask = cpumask - me;
+> > 
+> > again:
+> >    for_each_cpu(i, f->flushmask) {
+> > 
+> > 	   if (!running[i]) {
+> > 						   case 1:
+> > 
+> > 						   running[n]=1
+> > 
+> > 						   (cpuN does not see
+> > 						   flush_on_enter set,
+> > 						   guest later finds it
+> > 						   running and sends ipi,
+> > 						   we are fine here, need
+> > 						   to clear the flag on
+> > 						   guest_exit)
+> > 
+> > 		  flush_on_enter[i] = 1;
+> > 						   case2:
+> > 
+> > 						   running[n]=1
+> > 						   (cpuN - will see flush
+> > 						   on enter and an IPI as
+> > 						   well - addressed in patch-4)
+> > 
+> > 		  if (!running[i])
+> > 		     cpu_clear(f->flushmask);      All is well, vm_enter
+> > 						   will do the fixup
+> > 	   }
+> > 						   case 3:
+> > 						   running[n] = 0;
+> > 
+> > 						   (cpuN went to sleep,
+> > 						   we saw it as awake,
+> > 						   ipi sent, but wait
+> > 						   will break without
+> > 						   zero_mask and goto
+> > 						   again will take care)
+> > 
+> >    }
+> >    send_ipi(f->flushmask)
+> > 
+> >    wait_a_while_for_zero_mask();
+> > 
+> >    if (!zero_mask)
+> > 	   goto again;
+> > ---
+> >  arch/x86/include/asm/kvm_para.h |    3 +-
+> >  arch/x86/include/asm/tlbflush.h |    9 ++++++
+> >  arch/x86/kernel/kvm.c           |    1 +
+> >  arch/x86/kvm/x86.c              |   14 ++++++++-
+> >  arch/x86/mm/tlb.c               |   61 +++++++++++++++++++++++++++++++++++++++
+> >  5 files changed, 86 insertions(+), 2 deletions(-)
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
