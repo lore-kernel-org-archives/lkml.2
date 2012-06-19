@@ -1,106 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab2FSMXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 08:23:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52285 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2FSMXe (ORCPT
+	id S1754185Ab2FSMYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 08:24:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58082 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab2FSMYM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 08:23:34 -0400
-Date: Tue, 19 Jun 2012 07:23:20 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, a.p.zijlstra@chello.nl, jkosina@suse.cz,
-        ebiederm@xmission.com, dhowells@redhat.com, keescook@chromium.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] futex: Do not leak robust list to
- unprivileged process
-Message-ID: <20120619122320.GA3342@sergelap>
-References: <20120319231253.GA20893@www.outflux.net>
- <tip-bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8@git.kernel.org>
- <4FDFD8AF.6030209@cn.fujitsu.com>
- <20120619022456.GA2949@sergelap>
- <4FDFE4B1.80500@cn.fujitsu.com>
- <20120619031306.GA3985@sergelap>
- <4FDFF036.2000106@cn.fujitsu.com>
+	Tue, 19 Jun 2012 08:24:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FDFF036.2000106@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <CAF+7xWmFZTa8=mDW3gJwivkb0vDOj113u8bC-jP9x5BwYxFkLg@mail.gmail.com>
+References: <1340092423-10073-1-git-send-email-yadi.brar@samsung.com>
+ <1340092423-10073-2-git-send-email-yadi.brar@samsung.com> <CAF+7xWkopYu2CkPsdPeJ5Kr0NBbYcnf2ez-hC+RCj6QuOFcstw@mail.gmail.com>
+ <CAKew6eXafa0n+dUcqa3EXEJQj4xNDM_Z2UNVhGu7rCSSEgiieQ@mail.gmail.com> <CAF+7xWmFZTa8=mDW3gJwivkb0vDOj113u8bC-jP9x5BwYxFkLg@mail.gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 19 Jun 2012 20:23:51 +0800
+Message-ID: <CAF+7xW=GXWWecv5S5MerOQhrzFm=WuUWyJ0dd73B5i8aWofs3Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] regulator: max77686: Implement .set_ramp_delay() callback.
+To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Wanlong Gao (gaowanlong@cn.fujitsu.com):
-> On 06/19/2012 11:13 AM, Serge Hallyn wrote:
-> > Quoting Wanlong Gao (gaowanlong@cn.fujitsu.com):
-> >> On 06/19/2012 10:24 AM, Serge Hallyn wrote:
-> >>> Quoting Wanlong Gao (gaowanlong@cn.fujitsu.com):
-> >>>> On 03/29/2012 05:55 PM, tip-bot for Kees Cook wrote:
-> >>>>> Commit-ID:  bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8
-> >>>>> Gitweb:     http://git.kernel.org/tip/bdbb776f882f5ad431aa1e694c69c1c3d6a4a5b8
-> >>>>> Author:     Kees Cook <keescook@chromium.org>
-> >>>>> AuthorDate: Mon, 19 Mar 2012 16:12:53 -0700
-> >>>>> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> >>>>> CommitDate: Thu, 29 Mar 2012 11:37:17 +0200
-> >>>>>
-> >>>>> futex: Do not leak robust list to unprivileged process
-> >>>>>
-> >>>>> It was possible to extract the robust list head address from a setuid
-> >>>>> process if it had used set_robust_list(), allowing an ASLR info leak. This
-> >>>>> changes the permission checks to be the same as those used for similar
-> >>>>> info that comes out of /proc.
-> >>>>>
-> >>>>> Running a setuid program that uses robust futexes would have had:
-> >>>>>   cred->euid != pcred->euid
-> >>>>>   cred->euid == pcred->uid
-> >>>>> so the old permissions check would allow it. I'm not aware of any setuid
-> >>>>> programs that use robust futexes, so this is just a preventative measure.
-> >>>>>
-> >>>>
-> >>>> I'm not sure this change prevents the unprivileged process.
-> >>>> Please refer to LTP test, recently I saw that this change broke
-> >>>> the following test.
-> >>>>
-> >>>> https://github.com/linux-test-project/ltp/blob/master/testcases/kernel/syscalls/get_robust_list/get_robust_list01.c#L155
-> >>>> 		if (seteuid(1) == -1)
-> >>>> 			tst_brkm(TBROK|TERRNO, cleanup, "seteuid(1) failed");
-> >>>>
-> >>>> 		TEST(retval = syscall(__NR_get_robust_list, 1,
-> >>>> 				      (struct robust_list_head *)&head,
-> >>>> 				      &len_ptr));
-> >>>>
-> >>>> We set the euid to an unprivileged user, and expect to FAIL with EPERM,
-> >>>> without this patch, it FAIL as we expected, but with it, this call succeed.
-> >>>
-> >>> This relates to a question I asked - I believe in this thread, maybe in
-> >>> another thread - about ptrace_may_access.  That code goes back further than
-> >>> our git history, and for so long has used current->uid and ->gid, not
-> >>> euid and gid, for permission checks.  I asked if that's what we really
-> >>> want, but at the same am not sure we want to change something that's
-> >>> been like that for so long.
-> >>>
-> >>> But that's why it succeeded - you changed your euid, not your uid.
-> >>
-> >> Yeah, I known what I'm doing.
-> > 
-> > Didn't mean to offend :)
-> 
-> Sorry for my poor words, I didn't mean that, either. ;)
-> 
-> > 
-> >> I just wonder which is the right thing.
-> >> Should we check euid or uid ? You mean that checking uid instead of
-> >> checking euid for a long time, right?
-> > 
-> > Yup, and I agree it seems wrong.
-> 
-> Are there any other places where also switch checking uid instead of euid ?
-> In this place, anyway, this syscall is already marked as deprecated.
+> return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+>                          ramp_value << 6);
 
-This isn't just this syscall, though, it's ptrace_may_access() which is
-used in quite a few places (20 at quick glance).
+Typo, should be:
+        return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+                                  MAX77686_RAMP_RATE_MASK, ramp_value << 6);
 
--serge
+>
+> How do you think?
+>
+> Regards,
+> Axel
