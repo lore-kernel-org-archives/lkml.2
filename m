@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2FSPGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 11:06:22 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42051 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452Ab2FSPGV (ORCPT
+	id S1752917Ab2FSPML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 11:12:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37174 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab2FSPMK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 11:06:21 -0400
-Date: Tue, 19 Jun 2012 17:06:19 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-Message-ID: <20120619150619.GD1427@aftab.osrc.amd.com>
-References: <20120615123749.GC6083@aftab.osrc.amd.com>
- <1339764161.2559.63.camel@twins>
- <20120615125240.GD6083@aftab.osrc.amd.com>
- <20120615165231.GA9169@aftab.osrc.amd.com>
- <20120619024639.GB6186@khazad-dum.debian.net>
- <4FDFF27C.5000205@zytor.com>
- <20120619051116.GB31591@aftab.osrc.amd.com>
- <1340093864.21745.6.camel@twins>
- <20120619102250.GA787@aftab.osrc.amd.com>
- <1340101568.21745.37.camel@twins>
+	Tue, 19 Jun 2012 11:12:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340101568.21745.37.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FE053BD.2090605@itdev.co.uk>
+References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
+	<1339992522-22073-15-git-send-email-djkurtz@chromium.org>
+	<4FDF4345.40508@itdev.co.uk>
+	<CAPDwgkMATDg5_FyJhR2aDCOzHu9DQbxzPHMn7MCC8KmBsS2bhg@mail.gmail.com>
+	<4FE053BD.2090605@itdev.co.uk>
+Date: Tue, 19 Jun 2012 11:12:02 -0400
+Message-ID: <CAPDwgkNj1kEHeKsgV+3MOGnVPj++X44qXrTxR0QEsMK+AwvXSw@mail.gmail.com>
+Subject: Re: [PATCH 14/22 v4] Input: atmel_mxt_ts - don't re-read matrix after
+ applying pdata
+From: Yufeng Shen <miletus@google.com>
+To: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Daniel Kurtz <djkurtz@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, linux-input@vger.kernel.org,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
+        "Bowens, Alan" <Alan.Bowens@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 12:26:08PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-06-19 at 12:22 +0200, Borislav Petkov wrote:
-> > 
-> > But I haven't tested what happens when it is built in and I use the
-> > reload interface, hehe something to play with today. 
-> 
-> I couldn't easily find where to place the damn ucode image anyway, so I
-> built in the old-style /dev interface and used the microcode.ctl package
-> to load it.
-> 
-> Fwiw, that works just fine when its built-in.
+On Tue, Jun 19, 2012 at 6:26 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
+> Yufeng Shen wrote:
+>> On Mon, Jun 18, 2012 at 11:03 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
+>>> Daniel Kurtz wrote:
+>>>> The matrix x/y size in the Info ID Block represents the number of x/y
+>>>> trace lines on the device.  There is no need to re-read them after
+>>>> applying pdata config, since pdata only configures the object table
+>>>> etnries.  The matrix size read from the ID can only be updated by a
+>>>> firmware update.
+>>>
+>>> This isn't correct. For example, mXT224 can be configured as 16x14, 17x13,
+>>> 18x12, etc. This only takes effect when the chip is reset, which is why it
+>>> is necessary to re-read them after applying the config.
+>>
+>> so look at structure mxt_info
+>>
+>>  struct mxt_info {
+>>           u8 family_id;
+>>           u8 variant_id;
+>>           u8 version;
+>>           u8 build;
+>>           u8 matrix_xsize;
+>>           u8 matrix_ysize;
+>>           u8 object_num;
+>> };
+>>
+>> I think it is meant to be corresponding to Information Block of the
+>> device, of which
+>> the matrix_xsize and matrix_ysize mean "The size of the matrix the
+>> device supports",
+>> which should be fixed for a certain chip.
+>
+> As I said, it's not fixed, there is a mode setting (T28 byte 2) which
+> alters the matrix size. This is documented in the protocol guide, if you
+> have it.
+>
+> You can also verify this if you want: change mode setting, backup, reset,
+> and read the information block, you'll see the matrix size changes. I've
+> just checked that myself on an mXT224.
+>
 
-Ok, so something changed in the request_firmware thing in the meantime.
-Last time I checked we waited for 60 seconds to get the ucode blob from
-userspace but that wasn't happening that early in the boot process so we
-continued without newer ucode patch.
+Ah, you are correct. I was looking at the wrong protocol guide. mXT224(E) does
+have the mode setting option.
 
-Now we load the ucode driver very early if it is built-in (look at
-printk timestamps):
-
-[    3.651275] microcode: CPU0: patch_level=0x010000c4
-[    3.664943] microcode: CPU1: patch_level=0x010000c4
-[    3.670177] microcode: CPU2: patch_level=0x010000c4
-[    3.675407] microcode: CPU3: patch_level=0x010000c4
-...
-
-and then later, when we have userspace, we can use the reload thing to
-re-request microcode. Which is also fine, I guess.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> I also asked the guys at Atmel that I work with, and they confirm that this
+> behaviour is as designed.
+>
+>> The configurable matrix size is in T9 XSIZE/YSIZE, which, if ever
+>> needed to be read back,
+>> probably read back into something other than mxt_info struct.
+>
+> The position of the touchscreen within the matrix is a separate
+> configurable setting, you're confusing the two.
+>
+> cheers
+>
+> --
+> Nick Dyer
+> Software Engineer, ITDev Ltd
+> Hardware and Software Development Consultancy
+> Website: http://www.itdev.co.uk
