@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab2FSJwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 05:52:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39334 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751120Ab2FSJwG (ORCPT
+	id S1751738Ab2FSJ5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 05:57:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36200 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab2FSJ5l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 05:52:06 -0400
-Date: Tue, 19 Jun 2012 10:52:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Anthony Olech <Anthony.Olech@diasemi.com>
-Subject: Re: [PATCH] regmap: Fix work_buf switching for page update during
- virtual range access.
-Message-ID: <20120619095201.GC3974@opensource.wolfsonmicro.com>
-References: <201206181207.q5IC7Hbm029241@sw-eng-lt-dc-vm2>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="POjlveFHrWq2ZO+N"
-Content-Disposition: inline
-In-Reply-To: <201206181207.q5IC7Hbm029241@sw-eng-lt-dc-vm2>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Jun 2012 05:57:41 -0400
+Message-ID: <1340099851.21745.35.camel@twins>
+Subject: Re: [PATCH] sched: Folding nohz load accounting more accurate
+From: Peter Zijlstra <peterz@infradead.org>
+To: Charles Wang <muming.wq@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Tao Ma <tm@tao.ma>,
+        =?UTF-8?Q?=E5=90=AB=E9=BB=9B?= <handai.szj@taobao.com>,
+        Doug Smythies <dsmythies@telus.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 19 Jun 2012 11:57:31 +0200
+In-Reply-To: <4FE01B2F.9050805@gmail.com>
+References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
+	   <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>
+	  <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com>
+	 <1340035417.15222.95.camel@twins> <4FE01B2F.9050805@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-06-19 at 14:24 +0800, Charles Wang wrote:
+> > +static inline int calc_load_write_idx(void)
+> >  {
+> > +     int idx = calc_load_idx;
+> > +
+> > +     /*
+> > +      * See calc_global_nohz(), if we observe the new index, we also
+> > +      * need to observe the new update time.
+> > +      */
+> > +     smp_rmb();
+> > +
+> > +     /*
+> > +      * If the folding window started, make sure we start writing in the
+> > +      * next idle-load delta.
+> > +      */
+> > +     if (!time_before(jiffies, calc_load_update))
+> > +             idx++;
+> 
+> Can we just take calc_load_update as the start time-line here?  Will
+> there be different ticks between cpus? 
 
---POjlveFHrWq2ZO+N
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'm not exactly sure what you're asking, but yes and probably yes.
 
-On Mon, Jun 18, 2012 at 01:04:29PM +0100, Krystian Garbaciak wrote:
-> After page update, orginal work_buf has to be restored regardless of
-> the result.
+The per-cpu ticks are separate, but on the same time-line. That is, they
+don't happen at the exact same moment, either due to per-cpu IRQ
+disabling or because the architecture spreads the tick. But they do all
+get HZ ticks per second.
 
-Applied, thanks.
-
---POjlveFHrWq2ZO+N
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP4EsmAAoJEBus8iNuMP3dJmIQAJr11BPI2ad4Z9byhRxjSzZk
-AegPTsZ+UlpxfDwKRXLyTk3CXJ+nOCL01ilwVgmJnWYj9WxVkKIAIFnYT9z+iNEL
-C9vF+/ir1kfuONw3fjEfik1T0ET2cnyvTZuwFLuKVkC7DiI43GervUf965Y80Cj/
-NeyZBidcUUDzh3fpB7qgh0jjQos+ijnzj678QsqSsQzP64EUW97krBBg7qMmxKaD
-V26R9WzO5Xe4EBDxFM62+Q6dO8UMLrL14E32xvytOvaRevoUYWEvGOL/wrrFw5p3
-JgULJvREyuNFYQVyG2M/KRlm332yRKv57G0i6zC60Uqhq+fDHApRbCPl2yA8Th3O
-3tZYRJRftqGJM82aZM5wDnrzoWyCzlnqgzpmQ30A0CTMrDoqDy+hst0gmhtootXY
-+eSBN7969NFJJ0YPPkjhXo/lT2iISupydU7siLnam0ki73uDeQpmt9eWURI/Z5Mt
-mEWwQvotoq3OShFwh93ZzNAhVTA6+9mxkyj8cJTSiFLBuJVVFSv0V9mIc/mHzrYa
-gbRoplUcrDsequ2JzhoFPoc92tCpUI6XGqnBLJvkG65yefBiTPgwulr406lDcIF/
-kR74EorSItOBjmThmYocaGEh7+OBoFqWGfp5qrBTjfNJIEzH1Ae1aLPyJgpZLg4X
-VXk/SKGagwSN78zRTnZ6
-=+1J0
------END PGP SIGNATURE-----
-
---POjlveFHrWq2ZO+N--
+Remember, jiffies is a global timeline, and the global calc_load_update
+is the last to be moved fwd to the next period, so its ideally suited to
+be used to determine the current window.
