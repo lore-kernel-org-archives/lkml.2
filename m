@@ -1,127 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab2FSV4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 17:56:51 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:56035 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752108Ab2FSV4t (ORCPT
+	id S1755195Ab2FSWAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 18:00:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36153 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755171Ab2FSWAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 17:56:49 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgwKAOH04E95LJ3s/2dsb2JhbABFtDsDgS2BCIIYAQEEATocIwULCAMOCi4UJQMhE4gGBLleFIsbgQ6FCwOVJIklhlmCcg
-Date: Wed, 20 Jun 2012 07:56:45 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Wanpeng Li <liwp.linux@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH V2] writeback: fix hung_task alarm when sync block
-Message-ID: <20120619215645.GP25389@dastard>
-References: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com>
- <x49txyf8exl.fsf@segfault.boston.devel.redhat.com>
- <20120613144840.GA3055@localhost>
- <x49lijr8bur.fsf@segfault.boston.devel.redhat.com>
- <20120614133600.GB14883@localhost>
- <x491ulbjbzb.fsf@segfault.boston.devel.redhat.com>
- <20120619210212.GN25389@dastard>
- <x49vcinhuv1.fsf@segfault.boston.devel.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49vcinhuv1.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Jun 2012 18:00:15 -0400
+Date: Tue, 19 Jun 2012 15:00:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH -mm] memcg: prevent from OOM with too many dirty pages
+Message-Id: <20120619150014.1ebc108c.akpm@linux-foundation.org>
+In-Reply-To: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
+References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 05:09:22PM -0400, Jeff Moyer wrote:
-> Dave Chinner <david@fromorbit.com> writes:
-> 
-> > On Tue, Jun 19, 2012 at 04:14:16PM -0400, Jeff Moyer wrote:
-> >> Fengguang Wu <fengguang.wu@intel.com> writes:
-> >> 
-> >> > Good idea! Yes we can do some estimation and adaptively extend the
-> >> > hang timeout for the current writeback_inodes_sb_nr()/sync_inodes_sb()
-> >> > call.
-> >> >
-> >> > Note that it's not going to reliably get rid of false warnings due to
-> >> > estimation errors, which could be pretty large and unavoidable on
-> >> > change of workload. But still, it would be a net improvement and
-> >> > perhaps enough to get rid of most false warnings, while still being
-> >> > able to catch livelock or other kind of task hang.
-> >> 
-> >> Hi, Fengguang,
-> >> 
-> >> I didn't see a patch from you for this, so I went ahead and threw
-> >> something together.  Let me know what you think of it.  I wasn't sure
-> >> how to estimate the total I/O that will be issued for syncing out an
-> >> entire superblock, though, so I didn't do that part.
-> >
-> > As I said to the original patch - having a hang check timeout on a
-> > system that is overloaded w.r.t. IO is an important piece of
-> > information when it comes to debugging problems. Often the hangcheck
-> > timer is the first piece of information that we will get that
-> > indicates a problem somewhere in a production system.
-> 
-> So, you believe that we should always check at 2 minute intervals (or
-> whatever is configured), even if we know there is more than that much
-> I/O queued?  In case there is any confusion, here, the patch I posted
-> ensured that we would eventually spew a warning, but only if the process
-> was blocked for longer than we (the kernel) expected.
+On Tue, 19 Jun 2012 16:50:04 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Yes, because it gives us an indication of how long the problem
-persisted for.
+> Current implementation of dirty pages throttling is not memcg aware which makes
+> it easy to have LRUs full of dirty pages which might lead to memcg OOM if the
+> hard limit is small and so the lists are scanned faster than pages written
+> back.
 
-And basing the hangcheck time on the write bandwidth is a bad idea,
-anyway. If we have random 4k writeback to a 24 disk RAID6 array, the
-writeback rate is going to be under 1MB/s, and so that 10GB of dirty
-data in memory is still going to take hours to write. The only
-difference is that we won't get a warning until hours after the sync
-command is run. Then we just get reports of "sync has hung" and we
-hav eno information what-so-ever as to whether this is a one-off
-event or it is a systemic problem....
+This is a bit hard to parse.  I changed it to
 
-Reducing the amount of information emitted that tells us something
-is slow, possibly hung or just badly configured does not serve our
-users in a positive way. It makes it harder for them to realise there
-is a problem, it makes it harder for us to determine the nature of
-the problem, and makes it much less likely that such problems will
-be fixed.
+: The current implementation of dirty pages throttling is not memcg aware
+: which makes it easy to have memcg LRUs full of dirty pages.  Without
+: throttling, these LRUs can be scanned faster than the rate of writeback,
+: leading to memcg OOM conditions when the hard limit is small.
 
-> > Removing it does not magically fix the underlying problem - it
-> > simply means that we don't hear about them until someone complains
-> > that unmount is taking hours....
-> 
-> There isn't necessarily an underlying problem.  This is very much a gray
-> area, Dave.  We get plenty of false positives in this code.  I was
-> trying to reduce *that* problem.  Do you have a better idea on how to
-> address the issue?
+does that still say what you meant to say?
 
-In my experience, they are rarely false positives - any system that
-is taking more than 2 minutes to run sync has a problem that needs
-addressing. At minimum, the owners of the system need to be aware
-that their data is not getting written to disk in a timely manner,
-and so their data loss liability in the face of system crashes is
-*much* greater than they thought.
+> The solution is far from being ideal - long term solution is memcg aware
+> dirty throttling - but it is meant to be a band aid until we have a real
+> fix.
 
-That, by itself, is reason enough to keep it as it stands - I *need
-to know* if a report of loss of 5 minute old data on system crash is
-a result of writeback not being able to keep up with the workload,
-or whether there's some other problem we need to look at....
+Fair enough I guess.  The fix is small and simple and if it makes the
+kernel better, why not?
 
-> Maybe this discussion requires looking at specific instances of the
-> problem so we're all on the same page.  What do you think is the best
-> way forward, here?
+Would like to see a few more acks though.  Why hasn't everyone been
+hitting this?
 
-If advanced users don't want to be warned about this, then they can
-configure the hangcheck timer appropriately. For everyone is - it's
-a wakeup call that something in the IO subsystem is not working as
-expected. I say leave it as it is.
+> We are seeing this happening during nightly backups which are placed into
+> containers to prevent from eviction of the real working set.
 
-Cheers,
+Well that's a trick which we want to work well.  It's a killer
+featurelet for people who wonder what all this memcg crap is for ;)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> The change affects only memcg reclaim and only when we encounter PageReclaim
+> pages which is a signal that the reclaim doesn't catch up on with the writers
+> so somebody should be throttled. This could be potentially unfair because it
+> could be somebody else from the group who gets throttled on behalf of the
+> writer but as writers need to allocate as well and they allocate in higher rate
+> the probability that only innocent processes would be penalized is not that
+> high.
+
+OK.
+
+> ...
+>
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -720,9 +720,20 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
+>  
+>  		if (PageWriteback(page)) {
+> -			nr_writeback++;
+> -			unlock_page(page);
+> -			goto keep;
+> +			/*
+> +			 * memcg doesn't have any dirty pages throttling so we
+> +			 * could easily OOM just because too many pages are in
+> +			 * writeback from reclaim and there is nothing else to
+> +			 * reclaim.
+> +			 */
+> +			if (PageReclaim(page)
+> +					&& may_enter_fs && !global_reclaim(sc))
+> +				wait_on_page_writeback(page);
+> +			else {
+> +				nr_writeback++;
+> +				unlock_page(page);
+> +				goto keep;
+> +			}
+
+A couple of things here.
+
+With my gcc and CONFIG_CGROUP_MEM_RES_CTLR=n (for gawd's sake can we
+please rename this to CONFIG_MEMCG?), this:
+
+--- a/mm/vmscan.c~memcg-prevent-from-oom-with-too-many-dirty-pages-fix
++++ a/mm/vmscan.c
+@@ -726,8 +726,8 @@ static unsigned long shrink_page_list(st
+ 			 * writeback from reclaim and there is nothing else to
+ 			 * reclaim.
+ 			 */
+-			if (PageReclaim(page)
+-					&& may_enter_fs && !global_reclaim(sc))
++			if (!global_reclaim(sc) && PageReclaim(page) &&
++					may_enter_fs)
+ 				wait_on_page_writeback(page);
+ 			else {
+ 				nr_writeback++;
+
+
+reduces vmscan.o's .text by 48 bytes(!).  Because the compiler can
+avoid generating any code for PageReclaim() and perhaps the
+may_enter_fs test.  Because global_reclaim() evaluates to constant
+true.  Do you think that's an improvement?
+
+Also, why do we test may_enter_fs here?  I should have been able to
+work out your reasoning from either code comments or changelogging but
+I cannot (bad).  I don't *think* there's a deadlock issue here?  If the
+page is now under writeback, that writeback *will* complete?
+
+Finally, I wonder if there should be some timeout of that wait.  I
+don't know why, but I wouldn't be surprised if we hit some glitch which
+causes us to add one!
+
+
