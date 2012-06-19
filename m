@@ -1,150 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab2FSBDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 21:03:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2630 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab2FSBDQ (ORCPT
+	id S1753802Ab2FSBGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 21:06:46 -0400
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:39353 "EHLO
+	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753492Ab2FSBGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 21:03:16 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ARy8Wg5PTaYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=nW2dJv_3jwB65zfG-toA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340067793.25903.158.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC PATCH 0/2] libtraceevent/perf: Add support for trace-cmd
- plugins
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
-        linux-kernel@vger.kernel.org, weisbec@gmail.com, namhyung.kim@lge.com,
-        mingo@kernel.org, peterz@infradead.org
-Date: Mon, 18 Jun 2012 21:03:13 -0400
-In-Reply-To: <87d34wi0y3.fsf@sejong.aot.lge.com>
-References: <1339695333-64591-1-git-send-email-dsahern@gmail.com>
-	 <87lijlhv9v.fsf@sejong.aot.lge.com> <4FDF3D5C.1030209@gmail.com>
-	 <87d34wi0y3.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
+	Mon, 18 Jun 2012 21:06:45 -0400
+Date: Tue, 19 Jun 2012 02:06:41 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: nfs3 problem with -rc{2,3} : blame
+Message-ID: <20120619010641.GA22288@milliways>
+References: <20120617200700.GA15348@milliways>
+ <1340026956.2451.9.camel@lade.trondhjem.org>
+ <1340027134.2451.12.camel@lade.trondhjem.org>
+ <20120618141854.GA7962@milliways>
+ <1340031234.2451.13.camel@lade.trondhjem.org>
+ <20120618160005.GA10169@milliways>
+ <20120618200525.GA15654@milliways>
+ <20120618215323.GA17561@milliways>
+ <1340057002.20570.31.camel@lade.trondhjem.org>
+ <20120618221052.GA18341@milliways>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+In-Reply-To: <20120618221052.GA18341@milliways>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=wom5GMh1gUkA:10 a=3oYqF3-p60YA:10 a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=JDjsHSkAAAAA:8 a=LdyvC2AGxxKvA2f9IZgA:9 a=QEXdDO2ut3YA:10 a=Hf6muOzgCGQA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-19 at 09:45 +0900, Namhyung Kim wrote:
+On Mon, Jun 18, 2012 at 11:10:52PM +0100, Ken Moffat wrote:
+> On Mon, Jun 18, 2012 at 10:03:24PM +0000, Myklebust, Trond wrote:
+> > 
+> > Doesn't 4f97615d19 fix the fs/nfs/direct.c problem too? It should.
+> > 
+> > Anyhow, if you can apply that on top of the commits that didn't compile,
+> > and then continue the bisection, that would be great. We definitely do
+> > want the !defined(CONFIG_NFS_V4) case to work in 3.5-final...
+> > 
+>  OK (I was assuming errors in different places were from different
+> causes).  I'll do that after I've rerun rc3 without NFS_V4 with
+> SUNRPC_DEBUG.  Thanks.
 
-> TRACE_EVENT(kvm_emulate_insn,
->         ...
-> 	TP_printk("%x:%llx:%s (%s)%s",
-> 		  __entry->csbase, __entry->rip,
-> 		  __print_insn(__entry->insn, __entry->len),
-> 		  __print_symbolic(__entry->flags,
-> 				   kvm_trace_symbol_emul_flags),
-> 		  __entry->failed ? " failed" : ""
-> 		)
-> 	);
-> 
-> And __print_insn is defined as:
-> 
-> #define __print_insn(insn, ilen) ({		                 \
-> 	int i;							 \
-> 	const char *ret = p->buffer + p->len;			 \
-> 								 \
-> 	for (i = 0; i < ilen; ++i)				 \
-> 		trace_seq_printf(p, " %02x", insn[i]);		 \
-> 	trace_seq_printf(p, "%c", 0);				 \
-> 	ret;							 \
-> 	})
-> 
-> The parse error is occurred at the beginning of the compound statment:
-> 
->   Warning: bad op token {
->   Warning: failed to read event print fmt for kvm_emulate_insn
-> 
-> I don't think we can handle this kind of compound statments easily. So I
-> just said it *seems* broken. :) Btw, calling trace_seq_printf() here also
-> looks like a problem and I have no idea where the 'p' came from.
+Bisection now points to:
 
-This is why we want the plugin. What the plugins do is registers how to
-parse the data of the event. The event format file is still parsed to
-find where the data is located, but the printf fmt: field (TP_printk) is
-ignored. The plugin provides the format to print the data with.
+6d74743b088d116e31fe1b73f47e782ee2016b94 is the first bad commit
+commit 6d74743b088d116e31fe1b73f47e782ee2016b94
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Mon Apr 30 13:27:31 2012 -0400
 
-Lets look at the kvm plugin for kvm_emulate_insn:
+    NFS: Simplify O_DIRECT page referencing
+    
+    The O_DIRECT code shouldn't need to hold 2 references to each
+page. The
+    reference held by the struct nfs_page should suffice.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: Fred Isaman <iisaman@netapp.com>
 
-static int kvm_emulate_insn_handler(struct trace_seq *s, struct record *record,
-                                    struct event_format *event, void *context)
-{
-        unsigned long long rip, csbase, len, flags, failed;
-        int llen;
-        uint8_t *insn;
-        const char *disasm;
+ I was going to revert that from 3.5.0-rc3 to confirm that my
+problem with backups was gone, and then give it more extended
+testing to prove firefox downloads were ok, but 6 of 11 hunks
+failed, the code has changed and I'm not familiar with it.
 
-        if (pevent_get_field_val(s, event, "rip", record, &rip, 1) < 0)
-                return -1;
+ So, for the moment I'm not 100% sure that this is indeed the
+problem.
 
-        if (pevent_get_field_val(s, event, "csbase", record, &csbase, 1) < 0)
-                return -1;
-
-        if (pevent_get_field_val(s, event, "len", record, &len, 1) < 0)
-                return -1;
-
-        if (pevent_get_field_val(s, event, "flags", record, &flags, 1) < 0)
-                return -1;
-
-        if (pevent_get_field_val(s, event, "failed", record, &failed, 1) < 0)
-                return -1;
-
-        insn = pevent_get_field_raw(s, event, "insn", record, &llen, 1);
-        if (!insn)
-                return -1;
-
-        disasm = disassemble(insn, len, rip,
-                             flags & KVM_EMUL_INSN_F_CR0_PE,
-                             flags & KVM_EMUL_INSN_F_EFL_VM,
-                             flags & KVM_EMUL_INSN_F_CS_D,
-                             flags & KVM_EMUL_INSN_F_CS_L);
-
-        trace_seq_printf(s, "%llx:%llx: %s%s", csbase, rip, disasm,
-                         failed ? " FAIL" : "");
-
-        return 0;
-}
-
-
-You see, this uses the information from libtraceevent to get the
-required fields. Then it prints it out nicely for users. Here's the
-output of trace-cmd report after a trace-cmd record -e kvm and starting
-a guest:
-
-             kvm-6172  [000] 14669573.114126: kvm_entry:            vcpu 0
-             kvm-6172  [000] 14669573.114127: kvm_exit:             reason IO_INSTRUCTION rip 0xffff357a info cfc0008 0
-             kvm-6172  [000] 14669573.114130: kvm_emulate_insn:     0:ffff357a: ec
-             kvm-6172  [000] 14669573.114130: kvm_pio:              pio_read at 0xcfc size 1 count 1
-             kvm-6172  [000] 14669573.114131: kvm_userspace_exit:   reason KVM_EXIT_IO (2)
-             kvm-6172  [000] 14669573.114134: kvm_entry:            vcpu 0
-             kvm-6172  [000] 14669573.114135: kvm_exit:             reason IO_INSTRUCTION rip 0xffff34f9 info cf80003 0
-             kvm-6172  [000] 14669573.114136: kvm_pio:              pio_write at 0xcf8 size 4 count 1
-             kvm-6172  [000] 14669573.114136: kvm_userspace_exit:   reason KVM_EXIT_IO (2)
-
-I can disable plugins to show you the result of what happens without
-them:
-
-trace-cmd report -N
-[...]
-             kvm-6172  [000] 14669573.114126: kvm_entry:            vcpu 0
-             kvm-6172  [000] 14669573.114127: kvm_exit:             [FAILED TO PARSE] exit_reason=30 guest_rip=0xffff357a isa=1 info1=217841672 info2=0
-             kvm-6172  [000] 14669573.114130: kvm_emulate_insn:     [FAILED TO PARSE] rip=4294915450 csbase=0 len=1 insn=ì[ÃWVS<89>Ã<89>Ö¨^Gu^Q^O^E flags=5 failed=0
-             kvm-6172  [000] 14669573.114130: kvm_pio:              pio_read at 0xcfc size 1 count 1
-             kvm-6172  [000] 14669573.114131: kvm_userspace_exit:   reason KVM_EXIT_IO (2)
-             kvm-6172  [000] 14669573.114134: kvm_entry:            vcpu 0
-
-This is the power of plugins. I would expect to add something like:
-
-tools/events/plugins/
-
-where these can be added for everyone.
-
--- Steve
-
-
+Ä¸en
+-- 
+das eine Mal als TragÃ¶die, das andere Mal als Farce
