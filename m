@@ -1,149 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2FSCBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Jun 2012 22:01:37 -0400
-Received: from nm3.access.bullet.mail.mud.yahoo.com ([66.94.237.204]:40692
-	"HELO nm3.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752256Ab2FSCBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Jun 2012 22:01:33 -0400
-X-Yahoo-Newman-Id: 68213.23830.bm@smtp106.biz.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: N2FryAgVM1kR1GoJXERQEPYqXo7WjMS.OBUgqQYfbe8uDZh
- oplvkzbnm1P2qF4deolrGl7JhM0NIdcVRgcgw4DlbkVxnbvAOeD3yb57EGcD
- yoEf8SGhn6za9wDnEK44uTQjooXUuLX09xYaAfbukJvTS4iI4V0OJh6qRpL_
- 1UuJpOy7A3AWqmTQ2hkJ4v8och6WPJANUPeuPv62Vtm8673hWWQvpwHxuplm
- OjF8kQB6nqiCqQDWNK0s3G77gBmYVJ0li5lPb7NIQlks9t2x.h71pfUQR810
- wVqmyxcHWhGbf1WA7nrPNmejq_3WtkAdkF2J10N963s7CI8svxO6fVu1lmJo
- 9CJ13lCNzVbEoFEY2CgLma6g0.1uXYnDP6QZx8Mz7JdtIIs7IfAloynHkIHF
- aGAm.xXCSNnl6aVc9uRGtoVTau_gnDN3S66Uipp9fMnK_ik8iwZrQHM8e3OL
- zT8JPRpA5_s3UiWRtMNq5MHOTFPZcwLGIMrLNTDdbkxL1nYWUgh7KElQMi97
- biUHwYVexDBGqb95Cd7xA3LOCmg--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4FDFDD80.9010007@schaufler-ca.com>
-Date: Mon, 18 Jun 2012 19:01:36 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751919Ab2FSCBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Jun 2012 22:01:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10429 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708Ab2FSCBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Jun 2012 22:01:15 -0400
+Message-ID: <4FDFDDBE.3050506@redhat.com>
+Date: Tue, 19 Jun 2012 10:02:38 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: [PATCH] Smack: user access check bounds
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>
+Subject: Re: [PATCH 1/3] block: Introduce __blk_segment_map_sg() helper
+References: <1340002390-3950-1-git-send-email-asias@redhat.com> <1340002390-3950-2-git-send-email-asias@redhat.com> <20120618213103.GC32733@google.com>
+In-Reply-To: <20120618213103.GC32733@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Casey Schaufler <casey@schaufler-ca.com>
-Subject: [PATCH] Smack: user access check bounds
+On 06/19/2012 05:31 AM, Tejun Heo wrote:
+> Hello, Asias.
+>
+> On Mon, Jun 18, 2012 at 02:53:08PM +0800, Asias He wrote:
+>> Split the mapping code in blk_rq_map_sg() to a helper
+>> __blk_segment_map_sg(), so that other mapping function, e.g.
+>> blk_bio_map_sg(), can share the code.
+>>
+>> Cc: Jens Axboe <axboe@kernel.dk>
+>> Cc: Tejun Heo <tj@kernel.org>
+>> Cc: Shaohua Li <shli@kernel.org>
+>> Cc: linux-kernel@vger.kernel.org
+>> Suggested-by: Tejun Heo <tj@kernel.org>
+>> Suggested-by: Jens Axboe <axboe@kernel.dk>
+>> Signed-off-by: Asias He <asias@redhat.com>
+>> ---
+>>   block/blk-merge.c |   80 ++++++++++++++++++++++++++++++-----------------------
+>>   1 file changed, 45 insertions(+), 35 deletions(-)
+>>
+>> diff --git a/block/blk-merge.c b/block/blk-merge.c
+>> index 160035f..576b68e 100644
+>> --- a/block/blk-merge.c
+>> +++ b/block/blk-merge.c
+>> @@ -110,6 +110,49 @@ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
+>>   	return 0;
+>>   }
+>>
+>> +static void
+>> +__blk_segment_map_sg(struct request_queue *q, struct bio_vec *bvec,
+>> +		     struct scatterlist *sglist, struct bio_vec **bvprv,
+>> +		     struct scatterlist **sg, int *nsegs, int *cluster)
+>> +{
+>> +
+>> +	int nbytes = bvec->bv_len;
+>> +
+>> +	if (*bvprv && *cluster) {
+>> +		if ((*sg)->length + nbytes > queue_max_segment_size(q))
+>> +			goto new_segment;
+>> +
+>> +		if (!BIOVEC_PHYS_MERGEABLE(*bvprv, bvec))
+>> +			goto new_segment;
+>> +		if (!BIOVEC_SEG_BOUNDARY(q, *bvprv, bvec))
+>> +			goto new_segment;
+>> +
+>> +		(*sg)->length += nbytes;
+>> +	} else {
+>> +new_segment:
+>> +		if (!*sg)
+>> +			*sg = sglist;
+>> +		else {
+>> +			/*
+>> +			 * If the driver previously mapped a shorter
+>> +			 * list, we could see a termination bit
+>> +			 * prematurely unless it fully inits the sg
+>> +			 * table on each mapping. We KNOW that there
+>> +			 * must be more entries here or the driver
+>> +			 * would be buggy, so force clear the
+>> +			 * termination bit to avoid doing a full
+>> +			 * sg_init_table() in drivers for each command.
+>> +			 */
+>> +			(*sg)->page_link &= ~0x02;
+>> +			*sg = sg_next(*sg);
+>> +		}
+>> +
+>> +		sg_set_page(*sg, bvec->bv_page, nbytes, bvec->bv_offset);
+>> +		(*nsegs)++;
+>> +	}
+>> +	*bvprv = bvec;
+>> +}
+>
+> I *hope* this is a bit prettier.  e.g. Do we really need to pass in
+> @sglist and keep using "goto new_segment"?
 
-Some of the bounds checking used on the /smack/access
-interface was lost when support for long labels was
-added. No kernel access checks are affected, however
-this is a case where /smack/access could be used
-incorrectly and fail to detect the error. This patch
-reintroduces the original checks.
+I think this deserves another patch on top of this splitting one. I'd 
+like to clean this up later.
 
-Targeted for git://git.gitorious.org/smack-next/kernel.git
-
-Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-
----
-
- security/smack/smackfs.c |   26 ++++++++++++--------------
- 1 files changed, 12 insertions(+), 14 deletions(-)
-
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 2152965..29b760d 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -215,28 +215,27 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
-  * @access: access string
-  * @rule: Smack rule
-  * @import: if non-zero, import labels
-+ * @len: label length limit
-  *
-  * Returns 0 on success, -1 on failure
-  */
- static int smk_fill_rule(const char *subject, const char *object,
- 				const char *access, struct smack_rule *rule,
--				int import)
-+				int import, int len)
- {
--	int rc = -1;
--	int done;
- 	const char *cp;
- 	struct smack_known *skp;
- 
- 	if (import) {
--		rule->smk_subject = smk_import(subject, 0);
-+		rule->smk_subject = smk_import(subject, len);
- 		if (rule->smk_subject == NULL)
- 			return -1;
- 
--		rule->smk_object = smk_import(object, 0);
-+		rule->smk_object = smk_import(object, len);
- 		if (rule->smk_object == NULL)
- 			return -1;
- 	} else {
--		cp = smk_parse_smack(subject, 0);
-+		cp = smk_parse_smack(subject, len);
- 		if (cp == NULL)
- 			return -1;
- 		skp = smk_find_entry(cp);
-@@ -245,7 +244,7 @@ static int smk_fill_rule(const char *subject, const char *object,
- 			return -1;
- 		rule->smk_subject = skp->smk_known;
- 
--		cp = smk_parse_smack(object, 0);
-+		cp = smk_parse_smack(object, len);
- 		if (cp == NULL)
- 			return -1;
- 		skp = smk_find_entry(cp);
-@@ -257,7 +256,7 @@ static int smk_fill_rule(const char *subject, const char *object,
- 
- 	rule->smk_access = 0;
- 
--	for (cp = access, done = 0; *cp && !done; cp++) {
-+	for (cp = access; *cp != '\0'; cp++) {
- 		switch (*cp) {
- 		case '-':
- 			break;
-@@ -282,13 +281,11 @@ static int smk_fill_rule(const char *subject, const char *object,
- 			rule->smk_access |= MAY_TRANSMUTE;
- 			break;
- 		default:
--			done = 1;
--			break;
-+			return 0;
- 		}
- 	}
--	rc = 0;
- 
--	return rc;
-+	return 0;
- }
- 
- /**
-@@ -304,7 +301,8 @@ static int smk_parse_rule(const char *data, struct smack_rule *rule, int import)
- 	int rc;
- 
- 	rc = smk_fill_rule(data, data + SMK_LABELLEN,
--			   data + SMK_LABELLEN + SMK_LABELLEN, rule, import);
-+			   data + SMK_LABELLEN + SMK_LABELLEN, rule, import,
-+			   SMK_LABELLEN);
- 	return rc;
- }
- 
-@@ -340,7 +338,7 @@ static int smk_parse_long_rule(const char *data, struct smack_rule *rule,
- 		goto free_out_o;
- 
- 	if (sscanf(data, "%s %s %s", subject, object, access) == 3)
--		rc = smk_fill_rule(subject, object, access, rule, import);
-+		rc = smk_fill_rule(subject, object, access, rule, import, 0);
- 
- 	kfree(access);
- free_out_o:
+-- 
+Asias
 
 
