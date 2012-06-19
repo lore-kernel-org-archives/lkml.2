@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab2FSNnf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 09:43:35 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:59561 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab2FSNnb (ORCPT
+	id S1754179Ab2FSNno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 09:43:44 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:39375 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab2FSNnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 09:43:31 -0400
+	Tue, 19 Jun 2012 09:43:35 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 3/4] cputime: Consolidate vtime handling on context switch
-Date: Tue, 19 Jun 2012 15:43:10 +0200
-Message-Id: <1340113391-1896-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/4] s390: Remove leftover account_tick_vtime() header
+Date: Tue, 19 Jun 2012 15:43:11 +0200
+Message-Id: <1340113391-1896-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
 References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
@@ -27,18 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The archs that implement virtual cputime accounting all
-flush the cputime of a task when it gets descheduled
-and sometimes set up some ground initialization for the
-next task to account its cputime.
-
-These archs all put their own hooks in their context
-switch callbacks and handle the off-case themselves.
-
-Consolidate this by creating a new account_switch_vtime()
-callback called in generic code right after a context switch
-and that these archs must implement to flush the prev task
-cputime and initialize the next task cputime related state.
+The function doesn't seem to exist anymore.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Tony Luck <tony.luck@intel.com>
@@ -51,174 +40,22 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/ia64/include/asm/switch_to.h |    8 --------
- arch/ia64/kernel/time.c           |    4 ++--
- arch/powerpc/include/asm/time.h   |    6 ------
- arch/powerpc/kernel/process.c     |    3 ---
- arch/powerpc/kernel/time.c        |    6 ++++++
  arch/s390/include/asm/switch_to.h |    2 --
- arch/s390/kernel/vtime.c          |    4 ++--
- include/linux/kernel_stat.h       |    6 ++++++
- kernel/sched/core.c               |    1 +
- 9 files changed, 17 insertions(+), 23 deletions(-)
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/ia64/include/asm/switch_to.h b/arch/ia64/include/asm/switch_to.h
-index cb2412f..d38c7ea 100644
---- a/arch/ia64/include/asm/switch_to.h
-+++ b/arch/ia64/include/asm/switch_to.h
-@@ -30,13 +30,6 @@ extern struct task_struct *ia64_switch_to (void *next_task);
- extern void ia64_save_extra (struct task_struct *task);
- extern void ia64_load_extra (struct task_struct *task);
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
--extern void ia64_account_on_switch (struct task_struct *prev, struct task_struct *next);
--# define IA64_ACCOUNT_ON_SWITCH(p,n) ia64_account_on_switch(p,n)
--#else
--# define IA64_ACCOUNT_ON_SWITCH(p,n)
--#endif
--
- #ifdef CONFIG_PERFMON
-   DECLARE_PER_CPU(unsigned long, pfm_syst_info);
- # define PERFMON_IS_SYSWIDE() (__get_cpu_var(pfm_syst_info) & 0x1)
-@@ -49,7 +42,6 @@ extern void ia64_account_on_switch (struct task_struct *prev, struct task_struct
- 	 || PERFMON_IS_SYSWIDE())
- 
- #define __switch_to(prev,next,last) do {							 \
--	IA64_ACCOUNT_ON_SWITCH(prev, next);							 \
- 	if (IA64_HAS_EXTRA_STATE(prev))								 \
- 		ia64_save_extra(prev);								 \
- 	if (IA64_HAS_EXTRA_STATE(next))								 \
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index ecc904b..6247197 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -88,10 +88,10 @@ extern cputime_t cycle_to_cputime(u64 cyc);
-  * accumulated times to the current process, and to prepare accounting on
-  * the next process.
-  */
--void ia64_account_on_switch(struct task_struct *prev, struct task_struct *next)
-+void account_switch_vtime(struct task_struct *prev)
- {
- 	struct thread_info *pi = task_thread_info(prev);
--	struct thread_info *ni = task_thread_info(next);
-+	struct thread_info *ni = task_thread_info(current);
- 	cputime_t delta_stime, delta_utime;
- 	__u64 now;
- 
-diff --git a/arch/powerpc/include/asm/time.h b/arch/powerpc/include/asm/time.h
-index 3b4b4a8..c1f2676 100644
---- a/arch/powerpc/include/asm/time.h
-+++ b/arch/powerpc/include/asm/time.h
-@@ -197,12 +197,6 @@ struct cpu_usage {
- 
- DECLARE_PER_CPU(struct cpu_usage, cpu_usage_array);
- 
--#if defined(CONFIG_VIRT_CPU_ACCOUNTING)
--#define account_process_vtime(tsk)		account_process_tick(tsk, 0)
--#else
--#define account_process_vtime(tsk)		do { } while (0)
--#endif
--
- extern void secondary_cpu_time_init(void);
- 
- DECLARE_PER_CPU(u64, decrementers_next_tb);
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 710f400..d73fa99 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -514,9 +514,6 @@ struct task_struct *__switch_to(struct task_struct *prev,
- 
- 	local_irq_save(flags);
- 
--	account_system_vtime(current);
--	account_process_vtime(current);
--
- 	/*
- 	 * We can't take a PMU exception inside _switch() since there is a
- 	 * window where the kernel stack SLB and the kernel stack are out
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index be171ee..49da7f0 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -366,6 +366,12 @@ void account_process_tick(struct task_struct *tsk, int user_tick)
- 	account_user_time(tsk, utime, utimescaled);
- }
- 
-+void account_switch_vtime(struct task_struct *prev)
-+{
-+	account_system_vtime(prev);
-+	account_process_tick(prev, 0);
-+}
-+
- #else /* ! CONFIG_VIRT_CPU_ACCOUNTING */
- #define calc_cputime_factors()
- #endif
 diff --git a/arch/s390/include/asm/switch_to.h b/arch/s390/include/asm/switch_to.h
-index f223068..e7f9b3d 100644
+index e7f9b3d..314cc94 100644
 --- a/arch/s390/include/asm/switch_to.h
 +++ b/arch/s390/include/asm/switch_to.h
-@@ -89,12 +89,10 @@ static inline void restore_access_regs(unsigned int *acrs)
+@@ -89,8 +89,6 @@ static inline void restore_access_regs(unsigned int *acrs)
  	prev = __switch_to(prev,next);					\
  } while (0)
  
--extern void account_vtime(struct task_struct *, struct task_struct *);
- extern void account_tick_vtime(struct task_struct *);
- 
+-extern void account_tick_vtime(struct task_struct *);
+-
  #define finish_arch_switch(prev) do {					     \
  	set_fs(current->thread.mm_segment);				     \
--	account_vtime(prev, current);					     \
  } while (0)
- 
- #endif /* __ASM_SWITCH_TO_H */
-diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
-index 39ebff5..506e9bd 100644
---- a/arch/s390/kernel/vtime.c
-+++ b/arch/s390/kernel/vtime.c
-@@ -86,7 +86,7 @@ static void do_account_vtime(struct task_struct *tsk, int hardirq_offset)
- 	}
- }
- 
--void account_vtime(struct task_struct *prev, struct task_struct *next)
-+void account_switch_vtime(struct task_struct *prev)
- {
- 	struct thread_info *ti;
- 
-@@ -94,7 +94,7 @@ void account_vtime(struct task_struct *prev, struct task_struct *next)
- 	ti = task_thread_info(prev);
- 	ti->user_timer = S390_lowcore.user_timer;
- 	ti->system_timer = S390_lowcore.system_timer;
--	ti = task_thread_info(next);
-+	ti = task_thread_info(current);
- 	S390_lowcore.user_timer = ti->user_timer;
- 	S390_lowcore.system_timer = ti->system_timer;
- }
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 2fbd905..bbe5d15 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -130,4 +130,10 @@ extern void account_process_tick(struct task_struct *, int user);
- extern void account_steal_ticks(unsigned long ticks);
- extern void account_idle_ticks(unsigned long ticks);
- 
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+extern void account_switch_vtime(struct task_struct *prev);
-+#else
-+static inline void account_switch_vtime(struct task_struct *prev) { }
-+#endif
-+
- #endif /* _LINUX_KERNEL_STAT_H */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4f89f42..d34a150 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1796,6 +1796,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	 *		Manfred Spraul <manfred@colorfullife.com>
- 	 */
- 	prev_state = prev->state;
-+	account_switch_vtime(prev);
- 	finish_arch_switch(prev);
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	local_irq_disable();
 -- 
 1.7.5.4
 
