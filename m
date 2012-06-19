@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab2FSODt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 10:03:49 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:38305 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab2FSODs convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:1:1>);
-	Tue, 19 Jun 2012 10:03:48 -0400
-Message-Id: <4FE0A30C020000780008AA0B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 19 Jun 2012 15:04:28 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Kay Sievers" <kay@vrfy.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: printk behavioral regression
-References: <4FE09AFC020000780008A9DC@nat28.tlf.novell.com>
- <CAPXgP13y_xOUzHdStsDWescPtJYn0nvMhsQ7c2XS3HBuE=jwow@mail.gmail.com>
-In-Reply-To: <CAPXgP13y_xOUzHdStsDWescPtJYn0nvMhsQ7c2XS3HBuE=jwow@mail.gmail.com>
+	id S1753513Ab2FSOId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 10:08:33 -0400
+Received: from plane.gmane.org ([80.91.229.3]:37344 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751279Ab2FSOIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Jun 2012 10:08:32 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: =?ISO-8859-2?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
+Subject: regression with dynpm [was: [git pull] drm-fixes]
+Date: Tue, 19 Jun 2012 16:08:17 +0200
+Message-ID: <4FE087D1.2000708@web.de>
+References: <alpine.DEB.2.00.1206170838050.26175@skynet.skynet.ie>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: p5b3712e7.dip.t-dialin.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+In-Reply-To: <alpine.DEB.2.00.1206170838050.26175@skynet.skynet.ie>
+Cc: dri-devel@lists.freedesktop.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 19.06.12 at 15:53, Kay Sievers <kay@vrfy.org> wrote:
-> On Tue, Jun 19, 2012 at 3:30 PM, Jan Beulich <JBeulich@suse.com> wrote:
->> running 3.5-rc3 on a SLE11 SP1 system, early boot messages (apart
->> from the very first one) end up in /var/log/messages rather than
->> /var/log/boot.msg. I didn't dig deep enough yet to figure out what
->> is causing this, and would hope that you (having contributed most
->> of the changes between 3.4 and 3.5-rc3) might have an idea.
+Dave Airlie wrote, on 06/17/12 09:42:
 > 
-> Hmm, no idea really, and why this should change.
+> Hi Linus,
+> 
+> radeon is most of the work, one regression, one BUG fix in the new prime 
+> code, some fixes to init code to make streamout not lock up the hardware, 
+> and just some code to enable users to test HDMI audio on later hw (its off by 
+> default).
+> 
+> Intel adds edp edid caching for some strange Dell Vostros that black 
+> screen on startup if keep reading their EDID, and a fix for a DP 
+> regression.
+> 
+> Otherwise fix for via/sis and one to stop udl binding to multiple 
+> non-video usb.
+> 
+> Dave.
+> 
+> The following changes since commit 9b15b817f3d62409290fd56fe3cbb076a931bb0a:
+> 
+>   swap: fix shmem swapping when more than 8 areas (2012-06-15 21:48:14 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://people.freedesktop.org/~airlied/linux drm-fixes
+> 
+> for you to fetch changes up to c4af5c4597a7a5d64e058703e1328f315a59794e:
+> 
+>   Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes (2012-06-16 14:45:17 +0100)
+> 
+> ----------------------------------------------------------------
+> 
+> Alex Deucher (3):
+>       drm/radeon: fix regression in dynpm due to multi-ring rework
+>       drm/radeon: add some additional 6xx/7xx/EG register init
+>       drm/radeon: add support for STRMOUT_BASE_UPDATE on 7xx
+> 
 
-Okay, then I'll indeed need to do some debugging.
+Hello Dave,
 
-> /var/log/boot.msg is a SUSE speciality, that, as far as I know, just
-> dumps 'dmesg' after bootup, it has not much to do with the normal
-> syslog/klog logging in /var/log/messages, where all your messages should 
-> always end up, and what seems to work for you.
+on my HP Pavilion dv7 there is still with 3.5-rc3 a severe problem with the
+dynpm option. After booting, the machine freezes (hard-lock) when trying to
+switch to dynamic power mangement on the integrated GPU via
 
-No, boot messages (at least by default) end up _only_ in
-/var/log/boot.msg, and thus significantly help keeping the size
-of /var/log/messages down. SUSE specialty or not, there
-clearly is some user space visible change here.
+     echo -n dynpm > /sys/class/drm/card0/device/power_method
 
-Jan
+at least two trace calls are done. On the console only the last two lines of one
+call trace and the last one are visible (machine is frozen). Debugfs is not
+mounted. On demand I can deliver further information.
+The system has two AMD-GPU (Mobility Radeon HD 4200, HD 5400) and vga_switcheroo
+is built into the kernel.
+
+-- 
+Best regards,
+Jörg-Volker.
 
