@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2FSLwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 07:52:46 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:3991 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753550Ab2FSLwo (ORCPT
+	id S1753771Ab2FSLyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 07:54:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15650 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab2FSLyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 07:52:44 -0400
-Message-ID: <1340106762.1936.25.camel@x61.thuisdomein>
-Subject: [PATCH] mtd: chips: reorganize Kconfig help on swapping
-From: Paul Bolle <pebolle@tiscali.nl>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 19 Jun 2012 13:52:42 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Tue, 19 Jun 2012 07:54:44 -0400
+X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ARy8Wg5PTaYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=Y8WsaQ1XEaPmiJaeeMYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340106882.25903.206.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC PATCH 0/2] libtraceevent/perf: Add support for trace-cmd
+ plugins
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, namhyung.kim@lge.com,
+        mingo@kernel.org, peterz@infradead.org
+Date: Tue, 19 Jun 2012 07:54:42 -0400
+In-Reply-To: <87vcinhn90.fsf@sejong.aot.lge.com>
+References: <1339695333-64591-1-git-send-email-dsahern@gmail.com>
+	 <87lijlhv9v.fsf@sejong.aot.lge.com> <4FDF3D5C.1030209@gmail.com>
+	 <87d34wi0y3.fsf@sejong.aot.lge.com>
+	 <1340067793.25903.158.camel@gandalf.stny.rr.com>
+	 <878vfkhzr8.fsf@sejong.aot.lge.com>
+	 <1340069162.25903.176.camel@gandalf.stny.rr.com>
+	 <874nq8hyfa.fsf@sejong.aot.lge.com>
+	 <1340072171.25903.181.camel@gandalf.stny.rr.com>
+	 <87vcinhn90.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-OriginalArrivalTime: 19 Jun 2012 11:52:42.0882 (UTC) FILETIME=[08DEF620:01CD4E12]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig help on "Flash cmd/query data swapping" still mentions
-LART_ENDIAN_BYTE. That option used to be relevant for setting
-CONFIG_MTD_CFI_LART_BIT_SWAP. That option and macro got both removed in
-v2.4.11-pre4. So, although LART endianness sounds intriguing, that part
-of the help text can be removed.
+On Tue, 2012-06-19 at 14:41 +0900, Namhyung Kim wrote:
+> On Mon, 18 Jun 2012 22:16:11 -0400, Steven Rostedt wrote:
+> > We can be a bit better at the raw print, sure. Here's the format that's
+> > there:
+> >
+> > 	field:__u64 rip;	offset:16;	size:8;	signed:0;
+> > 	field:__u32 csbase;	offset:24;	size:4;	signed:0;
+> > 	field:__u8 len;	offset:28;	size:1;	signed:0;
+> > 	field:__u8 insn[15];	offset:29;	size:15;	signed:0;
+> > 	field:__u8 flags;	offset:44;	size:1;	signed:0;
+> > 	field:__u8 failed;	offset:45;	size:1;	signed:0;
+> >
+> > It treated __u* as decimal numbers, but it also saw that insn[15] was an
+> > array, and with single bytes at that. So it thought it was a string, and
+> > tried to print it out as such.
+> >
+> > We can change the heuristics of this to make it more readable.
+> >
+> 
+> Right. The current heuristic treats an u8 array as a string:
+> 
+> static int field_is_string(struct format_field *field)
+> {
+> 	if ((field->flags & FIELD_IS_ARRAY) &&
+> 	    (strstr(field->type, "char") || strstr(field->type, "u8") ||
+> 	     strstr(field->type, "s8")))
+> 		return 1;
+> 
+> 	return 0;
+> }
+> 
+> Do you want to get rid of u8 from the function? Or is there a
+> better way?
+> 
 
-And, while we're touching this choice, move the help text up one level.
-Currently it's available under the "NO" option, while it's relevant for
-all three options.
+We could simply check if all the characters in the array passes
+'isprint()' and if it does then print the string, otherwise print the
+hex. Do this for all events, and if it one fails, then mark it always to
+print hex.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Tested only with "make menuconfig".
+-- Steve
 
-1) Triggers a checkpatch warning: "please write a paragraph that
-describes the config symbol fully". That's a bit of a false positive
-here (also see the comment starting at line 1708 in checkpatch.pl).
-
- drivers/mtd/chips/Kconfig |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/mtd/chips/Kconfig b/drivers/mtd/chips/Kconfig
-index b1e3c26..e469b01 100644
---- a/drivers/mtd/chips/Kconfig
-+++ b/drivers/mtd/chips/Kconfig
-@@ -43,9 +43,6 @@ choice
- 	prompt "Flash cmd/query data swapping"
- 	depends on MTD_CFI_ADV_OPTIONS
- 	default MTD_CFI_NOSWAP
--
--config MTD_CFI_NOSWAP
--	bool "NO"
- 	---help---
- 	  This option defines the way in which the CPU attempts to arrange
- 	  data bits when writing the 'magic' commands to the chips. Saying
-@@ -55,12 +52,8 @@ config MTD_CFI_NOSWAP
- 	  Specific arrangements are possible with the BIG_ENDIAN_BYTE and
- 	  LITTLE_ENDIAN_BYTE, if the bytes are reversed.
- 
--	  If you have a LART, on which the data (and address) lines were
--	  connected in a fashion which ensured that the nets were as short
--	  as possible, resulting in a bit-shuffling which seems utterly
--	  random to the untrained eye, you need the LART_ENDIAN_BYTE option.
--
--	  Yes, there really exists something sicker than PDP-endian :)
-+config MTD_CFI_NOSWAP
-+	bool "NO"
- 
- config MTD_CFI_BE_BYTE_SWAP
- 	bool "BIG_ENDIAN_BYTE"
--- 
-1.7.7.6
 
