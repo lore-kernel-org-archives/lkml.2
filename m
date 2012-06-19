@@ -1,233 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab2FSGQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 02:16:10 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5256 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab2FSGQH (ORCPT
+	id S1753862Ab2FSGQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 02:16:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62107 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473Ab2FSGQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 02:16:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 18 Jun 2012 23:16:03 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>, <ccross@android.com>, <olof@lixom.net>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] ARM: tegra: apbio access using dma for tegra20 only
-Date: Tue, 19 Jun 2012 11:36:14 +0530
-Message-ID: <1340085974-9623-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Tue, 19 Jun 2012 02:16:28 -0400
+Date: Tue, 19 Jun 2012 08:16:06 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Roland Stigge <stigge@antcom.de>, riku.voipio@iki.fi,
+        bryan.wu@canonical.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] leds: Add DT support for leds-pca9532
+Message-ID: <20120619061606.GA32193@avionic-0098.mockup.avionic-design.de>
+References: <1339855851-9171-1-git-send-email-stigge@antcom.de>
+ <4FDCA0FC.5000409@wwwdotorg.org>
+ <4FDDC4A9.1040706@antcom.de>
+ <4FDE1BCF.60109@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
+Content-Disposition: inline
+In-Reply-To: <4FDE1BCF.60109@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:tOPlVNRnWgiDbMY23Z5x9/0ecqMLo2hwFU4/fPgrYAK
+ iSlThjT8zUKTxCVBoUWAYl6PbcR7lgmKKQferQ5zunHg2EZo/b
+ hjML3yVGgC5nIOpyJNCjRr+P9Lf5gi4EskXfoPeI1I4sTlPoxR
+ 4HGvp7ddFD7B88h/5spoZvai1jgpmzJR81GJHV/dQNpO+ZoREt
+ VgACmuaywtHtuwIzR8+cSK2y1Zsym7vXUBGGUBGsa8pjVRdUJT
+ vkuNuVQVvzWhZjdr2aW9LdoN3UnCSgJp1JRKtYvksulSZpC7YL
+ E6E8yKjzp4IXasFS8YGUM2t6/BsmCvxMdPu9MmcovL2UupWSEq
+ onZ1ORkc0TDfjaXtBaReZR4/v1QlzOJiA/uvUhy2oY7/mlGFPj
+ GuB3/LP+1e5DVM3GtTLFkLg2ZUIXhgHE4E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra20 HW issue with accessing APBIO registers (such
-as fuse registers) directly from the CPU concurrently with
-APB DMA accesses has been fixed in Tegra30 and later chips.
 
-Access these registers directly from the CPU on Tegra30
-and later, and apply the workaround only for Tegra20.
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- arch/arm/mach-tegra/Makefile |    3 +-
- arch/arm/mach-tegra/apbio.c  |   58 ++++++++++++++++++++++++++++++++++++++---
- arch/arm/mach-tegra/apbio.h  |   19 +-------------
- arch/arm/mach-tegra/common.c |    3 ++
- 4 files changed, 59 insertions(+), 24 deletions(-)
+On Sun, Jun 17, 2012 at 12:02:55PM -0600, Stephen Warren wrote:
+> On 06/17/2012 05:51 AM, Roland Stigge wrote:
+> > Hi,
+> >=20
+> > On 16/06/12 17:06, Stephen Warren wrote:
+> >>> +- nxp,typecodes: groups of 2 bits for each of the 16 pins:
+> >>> +  0: None
+> >>> +  1: LED
+> >>> +  2: Beep
+> >>> +  3: GPIO
+> >>> +- nxp,statecodes: groups of 2 bits for each of the 16 pins:
+> >>> +  0: off
+> >>> +  1: on
+> >>> +  2: pwm0
+> >>> +  3: pwm1
+> >>> +
+> >>> +Optional properties:
+> >>> +- nxp,psc: array of 2 numbers: PSC values for the two PWM channels (=
+see datasheet)
+> >>> +- nxp,pwm: array of 2 numbers: PWM values for the two PWM channels (=
+see datasheet)
+> >>
+> >> Shouldn't that all be exposed using a combination of the pinctrl
+> >> bindings that are in 3.5, and the PWM bindings that should be coming i=
+n 3.6?
+> >=20
+> > Thanks for the note! I found a pwm tree that should have this at
+> >=20
+> > http://gitorious.org/linux-pwm/linux-pwm
+> >=20
+> > but it gives me server errors. Is there a place where I can have a look?
+>=20
+> That URL (with http:// replace with git://) did work for me. It seemed a
+> little slow at first, but did work without issue. I Cc'd Thierry in case
+> there's any other location available.
 
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 508d816..c3d7303 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -9,6 +9,7 @@ obj-y					+= fuse.o
- obj-y					+= pmc.o
- obj-y					+= flowctrl.o
- obj-y					+= powergate.o
-+obj-y					+= apbio.o
- obj-$(CONFIG_CPU_IDLE)			+= cpuidle.o
- obj-$(CONFIG_CPU_IDLE)			+= sleep.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra2_clocks.o
-@@ -17,7 +18,7 @@ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= tegra30_clocks.o
- obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o
- obj-$(CONFIG_SMP)                       += reset.o
- obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
--obj-$(CONFIG_TEGRA_SYSTEM_DMA)		+= dma.o apbio.o
-+obj-$(CONFIG_TEGRA_SYSTEM_DMA)		+= dma.o
- obj-$(CONFIG_CPU_FREQ)                  += cpu-tegra.o
- obj-$(CONFIG_TEGRA_PCI)			+= pcie.o
- obj-$(CONFIG_USB_SUPPORT)		+= usb_phy.o
-diff --git a/arch/arm/mach-tegra/apbio.c b/arch/arm/mach-tegra/apbio.c
-index e75451e..13abaa3 100644
---- a/arch/arm/mach-tegra/apbio.c
-+++ b/arch/arm/mach-tegra/apbio.c
-@@ -15,6 +15,10 @@
- 
- #include <linux/kernel.h>
- #include <linux/io.h>
-+#include <mach/iomap.h>
-+#include <linux/of.h>
-+
-+#ifdef CONFIG_TEGRA_SYSTEM_DMA
- #include <linux/dma-mapping.h>
- #include <linux/spinlock.h>
- #include <linux/completion.h>
-@@ -22,7 +26,6 @@
- #include <linux/mutex.h>
- 
- #include <mach/dma.h>
--#include <mach/iomap.h>
- 
- #include "apbio.h"
- 
-@@ -33,6 +36,9 @@ static u32 *tegra_apb_bb;
- static dma_addr_t tegra_apb_bb_phys;
- static DECLARE_COMPLETION(tegra_apb_wait);
- 
-+static u32 tegra_apb_readl_direct(unsigned long offset);
-+static void tegra_apb_writel_direct(u32 value, unsigned long offset);
-+
- bool tegra_apb_init(void)
- {
- 	struct tegra_dma_channel *ch;
-@@ -72,13 +78,13 @@ static void apb_dma_complete(struct tegra_dma_req *req)
- 	complete(&tegra_apb_wait);
- }
- 
--u32 tegra_apb_readl(unsigned long offset)
-+static u32 tegra_apb_readl_using_dma(unsigned long offset)
- {
- 	struct tegra_dma_req req;
- 	int ret;
- 
- 	if (!tegra_apb_dma && !tegra_apb_init())
--		return readl(IO_TO_VIRT(offset));
-+		return tegra_apb_readl_direct(offset);
- 
- 	mutex_lock(&tegra_apb_dma_lock);
- 	req.complete = apb_dma_complete;
-@@ -108,13 +114,13 @@ u32 tegra_apb_readl(unsigned long offset)
- 	return *((u32 *)tegra_apb_bb);
- }
- 
--void tegra_apb_writel(u32 value, unsigned long offset)
-+static void tegra_apb_writel_using_dma(u32 value, unsigned long offset)
- {
- 	struct tegra_dma_req req;
- 	int ret;
- 
- 	if (!tegra_apb_dma && !tegra_apb_init()) {
--		writel(value, IO_TO_VIRT(offset));
-+		tegra_apb_writel_direct(value, offset);
- 		return;
- 	}
- 
-@@ -143,3 +149,45 @@ void tegra_apb_writel(u32 value, unsigned long offset)
- 
- 	mutex_unlock(&tegra_apb_dma_lock);
- }
-+#else
-+#define tegra_apb_readl_using_dma tegra_apb_readl_direct
-+#define tegra_apb_writel_using_dma tegra_apb_writel_direct
-+#endif
-+
-+typedef u32 (*apbio_read_fptr)(unsigned long offset);
-+typedef void (*apbio_write_fptr)(u32 value, unsigned long offset);
-+
-+static apbio_read_fptr apbio_read;
-+static apbio_write_fptr apbio_write;
-+
-+static u32 tegra_apb_readl_direct(unsigned long offset)
-+{
-+	return readl(IO_TO_VIRT(offset));
-+}
-+
-+static void tegra_apb_writel_direct(u32 value, unsigned long offset)
-+{
-+	writel(value, IO_TO_VIRT(offset));
-+}
-+
-+void tegra_apb_io_init(void)
-+{
-+	/* Need to use dma only when it is Tegra20 based platform */
-+	if (of_machine_is_compatible("nvidia,tegra20")) {
-+		apbio_read = tegra_apb_readl_using_dma;
-+		apbio_write = tegra_apb_writel_using_dma;
-+	} else {
-+		apbio_read = tegra_apb_readl_direct;
-+		apbio_write = tegra_apb_writel_direct;
-+	}
-+}
-+
-+u32 tegra_apb_readl(unsigned long offset)
-+{
-+	return apbio_read(offset);
-+}
-+
-+void tegra_apb_writel(u32 value, unsigned long offset)
-+{
-+	apbio_write(value, offset);
-+}
-diff --git a/arch/arm/mach-tegra/apbio.h b/arch/arm/mach-tegra/apbio.h
-index 8b49e8c..f05d71c 100644
---- a/arch/arm/mach-tegra/apbio.h
-+++ b/arch/arm/mach-tegra/apbio.h
-@@ -16,24 +16,7 @@
- #ifndef __MACH_TEGRA_APBIO_H
- #define __MACH_TEGRA_APBIO_H
- 
--#ifdef CONFIG_TEGRA_SYSTEM_DMA
--
-+void tegra_apb_io_init(void);
- u32 tegra_apb_readl(unsigned long offset);
- void tegra_apb_writel(u32 value, unsigned long offset);
--
--#else
--#include <asm/io.h>
--#include <mach/io.h>
--
--static inline u32 tegra_apb_readl(unsigned long offset)
--{
--        return readl(IO_TO_VIRT(offset));
--}
--
--static inline void tegra_apb_writel(u32 value, unsigned long offset)
--{
--        writel(value, IO_TO_VIRT(offset));
--}
--#endif
--
- #endif
-diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
-index 204a5c8..96fef6b 100644
---- a/arch/arm/mach-tegra/common.c
-+++ b/arch/arm/mach-tegra/common.c
-@@ -33,6 +33,7 @@
- #include "clock.h"
- #include "fuse.h"
- #include "pmc.h"
-+#include "apbio.h"
- 
- /*
-  * Storage for debug-macro.S's state.
-@@ -127,6 +128,7 @@ static void __init tegra_init_cache(u32 tag_latency, u32 data_latency)
- #ifdef CONFIG_ARCH_TEGRA_2x_SOC
- void __init tegra20_init_early(void)
- {
-+	tegra_apb_io_init();
- 	tegra_init_fuse();
- 	tegra2_init_clocks();
- 	tegra_clk_init_from_table(tegra20_clk_init_table);
-@@ -138,6 +140,7 @@ void __init tegra20_init_early(void)
- #ifdef CONFIG_ARCH_TEGRA_3x_SOC
- void __init tegra30_init_early(void)
- {
-+	tegra_apb_io_init();
- 	tegra_init_fuse();
- 	tegra30_init_clocks();
- 	tegra_clk_init_from_table(tegra30_clk_init_table);
--- 
-1.7.1.1
+There isn't. IIRC, back when I finalized the PWM subsystem during the last
+cycle, Arnd Bergmann suggested that I request an account and repository on
+kernel.org back when the subsystem was ready. At the time I didn't think
+it necessary, but reading this, perhaps it wouldn't be such a bad idea.
+kernel.org should have better availability than gitorious.
 
+Thierry
+
+--GvXjxJ+pjyke8COw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAk/gGSYACgkQZ+BJyKLjJp9VdgCfSGX+hZg+s6/mvrGolU1Y6Ero
+ij8AoKJMlCIBUDPmt54EyZg6fI8OsLze
+=3irR
+-----END PGP SIGNATURE-----
+
+--GvXjxJ+pjyke8COw--
