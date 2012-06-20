@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab2FTIoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 04:44:22 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18669 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab2FTIoU (ORCPT
+	id S1755629Ab2FTIp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 04:45:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58910 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab2FTIpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 04:44:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 20 Jun 2012 01:44:16 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>
-CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH RESEND] gpio: fix bits conflict for gpio flags
-Date: Wed, 20 Jun 2012 14:14:05 +0530
-Message-ID: <1340181845-14582-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 20 Jun 2012 04:45:55 -0400
+Date: Wed, 20 Jun 2012 09:43:30 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Gupta, Ramesh" <grgupta@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com
+Subject: Re: [PATCH v2 1/4] ARM: new cache maintenance api for iommu mem
+	flush
+Message-ID: <20120620084330.GA13009@n2100.arm.linux.org.uk>
+References: <CADysL2aFufYzmxWOHp2xUt_TkqOQpX883za+7it5h2qd=PMwwA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADysL2aFufYzmxWOHp2xUt_TkqOQpX883za+7it5h2qd=PMwwA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bit 2 and 3 in GPIO flag are allocated for the
-flag OPEN_DRAIN/OPEN_SOURCE. These bits are reused
-for the flag EXPORT/EXPORT_CHANGEABLE and so creating
-conflict.
-Fix this conflict by assigning bit 4 and 5 for the
-flag EXPORT/EXPORT_CHANGEABLE.
+On Tue, Jun 19, 2012 at 04:51:07PM +0530, Gupta, Ramesh wrote:
+> >From 785a1f2854002ce7c1c8880bc5d8d92a7868bf1c Mon Sep 17 00:00:00 2001
+> From: Ramesh Gupta G <grgupta@ti.com>
+> Date: Fri, 15 Jun 2012 16:37:20 +0530
+> Subject: [PATCH v2 1/4] ARM: new cache maintenance api for iommu mem flush
+> 
+> non-coherent IOMMUs need to make sure that the
+> data held in the caches need to be visible for the
+> MMU hardware. A new L1 cache maintenance api has been
+> created to handle this. Thanks to RMK's suggestions on
+> creating a dedicated API for this purpose.
+> 
+> ref:
+> http://marc.info/?l=linux-kernel&m=131316512713815&w=2
+> 
+> Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
+> ---
+>  arch/arm/include/asm/cacheflush.h |   17 +++++++++++++++++
+>  arch/arm/include/asm/glue-cache.h |    1 +
+>  arch/arm/mm/proc-macros.S         |    1 +
+>  3 files changed, 19 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/cacheflush.h
+> b/arch/arm/include/asm/cacheflush.h
+> index d5d8d5c..2b4f5aa 100644
+> --- a/arch/arm/include/asm/cacheflush.h
+> +++ b/arch/arm/include/asm/cacheflush.h
+> @@ -84,6 +84,11 @@
+>   *		- kaddr  - page address
+>   *		- size   - region size
+>   *
+> + *     flush_mem(start, end)
+> + *
+> + *             Clean and invalidate the specified virtual address range.
+> + *             - start  - virtual start address
+> + *             - end    - virtual end address
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Resending this patch in case of if previous patch lost.
+You're missing a blank line here.
 
- include/linux/gpio.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Also, "flush_mem" is a very lame name - it tells us nothing about what the
+purpose of this new API is.  Should it be used for when the CPU MMU TLB
+entries are changed?  What about if we're suspending, should it be used
+then?  What about if we're performing DMA - should it be used for that
+memory too?
 
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index f07fc2d..2e31e8b 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -22,8 +22,8 @@
- /* Gpio pin is open source */
- #define GPIOF_OPEN_SOURCE	(1 << 3)
- 
--#define GPIOF_EXPORT		(1 << 2)
--#define GPIOF_EXPORT_CHANGEABLE	(1 << 3)
-+#define GPIOF_EXPORT		(1 << 4)
-+#define GPIOF_EXPORT_CHANGEABLE	(1 << 5)
- #define GPIOF_EXPORT_DIR_FIXED	(GPIOF_EXPORT)
- #define GPIOF_EXPORT_DIR_CHANGEABLE (GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE)
- 
--- 
-1.7.1.1
+Please, give it a better name which describes what it is for.
 
+> diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
+> index 2d8ff3a..f48a5ab 100644
+> --- a/arch/arm/mm/proc-macros.S
+> +++ b/arch/arm/mm/proc-macros.S
+> @@ -307,6 +307,7 @@ ENTRY(\name\()_cache_fns)
+>  	.long	\name\()_dma_map_area
+>  	.long	\name\()_dma_unmap_area
+>  	.long	\name\()_dma_flush_range
+> +	.long	\name\()_flush_mem
+>  	.size	\name\()_cache_fns, . - \name\()_cache_fns
+>  .endm
+
+This will immediately break the kernel compilation.  Therefore, your
+patch is incomplete and unsuitable for applying.
