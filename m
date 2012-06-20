@@ -1,115 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab2FTQr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:47:28 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41502 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943Ab2FTQr0 convert rfc822-to-8bit (ORCPT
+	id S1754104Ab2FTQsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:48:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38093 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab2FTQr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:47:26 -0400
+	Wed, 20 Jun 2012 12:47:58 -0400
+Date: Wed, 20 Jun 2012 09:47:43 -0700
+From: tip-bot for Namhyung Kim <namhyung@gmail.com>
+Message-ID: <tip-b4418c6848dcd56cc90625dcfaef7cb019492233@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, tglx@linutronix.de, namhyung@gmail.com
+In-Reply-To: <1338265382-6872-6-git-send-email-namhyung@gmail.com>
+References: <1338265382-6872-6-git-send-email-namhyung@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui/gtk:
+  Add GTK statusbar widget to browser window
+Git-Commit-ID: b4418c6848dcd56cc90625dcfaef7cb019492233
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1206201046020.1804-100000@iolanthe.rowland.org>
-References: <1340158627-7586-1-git-send-email-msb@chromium.org>
-	<Pine.LNX.4.44L0.1206201046020.1804-100000@iolanthe.rowland.org>
-Date: Wed, 20 Jun 2012 09:47:24 -0700
-Message-ID: <CANFubx1PLcWaMca5Se0g3zKJxWxqmJj5x_Y6aoH4zgVtQ2OruQ@mail.gmail.com>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous suspend after abort
-From: Mandeep Baines <mandeep.baines@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mandeep Singh Baines <msb@chromium.org>, linux-pm@vger.kernel.org,
-        stable@kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kevin Hilman <khilman@ti.com>, Colin Cross <ccross@android.com>,
-        Sameer Nanda <snanda@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:47:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 7:58 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 19 Jun 2012, Mandeep Singh Baines wrote:
->
->> __device_suspend() must always send a completion. Otherwise, parent
->> devices will wait forever.
->>
->> Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
->> system sleep (v2)", introduced a regression by short-circuiting the
->> complete_all() for certain error cases.
->>
->> This patch fixes the bug by always signalling a completion.
->>
->> Addresses http://crosbug.com/31972
->>
->> Tested by injecting an abort via the following patch:
->>
->> diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
->> index a004db3..e5a6fce 100644
->> --- a/drivers/usb/core/hcd-pci.c
->> +++ b/drivers/usb/core/hcd-pci.c
->> @@ -21,6 +21,7 @@
->>  #include <linux/pci.h>
->>  #include <linux/usb.h>
->>  #include <linux/usb/hcd.h>
->> +#include <linux/string.h>
->>
->>  #include <asm/io.h>
->>  #include <asm/irq.h>
->> @@ -477,6 +478,8 @@ static int resume_common(struct device *dev, int event)
->>
->>  static int hcd_pci_suspend(struct device *dev)
->>  {
->> +       if (!strcmp("0000:00:1d.3", dev_name(dev)))
->> +               return -EBUSY;
->>         return suspend_common(dev, device_may_wakeup(dev));
->>  }
->
-> When you include one patch in front of another like this, doesn't it
-> confuse the automatic tools?  You might end up getting both changes
-> include in the final commit.  :-)
->
+Commit-ID:  b4418c6848dcd56cc90625dcfaef7cb019492233
+Gitweb:     http://git.kernel.org/tip/b4418c6848dcd56cc90625dcfaef7cb019492233
+Author:     Namhyung Kim <namhyung@gmail.com>
+AuthorDate: Tue, 29 May 2012 13:23:00 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 19 Jun 2012 13:06:19 -0300
 
-Ah. Good point. Removed the test code and re-sent.
+perf ui/gtk: Add GTK statusbar widget to browser window
 
->>  drivers/base/power/main.c |    6 ++++--
->>  1 files changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
->> index e0fb5b0..9cb845e 100644
->> --- a/drivers/base/power/main.c
->> +++ b/drivers/base/power/main.c
->> @@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->>       dpm_wait_for_children(dev, async);
->>
->>       if (async_error)
->> -             return 0;
->> +             goto Complete;
->>
->>       pm_runtime_get_noresume(dev);
->>       if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
->> @@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->>       if (pm_wakeup_pending()) {
->>               pm_runtime_put_sync(dev);
->>               async_error = -EBUSY;
->> -             return 0;
->> +             goto Complete;
->>       }
->>
->>       device_lock(dev);
->> @@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->>       }
->>
->>       device_unlock(dev);
->> +
->> + Complete:
->>       complete_all(&dev->power.completion);
->>
->>       if (error) {
->
-> Otherwise this looks right to me.
->
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
->
+Add statusbar widget to display non-critical messages at the bottom of
+the window. This can be used for showing a status change, warning or
+help message.
+
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1338265382-6872-6-git-send-email-namhyung@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/ui/gtk/browser.c |   26 +++++++++++++++++++++++++-
+ tools/perf/ui/gtk/gtk.h     |    2 ++
+ 2 files changed, 27 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 33ab1ae..ece360d 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -122,13 +122,30 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 	gtk_container_add(GTK_CONTAINER(window), view);
+ }
+ 
++static GtkWidget *perf_gtk__setup_statusbar(void)
++{
++	GtkWidget *stbar;
++	unsigned ctxid;
++
++	stbar = gtk_statusbar_new();
++
++	ctxid = gtk_statusbar_get_context_id(GTK_STATUSBAR(stbar),
++					     "perf report");
++	pgctx->statbar = stbar;
++	pgctx->statbar_ctx_id = ctxid;
++
++	return stbar;
++}
++
+ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 				  const char *help __used,
+ 				  void (*timer) (void *arg)__used,
+ 				  void *arg __used, int delay_secs __used)
+ {
+ 	struct perf_evsel *pos;
++	GtkWidget *vbox;
+ 	GtkWidget *notebook;
++	GtkWidget *statbar;
+ 	GtkWidget *window;
+ 
+ 	signal(SIGSEGV, perf_gtk__signal);
+@@ -147,6 +164,8 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 	if (!pgctx)
+ 		return -1;
+ 
++	vbox = gtk_vbox_new(FALSE, 0);
++
+ 	notebook = gtk_notebook_new();
+ 
+ 	list_for_each_entry(pos, &evlist->entries, node) {
+@@ -168,7 +187,12 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrolled_window, tab_label);
+ 	}
+ 
+-	gtk_container_add(GTK_CONTAINER(window), notebook);
++	gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
++
++	statbar = perf_gtk__setup_statusbar();
++	gtk_box_pack_start(GTK_BOX(vbox), statbar, FALSE, FALSE, 0);
++
++	gtk_container_add(GTK_CONTAINER(window), vbox);
+ 
+ 	gtk_widget_show_all(window);
+ 
+diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
+index 34fbca6..2061678 100644
+--- a/tools/perf/ui/gtk/gtk.h
++++ b/tools/perf/ui/gtk/gtk.h
+@@ -10,6 +10,8 @@
+ 
+ struct perf_gtk_context {
+ 	GtkWidget *main_window;
++	GtkWidget *statbar;
++	guint statbar_ctx_id;
+ };
+ 
+ extern struct perf_gtk_context *pgctx;
