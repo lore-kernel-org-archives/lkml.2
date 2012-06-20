@@ -1,220 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294Ab2FTWw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 18:52:29 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49232 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757809Ab2FTWsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 18:48:05 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 05/15] ARM: etm: Configure data tracing
-Date: Wed, 20 Jun 2012 18:47:37 -0400
-Message-Id: <1340232467-6023-6-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
-References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
+	id S1757850Ab2FTW5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 18:57:08 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:23488 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757302Ab2FTW5F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 18:57:05 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-132.messagelabs.com!1340232989!12024336!25
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: skel: use module_comedi_{pci_,}driver()
+Date: Wed, 20 Jun 2012 15:56:50 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062022-7182-0000-0000-000001CC3B85
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206201556.51336.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arve Hjønnevåg <arve@android.com>
+If PCI boards are supported, use the module_comedi_pci_driver() macro
+to register the module as a comedi driver and a PCI driver. Otherwise,
+only ISA boards are supported to use the module_comedi_driver() macro
+to register the module as a comedi driver.
 
-The old code enabled data tracing, but did not configure the
-range. We now configure it to trace all data addresses by default,
-and add a trace_data_range attribute to change the range or disable
-data tracing.
+Refactor the code a bit due to the use of the module_comedi_* macros.
 
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Rename the comedi_driver and pci_driver variables as well as the pci
+driver related functions for aesthetic reasons. This makes the skel
+driver conform to the changes to the other comedi drivers.
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/arm/include/asm/hardware/coresight.h |   10 +++-
- arch/arm/kernel/etm.c                     |   77 +++++++++++++++++++++++++++--
- 2 files changed, 83 insertions(+), 4 deletions(-)
+ drivers/staging/comedi/drivers/skel.c | 190 +++++++++++++++-------------------
+ 1 file changed, 81 insertions(+), 109 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
-index 7ecd793..6ea507f 100644
---- a/arch/arm/include/asm/hardware/coresight.h
-+++ b/arch/arm/include/asm/hardware/coresight.h
-@@ -17,9 +17,11 @@
- #define TRACER_ACCESSED_BIT	0
- #define TRACER_RUNNING_BIT	1
- #define TRACER_CYCLE_ACC_BIT	2
-+#define TRACER_TRACE_DATA_BIT	3
- #define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
- #define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
- #define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
-+#define TRACER_TRACE_DATA	BIT(TRACER_TRACE_DATA_BIT)
+diff --git a/drivers/staging/comedi/drivers/skel.c b/drivers/staging/comedi/drivers/skel.c
+index 6baac52..f9f1f5f 100644
+--- a/drivers/staging/comedi/drivers/skel.c
++++ b/drivers/staging/comedi/drivers/skel.c
+@@ -83,11 +83,7 @@ Configuration Options:
+ #define SKEL_START_AI_CONV	0
+ #define SKEL_AI_READ		0
  
- #define TRACER_TIMEOUT 10000
+-/*
+- * Board descriptions for two imaginary boards.  Describing the
+- * boards in this way is optional, and completely driver-dependent.
+- * Some drivers use arrays such as this, other do not.
+- */
++/* Board specific information about the imaginary board */
+ struct skel_board {
+ 	const char *name;
+ 	int ai_chans;
+@@ -95,34 +91,6 @@ struct skel_board {
+ 	int have_dio;
+ };
  
-@@ -113,8 +115,14 @@
- #define ETMR_TRACEENCTRL	0x24
- #define ETMTE_INCLEXCL		BIT(24)
- #define ETMR_TRACEENEVT		0x20
-+
-+#define ETMR_VIEWDATAEVT	0x30
-+#define ETMR_VIEWDATACTRL1	0x34
-+#define ETMR_VIEWDATACTRL2	0x38
-+#define ETMR_VIEWDATACTRL3	0x3c
-+#define ETMVDC3_EXCLONLY	BIT(16)
-+
- #define ETMCTRL_OPTS		(ETMCTRL_DO_CPRT | \
--				ETMCTRL_DATA_DO_ADDR | \
- 				ETMCTRL_BRANCH_OUTPUT | \
- 				ETMCTRL_DO_CONTEXTID)
+-static const struct skel_board skel_boards[] = {
+-	{
+-	 .name = "skel-100",
+-	 .ai_chans = 16,
+-	 .ai_bits = 12,
+-	 .have_dio = 1,
+-	 },
+-	{
+-	 .name = "skel-200",
+-	 .ai_chans = 8,
+-	 .ai_bits = 16,
+-	 .have_dio = 0,
+-	 },
+-};
+-
+-/* This is used by modprobe to translate PCI IDs to drivers.  Should
+- * only be used for PCI and ISA-PnP devices */
+-/* Please add your PCI vendor ID to comedidev.h, and it will be forwarded
+- * upstream. */
+-#define PCI_VENDOR_ID_SKEL 0xdafe
+-static DEFINE_PCI_DEVICE_TABLE(skel_pci_table) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_SKEL, 0x0100) },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_SKEL, 0x0200) },
+-	{ 0 }
+-};
+-
+-MODULE_DEVICE_TABLE(pci, skel_pci_table);
+-
+ /*
+  * Useful for shorthand access to the particular board structure
+  */
+@@ -149,42 +117,6 @@ struct skel_private {
+  */
+ #define devpriv ((struct skel_private *)dev->private)
  
-diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index bf34d34..c651cf9 100644
---- a/arch/arm/kernel/etm.c
-+++ b/arch/arm/kernel/etm.c
-@@ -43,6 +43,8 @@ struct tracectx {
- 	int		etm_portsz;
- 	unsigned long	range_start;
- 	unsigned long	range_end;
-+	unsigned long	data_range_start;
-+	unsigned long	data_range_end;
- 	struct device	*dev;
- 	struct clk	*emu_clk;
- 	struct mutex	mutex;
-@@ -84,8 +86,15 @@ static int etm_setup_address_range(struct tracectx *t, int n,
- 	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
- 	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
- 
--	flags = exclude ? ETMTE_INCLEXCL : 0;
--	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
-+	if (data) {
-+		flags = exclude ? ETMVDC3_EXCLONLY : 0;
-+		if (exclude)
-+			n += 8;
-+		etm_writel(t, flags | BIT(n), ETMR_VIEWDATACTRL3);
-+	} else {
-+		flags = exclude ? ETMTE_INCLEXCL : 0;
-+		etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
-+	}
- 
- 	return 0;
+-/*
+- * The struct comedi_driver structure tells the Comedi core module
+- * which functions to call to configure/deconfigure (attach/detach)
+- * the board, and also about the kernel module that contains
+- * the device code.
+- */
+-static int skel_attach(struct comedi_device *dev, struct comedi_devconfig *it);
+-static void skel_detach(struct comedi_device *dev);
+-static struct comedi_driver driver_skel = {
+-	.driver_name = "dummy",
+-	.module = THIS_MODULE,
+-	.attach = skel_attach,
+-	.detach = skel_detach,
+-/* It is not necessary to implement the following members if you are
+- * writing a driver for a ISA PnP or PCI card */
+-	/* Most drivers will support multiple types of boards by
+-	 * having an array of board structures.  These were defined
+-	 * in skel_boards[] above.  Note that the element 'name'
+-	 * was first in the structure -- Comedi uses this fact to
+-	 * extract the name of the board without knowing any details
+-	 * about the structure except for its length.
+-	 * When a device is attached (by comedi_config), the name
+-	 * of the device is given to Comedi, and Comedi tries to
+-	 * match it by going through the list of board names.  If
+-	 * there is a match, the address of the pointer is put
+-	 * into dev->board_ptr and driver->attach() is called.
+-	 *
+-	 * Note that these are not necessary if you can determine
+-	 * the type of board in software.  ISA PnP, PCI, and PCMCIA
+-	 * devices are such boards.
+-	 */
+-	.board_name = &skel_boards[0].name,
+-	.offset = sizeof(struct skel_board),
+-	.num_names = ARRAY_SIZE(skel_boards),
+-};
+-
+ static int skel_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 			 struct comedi_insn *insn, unsigned int *data);
+ static int skel_ao_winsn(struct comedi_device *dev, struct comedi_subdevice *s,
+@@ -611,57 +543,97 @@ static int skel_dio_insn_config(struct comedi_device *dev,
+ 	return insn->n;
  }
-@@ -109,6 +118,9 @@ static int trace_start(struct tracectx *t)
- 	if (t->flags & TRACER_CYCLE_ACC)
- 		v |= ETMCTRL_CYCLEACCURATE;
  
-+	if (t->flags & TRACER_TRACE_DATA)
-+		v |= ETMCTRL_DATA_DO_ADDR;
++/*
++ * Board descriptions for two imaginary boards.  Describing the
++ * boards in this way is optional, and completely driver-dependent.
++ * Some drivers use arrays such as this, other do not.
++ */
++static const struct skel_board skel_boards[] = {
++	{
++		.name		= "skel-100",
++		.ai_chans	= 16,
++		.ai_bits	= 12,
++		.have_dio	= 1,
++	}, {
++		.name		= "skel-200",
++		.ai_chans	= 8,
++		.ai_bits	= 16,
++		.have_dio	= 0,
++	},
++};
 +
- 	etm_unlock(t);
- 
- 	etm_writel(t, v, ETMR_CTRL);
-@@ -131,6 +143,17 @@ static int trace_start(struct tracectx *t)
- 	etm_writel(t, 0, ETMR_TRACESSCTRL);
- 	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
- 
-+	etm_writel(t, 0, ETMR_VIEWDATACTRL1);
-+	etm_writel(t, 0, ETMR_VIEWDATACTRL2);
++/*
++ * The struct comedi_driver structure tells the Comedi core module
++ * which functions to call to configure/deconfigure (attach/detach)
++ * the board, and also about the kernel module that contains
++ * the device code.
++ */
++static struct comedi_driver skel_driver = {
++	.driver_name	= "dummy",
++	.module		= THIS_MODULE,
++	.attach		= skel_attach,
++	.detach		= skel_detach,
++	/*
++	 * It is not necessary to implement the following members if
++	 * you are writing a driver for a ISA PnP or PCI card
++	 *
++	 * Most drivers will support multiple types of boards by
++	 * having an array of board structures.  These were defined
++	 * in skel_boards[] above.  Note that the element 'name'
++	 * was first in the structure -- Comedi uses this fact to
++	 * extract the name of the board without knowing any details
++	 * about the structure except for its length.
++	 * When a device is attached (by comedi_config), the name
++	 * of the device is given to Comedi, and Comedi tries to
++	 * match it by going through the list of board names.  If
++	 * there is a match, the address of the pointer is put
++	 * into dev->board_ptr and driver->attach() is called.
++	 *
++	 * Note that these are not necessary if you can determine
++	 * the type of board in software.  ISA PnP, PCI, and PCMCIA
++	 * devices are such boards.
++	 */
++	.board_name	= &skel_boards[0].name,
++	.offset		= sizeof(struct skel_board),
++	.num_names	= ARRAY_SIZE(skel_boards),
++};
 +
-+	if (t->data_range_start || t->data_range_end)
-+		etm_setup_address_range(t, 2, t->data_range_start,
-+					t->data_range_end, 0, 1);
-+	else
-+		etm_writel(t, ETMVDC3_EXCLONLY, ETMR_VIEWDATACTRL3);
-+
-+	etm_writel(t, 0x6f, ETMR_VIEWDATAEVT);
-+
- 	v &= ~ETMCTRL_PROGRAM;
- 	v |= ETMCTRL_PORTSEL;
- 
-@@ -564,6 +587,48 @@ static ssize_t trace_range_store(struct kobject *kobj,
- static struct kobj_attribute trace_range_attr =
- 	__ATTR(trace_range, 0644, trace_range_show, trace_range_store);
- 
-+static ssize_t trace_data_range_show(struct kobject *kobj,
-+				  struct kobj_attribute *attr,
-+				  char *buf)
-+{
-+	unsigned long range_start;
-+	u64 range_end;
-+	mutex_lock(&tracer.mutex);
-+	range_start = tracer.data_range_start;
-+	range_end = tracer.data_range_end;
-+	if (!range_end && (tracer.flags & TRACER_TRACE_DATA))
-+		range_end = 0x100000000ULL;
-+	mutex_unlock(&tracer.mutex);
-+	return sprintf(buf, "%08lx %08llx\n", range_start, range_end);
-+}
-+
-+static ssize_t trace_data_range_store(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   const char *buf, size_t n)
-+{
-+	unsigned long range_start;
-+	u64 range_end;
-+
-+	if (sscanf(buf, "%lx %llx", &range_start, &range_end) != 2)
-+		return -EINVAL;
-+
-+	mutex_lock(&tracer.mutex);
-+	tracer.data_range_start = range_start;
-+	tracer.data_range_end = (unsigned long)range_end;
-+	if (range_end)
-+		tracer.flags |= TRACER_TRACE_DATA;
-+	else
-+		tracer.flags &= ~TRACER_TRACE_DATA;
-+	mutex_unlock(&tracer.mutex);
-+
-+	return n;
-+}
-+
-+
-+static struct kobj_attribute trace_data_range_attr =
-+	__ATTR(trace_data_range, 0644,
-+		trace_data_range_show, trace_data_range_store);
-+
- static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id)
+ #ifdef CONFIG_COMEDI_PCI
+-static int __devinit driver_skel_pci_probe(struct pci_dev *dev,
+-					   const struct pci_device_id *ent)
++static int __devinit skel_pci_probe(struct pci_dev *dev,
++				    const struct pci_device_id *ent)
  {
- 	struct tracectx *t = &tracer;
-@@ -589,7 +654,7 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
- 
- 	mutex_init(&t->mutex);
- 	t->dev = &dev->dev;
--	t->flags = TRACER_CYCLE_ACC;
-+	t->flags = TRACER_CYCLE_ACC | TRACER_TRACE_DATA;
- 	t->etm_portsz = 1;
- 
- 	etm_unlock(t);
-@@ -619,6 +684,11 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
- 	if (ret)
- 		dev_dbg(&dev->dev, "Failed to create trace_range in sysfs\n");
- 
-+	ret = sysfs_create_file(&dev->dev.kobj, &trace_data_range_attr.attr);
-+	if (ret)
-+		dev_dbg(&dev->dev,
-+			"Failed to create trace_data_range in sysfs\n");
-+
- 	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
- 
- out:
-@@ -649,6 +719,7 @@ static int etm_remove(struct amba_device *dev)
- 	sysfs_remove_file(&dev->dev.kobj, &trace_info_attr.attr);
- 	sysfs_remove_file(&dev->dev.kobj, &trace_mode_attr.attr);
- 	sysfs_remove_file(&dev->dev.kobj, &trace_range_attr.attr);
-+	sysfs_remove_file(&dev->dev.kobj, &trace_data_range_attr.attr);
- 
- 	return 0;
+-	return comedi_pci_auto_config(dev, &driver_skel);
++	return comedi_pci_auto_config(dev, &skel_driver);
  }
+ 
+-static void __devexit driver_skel_pci_remove(struct pci_dev *dev)
++static void __devexit skel_pci_remove(struct pci_dev *dev)
+ {
+ 	comedi_pci_auto_unconfig(dev);
+ }
+ 
+-static struct pci_driver driver_skel_pci_driver = {
+-	.id_table = skel_pci_table,
+-	.probe = &driver_skel_pci_probe,
+-	.remove = __devexit_p(&driver_skel_pci_remove)
++/*
++ * This is used by modprobe to translate PCI IDs to drivers.
++ * Should only be used for PCI and ISA-PnP devices
++ *
++ * Please add your PCI vendor ID to comedidev.h, and it will
++ * be forwarded upstream.
++ */
++#define PCI_VENDOR_ID_SKEL 0xdafe
++static DEFINE_PCI_DEVICE_TABLE(skel_pci_table) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_SKEL, 0x0100) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_SKEL, 0x0200) },
++	{ 0 }
+ };
++MODULE_DEVICE_TABLE(pci, skel_pci_table);
+ 
+-static int __init driver_skel_init_module(void)
+-{
+-	int retval;
+-
+-	retval = comedi_driver_register(&driver_skel);
+-	if (retval < 0)
+-		return retval;
+-
+-	driver_skel_pci_driver.name = (char *)driver_skel.driver_name;
+-	return pci_register_driver(&driver_skel_pci_driver);
+-}
+-
+-static void __exit driver_skel_cleanup_module(void)
+-{
+-	pci_unregister_driver(&driver_skel_pci_driver);
+-	comedi_driver_unregister(&driver_skel);
+-}
+-
+-module_init(driver_skel_init_module);
+-module_exit(driver_skel_cleanup_module);
++static struct pci_driver skel_pci_driver = {
++	.name		= "dummy",
++	.id_table	= skel_pci_table,
++	.probe		= skel_pci_probe,
++	.remove		= __devexit_p(skel_pci_remove),
++};
++module_comedi_pci_driver(skel_driver, skel_pci_driver);
+ #else
+-static int __init driver_skel_init_module(void)
+-{
+-	return comedi_driver_register(&driver_skel);
+-}
+-
+-static void __exit driver_skel_cleanup_module(void)
+-{
+-	comedi_driver_unregister(&driver_skel);
+-}
+-
+-module_init(driver_skel_init_module);
+-module_exit(driver_skel_cleanup_module);
++module_comedi_driver(skel_driver);
+ #endif
+ 
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
 -- 
-1.7.9.5
+1.7.11
 
