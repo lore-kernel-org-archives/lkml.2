@@ -1,224 +1,578 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab2FTMDl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:03:41 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:33781 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab2FTMDj (ORCPT
+	id S1756629Ab2FTMEA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:04:00 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:58916 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab2FTMD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:03:39 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: gadget: lpc32xx_udc: move clock init to clock framework
-Date: Wed, 20 Jun 2012 09:03:15 -0300
-Message-Id: <1340193795-30805-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Wed, 20 Jun 2012 08:03:58 -0400
+Message-ID: <1340193761.12326.15.camel@falcor>
+Subject: Re: [tpmdd-devel] [PATCH V2 1/2] driver: add PPI support in tpm
+ driver
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: "Zhang, Xiaoyan" <xiaoyan.zhang@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>
+Date: Wed, 20 Jun 2012 08:02:41 -0400
+In-Reply-To: <1340122384.8068.0.camel@localhost>
+References: <1340122384.8068.0.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062012-7408-0000-0000-0000060650BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moves clock initialization to the clock framework.
+On Wed, 2012-06-20 at 08:15 +0000, Zhang, Xiaoyan wrote:
+> From: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+> 
+> The Physical Presence Interface enables the OS and the BIOS to cooperate
+> and provides a simple and straightforward platform user experience for
+> administering the TPM without sacrificing security.
+> 
+> V2: separate the patch out in a separate source file, add #ifdef CONFIG_ACPI
+> so it compiles out on ppc, and use standard error instead of ACPI error as
+> return code of show/store fns.
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
----
- drivers/usb/gadget/lpc32xx_udc.c |   84 +++++++++++---------------------------
- 1 file changed, 24 insertions(+), 60 deletions(-)
+ifdef's don't belong in .c code.  The normal practice is to define the
+function declaration and a stub function in an include file based on the
+ifdef.  Having a separate source file, allows you to include different
+code in the Makefile.
 
-diff --git a/drivers/usb/gadget/lpc32xx_udc.c b/drivers/usb/gadget/lpc32xx_udc.c
-index 262acfd..d227d93 100644
---- a/drivers/usb/gadget/lpc32xx_udc.c
-+++ b/drivers/usb/gadget/lpc32xx_udc.c
-@@ -164,6 +164,7 @@ struct lpc32xx_udc {
- 	int			udp_irq[4];
- 	struct clk		*usb_pll_clk;
- 	struct clk		*usb_slv_clk;
-+	struct clk		*usb_otg_clk;
- 
- 	/* DMA support */
- 	u32			*udca_v_base;
-@@ -226,33 +227,15 @@ static inline struct lpc32xx_udc *to_udc(struct usb_gadget *g)
- #define UDCA_BUFF_SIZE (128)
- 
- /* TODO: When the clock framework is introduced in LPC32xx, IO_ADDRESS will
-- * be replaced with an inremap()ed pointer, see USB_OTG_CLK_CTRL()
-+ * be replaced with an inremap()ed pointer
-  * */
- #define USB_CTRL		IO_ADDRESS(LPC32XX_CLK_PM_BASE + 0x64)
--#define USB_CLOCK_MASK		(AHB_M_CLOCK_ON | OTG_CLOCK_ON | \
--				 DEV_CLOCK_ON | I2C_CLOCK_ON)
- 
- /* USB_CTRL bit defines */
- #define USB_SLAVE_HCLK_EN	(1 << 24)
- #define USB_HOST_NEED_CLK_EN	(1 << 21)
- #define USB_DEV_NEED_CLK_EN	(1 << 22)
- 
--#define USB_OTG_CLK_CTRL(udc)	((udc)->udp_baseaddr + 0xFF4)
--#define USB_OTG_CLK_STAT(udc)	((udc)->udp_baseaddr + 0xFF8)
--
--/* USB_OTG_CLK_CTRL bit defines */
--#define AHB_M_CLOCK_ON		(1 << 4)
--#define OTG_CLOCK_ON		(1 << 3)
--#define I2C_CLOCK_ON		(1 << 2)
--#define DEV_CLOCK_ON		(1 << 1)
--#define HOST_CLOCK_ON		(1 << 0)
--
--#define USB_OTG_STAT_CONTROL(udc) (udc->udp_baseaddr + 0x110)
--
--/* USB_OTG_STAT_CONTROL bit defines */
--#define TRANSPARENT_I2C_EN	(1 << 7)
--#define HOST_EN			(1 << 0)
--
- /**********************************************************************
-  * USB device controller register offsets
-  **********************************************************************/
-@@ -676,7 +659,7 @@ static void isp1301_udc_configure(struct lpc32xx_udc *udc)
- 		ISP1301_I2C_INTERRUPT_RISING, INT_VBUS_VLD);
- 
- 	/* Enable usb_need_clk clock after transceiver is initialized */
--	writel((readl(USB_CTRL) | (1 << 22)), USB_CTRL);
-+	writel((readl(USB_CTRL) | USB_DEV_NEED_CLK_EN), USB_CTRL);
- 
- 	dev_info(udc->dev, "ISP1301 Vendor ID  : 0x%04x\n",
- 		 i2c_smbus_read_word_data(udc->isp1301_i2c_client, 0x00));
-@@ -1009,11 +992,8 @@ static void udc_dd_free(struct lpc32xx_udc *udc, struct lpc32xx_usbd_dd_gad *dd)
- /* Enables or disables most of the USB system clocks when low power mode is
-  * needed. Clocks are typically started on a connection event, and disabled
-  * when a cable is disconnected */
--#define OTGOFF_CLK_MASK (AHB_M_CLOCK_ON | I2C_CLOCK_ON)
- static void udc_clk_set(struct lpc32xx_udc *udc, int enable)
- {
--	int to = 1000;
--
- 	if (enable != 0) {
- 		if (udc->clocked)
- 			return;
-@@ -1027,14 +1007,7 @@ static void udc_clk_set(struct lpc32xx_udc *udc, int enable)
- 		writel(readl(USB_CTRL) | USB_DEV_NEED_CLK_EN,
- 			     USB_CTRL);
- 
--		/* Set to enable all needed USB OTG clocks */
--		writel(USB_CLOCK_MASK, USB_OTG_CLK_CTRL(udc));
--
--		while (((readl(USB_OTG_CLK_STAT(udc)) & USB_CLOCK_MASK) !=
--			USB_CLOCK_MASK) && (to > 0))
--			to--;
--		if (!to)
--			dev_dbg(udc->dev, "Cannot enable USB OTG clocking\n");
-+		clk_enable(udc->usb_otg_clk);
- 	} else {
- 		if (!udc->clocked)
- 			return;
-@@ -1046,19 +1019,11 @@ static void udc_clk_set(struct lpc32xx_udc *udc, int enable)
- 		/* 48MHz PLL dpwn */
- 		clk_disable(udc->usb_pll_clk);
- 
--		/* Enable the USB device clock */
-+		/* Disable the USB device clock */
- 		writel(readl(USB_CTRL) & ~USB_DEV_NEED_CLK_EN,
- 			     USB_CTRL);
- 
--		/* Set to enable all needed USB OTG clocks */
--		writel(OTGOFF_CLK_MASK, USB_OTG_CLK_CTRL(udc));
--
--		while (((readl(USB_OTG_CLK_STAT(udc)) &
--			 OTGOFF_CLK_MASK) !=
--			OTGOFF_CLK_MASK) && (to > 0))
--			to--;
--		if (!to)
--			dev_dbg(udc->dev, "Cannot disable USB OTG clocking\n");
-+		clk_disable(udc->usb_otg_clk);
- 	}
- }
- 
-@@ -3238,6 +3203,12 @@ static int __init lpc32xx_udc_probe(struct platform_device *pdev)
- 		retval = PTR_ERR(udc->usb_slv_clk);
- 		goto usb_clk_get_fail;
- 	}
-+	udc->usb_otg_clk = clk_get(&pdev->dev, "ck_usb_otg");
-+	if (IS_ERR(udc->usb_otg_clk)) {
-+		dev_err(udc->dev, "failed to acquire USB otg clock\n");
-+		retval = PTR_ERR(udc->usb_slv_clk);
-+		goto usb_otg_clk_get_fail;
-+	}
- 
- 	/* Setup PLL clock to 48MHz */
- 	retval = clk_enable(udc->usb_pll_clk);
-@@ -3261,15 +3232,12 @@ static int __init lpc32xx_udc_probe(struct platform_device *pdev)
- 		goto usb_clk_enable_fail;
- 	}
- 
--	/* Set to enable all needed USB OTG clocks */
--	writel(USB_CLOCK_MASK, USB_OTG_CLK_CTRL(udc));
--
--	i = 1000;
--	while (((readl(USB_OTG_CLK_STAT(udc)) & USB_CLOCK_MASK) !=
--		USB_CLOCK_MASK) && (i > 0))
--		i--;
--	if (!i)
--		dev_dbg(udc->dev, "USB OTG clocks not correctly enabled\n");
-+	/* Enable USB OTG clock */
-+	retval = clk_enable(udc->usb_otg_clk);
-+	if (retval < 0) {
-+		dev_err(udc->dev, "failed to start USB otg clock\n");
-+		goto usb_otg_clk_enable_fail;
-+	}
- 
- 	/* Setup deferred workqueue data */
- 	udc->poweron = udc->pullup = 0;
-@@ -3389,12 +3357,16 @@ dma_alloc_fail:
- 	dma_free_coherent(&pdev->dev, UDCA_BUFF_SIZE,
- 			  udc->udca_v_base, udc->udca_p_base);
- i2c_fail:
-+	clk_disable(udc->usb_otg_clk);
-+usb_otg_clk_enable_fail:
- 	clk_disable(udc->usb_slv_clk);
- usb_clk_enable_fail:
- pll_set_fail:
- 	clk_disable(udc->usb_pll_clk);
- pll_enable_fail:
- 	clk_put(udc->usb_slv_clk);
-+usb_otg_clk_get_fail:
-+	clk_put(udc->usb_otg_clk);
- usb_clk_get_fail:
- 	clk_put(udc->usb_pll_clk);
- pll_get_fail:
-@@ -3432,6 +3404,8 @@ static int __devexit lpc32xx_udc_remove(struct platform_device *pdev)
- 
- 	device_unregister(&udc->gadget.dev);
- 
-+	clk_disable(udc->usb_otg_clk);
-+	clk_put(udc->usb_otg_clk);
- 	clk_disable(udc->usb_slv_clk);
- 	clk_put(udc->usb_slv_clk);
- 	clk_disable(udc->usb_pll_clk);
-@@ -3445,7 +3419,6 @@ static int __devexit lpc32xx_udc_remove(struct platform_device *pdev)
- #ifdef CONFIG_PM
- static int lpc32xx_udc_suspend(struct platform_device *pdev, pm_message_t mesg)
- {
--	int to = 1000;
- 	struct lpc32xx_udc *udc = platform_get_drvdata(pdev);
- 
- 	if (udc->clocked) {
-@@ -3460,15 +3433,6 @@ static int lpc32xx_udc_suspend(struct platform_device *pdev, pm_message_t mesg)
- 		   on resume */
- 		udc->clocked = 1;
- 
--		/* Kill OTG and I2C clocks */
--		writel(0, USB_OTG_CLK_CTRL(udc));
--		while (((readl(USB_OTG_CLK_STAT(udc)) & OTGOFF_CLK_MASK) !=
--			OTGOFF_CLK_MASK) && (to > 0))
--			to--;
--		if (!to)
--			dev_dbg(udc->dev,
--				"USB OTG clocks not correctly enabled\n");
--
- 		/* Kill global USB clock */
- 		clk_disable(udc->usb_slv_clk);
- 	}
--- 
-1.7.10
+> 
+> Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+> ---
+>  drivers/char/tpm/Makefile  |    3 +-
+>  drivers/char/tpm/tpm.c     |   11 +
+>  drivers/char/tpm/tpm.h     |    1 +
+>  drivers/char/tpm/tpm_ppi.c |  450 ++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 464 insertions(+), 1 deletions(-)
+>  create mode 100644 drivers/char/tpm/tpm_ppi.c
+> 
+> diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+> index ea3a1e0..fe87366 100644
+> --- a/drivers/char/tpm/Makefile
+> +++ b/drivers/char/tpm/Makefile
+> @@ -1,7 +1,8 @@
+>  #
+>  # Makefile for the kernel tpm device drivers.
+>  #
+> -obj-$(CONFIG_TCG_TPM) += tpm.o
+> +obj-$(CONFIG_TCG_TPM) += tpm_main.o
+> +tpm_main-y += tpm.o tpm_ppi.o
+>  ifdef CONFIG_ACPI
+>  	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
+>  endif
+
+Shouldn't tpm_ppi be in the CONFIG_ACPI ifdef?
+
+> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+> index ad7c732..d5db4fa 100644
+> --- a/drivers/char/tpm/tpm.c
+> +++ b/drivers/char/tpm/tpm.c
+> @@ -1361,6 +1361,9 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+>  	char *devname;
+>  	struct tpm_chip *chip;
+> 
+> +#ifdef CONFIG_ACPI
+> +	struct kobject *ppi;
+> +#endif
+>  	/* Driver specific per-device data */
+>  	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+>  	devname = kmalloc(DEVNAME_SIZE, GFP_KERNEL);
+> @@ -1416,6 +1419,14 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+>  		return NULL;
+>  	}
+> 
+> +#ifdef CONFIG_ACPI
+> +	ppi = kobject_create_and_add("ppi", &dev->kobj);
+> +	if (sysfs_create_group(ppi, &ppi_attr_grp)) {
+> +		misc_deregister(&chip->vendor.miscdev);
+> +		put_device(chip->dev);
+> +		return NULL;
+> +	}
+> +#endif
+
+This should be a function defined in tpm_ppi.c.  The function definition
+and stub function definition would be defined in a .h file as well.
+
+Mimi
+
+>  	chip->bios_dir = tpm_bios_log_setup(devname);
+> 
+>  	/* Make chip available */
+> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+> index b1c5280..9f706ad 100644
+> --- a/drivers/char/tpm/tpm.h
+> +++ b/drivers/char/tpm/tpm.h
+> @@ -306,6 +306,7 @@ extern int wait_for_tpm_stat(struct tpm_chip *, u8, unsigned long,
+>  #ifdef CONFIG_ACPI
+>  extern struct dentry ** tpm_bios_log_setup(char *);
+>  extern void tpm_bios_log_teardown(struct dentry **);
+> +extern struct attribute_group ppi_attr_grp;
+>  #else
+>  static inline struct dentry ** tpm_bios_log_setup(char *name)
+>  {
+> diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
+> new file mode 100644
+> index 0000000..eaf0592
+> --- /dev/null
+> +++ b/drivers/char/tpm/tpm_ppi.c
+> @@ -0,0 +1,450 @@
+> +#include <linux/acpi.h>
+> +#include <acpi/acpi_drivers.h>
+> +#include "tpm.h"
+> +
+> +static const u8 tpm_ppi_uuid[] = {
+> +	0xA6, 0xFA, 0xDD, 0x3D,
+> +	0x1B, 0x36,
+> +	0xB4, 0x4E,
+> +	0xA4, 0x24,
+> +	0x8D, 0x10, 0x08, 0x9D, 0x16, 0x53
+> +};
+> +static char *tpm_device_name = "TPM";
+> +
+> +#define TPM_PPI_REVISION_ID	1
+> +#define TPM_PPI_FN_VERSION	1
+> +#define TPM_PPI_FN_SUBREQ	2
+> +#define TPM_PPI_FN_GETREQ	3
+> +#define TPM_PPI_FN_GETACT	4
+> +#define TPM_PPI_FN_GETRSP	5
+> +#define TPM_PPI_FN_SUBREQ2	7
+> +#define TPM_PPI_FN_GETOPR	8
+> +#define PPI_TPM_REQ_MAX		22
+> +#define PPI_VS_REQ_START	128
+> +#define PPI_VS_REQ_END		255
+> +#define PPI_VERSION_LEN		3
+> +
+> +static acpi_status ppi_callback(acpi_handle handle, u32 level, void *context,
+> +				void **return_value)
+> +{
+> +	acpi_status status;
+> +	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	status = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+> +	if (strstr(buffer.pointer, context) != NULL) {
+> +		*return_value = handle;
+> +		kfree(buffer.pointer);
+> +		return AE_CTRL_TERMINATE;
+> +	}
+> +	return AE_OK;
+> +}
+> +
+> +static inline void ppi_assign_params(union acpi_object params[4],
+> +				     u64 function_num)
+> +{
+> +	params[0].type = ACPI_TYPE_BUFFER;
+> +	params[0].buffer.length = sizeof(tpm_ppi_uuid);
+> +	params[0].buffer.pointer = (char *)tpm_ppi_uuid;
+> +	params[1].type = ACPI_TYPE_INTEGER;
+> +	params[1].integer.value = TPM_PPI_REVISION_ID;
+> +	params[2].type = ACPI_TYPE_INTEGER;
+> +	params[2].integer.value = function_num;
+> +	params[3].type = ACPI_TYPE_PACKAGE;
+> +	params[3].package.count = 0;
+> +	params[3].package.elements = NULL;
+> +}
+> +
+> +ssize_t tpm_show_ppi_version(struct device *dev, struct device_attribute *attr,
+> +			     char *buf)
+> +{
+> +	acpi_handle handle;
+> +	acpi_status status;
+> +	struct acpi_object_list input;
+> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	union acpi_object params[4];
+> +	union acpi_object *obj;
+> +
+> +	input.count = 4;
+> +	ppi_assign_params(params, TPM_PPI_FN_VERSION);
+> +	input.pointer = params;
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
+> +				     tpm_device_name, &handle);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENXIO;
+> +
+> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
+> +					 ACPI_TYPE_STRING);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENOMEM;
+> +	obj = (union acpi_object *)output.pointer;
+> +	status = scnprintf(buf, PAGE_SIZE, "%s\n", obj->string.pointer);
+> +	kfree(output.pointer);
+> +	return status;
+> +}
+> +
+> +ssize_t tpm_show_ppi_request(struct device *dev,
+> +			     struct device_attribute *attr,
+> +			     char *buf)
+> +{
+> +	acpi_handle handle;
+> +	acpi_status status;
+> +	struct acpi_object_list input;
+> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	union acpi_object params[4];
+> +	union acpi_object *ret_obj;
+> +
+> +	input.count = 4;
+> +	ppi_assign_params(params, TPM_PPI_FN_GETREQ);
+> +	input.pointer = params;
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
+> +				     tpm_device_name, &handle);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENXIO;
+> +
+> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
+> +					    ACPI_TYPE_PACKAGE);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENOMEM;
+> +	/*
+> +	 * output.pointer should be of package type, including two integers.
+> +	 * The first is function return code, 0 means success and 1 means
+> +	 * error. The second is pending TPM operation requested by the OS, 0
+> +	 * means none and >0 means operation value.
+> +	 */
+> +	ret_obj = ((union acpi_object *)output.pointer)->package.elements;
+> +	if (ret_obj->type == ACPI_TYPE_INTEGER) {
+> +		if (ret_obj->integer.value) {
+> +			status = -EFAULT;
+> +			goto cleanup;
+> +		}
+> +		ret_obj++;
+> +		if (ret_obj->type == ACPI_TYPE_INTEGER)
+> +			status = scnprintf(buf, PAGE_SIZE, "%llu\n",
+> +					   ret_obj->integer.value);
+> +		else
+> +			status = -EINVAL;
+> +	} else {
+> +		status = -EINVAL;
+> +	}
+> +cleanup:
+> +	kfree(output.pointer);
+> +	return status;
+> +}
+> +
+> +ssize_t tpm_store_ppi_request(struct device *dev,
+> +			      struct device_attribute *attr,
+> +			      const char *buf, size_t count)
+> +{
+> +	char version[PPI_VERSION_LEN + 1];
+> +	acpi_handle handle;
+> +	acpi_status status;
+> +	struct acpi_object_list input;
+> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	union acpi_object params[4];
+> +	union acpi_object obj;
+> +	u32 req;
+> +	u64 ret;
+> +
+> +	input.count = 4;
+> +	ppi_assign_params(params, TPM_PPI_FN_VERSION);
+> +	input.pointer = params;
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
+> +				     tpm_device_name, &handle);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENXIO;
+> +
+> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
+> +					    ACPI_TYPE_STRING);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENOMEM;
+> +	strncpy(version,
+> +		((union acpi_object *)output.pointer)->string.pointer,
+> +		PPI_VERSION_LEN);
+> +	kfree(output.pointer);
+> +	output.length = ACPI_ALLOCATE_BUFFER;
+> +	output.pointer = NULL;
+> +	/*
+> +	 * the function to submit TPM operation request to pre-os environment
+> +	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
+> +	 * version 1.1
+> +	 */
+> +	if (strcmp(version, "1.1") == -1)
+> +		params[2].integer.value = TPM_PPI_FN_SUBREQ;
+> +	else
+> +		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
+> +	/*
+> +	 * PPI spec defines params[3].type as ACPI_TYPE_PACKAGE. Some BIOS
+> +	 * accept buffer/string/integer type, but some BIOS accept buffer/
+> +	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
+> +	 * for compatibility, and use package type since 1.2 according to spec.
+> +	 */
+> +	if (strcmp(version, "1.2") == -1) {
+> +		params[3].type = ACPI_TYPE_BUFFER;
+> +		params[3].buffer.length = sizeof(req);
+> +		sscanf(buf, "%d", &req);
+> +		params[3].buffer.pointer = (char *)&req;
+> +	} else {
+> +		params[3].package.count = 1;
+> +		obj.type = ACPI_TYPE_INTEGER;
+> +		sscanf(buf, "%llu", &obj.integer.value);
+> +		params[3].package.elements = &obj;
+> +	}
+> +
+> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
+> +					    ACPI_TYPE_INTEGER);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENOMEM;
+> +	ret = ((union acpi_object *)output.pointer)->integer.value;
+> +	if (ret == 0)
+> +		status = (acpi_status)count;
+> +	else if (ret == 1)
+> +		status = -EPERM;
+> +	else
+> +		status = -EFAULT;
+> +	kfree(output.pointer);
+> +	return status;
+> +}
+> +
+> +ssize_t tpm_show_ppi_transition_action(struct device *dev,
+> +				       struct device_attribute *attr,
+> +				       char *buf)
+> +{
+> +	char version[PPI_VERSION_LEN + 1];
+> +	acpi_handle handle;
+> +	acpi_status status;
+> +	struct acpi_object_list input;
+> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	union acpi_object params[4];
+> +	u32 ret;
+> +	char *info[] = {
+> +		"None",
+> +		"Shutdown",
+> +		"Reboot",
+> +		"OS Vendor-specific",
+> +		"Error",
+> +	};
+> +	input.count = 4;
+> +	ppi_assign_params(params, TPM_PPI_FN_VERSION);
+> +	input.pointer = params;
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
+> +				     tpm_device_name, &handle);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENXIO;
+> +
+> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
+> +					    ACPI_TYPE_STRING);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENOMEM;
+> +	strncpy(version,
+> +		((union acpi_object *)output.pointer)->string.pointer,
+> +		PPI_VERSION_LEN);
+> +	/*
+> +	 * PPI spec defines params[3].type as empty package, but some platforms
+> +	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
+> +	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
+> +	 */
+> +	if (strcmp(version, "1.2") == -1) {
+> +		params[3].type = ACPI_TYPE_BUFFER;
+> +		params[3].buffer.length =  0;
+> +		params[3].buffer.pointer = NULL;
+> +	}
+> +	params[2].integer.value = TPM_PPI_FN_GETACT;
+> +	kfree(output.pointer);
+> +	output.length = ACPI_ALLOCATE_BUFFER;
+> +	output.pointer = NULL;
+> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
+> +					    ACPI_TYPE_INTEGER);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENOMEM;
+> +	ret = ((union acpi_object *)output.pointer)->integer.value;
+> +	if (ret < ARRAY_SIZE(info) - 1)
+> +		status = scnprintf(buf, PAGE_SIZE, "%d: %s\n", ret, info[ret]);
+> +	else
+> +		status = scnprintf(buf, PAGE_SIZE, "%d: %s\n", ret,
+> +				   info[ARRAY_SIZE(info)-1]);
+> +	kfree(output.pointer);
+> +	return status;
+> +}
+> +
+> +ssize_t tpm_show_ppi_response(struct device *dev,
+> +			      struct device_attribute *attr,
+> +			      char *buf)
+> +{
+> +	acpi_handle handle;
+> +	acpi_status status;
+> +	struct acpi_object_list input;
+> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	union acpi_object params[4];
+> +	union acpi_object *ret_obj;
+> +	u64 req;
+> +
+> +	input.count = 4;
+> +	ppi_assign_params(params, TPM_PPI_FN_GETRSP);
+> +	input.pointer = params;
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
+> +				     tpm_device_name, &handle);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENXIO;
+> +
+> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
+> +					    ACPI_TYPE_PACKAGE);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENOMEM;
+> +	/*
+> +	 * parameter output.pointer should be of package type, including
+> +	 * 3 integers. The first means function return code, the second means
+> +	 * most recent TPM operation request, and the last means response to
+> +	 * the most recent TPM operation request. Only if the first is 0, and
+> +	 * the second integer is not 0, the response makes sense.
+> +	 */
+> +	ret_obj = ((union acpi_object *)output.pointer)->package.elements;
+> +	if (ret_obj->type != ACPI_TYPE_INTEGER) {
+> +		status = -EINVAL;
+> +		goto cleanup;
+> +	}
+> +	if (ret_obj->integer.value) {
+> +		status = -EFAULT;
+> +		goto cleanup;
+> +	}
+> +	ret_obj++;
+> +	if (ret_obj->type != ACPI_TYPE_INTEGER) {
+> +		status = -EINVAL;
+> +		goto cleanup;
+> +	}
+> +	if (ret_obj->integer.value) {
+> +		req = ret_obj->integer.value;
+> +		ret_obj++;
+> +		if (ret_obj->type != ACPI_TYPE_INTEGER) {
+> +			status = -EINVAL;
+> +			goto cleanup;
+> +		}
+> +		if (ret_obj->integer.value == 0)
+> +			status = scnprintf(buf, PAGE_SIZE, "%llu %s\n", req,
+> +					   "0: Success");
+> +		else if (ret_obj->integer.value == 0xFFFFFFF0)
+> +			status = scnprintf(buf, PAGE_SIZE, "%llu %s\n", req,
+> +					   "0xFFFFFFF0: User Abort");
+> +		else if (ret_obj->integer.value == 0xFFFFFFF1)
+> +			status = scnprintf(buf, PAGE_SIZE, "%llu %s\n", req,
+> +					   "0xFFFFFFF1: BIOS Failure");
+> +		else if (ret_obj->integer.value >= 1 &&
+> +			 ret_obj->integer.value <= 0x00000FFF)
+> +			status = scnprintf(buf, PAGE_SIZE, "%llu %llu: %s\n",
+> +					   req, ret_obj->integer.value,
+> +					   "Corresponding TPM error");
+> +		else
+> +			status = scnprintf(buf, PAGE_SIZE, "%llu %llu: %s\n",
+> +					   req, ret_obj->integer.value,
+> +					   "Error");
+> +	} else {
+> +		status = scnprintf(buf, PAGE_SIZE, "%llu: %s\n",
+> +				   ret_obj->integer.value, "No Recent Request");
+> +	}
+> +cleanup:
+> +	kfree(output.pointer);
+> +	return status;
+> +}
+> +
+> +static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
+> +{
+> +	char *str = buf;
+> +	char version[PPI_VERSION_LEN];
+> +	acpi_handle handle;
+> +	acpi_status status;
+> +	struct acpi_object_list input;
+> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	union acpi_object params[4];
+> +	union acpi_object obj;
+> +	int i;
+> +	u32 ret;
+> +	char *info[] = {
+> +		"Not implemented",
+> +		"BIOS only",
+> +		"Blocked for OS by BIOS",
+> +		"User required",
+> +		"User not required",
+> +	};
+> +	input.count = 4;
+> +	ppi_assign_params(params, TPM_PPI_FN_VERSION);
+> +	input.pointer = params;
+> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
+> +				     tpm_device_name, &handle);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENXIO;
+> +
+> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
+> +					 ACPI_TYPE_STRING);
+> +	if (ACPI_FAILURE(status))
+> +		return -ENOMEM;
+> +
+> +	strncpy(version,
+> +		((union acpi_object *)output.pointer)->string.pointer,
+> +		PPI_VERSION_LEN);
+> +	kfree(output.pointer);
+> +	output.length = ACPI_ALLOCATE_BUFFER;
+> +	output.pointer = NULL;
+> +	if (strcmp(version, "1.2") == -1)
+> +		return -EPERM;
+> +
+> +	params[2].integer.value = TPM_PPI_FN_GETOPR;
+> +	params[3].package.count = 1;
+> +	obj.type = ACPI_TYPE_INTEGER;
+> +	params[3].package.elements = &obj;
+> +	for (i = start; i <= end; i++) {
+> +		obj.integer.value = i;
+> +		status = acpi_evaluate_object_typed(handle, "_DSM",
+> +			 &input, &output, ACPI_TYPE_INTEGER);
+> +		if (ACPI_FAILURE(status))
+> +			return -ENOMEM;
+> +
+> +		ret = ((union acpi_object *)output.pointer)->integer.value;
+> +		if (ret > 0 && ret < ARRAY_SIZE(info))
+> +			str += scnprintf(str, PAGE_SIZE, "%d %d: %s\n",
+> +					 i, ret, info[ret]);
+> +		kfree(output.pointer);
+> +		output.length = ACPI_ALLOCATE_BUFFER;
+> +		output.pointer = NULL;
+> +	}
+> +	return str - buf;
+> +}
+> +
+> +ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
+> +				   struct device_attribute *attr, char *buf)
+> +{
+> +	return show_ppi_operations(buf, 0, PPI_TPM_REQ_MAX);
+> +}
+> +
+> +ssize_t tpm_show_ppi_vs_operations(struct device *dev,
+> +				  struct device_attribute *attr, char *buf)
+> +{
+> +	return show_ppi_operations(buf, PPI_VS_REQ_START, PPI_VS_REQ_END);
+> +}
+> +
+> +static DEVICE_ATTR(version, S_IRUGO, tpm_show_ppi_version, NULL);
+> +static DEVICE_ATTR(request, S_IRUGO | S_IWUSR | S_IWGRP,
+> +		   tpm_show_ppi_request, tpm_store_ppi_request);
+> +static DEVICE_ATTR(transition_action, S_IRUGO,
+> +		   tpm_show_ppi_transition_action, NULL);
+> +static DEVICE_ATTR(response, S_IRUGO, tpm_show_ppi_response, NULL);
+> +static DEVICE_ATTR(tcg_operations, S_IRUGO, tpm_show_ppi_tcg_operations, NULL);
+> +static DEVICE_ATTR(vs_operations, S_IRUGO, tpm_show_ppi_vs_operations, NULL);
+> +
+> +static struct attribute *ppi_attrs[] = {
+> +	&dev_attr_version.attr,
+> +	&dev_attr_request.attr,
+> +	&dev_attr_transition_action.attr,
+> +	&dev_attr_response.attr,
+> +	&dev_attr_tcg_operations.attr,
+> +	&dev_attr_vs_operations.attr, NULL,
+> +};
+> +struct attribute_group ppi_attr_grp = {
+> +	.attrs = ppi_attrs
+> +};
+> +EXPORT_SYMBOL_GPL(ppi_attr_grp);
+> +
+> +MODULE_LICENSE("GPL");
+
 
