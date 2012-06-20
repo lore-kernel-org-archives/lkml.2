@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417Ab2FTRRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 13:17:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30104 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965Ab2FTRRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 13:17:33 -0400
-Message-ID: <4FE2056B.3070407@redhat.com>
-Date: Wed, 20 Jun 2012 13:16:27 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757464Ab2FTRSR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 13:18:17 -0400
+Received: from node140.e-blokos.com ([67.205.80.140]:35681 "EHLO
+	node140.e-blokos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757413Ab2FTRSO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 13:18:14 -0400
+X-Greylist: delayed 1342 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jun 2012 13:18:14 EDT
+Message-ID: <5839DCEA739B481B8C28EF3441D255EF@e1705>
+From: "Madovsky" <infos@madovsky.org>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>, <linux-kernel@vger.kernel.org>
+References: <loom.20120620T164714-725@post.gmane.org> <804857E1F29AAC47BF68C404FC60A1842846965C@ORSMSX102.amr.corp.intel.com>
+Subject: Re: e1000e, 3.4.1, , jumbo frames are not working
+Date: Wed, 20 Jun 2012 12:55:33 -0400
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 09/12] nfs: disable data cache revalidation for swapfiles
-References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-10-git-send-email-mgorman@suse.de>
-In-Reply-To: <1340185081-22525-10-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:37 AM, Mel Gorman wrote:
-> The VM does not like PG_private set on PG_swapcache pages. As suggested
-> by Trond in http://lkml.org/lkml/2006/8/25/348, this patch disables
-> NFS data cache revalidation on swap files.  as it does not make
-> sense to have other clients change the file while it is being used as
-> swap. This avoids setting PG_private on swap pages, since there ought
-> to be no further races with invalidate_inode_pages2() to deal with.
->
-> Since we cannot set PG_private we cannot use page->private which
-> is already used by PG_swapcache pages to store the nfs_page. Thus
-> augment the new nfs_page_find_request logic.
->
-> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+ok thanks Bruce
 
-Acked-by: Rik van Riel<riel@redhat.com>
+----- Original Message ----- 
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: "madovsky" <infos@madovsky.org>; <linux-kernel@vger.kernel.org>
+Sent: Wednesday, June 20, 2012 12:45 PM
+Subject: RE: e1000e, 3.4.1, , jumbo frames are not working
 
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of madovsky
+> Sent: Wednesday, June 20, 2012 7:49 AM
+> To: linux-kernel@vger.kernel.org
+> Subject: RE: e1000e, 3.4.1, , jumbo frames are not working
+> 
+> it's the same on kernel 3.4.3.
+> I can't activate jumbo frames
+> my mobo is S5000PAL
+
+This is already known and discussed on previous threads.  If you look at
+the system log file you will see a message from the driver which states
+"Jumbo frames cannot be enabled  when both receive checksum offload and
+receive hashing are enabled.  Disable one of the receive offload features
+before enabling jumbos."  A patch that removes this incompatibility is
+currently in test here at Intel and should be passed upstream soon.
+
+Thanks,
+Bruce.
