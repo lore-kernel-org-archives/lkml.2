@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab2FTKmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:42:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34354 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2FTKmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:42:19 -0400
-Date: Wed, 20 Jun 2012 03:42:04 -0700
-From: tip-bot for Ido Yariv <ido@wizery.com>
-Message-ID: <tip-abf71f3066740f3b59c3f731b4b68ed335f7b24d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, shai@scalemp.com, ido@wizery.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, shai@scalemp.com, tglx@linutronix.de,
-        ido@wizery.com
-In-Reply-To: <1339773055-27397-1-git-send-email-ido@wizery.com>
-References: <1339773055-27397-1-git-send-email-ido@wizery.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/vsmp: Fix vector_allocation_domain'
- s return value
-Git-Commit-ID: abf71f3066740f3b59c3f731b4b68ed335f7b24d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:42:10 -0700 (PDT)
+	id S932083Ab2FTKnT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:43:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10931 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756054Ab2FTKnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 06:43:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="182636159"
+From: Andrei Emeltchenko <Andrei.Emeltchenko.news@gmail.com>
+To: linux-bluetooth@vger.kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Docs: printk-formats: add description for %pMR
+Date: Wed, 20 Jun 2012 13:44:49 +0300
+Message-Id: <1340189089-20257-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1338210316-12299-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+References: <1338210316-12299-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  abf71f3066740f3b59c3f731b4b68ed335f7b24d
-Gitweb:     http://git.kernel.org/tip/abf71f3066740f3b59c3f731b4b68ed335f7b24d
-Author:     Ido Yariv <ido@wizery.com>
-AuthorDate: Fri, 15 Jun 2012 18:10:55 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 18 Jun 2012 11:10:23 +0200
+From: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
 
-x86/vsmp: Fix vector_allocation_domain's return value
+Add information about new specifier %pMR for Bluetooth addresses.
 
-Commit 8637e38a ("x86/apic: Avoid useless scanning thru a
-cpumask in assign_irq_vector()") modified
-vector_allocation_domain() to return a boolean indicating if
-cpumask is dynamic or static. Adjust vSMP's callback
-implementation accordingly.
-
-Signed-off-by: Ido Yariv <ido@wizery.com>
-Acked-by: Shai Fultheim <shai@scalemp.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Link: http://lkml.kernel.org/r/1339773055-27397-1-git-send-email-ido@wizery.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
 ---
- arch/x86/kernel/vsmp_64.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ Documentation/printk-formats.txt |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index 3f0285a..fa5adb7 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -208,9 +208,10 @@ static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
-  * In vSMP, all cpus should be capable of handling interrupts, regardless of
-  * the APIC used.
-  */
--static void fill_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+static bool fill_vector_allocation_domain(int cpu, struct cpumask *retmask)
- {
- 	cpumask_setall(retmask);
-+	return false;
- }
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 5df176e..d8d168f 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -56,6 +56,7 @@ Struct Resources:
+ MAC/FDDI addresses:
  
- static void vsmp_apic_post_init(void)
+ 	%pM	00:01:02:03:04:05
++	%pMR	05:04:03:02:01:00
+ 	%pMF	00-01-02-03-04-05
+ 	%pm	000102030405
+ 
+@@ -67,6 +68,10 @@ MAC/FDDI addresses:
+ 	the 'M' specifier to use dash ('-') separators instead of the default
+ 	separator.
+ 
++	For Bluetooth addresses the 'R' specifier shall be used after the 'M'
++	specifier to use reversed byte order suitable for visual interpretation
++	of Bluetooth addresses which are in the little endian order.
++
+ IPv4 addresses:
+ 
+ 	%pI4	1.2.3.4
+-- 
+1.7.9.5
+
