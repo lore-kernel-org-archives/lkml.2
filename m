@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab2FTOSk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:18:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54083 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756254Ab2FTOSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:18:39 -0400
-Date: Wed, 20 Jun 2012 15:18:33 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: Re: [PATCH 08/17] net: Do not coalesce skbs belonging to PFMEMALLOC
- sockets
-Message-ID: <20120620141833.GI4011@suse.de>
-References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
- <1340192652-31658-9-git-send-email-mgorman@suse.de>
- <1340193892.4604.865.camel@edumazet-glaptop>
- <20120620133656.GH4011@suse.de>
- <1340200312.4604.1008.camel@edumazet-glaptop>
+	id S1756466Ab2FTOSp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:18:45 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:54564 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424Ab2FTOSn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 10:18:43 -0400
+Message-ID: <4FE1DB88.9060405@linux.vnet.ibm.com>
+Date: Wed, 20 Jun 2012 19:47:44 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1340200312.4604.1008.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, pjt@google.com,
+        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        nacc@us.ibm.com, rientjes@google.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, tj@kernel.org,
+        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v6 0/4] CPU hotplug, cpusets, suspend/resume: Fixes, cleanups
+ and optimizations
+References: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com> <4FE199B6.2050803@linux.vnet.ibm.com> <20120620113917.GA1925@gmail.com>
+In-Reply-To: <20120620113917.GA1925@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062014-9574-0000-0000-0000033D362C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 03:51:52PM +0200, Eric Dumazet wrote:
-> On Wed, 2012-06-20 at 14:36 +0100, Mel Gorman wrote:
-> > The intention was to avoid any coalescing in the input path due to avoid
-> > packets that "were held back due to TCP_CORK or attempt at coalescing
-> > tiny packet". I recognise that it is clumsy and will take the approach
-> > instead of having __tcp_push_pending_frames() use sk_gfp_atomic() in the
-> > output path.
+On 06/20/2012 05:09 PM, Ingo Molnar wrote:
+
+> * Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
 > 
-> But coalescing in input path needs no additional memory allocation, it
-> can actually free some memory.
+>> On 05/24/2012 07:46 PM, Srivatsa S. Bhat wrote:
+>>
+>>> Currently the kernel doesn't handle cpusets properly during 
+>>> suspend/resume. After a resume, all non-root cpusets end up 
+>>> having only 1 cpu (the boot cpu), causing massive 
+>>> performance degradation of workloads. One major user of 
+>>> cpusets is libvirt, which means that after a 
+>>> suspend/hibernation cycle, all VMs suddenly end up running 
+>>> terribly slow!
+>>>
+>>> Also, the kernel moves the tasks from one cpuset to another 
+>>> during CPU hotplug in the suspend/resume path, leading to a 
+>>> task-management nightmare after resume.
+>>>
+>>> Patch 1 fixes this by keeping cpusets unmodified in the 
+>>> suspend/resume path. But to ensure we don't trip over, it 
+>>> keeps the sched domains updated during every CPU hotplug in 
+>>> the s/r path. This is a long standing issue and we need to 
+>>> fix up stable kernels too.
+>>>
+>>> The rest of the patches in the series are mostly 
+>>> cleanups/optimizations.
+>>
+>> Hi Peter,
+>>
+>> Would you be taking these patches through -tip for 3.6?
+> 
+> They are now in tip:sched/core.
+> 
+> Note that I removed the Cc:stable tag - it's not a regression 
+> fix and such it is not eligible for immediate -stable backports.
+> 
+> ( Once they are upstream and have been problem-free upstream for
+>   several weeks then *maybe* we could forward the first commit
+>   to -stable, as a super special exception. )
 > 
 
-When I wrote it I thought the timing of the transmission of pending frames
-was the problem rather than the actual memory usage. My intention was that
-any data related to swapping be handled immediately without delay instead of
-deferring until a time when GFP_ATOMIC allocations might fail. I arrived
-at this patch because tcp_input.c does call tcp_push_pending_frames()
-on the receive path and that led me to believe that coalescing was a
-factor.
 
-> And it avoids most of the time the infamous "tcp collapses" that needed
-> extra memory allocations to group tcp payload on single pages.
-> 
-> If you want tcp output path being safer, you should disable TSO/GSO
-> because some drivers have special handling for skbs that cannot be
-> mapped because of various hardware limitations.
-> 
+OK, I get the point of allowing it to cook in the mainline for a
+while before backporting to -stable and I totally agree with that,
+but why so much of uncertainty about whether the first commit should
+(eventually) even land in -stable or not? Distros have been struggling
+to deal with this bug in userspace and have failed, and AFAIK they are
+waiting for a proper kernel fix for this bug. Agreed, this is not a
+regression per se, but isn't this bug critical enough to qualify for
+-stable?
 
-Understood. Thanks for the explanation.
+Regards,
+Srivatsa S. Bhat
 
--- 
-Mel Gorman
-SUSE Labs
