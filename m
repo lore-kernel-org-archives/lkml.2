@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab2FTRjk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 13:39:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754165Ab2FTRjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 13:39:39 -0400
-Message-ID: <4FE20A8C.6000207@redhat.com>
-Date: Wed, 20 Jun 2012 13:38:20 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 10/12] nfs: enable swap on NFS
-References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-11-git-send-email-mgorman@suse.de>
-In-Reply-To: <1340185081-22525-11-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755724Ab2FTRk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 13:40:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35827 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754044Ab2FTRky convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 13:40:54 -0400
+Message-ID: <1340214048.21745.124.camel@twins>
+Subject: Re: [PATCH v3] sched: balance_cpu to consider other cpus in its
+ group as target of (pinned) task
+From: Peter Zijlstra <peterz@infradead.org>
+To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Cc: mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>, efault@gmx.de,
+        Ingo Molnar <mingo@elte.hu>
+Date: Wed, 20 Jun 2012 19:40:48 +0200
+In-Reply-To: <4FE06CDB.2060605@linux.vnet.ibm.com>
+References: <4FE06CDB.2060605@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:37 AM, Mel Gorman wrote:
-> Implement the new swapfile a_ops for NFS and hook up ->direct_IO. This
-> will set the NFS socket to SOCK_MEMALLOC and run socket reconnect
-> under PF_MEMALLOC as well as reset SOCK_MEMALLOC before engaging the
-> protocol ->connect() method.
->
-> PF_MEMALLOC should allow the allocation of struct socket and related
-> objects and the early (re)setting of SOCK_MEMALLOC should allow us
-> to receive the packets required for the TCP connection buildup.
->
-> [dfeng@redhat.com: Fix handling of multiple swap files]
-> [a.p.zijlstra@chello.nl: Original patch]
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+On Tue, 2012-06-19 at 17:43 +0530, Prashanth Nageshappa wrote:
+> +               new_dst_cpu = cpumask_first_and(env->dst_grpmask,
+> +                                               tsk_cpus_allowed(p));
 
-Acked-by: Rik van Riel<riel@redhat.com>
 
+> +               if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
+> +                               lb_iterations++ < max_lb_iterations) { 
+
+Hmm, too bad dst_grpmask isn't an actual mask, otherwise we could simply
+clear the cpu we just had, just like the ALL_PINNED does with cpus.
