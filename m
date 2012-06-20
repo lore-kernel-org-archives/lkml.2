@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab2FTUFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 16:05:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:32931 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758013Ab2FTUFq (ORCPT
+	id S1758044Ab2FTUJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 16:09:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44062 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036Ab2FTUJn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 16:05:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FE2125A.5080806@libero.it>
-References: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
-	<4FE205CF.9020509@libero.it>
-	<CAB9VWqB8z_faPNRJo8+9JWsQFDe507iTxwQK4sctUYGF9zCL4Q@mail.gmail.com>
-	<1340215644.6961.12.camel@cwalton-XPS-8300>
-	<4FE2125A.5080806@libero.it>
-Date: Wed, 20 Jun 2012 22:05:45 +0200
-Message-ID: <CAB9VWqAF5QS6BppN7Xei6JGsDU9ThBpcipk4r=PCwzu8c2AKgQ@mail.gmail.com>
-Subject: Re: [PATCH] Allow cross subvolume reflinks (2nd attempt)
-From: Alexander Block <ablock84@googlemail.com>
-To: kreijack@inwind.it
-Cc: Calvin Walton <calvin.walton@kepstin.ca>, linux-btrfs@vger.kernel.org,
-        dave@jikos.cz, hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        chris.mason@fusionio.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Jun 2012 16:09:43 -0400
+Message-ID: <1340222976.21745.125.camel@twins>
+Subject: Re: [PATCH 0/4] perf, x86: Updates and cleanups
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Jun 2012 22:09:36 +0200
+In-Reply-To: <1340217996-2254-1-git-send-email-robert.richter@amd.com>
+References: <1340217996-2254-1-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 8:11 PM, Goffredo Baroncelli <kreijack@libero.it> wrote:
->
-> Yes please, could someone explain the reason behind this decision ? May
-> be there are valid reasons, I am asking only to know which ones ?
->
-The reason is that at the moment no user visible operations span mount
-boundaries
-and there were discussion on whether this should be allowed for the
-clone ioctl or
-not. For the moment, I would already be happy to have cross subvolume reflinks
-which do not span mount points, this would already be much more as we have at
-the moment.
+On Wed, 2012-06-20 at 20:46 +0200, Robert Richter wrote:
+> I separated these for patches from my original NB counter
+> implementation. They are independent and contain updates and
+> cleanups. The most important change is the pmu unification. That code
+> also changes pmu setup for core perfctr from family detection to cpuid
+> check.
+
+Thanks Robert!
