@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab2FTKWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:22:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36153 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756203Ab2FTKWL convert rfc822-to-8bit (ORCPT
+	id S1756242Ab2FTK0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:26:18 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54992 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab2FTK0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:22:11 -0400
-Message-ID: <1340187720.21745.97.camel@twins>
-Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Date: Wed, 20 Jun 2012 12:22:00 +0200
-In-Reply-To: <20120620101943.GE10012@aftab.osrc.amd.com>
-References: <1340121811-4477-1-git-send-email-bp@amd64.org>
-	 <1340121811-4477-3-git-send-email-bp@amd64.org>
-	 <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
-	 <20120619232857.GH5996@aftab.osrc.amd.com>
-	 <1340182778.21745.75.camel@twins>
-	 <20120620095616.GB10012@aftab.osrc.amd.com>
-	 <1340186931.21745.90.camel@twins>
-	 <20120620101943.GE10012@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Wed, 20 Jun 2012 06:26:17 -0400
+Date: Wed, 20 Jun 2012 20:26:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: viresh.kumar2@arm.com, bhupesh.sharma@st.com, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        federico.vaga@gmail.com, giancarlo.asnaghi@st.com, wg@grandegger.com,
+        mkl@pengutronix.de, spear-devel@list.st.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+Message-Id: <20120620202604.407af721f746045ae00c8268@canb.auug.org.au>
+In-Reply-To: <20120620.012037.783895812206310043.davem@davemloft.net>
+References: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au>
+	<D5ECB3C7A6F99444980976A8C6D896384FAA275CA8@EAPEX1MAIL1.st.com>
+	<4FE18502.6040409@arm.com>
+	<20120620.012037.783895812206310043.davem@davemloft.net>
+X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Jun_2012_20_26_04_+1000_Pt2R0QMfCktuvVXA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 12:19 +0200, Borislav Petkov wrote:
-> On Wed, Jun 20, 2012 at 12:08:51PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-06-20 at 11:56 +0200, Borislav Petkov wrote:
-> > >         sprintf(name, "intel-ucode/%02x-%02x-%02x",
-> > >                 c->x86, c->x86_model, c->x86_mask);
-> > > 
-> > > 
-> > 
-> > but but but, the ucode image actually contains stuff for multiple
-> > things.. so I have to like rename it to match the actual cpu in the
-> > machine?
-> > 
-> > That seems rather daft..
-> > 
-> > awk 'BEGIN { FS=":" } /family/ {fam=$2} /model[^ ]/ {mod=$2} /stepping/
-> > {step=$2} END { printf "intel-ucode/%02x-%02x-%02x\n", fam, mod,
-> > step }' /proc/cpuinfo
-> > 
-> > Will get me the right filename, but surely that's not user-friendly at
-> > all...
-> 
-> I know, right. Whose idea was it to do it like that I don't know.
-> AFAICT, Intel delivers ucode as a single blob too, so why split it? The
-> driver picks out the right blob anyway.
+--Signature=_Wed__20_Jun_2012_20_26_04_+1000_Pt2R0QMfCktuvVXA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, so since we're mucking about with the whole interface anyway,
-can't we fix this too?
+Hi all,
+
+On Wed, 20 Jun 2012 01:20:37 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: viresh kumar <viresh.kumar2@arm.com>
+> Date: Wed, 20 Jun 2012 09:08:34 +0100
+>=20
+> > Please see following patchset from me, that got applied in linux-next
+> >=20
+> > https://lkml.org/lkml/2012/4/24/154
+> >=20
+> > Please check if this patchset is present in your build repo. I believe =
+it should be
+> > there. If it is, then you shouldn't get these errors.
+>=20
+> Well, then Stephen shouldn't get those errors either.
+>=20
+> But obviously he did.
+>=20
+> But all of this talk about changes existing only in linux-next is
+> entirely moot.  Because The damn thing MUST build independently inside
+> of net-next which doesn't have those clock layer changes.
+>=20
+> Someone send me a clean fix for net-next now.
+
+I get those errors because those patches are in the akpm tree which is
+merged after everything else ...
+
+One possibility is to put those changes in another (stable) tree and
+merge that into the net-next tree (and any other tree that needs it).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__20_Jun_2012_20_26_04_+1000_Pt2R0QMfCktuvVXA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP4aU8AAoJEECxmPOUX5FESSkQAKpF+Pf7CDj+K4cG37IdcOeE
+GZ7vji+MG9baDypNtp2CAPQOS2aYZeO4YBbBDg1UIDmDfltdi8iEpwpfPkIZDEzt
+yIfUN2O4RgvQ/reoxtp9aJ8DKbdOK+eO+zA4h1fdDRzsLMGZO7aWQOv0LbnC0Prz
+VX6nJHyloHsOWD3kX3e5j4Fq241EPR+sTC4DRnqMNI5esu1rwuNCx1TAPqVEO8xq
+AlVpKoBV+MTICylBAwspdv8cr6o2hsz99szPHMRgRPZ30qvbkdx2to7xCvSj4wgb
+76+Tj5gUZZ4aQMMRKKpGIp151NTZ1aD9Hlg24GcwmKJz21XAi8PTmWa/fptZ1EfO
+HeE6RCwxsoDMhL+EKXd1gmunmzQTvzMqAQsJEHVGVEAYA/70M4+K8g0tlZmleM22
+WuUITytjY/gWQDRo3dauRAvb2LlkbEGFPw8b+zyqj5I0VFEH6K+v7NSscuOmPsYV
+RUuxwqMu+LHgjhp43n/i53eGxks4WDMSOz1uOc/3y7vVG5yNg5TxW/s+CX3NTq7p
+rUqG91VC2I0Wym40lrQmVo/L5E2qEQioOzy+YROBQO5LPJzzVmCtjZImyc32jOzj
+n/qXtP3gkjux3yQncUN70NH3Unm2eSVtUI6SxaABEjqXbQkNvuKO38YRFnhtU3Ol
+2WfQVOxHGTEnwgzwnS+2
+=keoq
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Jun_2012_20_26_04_+1000_Pt2R0QMfCktuvVXA--
