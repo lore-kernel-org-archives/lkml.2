@@ -1,219 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab2FTGLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:11:34 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59022 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab2FTGLd (ORCPT
+	id S1753803Ab2FTGLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:11:52 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:35989 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab2FTGLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:11:33 -0400
-X-AuditID: 9c930197-b7b87ae000000e4d-73-4fe16992eb70
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Subject: [PATCH v2] perf bench: Documentation update
-Date: Wed, 20 Jun 2012 15:08:06 +0900
-Message-Id: <1340172486-17805-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.10.2
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 20 Jun 2012 02:11:50 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6747"; a="200371266"
+X-IronPort-AV: E=Sophos;i="4.77,440,1336374000"; 
+   d="scan'208";a="331053782"
+Date: Wed, 20 Jun 2012 11:43:05 +0530
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+To: Michael Leun <lkml20120218@newton.leun.net>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>,
+        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
+Message-ID: <20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
+References: <20120619085137.337838c0@xenia.leun.net>
+ <CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
+ <20120620003315.2eaf6460@xenia.leun.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120620003315.2eaf6460@xenia.leun.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Wed, Jun 20, 2012 at 12:33:15AM +0200, Michael Leun wrote:
+> On Tue, 19 Jun 2012 15:11:38 +0530
+> Mohammed Shafi <shafi.wireless@gmail.com> wrote:
+> 
+> > Hi,
+> > 
+> > On Tue, Jun 19, 2012 at 12:21 PM, Michael Leun
+> > <lkml20120218@newton.leun.net> wrote:
+> > > Hi,
+> > >
+> > > ne-wlan1@elektra:/home/ml4> ping 192.168.2.1
+> > > PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
+> > > 64 bytes from 192.168.2.1: icmp_seq=1 ttl=64 time=2010 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=2 ttl=64 time=1011 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=3 ttl=64 time=11.5 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=4 ttl=64 time=1.12 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=5 ttl=64 time=1002 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=6 ttl=64 time=3.83 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=7 ttl=64 time=1003 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=8 ttl=64 time=4.10 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=9 ttl=64 time=1003 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=10 ttl=64 time=3.95 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=11 ttl=64 time=1003 ms
+> > > 64 bytes from 192.168.2.1: icmp_seq=12 ttl=64 time=3.78 ms
+> > >
+> > >
+> > > Please note the additional delay of ~1000ms every 2nd packet. This
+> > > is Kernel 3.4.3, have seen it in 3.4.2 also. Does NOT happen in
+> > > 3.3.1.
+> > >
+> > > Is this Issue already known? If so, I can save the work bisecting...
+> > 
+> > looks like some one reported this bug in kernel bugzilla. would be
+> > saving us lot of time
+> > if you can bisect it!
+> > 
+> 
+> 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 is the first bad commit
+> commit 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45
+> Author: Johannes Berg <johannes.berg@intel.com>
+> Date:   Thu Mar 8 15:02:06 2012 +0100
+> 
+>     mac80211: remove spurious BSSID change flag
+> 
+>     The BSSID has been set a lot earlier already and
+>     didn't change again in ieee80211_set_associated().
+> 
+>     Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+>     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> 
+> :040000 040000 67a19a39e4b04c16921a3758ddd2362e02e81dd3 4a7cbd327b59345b83fa613f893770fbf44220bb M      net
+> 
+> Reverting 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 from 3.4.3 fixes the issue.
+> 
+Michael,
 
-The current perf-bench documentation has a couple
-of typos and even lacks entire description of mem
-subsystem. Fix it.
+Thanks for the analysis. Can you please try with the attached patch without
+reverting mac80211 change?
 
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Link: http://lkml.kernel.org/n/tip-exnzkah7sfzevvtsiw1s904e@git.kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Documentation/perf-bench.txt |   78 +++++++++++++++++++++++++++++--
- tools/perf/bench/mem-memcpy.c           |    4 +-
- tools/perf/bench/mem-memset.c           |    8 ++--
- tools/perf/builtin-bench.c              |    4 +-
- 4 files changed, 83 insertions(+), 11 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
-index a3dbadb26ef5..f3c716a4cad3 100644
---- a/tools/perf/Documentation/perf-bench.txt
-+++ b/tools/perf/Documentation/perf-bench.txt
-@@ -12,7 +12,7 @@ SYNOPSIS
- 
- DESCRIPTION
- -----------
--This 'perf bench' command is general framework for benchmark suites.
-+This 'perf bench' command is a general framework for benchmark suites.
- 
- COMMON OPTIONS
- --------------
-@@ -45,14 +45,20 @@ SUBSYSTEM
- 'sched'::
- 	Scheduler and IPC mechanisms.
- 
-+'mem'::
-+	Memory access performance.
-+
-+'all'::
-+	All benchmark subsystems.
-+
- SUITES FOR 'sched'
- ~~~~~~~~~~~~~~~~~~
- *messaging*::
- Suite for evaluating performance of scheduler and IPC mechanisms.
- Based on hackbench by Rusty Russell.
- 
--Options of *pipe*
--^^^^^^^^^^^^^^^^^
-+Options of *messaging*
-+^^^^^^^^^^^^^^^^^^^^^^
- -p::
- --pipe::
- Use pipe() instead of socketpair()
-@@ -115,6 +121,72 @@ Example of *pipe*
-                 59004 ops/sec
- ---------------------
- 
-+SUITES FOR 'mem'
-+~~~~~~~~~~~~~~~~
-+*memcpy*::
-+Suite for evaluating performance of simple memory copy in various ways.
-+
-+Options of *memcpy*
-+^^^^^^^^^^^^^^^^^^^
-+-l::
-+--length::
-+Specify length of memory to copy (default: 1MB).
-+Available units are B, KB, MB, GB and TB (case insensitive).
-+
-+-r::
-+--routine::
-+Specify routine to copy (default: default).
-+Available routines are depend on the architecture.
-+On x86-64, x86-64-unrolled, x86-64-movsq and x86-64-movsb are supported.
-+
-+-i::
-+--iterations::
-+Repeat memcpy invocation this number of times.
-+
-+-c::
-+--clock::
-+Use perf's cpu-cycles event instead of gettimeofday syscall.
-+
-+-o::
-+--only-prefault::
-+Show only the result with page faults before memcpy.
-+
-+-n::
-+--no-prefault::
-+Show only the result without page faults before memcpy.
-+
-+*memset*::
-+Suite for evaluating performance of simple memory set in various ways.
-+
-+Options of *memset*
-+^^^^^^^^^^^^^^^^^^^
-+-l::
-+--length::
-+Specify length of memory to set (default: 1MB).
-+Available units are B, KB, MB, GB and TB (case insensitive).
-+
-+-r::
-+--routine::
-+Specify routine to set (default: default).
-+Available routines are depend on the architecture.
-+On x86-64, x86-64-unrolled, x86-64-stosq and x86-64-stosb are supported.
-+
-+-i::
-+--iterations::
-+Repeat memset invocation this number of times.
-+
-+-c::
-+--clock::
-+Use perf's cpu-cycles event instead of gettimeofday syscall.
-+
-+-o::
-+--only-prefault::
-+Show only the result with page faults before memset.
-+
-+-n::
-+--no-prefault::
-+Show only the result without page faults before memset.
-+
- SEE ALSO
- --------
- linkperf:perf[1]
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 71557225bf92..d990365cafa0 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -32,13 +32,13 @@ static bool		no_prefault;
- static const struct option options[] = {
- 	OPT_STRING('l', "length", &length_str, "1MB",
- 		    "Specify length of memory to copy. "
--		    "available unit: B, MB, GB (upper and lower)"),
-+		    "Available units: B, KB, MB, GB and TB (upper and lower)"),
- 	OPT_STRING('r', "routine", &routine, "default",
- 		    "Specify routine to copy"),
- 	OPT_INTEGER('i', "iterations", &iterations,
- 		    "repeat memcpy() invocation this number of times"),
- 	OPT_BOOLEAN('c', "clock", &use_clock,
--		    "Use CPU clock for measuring"),
-+		    "Use cycles event instead of gettimeofday() for measuring"),
- 	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
- 		    "Show only the result with page faults before memcpy()"),
- 	OPT_BOOLEAN('n', "no-prefault", &no_prefault,
-diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-index e9079185bd72..bf0d5f552017 100644
---- a/tools/perf/bench/mem-memset.c
-+++ b/tools/perf/bench/mem-memset.c
-@@ -31,14 +31,14 @@ static bool		no_prefault;
- 
- static const struct option options[] = {
- 	OPT_STRING('l', "length", &length_str, "1MB",
--		    "Specify length of memory to copy. "
--		    "available unit: B, MB, GB (upper and lower)"),
-+		    "Specify length of memory to set. "
-+		    "Available units: B, KB, MB, GB and TB (upper and lower)"),
- 	OPT_STRING('r', "routine", &routine, "default",
--		    "Specify routine to copy"),
-+		    "Specify routine to set"),
- 	OPT_INTEGER('i', "iterations", &iterations,
- 		    "repeat memset() invocation this number of times"),
- 	OPT_BOOLEAN('c', "clock", &use_clock,
--		    "Use CPU clock for measuring"),
-+		    "Use cycles event instead of gettimeofday() for measuring"),
- 	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
- 		    "Show only the result with page faults before memset()"),
- 	OPT_BOOLEAN('n', "no-prefault", &no_prefault,
-diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-index b0e74ab2d7a2..1f3100216448 100644
---- a/tools/perf/builtin-bench.c
-+++ b/tools/perf/builtin-bench.c
-@@ -33,7 +33,7 @@ struct bench_suite {
- };
- 						\
- /* sentinel: easy for help */
--#define suite_all { "all", "test all suite (pseudo suite)", NULL }
-+#define suite_all { "all", "Test all benchmark suites", NULL }
- 
- static struct bench_suite sched_suites[] = {
- 	{ "messaging",
-@@ -75,7 +75,7 @@ static struct bench_subsys subsystems[] = {
- 	  "memory access performance",
- 	  mem_suites },
- 	{ "all",		/* sentinel: easy for help */
--	  "test all subsystem (pseudo subsystem)",
-+	  "all benchmark subsystem",
- 	  NULL },
- 	{ NULL,
- 	  NULL,
--- 
-1.7.10.2
-
+-Rajkumar
