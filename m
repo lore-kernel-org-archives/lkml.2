@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548Ab2FTSYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:24:39 -0400
+	id S932583Ab2FTS2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:28:15 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932541Ab2FTSYe (ORCPT
+	with ESMTP id S932528Ab2FTSYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:24:34 -0400
-Message-Id: <20120620173040.450383758@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:24:31 -0400
+Message-Id: <20120620173040.368325432@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:49 -0700
+Date: Wed, 20 Jun 2012 10:30:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [ 10/20] xHCI: Increase the timeout for controller save/restore state operation
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Janne=20Kalliom=C3=A4ki?= <janne@tuxera.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [ 09/20] hfsplus: fix overflow in sector calculations in hfsplus_submit_bio
 In-Reply-To: <20120620173044.GA6910@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,63 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@gmail.com>
+From: Janne Kalliomäki <janne@tuxera.com>
 
-commit 622eb783fe6ff4c1baa47db16c3a5db97f9e6e50 upstream.
+commit a6dc8c04218eb752ff79cdc24a995cf51866caed upstream.
 
-When system software decides to power down the xHC with the intent of
-resuming operation at a later time, it will ask xHC to save the internal
-state and restore it when resume to correctly recover from a power event.
-Two bits are used to enable this operation: Save State and Restore State.
+The variable io_size was unsigned int, which caused the wrong sector number
+to be calculated after aligning it. This then caused mount to fail with big
+volumes, as backup volume header information was searched from a
+wrong sector.
 
-xHCI spec 4.23.2 says software should "Set the Controller Save/Restore
-State flag in the USBCMD register and wait for the Save/Restore State
-Status flag in the USBSTS register to transition to '0'". However, it does
-not define how long software should wait for the SSS/RSS bit to transition
-to 0.
-
-Currently the timeout is set to 1ms. There is bug report
-(https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1002697)
-indicates that the timeout is too short for ASMedia ASM1042 host controller
-to save/restore the state successfully. Increase the timeout to 10ms helps to
-resolve the issue.
-
-This patch should be backported to stable kernels as old as 2.6.37, that
-contain the commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI:
-PCI power management implementation"
-
-Signed-off-by: Andiry Xu <andiry.xu@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Janne Kalliomäki <janne@tuxera.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/hfsplus/wrapper.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -730,8 +730,8 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 	command = xhci_readl(xhci, &xhci->op_regs->command);
- 	command |= CMD_CSS;
- 	xhci_writel(xhci, command, &xhci->op_regs->command);
--	if (handshake(xhci, &xhci->op_regs->status, STS_SAVE, 0, 10*100)) {
--		xhci_warn(xhci, "WARN: xHC CMD_CSS timeout\n");
-+	if (handshake(xhci, &xhci->op_regs->status, STS_SAVE, 0, 10 * 1000)) {
-+		xhci_warn(xhci, "WARN: xHC save state timeout\n");
- 		spin_unlock_irq(&xhci->lock);
- 		return -ETIMEDOUT;
- 	}
-@@ -786,8 +786,8 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 		command |= CMD_CRS;
- 		xhci_writel(xhci, command, &xhci->op_regs->command);
- 		if (handshake(xhci, &xhci->op_regs->status,
--			      STS_RESTORE, 0, 10*100)) {
--			xhci_dbg(xhci, "WARN: xHC CMD_CSS timeout\n");
-+			      STS_RESTORE, 0, 10 * 1000)) {
-+			xhci_warn(xhci, "WARN: xHC restore state timeout\n");
- 			spin_unlock_irq(&xhci->lock);
- 			return -ETIMEDOUT;
- 		}
+--- a/fs/hfsplus/wrapper.c
++++ b/fs/hfsplus/wrapper.c
+@@ -56,7 +56,7 @@ int hfsplus_submit_bio(struct super_bloc
+ 	DECLARE_COMPLETION_ONSTACK(wait);
+ 	struct bio *bio;
+ 	int ret = 0;
+-	unsigned int io_size;
++	u64 io_size;
+ 	loff_t start;
+ 	int offset;
+ 
 
 
