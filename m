@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab2FTWjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 18:39:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59636 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab2FTWjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 18:39:53 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Bret Towe <magnade@gmail.com>, linux-kernel@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, mfasheh@suse.com, jlbec@evilplan.org,
-        sunil.mushran@oracle.com
-Subject: Re: [PATCH] ocfs2: Fix NULL pointer dereferrence in __ocfs2_change_file_space
-In-Reply-To: <1340231684-1667-1-git-send-email-luis.henriques@canonical.com>
-	(Luis Henriques's message of "Wed, 20 Jun 2012 23:34:44 +0100")
-References: <20120620145659.a5fff5f6.akpm@linux-foundation.org>
-	<1340231684-1667-1-git-send-email-luis.henriques@canonical.com>
-User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.1.50 (gnu/linux)
-Date: Wed, 20 Jun 2012 23:39:51 +0100
-Message-ID: <87d34tk3pk.fsf@canonical.com>
+	id S1755093Ab2FTWmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 18:42:36 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:53447 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753553Ab2FTWmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 18:42:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Huang Ying <ying.huang@intel.com>
+Subject: Re: [PATCH -v6 3/4] PCI, PM, Do not call pci_set_power_state with PCI_D3cold
+Date: Thu, 21 Jun 2012 00:47:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>,
+        Michal Miroslaw <mirq-linux@rere.qmqm.pl>,
+        Jesse Barnes <jesse.barnes@intel.com>
+References: <1340083249-16266-1-git-send-email-ying.huang@intel.com> <1340083249-16266-4-git-send-email-ying.huang@intel.com>
+In-Reply-To: <1340083249-16266-4-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206210047.57882.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm... forgot to send to stable.  Is this enough?
+On Tuesday, June 19, 2012, Huang Ying wrote:
+> PCI subsystem has not been ready for D3cold support yet.  So
+> PCI_D3cold should not be used as parameter for pci_set_power_state.
+> This patch is needed for upcoming PCI_D3cold support.
+> 
+> This patch has no functionality change, because pci_set_power_state
+> will bound the parameter to PCI_D3hot too.
+> 
+> Cc: Michal Miroslaw <mirq-linux@rere.qmqm.pl>
+> Cc: Jesse Barnes <jesse.barnes@intel.com>
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
 
-Cc: stable@vger.kernel.org
+Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Or do I need to re-send?
-
-Cheers,
---
-Luis
-
-Luis Henriques <luis.henriques@canonical.com> writes:
-
-> As ocfs2_fallocate() will invoke __ocfs2_change_file_space() with a NULL
-> as the first parameter (file), it may trigger a NULL pointer dereferrence
-> due to a missing check.  See http://bugs.launchpad.net/bugs/1006012.
->
-> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 > ---
->  fs/ocfs2/file.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-> index 6e39668..84822a4 100644
-> --- a/fs/ocfs2/file.c
-> +++ b/fs/ocfs2/file.c
-> @@ -1950,7 +1950,7 @@ static int __ocfs2_change_file_space(struct file *file, struct inode *inode,
->  	if (ret < 0)
->  		mlog_errno(ret);
+>  arch/x86/pci/mrst.c       |    2 +-
+>  drivers/misc/cb710/core.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- a/arch/x86/pci/mrst.c
+> +++ b/arch/x86/pci/mrst.c
+> @@ -264,7 +264,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_IN
 >  
-> -	if (file->f_flags & O_SYNC)
-> +	if (file && (file->f_flags & O_SYNC))
->  		handle->h_sync = 1;
+>  static void __devinit mrst_power_off_unused_dev(struct pci_dev *dev)
+>  {
+> -	pci_set_power_state(dev, PCI_D3cold);
+> +	pci_set_power_state(dev, PCI_D3hot);
+>  }
+>  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0801, mrst_power_off_unused_dev);
+>  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0809, mrst_power_off_unused_dev);
+> --- a/drivers/misc/cb710/core.c
+> +++ b/drivers/misc/cb710/core.c
+> @@ -180,7 +180,7 @@ static int cb710_suspend(struct pci_dev
+>  	pci_save_state(pdev);
+>  	pci_disable_device(pdev);
+>  	if (state.event & PM_EVENT_SLEEP)
+> -		pci_set_power_state(pdev, PCI_D3cold);
+> +		pci_set_power_state(pdev, PCI_D3hot);
+>  	return 0;
+>  }
 >  
->  	ocfs2_commit_trans(osb, handle);
+> 
+> 
+
