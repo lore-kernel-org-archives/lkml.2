@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab2FTJLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:11:07 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34974 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab2FTJLF convert rfc822-to-8bit (ORCPT
+	id S1755688Ab2FTJLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:11:18 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:44473 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab2FTJLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:11:05 -0400
+	Wed, 20 Jun 2012 05:11:16 -0400
+Message-ID: <4FE193AA.8010801@linux.vnet.ibm.com>
+Date: Wed, 20 Jun 2012 17:11:06 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120619090110.GA1692@zhy>
-References: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
-	<1340094536-20873-6-git-send-email-vincent.guittot@linaro.org>
-	<20120619090110.GA1692@zhy>
-Date: Wed, 20 Jun 2012 11:11:04 +0200
-Message-ID: <CAKfTPtAdSMJ1RnDPDYZZ378QW9DUCKLA+oC3TWJD7v5KAkFitA@mail.gmail.com>
-Subject: Re: [PATCH v2 5/5] sched: cpu_power: enable ARCH_POWER
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v7 02/10] KVM: MMU: abstract spte write-protect
+References: <4FE1822D.8010002@linux.vnet.ibm.com> <4FE1825B.1030402@linux.vnet.ibm.com> <20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062009-5564-0000-0000-00000344AA11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 June 2012 11:01, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Tue, Jun 19, 2012 at 10:28:56AM +0200, Vincent Guittot wrote:
->> Heteregeneous ARM platform uses arch_scale_freq_power function
->> to reflect the relative capacity of each core
+On 06/20/2012 05:02 PM, Takuya Yoshikawa wrote:
+
+> On Wed, 20 Jun 2012 15:57:15 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> 
+>> Introduce a common function to abstract spte write-protect to
+>> cleanup the code
 >>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>  kernel/sched/features.h |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> 
+> ...
+> 
+>> +/* Return true if the spte is dropped. */
+>> +static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush)
+>> +{
+>> +	u64 spte = *sptep;
+>> +
+>> +	if (!is_writable_pte(spte))
+>> +		return false;
+>> +
+>> +	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+> 
+> ...
+> 
+>> @@ -3902,16 +3915,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+>>  			      !is_last_spte(pt[i], sp->role.level))
+>>  				continue;
 >>
->> diff --git a/kernel/sched/features.h b/kernel/sched/features.h
->> index de00a48..d98ae90 100644
->> --- a/kernel/sched/features.h
->> +++ b/kernel/sched/features.h
->> @@ -42,7 +42,7 @@ SCHED_FEAT(CACHE_HOT_BUDDY, true)
->>  /*
->>   * Use arch dependent cpu power functions
->>   */
->> -SCHED_FEAT(ARCH_POWER, false)
->> +SCHED_FEAT(ARCH_POWER, true)
->
-> Hmmm...seems we can remove this knob completely.
->
+>> -			if (is_large_pte(pt[i])) {
+>> -				drop_spte(kvm, &pt[i]);
+>> -				--kvm->stat.lpages;
+>> -				continue;
+>> -			}
+>> -
+>> -			/* avoid RMW */
+>> -			if (is_writable_pte(pt[i]))
+>> -				mmu_spte_update(&pt[i],
+>> -						pt[i] & ~PT_WRITABLE_MASK);
+>> +			spte_write_protect(kvm, &pt[i], &flush);
+> 
+> Adding rmap_printk() here seems wrong.
+> 
 
-Peter,
 
-Do you prefer to keep it or remove it completely ?
+Strange! Why do you think it is wrong? It is just debug code.
 
-Thanks
+> If you think it is not a problem, please explain why you think so in
+> the changelog.
 
-> __weak arch_scale_smt_power() is doing all the trick.
->
-> Thanks,
-> Yong
+
+It is a from the first place and it is used to debug and not compiled at all.
+
