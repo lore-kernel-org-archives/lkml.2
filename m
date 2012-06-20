@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab2FTQM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:12:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756898Ab2FTQMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:12:55 -0400
-Message-ID: <4FE1F640.10803@redhat.com>
-Date: Wed, 20 Jun 2012 12:11:44 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757123Ab2FTQNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:13:14 -0400
+Received: from h9.dl5rb.org.uk ([81.2.74.9]:42611 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757108Ab2FTQNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 12:13:12 -0400
+Date: Wed, 20 Jun 2012 17:12:49 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Yoichi Yuasa <yuasa@linux-mips.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH] MIPS: fix bug.h MIPS build regression
+Message-ID: <20120620161249.GB29196@linux-mips.org>
+References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org>
+ <CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com>
+ <20120620152759.2caceb8c.yuasa@linux-mips.org>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 06/12] mm: Add get_kernel_page[s] for pinning of kernel
- addresses for I/O
-References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-7-git-send-email-mgorman@suse.de>
-In-Reply-To: <1340185081-22525-7-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120620152759.2caceb8c.yuasa@linux-mips.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:37 AM, Mel Gorman wrote:
-> This patch adds two new APIs get_kernel_pages() and get_kernel_page()
-> that may be used to pin a vector of kernel addresses for IO. The initial
-> user is expected to be NFS for allowing pages to be written to swap
-> using aops->direct_IO(). Strictly speaking, swap-over-NFS only needs
-> to pin one page for IO but it makes sense to express the API in terms
-> of a vector and add a helper for pinning single pages.
->
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+On Wed, Jun 20, 2012 at 03:27:59PM +0900, Yoichi Yuasa wrote:
 
-Reviewed-by: Rik van Riel<riel@redhat.com>
+> Commit: 3777808873b0c49c5cf27e44c948dfb02675d578 breaks all MIPS builds.
 
+Thanks, fix applied.
+
+  Ralf
