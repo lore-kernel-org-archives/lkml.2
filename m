@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab2FTEC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 00:02:26 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:51265 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab2FTECY (ORCPT
+	id S1752183Ab2FTEY2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 00:24:28 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33538 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab2FTEY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 00:02:24 -0400
-Message-ID: <4FE14B4D.2000205@gmail.com>
-Date: Wed, 20 Jun 2012 00:02:21 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Nathan Zimmer <nzimmer@sgi.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        npiggin@gmail.com, cl@linux.com, lee.schermerhorn@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        stable@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH v2] tmpfs not interleaving properly
-References: <20120531143916.GA16162@gulag1.americas.sgi.com> <4FC7CFEB.5040009@gmail.com> <20120531132515.6af60152.akpm@linux-foundation.org> <4FC7D629.3090801@gmail.com> <20120601142437.GA13739@gulag1.americas.sgi.com> <4FC8FA47.70001@gmail.com> <20120619232102.GA5698@gulag1.americas.sgi.com>
-In-Reply-To: <20120619232102.GA5698@gulag1.americas.sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Jun 2012 00:24:26 -0400
+Date: Tue, 19 Jun 2012 21:24:23 -0700 (PDT)
+Message-Id: <20120619.212423.1927278993583357087.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, federico.vaga@gmail.com,
+        giancarlo.asnaghi@st.com, wg@grandegger.com, bhupesh.sharma@st.com,
+        mkl@pengutronix.de
+Subject: Re: linux-next: build failure after merge of the net-next tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au>
+References: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/19/12 7:21 PM), Nathan Zimmer wrote:
-> On Fri, Jun 01, 2012 at 01:22:15PM -0400, KOSAKI Motohiro wrote:
->> (6/1/12 10:24 AM), Nathan Zimmer wrote:
->>> On Thu, May 31, 2012 at 04:35:53PM -0400, KOSAKI Motohiro wrote:
->>>> (5/31/12 4:25 PM), Andrew Morton wrote:
->>>>> On Thu, 31 May 2012 16:09:15 -0400
->>>>> KOSAKI Motohiro<kosaki.motohiro@gmail.com>   wrote:
->>>>>
->>>>>>> --- a/mm/shmem.c
->>>>>>> +++ b/mm/shmem.c
->>>>>>> @@ -929,7 +929,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
->>>>>>>     	/*
->>>>>>>     	 * alloc_page_vma() will drop the shared policy reference
->>>>>>>     	 */
->>>>>>> -	return alloc_page_vma(gfp,&pvma, 0);
->>>>>>> +	return alloc_page_vma(gfp,&pvma, info->node_offset<<    PAGE_SHIFT );
->>>>>>
->>>>>> 3rd argument of alloc_page_vma() is an address. This is type error.
->>>>>
->>>>> Well, it's an unsigned long...
->>>>>
->>>>> But yes, it is conceptually wrong and *looks* weird.  I think we can
->>>>> address that by overcoming our peculair aversion to documenting our
->>>>> code, sigh.  This?
->>>>
->>>> Sorry, no.
->>>>
->>>> addr agrument of alloc_pages_vma() have two meanings.
->>>>
->>>> 1) interleave node seed
->>>> 2) look-up key of shmem policy
->>>>
->>>> I think this patch break (2). shmem_get_policy(pol, addr) assume caller honor to
->>>> pass correct address.
->>>
->>> But the pseudo vma we generated in shmem_alloc_page the vm_ops are set to NULL.
->>> So get_vma_policy will return the policy provided by the pseudo vma and not reach
->>> the shmem_get_policy.
->>
->> yes, and it is bug source. we may need to change soon. I guess the right way is
->> to make vm_ops->interleave and interleave_nid uses it if povided.
-> 
-> If we provide vm_ops then won't shmem_get_policy get called?
-> That would be an issue since shmem_get_policy assumes vm_file is non NULL.
->
->> btw, I don't think node_random() is good idea. it is random(pid + jiffies + cycle).
->> current->cpuset_mem_spread_rotor is per-thread value. but you now need per-inode
->> interleave offset. maybe, just inode addition is enough. Why do you need randomness?
-> 
-> I don't really need the randomness, the rotor should be good enough.
-> The correct way to get that is cpuset_mem_spread_node(), yes?
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 20 Jun 2012 13:33:48 +1000
 
-I think that's good idea too.
+> After merging the net-next tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> ERROR: "clk_get_rate" [drivers/net/can/c_can/c_can_pci.ko] undefined!
+> ERROR: "clk_get" [drivers/net/can/c_can/c_can_pci.ko] undefined!
+> ERROR: "clk_put" [drivers/net/can/c_can/c_can_pci.ko] undefined!
+> 
+> Caused by commit 5b92da0443c2 ("c_can_pci: generic module for C_CAN/D_CAN
+> on PCI").  Maybe a missing Kconfig dependency/select?
+> 
+> I have used the net-next tree from next-20120619 for today.
+
+Known problem:
+
+http://marc.info/?l=linux-netdev&m=134014347620836&w=2
