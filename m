@@ -1,61 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab2FTJgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:36:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54970 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab2FTJgt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:36:49 -0400
-Message-ID: <1340185002.21745.80.camel@twins>
-Subject: Re: [PATCH 05/10] perf, x86: Move Intel specific code to
- intel_pmu_init()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Jun 2012 11:36:42 +0200
-In-Reply-To: <1340129448-8690-6-git-send-email-robert.richter@amd.com>
-References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
-	 <1340129448-8690-6-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756098Ab2FTJg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:36:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58878 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755897Ab2FTJgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:36:22 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 00/12] Swap-over-NFS without deadlocking V6
+Date: Wed, 20 Jun 2012 10:36:05 +0100
+Message-Id: <1340184977-22356-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-19 at 20:10 +0200, Robert Richter wrote:
-> There is some Intel specific code in the generic x86 path. Move it to
-> intel_pmu_init().
-> 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
+Changelog since V5
+  o Rebase to v3.5-rc3
 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 1eb9f00..90d7097 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -1760,7 +1760,7 @@ static __init void intel_nehalem_quirk(void)
->  	}
->  }
->  
-> -__init int intel_pmu_init(void)
-> +static __init int __intel_pmu_init(void)
->  {
->  	union cpuid10_edx edx;
->  	union cpuid10_eax eax;
-> @@ -1955,3 +1955,46 @@ __init int intel_pmu_init(void)
->  
->  	return 0;
->  }
-> +
-> +__init int intel_pmu_init(void)
-> +{
-> +	struct event_constraint *c;
-> +	int ret = __intel_pmu_init();
+Changelog since V4
+  o Catch if SOCK_MEMALLOC flag is cleared with rmem tokens	(davem)
 
+Changelog since V3
+  o Rebase to 3.4-rc5
+  o kmap pages for writing to swap				(akpm)
+  o Move forward declaration to reduce chance of duplication	(akpm)
 
-This seems like a nice enough cleanup all on its own, but why make it
-two functions?
+Changelog since V2
+  o Nothing significant, just rebases. A radix tree lookup is replaced with
+    a linear search would be the biggest rebase artifact
+
+This patch series is based on top of "Swap-over-NBD without deadlocking v12"
+as it depends on the same reservation of PF_MEMALLOC reserves logic.
+
+When a user or administrator requires swap for their application, they
+create a swap partition and file, format it with mkswap and activate it with
+swapon. In diskless systems this is not an option so if swap if required
+then swapping over the network is considered.  The two likely scenarios
+are when blade servers are used as part of a cluster where the form factor
+or maintenance costs do not allow the use of disks and thin clients.
+
+The Linux Terminal Server Project recommends the use of the Network
+Block Device (NBD) for swap but this is not always an option.  There is
+no guarantee that the network attached storage (NAS) device is running
+Linux or supports NBD. However, it is likely that it supports NFS so there
+are users that want support for swapping over NFS despite any performance
+concern. Some distributions currently carry patches that support swapping
+over NFS but it would be preferable to support it in the mainline kernel.
+
+Patch 1 avoids a stream-specific deadlock that potentially affects TCP.
+
+Patch 2 is a small modification to SELinux to avoid using PFMEMALLOC
+	reserves.
+
+Patch 3 adds three helpers for filesystems to handle swap cache pages.
+	For example, page_file_mapping() returns page->mapping for
+	file-backed pages and the address_space of the underlying
+	swap file for swap cache pages.
+
+Patch 4 adds two address_space_operations to allow a filesystem
+	to pin all metadata relevant to a swapfile in memory. Upon
+	successful activation, the swapfile is marked SWP_FILE and
+	the address space operation ->direct_IO is used for writing
+	and ->readpage for reading in swap pages.
+
+Patch 5 notes that patch 3 is bolting
+	filesystem-specific-swapfile-support onto the side and that
+	the default handlers have different information to what
+	is available to the filesystem. This patch refactors the
+	code so that there are generic handlers for each of the new
+	address_space operations.
+
+Patch 6 adds an API to allow a vector of kernel addresses to be
+	translated to struct pages and pinned for IO.
+
+Patch 7 adds support for using highmem pages for swap by kmapping
+	the pages before calling the direct_IO handler.
+
+Patch 8 updates NFS to use the helpers from patch 3 where necessary.
+
+Patch 9 avoids setting PF_private on PG_swapcache pages within NFS.
+
+Patch 10 implements the new swapfile-related address_space operations
+	for NFS and teaches the direct IO handler how to manage
+	kernel addresses.
+
+Patch 11 prevents page allocator recursions in NFS by using GFP_NOIO
+	where appropriate.
+
+Patch 12 fixes a NULL pointer dereference that occurs when using
+	swap-over-NFS.
+
+With the patches applied, it is possible to mount a swapfile that is on an
+NFS filesystem. Swap performance is not great with a swap stress test taking
+roughly twice as long to complete than if the swap device was backed by NBD.
+
+ Documentation/filesystems/Locking |   13 ++++
+ Documentation/filesystems/vfs.txt |   12 +++
+ fs/nfs/Kconfig                    |    8 ++
+ fs/nfs/direct.c                   |   82 ++++++++++++++-------
+ fs/nfs/file.c                     |   28 +++++--
+ fs/nfs/inode.c                    |    4 +
+ fs/nfs/internal.h                 |    7 +-
+ fs/nfs/pagelist.c                 |    4 +-
+ fs/nfs/read.c                     |    6 +-
+ fs/nfs/write.c                    |   91 ++++++++++++++---------
+ include/linux/blk_types.h         |    2 +
+ include/linux/fs.h                |    8 ++
+ include/linux/highmem.h           |    7 ++
+ include/linux/mm.h                |   29 ++++++++
+ include/linux/nfs_fs.h            |    4 +-
+ include/linux/pagemap.h           |    5 ++
+ include/linux/sunrpc/xprt.h       |    3 +
+ include/linux/swap.h              |    8 ++
+ mm/highmem.c                      |   12 +++
+ mm/memory.c                       |   52 +++++++++++++
+ mm/page_io.c                      |  145 +++++++++++++++++++++++++++++++++++++
+ mm/swap_state.c                   |    2 +-
+ mm/swapfile.c                     |  141 ++++++++++++++----------------------
+ net/core/sock.c                   |    1 +
+ net/sunrpc/Kconfig                |    5 ++
+ net/sunrpc/clnt.c                 |    2 +
+ net/sunrpc/sched.c                |    7 +-
+ net/sunrpc/xprtsock.c             |   53 ++++++++++++++
+ security/selinux/avc.c            |    2 +-
+ 29 files changed, 573 insertions(+), 170 deletions(-)
+
+-- 
+1.7.9.2
+
