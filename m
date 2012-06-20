@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab2FTShZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:37:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
+	id S932288Ab2FTShl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:37:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35553 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757731Ab2FTSWT (ORCPT
+	with ESMTP id S932131Ab2FTShf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:22:19 -0400
-Message-Id: <20120620173023.344606261@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [ 28/61] Make hard_irq_disable() actually hard-disable interrupts
-In-Reply-To: <20120620173033.GA5634@kroah.com>
+	Wed, 20 Jun 2012 14:37:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
+References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
+	<CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
+	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
+	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
+	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
+	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
+	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
+	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
+	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
+Date: Wed, 20 Jun 2012 11:37:33 -0700
+X-Google-Sender-Auth: 1HlyN86vS75AQKGaZjxz2SAaMOE
+Message-ID: <CAE9FiQWR2E8NEdxOc=+3pzXcnOV_Wt7itqsO3QCJX+x7FzGUJg@mail.gmail.com>
+Subject: Re: SNB PCI root information
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ulrich Drepper <drepper@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, jbarnes@virtuousgeek.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b339cc145af3204c2ebb174
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+--047d7b339cc145af3204c2ebb174
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Wed, Jun 20, 2012 at 10:59 AM, Ulrich Drepper <drepper@gmail.com> wrote:
+> On Wed, Jun 20, 2012 at 1:17 PM, Bjorn Helgaas <bhelgaas@google.com> wrot=
+e:
+>
+> I'd be willing to go with Yinghai's recommendation and give the BIOS
+> writers the benefit of a doubt that they get things right. =A0If they
+> prove to be incapable again we can still change the option handling to
+> overwrite the kernel setting regardless.
 
-From: Paul Mackerras <paulus@samba.org>
+good, please check updated patch with fix from you.
 
-commit f948501b36c6b3d9352ce212a197098a7e958971 upstream.
+Thanks
 
-At present, hard_irq_disable() does nothing on powerpc because of
-this code in include/linux/interrupt.h:
+Yinghai
 
-    #ifndef hard_irq_disable
-    #define hard_irq_disable()      do { } while(0)
-    #endif
+--047d7b339cc145af3204c2ebb174
+Content-Type: application/octet-stream; name="busnum_node_v2.patch"
+Content-Disposition: attachment; filename="busnum_node_v2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h3oqv94t0
 
-So we need to make our hard_irq_disable be a macro.  It was previously
-a macro until commit 7230c56441 ("powerpc: Rework lazy-interrupt
-handling") changed it to a static inline function.
-
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
---
- arch/powerpc/include/asm/hw_irq.h |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/arch/powerpc/include/asm/hw_irq.h
-+++ b/arch/powerpc/include/asm/hw_irq.h
-@@ -99,6 +99,9 @@ static inline void hard_irq_disable(void
- 	get_paca()->irq_happened |= PACA_IRQ_HARD_DIS;
- }
- 
-+/* include/linux/interrupt.h needs hard_irq_disable to be a macro */
-+#define hard_irq_disable	hard_irq_disable
-+
- /*
-  * This is called by asynchronous interrupts to conditionally
-  * re-enable hard interrupts when soft-disabled after having
-
-
+U3ViamVjdDogW1BBVENIXSBQQ0ksIFg4NjogYnVzbnVtL25vZGUgYm9vdCBjb21tYW5kIGxpbmUg
+Zm9yIG1pc3NpbmcgX1BYTQoKU29tZSBpbnRlbCBuZXcgc2FuZHlicmlkZ2Ugb3IgbmV3ZXIgdHdv
+IHNvY2tldHMgc3lzdGVtIGRvIHN1cHBvcnQgc3VwcG9ydCBudW1hCmZvciBwY2kgZGV2aWNlcy4g
+QnV0IEJJT1MgZG9lcyBub3QgcHJvdmlkZSBfUFhNIHVuZGVyIHRob3NlIHJvb3QgYnVzIGluIERT
+RFQuCgpBZGQgYm9vdCBjb21tYW5kIGxpbmUsIHNvIHVzZXIgY291bGQgaGF2ZSBjaGFuY2UgdG8g
+aW5wdXQgbm9kZSBpbmZvIGJlZm9yZQpCSU9TIGd1eXMgZmlndXJlIG91dCB0byBhZGQgX1BYTS4K
+CkZvbGQgZml4IGZyb20gVWxyaWNoIHRvIHVzZSAiOyIgaW5zdGVhZCBvZiAiLCIuCnwgVGhlIHBy
+b2JsZW0gaXMgdGhlIHBjaT0gcGFyYW1ldGVyCnwgaGFuZGxpbmcgdXNlcyAnLCcgdG8gc2VwYXJh
+dGUgcGFyYW1ldGVycyBhbmQgdGhlcmVmb3JlIHRoZSBzZWNvbmQgUENJCnwgcm9vdCBpbmZvcm1h
+dGlvbiwgc2VwYXJhdGVkIGJ5IGEgY29tbWEsIGlzIGludGVycHJldGVkIGFzIGEgbmV3IHBjaT0K
+fCBwYXJhbWV0ZXIuCgpSZXBvcnRlZC1ieTogVWxyaWNoIERyZXBwZXIgPGRyZXBwZXJAZ21haWwu
+Y29tPgpUZXN0ZWQtYnk6IFVscmljaCBEcmVwcGVyIDxkcmVwcGVyQGdtYWlsLmNvbT4KU2lnbmVk
+LW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKZGlmZiAtLWdpdCBhL0Rv
+Y3VtZW50YXRpb24va2VybmVsLXBhcmFtZXRlcnMudHh0IGIvRG9jdW1lbnRhdGlvbi9rZXJuZWwt
+cGFyYW1ldGVycy50eHQKaW5kZXggYTkyYzVlYi4uYTY2NDg1ZiAxMDA2NDQKLS0tIGEvRG9jdW1l
+bnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKKysrIGIvRG9jdW1lbnRhdGlvbi9rZXJuZWwt
+cGFyYW1ldGVycy50eHQKQEAgLTIxOTAsNiArMjE5MCwxMCBAQCBieXRlcyByZXNwZWN0aXZlbHku
+IFN1Y2ggbGV0dGVyIHN1ZmZpeGVzIGNhbiBhbHNvIGJlIGVudGlyZWx5IG9taXR0ZWQuCiAJCQkJ
+b2ZmOiBUdXJuIHJlYWxsb2Mgb2ZmCiAJCQkJb246IFR1cm4gcmVhbGxvYyBvbgogCQlyZWFsbG9j
+CQlzYW1lIGFzIHJlYWxsb2M9b24KKwkJYnVzbnVtX25vZGU9CisJCQkJRm9ybWF0OgorCQkJCTxi
+dXM+Ojxub2RlPls7IC4uLl0KKwkJCQlTcGVjaWZpZXMgbm9kZSBmb3IgYnVzLCBvbmx5IHdvcmtz
+IGZvciBtaXNzaW5nIF9QWE0KIAkJbm9hcmkJCWRvIG5vdCB1c2UgUENJZSBBUkkuCiAJCXBjaWVf
+c2Nhbl9hbGwJU2NhbiBhbGwgcG9zc2libGUgUENJZSBkZXZpY2VzLiAgT3RoZXJ3aXNlIHdlCiAJ
+CQkJb25seSBsb29rIGZvciBvbmUgZGV2aWNlIGJlbG93IGEgUENJZSBkb3duc3RyZWFtCmRpZmYg
+LS1naXQgYS9hcmNoL3g4Ni9wY2kvY29tbW9uLmMgYi9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKaW5k
+ZXggMGFkOTkwYS4uYTY1MjdmZSAxMDA2NDQKLS0tIGEvYXJjaC94ODYvcGNpL2NvbW1vbi5jCisr
+KyBiL2FyY2gveDg2L3BjaS9jb21tb24uYwpAQCAtNDk0LDYgKzQ5NCwyOCBAQCBpbnQgX19pbml0
+IHBjaWJpb3NfaW5pdCh2b2lkKQogCXJldHVybiAwOwogfQogCitzdGF0aWMgdm9pZCBfX2luaXQg
+cGFyc2VfYnVzbnVtX25vZGUoY2hhciAqc3RyKQoreworCWludCBidXMsIG5vZGUsIGNvdW50Owor
+CWNoYXIgKnA7CisKKwlwID0gc3RyOworCXdoaWxlICgqcCkgeworCQljb3VudCA9IDA7CisJCWlm
+IChzc2NhbmYocCwgIiV4OiV4JW4iLCAmYnVzLCAmbm9kZSwgJmNvdW50KSAhPSAyKSB7CisJCQlw
+cmludGsoS0VSTl9FUlIgIlBDSTogQ2FuJ3QgcGFyc2UgYnVzbnVtX25vZGUgaW5wdXQ6ICVzXG4i
+LAorCQkJCQlwKTsKKwkJCWJyZWFrOworCQl9CisJCXNldF9tcF9idXNfdG9fbm9kZShidXMsIG5v
+ZGUpOworCQlwICs9IGNvdW50OworCQlpZiAoKnAgIT0gJzsnKQorCQkJYnJlYWs7CisJCXArKzsK
+Kwl9Cit9CisKKwogY2hhciAqIF9fZGV2aW5pdCAgcGNpYmlvc19zZXR1cChjaGFyICpzdHIpCiB7
+CiAJaWYgKCFzdHJjbXAoc3RyLCAib2ZmIikpIHsKQEAgLTU3OSw2ICs2MDEsOSBAQCBjaGFyICog
+X19kZXZpbml0ICBwY2liaW9zX3NldHVwKGNoYXIgKnN0cikKIAl9IGVsc2UgaWYgKCFzdHJjbXAo
+c3RyLCAibm9jcnMiKSkgewogCQlwY2lfcHJvYmUgfD0gUENJX1JPT1RfTk9fQ1JTOwogCQlyZXR1
+cm4gTlVMTDsKKwl9IGVsc2UgaWYgKCFzdHJuY21wKHN0ciwgImJ1c251bV9ub2RlPSIsIDEyKSkg
+eworCQlwYXJzZV9idXNudW1fbm9kZShzdHIgKyAxMik7CisJCXJldHVybiBOVUxMOwogCX0gZWxz
+ZSBpZiAoIXN0cmNtcChzdHIsICJlYXJseWR1bXAiKSkgewogCQlwY2lfZWFybHlfZHVtcF9yZWdz
+ID0gMTsKIAkJcmV0dXJuIE5VTEw7Cg==
+--047d7b339cc145af3204c2ebb174--
