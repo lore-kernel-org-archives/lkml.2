@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab2FTTeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 15:34:46 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44443 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab2FTTeo (ORCPT
+	id S1757936Ab2FTTgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 15:36:43 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38258 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757885Ab2FTTgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 15:34:44 -0400
-Date: Wed, 20 Jun 2012 21:34:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Ulrich Drepper <drepper@gmail.com>,
-        jbarnes@virtuousgeek.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Subject: Re: SNB PCI root information
-Message-ID: <20120620193438.GB2248@gmail.com>
-References: <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
- <CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
- <CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
- <CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
- <CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
- <CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
- <CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
- <CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
- <CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
- <CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
+	Wed, 20 Jun 2012 15:36:41 -0400
+Message-ID: <4FE225F3.4080806@mvista.com>
+Date: Wed, 20 Jun 2012 23:35:15 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Kelvin Cheung <keguang.zhang@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, wuzhangjin@gmail.com, zhzhl555@gmail.com
+Subject: Re: [PATCH V7 2/4] MIPS: Add board support for Loongson1B
+References: <1339757617-2187-1-git-send-email-keguang.zhang@gmail.com> <1339757617-2187-3-git-send-email-keguang.zhang@gmail.com> <20120620192551.GC29446@linux-mips.org>
+In-Reply-To: <20120620192551.GC29446@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+On 06/20/2012 11:25 PM, Ralf Baechle wrote:
 
-> On Wed, Jun 20, 2012 at 11:46 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> 
-> > As far as I can tell, here's Yinghai's recommendation:  the 
-> > user argument should not override BIOS _PXM because if the 
-> > BIOS gets the _PXM wrong, the user won't be able to work 
-> > around it with the argument, which will force the vendor to 
-> > fix the BIOS.
-> >
-> > I'm not buying it.  The convention that user-supplied 
-> > arguments always take precedence is useful, easy to 
-> > document, and matches user expectations.  It allows the user 
-> > to work around both missing _PXM and incorrect _PXM.
-> 
-> if the vendor provide _PXM, that _PXM should be right and be 
-> trusted.
-> 
-> if the vendor does not provide _PXM, we can have command line 
-> to input it before user can get one updated BIOS from vendor.
+>> +#include <linux/clk.h>
 
-So how about an incorrect _PXM, or a slightly inefficient one? 
-Why shouldn't it be possible for the user to override it?
+>> +static LIST_HEAD(clocks);
+>> +static DEFINE_MUTEX(clocks_mutex);
+>> +
+>> +struct clk *clk_get(struct device *dev, const char *name)
+>> +{
+>> +	struct clk *c;
+>> +	struct clk *ret = NULL;
+>> +
+>> +	mutex_lock(&clocks_mutex);
+>> +	list_for_each_entry(c, &clocks, node) {
+>> +		if (!strcmp(c->name, name)) {
+>> +			ret = c;
+>> +			break;
+>> +		}
+>> +	}
+>> +	mutex_unlock(&clocks_mutex);
+>> +
+>> +	return ret;
+>> +}
+>> +EXPORT_SYMBOL(clk_get);
 
-I mean, if we create a parameter space that tweaks data then why 
-not make it complete and allow *all* firmware data to be 
-(optionally) modified, from the kernel boot line?
+> This redefines a function that already is declared in <linux/clk.h> and
+> defined in drivers/clk/clkdev.c.  Why?
 
-Thanks,
+    Because he doesn't support clkdev? clkdev support is optional.
 
-	Ingo
+>> +int clk_register(struct clk *clk)
+>> +{
+>> +	mutex_lock(&clocks_mutex);
+>> +	list_add(&clk->node, &clocks);
+>> +	if (clk->ops->init)
+>> +		clk->ops->init(clk);
+>> +	mutex_unlock(&clocks_mutex);
+>> +
+>> +	return 0;
+>> +}
+>> +EXPORT_SYMBOL(clk_register);
+
+> Same here.
+
+>    Ralf
+
+WBR, Sergei
