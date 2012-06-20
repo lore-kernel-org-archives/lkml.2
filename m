@@ -1,128 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab2FTNwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:52:21 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:39591
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756103Ab2FTNwA (ORCPT
+	id S1754100Ab2FTN5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:57:24 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:35721
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751740Ab2FTN5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 09:52:00 -0400
+	Wed, 20 Jun 2012 09:57:23 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1202hzzz2dh2a8h668h839h944hd25hf0ah)
-Date: Wed, 20 Jun 2012 21:48:01 +0800
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1202hzz8275dhz2dh2a8h668h839h944hd25hf0ah)
+Date: Wed, 20 Jun 2012 21:53:38 +0800
 From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Vinod Koul <vinod.koul@intel.com>,
-        Ola Lilja <ola.o.lilja@stericsson.com>, <alsa-devel@alsa-project.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        <linux-kernel@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [alsa-devel] [PATCH v2 3/3] ASoC: dmaengine-pcm: Add support
- for querying stream position from DMA driver
-Message-ID: <20120620134800.GL10387@shlinux2.ap.freescale.net>
-References: <1339438302-12417-1-git-send-email-lars@metafoo.de>
- <1339438302-12417-3-git-send-email-lars@metafoo.de>
+To: Rob Herring <robherring2@gmail.com>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 1/1] of: reform prom_update_property function
+Message-ID: <20120620135337.GM10387@shlinux2.ap.freescale.net>
+References: <1340171647-2815-1-git-send-email-b29396@freescale.com>
+ <4FE1CB2C.5040208@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1339438302-12417-3-git-send-email-lars@metafoo.de>
+In-Reply-To: <4FE1CB2C.5040208@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 08:11:42PM +0200, Lars-Peter Clausen wrote:
-> Currently the sound dmaengine pcm helper functions implement the pcm_pointer
-> callback by trying to count the number of elapsed periods. This is done by
-> advancing the stream position in the dmaengine callback by one period.
-> Unfortunately there is no guarantee that the callback will be called for each
-> elapsed period. It may be possible that under high system load it is only called
-> once for multiple elapsed periods. This patch addresses the issue by
-> implementing support for querying the current stream position directly from the
-> dmaengine driver. Since not all dmaengine drivers support reporting the stream
-> position yet the old period counting implementation is kept for now.
+On Wed, Jun 20, 2012 at 09:07:56PM +0800, Rob Herring wrote:
+> On 06/20/2012 12:54 AM, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > prom_update_property() currently fails if the property doesn't
+> > actually exist yet which isn't what we want. Change to add-or-update
+> > instead of update-only, then we can remove a lot duplicated lines.
+> > 
+> > Suggested-by: Grant Likely <grant.likely@secretlab.ca>
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > ---
 > 
-> Furthermore the new mechanism allows to report the stream position with a
-> sub-period granularity, given that the dmaengine driver supports this.
+> Looks fine, but you need to cc powerpc maintainers.
 > 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> 
-> ---
-> Changes since v1:
-> 	* Don't implement fallback support in snd_dmaengine_pcm_pointer, instead it
-> 	  is now moved to its own function. This was done to make it more explicit
-> 	  that implementing residue reporting for cyclic is required and that this
-> 	  won't be optional for new drivers.
-> ---
->  include/sound/dmaengine_pcm.h |    1 +
->  sound/soc/soc-dmaengine-pcm.c |   29 ++++++++++++++++++++++++++++-
->  2 files changed, 29 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/sound/dmaengine_pcm.h b/include/sound/dmaengine_pcm.h
-> index ea57915..b877334 100644
-> --- a/include/sound/dmaengine_pcm.h
-> +++ b/include/sound/dmaengine_pcm.h
-> @@ -38,6 +38,7 @@ void *snd_dmaengine_pcm_get_data(struct snd_pcm_substream *substream);
->  int snd_hwparams_to_dma_slave_config(const struct snd_pcm_substream *substream,
->  	const struct snd_pcm_hw_params *params, struct dma_slave_config *slave_config);
->  int snd_dmaengine_pcm_trigger(struct snd_pcm_substream *substream, int cmd);
-> +snd_pcm_uframes_t snd_dmaengine_pcm_pointer(struct snd_pcm_substream *substream);
->  snd_pcm_uframes_t snd_dmaengine_pcm_pointer_no_residue(struct snd_pcm_substream *substream);
->  
->  int snd_dmaengine_pcm_open(struct snd_pcm_substream *substream,
-> diff --git a/sound/soc/soc-dmaengine-pcm.c b/sound/soc/soc-dmaengine-pcm.c
-> index 7c0877e..2995334 100644
-> --- a/sound/soc/soc-dmaengine-pcm.c
-> +++ b/sound/soc/soc-dmaengine-pcm.c
-> @@ -30,6 +30,7 @@
->  
->  struct dmaengine_pcm_runtime_data {
->  	struct dma_chan *dma_chan;
-> +	dma_cookie_t cookie;
->  
->  	unsigned int pos;
->  
-> @@ -153,7 +154,7 @@ static int dmaengine_pcm_prepare_and_submit(struct snd_pcm_substream *substream)
->  
->  	desc->callback = dmaengine_pcm_dma_complete;
->  	desc->callback_param = substream;
-> -	dmaengine_submit(desc);
-> +	prtd->cookie = dmaengine_submit(desc);
->  
->  	return 0;
->  }
-> @@ -213,6 +214,32 @@ snd_pcm_uframes_t snd_dmaengine_pcm_pointer_no_residue(struct snd_pcm_substream
->  }
->  EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_pointer_no_residue);
->  
-> +/**
-> + * snd_dmaengine_pcm_pointer - dmaengine based PCM pointer implementation
-> + * @substream: PCM substream
-> + *
-> + * This function can be used as the PCM pointer callback for dmaengine based PCM
-> + * driver implementations.
-> + */
-> +snd_pcm_uframes_t snd_dmaengine_pcm_pointer(struct snd_pcm_substream *substream)
-> +{
-> +	struct dmaengine_pcm_runtime_data *prtd = substream_to_prtd(substream);
-> +	struct dma_tx_state state;
-> +	enum dma_status status;
-> +	unsigned int buf_size;
-> +	unsigned int pos = 0;
-> +
-> +	status = dmaengine_tx_status(prtd->dma_chan, prtd->cookie, &state);
-> +	if (status == DMA_IN_PROGRESS || status == DMA_PAUSED) {
-> +		buf_size = snd_pcm_lib_buffer_bytes(substream);
-> +		if (state.residue > 0 && state.residue <= buf_size)
-> +			pos = buf_size - state.residue;
-One question i still not very clear, for the case when one buffer size of cyclic dma
-transfer completes, the dma residue may be buf_size( or 0 as Russell said), then
-pos here is 0. So is it correct that call bytes_to_frames(substream->runtime, 0)
-for this case?
+Sorry, i missed that.
+Thanks for reminder.
 
 Regards
 Dong Aisheng
+
+> 
+> >  arch/powerpc/platforms/85xx/p1022_ds.c    |    8 +-------
+> >  arch/powerpc/platforms/pseries/mobility.c |    8 +-------
+> >  arch/powerpc/platforms/pseries/reconfig.c |   13 +++----------
+> >  drivers/of/base.c                         |   15 +++++++++++----
+> >  fs/proc/proc_devtree.c                    |    5 +++++
+> >  include/linux/of.h                        |    3 +--
+> >  6 files changed, 22 insertions(+), 30 deletions(-)
+> > 
+> > diff --git a/arch/powerpc/platforms/85xx/p1022_ds.c b/arch/powerpc/platforms/85xx/p1022_ds.c
+> > index f700c81..d66631c 100644
+> > --- a/arch/powerpc/platforms/85xx/p1022_ds.c
+> > +++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+> > @@ -348,13 +348,7 @@ void __init p1022_ds_pic_init(void)
+> >   */
+> >  static void __init disable_one_node(struct device_node *np, struct property *new)
+> >  {
+> > -	struct property *old;
+> > -
+> > -	old = of_find_property(np, new->name, NULL);
+> > -	if (old)
+> > -		prom_update_property(np, new, old);
+> > -	else
+> > -		prom_add_property(np, new);
+> > +	prom_update_property(np, new);
+> >  }
+> >  
+> >  /* TRUE if there is a "video=fslfb" command-line parameter. */
+> > diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
+> > index 029a562..dd30b12 100644
+> > --- a/arch/powerpc/platforms/pseries/mobility.c
+> > +++ b/arch/powerpc/platforms/pseries/mobility.c
+> > @@ -67,7 +67,6 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+> >  			      const char *name, u32 vd, char *value)
+> >  {
+> >  	struct property *new_prop = *prop;
+> > -	struct property *old_prop;
+> >  	int more = 0;
+> >  
+> >  	/* A negative 'vd' value indicates that only part of the new property
+> > @@ -117,12 +116,7 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+> >  	}
+> >  
+> >  	if (!more) {
+> > -		old_prop = of_find_property(dn, new_prop->name, NULL);
+> > -		if (old_prop)
+> > -			prom_update_property(dn, new_prop, old_prop);
+> > -		else
+> > -			prom_add_property(dn, new_prop);
+> > -
+> > +		prom_update_property(dn, new_prop);
+> >  		new_prop = NULL;
+> >  	}
+> >  
+> > diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
+> > index 7b3bf76..4c92f1c 100644
+> > --- a/arch/powerpc/platforms/pseries/reconfig.c
+> > +++ b/arch/powerpc/platforms/pseries/reconfig.c
+> > @@ -432,7 +432,7 @@ static int do_update_property(char *buf, size_t bufsize)
+> >  	unsigned char *value;
+> >  	char *name, *end, *next_prop;
+> >  	int rc, length;
+> > -	struct property *newprop, *oldprop;
+> > +	struct property *newprop;
+> >  	buf = parse_node(buf, bufsize, &np);
+> >  	end = buf + bufsize;
+> >  
+> > @@ -450,18 +450,11 @@ static int do_update_property(char *buf, size_t bufsize)
+> >  	if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
+> >  		slb_set_size(*(int *)value);
+> >  
+> > -	oldprop = of_find_property(np, name,NULL);
+> > -	if (!oldprop) {
+> > -		if (strlen(name))
+> > -			return prom_add_property(np, newprop);
+> > -		return -ENODEV;
+> > -	}
+> > -
+> >  	upd_value.node = np;
+> >  	upd_value.property = newprop;
+> >  	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
+> >  
+> > -	rc = prom_update_property(np, newprop, oldprop);
+> > +	rc = prom_update_property(np, newprop);
+> >  	if (rc)
+> >  		return rc;
+> >  
+> > @@ -486,7 +479,7 @@ static int do_update_property(char *buf, size_t bufsize)
+> >  
+> >  		rc = pSeries_reconfig_notify(action, value);
+> >  		if (rc) {
+> > -			prom_update_property(np, oldprop, newprop);
+> > +			prom_update_property(np, newprop);
+> >  			return rc;
+> >  		}
+> >  	}
+> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+> > index d9bfd49..a14f109 100644
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -1051,7 +1051,8 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+> >  }
+> >  
+> >  /*
+> > - * prom_update_property - Update a property in a node.
+> > + * prom_update_property - Update a property in a node, if the property does
+> > + * not exist, add it.
+> >   *
+> >   * Note that we don't actually remove it, since we have given out
+> >   * who-knows-how-many pointers to the data using get-property.
+> > @@ -1059,13 +1060,19 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+> >   * and add the new property to the property list
+> >   */
+> >  int prom_update_property(struct device_node *np,
+> > -			 struct property *newprop,
+> > -			 struct property *oldprop)
+> > +			 struct property *newprop)
+> >  {
+> > -	struct property **next;
+> > +	struct property **next, *oldprop;
+> >  	unsigned long flags;
+> >  	int found = 0;
+> >  
+> > +	if (!newprop->name)
+> > +		return -EINVAL;
+> > +
+> > +	oldprop = of_find_property(np, newprop->name, NULL);
+> > +	if (!oldprop)
+> > +		return prom_add_property(np, newprop);
+> > +
+> >  	write_lock_irqsave(&devtree_lock, flags);
+> >  	next = &np->properties;
+> >  	while (*next) {
+> > diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+> > index 927cbd1..df7dd08 100644
+> > --- a/fs/proc/proc_devtree.c
+> > +++ b/fs/proc/proc_devtree.c
+> > @@ -101,6 +101,11 @@ void proc_device_tree_update_prop(struct proc_dir_entry *pde,
+> >  {
+> >  	struct proc_dir_entry *ent;
+> >  
+> > +	if (!oldprop) {
+> > +		proc_device_tree_add_prop(pde, newprop);
+> > +		return;
+> > +	}
+> > +
+> >  	for (ent = pde->subdir; ent != NULL; ent = ent->next)
+> >  		if (ent->data == oldprop)
+> >  			break;
+> > diff --git a/include/linux/of.h b/include/linux/of.h
+> > index 2ec1083..b27c871 100644
+> > --- a/include/linux/of.h
+> > +++ b/include/linux/of.h
+> > @@ -260,8 +260,7 @@ extern int of_machine_is_compatible(const char *compat);
+> >  extern int prom_add_property(struct device_node* np, struct property* prop);
+> >  extern int prom_remove_property(struct device_node *np, struct property *prop);
+> >  extern int prom_update_property(struct device_node *np,
+> > -				struct property *newprop,
+> > -				struct property *oldprop);
+> > +				struct property *newprop);
+> >  
+> >  #if defined(CONFIG_OF_DYNAMIC)
+> >  /* For updating the device tree at runtime */
+> 
+> 
 
