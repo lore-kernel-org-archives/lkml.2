@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab2FTUmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 16:42:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33205 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab2FTUmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 16:42:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="156184518"
-Message-ID: <4FE23592.60201@linux.intel.com>
-Date: Wed, 20 Jun 2012 13:41:54 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753208Ab2FTUu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 16:50:29 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:61546 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab2FTUu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 16:50:28 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-209.messagelabs.com!1340225399!3633376!50
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: ssv_dnp: remove empty private data
+Date: Wed, 20 Jun 2012 13:50:03 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
-        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-Subject: Re: [PATCH] phys_efi_set_virtual_address_map needs va, no pa.
-References: <20120620082457.GE3464@sgi.com> <20120620120702.GA3983@srcf.ucam.org>
-In-Reply-To: <20120620120702.GA3983@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206201350.04298.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:07 AM, Matthew Garrett wrote:
-> 
-> No, that's completely wrong. UEFI can't be called in virtual mode until 
-> *after* SetVirtualAddressMap(). The UEFI spec indicates that all 
-> physical memory must have an identity mapping at this stage (section 
-> 2.3.4), so if we don't then that's a bug that needs to be fixed.
-> 
+The private data struct 'dnp_private_data' contains no information.
+Remove it and the alloc_private() call.
 
-I think it is a bug, and with the trampoline work in 3.4 we should
-finally have a proper platform to fix it.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/ssv_dnp.c | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-In particular, we should keep a full 1:1 page map around, and it should
-be the one that is in the trampoline (real_mode_header->trampoline_pgd)
-as we need the page directory to be 32-bit addressable.
+diff --git a/drivers/staging/comedi/drivers/ssv_dnp.c b/drivers/staging/comedi/drivers/ssv_dnp.c
+index 72dbccc..84b9f2a 100644
+--- a/drivers/staging/comedi/drivers/ssv_dnp.c
++++ b/drivers/staging/comedi/drivers/ssv_dnp.c
+@@ -59,14 +59,6 @@ struct dnp_board {
+ 	int have_dio;
+ };
+ 
+-/* This structure is for data unique to the DNP driver --------------------- */
+-struct dnp_private_data {
+-
+-};
+-
+-/* Shorthand macro for faster access to the private data ------------------- */
+-#define devpriv ((dnp_private *)dev->private)
+-
+ /* ------------------------------------------------------------------------- */
+ /* The insn_bits interface allows packed reading/writing of DIO channels.    */
+ /* The comedi core can convert between insn_bits and insn_read/write, so you */
+@@ -189,11 +181,6 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	dev->board_name = board->name;
+ 
+-	/* Allocate the private structure area. alloc_private() is a         */
+-	/* convenient macro defined in comedidev.h.                          */
+-	if (alloc_private(dev, sizeof(struct dnp_private_data)) < 0)
+-		return -ENOMEM;
+-
+ 	ret = comedi_alloc_subdevices(dev, 1);
+ 	if (ret)
+ 		return ret;
+-- 
+1.7.11
 
-The right thing to do is to sync the pgds in the 1:1 area, both for 64
-bit and for legacy 32 bit (PAE 32 bit don't need it, since all the
-kernel maps are shared.)  This is currently done ad hoc (and
-differently!) on both 32 and 64 bits and that really should be fixed.
-
-Once that is properly fixed, we have a usable identity mapping.
-
-On that subject, I have been thinking about the kexec use case.  I'm
-thinking that if we indeed cannot use either physical mode nor a
-zero-offset virtual mode, that the most likely sane thing to do is to
-use a fixed offset of 2^46 and still use a (pseudo-)1:1 map.
-
-Do we have any data at all on machines that supposedly can't use
-identity-mapped EFI?
-
-	-hpa
