@@ -1,55 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab2FTMoa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:44:30 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14270 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab2FTMo3 convert rfc822-to-8bit (ORCPT
+	id S1754243Ab2FTMow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:44:52 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43439 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab2FTMou convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:44:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 20 Jun 2012 05:41:43 -0700
-From: Bandi Krishna Chaitanya <bandik@nvidia.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Jun 2012 18:14:24 +0530
-Subject: RE: [PATCH V2] ARM: tegra: apbio access using dma for tegra20 only
-Thread-Topic: [PATCH V2] ARM: tegra: apbio access using dma for tegra20 only
-Thread-Index: Ac1O4V73841E9v/4SZq9TkVm3OCWDQAAKKbg
-Message-ID: <4B31D3FCDA299E46AB481AFD049E47C97D8A45C1B9@BGMAIL01.nvidia.com>
-References: <1340195794-26571-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1340195794-26571-1-git-send-email-ldewangan@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 20 Jun 2012 08:44:50 -0400
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <4FE18187.3050103@kernel.org>
+References: <4FE169B1.7020600@kernel.org>
+	<4FE16E80.9000306@gmail.com>
+	<4FE18187.3050103@kernel.org>
+Date: Wed, 20 Jun 2012 20:44:48 +0800
+Message-ID: <CAJd=RBC2PdP0ggZ=RvXwXbToFmzRdpxYKWvkX_8qr7-Zw+DB1Q@mail.gmail.com>
+Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
+From: Hillf Danton <dhillf@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 June 2012 06:06 PM, Chaitanya Bandi wrote:
-> 
-> The Tegra20 HW issue with accessing APBIO registers (such as fuse registers)
-> directly from the CPU concurrently with APB DMA accesses has been fixed in
-> Tegra30 and later chips.
-> 
-> Access these registers directly from the CPU on Tegra30 and later, and apply
-> the workaround only for Tegra20.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+On Wed, Jun 20, 2012 at 3:53 PM, Minchan Kim <minchan@kernel.org> wrote:
+> On 06/20/2012 03:32 PM, KOSAKI Motohiro wrote:
 >
+>> (6/20/12 2:12 AM), Minchan Kim wrote:
+>>>
+>>> Hi Aaditya,
+>>>
+>>> I want to discuss this problem on another thread.
+>>>
+>>> On 06/19/2012 10:18 PM, Aaditya Kumar wrote:
+>>>> On Mon, Jun 18, 2012 at 6:13 AM, Minchan Kim <minchan@kernel.org> wrote:
+>>>>> On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
+>>>>>
+>>>>>> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
+>>>>>>
+>>>>>>>>
+>>>>>>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
+>>>>>>>> if node has multiple zones. Hm ok, I realized my descriptions was
+>>>>>>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
+>>>>>>>> pgdat_balanced()
+>>>>>>>> every priority. Most easy case is, movable zone has a lot of free pages and
+>>>>>>>> normal zone has no reclaimable page.
+>>>>>>>>
+>>>>>>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
+>>>>>>>> sleep only if every zones have much free pages than high water mark
+>>>>>>>> _and_ 25% of present pages in node are free.
+>>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>> Sorry. I can't understand your point.
+>>>>>>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
+>>>>>>> It seems I am missing your point.
+>>>>>>> Please anybody correct me.
+>>>>>>
+>>>>>> Since currently direct reclaim is given up based on
+>>>>>> zone->all_unreclaimable flag,
+>>>>>> so for e.g in one of the scenarios:
+>>>>>>
+>>>>>> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
+>>>>>> hot-remove the all the pages of the MOVABLE zone.
+>>>>>>
+>>>>>> While migrating pages during memory hot-unplugging, the allocation function
+>>>>>> (for new page to which the page in MOVABLE zone would be moved)  can end up
+>>>>>> looping in direct reclaim path for ever.
+>>>>>>
+>>>>>> This is so because when most of the pages in the MOVABLE zone have
+>>>>>> been migrated,
+>>>>>> the zone now contains lots of free memory (basically above low watermark)
+>>>>>> BUT all are in MIGRATE_ISOLATE list of the buddy list.
+>>>>>>
+>>>>>> So kswapd() would not balance this zone as free pages are above low watermark
+>>>>>> (but all are in isolate list). So zone->all_unreclaimable flag would
+>>>>>> never be set for this zone
+>>>>>> and allocation function would end up looping forever. (assuming the
+>>>>>> zone NORMAL is
+>>>>>> left with no reclaimable memory)
+>>>>>>
+>>>>>
+>>>>>
+>>>>> Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
+>>>>> But I don't see it's a problem of kswapd.
+>>>>
+>>>> Hi Kim,
+>>>
+>>> I like called Minchan rather than Kim
+>>> Never mind. :)
+>>>
+>>>>
+>>>> Yes I agree it is not a problem of kswapd.
+>>>
+>>> Yeb.
+>>>
+>>>>
+>>>>> a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
+>>>>> but we can't allocate it. :(
+>>>>> It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
+>>>>> Kswapd is just one of them confused.
+>>>>> As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too.
+>>>>>
+>>>>> This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
+>>>>
+>>>>
+>>>> I assume that by the inconsistency you mention above, you mean
+>>>> temporary inconsistency.
+>>>>
+>>>> Sorry, but IMHO as for memory hot plug the main issue with this patch
+>>>> is that the inconsistency you mentioned above would NOT be a temporary
+>>>> inconsistency.
+>>>>
+>>>> Every time say 'x' number of page frames are off lined, they will
+>>>> introduce a difference of 'x' pages between
+>>>> NR_FREE_PAGES and SumOf[free_area[order].nr_free].
+>>>> (So for e.g. if we do a frequent offline/online it will make
+>>>> NR_FREE_PAGES  negative)
+>>>>
+>>>> This is so because, unset_migratetype_isolate() is called from
+>>>> offlining  code (to set the migrate type of off lined pages again back
+>>>> to MIGRATE_MOVABLE)
+>>>> after the pages have been off lined and removed from the buddy list.
+>>>> Since the pages for which unset_migratetype_isolate() is called are
+>>>> not buddy pages so move_freepages_block() does not move any page, and
+>>>> thus introducing a permanent inconsistency.
+>>>
+>>> Good point. Negative NR_FREE_PAGES is caused by double counting by my patch and __offline_isolated_pages.
+>>> I think at first MIGRATE_ISOLATE type freed page shouldn't account as free page.
+>>>
+>>>>
+>>>>> and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
+>>>>> free_area[order].nr_free exactly.
+>>>>>
+>>>>> Any thought?
+>>>>
+>>>> As for fixing move_freepages_block(), At least for memory hot plug,
+>>>> the pages stay in MIGRATE_ISOLATE list only for duration
+>>>> offline_pages() function,
+>>>> I mean only temporarily. Since fixing move_freepages_block() for will
+>>>> introduce some overhead, So I am not very sure whether that overhead
+>>>> is justified
+>>>> for a temporary condition. What do you think?
+>>>
+>>> Yes. I don't like hurt fast path, either.
+>>> How about this? (Passed just compile test :(  )
+>>> The patch's goal is to NOT increase nr_free and NR_FREE_PAGES about freed page into MIGRATE_ISOLATED.
+>>>
+>>> This patch hurts high order page free path but I think it's not critical because higher order allocation
+>>> is rare than order-0 allocation and we already have done same thing on free_hot_cold_page on order-0 free path
+>>> which is more hot.
+>>
+>> Can't we change zone_water_mark_ok_safe() instead of page allocator? memory hotplug is really rare event.
+>
+>
+> +1
+>
+> Firstly, I want to make zone_page_state(z, NR_FREE_PAGES) itself more accurately because it is used by
+> several places. As I looked over places, I can't find critical places except kswapd forever sleep case.
+> So it's a nice idea!
+>
+> In that case, we need zone->lock whenever zone_watermark_ok_safe is called.
+>
+Ifdefinery could be utilized for builds with CMA disabled, first.
 
-Tested-by: Chaitanya Bandi <bandik@nvidia.com>
-Tested on Harmony with non-dt booting and confirmed that it is using the
-dma based apbio access.
+> Most of cases, it's unnecessary and it might hurt alloc/free performance when memory pressure is high.
+> But if memory pressure is high, it may be already meaningless alloc/free performance.
+> So it does make sense, IMHO.
+>
+> Please raise your hands if anyone has a concern about this.
+>
+> barrios@bbox:~/linux-next$ git diff
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index d2a515d..82cc0a2 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1748,16 +1748,38 @@ bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+>                                        zone_page_state(z, NR_FREE_PAGES));
+>  }
+>
+> -bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
+> +bool zone_watermark_ok_safe(struct zone *z, int alloc_order, unsigned long mark,
+>                      int classzone_idx, int alloc_flags)
+>  {
+> +       struct free_area *area;
+> +       struct list_head *curr;
+> +       int order;
+> +       unsigned long flags;
+>        long free_pages = zone_page_state(z, NR_FREE_PAGES);
+>
+>        if (z->percpu_drift_mark && free_pages < z->percpu_drift_mark)
+>                free_pages = zone_page_state_snapshot(z, NR_FREE_PAGES);
+>
+> -       return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
+> -                                                               free_pages);
+> +       /*
+> +        * Memory hotplug/CMA can isolate freed page into MIGRATE_ISOLATE
+> +        * so that buddy can't allocate it although they are in free list.
+> +        */
+> +       spin_lock_irqsave(&z->lock, flags);
+> +       for (order = 0; order < MAX_ORDER; order++) {
+> +               int count = 0;
+> +               area = &(z->free_area[order]);
+> +               if (unlikely(!list_empty(&area->free_list[MIGRATE_ISOLATE]))) {
+> +                       list_for_each(curr, &area->free_list[MIGRATE_ISOLATE])
+> +                               count++;
+> +                       free_pages -= (count << order);
+> +               }
+> +       }
+> +       if (free_pages < 0)
+> +               free_pages = 0;
+> +       spin_unlock_irqrestore(&z->lock, flags);
+> +
+> +       return __zone_watermark_ok(z, alloc_order, mark,
+> +                               classzone_idx, alloc_flags, free_pages);
+>  }
+>
+Then isolated pages could be scanned in another direction?
 
+	spin_lock_irqsave(&z->lock, flags);
+	for (order = MAX_ORDER - 1; order >= 0; order--) {
+		struct free_area *area = &z->free_area[order];
+		long count = 0;
+		struct list_head *curr;
 
+		list_for_each(curr, &area->free_list[MIGRATE_ISOLATE])
+			count++;
 
+		free_pages -= (count << order);
+		if (free_pages < 0) {
+			free_pages = 0;
+			break;
+		}
+	}
+	spin_unlock_irqrestore(&z->lock, flags);
