@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab2FTKtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:49:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34490 "EHLO
+	id S1756503Ab2FTKuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:50:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34513 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab2FTKtV (ORCPT
+	with ESMTP id S1756256Ab2FTKuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:49:21 -0400
-Date: Wed, 20 Jun 2012 03:49:06 -0700
-From: tip-bot for Salman Qazi <sqazi@google.com>
-Message-ID: <tip-9c5da09d266ca9b32eb16cf940f8161d949c2fe5@git.kernel.org>
+	Wed, 20 Jun 2012 06:50:13 -0400
+Date: Wed, 20 Jun 2012 03:49:59 -0700
+From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
+Message-ID: <tip-4b4969b14490a4f65b572b8f180164181104b5e1@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, sqazi@google.com, tj@kernel.org,
-        tglx@linutronix.de
+        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, sqazi@google.com, tj@kernel.org,
-        tglx@linutronix.de
-In-Reply-To: <20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com>
-References: <20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com>
+        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
+In-Reply-To: <1339741902-8449-2-git-send-email-zheng.z.yan@intel.com>
+References: <1339741902-8449-2-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Use css_tryget()
-  to avoid propping up css refcount
-Git-Commit-ID: 9c5da09d266ca9b32eb16cf940f8161d949c2fe5
+Subject: [tip:perf/core] perf: Export perf_assign_events()
+Git-Commit-ID: 4b4969b14490a4f65b572b8f180164181104b5e1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,107 +27,66 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:49:12 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:50:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9c5da09d266ca9b32eb16cf940f8161d949c2fe5
-Gitweb:     http://git.kernel.org/tip/9c5da09d266ca9b32eb16cf940f8161d949c2fe5
-Author:     Salman Qazi <sqazi@google.com>
-AuthorDate: Thu, 14 Jun 2012 15:31:09 -0700
+Commit-ID:  4b4969b14490a4f65b572b8f180164181104b5e1
+Gitweb:     http://git.kernel.org/tip/4b4969b14490a4f65b572b8f180164181104b5e1
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Fri, 15 Jun 2012 14:31:30 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 18 Jun 2012 11:45:57 +0200
+CommitDate: Mon, 18 Jun 2012 12:13:20 +0200
 
-perf: Use css_tryget() to avoid propping up css refcount
+perf: Export perf_assign_events()
 
-An rmdir pushes css's ref count to zero.  However, if the associated
-directory is open at the time, the dentry ref count is non-zero.  If
-the fd for this directory is then passed into perf_event_open, it
-does a css_get().  This bounces the ref count back up from zero.  This
-is a problem by itself.  But what makes it turn into a crash is the
-fact that we end up doing an extra dput, since we perform a dput
-when css_put sees the ref count go down to zero.
+Export perf_assign_events() so the uncore code can use it to
+schedule events.
 
-css_tryget() does not fall into that trap. So, we use that instead.
-
-Reproduction test-case for the bug:
-
- #include <unistd.h>
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
- #include <linux/unistd.h>
- #include <linux/perf_event.h>
- #include <string.h>
- #include <errno.h>
- #include <stdio.h>
-
- #define PERF_FLAG_PID_CGROUP    (1U << 2)
-
- int perf_event_open(struct perf_event_attr *hw_event_uptr,
-                     pid_t pid, int cpu, int group_fd, unsigned long flags) {
-         return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
-                 group_fd, flags);
- }
-
- /*
-  * Directly poke at the perf_event bug, since it's proving hard to repro
-  * depending on where in the kernel tree.  what moved?
-  */
- int main(int argc, char **argv)
- {
-        int fd;
-        struct perf_event_attr attr;
-        memset(&attr, 0, sizeof(attr));
-        attr.exclude_kernel = 1;
-        attr.size = sizeof(attr);
-        mkdir("/dev/cgroup/perf_event/blah", 0777);
-        fd = open("/dev/cgroup/perf_event/blah", O_RDONLY);
-        perror("open");
-        rmdir("/dev/cgroup/perf_event/blah");
-        sleep(2);
-        perf_event_open(&attr, fd, 0, -1,  PERF_FLAG_PID_CGROUP);
-        perror("perf_event_open");
-        close(fd);
-        return 0;
- }
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
+Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com
+Link: http://lkml.kernel.org/r/1339741902-8449-2-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |    6 +++---
+ arch/x86/kernel/cpu/perf_event.h |    2 ++
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f85c015..d7d71d6 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -253,9 +253,9 @@ perf_cgroup_match(struct perf_event *event)
- 	return !event->cgrp || event->cgrp == cpuctx->cgrp;
- }
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index d1f38c9..6d32aef 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -626,7 +626,7 @@ static bool __perf_sched_find_counter(struct perf_sched *sched)
+ 	c = sched->constraints[sched->state.event];
  
--static inline void perf_get_cgroup(struct perf_event *event)
-+static inline bool perf_tryget_cgroup(struct perf_event *event)
+ 	/* Prefer fixed purpose counters */
+-	if (x86_pmu.num_counters_fixed) {
++	if (c->idxmsk64 & (~0ULL << X86_PMC_IDX_FIXED)) {
+ 		idx = X86_PMC_IDX_FIXED;
+ 		for_each_set_bit_from(idx, c->idxmsk, X86_PMC_IDX_MAX) {
+ 			if (!__test_and_set_bit(idx, sched->state.used))
+@@ -693,8 +693,8 @@ static bool perf_sched_next_event(struct perf_sched *sched)
+ /*
+  * Assign a counter for each event.
+  */
+-static int perf_assign_events(struct event_constraint **constraints, int n,
+-			      int wmin, int wmax, int *assign)
++int perf_assign_events(struct event_constraint **constraints, int n,
++			int wmin, int wmax, int *assign)
  {
--	css_get(&event->cgrp->css);
-+	return css_tryget(&event->cgrp->css);
- }
+ 	struct perf_sched sched;
  
- static inline void perf_put_cgroup(struct perf_event *event)
-@@ -484,7 +484,11 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
- 	event->cgrp = cgrp;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 3df3de9..83238f2 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -481,6 +481,8 @@ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
  
- 	/* must be done before we fput() the file */
--	perf_get_cgroup(event);
-+	if (!perf_tryget_cgroup(event)) {
-+		event->cgrp = NULL;
-+		ret = -ENOENT;
-+		goto out;
-+	}
+ void x86_pmu_enable_all(int added);
  
- 	/*
- 	 * all events in a group must monitor
++int perf_assign_events(struct event_constraint **constraints, int n,
++			int wmin, int wmax, int *assign);
+ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign);
+ 
+ void x86_pmu_stop(struct perf_event *event, int flags);
