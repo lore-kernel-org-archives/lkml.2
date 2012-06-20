@@ -1,105 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab2FTQjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:39:39 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:38276
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754433Ab2FTQji (ORCPT
+	id S1757268Ab2FTQmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:42:45 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59714 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757076Ab2FTQmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:39:38 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1202hzz8275bh8275dhz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M5XCXU-01-2Y8-02
-X-M-MSG: 
-Date: Wed, 20 Jun 2012 18:39:27 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: <mingo@kernel.org>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-        <a.p.zijlstra@chello.nl>, <zheng.z.yan@intel.com>,
-        <tglx@linutronix.de>
-CC: <linux-tip-commits@vger.kernel.org>
-Subject: [PATCH] perf, x86: Fix section mismatch in uncore_pci_init()
-Message-ID: <20120620163927.GI5046@erda.amd.com>
-References: <1339741902-8449-8-git-send-email-zheng.z.yan@intel.com>
- <tip-14371cce03c2fc393997e17f979e76674b7f392a@git.kernel.org>
+	Wed, 20 Jun 2012 12:42:43 -0400
+Date: Wed, 20 Jun 2012 18:42:36 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 02/23] perf: Unified API to record selective sets of arch
+ registers
+Message-ID: <20120620164233.GB7714@somewhere.redhat.com>
+References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
+ <1340120894-9465-3-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <tip-14371cce03c2fc393997e17f979e76674b7f392a@git.kernel.org>
+In-Reply-To: <1340120894-9465-3-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.06.12 03:56:06, tip-bot for Yan, Zheng wrote:
-> Commit-ID:  14371cce03c2fc393997e17f979e76674b7f392a
-> Gitweb:     http://git.kernel.org/tip/14371cce03c2fc393997e17f979e76674b7f392a
-> Author:     Yan, Zheng <zheng.z.yan@intel.com>
-> AuthorDate: Fri, 15 Jun 2012 14:31:36 +0800
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Mon, 18 Jun 2012 12:13:23 +0200
+On Tue, Jun 19, 2012 at 05:47:53PM +0200, Jiri Olsa wrote:
+> This brings a new API to help the selective dump of registers on
+> event sampling, and its implementation for x86 arch.
 > 
-> perf: Add generic PCI uncore PMU device support
+> Added HAVE_PERF_REGS config option to determine if the architecture
+> provides perf registers ABI.
 > 
-> This patch adds generic support for uncore PMUs presented as
-> PCI devices. (These come in addition to the CPU/MSR based
-> uncores.)
+> The information about desired registers will be passed in u64 mask.
+> It's up to the architecture to map the registers into the mask bits.
 > 
-> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/1339741902-8449-8-git-send-email-zheng.z.yan@intel.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> For the x86 arch implementation, both 32 and 64 bit registers
+> bits are defined within single enum to ensure 64 bit system can
+> provide register dump for compat task if needed in the future.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > ---
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c |  175 ++++++++++++++++++++++++-
->  arch/x86/kernel/cpu/perf_event_intel_uncore.h |   66 +++++++++
->  2 files changed, 236 insertions(+), 5 deletions(-)
+>  arch/Kconfig                     |    6 +++
+>  arch/x86/Kconfig                 |    1 +
+>  arch/x86/include/asm/perf_regs.h |   34 ++++++++++++++
+>  arch/x86/kernel/Makefile         |    2 +
+>  arch/x86/kernel/perf_regs.c      |   90 ++++++++++++++++++++++++++++++++++++++
+>  include/linux/perf_regs.h        |   19 ++++++++
+>  6 files changed, 152 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/include/asm/perf_regs.h
+>  create mode 100644 arch/x86/kernel/perf_regs.c
+>  create mode 100644 include/linux/perf_regs.h
+> 
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index 8c3d957..32f4873 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -222,6 +222,12 @@ config HAVE_PERF_EVENTS_NMI
+>  	  subsystem.  Also has support for calculating CPU cycle events
+>  	  to determine how many clock cycles in a given period.
+>  
+> +config HAVE_PERF_REGS
+> +	bool
+> +	help
+> +	  Support selective register dumps for perf events. This includes
+> +	  bit-mapping of each registers and a unique architecture id.
+> +
+>  config HAVE_ARCH_JUMP_LABEL
+>  	bool
+>  
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index d35438e..457d8d6 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -60,6 +60,7 @@ config X86
+>  	select HAVE_MIXED_BREAKPOINTS_REGS
+>  	select PERF_EVENTS
+>  	select HAVE_PERF_EVENTS_NMI
+> +	select HAVE_PERF_REGS
+>  	select ANON_INODES
+>  	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
+>  	select HAVE_CMPXCHG_LOCAL if !M386
+> diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
+> new file mode 100644
+> index 0000000..0397bfc
+> --- /dev/null
+> +++ b/arch/x86/include/asm/perf_regs.h
+> @@ -0,0 +1,34 @@
+> +#ifndef _ASM_X86_PERF_REGS_H
+> +#define _ASM_X86_PERF_REGS_H
+> +
+> +enum perf_event_x86_regs {
+> +	PERF_REG_X86_AX,
+> +	PERF_REG_X86_BX,
+> +	PERF_REG_X86_CX,
+> +	PERF_REG_X86_DX,
+> +	PERF_REG_X86_SI,
+> +	PERF_REG_X86_DI,
+> +	PERF_REG_X86_BP,
+> +	PERF_REG_X86_SP,
+> +	PERF_REG_X86_IP,
+> +	PERF_REG_X86_FLAGS,
+> +	PERF_REG_X86_CS,
+> +	PERF_REG_X86_DS,
+> +	PERF_REG_X86_ES,
+> +	PERF_REG_X86_FS,
+> +	PERF_REG_X86_GS,
+> +	PERF_REG_X86_R8,
+> +	PERF_REG_X86_R9,
+> +	PERF_REG_X86_R10,
+> +	PERF_REG_X86_R11,
+> +	PERF_REG_X86_R12,
+> +	PERF_REG_X86_R13,
+> +	PERF_REG_X86_R14,
+> +	PERF_REG_X86_R15,
+> +	PERF_REG_X86_SS,
+> +
+> +	/* non ABI */
+> +	PERF_REG_X86_64_MAX = PERF_REG_X86_SS + 1,
 
-This patch causes a section mismatch, fix below.
-
--Robert
-
-
-
->From 912df3647e53c7bb1c61fd8fe4366cba1f788755 Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Wed, 20 Jun 2012 18:31:17 +0200
-Subject: [PATCH] perf, x86: Fix section mismatch in uncore_pci_init()
-
-Fixing section mismatch in uncore_pci_init():
-
- WARNING: vmlinux.o(.init.text+0x9246): Section mismatch in reference from the function uncore_pci_init() to the function .devexit.text:uncore_pci_remove()
- The function __init uncore_pci_init() references
- a function __devexit uncore_pci_remove().
- This is often seen when error handling in the init function
- uses functionality in the exit path.
- The fix is often to remove the __devexit annotation of
- uncore_pci_remove() so it may be used outside an exit section.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 28a8413..6f43f95 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -1313,7 +1313,7 @@ static int __devinit uncore_pci_add(struct intel_uncore_type *type,
- 	return 0;
- }
- 
--static void __devexit uncore_pci_remove(struct pci_dev *pdev)
-+static void uncore_pci_remove(struct pci_dev *pdev)
- {
- 	struct intel_uncore_box *box = pci_get_drvdata(pdev);
- 	struct intel_uncore_pmu *pmu = box->pmu;
--- 
-1.7.8.4
-
-
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+SS also exist in 32 bits, right?
+Although I guess userspace doesn't care much.
