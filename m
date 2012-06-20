@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab2FTSnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:43:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756986Ab2FTSVD (ORCPT
+	id S1757150Ab2FTSoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:44:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42689 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756548Ab2FTSoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:21:03 -0400
-Message-Id: <20120620173021.249009253@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [ 03/61] ARM i.MX imx21ads: Fix overlapping static i/o mappings
-In-Reply-To: <20120620173033.GA5634@kroah.com>
+	Wed, 20 Jun 2012 14:44:16 -0400
+Message-ID: <4FE219FD.4070307@wwwdotorg.org>
+Date: Wed, 20 Jun 2012 12:44:13 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: ccross@android.com, olof@lixom.net, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bandik@nvidia.com
+Subject: Re: [PATCH V2] ARM: tegra: apbio access using dma for tegra20 only
+References: <1340195794-26571-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1340195794-26571-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 06/20/2012 06:36 AM, Laxman Dewangan wrote:
+> The Tegra20 HW issue with accessing APBIO registers (such
+> as fuse registers) directly from the CPU concurrently with
+> APB DMA accesses has been fixed in Tegra30 and later chips.
+> 
+> Access these registers directly from the CPU on Tegra30
+> and later, and apply the workaround only for Tegra20.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-------------------
-
-From: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
-
-commit 350ab15bb2ffe7103bc6bf6c634f3c5b286eaf2a upstream.
-
-The statically defined I/O memory regions for the i.MX21 on chip
-peripherals and the on board I/O peripherals of the i.MX21ADS board
-overlap. This results in a kernel crash during startup. This is fixed
-by reducing the memory range for the on board I/O peripherals to the
-actually required range.
-
-Signed-off-by: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/mach-imx/mach-mx21ads.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/arm/mach-imx/mach-mx21ads.c
-+++ b/arch/arm/mach-imx/mach-mx21ads.c
-@@ -32,7 +32,7 @@
-  * Memory-mapped I/O on MX21ADS base board
-  */
- #define MX21ADS_MMIO_BASE_ADDR   0xf5000000
--#define MX21ADS_MMIO_SIZE        SZ_16M
-+#define MX21ADS_MMIO_SIZE        0xc00000
- 
- #define MX21ADS_REG_ADDR(offset)    (void __force __iomem *) \
- 		(MX21ADS_MMIO_BASE_ADDR + (offset))
-
-
+Thanks, applied.
