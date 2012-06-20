@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab2FTRk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 13:40:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35827 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab2FTRky convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 13:40:54 -0400
-Message-ID: <1340214048.21745.124.camel@twins>
-Subject: Re: [PATCH v3] sched: balance_cpu to consider other cpus in its
- group as target of (pinned) task
-From: Peter Zijlstra <peterz@infradead.org>
-To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Cc: mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>, efault@gmx.de,
-        Ingo Molnar <mingo@elte.hu>
-Date: Wed, 20 Jun 2012 19:40:48 +0200
-In-Reply-To: <4FE06CDB.2060605@linux.vnet.ibm.com>
-References: <4FE06CDB.2060605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756522Ab2FTRoG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 13:44:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13164 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714Ab2FTRoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 13:44:04 -0400
+Message-ID: <4FE20B9C.7010209@redhat.com>
+Date: Wed, 20 Jun 2012 13:42:52 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 11/12] nfs: Prevent page allocator recursions with swap
+ over NFS.
+References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-12-git-send-email-mgorman@suse.de>
+In-Reply-To: <1340185081-22525-12-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-19 at 17:43 +0530, Prashanth Nageshappa wrote:
-> +               new_dst_cpu = cpumask_first_and(env->dst_grpmask,
-> +                                               tsk_cpus_allowed(p));
+On 06/20/2012 05:38 AM, Mel Gorman wrote:
+> GFP_NOFS is _more_ permissive than GFP_NOIO in that it will initiate
+> IO, just not of any filesystem data.
+>
+> The problem is that previously NOFS was correct because that avoids
+> recursion into the NFS code. With swap-over-NFS, it is no longer
+> correct as swap IO can lead to this recursion.
+>
+> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+> Signed-off-by: Mel Gorman<mgorman@suse.de>
 
+Acked-by: Rik van Riel<riel@redhat.com>
 
-> +               if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
-> +                               lb_iterations++ < max_lb_iterations) { 
-
-Hmm, too bad dst_grpmask isn't an actual mask, otherwise we could simply
-clear the cpu we just had, just like the ALL_PINNED does with cpus.
