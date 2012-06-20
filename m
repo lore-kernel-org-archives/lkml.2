@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab2FTRoG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 13:44:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13164 "EHLO mx1.redhat.com"
+	id S1756882Ab2FTRsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 13:48:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714Ab2FTRoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 13:44:04 -0400
-Message-ID: <4FE20B9C.7010209@redhat.com>
-Date: Wed, 20 Jun 2012 13:42:52 -0400
+	id S1754214Ab2FTRsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 13:48:15 -0400
+Message-ID: <4FE20C97.2060401@redhat.com>
+Date: Wed, 20 Jun 2012 13:47:03 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -22,10 +22,10 @@ CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 11/12] nfs: Prevent page allocator recursions with swap
- over NFS.
-References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-12-git-send-email-mgorman@suse.de>
-In-Reply-To: <1340185081-22525-12-git-send-email-mgorman@suse.de>
+Subject: Re: [PATCH 12/12] Avoid dereferencing bd_disk during swap_entry_free
+ for network storage
+References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-13-git-send-email-mgorman@suse.de>
+In-Reply-To: <1340185081-22525-13-git-send-email-mgorman@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,14 +33,18 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 06/20/2012 05:38 AM, Mel Gorman wrote:
-> GFP_NOFS is _more_ permissive than GFP_NOIO in that it will initiate
-> IO, just not of any filesystem data.
+> Commit [b3a27d: swap: Add swap slot free callback to
+> block_device_operations] dereferences p->bdev->bd_disk but this is a
+> NULL dereference if using swap-over-NFS. This patch checks SWP_BLKDEV
+> on the swap_info_struct before dereferencing.
 >
-> The problem is that previously NOFS was correct because that avoids
-> recursion into the NFS code. With swap-over-NFS, it is no longer
-> correct as swap IO can lead to this recursion.
+> With reference to this callback, Christoph Hellwig stated "Please
+> just remove the callback entirely.  It has no user outside the staging
+> tree and was added clearly against the rules for that staging tree".
+> This would also be my preference but there was not an obvious way of
+> keeping zram in staging/ happy.
 >
-> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+> Signed-off-by: Xiaotian Feng<dfeng@redhat.com>
 > Signed-off-by: Mel Gorman<mgorman@suse.de>
 
 Acked-by: Rik van Riel<riel@redhat.com>
