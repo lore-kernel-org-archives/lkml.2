@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2FTPfC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 11:35:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39015 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756756Ab2FTPe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 11:34:59 -0400
-Message-ID: <4FE1ED55.5070708@redhat.com>
-Date: Wed, 20 Jun 2012 11:33:41 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756849Ab2FTPkR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 11:40:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48006 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab2FTPkQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 11:40:16 -0400
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 02/12] selinux: tag avc cache alloc as non-critical
-References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1340185081-22525-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1340181732-21953-1-git-send-email-linus.walleij@stericsson.com>
+References: <1340181732-21953-1-git-send-email-linus.walleij@stericsson.com>
+Date: Wed, 20 Jun 2012 21:10:15 +0530
+Message-ID: <CADTbHxpyOqwx-VqmW5FGS9Qh2YUtsLRHyqXf7snSwS4JWLjnLQ@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl/coh901: use clk_prepare_[en|dis]able()
+From: Pankaj Jangra <jangra.pankaj9@gmail.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:37 AM, Mel Gorman wrote:
-> Failing to allocate a cache entry will only harm performance not
-> correctness.  Do not consume valuable reserve pages for something
-> like that.
+On Wed, Jun 20, 2012 at 2:12 PM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 >
-> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
-> Acked-by: Eric Paris<eparis@redhat.com>
+> The COH901 GPIO driver did not prepare or unprepare its
+> clock, so let us fix it to do so.
+>
+> Cc: Pankaj Jangra <jangra.pankaj9@gmail.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> ChangeLog v1->v2:
+> - Fix up to use clk_disable_unprepare() on error and exit paths,
+>  noticed by Pankaj Jangra.
+> ---
+>  drivers/pinctrl/pinctrl-coh901.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-Acked-by: Rik van Riel<riel@redhat.com>
+Reviewed-by: Pankaj Jangra <jangra.pankaj9@gmail.com>
 
+Regards,
+Pankaj Jangra
