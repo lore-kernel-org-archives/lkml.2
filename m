@@ -1,83 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab2FTGeB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:34:01 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42837 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab2FTGd7 (ORCPT
+	id S1752237Ab2FTGhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:37:08 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58644 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab2FTGhG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:33:59 -0400
-Message-ID: <4FE16ED3.2090403@gmail.com>
-Date: Wed, 20 Jun 2012 02:33:55 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 20 Jun 2012 02:37:06 -0400
 MIME-Version: 1.0
-To: gaowanlong@cn.fujitsu.com
-CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>, Eric Wong <normalperson@yhbt.net>
-Subject: Re: [PATCH] mm, fadvise: don't return -EINVAL when filesystem has
- no optimization way
-References: <1339792575-17637-1-git-send-email-kosaki.motohiro@gmail.com> <4FE16E50.9030304@cn.fujitsu.com>
-In-Reply-To: <4FE16E50.9030304@cn.fujitsu.com>
+In-Reply-To: <1340170042-4537-1-git-send-email-gshark.jeong@gmail.com>
+References: <1340170042-4537-1-git-send-email-gshark.jeong@gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 20 Jun 2012 14:36:45 +0800
+X-Google-Sender-Auth: 8WK8ETkwSo_cEacvef9quxffIWE
+Message-ID: <CAK5ve-+H6LGysXLGjooqKO91yujJLd8q5Q==p=7L-suVSLpvwg@mail.gmail.com>
+Subject: Re: [PATCH] Document : Add LED driver for lm3556 chip
+To: "G.Shark Jeong" <gshark.jeong@gmail.com>
+Cc: Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Daniel Jeong <daniel.jeong@ti.com>, linux-kernel@vger.kernel.org,
+        milo kim <milo.kim@ti.com>, linux-doc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/20/12 2:31 AM), Wanlong Gao wrote:
-> On 06/16/2012 04:36 AM, kosaki.motohiro@gmail.com wrote:
->> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>
->> Eric Wong reported his test suite was fail when /tmp is tmpfs.
->>
->> https://lkml.org/lkml/2012/2/24/479
->>
->> Current,input check of POSIX_FADV_WILLNEED has two problems.
->>
->> 1) require a_ops->readpage.
->>    But in fact, force_page_cache_readahead() only require
->>    a target filesystem has either ->readpage or ->readpages.
->> 2) return -EINVAL when filesystem don't have ->readpage.
->>    But, posix says, it should be retrieved a hint. Thus fadvise()
->>    should return 0 if filesystem has no optimization way.
->>    Especially, userland application don't know a filesystem type
->>    of TMPDIR directory as Eric pointed out. Then, userland can't
->>    avoid this error. We shouldn't encourage to ignore syscall
->>    return value.
->>
->> Thus, this patch change a return value to 0 when filesytem don't
->> support readahead.
->>
->> Cc: linux-mm@kvack.org
->> Cc: Hugh Dickins <hughd@google.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Hillf Danton <dhillf@gmail.com>
->> Signed-off-by: Eric Wong <normalperson@yhbt.net>
->> Tested-by: Eric Wong <normalperson@yhbt.net>
->> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> ---
->>  mm/fadvise.c |   18 +++++++-----------
->>  1 files changed, 7 insertions(+), 11 deletions(-)
->>
->> diff --git a/mm/fadvise.c b/mm/fadvise.c
->> index 469491e..33e6baf 100644
->> --- a/mm/fadvise.c
->> +++ b/mm/fadvise.c
->> @@ -93,11 +93,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->>  		spin_unlock(&file->f_lock);
->>  		break;
->>  	case POSIX_FADV_WILLNEED:
->> -		if (!mapping->a_ops->readpage) {
->> -			ret = -EINVAL;
->> -			break;
->> -		}
-> 
-> Why not check both readpage and readpages, if they are not here,
-> just beak and no following force_page_cache_readahead ?
+On Wed, Jun 20, 2012 at 1:27 PM, G.Shark Jeong <gshark.jeong@gmail.com> wrote:
+> From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+>
+> LM3556 :
+> The LM3556 is a 4 MHz fixed-frequency synchronous boost
+> converter plus 1.5A constant current driver for a high-current white LED.
+> Datasheet: www.national.com/ds/LM/LM3556.pdf
+>
+> Signed-off-by: G.Shark Jeong <gshark.jeong@gmail.com>
 
-They are checked in force_page_cache_readahead.
+Apparently, this patch has some coding style issue. And please fold
+this patch with your previous driver patch together and send out as a
+whole patch then.
 
+Thanks,
+-Bryan
+
+> ---
+>  Documentation/leds/00-INDEX        |    2 +
+>  Documentation/leds/leds-lm3556.txt |   86 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 88 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/leds/leds-lm3556.txt
+>
+> diff --git a/Documentation/leds/00-INDEX b/Documentation/leds/00-INDEX
+> index 29f481d..5fefe37 100644
+> --- a/Documentation/leds/00-INDEX
+> +++ b/Documentation/leds/00-INDEX
+> @@ -6,3 +6,5 @@ leds-lp5521.txt
+>        - notes on how to use the leds-lp5521 driver.
+>  leds-lp5523.txt
+>        - notes on how to use the leds-lp5523 driver.
+> +leds-lm3556.txt
+> +       - notes on how to use the leds-lm3556 driver.
+> diff --git a/Documentation/leds/leds-lm3556.txt b/Documentation/leds/leds-lm3556.txt
+> new file mode 100644
+> index 0000000..debdf87
+> --- /dev/null
+> +++ b/Documentation/leds/leds-lm3556.txt
+> @@ -0,0 +1,86 @@
+> +Kernel driver for lm3556
+> +========================
+> +
+> +*Texas Instrument:
+> + 1.5 A Synchronous Boost LED Flash Driver w/ High-Side Current Source
+> +* Datasheet: http://www.national.com/ds/LM/LM3556.pdf
+> +
+> +Authors:
+> +       Daniel Jeong
+> +       Contact:Daniel Jeong(daniel.jeong-at-ti.com, gshark.jeong-at-gmail.com)
+> +
+> +Description
+> +-----------
+> +There are 3 functions in LM3556, Flash, Torch and Indicator.
+> +
+> +FLASH MODE
+> +In Flash Mode, the LED current source(LED) provides 16 target current levels
+> +from 93.75 mA to 1500 mA.The Flash currents are adjusted via the CURRENT
+> +CONTROL REGISTER(0x09).Flash mode is activated by the ENABLE REGISTER(0x0A),
+> +or by pulling the STROBE pin HIGH.
+> +LM3556 Flash can be controlled through sys/class/leds/flash/brightness file
+> +* if STROBE pin is enabled, below example control brightness only, and
+> +ON / OFF will be controlled by STROBE pin.
+> +
+> +Flash Example:
+> +OFF     : #echo 0 > sys/class/leds/flash/brightness
+> +93.75 mA: #echo 1 > sys/class/leds/flash/brightness
+> +... .....
+> +1500  mA: #echo 16 > sys/class/leds/flash/brightness
+> +
+> +TORCH MODE
+> +In Torch Mode, the current source(LED) is programmed via the CURRENT CONTROL
+> +REGISTER(0x09).Torch Mode is activated by the ENABLE REGISTER(0x0A) or by the
+> +hardware TORCH input.
+> +LM3556 torch can be controlled through sys/class/leds/torch/brightness file.
+> +* if TORCH pin is enabled, below example control brightness only,
+> +and ON / OFF will be controlled by TORCH pin.
+> +
+> +Torch Example:
+> +OFF     : #echo 0 > sys/class/leds/torch/brightness
+> +46.88 mA: #echo 1 > sys/class/leds/torch/brightness
+> +... .....
+> +375 mA  : #echo 8 > sys/class/leds/torch/brightness
+> +
+> +INDICATOR MODE
+> +Indicater pattern can be set through sys/class/leds/indicator/pattern file,
+> +and 4 patterns are pre-defined in indicator_pattern array.
+> +According to N-lank, Pulse time and N Period values, different pattern wiill
+> +be generated.If you want new patterns for your own device, change
+> +indicator_pattern array with your own values and INDIC_PATTERN_SIZE.
+> +Please refer datasheet for more detail about N-Blank, Pulse time and N Period.
+> +
+> +Indicator pattern example:
+> +pattern 0: #echo 0 > sys/class/leds/indicator/pattern
+> +....
+> +pattern 3: #echo 3 > sys/class/leds/indicator/pattern
+> +
+> +Indicater brightness can be controlled through
+> +sys/class/leds/indicator/brightness file.
+> +
+> +Example:
+> +OFF      : #echo 0 > sys/class/leds/indicator/brightness
+> +5.86 mA  : #echo 1 > sys/class/leds/indicator/brightness
+> +........
+> +46.875mA : #echo 8 > sys/class/leds/indicator/brightness
+> +
+> +Notes
+> +-----
+> +Driver expects it is registered using the i2c_board_info mechanism.
+> +Toregister the chip at address 0x63 on specific adapter, set the platform data
+> + according to include/linux/platform_data/leds-lm3556.h, set the i2c board info:
+> +
+> +Example:
+> +       static struct i2c_board_info __initdata board_i2c_ch4[] = {
+> +               {
+> +                        I2C_BOARD_INFO(LM3556_NAME, 0x63),
+> +                        .platform_data = &lm3556_pdata,
+> +                },
+> +       };
+> +
+> +and register it in the platform init function
+> +
+> +Example:
+> +       board_register_i2c_bus(4, 400,
+> +                               board_i2c_ch4, ARRAY_SIZE(board_i2c_ch4));
+> +
+> --
+> 1.7.5.4
+>
+
+
+
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
