@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab2FTLo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:44:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40298 "EHLO mx2.suse.de"
+	id S932192Ab2FTLov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:44:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40269 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932103Ab2FTLoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:44:54 -0400
-Date: Wed, 20 Jun 2012 12:44:50 +0100
+	id S932129Ab2FTLod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:44:33 -0400
 From: Mel Gorman <mgorman@suse.de>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 01/17] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-Message-ID: <20120620114450.GF4011@suse.de>
-References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
- <1340184920-22288-2-git-send-email-mgorman@suse.de>
- <20120620110512.GA4208@breakpoint.cc>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120620110512.GA4208@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Eric B Munson <emunson@mgebm.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 17/17] mm: Account for the number of times direct reclaimers get throttled
+Date: Wed, 20 Jun 2012 12:44:12 +0100
+Message-Id: <1340192652-31658-18-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 01:05:13PM +0200, Sebastian Andrzej Siewior wrote:
-> On Wed, Jun 20, 2012 at 10:35:04AM +0100, Mel Gorman wrote:
-> > [a.p.zijlstra@chello.nl: Original implementation]
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> > diff --git a/mm/slab.c b/mm/slab.c
-> > index e901a36..b190cac 100644
-> > --- a/mm/slab.c
-> > +++ b/mm/slab.c
-> > @@ -1851,6 +1984,7 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
-> >  	while (i--) {
-> >  		BUG_ON(!PageSlab(page));
-> >  		__ClearPageSlab(page);
-> > +		__ClearPageSlabPfmemalloc(page);
-> >  		page++;
-> >  	}
-> >  	if (current->reclaim_state)
-> > @@ -3120,16 +3254,19 @@ bad:
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index 8c691fa..43738c9 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -1414,6 +1418,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
-> >  		-pages);
-> >  
-> >  	__ClearPageSlab(page);
-> > +	__ClearPageSlabPfmemalloc(page);
-> >  	reset_page_mapcount(page);
-> >  	if (current->reclaim_state)
-> >  		current->reclaim_state->reclaimed_slab += pages;
-> 
-> So you mention a change here in v11's changelog but I don't see it.
-> 
+Under significant pressure when writing back to network-backed storage,
+direct reclaimers may get throttled. This is expected to be a
+short-lived event and the processes get woken up again but processes do
+get stalled. This patch counts how many times such stalling occurs. It's
+up to the administrator whether to reduce these stalls by increasing
+min_free_kbytes.
 
-Because I'm an idiot and send out the wrong branch and then was rude
-enough to not include you on the CC. I have resent the series, correctly
-this time I hope. Sorry about that.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/vm_event_item.h |    1 +
+ mm/vmscan.c                   |    3 +++
+ mm/vmstat.c                   |    1 +
+ 3 files changed, 5 insertions(+)
 
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 06f8e38..57f7b10 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -30,6 +30,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
+ 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
+ 		FOR_ALL_ZONES(PGSCAN_DIRECT),
++		PGSCAN_DIRECT_THROTTLE,
+ #ifdef CONFIG_NUMA
+ 		PGSCAN_ZONE_RECLAIM_FAILED,
+ #endif
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index bf8625c..bcc65c5 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2166,6 +2166,9 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 	if (pfmemalloc_watermark_ok(pgdat))
+ 		return;
+ 
++	/* Account for the throttling */
++	count_vm_event(PGSCAN_DIRECT_THROTTLE);
++
+ 	/*
+ 	 * If the caller cannot enter the filesystem, it's possible that it
+ 	 * is due to the caller holding an FS lock or performing a journal
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 1bbbbd9..df7a674 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -745,6 +745,7 @@ const char * const vmstat_text[] = {
+ 	TEXTS_FOR_ZONES("pgsteal_direct")
+ 	TEXTS_FOR_ZONES("pgscan_kswapd")
+ 	TEXTS_FOR_ZONES("pgscan_direct")
++	"pgscan_direct_throttle",
+ 
+ #ifdef CONFIG_NUMA
+ 	"zone_reclaim_failed",
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.2
+
