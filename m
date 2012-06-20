@@ -1,578 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab2FTMEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:04:00 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:58916 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab2FTMD6 (ORCPT
+	id S1756586Ab2FTMFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:05:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49854 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab2FTME6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:03:58 -0400
-Message-ID: <1340193761.12326.15.camel@falcor>
-Subject: Re: [tpmdd-devel] [PATCH V2 1/2] driver: add PPI support in tpm
- driver
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "Zhang, Xiaoyan" <xiaoyan.zhang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>
-Date: Wed, 20 Jun 2012 08:02:41 -0400
-In-Reply-To: <1340122384.8068.0.camel@localhost>
-References: <1340122384.8068.0.camel@localhost>
+	Wed, 20 Jun 2012 08:04:58 -0400
+Subject: Re: [PATCH 08/17] net: Do not coalesce skbs belonging to
+ PFMEMALLOC sockets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+In-Reply-To: <1340192652-31658-9-git-send-email-mgorman@suse.de>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+	 <1340192652-31658-9-git-send-email-mgorman@suse.de>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Jun 2012 14:04:52 +0200
+Message-ID: <1340193892.4604.865.camel@edumazet-glaptop>
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062012-7408-0000-0000-0000060650BA
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 08:15 +0000, Zhang, Xiaoyan wrote:
-> From: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+On Wed, 2012-06-20 at 12:44 +0100, Mel Gorman wrote:
+> Commit [bad43ca8: net: introduce skb_try_coalesce()] introduced an
+> optimisation to coalesce skbs to reduce memory usage and cache line
+> misses. In the case where the socket is used for swapping this can result
+> in a warning like the following.
 > 
-> The Physical Presence Interface enables the OS and the BIOS to cooperate
-> and provides a simple and straightforward platform user experience for
-> administering the TPM without sacrificing security.
+> [  110.476565] nbd0: page allocation failure: order:0, mode:0x20
+> [  110.476568] Pid: 2714, comm: nbd0 Not tainted 3.5.0-rc2-swapnbd-v12r2-slab #3
+> [  110.476569] Call Trace:
+> [  110.476573]  [<ffffffff811042d3>] warn_alloc_failed+0xf3/0x160
+> [  110.476578]  [<ffffffff81107c92>] __alloc_pages_nodemask+0x6e2/0x930
+> [  110.476582]  [<ffffffff81107c92>] ?  __alloc_pages_nodemask+0x6e2/0x930
+> [  110.476588]  [<ffffffff81149f09>] kmem_getpages+0x59/0x1a0
+> [  110.476593]  [<ffffffff8114ae5b>] fallback_alloc+0x17b/0x260
+> [  110.476597]  [<ffffffff8114ac26>] ____cache_alloc_node+0x96/0x150
+> [  110.476602]  [<ffffffff8114a458>] kmem_cache_alloc_node+0x78/0x1b0
+> [  110.476607]  [<ffffffff8136c127>] __alloc_skb+0x57/0x1e0
+> [  110.476612]  [<ffffffff813b9f81>] sk_stream_alloc_skb+0x41/0x120
+> [  110.476617]  [<ffffffff813c8c72>] tcp_fragment+0x62/0x370
+> [  110.476622]  [<ffffffff813c8fb9>] tso_fragment+0x39/0x180
+> [  110.476628]  [<ffffffff813ca2a9>] tcp_write_xmit+0x1a9/0x3f0
+> [  110.476634]  [<ffffffff813ca556>] __tcp_push_pending_frames+0x26/0xd0
+> [  110.476639]  [<ffffffff813c61f5>] tcp_rcv_established+0x385/0x760
+> [  110.476644]  [<ffffffff813ce671>] tcp_v4_do_rcv+0x111/0x1f0
+> [  110.476648]  [<ffffffff81367259>] release_sock+0x99/0x140
+> [  110.476652]  [<ffffffff813ba82b> tcp_sendmsg+0x7cb/0xe80
+> [  110.476657]  [<ffffffff813df9b4>] inet_sendmsg+0x64/0xb0
+> [  110.476661]  [<ffffffff811f0a00>] ? security_socket_sendmsg+0x10/0x20
+> [  110.476666]  [<ffffffff81361dd8>] sock_sendmsg+0xf8/0x130
+> [  110.476672]  [<ffffffff8124ba4c>] ? cpumask_next_and+0x3c/0x50
+> [  110.476677]  [<ffffffff8107b053>] ? update_sd_lb_stats+0x123/0x620
+> [  110.476683]  [<ffffffff8105164f>] ? recalc_sigpending+0x1f/0x70
+> [  110.476688]  [<ffffffff81051e17>] ? __set_task_blocked+0x37/0x80
+> [  110.476693]  [<ffffffff81361e51>] kernel_sendmsg+0x41/0x60
+> [  110.476698]  [<ffffffffa048d417>] sock_xmit+0xb7/0x300 [nbd]
+> [  110.476703]  [<ffffffff8107bad7>] ? load_balance+0xd7/0x490
+> [  110.476710]  [<ffffffffa048d7ac>] nbd_send_req+0x14c/0x270 [nbd]
+> [  110.476716]  [<ffffffffa048e21e>] nbd_handle_req+0x9e/0x180 [nbd]
+> [  110.476721]  [<ffffffffa048e4f2>] nbd_thread+0xb2/0x150 [nbd]
+> [  110.476725]  [<ffffffff81062580>] ? wake_up_bit+0x40/0x40
+> [  110.476730]  [<ffffffffa048e440>] ? do_nbd_request+0x140/0x140 [nbd]
+> [  110.476733]  [<ffffffff81061d7e>] kthread+0x9e/0xb0
+> [  110.476739]  [<ffffffff81439d64>] kernel_thread_helper+0x4/0x10
+> [  110.476743]  [<ffffffff81061ce0>] ? flush_kthread_worker+0xc0/0xc0
+> [  110.476748]  [<ffffffff81439d60>] ? gs_change+0x13/0x13
 > 
-> V2: separate the patch out in a separate source file, add #ifdef CONFIG_ACPI
-> so it compiles out on ppc, and use standard error instead of ACPI error as
-> return code of show/store fns.
-
-ifdef's don't belong in .c code.  The normal practice is to define the
-function declaration and a stub function in an include file based on the
-ifdef.  Having a separate source file, allows you to include different
-code in the Makefile.
-
+> There were two ways this could be addressed. The first would be to
+> teach __tcp_push_pending_frames() to use __GFP_MEMALLOC if the socket
+> has SOCK_MEMALLOC set. This potentially defers the time of allocation
+> to a point where we are applying greater pressure on PFMEMALLOC reserves
+> which is undesirable.  The second approach is to disable skb coalescing
+> for SOCK_MEMALLOC sockets and process them immediately. This patch takes
+> the second approach.
 > 
-> Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 > ---
->  drivers/char/tpm/Makefile  |    3 +-
->  drivers/char/tpm/tpm.c     |   11 +
->  drivers/char/tpm/tpm.h     |    1 +
->  drivers/char/tpm/tpm_ppi.c |  450 ++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 464 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm_ppi.c
+>  net/core/skbuff.c    |    7 +++++++
+>  net/ipv4/tcp_input.c |    8 ++++++++
+>  2 files changed, 15 insertions(+)
 > 
-> diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-> index ea3a1e0..fe87366 100644
-> --- a/drivers/char/tpm/Makefile
-> +++ b/drivers/char/tpm/Makefile
-> @@ -1,7 +1,8 @@
->  #
->  # Makefile for the kernel tpm device drivers.
->  #
-> -obj-$(CONFIG_TCG_TPM) += tpm.o
-> +obj-$(CONFIG_TCG_TPM) += tpm_main.o
-> +tpm_main-y += tpm.o tpm_ppi.o
->  ifdef CONFIG_ACPI
->  	obj-$(CONFIG_TCG_TPM) += tpm_bios.o
->  endif
-
-Shouldn't tpm_ppi be in the CONFIG_ACPI ifdef?
-
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> index ad7c732..d5db4fa 100644
-> --- a/drivers/char/tpm/tpm.c
-> +++ b/drivers/char/tpm/tpm.c
-> @@ -1361,6 +1361,9 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
->  	char *devname;
->  	struct tpm_chip *chip;
-> 
-> +#ifdef CONFIG_ACPI
-> +	struct kobject *ppi;
-> +#endif
->  	/* Driver specific per-device data */
->  	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
->  	devname = kmalloc(DEVNAME_SIZE, GFP_KERNEL);
-> @@ -1416,6 +1419,14 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
->  		return NULL;
->  	}
-> 
-> +#ifdef CONFIG_ACPI
-> +	ppi = kobject_create_and_add("ppi", &dev->kobj);
-> +	if (sysfs_create_group(ppi, &ppi_attr_grp)) {
-> +		misc_deregister(&chip->vendor.miscdev);
-> +		put_device(chip->dev);
-> +		return NULL;
-> +	}
-> +#endif
-
-This should be a function defined in tpm_ppi.c.  The function definition
-and stub function definition would be defined in a .h file as well.
-
-Mimi
-
->  	chip->bios_dir = tpm_bios_log_setup(devname);
-> 
->  	/* Make chip available */
-> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> index b1c5280..9f706ad 100644
-> --- a/drivers/char/tpm/tpm.h
-> +++ b/drivers/char/tpm/tpm.h
-> @@ -306,6 +306,7 @@ extern int wait_for_tpm_stat(struct tpm_chip *, u8, unsigned long,
->  #ifdef CONFIG_ACPI
->  extern struct dentry ** tpm_bios_log_setup(char *);
->  extern void tpm_bios_log_teardown(struct dentry **);
-> +extern struct attribute_group ppi_attr_grp;
->  #else
->  static inline struct dentry ** tpm_bios_log_setup(char *name)
->  {
-> diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
-> new file mode 100644
-> index 0000000..eaf0592
-> --- /dev/null
-> +++ b/drivers/char/tpm/tpm_ppi.c
-> @@ -0,0 +1,450 @@
-> +#include <linux/acpi.h>
-> +#include <acpi/acpi_drivers.h>
-> +#include "tpm.h"
-> +
-> +static const u8 tpm_ppi_uuid[] = {
-> +	0xA6, 0xFA, 0xDD, 0x3D,
-> +	0x1B, 0x36,
-> +	0xB4, 0x4E,
-> +	0xA4, 0x24,
-> +	0x8D, 0x10, 0x08, 0x9D, 0x16, 0x53
-> +};
-> +static char *tpm_device_name = "TPM";
-> +
-> +#define TPM_PPI_REVISION_ID	1
-> +#define TPM_PPI_FN_VERSION	1
-> +#define TPM_PPI_FN_SUBREQ	2
-> +#define TPM_PPI_FN_GETREQ	3
-> +#define TPM_PPI_FN_GETACT	4
-> +#define TPM_PPI_FN_GETRSP	5
-> +#define TPM_PPI_FN_SUBREQ2	7
-> +#define TPM_PPI_FN_GETOPR	8
-> +#define PPI_TPM_REQ_MAX		22
-> +#define PPI_VS_REQ_START	128
-> +#define PPI_VS_REQ_END		255
-> +#define PPI_VERSION_LEN		3
-> +
-> +static acpi_status ppi_callback(acpi_handle handle, u32 level, void *context,
-> +				void **return_value)
-> +{
-> +	acpi_status status;
-> +	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	status = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-> +	if (strstr(buffer.pointer, context) != NULL) {
-> +		*return_value = handle;
-> +		kfree(buffer.pointer);
-> +		return AE_CTRL_TERMINATE;
-> +	}
-> +	return AE_OK;
-> +}
-> +
-> +static inline void ppi_assign_params(union acpi_object params[4],
-> +				     u64 function_num)
-> +{
-> +	params[0].type = ACPI_TYPE_BUFFER;
-> +	params[0].buffer.length = sizeof(tpm_ppi_uuid);
-> +	params[0].buffer.pointer = (char *)tpm_ppi_uuid;
-> +	params[1].type = ACPI_TYPE_INTEGER;
-> +	params[1].integer.value = TPM_PPI_REVISION_ID;
-> +	params[2].type = ACPI_TYPE_INTEGER;
-> +	params[2].integer.value = function_num;
-> +	params[3].type = ACPI_TYPE_PACKAGE;
-> +	params[3].package.count = 0;
-> +	params[3].package.elements = NULL;
-> +}
-> +
-> +ssize_t tpm_show_ppi_version(struct device *dev, struct device_attribute *attr,
-> +			     char *buf)
-> +{
-> +	acpi_handle handle;
-> +	acpi_status status;
-> +	struct acpi_object_list input;
-> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object params[4];
-> +	union acpi_object *obj;
-> +
-> +	input.count = 4;
-> +	ppi_assign_params(params, TPM_PPI_FN_VERSION);
-> +	input.pointer = params;
-> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
-> +				     tpm_device_name, &handle);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENXIO;
-> +
-> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
-> +					 ACPI_TYPE_STRING);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENOMEM;
-> +	obj = (union acpi_object *)output.pointer;
-> +	status = scnprintf(buf, PAGE_SIZE, "%s\n", obj->string.pointer);
-> +	kfree(output.pointer);
-> +	return status;
-> +}
-> +
-> +ssize_t tpm_show_ppi_request(struct device *dev,
-> +			     struct device_attribute *attr,
-> +			     char *buf)
-> +{
-> +	acpi_handle handle;
-> +	acpi_status status;
-> +	struct acpi_object_list input;
-> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object params[4];
-> +	union acpi_object *ret_obj;
-> +
-> +	input.count = 4;
-> +	ppi_assign_params(params, TPM_PPI_FN_GETREQ);
-> +	input.pointer = params;
-> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
-> +				     tpm_device_name, &handle);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENXIO;
-> +
-> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
-> +					    ACPI_TYPE_PACKAGE);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENOMEM;
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index d78671e..1d6ecc8 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -3370,6 +3370,13 @@ bool skb_try_coalesce(struct sk_buff *to, struct sk_buff *from,
+>  
+>  	*fragstolen = false;
+>  
 > +	/*
-> +	 * output.pointer should be of package type, including two integers.
-> +	 * The first is function return code, 0 means success and 1 means
-> +	 * error. The second is pending TPM operation requested by the OS, 0
-> +	 * means none and >0 means operation value.
+> +	 * Avoid coalescing of SOCK_MEMALLOC socks are we do not want to defer
+> +	 * RX/TX to a time when pfmemallo reserves are under greater pressure
 > +	 */
-> +	ret_obj = ((union acpi_object *)output.pointer)->package.elements;
-> +	if (ret_obj->type == ACPI_TYPE_INTEGER) {
-> +		if (ret_obj->integer.value) {
-> +			status = -EFAULT;
-> +			goto cleanup;
-> +		}
-> +		ret_obj++;
-> +		if (ret_obj->type == ACPI_TYPE_INTEGER)
-> +			status = scnprintf(buf, PAGE_SIZE, "%llu\n",
-> +					   ret_obj->integer.value);
-> +		else
-> +			status = -EINVAL;
-> +	} else {
-> +		status = -EINVAL;
-> +	}
-> +cleanup:
-> +	kfree(output.pointer);
-> +	return status;
-> +}
+> +	if (sk_memalloc_socks() && sock_flag(to->sk, SOCK_MEMALLOC))
+> +		return false;
 > +
-> +ssize_t tpm_store_ppi_request(struct device *dev,
-> +			      struct device_attribute *attr,
-> +			      const char *buf, size_t count)
-> +{
-> +	char version[PPI_VERSION_LEN + 1];
-> +	acpi_handle handle;
-> +	acpi_status status;
-> +	struct acpi_object_list input;
-> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object params[4];
-> +	union acpi_object obj;
-> +	u32 req;
-> +	u64 ret;
-> +
-> +	input.count = 4;
-> +	ppi_assign_params(params, TPM_PPI_FN_VERSION);
-> +	input.pointer = params;
-> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
-> +				     tpm_device_name, &handle);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENXIO;
-> +
-> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
-> +					    ACPI_TYPE_STRING);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENOMEM;
-> +	strncpy(version,
-> +		((union acpi_object *)output.pointer)->string.pointer,
-> +		PPI_VERSION_LEN);
-> +	kfree(output.pointer);
-> +	output.length = ACPI_ALLOCATE_BUFFER;
-> +	output.pointer = NULL;
+>  	if (skb_cloned(to))
+>  		return false;
+>  
+> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+> index b224eb8..448f130 100644
+> --- a/net/ipv4/tcp_input.c
+> +++ b/net/ipv4/tcp_input.c
+> @@ -4553,6 +4553,14 @@ static bool tcp_try_coalesce(struct sock *sk,
+>  
+>  	*fragstolen = false;
+>  
 > +	/*
-> +	 * the function to submit TPM operation request to pre-os environment
-> +	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
-> +	 * version 1.1
+> +	 * Do not attempt merging if the socket is used by the VM for swapping.
+> +	 * Attempts to defer can result in allocation failures during RX when
+> +	 * an attempt is made to push pending frames
 > +	 */
-> +	if (strcmp(version, "1.1") == -1)
-> +		params[2].integer.value = TPM_PPI_FN_SUBREQ;
-> +	else
-> +		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
-> +	/*
-> +	 * PPI spec defines params[3].type as ACPI_TYPE_PACKAGE. Some BIOS
-> +	 * accept buffer/string/integer type, but some BIOS accept buffer/
-> +	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
-> +	 * for compatibility, and use package type since 1.2 according to spec.
-> +	 */
-> +	if (strcmp(version, "1.2") == -1) {
-> +		params[3].type = ACPI_TYPE_BUFFER;
-> +		params[3].buffer.length = sizeof(req);
-> +		sscanf(buf, "%d", &req);
-> +		params[3].buffer.pointer = (char *)&req;
-> +	} else {
-> +		params[3].package.count = 1;
-> +		obj.type = ACPI_TYPE_INTEGER;
-> +		sscanf(buf, "%llu", &obj.integer.value);
-> +		params[3].package.elements = &obj;
-> +	}
+> +	if (sk_memalloc_socks() && sock_flag(sk, SOCK_MEMALLOC))
+> +		return false;
 > +
-> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
-> +					    ACPI_TYPE_INTEGER);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENOMEM;
-> +	ret = ((union acpi_object *)output.pointer)->integer.value;
-> +	if (ret == 0)
-> +		status = (acpi_status)count;
-> +	else if (ret == 1)
-> +		status = -EPERM;
-> +	else
-> +		status = -EFAULT;
-> +	kfree(output.pointer);
-> +	return status;
-> +}
-> +
-> +ssize_t tpm_show_ppi_transition_action(struct device *dev,
-> +				       struct device_attribute *attr,
-> +				       char *buf)
-> +{
-> +	char version[PPI_VERSION_LEN + 1];
-> +	acpi_handle handle;
-> +	acpi_status status;
-> +	struct acpi_object_list input;
-> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object params[4];
-> +	u32 ret;
-> +	char *info[] = {
-> +		"None",
-> +		"Shutdown",
-> +		"Reboot",
-> +		"OS Vendor-specific",
-> +		"Error",
-> +	};
-> +	input.count = 4;
-> +	ppi_assign_params(params, TPM_PPI_FN_VERSION);
-> +	input.pointer = params;
-> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
-> +				     tpm_device_name, &handle);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENXIO;
-> +
-> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
-> +					    ACPI_TYPE_STRING);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENOMEM;
-> +	strncpy(version,
-> +		((union acpi_object *)output.pointer)->string.pointer,
-> +		PPI_VERSION_LEN);
-> +	/*
-> +	 * PPI spec defines params[3].type as empty package, but some platforms
-> +	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
-> +	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
-> +	 */
-> +	if (strcmp(version, "1.2") == -1) {
-> +		params[3].type = ACPI_TYPE_BUFFER;
-> +		params[3].buffer.length =  0;
-> +		params[3].buffer.pointer = NULL;
-> +	}
-> +	params[2].integer.value = TPM_PPI_FN_GETACT;
-> +	kfree(output.pointer);
-> +	output.length = ACPI_ALLOCATE_BUFFER;
-> +	output.pointer = NULL;
-> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
-> +					    ACPI_TYPE_INTEGER);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENOMEM;
-> +	ret = ((union acpi_object *)output.pointer)->integer.value;
-> +	if (ret < ARRAY_SIZE(info) - 1)
-> +		status = scnprintf(buf, PAGE_SIZE, "%d: %s\n", ret, info[ret]);
-> +	else
-> +		status = scnprintf(buf, PAGE_SIZE, "%d: %s\n", ret,
-> +				   info[ARRAY_SIZE(info)-1]);
-> +	kfree(output.pointer);
-> +	return status;
-> +}
-> +
-> +ssize_t tpm_show_ppi_response(struct device *dev,
-> +			      struct device_attribute *attr,
-> +			      char *buf)
-> +{
-> +	acpi_handle handle;
-> +	acpi_status status;
-> +	struct acpi_object_list input;
-> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object params[4];
-> +	union acpi_object *ret_obj;
-> +	u64 req;
-> +
-> +	input.count = 4;
-> +	ppi_assign_params(params, TPM_PPI_FN_GETRSP);
-> +	input.pointer = params;
-> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
-> +				     tpm_device_name, &handle);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENXIO;
-> +
-> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
-> +					    ACPI_TYPE_PACKAGE);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENOMEM;
-> +	/*
-> +	 * parameter output.pointer should be of package type, including
-> +	 * 3 integers. The first means function return code, the second means
-> +	 * most recent TPM operation request, and the last means response to
-> +	 * the most recent TPM operation request. Only if the first is 0, and
-> +	 * the second integer is not 0, the response makes sense.
-> +	 */
-> +	ret_obj = ((union acpi_object *)output.pointer)->package.elements;
-> +	if (ret_obj->type != ACPI_TYPE_INTEGER) {
-> +		status = -EINVAL;
-> +		goto cleanup;
-> +	}
-> +	if (ret_obj->integer.value) {
-> +		status = -EFAULT;
-> +		goto cleanup;
-> +	}
-> +	ret_obj++;
-> +	if (ret_obj->type != ACPI_TYPE_INTEGER) {
-> +		status = -EINVAL;
-> +		goto cleanup;
-> +	}
-> +	if (ret_obj->integer.value) {
-> +		req = ret_obj->integer.value;
-> +		ret_obj++;
-> +		if (ret_obj->type != ACPI_TYPE_INTEGER) {
-> +			status = -EINVAL;
-> +			goto cleanup;
-> +		}
-> +		if (ret_obj->integer.value == 0)
-> +			status = scnprintf(buf, PAGE_SIZE, "%llu %s\n", req,
-> +					   "0: Success");
-> +		else if (ret_obj->integer.value == 0xFFFFFFF0)
-> +			status = scnprintf(buf, PAGE_SIZE, "%llu %s\n", req,
-> +					   "0xFFFFFFF0: User Abort");
-> +		else if (ret_obj->integer.value == 0xFFFFFFF1)
-> +			status = scnprintf(buf, PAGE_SIZE, "%llu %s\n", req,
-> +					   "0xFFFFFFF1: BIOS Failure");
-> +		else if (ret_obj->integer.value >= 1 &&
-> +			 ret_obj->integer.value <= 0x00000FFF)
-> +			status = scnprintf(buf, PAGE_SIZE, "%llu %llu: %s\n",
-> +					   req, ret_obj->integer.value,
-> +					   "Corresponding TPM error");
-> +		else
-> +			status = scnprintf(buf, PAGE_SIZE, "%llu %llu: %s\n",
-> +					   req, ret_obj->integer.value,
-> +					   "Error");
-> +	} else {
-> +		status = scnprintf(buf, PAGE_SIZE, "%llu: %s\n",
-> +				   ret_obj->integer.value, "No Recent Request");
-> +	}
-> +cleanup:
-> +	kfree(output.pointer);
-> +	return status;
-> +}
-> +
-> +static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
-> +{
-> +	char *str = buf;
-> +	char version[PPI_VERSION_LEN];
-> +	acpi_handle handle;
-> +	acpi_status status;
-> +	struct acpi_object_list input;
-> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	union acpi_object params[4];
-> +	union acpi_object obj;
-> +	int i;
-> +	u32 ret;
-> +	char *info[] = {
-> +		"Not implemented",
-> +		"BIOS only",
-> +		"Blocked for OS by BIOS",
-> +		"User required",
-> +		"User not required",
-> +	};
-> +	input.count = 4;
-> +	ppi_assign_params(params, TPM_PPI_FN_VERSION);
-> +	input.pointer = params;
-> +	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +				     ACPI_UINT32_MAX, ppi_callback, NULL,
-> +				     tpm_device_name, &handle);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENXIO;
-> +
-> +	status = acpi_evaluate_object_typed(handle, "_DSM", &input, &output,
-> +					 ACPI_TYPE_STRING);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENOMEM;
-> +
-> +	strncpy(version,
-> +		((union acpi_object *)output.pointer)->string.pointer,
-> +		PPI_VERSION_LEN);
-> +	kfree(output.pointer);
-> +	output.length = ACPI_ALLOCATE_BUFFER;
-> +	output.pointer = NULL;
-> +	if (strcmp(version, "1.2") == -1)
-> +		return -EPERM;
-> +
-> +	params[2].integer.value = TPM_PPI_FN_GETOPR;
-> +	params[3].package.count = 1;
-> +	obj.type = ACPI_TYPE_INTEGER;
-> +	params[3].package.elements = &obj;
-> +	for (i = start; i <= end; i++) {
-> +		obj.integer.value = i;
-> +		status = acpi_evaluate_object_typed(handle, "_DSM",
-> +			 &input, &output, ACPI_TYPE_INTEGER);
-> +		if (ACPI_FAILURE(status))
-> +			return -ENOMEM;
-> +
-> +		ret = ((union acpi_object *)output.pointer)->integer.value;
-> +		if (ret > 0 && ret < ARRAY_SIZE(info))
-> +			str += scnprintf(str, PAGE_SIZE, "%d %d: %s\n",
-> +					 i, ret, info[ret]);
-> +		kfree(output.pointer);
-> +		output.length = ACPI_ALLOCATE_BUFFER;
-> +		output.pointer = NULL;
-> +	}
-> +	return str - buf;
-> +}
-> +
-> +ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
-> +				   struct device_attribute *attr, char *buf)
-> +{
-> +	return show_ppi_operations(buf, 0, PPI_TPM_REQ_MAX);
-> +}
-> +
-> +ssize_t tpm_show_ppi_vs_operations(struct device *dev,
-> +				  struct device_attribute *attr, char *buf)
-> +{
-> +	return show_ppi_operations(buf, PPI_VS_REQ_START, PPI_VS_REQ_END);
-> +}
-> +
-> +static DEVICE_ATTR(version, S_IRUGO, tpm_show_ppi_version, NULL);
-> +static DEVICE_ATTR(request, S_IRUGO | S_IWUSR | S_IWGRP,
-> +		   tpm_show_ppi_request, tpm_store_ppi_request);
-> +static DEVICE_ATTR(transition_action, S_IRUGO,
-> +		   tpm_show_ppi_transition_action, NULL);
-> +static DEVICE_ATTR(response, S_IRUGO, tpm_show_ppi_response, NULL);
-> +static DEVICE_ATTR(tcg_operations, S_IRUGO, tpm_show_ppi_tcg_operations, NULL);
-> +static DEVICE_ATTR(vs_operations, S_IRUGO, tpm_show_ppi_vs_operations, NULL);
-> +
-> +static struct attribute *ppi_attrs[] = {
-> +	&dev_attr_version.attr,
-> +	&dev_attr_request.attr,
-> +	&dev_attr_transition_action.attr,
-> +	&dev_attr_response.attr,
-> +	&dev_attr_tcg_operations.attr,
-> +	&dev_attr_vs_operations.attr, NULL,
-> +};
-> +struct attribute_group ppi_attr_grp = {
-> +	.attrs = ppi_attrs
-> +};
-> +EXPORT_SYMBOL_GPL(ppi_attr_grp);
-> +
-> +MODULE_LICENSE("GPL");
+>  	if (tcp_hdr(from)->fin)
+>  		return false;
+>  
+
+
+This makes absolutely no sense to me.
+
+This patch changes input path, while your stack trace is about output
+path and a packet being fragmented.
+
+If you really want to avoid this kind of thing, you'll need to disable
+TSO/GSO on the socket.
+
 
 
