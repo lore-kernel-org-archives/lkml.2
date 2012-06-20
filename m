@@ -1,35 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab2FTIwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 04:52:16 -0400
-Received: from mail.tomaatnet.nl ([82.94.240.199]:61228 "EHLO
-	mail.tomaatnet.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2FTIwO (ORCPT
+	id S1755649Ab2FTIzF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 04:55:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54002 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754523Ab2FTIzD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 04:52:14 -0400
-X-Greylist: delayed 760 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jun 2012 04:52:13 EDT
-Authentication-Results: mail.tomaatnet.nl; sender-id=neutral header.from=info@aim.com; spf=neutral smtp.mfrom=info@aim.com
-Message-ID: <6677f49ea0146a4a18e016f03dd5326d.squirrel@webmail.tomaatnet.nl>
-Date: Wed, 20 Jun 2012 10:35:01 +0200 (CEST)
-Subject: RE
-From: "Mrs Donna Kwok" <info@aim.com>
-Reply-To: mrs_donna64@w.cn
-User-Agent: SquirrelMail/1.5.2 [SVN]
-MIME-Version: 1.0
+	Wed, 20 Jun 2012 04:55:03 -0400
+Message-ID: <1340182493.21745.73.camel@twins>
+Subject: Re: [PATCH 00/10] perf, x86: Add northbridge counter support for
+ AMD family 15h
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Jun 2012 10:54:53 +0200
+In-Reply-To: <CABPqkBS=QAnoz3-_XgRPoRsUh4GbpHQe+u75dR=pLG2isC8Ccw@mail.gmail.com>
+References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
+	 <CABPqkBS=QAnoz3-_XgRPoRsUh4GbpHQe+u75dR=pLG2isC8Ccw@mail.gmail.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
-To: undisclosed-recipients:;
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (mail.tomaatnet.nl); Wed, 20 Jun 2012 10:35:01 +0200 (CEST)
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -2.6 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	*  0.0 AWL AWL: From: address is in the auto white-list
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-Please I have a transaction for you, if interested contact me.
-Donna Kwok.
+On Wed, 2012-06-20 at 10:36 +0200, Stephane Eranian wrote:
+> 
+> I dont' quite understand the design choice here. In Fam15h, there is a clean
+> design for the uncore PMU. It has its own distinct set of 4 counters. Unlike
+> Fam10h, where you program core counters to access the NB counters. So
+> why not like with Intel uncore, create a separate NB PMU which would
+> advertise its characteristics? That does not preclude re-using the existing
+> AMD-specific routines wherever possible. I think the advantage is that
+> muxing or starting/stopping of the core PMU would not affect uncore and
+> vice-versa for instance. Wouldn't this also alleviate the problems with
+> assigning indexes to uncore PMU counters? 
+
+Quite agreed, it also avoids making a trainwreck of the counter rotation
+on overload.
 
 
