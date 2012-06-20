@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab2FTRX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 13:23:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39475 "EHLO mail.zytor.com"
+	id S1757490Ab2FTRYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 13:24:13 -0400
+Received: from smtp205.alice.it ([82.57.200.101]:43510 "EHLO smtp205.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752404Ab2FTRX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 13:23:56 -0400
-Message-ID: <4FE2071B.5040602@zytor.com>
-Date: Wed, 20 Jun 2012 10:23:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754472Ab2FTRYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 13:24:09 -0400
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jun 2012 13:24:09 EDT
+Message-ID: <4FE205CF.9020509@libero.it>
+Date: Wed, 20 Jun 2012 19:18:07 +0200
+From: Goffredo Baroncelli <kreijack@libero.it>
+Reply-To: kreijack@inwind.it
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120418 Icedove/11.0
 MIME-Version: 1.0
-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/apic] x86/apic: Try to spread IRQ vectors to different
- priority levels
-References: <20120607131514.GD4759@dhcp-26-207.brq.redhat.com> <tip-1bccd58bfffc5a677051937b332b71f0686187c1@git.kernel.org>
-In-Reply-To: <tip-1bccd58bfffc5a677051937b332b71f0686187c1@git.kernel.org>
+To: Alexander Block <ablock84@googlemail.com>
+CC: linux-btrfs@vger.kernel.org, dave@jikos.cz, hch@infradead.org,
+        linux-fsdevel@vger.kernel.org, chris.mason@fusionio.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Allow cross subvolume reflinks (2nd attempt)
+References: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
+In-Reply-To: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
 X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2012 07:50 AM, tip-bot for Alexander Gordeev wrote:
-> Commit-ID:  1bccd58bfffc5a677051937b332b71f0686187c1
-> Gitweb:     http://git.kernel.org/tip/1bccd58bfffc5a677051937b332b71f0686187c1
-> Author:     Alexander Gordeev <agordeev@redhat.com>
-> AuthorDate: Thu, 7 Jun 2012 15:15:15 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Fri, 8 Jun 2012 11:44:28 +0200
-> 
-> x86/apic: Try to spread IRQ vectors to different priority levels
-> 
-> When assigning a new vector it is primarially done by adding 8
-> to the previously given out vector number. Hence, two
-> consequently allocated vector numbers would likely fall into the
-> same priority level. Try to spread vector numbers to different
-> priority levels better by changing the step from 8 to 16.
-> 
+Hi Alexander,
 
-OK, stupid question: WHY?
+On 06/20/2012 12:35 PM, Alexander Block wrote:
+> The patch also does proper vfs mount checks, so cross mount 
+> point reflinks are not possible with this patch. It only allows cross 
+> reflinks between two subvolumes which are in the same mount point.
 
-In general, in Linux the random prioritization is actually a negative.
-The only reason for the spreading by 8 is because of bugs/misfeatures in
-old APIC implementations which made them handle more than two interrupts
-per priority level rather inefficiently.
+Thanks for working on that. What happens if two subvolumes of the same
+filesystem are mounted on two different places ?
 
-	-hpa
+I usually do:
+ mount -o subvol=__active /dev/sdX /
+ mount -o subvol=.        /dev/sdX /var/btrfs
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+So two different subvolumes of the same filesystem (the one on /dev/sdX)
+are mounted on two different places.
+
+Is it possible to do
+ cp --reflink /tmp/foo /var/btrfs/tmp/foo2
+
+Thanks
+G.Baroncelli
 
