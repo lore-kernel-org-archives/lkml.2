@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab2FTSVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:21:04 -0400
+	id S1757360Ab2FTSVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:21:11 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756828Ab2FTSU7 (ORCPT
+	with ESMTP id S1757216Ab2FTSVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:20:59 -0400
-Message-Id: <20120620173021.167993326@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:21:06 -0400
+Message-Id: <20120620173021.431989125@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:22 -0700
+Date: Wed, 20 Jun 2012 10:30:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 02/61] ARM: imx6: exit coherency when shutting down a cpu
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 05/61] drm/radeon: add some additional 6xx/7xx/EG register init
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,96 +25,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 602bf40971d7f9a1ec0b7ba2b7e6427849828651 upstream.
+commit b866d1334ba2d544bc575d75357dea6bdcdc7f46 upstream.
 
-There is a system hang issue on imx6q which can easily be seen with
-running a cpu hotplug stress testing (hotplug secondary cores from
-user space via sysfs interface for thousands iterations).
+- SMX_SAR_CTL0 needs to be programmed correctly to prevent
+problems with memory exports in certain cases.
+- VC_ENHANCE needs to be initialized on 6xx/7xx.
 
-It turns out that the issue is caused by coherency of the cpu that
-is being shut down.  When shutting down a cpu, we need to have the
-cpu exit coherency to prevent it from receiving cache, TLB, or BTB
-maintenance operations broadcast by other CPUs in the cluster.
-
-Copy cpu_enter_lowpower() and cpu_leave_lowpower() from mach-vexpress
-to have coherency properly handled in platform_cpu_die(), thus fix
-the issue.
-
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/hotplug.c |   42 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 41 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen.c  |    3 +++
+ drivers/gpu/drm/radeon/evergreend.h |    1 +
+ drivers/gpu/drm/radeon/r600.c       |    1 +
+ drivers/gpu/drm/radeon/r600d.h      |    1 +
+ drivers/gpu/drm/radeon/rv770.c      |    5 ++++-
+ drivers/gpu/drm/radeon/rv770d.h     |    3 +++
+ 6 files changed, 13 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-imx/hotplug.c
-+++ b/arch/arm/mach-imx/hotplug.c
-@@ -12,6 +12,7 @@
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2210,6 +2210,9 @@ static void evergreen_gpu_init(struct ra
+ 	smx_dc_ctl0 |= NUMBER_OF_SETS(rdev->config.evergreen.sx_num_of_sets);
+ 	WREG32(SMX_DC_CTL0, smx_dc_ctl0);
  
- #include <linux/errno.h>
- #include <asm/cacheflush.h>
-+#include <asm/cp15.h>
- #include <mach/common.h>
++	if (rdev->family <= CHIP_SUMO2)
++		WREG32(SMX_SAR_CTL0, 0x00010000);
++
+ 	WREG32(SX_EXPORT_BUFFER_SIZES, (COLOR_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_size / 4) - 1) |
+ 					POSITION_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_pos_size / 4) - 1) |
+ 					SMX_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_smx_size / 4) - 1)));
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -273,6 +273,7 @@
+ #define	SCRATCH_UMSK					0x8540
+ #define	SCRATCH_ADDR					0x8544
  
- int platform_cpu_kill(unsigned int cpu)
-@@ -19,6 +20,44 @@ int platform_cpu_kill(unsigned int cpu)
- 	return 1;
++#define	SMX_SAR_CTL0					0xA008
+ #define	SMX_DC_CTL0					0xA020
+ #define		USE_HASH_FUNCTION				(1 << 0)
+ #define		NUMBER_OF_SETS(x)				((x) << 1)
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -1906,6 +1906,7 @@ void r600_gpu_init(struct radeon_device
+ 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
+ 			       NUM_CLIP_SEQ(3)));
+ 	WREG32(PA_SC_ENHANCE, FORCE_EOV_MAX_CLK_CNT(4095));
++	WREG32(VC_ENHANCE, 0);
  }
  
-+static inline void cpu_enter_lowpower(void)
-+{
-+	unsigned int v;
-+
-+	flush_cache_all();
-+	asm volatile(
-+		"mcr	p15, 0, %1, c7, c5, 0\n"
-+	"	mcr	p15, 0, %1, c7, c10, 4\n"
-+	/*
-+	 * Turn off coherency
-+	 */
-+	"	mrc	p15, 0, %0, c1, c0, 1\n"
-+	"	bic	%0, %0, %3\n"
-+	"	mcr	p15, 0, %0, c1, c0, 1\n"
-+	"	mrc	p15, 0, %0, c1, c0, 0\n"
-+	"	bic	%0, %0, %2\n"
-+	"	mcr	p15, 0, %0, c1, c0, 0\n"
-+	  : "=&r" (v)
-+	  : "r" (0), "Ir" (CR_C), "Ir" (0x40)
-+	  : "cc");
-+}
-+
-+static inline void cpu_leave_lowpower(void)
-+{
-+	unsigned int v;
-+
-+	asm volatile(
-+		"mrc	p15, 0, %0, c1, c0, 0\n"
-+	"	orr	%0, %0, %1\n"
-+	"	mcr	p15, 0, %0, c1, c0, 0\n"
-+	"	mrc	p15, 0, %0, c1, c0, 1\n"
-+	"	orr	%0, %0, %2\n"
-+	"	mcr	p15, 0, %0, c1, c0, 1\n"
-+	  : "=&r" (v)
-+	  : "Ir" (CR_C), "Ir" (0x40)
-+	  : "cc");
-+}
-+
- /*
-  * platform-specific code to shutdown a CPU
-  *
-@@ -26,9 +65,10 @@ int platform_cpu_kill(unsigned int cpu)
-  */
- void platform_cpu_die(unsigned int cpu)
- {
--	flush_cache_all();
-+	cpu_enter_lowpower();
- 	imx_enable_cpu(cpu, false);
- 	cpu_do_idle();
-+	cpu_leave_lowpower();
  
- 	/* We should never return from idle */
- 	panic("cpu %d unexpectedly exit from shutdown\n", cpu);
+--- a/drivers/gpu/drm/radeon/r600d.h
++++ b/drivers/gpu/drm/radeon/r600d.h
+@@ -483,6 +483,7 @@
+ #define		TC_L2_SIZE(x)					((x)<<5)
+ #define		L2_DISABLE_LATE_HIT				(1<<9)
+ 
++#define	VC_ENHANCE					0x9714
+ 
+ #define	VGT_CACHE_INVALIDATION				0x88C4
+ #define		CACHE_INVALIDATION(x)				((x)<<0)
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -782,6 +782,9 @@ static void rv770_gpu_init(struct radeon
+ 				       ACK_FLUSH_CTL(3) |
+ 				       SYNC_FLUSH_CTL));
+ 
++	if (rdev->family != CHIP_RV770)
++		WREG32(SMX_SAR_CTL0, 0x00003f3f);
++
+ 	db_debug3 = RREG32(DB_DEBUG3);
+ 	db_debug3 &= ~DB_CLK_OFF_DELAY(0x1f);
+ 	switch (rdev->family) {
+@@ -960,7 +963,7 @@ static void rv770_gpu_init(struct radeon
+ 
+ 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
+ 					  NUM_CLIP_SEQ(3)));
+-
++	WREG32(VC_ENHANCE, 0);
+ }
+ 
+ void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
+--- a/drivers/gpu/drm/radeon/rv770d.h
++++ b/drivers/gpu/drm/radeon/rv770d.h
+@@ -208,6 +208,7 @@
+ #define	SCRATCH_UMSK					0x8540
+ #define	SCRATCH_ADDR					0x8544
+ 
++#define	SMX_SAR_CTL0					0xA008
+ #define	SMX_DC_CTL0					0xA020
+ #define		USE_HASH_FUNCTION				(1 << 0)
+ #define		CACHE_DEPTH(x)					((x) << 1)
+@@ -307,6 +308,8 @@
+ #define	TCP_CNTL					0x9610
+ #define	TCP_CHAN_STEER					0x9614
+ 
++#define	VC_ENHANCE					0x9714
++
+ #define	VGT_CACHE_INVALIDATION				0x88C4
+ #define		CACHE_INVALIDATION(x)				((x)<<0)
+ #define			VC_ONLY						0
 
 
