@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2FTJfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:35:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58577 "EHLO mx2.suse.de"
+	id S1755994Ab2FTJfi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:35:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58642 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755845Ab2FTJf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:35:27 -0400
+	id S1755940Ab2FTJfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:35:34 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 04/17] mm: allow PF_MEMALLOC from softirq context
-Date: Wed, 20 Jun 2012 10:35:07 +0100
-Message-Id: <1340184920-22288-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 11/17] netvm: Propagate page->pfmemalloc from skb_alloc_page to skb
+Date: Wed, 20 Jun 2012 10:35:14 +0100
+Message-Id: <1340184920-22288-12-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1340184920-22288-1-git-send-email-mgorman@suse.de>
 References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
@@ -24,113 +24,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed to allow network softirq packet processing to make
-use of PF_MEMALLOC.
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If page splitting is used, it is possible that pages will
+be allocated from the PFMEMALLOC reserve without propagating this
+information to the skb. This patch propagates page->pfmemalloc from
+pages allocated for fragments to the skb.
 
-Currently softirq context cannot use PF_MEMALLOC due to it not being
-associated with a task, and therefore not having task flags to fiddle
-with - thus the gfp to alloc flag mapping ignores the task flags when
-in interrupts (hard or soft) context.
+It works by reintroducing and expanding the skb_alloc_page() API
+to take an skb. If the page was allocated from pfmemalloc reserves,
+it is automatically copied. If the driver allocates the page before
+the skb, it should call skb_propagate_pfmemalloc() after the skb is
+allocated to ensure the flag is copied properly.
 
-Allowing softirqs to make use of PF_MEMALLOC therefore requires some
-trickery. This patch borrows the task flags from whatever process happens
-to be preempted by the softirq. It then modifies the gfp to alloc flags
-mapping to not exclude task flags in softirq context, and modify the
-softirq code to save, clear and restore the PF_MEMALLOC flag.
+Failure to do so is not critical. The resulting driver may perform
+slower if it is used for swap-over-NBD or swap-over-NFS but it should
+not result in failure.
 
-The save and clear, ensures the preempted task's PF_MEMALLOC flag
-doesn't leak into the softirq. The restore ensures a softirq's
-PF_MEMALLOC flag cannot leak back into the preempted process. This
-should be safe due to the following reasons
-
-Softirqs can run on multiple CPUs sure but the same task should not be
-	executing the same softirq code. Neither should the softirq
-	handler be preempted by any other softirq handler so the flags
-	should not leak to an unrelated softirq.
-
-Softirqs re-enable hardware interrupts in __do_softirq() so can be
-	preempted by hardware interrupts so PF_MEMALLOC is inherited
-	by the hard IRQ. However, this is similar to a process in
-	reclaim being preempted by a hardirq. While PF_MEMALLOC is
-	set, gfp_to_alloc_flags() distinguishes between hard and
-	soft irqs and avoids giving a hardirq the ALLOC_NO_WATERMARKS
-	flag.
-
-If the softirq is deferred to ksoftirq then its flags may be used
-        instead of a normal tasks but as the softirq cannot be preempted,
-        the PF_MEMALLOC flag does not leak to other code by accident.
-
-[davem@davemloft.net: Document why PF_MEMALLOC is safe]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+[davem@davemloft.net: API rename and consistency]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David S. Miller <davem@davemloft.net>
 ---
- include/linux/sched.h |    7 +++++++
- kernel/softirq.c      |    9 +++++++++
- mm/page_alloc.c       |    6 +++++-
- 3 files changed, 21 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
+ drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |    2 +-
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
+ drivers/net/usb/cdc-phonet.c                      |    2 +-
+ drivers/usb/gadget/f_phonet.c                     |    2 +-
+ include/linux/skbuff.h                            |   55 +++++++++++++++++++++
+ 8 files changed, 63 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4059c0f..3a33c4e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1889,6 +1889,13 @@ static inline void rcu_switch_from(struct task_struct *prev)
- 
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/sge.c b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+index e111d97..496df78 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+@@ -528,7 +528,7 @@ static unsigned int refill_fl(struct adapter *adap, struct sge_fl *q, int n,
  #endif
  
-+static inline void tsk_restore_flags(struct task_struct *task,
-+				unsigned long orig_flags, unsigned long flags)
-+{
-+	task->flags &= ~flags;
-+	task->flags |= orig_flags & flags;
-+}
-+
- #ifdef CONFIG_SMP
- extern void do_set_cpus_allowed(struct task_struct *p,
- 			       const struct cpumask *new_mask);
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 671f959..b73e681 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -210,6 +210,14 @@ asmlinkage void __do_softirq(void)
- 	__u32 pending;
- 	int max_restart = MAX_SOFTIRQ_RESTART;
- 	int cpu;
-+	unsigned long old_flags = current->flags;
-+
-+	/*
-+	 * Mask out PF_MEMALLOC s current task context is borrowed for the
-+	 * softirq. A softirq handled such as network RX might set PF_MEMALLOC
-+	 * again if the socket is related to swap
-+	 */
-+	current->flags &= ~PF_MEMALLOC;
+ 	while (n--) {
+-		pg = alloc_page(gfp);
++		pg = __skb_alloc_page(gfp, NULL);
+ 		if (unlikely(!pg)) {
+ 			q->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+index 0bd585b..dca0716 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+@@ -653,7 +653,7 @@ static unsigned int refill_fl(struct adapter *adapter, struct sge_fl *fl,
  
- 	pending = local_softirq_pending();
- 	account_system_vtime(current);
-@@ -265,6 +273,7 @@ restart:
+ alloc_small_pages:
+ 	while (n--) {
+-		page = alloc_page(gfp | __GFP_NOWARN | __GFP_COLD);
++		page = __skb_alloc_page(gfp | __GFP_NOWARN, NULL);
+ 		if (unlikely(!page)) {
+ 			fl->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index dd3bfe8..603a702 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6142,7 +6142,7 @@ static bool igb_alloc_mapped_page(struct igb_ring *rx_ring,
+ 		return true;
  
- 	account_system_vtime(current);
- 	__local_bh_enable(SOFTIRQ_OFFSET);
-+	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
+ 	if (!page) {
+-		page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++		page = __skb_alloc_page(GFP_ATOMIC, bi->skb);
+ 		bi->page = page;
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index bf20457..20ecf58 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1148,7 +1148,7 @@ static bool ixgbe_alloc_mapped_page(struct ixgbe_ring *rx_ring,
+ 
+ 	/* alloc new page for storage */
+ 	if (likely(!page)) {
+-		page = alloc_pages(GFP_ATOMIC | __GFP_COLD,
++		page = __skb_alloc_pages(GFP_ATOMIC, bi->skb,
+ 				   ixgbe_rx_pg_order(rx_ring));
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_rx_page_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index f69ec42..cd65fd8 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -369,7 +369,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 		if (!bi->page_dma &&
+ 		    (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED)) {
+ 			if (!bi->page) {
+-				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++				bi->page = __skb_alloc_page(GFP_ATOMIC, NULL);
+ 				if (!bi->page) {
+ 					adapter->alloc_rx_page_failed++;
+ 					goto no_buffers;
+@@ -403,6 +403,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 			 */
+ 			skb_reserve(skb, NET_IP_ALIGN);
+ 
++			skb_propagate_pfmemalloc(bi->page_dma, skb);
+ 			bi->skb = skb;
+ 		}
+ 		if (!bi->dma) {
+diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
+index d848d4d..85e8bc5 100644
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -130,7 +130,7 @@ static int rx_submit(struct usbpn_dev *pnd, struct urb *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __skb_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
+index 965a629..8ee9268 100644
+--- a/drivers/usb/gadget/f_phonet.c
++++ b/drivers/usb/gadget/f_phonet.c
+@@ -301,7 +301,7 @@ pn_rx_submit(struct f_phonet *fp, struct usb_request *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __skb_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index c421ee0..3ae2f60 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1761,6 +1761,61 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
+ 	return __netdev_alloc_skb_ip_align(dev, length, GFP_ATOMIC);
  }
  
- #ifndef __ARCH_HAS_DO_SOFTIRQ
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ebffeaa..c059f51 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2267,7 +2267,11 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
- 		if (gfp_mask & __GFP_MEMALLOC)
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
--		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
-+		else if (in_serving_softirq() && (current->flags & PF_MEMALLOC))
-+			alloc_flags |= ALLOC_NO_WATERMARKS;
-+		else if (!in_interrupt() &&
-+				((current->flags & PF_MEMALLOC) ||
-+				 unlikely(test_thread_flag(TIF_MEMDIE))))
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
- 	}
- 
++/*
++ *	__skb_alloc_page - allocate pages for ps-rx on a skb and preserve pfmemalloc data
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *	@order: size of the allocation
++ *
++ * 	Allocate a new page.
++ *
++ * 	%NULL is returned if there is no free memory.
++*/
++static inline struct page *__skb_alloc_pages(gfp_t gfp_mask,
++					      struct sk_buff *skb,
++					      unsigned int order)
++{
++	struct page *page;
++
++	gfp_mask |= __GFP_COLD;
++
++	if (!(gfp_mask & __GFP_NOMEMALLOC))
++		gfp_mask |= __GFP_MEMALLOC;
++
++	page = alloc_pages_node(NUMA_NO_NODE, gfp_mask, order);
++	if (skb && page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++
++	return page;
++}
++
++/**
++ *	__skb_alloc_page - allocate a page for ps-rx for a given skb and preserve pfmemalloc data
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *
++ * 	Allocate a new page.
++ *
++ * 	%NULL is returned if there is no free memory.
++ */
++static inline struct page *__skb_alloc_page(gfp_t gfp_mask,
++					     struct sk_buff *skb)
++{
++	return __skb_alloc_pages(gfp_mask, skb, 0);
++}
++
++/**
++ *	skb_propagate_pfmemalloc - Propagate pfmemalloc if skb is allocated after RX page
++ *	@page: The page that was allocated from skb_alloc_page
++ *	@skb: The skb that may need pfmemalloc set
++ */
++static inline void skb_propagate_pfmemalloc(struct page *page,
++					     struct sk_buff *skb)
++{
++	if (page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++}
++
+ /**
+  * skb_frag_page - retrieve the page refered to by a paged fragment
+  * @frag: the paged fragment
 -- 
 1.7.9.2
 
