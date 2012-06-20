@@ -1,172 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2FTMBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:01:49 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61730 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab2FTMBr (ORCPT
+	id S1756589Ab2FTMCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:02:17 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:50806 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536Ab2FTMCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:01:47 -0400
-Date: Wed, 20 Jun 2012 14:01:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Arun Sharma <asharma@fb.com>,
-        Benjamin Redelings <benjamin.redelings@nescent.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, David Ahern <dsahern@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Shan Wei <davidshan@tencent.com>,
-        Stephane Eranian <eranian@google.com>, Sunjin Yang <fan4326@gmail.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/20] perf/core improvements
-Message-ID: <20120620120141.GB1925@gmail.com>
-References: <1340128221-17348-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340128221-17348-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Jun 2012 08:02:02 -0400
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Kevin Wells <kevin.wells@nxp.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: LPC32XX: Cleanup USB clock init
+Date: Wed, 20 Jun 2012 09:01:12 -0300
+Message-Id: <1340193675-30717-1-git-send-email-aletes.xgr@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move most of usb clock initialization from lpc32xx_udc and ohci-nxp to
+clock.c. Also adds ohci clocks and otg clocks.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+---
+ arch/arm/mach-lpc32xx/clock.c                 |   73 ++++++++++++++++++++++++-
+ arch/arm/mach-lpc32xx/include/mach/platform.h |   14 +++++
+ 2 files changed, 86 insertions(+), 1 deletion(-)
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit e227051b13956b8f71c0abecc41ad351e64671c8:
-> 
->   uprobes: Remove the unnecessary initialization in add_utask() (2012-06-16 09:10:52 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to c0a58fb2bdf033df433cad9009c7dac4c6b872b0:
-> 
->   perf annotate: Check null of sym pointer before using it (2012-06-19 14:30:26 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes
-> 
-> . Replace event_name with perf_evsel__name, that handles the event modifiers
->   and doesn't use static variables.
-> 
-> . GTK browser improvements, from Namhyung Kim
-> 
-> . Fix possible NULL pointer deref in the TUI annotate browser, from Samuel Liao
-> 
-> . Add sort by source file:line number, using addr2line.
-> 
-> . Allow printing histogram text snapshots at any point in top/report.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (13):
->       perf tools: Add sort by src line/number
->       perf lib: Introduce rtrim
->       perf hists browser: Implement printing snapshots to files
->       perf evsel: Carve out event modifier formatting
->       perf tools: Reconstruct hw cache event with modifiers from perf_event_attr
->       perf tools: Reconstruct sw event with modifiers from perf_event_attr
->       perf evsel: Handle all event types in perf_evsel__name
->       perf tools: Move all users of event_name to perf_evsel__name
->       perf script: Replace __event_name uses with perf_evsel__name
->       perf tools: Don't access evsel->name directly
->       perf tools: Remove __event_name
->       perf evsel: Reconstruct raw event with modifiers from perf_event_attr
->       perf evsel: Make some methods private
-> 
-> Jiri Olsa (1):
->       perf tools: Remove unused evsel parameter from machine__resolve_callchain
-> 
-> Namhyung Kim (5):
->       perf ui: Introduce struct perf_error_ops
->       perf ui/gtk: Introduce struct perf_gtk_context
->       perf ui/gtk: Add GTK statusbar widget to browser window
->       perf ui/gtk: Add GTK info_bar widget to browser window
->       perf ui/gtk: Use struct perf_error_ops
-> 
-> Samuel Liao (1):
->       perf annotate: Check null of sym pointer before using it
-> 
->  tools/perf/Documentation/perf-report.txt |    2 +-
->  tools/perf/Documentation/perf-top.txt    |    2 +-
->  tools/perf/Makefile                      |    6 +
->  tools/perf/builtin-evlist.c              |    2 +-
->  tools/perf/builtin-record.c              |    4 +-
->  tools/perf/builtin-report.c              |   10 +-
->  tools/perf/builtin-sched.c               |    2 +-
->  tools/perf/builtin-script.c              |   42 ++---
->  tools/perf/builtin-stat.c                |   12 +-
->  tools/perf/builtin-test.c                |    2 +-
->  tools/perf/builtin-top.c                 |   12 +-
->  tools/perf/config/feature-tests.mak      |   13 ++
->  tools/perf/ui/browsers/annotate.c        |    4 +-
->  tools/perf/ui/browsers/hists.c           |  210 ++++++++++++++++++++--
->  tools/perf/ui/gtk/browser.c              |   69 +++++++-
->  tools/perf/ui/gtk/gtk.h                  |   31 ++++
->  tools/perf/ui/gtk/setup.c                |    5 +
->  tools/perf/ui/gtk/util.c                 |  129 ++++++++++++++
->  tools/perf/ui/tui/setup.c                |    6 +
->  tools/perf/ui/tui/util.c                 |  243 ++++++++++++++++++++++++++
->  tools/perf/ui/util.c                     |  277 ++++++------------------------
->  tools/perf/ui/util.h                     |    9 +-
->  tools/perf/util/debug.c                  |    2 +-
->  tools/perf/util/debug.h                  |   23 ++-
->  tools/perf/util/evsel.c                  |  196 ++++++++++++++++++---
->  tools/perf/util/evsel.h                  |   15 +-
->  tools/perf/util/header.c                 |    2 +-
->  tools/perf/util/hist.h                   |    1 +
->  tools/perf/util/map.h                    |    2 +-
->  tools/perf/util/parse-events-test.c      |    4 +-
->  tools/perf/util/parse-events.c           |  203 ++--------------------
->  tools/perf/util/parse-events.h           |    2 -
->  tools/perf/util/session.c                |    9 +-
->  tools/perf/util/session.h                |    4 +-
->  tools/perf/util/sort.c                   |   49 ++++++
->  tools/perf/util/sort.h                   |    2 +
->  tools/perf/util/string.c                 |   22 +++
->  tools/perf/util/top.c                    |    2 +-
->  tools/perf/util/util.h                   |    2 +
->  39 files changed, 1118 insertions(+), 514 deletions(-)
->  create mode 100644 tools/perf/ui/gtk/util.c
->  create mode 100644 tools/perf/ui/tui/util.c
+diff --git a/arch/arm/mach-lpc32xx/clock.c b/arch/arm/mach-lpc32xx/clock.c
+index f6a3ffe..c80f064 100644
+--- a/arch/arm/mach-lpc32xx/clock.c
++++ b/arch/arm/mach-lpc32xx/clock.c
+@@ -727,14 +727,82 @@ static struct clk clk_rtc = {
+ 	.get_rate	= local_return_parent_rate,
+ };
+ 
++static int local_usb_enable(struct clk *clk, int enable)
++{
++	u32 tmp;
++
++	if (enable) {
++		/* Set up I2C pull levels
++		 *
++		 * This should never be disabled as the host/gadget driver may
++		 * need to talk to the usb transceiver while the main clocks are
++		 * disabled to save power.
++		 */
++		tmp = __raw_readl(LPC32XX_CLKPWR_I2C_CLK_CTRL);
++		tmp |= LPC32XX_CLKPWR_I2CCLK_USBI2CHI_DRIVE;
++		__raw_writel(tmp, LPC32XX_CLKPWR_I2C_CLK_CTRL);
++	}
++
++	return local_onoff_enable(clk, enable);
++}
++
+ static struct clk clk_usbd = {
+ 	.parent		= &clk_usbpll,
+-	.enable		= local_onoff_enable,
++	.enable		= local_usb_enable,
+ 	.enable_reg	= LPC32XX_CLKPWR_USB_CTRL,
+ 	.enable_mask	= LPC32XX_CLKPWR_USBCTRL_HCLK_EN,
+ 	.get_rate	= local_return_parent_rate,
+ };
+ 
++#define OTG_ALWAYS_MASK		(LPC32XX_USB_OTG_OTG_CLOCK_ON | \
++				 LPC32XX_USB_OTG_I2C_CLOCK_ON)
++
++static int local_usb_otg_enable(struct clk *clk, int enable)
++{
++	int to = 1000;
++
++	if (enable) {
++		__raw_writel(clk->enable_mask, clk->enable_reg);
++
++		while (((__raw_readl(LPC32XX_USB_OTG_CLK_STAT) &
++			clk->enable_mask) != clk->enable_mask) && (to > 0))
++			to--;
++	} else {
++		__raw_writel(OTG_ALWAYS_MASK, clk->enable_reg);
++
++		while (((__raw_readl(LPC32XX_USB_OTG_CLK_STAT) &
++			OTG_ALWAYS_MASK) != OTG_ALWAYS_MASK) && (to > 0))
++			to--;
++	}
++
++	if (to)
++		return 0;
++	else
++		return -1;
++}
++
++static struct clk clk_usb_otg_dev = {
++	.parent		= &clk_usbpll,
++	.enable		= local_usb_otg_enable,
++	.enable_reg	= LPC32XX_USB_OTG_CLK_CTRL,
++	.enable_mask	= LPC32XX_USB_OTG_AHB_M_CLOCK_ON |
++			  LPC32XX_USB_OTG_OTG_CLOCK_ON |
++			  LPC32XX_USB_OTG_DEV_CLOCK_ON |
++			  LPC32XX_USB_OTG_I2C_CLOCK_ON,
++	.get_rate	= local_return_parent_rate,
++};
++
++static struct clk clk_usb_otg_host = {
++	.parent		= &clk_usbpll,
++	.enable		= local_usb_otg_enable,
++	.enable_reg	= LPC32XX_USB_OTG_CLK_CTRL,
++	.enable_mask	= LPC32XX_USB_OTG_AHB_M_CLOCK_ON |
++			  LPC32XX_USB_OTG_OTG_CLOCK_ON |
++			  LPC32XX_USB_OTG_HOST_CLOCK_ON |
++			  LPC32XX_USB_OTG_I2C_CLOCK_ON,
++	.get_rate	= local_return_parent_rate,
++};
++
+ static int tsc_onoff_enable(struct clk *clk, int enable)
+ {
+ 	u32 tmp;
+@@ -1130,6 +1198,9 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_INIT("31060000.ethernet", NULL, &clk_net),
+ 	CLKDEV_INIT("dev:clcd", NULL, &clk_lcd),
+ 	CLKDEV_INIT("31020000.usbd", "ck_usbd", &clk_usbd),
++	CLKDEV_INIT("31020000.ohci", "ck_usbd", &clk_usbd),
++	CLKDEV_INIT("31020000.usbd", "ck_usb_otg", &clk_usb_otg_dev),
++	CLKDEV_INIT("31020000.ohci", "ck_usb_otg", &clk_usb_otg_host),
+ 	CLKDEV_INIT("lpc32xx_rtc", NULL, &clk_rtc),
+ };
+ 
+diff --git a/arch/arm/mach-lpc32xx/include/mach/platform.h b/arch/arm/mach-lpc32xx/include/mach/platform.h
+index c584f5b..acc4aab 100644
+--- a/arch/arm/mach-lpc32xx/include/mach/platform.h
++++ b/arch/arm/mach-lpc32xx/include/mach/platform.h
+@@ -694,4 +694,18 @@
+ #define LPC32XX_GPIO_P2_MUX_CLR			_GPREG(0x02C)
+ #define LPC32XX_GPIO_P2_MUX_STATE		_GPREG(0x030)
+ 
++/*
++ * USB Otg Registers
++ */
++#define _OTGREG(x)			io_p2v(LPC32XX_USB_OTG_BASE + (x))
++#define LPC32XX_USB_OTG_CLK_CTRL	_OTGREG(0xFF4)
++#define LPC32XX_USB_OTG_CLK_STAT	_OTGREG(0xFF8)
++
++/* USB OTG CLK CTRL bit defines */
++#define LPC32XX_USB_OTG_AHB_M_CLOCK_ON	_BIT(4)
++#define LPC32XX_USB_OTG_OTG_CLOCK_ON	_BIT(3)
++#define LPC32XX_USB_OTG_I2C_CLOCK_ON	_BIT(2)
++#define LPC32XX_USB_OTG_DEV_CLOCK_ON	_BIT(1)
++#define LPC32XX_USB_OTG_HOST_CLOCK_ON	_BIT(0)
++
+ #endif
+-- 
+1.7.10
 
-Pulled, thanks Arnaldo!
-
-One Makefile bug I noticed is that lib/tracevents does not clean 
-out these files:
-
- .event-parse.d
- .parse-filter.d
- .parse-utils.d
- .trace-seq.d
-
-and this can break the build when the libgcc package upgraded:
-
- comet:~/tip/tools/perf> make -j
-     SUBDIR ../lib/traceevent/
- make[1]: *** No rule to make target `/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include/stddef.h', 
-  needed by `event-parse.o'.  Stop.
- make: *** [../lib/traceevent//libtraceevent.a] Error 2
-
-Thanks,
-
-	Ingo
