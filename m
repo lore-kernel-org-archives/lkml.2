@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab2FTGTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:19:36 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:39603 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab2FTGTe (ORCPT
+	id S1753802Ab2FTGYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:24:20 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49710 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab2FTGYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:19:34 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6747"; a="202775415"
-X-IronPort-AV: E=Sophos;i="4.77,440,1336374000"; 
-   d="scan'208,223";a="159737512"
-Date: Wed, 20 Jun 2012 11:50:49 +0530
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-To: Michael Leun <lkml20120218@newton.leun.net>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>,
-        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
-Message-ID: <20120620062047.GB8738@vmraj-lnx.qca.qualcomm.com>
-References: <20120619085137.337838c0@xenia.leun.net>
- <CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
- <20120620003315.2eaf6460@xenia.leun.net>
- <20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
- <20120620081553.040171f4@xenia.leun.net>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="d6Gm4EdcadzBjdND"
-Content-Disposition: inline
-In-Reply-To: <20120620081553.040171f4@xenia.leun.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [172.30.48.1]
+	Wed, 20 Jun 2012 02:24:18 -0400
+From: Michal Simek <monstr@monstr.eu>
+To: linux-kernel@vger.kernel.org
+Cc: robherring2@gmail.com, arnd@arndb.de, John.Linn@xilinx.com,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        Michal Simek <monstr@monstr.eu>
+Subject: [PATCH v2] arm: zynq: Support GIC OF initialization
+Date: Wed, 20 Jun 2012 08:24:11 +0200
+Message-Id: <1340173451-14613-1-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
+Zynq is OF driven platfrom which requires OF initialization.
 
-On Wed, Jun 20, 2012 at 08:15:53AM +0200, Michael Leun wrote:
-> On Wed, 20 Jun 2012 11:43:05 +0530
-> Rajkumar Manoharan <rmanohar@qca.qualcomm.com> wrote:
-> 
-> 
-> > Thanks for the analysis. Can you please try with the attached patch
-> > without reverting mac80211 change?
-> 
-> Radio Eriwan answers: In principle yes, but you forgot the
-> attachment ;-)
-> 
-Oops. Sorry.  
+Signed-off-by: Michal Simek <monstr@monstr.eu>
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: attachment;
-	filename="0001-ath9k_htc-configure-bssid-on-ASSOC-IBSS-change.patch"
-
->From 025f26a70c1f8bab443a49f0fe3e7c6627e6550c Mon Sep 17 00:00:00 2001
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Date: Wed, 20 Jun 2012 11:33:37 +0530
-Subject: [PATCH] ath9k_htc: configure bssid on ASSOC/IBSS change
-
-After the change "mac80211: remove spurious BSSID change flag",
-BSS_CHANGED_BSSID will not be passed on association or IBSS
-status changes. So it could be better to program bssid on ASSOC
-or IBSS change notification. Not doing so, is affecting the
-packet transmission.
-
-Reported-by: Michael Leun <lkml20120218@newton.leun.net>
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+v2: Remove also corresponding defines
+---
+ arch/arm/mach-zynq/common.c                |    7 ++++++-
+ arch/arm/mach-zynq/include/mach/zynq_soc.h |    2 --
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-index 2b8f61c..abbd6ef 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -1496,6 +1496,7 @@ static void ath9k_htc_bss_info_changed(struct ieee80211_hw *hw,
- 			priv->num_sta_assoc_vif++ : priv->num_sta_assoc_vif--;
+diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+index 17d68d6..7941544 100644
+--- a/arch/arm/mach-zynq/common.c
++++ b/arch/arm/mach-zynq/common.c
+@@ -56,12 +56,17 @@ static void __init xilinx_init_machine(void)
+ 	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
+ }
  
- 		if (priv->ah->opmode == NL80211_IFTYPE_STATION) {
-+			ath9k_htc_choose_set_bssid(priv);
- 			if (bss_conf->assoc && (priv->num_sta_assoc_vif == 1))
- 				ath9k_htc_start_ani(priv);
- 			else if (priv->num_sta_assoc_vif == 0)
-@@ -1503,13 +1504,11 @@ static void ath9k_htc_bss_info_changed(struct ieee80211_hw *hw,
- 		}
- 	}
++static const struct of_device_id zynq_dt_irq_match[] __initconst = {
++	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init },
++	{ }
++};
++
+ /**
+  * xilinx_irq_init() - Interrupt controller initialization for the GIC.
+  */
+ static void __init xilinx_irq_init(void)
+ {
+-	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
++	of_irq_init(zynq_dt_irq_match);
+ }
  
--	if (changed & BSS_CHANGED_BSSID) {
-+	if (changed & BSS_CHANGED_IBSS) {
- 		if (priv->ah->opmode == NL80211_IFTYPE_ADHOC) {
- 			common->curaid = bss_conf->aid;
- 			memcpy(common->curbssid, bss_conf->bssid, ETH_ALEN);
- 			ath9k_htc_set_bssid(priv);
--		} else if (priv->ah->opmode == NL80211_IFTYPE_STATION) {
--			ath9k_htc_choose_set_bssid(priv);
- 		}
- 	}
+ /* The minimum devices needed to be mapped before the VM system is up and
+diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+index 6ff7015..eab11a0 100644
+--- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
++++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+@@ -41,9 +41,7 @@
  
+ #define TTC0_BASE			IOMEM(TTC0_VIRT)
+ #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
+-#define SCU_GIC_CPU_BASE		(SCU_PERIPH_BASE + 0x100)
+ #define SCU_CPU_TIMER_BASE		(SCU_PERIPH_BASE + 0x600)
+-#define SCU_GIC_DIST_BASE		(SCU_PERIPH_BASE + 0x1000)
+ #define PL310_L2CC_BASE			IOMEM(PL310_L2CC_VIRT)
+ 
+ /*
 -- 
-1.7.11
+1.7.0.4
 
-
---d6Gm4EdcadzBjdND--
