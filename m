@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab2FTEpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 00:45:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6208 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419Ab2FTEpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 00:45:23 -0400
-Message-ID: <4FE155B3.8020206@redhat.com>
-Date: Wed, 20 Jun 2012 12:46:43 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753052Ab2FTEqK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 00:46:10 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:34345 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752775Ab2FTEqG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 00:46:06 -0400
+From: Bhupesh SHARMA <bhupesh.sharma@st.com>
+To: David Miller <davem@davemloft.net>
+Cc: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "federico.vaga@gmail.com" <federico.vaga@gmail.com>,
+        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "mkl@pengutronix.de" <mkl@pengutronix.de>
+Date: Wed, 20 Jun 2012 12:45:46 +0800
+Subject: RE: linux-next: build failure after merge of the net-next tree
+Thread-Topic: linux-next: build failure after merge of the net-next tree
+Thread-Index: Ac1Onn8kQxSUwitASwiVeI3uPf+0VAAAJ7bw
+Message-ID: <D5ECB3C7A6F99444980976A8C6D896384FAA275CBE@EAPEX1MAIL1.st.com>
+References: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au>
+	<D5ECB3C7A6F99444980976A8C6D896384FAA275CA8@EAPEX1MAIL1.st.com>
+ <20120619.213703.513466167861199217.davem@davemloft.net>
+In-Reply-To: <20120619.213703.513466167861199217.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: dlaor@redhat.com
-CC: Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, kvm@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
-References: <1340002390-3950-1-git-send-email-asias@redhat.com>  <1340002390-3950-4-git-send-email-asias@redhat.com>  <87hau9yse7.fsf@rustcorp.com.au> <4FDEE0CB.1030505@redhat.com>  <87zk81x7dp.fsf@rustcorp.com.au> <4FDF0DA7.40604@redhat.com> <1340019575.22848.2.camel@lappy> <4FDFE926.7030309@redhat.com> <4FE01A5F.6060201@redhat.com>
-In-Reply-To: <4FE01A5F.6060201@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2012 02:21 PM, Dor Laor wrote:
-> On 06/19/2012 05:51 AM, Asias He wrote:
->> On 06/18/2012 07:39 PM, Sasha Levin wrote:
->>> On Mon, 2012-06-18 at 14:14 +0300, Dor Laor wrote:
->>>> On 06/18/2012 01:05 PM, Rusty Russell wrote:
->>>>> On Mon, 18 Jun 2012 16:03:23 +0800, Asias He<asias@redhat.com> wrote:
->>>>>> On 06/18/2012 03:46 PM, Rusty Russell wrote:
->>>>>>> On Mon, 18 Jun 2012 14:53:10 +0800, Asias He<asias@redhat.com>
->>>>>>> wrote:
->>>>>>>> This patch introduces bio-based IO path for virtio-blk.
->>>>>>>
->>>>>>> Why make it optional?
->>>>>>
->>>>>> request-based IO path is useful for users who do not want to bypass
->>>>>> the
->>>>>> IO scheduler in guest kernel, e.g. users using spinning disk. For
->>>>>> users
->>>>>> using fast disk device, e.g. SSD device, they can use bio-based IO
->>>>>> path.
->>>>>
->>>>> Users using a spinning disk still get IO scheduling in the host
->>>>> though.
->>>>> What benefit is there in doing it in the guest as well?
->>>>
->>>> The io scheduler waits for requests to merge and thus batch IOs
->>>> together. It's not important w.r.t spinning disks since the host can do
->>>> it but it causes much less vmexits which is the key issue for VMs.
->>>
->>> Is the amount of exits caused by virtio-blk significant at all with
->>> EVENT_IDX?
->>
->> Yes. EVENT_IDX saves the number of notify and interrupt. Let's take the
->> interrupt as an example, The guest fires 200K request to host, the
->> number of interrupt is about 6K thanks to EVENT_IDX. The ratio is 200K /
->> 6K = 33. The ratio of merging is 40000K / 200K = 20.
->>
->
-> In this case, why don't you always recommend bio over request based?
+Hi David,
 
-This case shows that IO scheduler's merging in guest saves a lot of 
-requests to host side. Why should I recommend bio over request based here?
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Wednesday, June 20, 2012 10:07 AM
+> To: Bhupesh SHARMA
+> Cc: sfr@canb.auug.org.au; netdev@vger.kernel.org; linux-
+> next@vger.kernel.org; linux-kernel@vger.kernel.org;
+> federico.vaga@gmail.com; Giancarlo ASNAGHI; wg@grandegger.com;
+> mkl@pengutronix.de
+> Subject: Re: linux-next: build failure after merge of the net-next tree
+> 
+> From: Bhupesh SHARMA <bhupesh.sharma@st.com>
+> Date: Wed, 20 Jun 2012 12:27:11 +0800
+> 
+> > clk_get/clk_put* variants are usually used by ARM platforms.
+> > Protecting their calls under macro 'CONFIG_HAVE_CLK' should solve the
+> problem.
+> 
+> No, we don't pepper foo.c files with crappy ifdefs.
 
--- 
-Asias
+So, whether adding a check in Kconfig for HAVE_CLK be a proper solution ?
+But that will limit the compilation of this driver for only platforms which are ARM based.
 
+One may need to support this driver on x86 like platforms also..
 
+Regards,
+Bhupesh
