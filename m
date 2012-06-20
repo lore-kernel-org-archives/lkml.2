@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650Ab2FTX6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:58:33 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38483 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530Ab2FTX6b convert rfc822-to-8bit (ORCPT
+	id S932468Ab2FTX7W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:59:22 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45517 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754530Ab2FTX7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:58:31 -0400
+	Wed, 20 Jun 2012 19:59:20 -0400
+X-Sasl-enc: cLMDLC6f4b/JFcXRxl9xl6vQ0FsfQu4cppmQmqrmr1Od 1340236760
+Date: Wed, 20 Jun 2012 20:59:18 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+Message-ID: <20120620235918.GF4223@khazad-dum.debian.net>
+References: <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
+ <20120619232857.GH5996@aftab.osrc.amd.com>
+ <1340182778.21745.75.camel@twins>
+ <20120620230856.GA4223@khazad-dum.debian.net>
+ <4FE2585A.3000505@zytor.com>
+ <20120620232359.GD2016@aftab.osrc.amd.com>
+ <4FE25C7E.9030109@zytor.com>
+ <4FE25DF9.2020305@zytor.com>
+ <20120620234611.GA3440@aftab.osrc.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOPLpQdi-8NZL1rwt3APU_is4GcyGaAN0Vq0T23BMSHob--YYg@mail.gmail.com>
-References: <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
-	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
-	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
-	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
-	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
-	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
-	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
-	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
-	<CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
-	<CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
-	<20120620193438.GB2248@gmail.com>
-	<CAOPLpQdi-8NZL1rwt3APU_is4GcyGaAN0Vq0T23BMSHob--YYg@mail.gmail.com>
-Date: Wed, 20 Jun 2012 16:58:30 -0700
-X-Google-Sender-Auth: hBwnxdjti6Rg_uLxUMTy6Qb4854
-Message-ID: <CAE9FiQXM5G3GXKkBio_wysDapOqvZ0D0LJz+tAMo21DV0uibiA@mail.gmail.com>
-Subject: Re: SNB PCI root information
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        jbarnes@virtuousgeek.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120620234611.GA3440@aftab.osrc.amd.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 1:04 PM, Ulrich Drepper <drepper@gmail.com> wrote:
-> On Wed, Jun 20, 2012 at 3:34 PM, Ingo Molnar <mingo@kernel.org> wrote:
->> I mean, if we create a parameter space that tweaks data then why
->> not make it complete and allow *all* firmware data to be
->> (optionally) modified, from the kernel boot line?
->
-> If there is proof that BIOSes get it wrong then just use this small
-> additional patch:
->
->
-> Signed-off-by: Ulrich Drepper <drepper@gmail.com>
->
-> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-> index fc09c27..7aceb84 100644
-> --- a/arch/x86/pci/acpi.c
-> +++ b/arch/x86/pci/acpi.c
-> @@ -387,16 +387,16 @@ struct pci_bus * __devinit
-> pci_acpi_scan_root(struct acpi_pci_root *root)
->                return NULL;
->        }
->
-> -       node = -1;
-> +       node = get_mp_bus_to_node(busnum);
->  #ifdef CONFIG_ACPI_NUMA
-> -       pxm = acpi_get_pxm(device->handle);
-> -       if (pxm >= 0)
-> -               node = pxm_to_node(pxm);
-> -       if (node != -1)
-> -               set_mp_bus_to_node(busnum, node);
-> -       else
-> +       if (node == -1) {
-> +               pxm = acpi_get_pxm(device->handle);
-> +               if (pxm >= 0)
-> +                       node = pxm_to_node(pxm);
-> +               if (node != -1)
-> +                       set_mp_bus_to_node(busnum, node);
-> +       }
->  #endif
-> -               node = get_mp_bus_to_node(busnum);
->
->        if (node != -1 && !node_online(node))
->                node = -1;
+On Thu, 21 Jun 2012, Borislav Petkov wrote:
+> * we don't need the userspace tool to split the blob - we have one
+> single file we load and the driver picks out what it needs.
 
-it will have problem for amd platform that have _PXM and also have
-hostbridge detection.
+Yes.  A smarter userspace tool is useful to reduce the size of the
+microcode blob that ends up linked to the kernel or added to the
+initramfs in distros that generate the initramfs at the target system
+when you install a kernel (like Debian does), but it is in no way
+*required*.
 
-before the patch, _PXM will always be used at first.
+Typically you go from ~512KiB uncompressed (all binary microcodes) to
+8-32KiB uncompressed when you target only the [online] processors of the
+current system.  Nice for embedded, I suppose.
 
-after this patch, the one from host bridge will always get used at first.
+> In the end, we have one unified ucode loading procedure:
+> 
+> 1. put the blob in /lib/firmware/...
+> 2. echo 1 > /sys/devices/system/cpu/microcode/reload
+> 
+> That's it - it can't be simpler than that.
 
-need to check AMD cpu with two silicon chip in one package.
+Indeed.  And with an invariant microcode name for the Intel driver, one
+can use the standard userspace tooling that detects which firmware needs
+to go into the initramfs when no special tooling is installed.
 
-Thanks
-
-Yinghai
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
