@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab2FTMKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:10:33 -0400
-Received: from smtp-out-159.synserver.de ([212.40.185.159]:1030 "EHLO
-	smtp-out-150.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754037Ab2FTMKc (ORCPT
+	id S1754226Ab2FTMNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:13:09 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:36224 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab2FTMNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:10:32 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22274
-Message-ID: <4FE1BE79.5080903@metafoo.de>
-Date: Wed, 20 Jun 2012 14:13:45 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
+	Wed, 20 Jun 2012 08:13:06 -0400
+Date: Wed, 20 Jun 2012 17:37:42 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] dmaengine: Add wrapper for device_tx_status callback
-References: <1339438302-12417-1-git-send-email-lars@metafoo.de> <1340189662.1927.1648.camel@vkoul-udesk3>
-In-Reply-To: <1340189662.1927.1648.camel@vkoul-udesk3>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 2/5] uprobes: __replace_page() should not use
+ page_address_in_vma()
+Message-ID: <20120620120742.GK4629@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120619194636.GA30137@redhat.com>
+ <20120619194712.GB30146@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120619194712.GB30146@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062012-6148-0000-0000-000006E100F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 12:54 PM, Vinod Koul wrote:
-> On Mon, 2012-06-11 at 20:11 +0200, Lars-Peter Clausen wrote:
->> This patch adds a small inline wrapper for the devivce_tx_status callback of a
->> dma device. This makes the source code of users of this function a bit more
->> compact and a bit more legible.
-> Applied, thanks
+* Oleg Nesterov <oleg@redhat.com> [2012-06-19 21:47:12]:
+
+> page_address_in_vma(old_page) in __replace_page() is ugly and wrong.
+> The caller already knows the correct virtual address, this page was
+> found by get_user_pages(vaddr).
 > 
-> rest of the series should go thru ASoC tree.
+> However, page_address_in_vma() can actually fail if page->mapping was
+> cleared by __delete_from_page_cache() after get_user_pages() returns.
+> But this means the race with page reclaim, write_opcode() should not
+> fail, it should retry and read this page again. Not sure this race is
+> really possible though, page_freeze_refs() logic should prevent it.
 > 
+> We could change __replace_page() to return -EAGAIN in this case, but
+> it would be better to simply use the caller's vaddr and rely on
+> page_check_address().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/events/uprobes.c |   10 +++-------
+>  1 files changed, 3 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index a2b32a5..5b10705 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -132,17 +132,13 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
+>   *
+>   * Returns 0 on success, -EFAULT on failure.
+>   */
+> -static int __replace_page(struct vm_area_struct *vma, struct page *page, struct page *kpage)
+> +static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+> +				struct page *page, struct page *kpage)
 
-Thanks.
+Could please update the comment above __replace_page to mention that it
+now takes addr as a parameter?
 
-There is a compile time dependency between the patches, so this patch should
-go through the ASoC tree as well, or we'll have to wait another release
-before the ASoC patches can be applied.
-
-- Lars
