@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab2FTIqR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 04:46:17 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:50272 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452Ab2FTIp4 convert rfc822-to-8bit (ORCPT
+	id S1755604Ab2FTIrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 04:47:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58915 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab2FTIrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 04:45:56 -0400
-Message-ID: <4FE18DBF.1070306@arm.com>
-Date: Wed, 20 Jun 2012 09:45:51 +0100
-From: viresh kumar <viresh.kumar2@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 20 Jun 2012 04:47:05 -0400
+Date: Wed, 20 Jun 2012 09:45:47 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Gupta, Ramesh" <grgupta@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com
+Subject: Re: [PATCH v2 2/4] ARM: add flush_mem api for ARMv6
+Message-ID: <20120620084547.GB13009@n2100.arm.linux.org.uk>
+References: <CADysL2acF3ttJ-TR2as+GT66MfJiK4YyWYaAiP5j8yQ+YLBGYQ@mail.gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: "bhupesh.sharma@st.com" <bhupesh.sharma@st.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "federico.vaga@gmail.com" <federico.vaga@gmail.com>,
-        "giancarlo.asnaghi@st.com" <giancarlo.asnaghi@st.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        "spear-devel@list.st.com" <spear-devel@list.st.com>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-References: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au> <D5ECB3C7A6F99444980976A8C6D896384FAA275CA8@EAPEX1MAIL1.st.com> <4FE18502.6040409@arm.com> <20120620.012037.783895812206310043.davem@davemloft.net>
-In-Reply-To: <20120620.012037.783895812206310043.davem@davemloft.net>
-X-MC-Unique: 112062009455401801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADysL2acF3ttJ-TR2as+GT66MfJiK4YyWYaAiP5j8yQ+YLBGYQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/06/12 09:20, David Miller wrote:
-> From: viresh kumar <viresh.kumar2@arm.com>
-> Date: Wed, 20 Jun 2012 09:08:34 +0100
->
->> > Please see following patchset from me, that got applied in linux-next
->> >
->> > https://lkml.org/lkml/2012/4/24/154
->> >
->> > Please check if this patchset is present in your build repo. I believe it should be
->> > there. If it is, then you shouldn't get these errors.
-> Well, then Stephen shouldn't get those errors either.
->
-> But obviously he did.
+On Tue, Jun 19, 2012 at 04:51:16PM +0530, Gupta, Ramesh wrote:
+> >From 630a3a8f341eb7f58f9a63bf786d732b5bdfd01e Mon Sep 17 00:00:00 2001
+> From: Ramesh Gupta G <grgupta@ti.com>
+> Date: Fri, 15 Jun 2012 16:39:21 +0530
+> Subject: [PATCH v2 2/4] ARM: add flush_mem api for ARMv6
+> 
+> Added flush_mem cache maintenance api for ARMv6.
+> The implementation is based on dma_flush_range.
 
-Surprised. I am not able to get why this happen. Because we don't have HAVE_CLK defined
-for x86_64, then the inline routines like following should come into play:
+And what about all the other users of the define_cache_functions macro?
 
-static inline unsigned long clk_get_rate(struct clk *clk)
-{
-        return 0;
-}
-
-
-Is there any tricky part for such routines with drivers compiled as modules?
-
---
-Viresh
-
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
-
+This series is incomplete, and therefore entirely unsuitable for
+upstreaming.
