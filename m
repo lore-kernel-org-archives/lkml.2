@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab2FTXqQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:46:16 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49438 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758417Ab2FTXqP (ORCPT
+	id S932407Ab2FTXqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:46:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34672 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932191Ab2FTXqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:46:15 -0400
-Date: Thu, 21 Jun 2012 01:46:11 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
-Message-ID: <20120620234611.GA3440@aftab.osrc.amd.com>
-References: <1340121811-4477-3-git-send-email-bp@amd64.org>
- <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
- <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
- <20120619232857.GH5996@aftab.osrc.amd.com>
- <1340182778.21745.75.camel@twins>
- <20120620230856.GA4223@khazad-dum.debian.net>
- <4FE2585A.3000505@zytor.com>
- <20120620232359.GD2016@aftab.osrc.amd.com>
- <4FE25C7E.9030109@zytor.com>
- <4FE25DF9.2020305@zytor.com>
+	Wed, 20 Jun 2012 19:46:51 -0400
+Date: Thu, 21 Jun 2012 00:46:48 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Liam Girdwood <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: boot_on regulator constraint vs. regulator-boot-on DT property
+Message-ID: <20120620234648.GE4037@opensource.wolfsonmicro.com>
+References: <4FE238C9.3010408@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ey/N+yb7u/X9mFhi"
 Content-Disposition: inline
-In-Reply-To: <4FE25DF9.2020305@zytor.com>
+In-Reply-To: <4FE238C9.3010408@wwwdotorg.org>
+X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 04:34:17PM -0700, H. Peter Anvin wrote:
-> On 06/20/2012 04:32 PM, Borislav Petkov wrote:
-> > 
-> > Which means that
-> > 
-> > static enum ucode_state request_microcode_fw(int cpu, struct device *device)
-> > {
-> >         char name[30];
-> > 
-> > 	...
-> > 
-> >         sprintf(name, "intel-ucode/%02x-%02x-%02x",
-> >                 c->x86, c->x86_model, c->x86_mask);
-> > 
-> > needs to be changed to the name of the microcode blob you guys use for
-> > distributing and we can drop the OLD INTERFACE and there'll be no need
-> > for userspace tools doing anything with the ucode patches.
-> > 
-> 
-> Except you still need to re-poke it when you have a new microcode
-> blob... so what was gained by all this churn?
 
-We need to do that anyway if new (F,M,S) ucode piece comes along.
+--ey/N+yb7u/X9mFhi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The gain is twofold:
+On Wed, Jun 20, 2012 at 02:55:37PM -0600, Stephen Warren wrote:
 
-* we don't need the userspace tool to split the blob - we have one
-single file we load and the driver picks out what it needs.
+> include/linux/regulator/machine.h says:
 
-* as a result, we drop the CONFIG_MICROCODE_OLD_INTERFACE, i.e.
-/dev/cpu/microcode which takes the single blob anyway which the driver
-picks apart later.
+> >  * @boot_on: Set if the regulator is enabled when the system is initially
+> >  *           started.  If the regulator is not enabled by the hardware or
+> >  *           bootloader then it will be enabled when the constraints are
+> >  *           applied.
 
-In the end, we have one unified ucode loading procedure:
+> Documentation/devicetree/bindings/regulator/regulator.txt says:
 
-1. put the blob in /lib/firmware/...
-2. echo 1 > /sys/devices/system/cpu/microcode/reload
+> > - regulator-boot-on: bootloader/firmware enabled regulator
 
-That's it - it can't be simpler than that.
+> ... and of_regulator.c sets the boot_on constraint based on this property.
 
--- 
-Regards/Gruss,
-Boris.
+> The former quote implies that this is a flag to tell Linux to turn on
+> the regulator when it's first registered, whereas the latter quote
+> implies that it's guaranteeing the state that previous SW placed the
+> regulator into already.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> I assume the documentation from machine.h is correct, and I should send
+> a patch to make regulator.txt match it?
+
+There's no great inconsistency between the two, this is only supposed to
+be used for supplies which are already enabled on boot but if the supply
+is not already enabled then currently the API will try to make it so
+since probably there's some reason for that.  Generally it's supposed to
+be used as a crutch to keep hotplug going.
+
+I'm not sure we should clarify this since I'm not sure that for DT
+setups which (as we were discussing in the other thread) are supposed to
+be usable over many software versions it's something that should really
+be used.  We ought to in the endgame be able to have DT systems turn on
+full constraints and that probably breaks anything relying too much on
+boot-on, I'd expect they either need the regulator to be always on or
+some more consumers.
+
+--ey/N+yb7u/X9mFhi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP4mDhAAoJEBus8iNuMP3dGi0P/1EFnIaEpwUdf0kC2rnuKIuc
+Dr0pKFG4C7XnE3H7bO/yluFlqm/5QwzuKfm6/l09w6jtN8YClN7GVP8r0GTaePdH
+86CnZrR7nxoIcrTkrPfCqoVXpx6AZxmHsyjeIF4qzjcFa4GWCCcEpkhgyuuJXIAJ
+wub0dd+5p0PSZYdRnIl6AnbK2GrV+xyYrdfLmFsctnIf7YYSPhYdcoeHEvJ8/X5L
++2ykr7TalHrLfKbCEKQZGfLr5Vp0F4F9Ex6a+G4Ar3lQMcTbAnG7Fh7VRMalE+Qr
+mwoYDTvY3ogv9AVAqX4WD4x/0JcBVJbGJ1YVN3bqR3BwsclDo5Td4Ao7tUhQNIGW
+hkC+F2ffYqHlSnyNlj5OoD0Q9e6p6V1fIiJQlGW6KjOe3SFEPOLIrFZxxiZ2zIfk
+7O4mIjCWVnMO7FLI4BlGypKnd9HlNap5B2ngjCSsSzQFzv4hiUnWy7vGYsVzJ6Nw
+VgNQLo12yGi6VOYIn8kuqWwuuLpPLqpuKV2oEhJCoo/DcbnkI21SivUfKVOBVus1
+z1Xab/dhvctXHdt9TptlkBa+bIq6Th1EO5UK9/igSFMtXTpTm7mELx4EP3usfCNx
+JCBJa8dUQVozUijFDcs2wwvDvU710/DuYnYeH9c45tfvZ4J85PWFaKyAEYNjnKLy
+SW1ghxTs24yW+w8LAGbs
+=dmEY
+-----END PGP SIGNATURE-----
+
+--ey/N+yb7u/X9mFhi--
