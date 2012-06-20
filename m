@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab2FTIIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 04:08:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36442 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755468Ab2FTIIk convert rfc822-to-8bit (ORCPT
+	id S1755427Ab2FTIN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 04:13:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33099 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab2FTINY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 04:08:40 -0400
-Message-ID: <4FE18502.6040409@arm.com>
-Date: Wed, 20 Jun 2012 09:08:34 +0100
-From: viresh kumar <viresh.kumar2@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Federico Vaga <federico.vaga@gmail.com>,
-        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-References: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au> <D5ECB3C7A6F99444980976A8C6D896384FAA275CA8@EAPEX1MAIL1.st.com>
-In-Reply-To: <D5ECB3C7A6F99444980976A8C6D896384FAA275CA8@EAPEX1MAIL1.st.com>
-X-MC-Unique: 112062009083706801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Jun 2012 04:13:24 -0400
+Message-ID: <1340179995.18879.1.camel@phoenix>
+Subject: [PATCH] regulator: lp872x: Return -EINVAL if pdata is NULL
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 20 Jun 2012 16:13:15 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/06/12 05:27, Bhupesh SHARMA wrote:
->> -----Original Message-----
->> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
->> Sent: Wednesday, June 20, 2012 9:04 AM
->> To: David Miller; netdev@vger.kernel.org
->> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Federico
->> Vaga; Giancarlo ASNAGHI; Wolfgang Grandegger; Bhupesh SHARMA; Marc
->> Kleine-Budde
->> Subject: linux-next: build failure after merge of the net-next tree
->>
->> Hi all,
->>
->> After merging the net-next tree, today's linux-next build (x86_64
->> allmodconfig) failed like this:
->>
->> ERROR: "clk_get_rate" [drivers/net/can/c_can/c_can_pci.ko] undefined!
->> ERROR: "clk_get" [drivers/net/can/c_can/c_can_pci.ko] undefined!
->> ERROR: "clk_put" [drivers/net/can/c_can/c_can_pci.ko] undefined!
->>
->> Caused by commit 5b92da0443c2 ("c_can_pci: generic module for
->> C_CAN/D_CAN on PCI").  Maybe a missing Kconfig dependency/select?
->>
->> I have used the net-next tree from next-20120619 for today.
->> --
->
-> clk_get/clk_put* variants are usually used by ARM platforms.
-> Protecting their calls under macro 'CONFIG_HAVE_CLK' should solve the problem.
->
-> See [1] for how it is done in c_can_platform.c
->
-> Could you possibly add these checks and send a patch for the same?
-> It should be fairly simple.
+Return -EINVAL if pdata is NULL, otherwise we have NULL dereference bug.
+This patch also moves the code checking pdata earlier in lp872x_probe.
 
-Hi Bhupesh,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/lp872x.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Please see following patchset from me, that got applied in linux-next
+diff --git a/drivers/regulator/lp872x.c b/drivers/regulator/lp872x.c
+index d51d098..e8f54ef 100644
+--- a/drivers/regulator/lp872x.c
++++ b/drivers/regulator/lp872x.c
+@@ -785,11 +785,6 @@ static int lp872x_config(struct lp872x *lp)
+ 	struct lp872x_platform_data *pdata = lp->pdata;
+ 	int ret;
+ 
+-	if (!pdata) {
+-		dev_warn(lp->dev, "no platform data\n");
+-		return 0;
+-	}
+-
+ 	if (!pdata->update_config)
+ 		return 0;
+ 
+@@ -889,6 +884,11 @@ static int lp872x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 		[LP8725] = LP8725_NUM_REGULATORS,
+ 	};
+ 
++	if (!pdata) {
++		dev_warn(&cl->dev, "no platform data\n");
++		return -EINVAL;
++	}
++
+ 	lp = devm_kzalloc(&cl->dev, sizeof(struct lp872x), GFP_KERNEL);
+ 	if (!lp)
+ 		goto err_mem;
+-- 
+1.7.9.5
 
-https://lkml.org/lkml/2012/4/24/154
 
-Please check if this patchset is present in your build repo. I believe it should be
-there. If it is, then you shouldn't get these errors.
-
---
-viresh
-
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
 
