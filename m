@@ -1,89 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab2FTKGf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:06:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33320 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751930Ab2FTKGd (ORCPT
+	id S1756044Ab2FTKGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:06:52 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:37758 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab2FTKGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:06:33 -0400
-Date: Wed, 20 Jun 2012 11:06:31 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 3/3] ARM: dts: db8500: add node property
- "regulator-compatible" regulator node
-Message-ID: <20120620100631.GE3978@opensource.wolfsonmicro.com>
-References: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com>
- <1340116099-17629-4-git-send-email-ldewangan@nvidia.com>
- <4FE0A546.1010707@linaro.org>
- <4FE0B79D.4090201@wwwdotorg.org>
- <4FE1772A.2010806@linaro.org>
- <4FE17E24.8050702@nvidia.com>
- <4FE18371.2020602@linaro.org>
- <4FE1877C.4090103@nvidia.com>
- <4FE19036.1060008@linaro.org>
+	Wed, 20 Jun 2012 06:06:50 -0400
+Message-ID: <4FE19CF5.3060000@linux.vnet.ibm.com>
+Date: Wed, 20 Jun 2012 15:20:45 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LSp5EJdfMPwZcMS1"
-Content-Disposition: inline
-In-Reply-To: <4FE19036.1060008@linaro.org>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: a.p.zijlstra@chello.nl, mingo@kernel.org
+CC: pjt@google.com, suresh.b.siddha@intel.com, seto.hidetoshi@jp.fujitsu.com,
+        rostedt@goodmis.org, tglx@linutronix.de, dhillf@gmail.com, rjw@sisk.pl,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/cpu hotplug: Don't traverse sched domain tree of
+ cpus going offline
+References: <20120602185721.5559.65562.stgit@srivatsabhat>
+In-Reply-To: <20120602185721.5559.65562.stgit@srivatsabhat>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12061923-5490-0000-0000-000001A10943
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/2012 12:27 AM, Srivatsa S. Bhat wrote:
 
---LSp5EJdfMPwZcMS1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> The cpu_active_mask is used to help the scheduler make the right decisions
+> during CPU hotplug transitions, and thereby enable CPU hotplug operations to
+> run smoothly.
+> 
+> However there are a few places where the scheduler doesn't consult the
+> cpu_active_mask and hence can trip over during CPU hotplug operations, by
+> making decisions based on stale data structures.
+> 
+> In particular, the call to partition_sched_domains() in the CPU offline path
+> sets cpu_rq(dying_cpu)->sd (sched domain pointer) to NULL. However, until
+> we get to that point, it remains non-NULL. And during that time period,
+> the scheduler could end up traversing that non-NULL sched domain tree and
+> making decisions based on that, which could lead to undesirable consequences.
+> 
+> For example, commit 8f2f748 (CPU hotplug, cpusets, suspend: Don't touch
+> cpusets during suspend/resume) caused suspend hangs at the CPU hotplug stage,
+> in some configurations. And the root-cause of that hang was that the
+> scheduler was traversing the sched domain trees of cpus going offline, thereby
+> messing up its decisions. The analysis of that hang can be found in:
+> http://marc.info/?l=linux-kernel&m=133518704022532&w=4
+> 
+> In short, our assumption that we are good to go (even with stale sched
+> domains) as long as the dying cpu was not in the cpu_active_mask, was wrong.
+> Because, there are several places where the scheduler code doesn't really
+> check the cpu_active_mask, but instead traverses the sched domains directly
+> to do stuff.
+> 
+> Anyway, that commit got reverted. However, that same problem could very well
+> occur during regular CPU hotplug too, even now. Ideally, we would want the
+> scheduler to make all its decisions during the CPU hotplug transition, by
+> looking up the cpu_active_mask (which is updated very early during CPU
+> Hotplug) to avoid such disasters. So, strengthen the scheduler by making it
+> consult the cpu_active_mask as a validity check before traversing the sched
+> domain tree.
+> 
+> Here we are specifically fixing the 2 known instances: idle_balance() and
+> find_lowest_rq().
+> 
+> 1. kernel/sched/core.c and fair.c:
+>    schedule()
+> 	__schedule()
+> 		idle_balance()
+> 
+> idle_balance() can end up doing:
+> 
+> for_each_domain(dying_cpu, sd) {
+> 	...
+> }
+> 
+> 2. kernel/sched/core.c and rt.c:
+> 
+> migration_call()
+> 	sched_ttwu_pending()
+> 		ttwu_do_activate()
+> 			ttwu_do_wakeup()
+> 				task_woken()
+> 					task_woken_rt()
+> 						push_rt_tasks()
+> 							find_lowest_rq()
+> 
+> find_lowest_rq() can end up doing:
+> 
+> for_each_domain(dying_cpu, sd) {
+> 	...
+> }
 
-On Wed, Jun 20, 2012 at 09:56:22AM +0100, Lee Jones wrote:
+> 
 
-> >Are you OK to have the first patch with adding property
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-...
 
-> Yes I'm fine with it.
+Any thoughts on this patch?
 
-So is that an ack?
+Regards,
+Srivatsa S. Bhat
 
-> It's only the unnecessary reg and *-size properties I'm opposed to.
+> ---
+> 
+>  kernel/sched/fair.c |    5 +++++
+>  kernel/sched/rt.c   |    4 ++++
+>  2 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 940e6d1..72cc7c6 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4402,6 +4402,10 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+>  	raw_spin_unlock(&this_rq->lock);
+> 
+>  	update_shares(this_cpu);
+> +
+> +	if (!cpu_active(this_cpu))
+> +		goto out;
+> +
+>  	rcu_read_lock();
+>  	for_each_domain(this_cpu, sd) {
+>  		unsigned long interval;
+> @@ -4426,6 +4430,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+>  	}
+>  	rcu_read_unlock();
+> 
+> + out:
+>  	raw_spin_lock(&this_rq->lock);
+> 
+>  	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index c5565c3..8cbafcd 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1488,6 +1488,9 @@ static int find_lowest_rq(struct task_struct *task)
+>  	if (!cpumask_test_cpu(this_cpu, lowest_mask))
+>  		this_cpu = -1; /* Skip this_cpu opt if not among lowest */
+> 
+> +	if (!cpu_active(cpu))
+> +		goto out;
+> +
+>  	rcu_read_lock();
+>  	for_each_domain(cpu, sd) {
+>  		if (sd->flags & SD_WAKE_AFFINE) {
+> @@ -1513,6 +1516,7 @@ static int find_lowest_rq(struct task_struct *task)
+>  	}
+>  	rcu_read_unlock();
+> 
+> + out:
+>  	/*
+>  	 * And finally, if there were no matches within the domains
+>  	 * just give the caller *something* to work with from the compatible
+> 
 
-My understanding is that they're required by DT policies in the same way
-that some of the other verbiage is.
 
---LSp5EJdfMPwZcMS1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP4aCTAAoJEBus8iNuMP3dFmkQAI2YR4TUUUyWjyQpYaRWFXUE
-m8eTJtR0YWJQ/nrTHKgc4B29pukneWzn7XjONrKYkFV/eDKEuVrKFrObwblN0LVw
-9y48vjJUGcvrdS9QBX0l8gKa8jVOYr7JTo6fKPOY1ahisEKTs/genJxGR3lV/jH0
-SJtPR2Rs9EkkVO/JX6Nx3aYUNOkPnZOlTgy0Le+NIPpAqkRvoiuj3LgJ2YUgNYRQ
-2GSp23auK/GGW2PsDtuU1cvR3IAkHPc4ukHBz0CSzzzZhNHf1AGBrVJbfc8vv02E
-BP1nUqmxR5s7W350IB3MfYOJyVe0eXbVJrQgtoXg+vijs3tYDTuhHFa0g982Fn2q
-c4ky/WG6y/9SvfjARj3DQDuptvZidq/dQRtS4DNUngTzmVCl/E3wAvmwYFSAVuXi
-CpqbfdcJmRV+m76fiWuYlFfRi7DNnZgpjuVkEYkXVCM0no4ePqyI3h6+nq1EQhqE
-KHPdLuEs6qih+fTwIkon35xeeHqdWhVC68C04088QjqoBkQIVGjy9QIhz3eWemA+
-yot/LviFKULvHgTwyTkkznGu9JTKBB7r+g6G5W/gVB/TA3YPEByUE0zLHe281x7W
-LlPWIeQZvLgO1FMAh0PYiJDNz/P10QGYI4iE5fXcIGXNqLohgxOOb1Hg0D+NqGHP
-v5HCEJDyvEQXvik43mgo
-=Qmyf
------END PGP SIGNATURE-----
-
---LSp5EJdfMPwZcMS1--
