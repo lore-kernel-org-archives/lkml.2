@@ -1,106 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354Ab2FTWsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 18:48:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27107 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758312Ab2FTWsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758340Ab2FTWsp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 18:48:45 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41456 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758317Ab2FTWsk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jun 2012 18:48:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158866848"
-Message-ID: <4FE25346.901@intel.com>
-Date: Wed, 20 Jun 2012 15:48:38 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 15/15] ARM: etm: Add sysfs entry to enable return stack if supported
+Date: Wed, 20 Jun 2012 18:47:47 -0400
+Message-Id: <1340232467-6023-16-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
+References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
-References: <20120619102041.GI2624@amd.com> <4FE0C2A8.50602@intel.com> <20120620094844.GL2624@amd.com>
-In-Reply-To: <20120620094844.GL2624@amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062022-7282-0000-0000-00000A239097
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 02:48 AM, Joerg Roedel wrote:
-> Hi Alexander,
->
-> On Tue, Jun 19, 2012 at 11:19:20AM -0700, Alexander Duyck wrote:
->> Based on the faults it would look like accessing the descriptor rings is
->> probably triggering the errors.  We allocate the descriptor rings using
->> dma_alloc_coherent so the rings should be mapped correctly.
-> Can this happen before the driver actually allocated the descriptors? As
-> I said, the faults appear before any DMA-API call was made for that
-> device (hence, domain=0x0000, because the domain is assigned on the
-> first call to the DMA-API for a device).
->
-> Also, I don't see the faults every time. One out of ten times
-> (estimated) there are not faults. Is it possible that this is a race
-> condition, e.g. that the card trys to access its descriptor rings before
-> the driver allocated them (or something like that).
-The descriptor rings are located in system memory so it shouldn't be
-possible for the driver to start accessing anything without requesting
-the address via the DMA-API calls.  As I said we use dma_alloc_coherent
-to allocate the descriptor rings so I don't think it is possible for us
-to configure the rings without calling the DMA-API.  You might try
-double checking the timing on igbvf driver load versus the notifier
-getting to the IOMMU.  I supposed this could be some sort of
-initialization race between the driver and the IOMMU.  One way to verify
-that would be to blacklist the VF driver and make sure it is unloaded
-prior to loading the PF driver.  Load it manually via insmod after you
-have have created the PCI devices by loading the PF module.  This way
-you can guarantee that the igbvf load isn't somehow occuring prior to
-the IOMMU notifier being triggered.
+From: Arve Hjønnevåg <arve@android.com>
 
->> The PF and VF will end up being locked out since they are hung on an
->> uncompleted DMA transaction.  Normally we recommend that PCIe Advanced
->> Error Reporting be enabled if an IOMMU is enabled so the device can be
->> reset after triggering a page fault event.
->>
->> The first thing that pops into my head for possible issues would be that
->> maybe the VF pci_dev structure or the device structure isn't being
->> correctly initialized when SR-IOV is enabled on the igb interface.  Do
->> you know if there are any AMD IOMMU specific values on those structures,
->> such as the domain, that are supposed to be initialized prior to calling
->> the DMA API calls?  If so, have you tried adding debug output to verify
->> if those values are initialized on a VF prior to bringing up a VF interface?
-> Well, when the device appears in the system the IOMMU driver gets
-> notified about it using the device_change notifiers. It will then
-> allocate all necessary data structures. I also verified that this works
-> correctly while debugging this issue. So I am pretty sure the problem
-> isn't there :)
-You might want to try also adding some code to the dma_alloc_coherent
-function in your kernel to verify that when the VF driver is allocating
-the descriptor rings that the domain info is set-up correctly.
+Add sysfs entry to enable return stack if supported
 
->> Also have you tried any other SR-IOV capable devices on this system? 
->> That would be a valuable data point because we could then exclude the
->> SR-IOV code as being a possible cause for the issues if other SR-IOV
->> devices are working without any issues.
-> I have another SR-IOV device, but that fails to even enable SR-IOV
-> because the BIOS did not let enough MMIO resources left. So I couldn't
-> try it with that device. With the 82576 card enabling SR-IOV works fine
-> but results in the faults from the VF.
-If you are working on a recent kernel you should be able to overcome the
-BIOS issues.  I believe there are the options "pci=assign-busses" if the
-BIOS doesn't place enough buses on the bridge to support SR-IOV, and
-there is "pci=realloc" which will reassign the MMIO resources to make
-enough room for VF MMIO bars.
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ arch/arm/include/asm/hardware/coresight.h |    4 +++
+ arch/arm/kernel/etm.c                     |   51 +++++++++++++++++++++++++++--
+ 2 files changed, 53 insertions(+), 2 deletions(-)
 
-Thanks,
-
-Alex
-
+diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
+index 727ba0f..dcf74d7 100644
+--- a/arch/arm/include/asm/hardware/coresight.h
++++ b/arch/arm/include/asm/hardware/coresight.h
+@@ -20,12 +20,14 @@
+ #define TRACER_TRACE_DATA_BIT	3
+ #define TRACER_TIMESTAMP_BIT	4
+ #define TRACER_BRANCHOUTPUT_BIT	5
++#define TRACER_RETURN_STACK_BIT	6
+ #define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
+ #define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
+ #define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
+ #define TRACER_TRACE_DATA	BIT(TRACER_TRACE_DATA_BIT)
+ #define TRACER_TIMESTAMP	BIT(TRACER_TIMESTAMP_BIT)
+ #define TRACER_BRANCHOUTPUT	BIT(TRACER_BRANCHOUTPUT_BIT)
++#define TRACER_RETURN_STACK	BIT(TRACER_RETURN_STACK_BIT)
+ 
+ #define TRACER_TIMEOUT 10000
+ 
+@@ -62,6 +64,7 @@
+ #define ETMCTRL_BRANCH_OUTPUT	(1 << 8)
+ #define ETMCTRL_CYCLEACCURATE	(1 << 12)
+ #define ETMCTRL_TIMESTAMP_EN	(1 << 28)
++#define ETMCTRL_RETURN_STACK_EN	(1 << 29)
+ 
+ /* ETM configuration code register */
+ #define ETMR_CONFCODE		(0x04)
+@@ -136,6 +139,7 @@
+ #define ETMIDR_VERSION_PFT_1_0	0x30
+ 
+ #define ETMR_CCE		0x1e8
++#define ETMCCER_RETURN_STACK_IMPLEMENTED	BIT(23)
+ #define ETMCCER_TIMESTAMPING_IMPLEMENTED	BIT(22)
+ 
+ #define ETMR_TRACEIDR		0x200
+diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+index 8e84d5c..c5fb6c9 100644
+--- a/arch/arm/kernel/etm.c
++++ b/arch/arm/kernel/etm.c
+@@ -124,6 +124,9 @@ static int trace_start_etm(struct tracectx *t, int id)
+ 	if (t->flags & TRACER_TIMESTAMP)
+ 		v |= ETMCTRL_TIMESTAMP_EN;
+ 
++	if (t->flags & TRACER_RETURN_STACK)
++		v |= ETMCTRL_RETURN_STACK_EN;
++
+ 	etm_unlock(t, id);
+ 
+ 	etm_writel(t, id, v, ETMR_CTRL);
+@@ -703,10 +706,13 @@ static ssize_t trace_branch_output_store(struct kobject *kobj,
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&tracer.mutex);
+-	if (branch_output)
++	if (branch_output) {
+ 		tracer.flags |= TRACER_BRANCHOUTPUT;
+-	else
++		/* Branch broadcasting is incompatible with the return stack */
++		tracer.flags &= ~TRACER_RETURN_STACK;
++	} else {
+ 		tracer.flags &= ~TRACER_BRANCHOUTPUT;
++	}
+ 	mutex_unlock(&tracer.mutex);
+ 
+ 	return n;
+@@ -716,6 +722,39 @@ static struct kobj_attribute trace_branch_output_attr =
+ 	__ATTR(trace_branch_output, 0644,
+ 		trace_branch_output_show, trace_branch_output_store);
+ 
++static ssize_t trace_return_stack_show(struct kobject *kobj,
++				  struct kobj_attribute *attr,
++				  char *buf)
++{
++	return sprintf(buf, "%d\n", !!(tracer.flags & TRACER_RETURN_STACK));
++}
++
++static ssize_t trace_return_stack_store(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   const char *buf, size_t n)
++{
++	unsigned int return_stack;
++
++	if (sscanf(buf, "%u", &return_stack) != 1)
++		return -EINVAL;
++
++	mutex_lock(&tracer.mutex);
++	if (return_stack) {
++		tracer.flags |= TRACER_RETURN_STACK;
++		/* Return stack is incompatible with branch broadcasting */
++		tracer.flags &= ~TRACER_BRANCHOUTPUT;
++	} else {
++		tracer.flags &= ~TRACER_RETURN_STACK;
++	}
++	mutex_unlock(&tracer.mutex);
++
++	return n;
++}
++
++static struct kobj_attribute trace_return_stack_attr =
++	__ATTR(trace_return_stack, 0644,
++		trace_return_stack_show, trace_return_stack_store);
++
+ static ssize_t trace_timestamp_show(struct kobject *kobj,
+ 				  struct kobj_attribute *attr,
+ 				  char *buf)
+@@ -900,6 +939,14 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
+ 		dev_dbg(&dev->dev,
+ 			"Failed to create trace_branch_output in sysfs\n");
+ 
++	if (etmccer & ETMCCER_RETURN_STACK_IMPLEMENTED) {
++		ret = sysfs_create_file(&dev->dev.kobj,
++					&trace_return_stack_attr.attr);
++		if (ret)
++			dev_dbg(&dev->dev,
++			      "Failed to create trace_return_stack in sysfs\n");
++	}
++
+ 	if (etmccer & ETMCCER_TIMESTAMPING_IMPLEMENTED) {
+ 		ret = sysfs_create_file(&dev->dev.kobj,
+ 					&trace_timestamp_attr.attr);
+-- 
+1.7.9.5
 
