@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab2FTWKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 18:10:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50777 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758123Ab2FTWKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 18:10:06 -0400
-Message-ID: <1340230206.29885.25.camel@joe2Laptop>
-Subject: [PATCH] scripts/get_maintainer.pl: Test for non-standard signatures
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Date: Wed, 20 Jun 2012 15:10:06 -0700
-In-Reply-To: <20120620143959.394b9930.akpm@linux-foundation.org>
-References: <1340193105-10734-1-git-send-email-aletes.xgr@gmail.com>
-	 <1340209526.29885.14.camel@joe2Laptop>
-	 <20120620143959.394b9930.akpm@linux-foundation.org>
+	id S1758222Ab2FTWQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 18:16:51 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:3416 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754816Ab2FTWQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 18:16:50 -0400
+Message-ID: <1340230589.1773.7.camel@x61.thuisdomein>
+Subject: [PATCH] x86: boot: Remove ancient dead code
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Jeff Epler <jepler@inetnebr.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 21 Jun 2012 00:16:29 +0200
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
+X-OriginalArrivalTime: 20 Jun 2012 22:16:36.0220 (UTC) FILETIME=[5B4ACBC0:01CD4F32]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Warn on non-standard signature styles.
+Release v1.3.82 wrapped a few lines of code in an "#ifdef
+SAFE_RESET_DISK_CONTROLLER" and "#endif" pair. Since
+SAFE_RESET_DISK_CONTROLLER was never defined anywhere that was basically
+a verbose "#ifdef 0" and "#endif" pair. These dead lines have been in
+the tree for sixteen years but now the time has come to remove them.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+I guess the main lesson here is that if you want your dead code in the
+tree for a very long time you'd better be creative. A plain old "#ifdef
+0" and "#endif" pair just doesn't cut it!
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Link: https://lkml.org/lkml/1996/3/30/38
+Cc: Jeff Epler <jepler@inetnebr.com>
 ---
- scripts/checkpatch.pl |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ arch/x86/boot/header.S |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 630319a..3e04f80 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1600,13 +1600,17 @@ sub process {
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index efe5acf..9b9c647 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -406,13 +406,6 @@ init_size:		.long INIT_SIZE		# kernel initialization size
  
- # Check signature styles
- 		if (!$in_header_lines &&
--		    $line =~ /^(\s*)($signature_tags)(\s*)(.*)/) {
-+		    $line =~ /^(\s*)([a-z0-9_-]+by:|$signature_tags)(\s*)(.*)/i) {
- 			my $space_before = $1;
- 			my $sign_off = $2;
- 			my $space_after = $3;
- 			my $email = $4;
- 			my $ucfirst_sign_off = ucfirst(lc($sign_off));
- 
-+			if ($sign_off !~ /$signature_tags/) {
-+				WARN("BAD_SIGN_OFF",
-+				     "Non-standard signature: $sign_off\n" . $herecurr);
-+			}
- 			if (defined $space_before && $space_before ne "") {
- 				WARN("BAD_SIGN_OFF",
- 				     "Do not use whitespace before $ucfirst_sign_off\n" . $herecurr);
-
+ 	.section ".entrytext", "ax"
+ start_of_setup:
+-#ifdef SAFE_RESET_DISK_CONTROLLER
+-# Reset the disk controller.
+-	movw	$0x0000, %ax		# Reset disk controller
+-	movb	$0x80, %dl		# All disks
+-	int	$0x13
+-#endif
+-
+ # Force %es = %ds
+ 	movw	%ds, %ax
+ 	movw	%ax, %es
+-- 
+1.7.7.6
 
