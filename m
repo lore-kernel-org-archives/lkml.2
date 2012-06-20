@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab2FTOHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:07:49 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:48622 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab2FTOHr (ORCPT
+	id S1756319Ab2FTOLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:11:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58146 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab2FTOLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:07:47 -0400
-Date: Wed, 20 Jun 2012 09:58:33 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, johnstul@us.ibm.com,
-        fweisbec@gmail.com
-Subject: Re: WARNING: at /home/konrad/ssd/linux/kernel/rcutree.c:1547
- __rcu_process_callbacks+0x42e/0x440()
-Message-ID: <20120620135833.GB12787@phenom.dumpdata.com>
-References: <20120619182216.GA13454@phenom.dumpdata.com>
- <20120619184718.GF2385@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120619184718.GF2385@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 20 Jun 2012 10:11:18 -0400
+Date: Wed, 20 Jun 2012 23:11:12 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v7 02/10] KVM: MMU: abstract spte write-protect
+Message-Id: <20120620231112.440df9ae19c1aca36100b746@gmail.com>
+In-Reply-To: <4FE1CE43.9080203@linux.vnet.ibm.com>
+References: <4FE1822D.8010002@linux.vnet.ibm.com>
+	<4FE1825B.1030402@linux.vnet.ibm.com>
+	<20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp>
+	<4FE193AA.8010801@linux.vnet.ibm.com>
+	<20120620215653.15930f3467bc13748d548b0d@gmail.com>
+	<4FE1CE43.9080203@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 11:47:18AM -0700, Paul E. McKenney wrote:
-> On Tue, Jun 19, 2012 at 02:22:16PM -0400, Konrad Rzeszutek Wilk wrote:
-> > 
-> > I've been getting this when booting a Xen PV guest with 3 CPUs (of which two are
-> > online). Any thoughts?
-> 
-> Maybe...  I am assuming that your kernel/rcutree.c:1547 is this line of code:
-> 
-> 	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
-> 
-> This is line 1549 in current mainline.
+On Wed, 20 Jun 2012 21:21:07 +0800
+Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 
-<nods>
-[    0.064998] ------------[ cut here ]------------^M
-[    0.065004] WARNING: at /home/konrad/linux-linus/kernel/rcutree.c:1549 __rcu_process_callbacks+0x42e/0x440()^M
-[    0.065005] Modules linked in:^M
-[    0.065006] Pid: 12, comm: migration/2 Not tainted 3.5.0-rc3upstream-00111-gf40759e #1^M
-[    0.065007] Call Trace:^M
-[    0.065011]  <IRQ>  [<ffffffff810718ba>] warn_slowpath_common+0x7a/0xb0^M
-[    0.065013]  [<ffffffff81071905>] warn_slowpath_null+0x15/0x20^M
-[    0.065022]  [<ffffffff810edb7e>] __rcu_process_callbacks+0x42e/0x440^M
-[    0.065026]  [<ffffffff810edbb0>] rcu_process_callbacks+0x20/0x40^M
-[    0.065029]  [<ffffffff81079299>] __do_softirq+0xa9/0x160^M
-[    0.065033]  [<ffffffff810a1035>] ? sched_clock_local+0x25/0x90^M
-[    0.065037]  [<ffffffff810d7201>] ? queue_stop_cpus_work+0x61/0xf0^M
-[    0.065042]  [<ffffffff815c44dc>] call_softirq+0x1c/0x30^M
-[    0.065044]  [<ffffffff81039435>] do_softirq+0x65/0xa0^M
-[    0.065047]  [<ffffffff81079095>] irq_exit+0xd5/0xf0^M
-[    0.065050]  [<ffffffff81322f2f>] xen_evtchn_do_upcall+0x2f/0x40^M
-[    0.065054]  [<ffffffff815c452e>] xen_do_hypervisor_callback+0x1e/0x30^M
-[    0.065058]  <EOI>  [<ffffffff810d7201>] ? queue_stop_cpus_work+0x61/0xf0^M
+> Again, "rmap" does not break the logic, the spte we handle in this function must
+> be in rmap.
 
+I'm not saying whether this breaks some logic or not.
 
-> 
-> If my guess is correct, my question is "why on earth is a CPU that has
-> marked itself offline taking a timer interrupt???"
+rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+helps developers by saying "rmap_write_protect() protected ...."
 
-So.. part of this is that I think the CPU hotplug code is a bit brain-dead.
+For another function, the message should be "another_func_name: spte ..."
+But OK, I won't argue about this anymore.
 
-In the Xen side, when a guest starts - it boots all the available CPUs
-(in this case three), and then it brings down the one it doesn't need.
-How many it brings down is dependent on two simple lines in the guest config:
+We can change the debug message later if needed.
 
-vcpus=2
-maxvcpus=3
-
-The "offline" CPU can be immediately brought back and its parked in the
-cpu_idle call. Which looking at it - means that it also hits the schedule_bug
-when it gets to be onlined. Grrrr..
-
-But irregardless of that - when a CPU is brought down it does call the CPU
-offline notifiers - and I am not sure why the RCU isn't notified? Could
-it be a race perhaps?
-
-> 
-> I could provide a patch to make RCU work around this problem from its
-> viewpoint, but taking timer interrupts on an offline CPU is an extremely
-> bad idea.  It would be good to fix the underlying problem instead of
-
-Right.
-> silencing RCU's warning.
-
-Of course.
-> 
-> If my guess on what line is warning you is wrong, please do let me know
-> what the line really is -- or even better, the corresponding mainline
-> git commit ID.
-
-This is f40759e but I think earlier versions of v3.5 exhibited this too.
+Thanks,
+	Takuya
