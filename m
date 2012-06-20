@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2FTJzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:55:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59948 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755542Ab2FTJzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:55:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="155928998"
-Date: Wed, 20 Jun 2012 17:55:46 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
-        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH -mm] memcg: prevent from OOM with too many dirty pages
-Message-ID: <20120620095546.GB8765@localhost>
-References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
- <20120619150014.1ebc108c.akpm@linux-foundation.org>
- <20120620092011.GB4011@suse.de>
+	id S1755968Ab2FTJ4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:56:04 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42690 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842Ab2FTJz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:55:58 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: mkl@pengutronix.de, bhupesh.sharma@st.com, sfr@canb.auug.org.au,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        wg@grandegger.com
+Subject: Re: linux-next: build failure after merge of the net-next tree
+Date: Wed, 20 Jun 2012 11:59:26 +0200
+Message-ID: <5059693.iaLYtpk3E4@harkonnen>
+User-Agent: KMail/4.8.3 (Linux/3.4.2-4.fc17.x86_64; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <20120620.020611.1696375957120854262.davem@davemloft.net>
+References: <D5ECB3C7A6F99444980976A8C6D896384FAA275CBE@EAPEX1MAIL1.st.com> <3170667.1PZa2330KE@harkonnen> <20120620.020611.1696375957120854262.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120620092011.GB4011@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Finally, I wonder if there should be some timeout of that wait.  I
-> > don't know why, but I wouldn't be surprised if we hit some glitch which
-> > causes us to add one!
-> > 
-> 
-> If we hit such a situation it means that flush is no longer working which
-> is interesting in itself. I guess one possibility where it can occur is
-> if we hit global dirty limits (or memcg dirty limits when they exist)
-> and the page is backed by NFS that is disconnected. That would stall here
-> potentially forever but it's already the case that a system that hits its
-> dirty limits with a disconnected NFS is in trouble and a timeout here will
-> not do much to help.
+> Then the driver should NEVER have been submitted without the
+> required infrastructure in place first.
 
-Agreed. I've run into such cases and cannot login even locally because
-the shell will be blocked trying to write even 1 byte at startup time. 
-Any opened shells are also stalled on writing to .bash_history etc.
+This particular driver don't use the clk framework at the moment. I put 
+that lines about clk to try to be generic as possibile, but I see that I 
+made a mistake: I'm sorry. An alternative solution to HAVE_CLK 
+dependency can be: remove the clk_* lines because actualy nobody use 
+them. In the future, if our c_can migrate to clk and our clk framework 
+is accepted in the kernel, we can re-add the clk_* lines.
 
-Thanks,
-Fengguang
+
+-- 
+Federico Vaga
