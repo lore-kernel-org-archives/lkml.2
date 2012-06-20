@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab2FTLwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:52:23 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59936 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab2FTLwV (ORCPT
+	id S1756253Ab2FTL5w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:57:52 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:34943 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab2FTL5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:52:21 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Subject: [PATCH] scripts/get_maintainer.pl: Add tested-by signature
-Date: Wed, 20 Jun 2012 08:51:44 -0300
-Message-Id: <1340193105-10734-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 20 Jun 2012 07:57:51 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thomas Gleixner <tglx@linutronix.de>, David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] mn10300: Fix common threadinfo allocator fallout
+Date: Wed, 20 Jun 2012 13:57:46 +0200
+Message-Id: <1340193466-3342-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tester of the patch should also be listed to receive patch
-notifications.
+commit c03a6a7ba6f456663e4b254cdde460b24c0852e1 ("mn10300: Use common
+threadinfo allocator") caused:
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+include/linux/thread_info.h: In function 'arch_release_thread_info':
+include/linux/thread_info.h:70:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+include/linux/thread_info.h:75:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+include/linux/thread_info.h:80:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+include/linux/thread_info.h:85:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+include/linux/thread_info.h:90:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+include/linux/thread_info.h:127:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+include/linux/thread_info.h:132:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+include/linux/thread_info.h:136:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+include/linux/thread_info.h:140:1: error: expected '=', ',', ';', 'asm' or '__attribute__' before '{' token
+
+Add the missing semicolon, and revive the "extern" while we're at it.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- scripts/get_maintainer.pl |    1 +
- 1 file changed, 1 insertion(+)
+ arch/mn10300/include/asm/thread_info.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 0948c6b..5715773 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -81,6 +81,7 @@ my $penguin_chiefs = "\(" . join("|", @penguin_chief_names) . "\)";
- my @signature_tags = ();
- push(@signature_tags, "Signed-off-by:");
- push(@signature_tags, "Reviewed-by:");
-+push(@signature_tags, "Tested-by:");
- push(@signature_tags, "Acked-by:");
+diff --git a/arch/mn10300/include/asm/thread_info.h b/arch/mn10300/include/asm/thread_info.h
+index 08251d6..f374a76 100644
+--- a/arch/mn10300/include/asm/thread_info.h
++++ b/arch/mn10300/include/asm/thread_info.h
+@@ -123,7 +123,7 @@ static inline unsigned long current_stack_pointer(void)
+ }
  
- # rfc822 email address - preloaded methods go here.
+ #ifndef CONFIG_KGDB
+-void arch_release_thread_info(struct thread_info *ti)
++extern void arch_release_thread_info(struct thread_info *ti);
+ #endif
+ #define get_thread_info(ti)	get_task_struct((ti)->task)
+ #define put_thread_info(ti)	put_task_struct((ti)->task)
 -- 
-1.7.10
+1.7.0.4
 
