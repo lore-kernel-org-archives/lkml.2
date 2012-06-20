@@ -1,44 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab2FTLCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:02:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25682 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab2FTLCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:02:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="167950898"
-Subject: Re: [PATCH v2 1/3] dmaengine: Add wrapper for device_tx_status
- callback
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1339438302-12417-1-git-send-email-lars@metafoo.de>
-References: <1339438302-12417-1-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jun 2012 16:24:22 +0530
-Message-ID: <1340189662.1927.1648.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756408Ab2FTLCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:02:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34702 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab2FTLC3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:02:29 -0400
+Date: Wed, 20 Jun 2012 04:02:15 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-ucnds8gkve4x3s4biuukyph3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86: Lowercase uncore PMU event names
+Git-Commit-ID: 2992c542fcd40777ed253f57362c65711fb8acaf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 04:02:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 20:11 +0200, Lars-Peter Clausen wrote:
-> This patch adds a small inline wrapper for the devivce_tx_status callback of a
-> dma device. This makes the source code of users of this function a bit more
-> compact and a bit more legible.
-Applied, thanks
+Commit-ID:  2992c542fcd40777ed253f57362c65711fb8acaf
+Gitweb:     http://git.kernel.org/tip/2992c542fcd40777ed253f57362c65711fb8acaf
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Sat, 16 Jun 2012 14:45:49 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 18 Jun 2012 15:55:52 +0200
 
-rest of the series should go thru ASoC tree.
+perf/x86: Lowercase uncore PMU event names
 
--- 
-~Vinod
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-ucnds8gkve4x3s4biuukyph3@git.kernel.org
+[ Trivial build fix ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |   51 ++++++++-----------------
+ 1 files changed, 16 insertions(+), 35 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index d34f68b..28a8413 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -179,22 +179,17 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
+ };
+ 
+ static struct uncore_event_desc snbep_uncore_imc_events[] = {
+-	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
+-	/* read */
+-	INTEL_UNCORE_EVENT_DESC(CAS_COUNT_RD, "event=0x4,umask=0x3"),
+-	/* write */
+-	INTEL_UNCORE_EVENT_DESC(CAS_COUNT_WR, "event=0x4,umask=0xc"),
++	INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0xff"),
++	INTEL_UNCORE_EVENT_DESC(cas_count_read,  "event=0x04,umask=0x03"),
++	INTEL_UNCORE_EVENT_DESC(cas_count_write, "event=0x04,umask=0x0c"),
+ 	{ /* end: all zeroes */ },
+ };
+ 
+ static struct uncore_event_desc snbep_uncore_qpi_events[] = {
+-	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "event=0x14"),
+-	/* outgoing data+nondata flits */
+-	INTEL_UNCORE_EVENT_DESC(TxL_FLITS_ACTIVE, "event=0x0,umask=0x6"),
+-	/* DRS data received */
+-	INTEL_UNCORE_EVENT_DESC(DRS_DATA, "event=0x2,umask=0x8"),
+-	/* NCB data received */
+-	INTEL_UNCORE_EVENT_DESC(NCB_DATA, "event=0x3,umask=0x4"),
++	INTEL_UNCORE_EVENT_DESC(clockticks,       "event=0x14"),
++	INTEL_UNCORE_EVENT_DESC(txl_flits_active, "event=0x00,umask=0x06"),
++	INTEL_UNCORE_EVENT_DESC(drs_data,         "event=0x02,umask=0x08"),
++	INTEL_UNCORE_EVENT_DESC(ncb_data,         "event=0x03,umask=0x04"),
+ 	{ /* end: all zeroes */ },
+ };
+ 
+@@ -621,29 +616,15 @@ static struct attribute_group nhm_uncore_format_group = {
+ };
+ 
+ static struct uncore_event_desc nhm_uncore_events[] = {
+-	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
+-	/* full cache line writes to DRAM */
+-	INTEL_UNCORE_EVENT_DESC(QMC_WRITES_FULL_ANY, "event=0x2f,umask=0xf"),
+-	/* Quickpath Memory Controller normal priority read requests */
+-	INTEL_UNCORE_EVENT_DESC(QMC_NORMAL_READS_ANY, "event=0x2c,umask=0xf"),
+-	/* Quickpath Home Logic read requests from the IOH */
+-	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_READS,
+-				"event=0x20,umask=0x1"),
+-	/* Quickpath Home Logic write requests from the IOH */
+-	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_WRITES,
+-				"event=0x20,umask=0x2"),
+-	/* Quickpath Home Logic read requests from a remote socket */
+-	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_READS,
+-				"event=0x20,umask=0x4"),
+-	/* Quickpath Home Logic write requests from a remote socket */
+-	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_WRITES,
+-				"event=0x20,umask=0x8"),
+-	/* Quickpath Home Logic read requests from the local socket */
+-	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_READS,
+-				"event=0x20,umask=0x10"),
+-	/* Quickpath Home Logic write requests from the local socket */
+-	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_WRITES,
+-				"event=0x20,umask=0x20"),
++	INTEL_UNCORE_EVENT_DESC(clockticks,                "event=0xff,umask=0xff"),
++	INTEL_UNCORE_EVENT_DESC(qmc_writes_full_any,       "event=0x2f,umask=0x0f"),
++	INTEL_UNCORE_EVENT_DESC(qmc_normal_reads_any,      "event=0x2c,umask=0x0f"),
++	INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_reads,     "event=0x20,umask=0x01"),
++	INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_writes,    "event=0x20,umask=0x02"),
++	INTEL_UNCORE_EVENT_DESC(qhl_request_remote_reads,  "event=0x20,umask=0x04"),
++	INTEL_UNCORE_EVENT_DESC(qhl_request_remote_writes, "event=0x20,umask=0x08"),
++	INTEL_UNCORE_EVENT_DESC(qhl_request_local_reads,   "event=0x20,umask=0x10"),
++	INTEL_UNCORE_EVENT_DESC(qhl_request_local_writes,  "event=0x20,umask=0x20"),
+ 	{ /* end: all zeroes */ },
+ };
+ 
