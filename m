@@ -1,134 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab2FTNUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:20:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48610 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790Ab2FTNUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 09:20:52 -0400
-Date: Wed, 20 Jun 2012 15:20:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v4 05/25] memcg: Always free struct memcg through
- schedule_work()
-Message-ID: <20120620132050.GE5541@tiehlicka.suse.cz>
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
- <1340015298-14133-6-git-send-email-glommer@parallels.com>
+	id S1755881Ab2FTNVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:21:18 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:36899 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab2FTNVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 09:21:17 -0400
+Message-ID: <4FE1CE43.9080203@linux.vnet.ibm.com>
+Date: Wed, 20 Jun 2012 21:21:07 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340015298-14133-6-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v7 02/10] KVM: MMU: abstract spte write-protect
+References: <4FE1822D.8010002@linux.vnet.ibm.com> <4FE1825B.1030402@linux.vnet.ibm.com> <20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp> <4FE193AA.8010801@linux.vnet.ibm.com> <20120620215653.15930f3467bc13748d548b0d@gmail.com>
+In-Reply-To: <20120620215653.15930f3467bc13748d548b0d@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062003-9264-0000-0000-000001BC91A7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-06-12 14:27:58, Glauber Costa wrote:
-> Right now we free struct memcg with kfree right after a
-> rcu grace period, but defer it if we need to use vfree() to get
-> rid of that memory area. We do that by need, because we need vfree
-> to be called in a process context.
-> 
-> This patch unifies this behavior, by ensuring that even kfree will
-> happen in a separate thread. The goal is to have a stable place to
-> call the upcoming jump label destruction function outside the realm
-> of the complicated and quite far-reaching cgroup lock (that can't be
-> held when calling neither the cpu_hotplug.lock nor the jump_label_mutex)
+On 06/20/2012 08:56 PM, Takuya Yoshikawa wrote:
 
-This one is in memcg-devel (mmotm) tree for quite some time with acks
-from me and Kamezawa.
-
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Li Zefan <lizefan@huawei.com>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c |   24 +++++++++++++-----------
->  1 file changed, 13 insertions(+), 11 deletions(-)
+> On Wed, 20 Jun 2012 17:11:06 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index e3b528e..ce15be4 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -245,8 +245,8 @@ struct mem_cgroup {
->  		 */
->  		struct rcu_head rcu_freeing;
->  		/*
-> -		 * But when using vfree(), that cannot be done at
-> -		 * interrupt time, so we must then queue the work.
-> +		 * We also need some space for a worker in deferred freeing.
-> +		 * By the time we call it, rcu_freeing is not longer in use.
->  		 */
->  		struct work_struct work_freeing;
->  	};
-> @@ -4826,23 +4826,28 @@ out_free:
->  }
->  
->  /*
-> - * Helpers for freeing a vzalloc()ed mem_cgroup by RCU,
-> + * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
->   * but in process context.  The work_freeing structure is overlaid
->   * on the rcu_freeing structure, which itself is overlaid on memsw.
->   */
-> -static void vfree_work(struct work_struct *work)
-> +static void free_work(struct work_struct *work)
->  {
->  	struct mem_cgroup *memcg;
-> +	int size = sizeof(struct mem_cgroup);
->  
->  	memcg = container_of(work, struct mem_cgroup, work_freeing);
-> -	vfree(memcg);
-> +	if (size < PAGE_SIZE)
-> +		kfree(memcg);
-> +	else
-> +		vfree(memcg);
->  }
-> -static void vfree_rcu(struct rcu_head *rcu_head)
-> +
-> +static void free_rcu(struct rcu_head *rcu_head)
->  {
->  	struct mem_cgroup *memcg;
->  
->  	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
-> -	INIT_WORK(&memcg->work_freeing, vfree_work);
-> +	INIT_WORK(&memcg->work_freeing, free_work);
->  	schedule_work(&memcg->work_freeing);
->  }
->  
-> @@ -4868,10 +4873,7 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
->  		free_mem_cgroup_per_zone_info(memcg, node);
->  
->  	free_percpu(memcg->stat);
-> -	if (sizeof(struct mem_cgroup) < PAGE_SIZE)
-> -		kfree_rcu(memcg, rcu_freeing);
-> -	else
-> -		call_rcu(&memcg->rcu_freeing, vfree_rcu);
-> +	call_rcu(&memcg->rcu_freeing, free_rcu);
->  }
->  
->  static void mem_cgroup_get(struct mem_cgroup *memcg)
-> -- 
-> 1.7.10.2
+>> Strange! Why do you think it is wrong? It is just debug code.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> kvm_mmu_slot_remove_write_access() does not use rmap but the debug code says:
+> 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
+It is not a problem since all sptes which are pointing to gfn is existed in rmap.
+
+> 
+>>> If you think it is not a problem, please explain why you think so in
+>>> the changelog.
+>>
+>>
+>> It is a from the first place and it is used to debug and not compiled at all.
+> 
+> It was not in kvm_mmu_slot_remove_write_access() before, no?
+> 
+> This patch says that the write protection code becomes commonly usable
+> function, but it still has rmap_write_protect specific debug code in it;
+> using it in kvm_mmu_slot_remove_write_access(), which is not at all related
+> to rmap_write_protect, is strange.
+> 
+> As you say, this is just debug code and does not have any practical problem.
+> But randomly putting debug code is not a good thing.
+> 
+
+
+Again, "rmap" does not break the logic, the spte we handle in this function must
+be in rmap.
+
