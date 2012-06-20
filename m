@@ -1,116 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab2FTSxR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:53:17 -0400
-Received: from relay02ant.iops.be ([212.53.4.35]:47656 "EHLO
-	relay02ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533Ab2FTSxP (ORCPT
+	id S1757770Ab2FTTBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 15:01:06 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:25618 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab2FTTBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:53:15 -0400
-Message-ID: <4FE21C15.6040409@acm.org>
-Date: Wed, 20 Jun 2012 18:53:09 +0000
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	Wed, 20 Jun 2012 15:01:04 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-10.tower-131.messagelabs.com!1340218862!22998957!2
+X-Originating-IP: [216.166.12.99]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/8] staging: comedi: usbdux: use module_comedi_usb_driver()
+Date: Wed, 20 Jun 2012 12:00:57 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Muthu Kumar <muthu.lkml@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
- before checking for dead queue.
-References: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com> <4FD345DC.6020405@acm.org> <CAFR8ueca-MQWRipE+3OQSpqmJ40HKJEY7jWt6PQ+zTCQ9Bh=5Q@mail.gmail.com> <4FD4DC26.5080902@acm.org> <CAFR8uecF0LwbV8FvYob5m34sVbKqafrNoYOrcRUQCEOymGnYRA@mail.gmail.com> <CAFR8uefK+nByiJ8tw5_KF1qEJs4du2mDdU36gg1_2nRNZXN5Fw@mail.gmail.com> <20120618224253.GH32733@google.com>
-In-Reply-To: <20120618224253.GH32733@google.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206201200.57853.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/12 22:42, Tejun Heo wrote:
+Use the module_comedi_usb_driver helper macro to initialize this
+module. Rename the driver structs to follow the pattern of the
+other comedi driver types and add some whitespace to improve
+readability.
 
-> On Mon, Jun 11, 2012 at 02:23:23PM -0700, Muthu Kumar wrote:
->> On Mon, Jun 11, 2012 at 10:33 AM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
->>> On Sun, Jun 10, 2012 at 10:40 AM, Bart Van Assche <bvanassche@acm.org> wrote:
->>>> On 06/09/12 23:57, Muthu Kumar wrote:
->>>>
->>>>> Locking change is the one you posted already (the link above). Anyway,
->>>>> I have the attached patch *including* the locking change. Original
->>>>> mail has attachment without locking change. Please use whatever you
->>>>> need.
->>>>
->>>> While we are at it ... the rq->rq_disk and rq->end_io assignments can be
->>>> performed safely before the spinlock is taken, isn't it ?
->>>
->>> Yes.. that spinlock is to protect the q.
->>
->> Attached patch with assignment performed before taking the spinlock.
-> 
-> This looks correct to me.  Bart, can you please include this patch in
-> your series and repost the series?
-
-
-I'll start testing the patch below:
-
-[PATCH] block: Fix blk_execute_rq_nowait() dead queue handling
-
-Make sure that blk_execute_rq_nowait() invokes the proper end_io
-function if the queue is dead and also that this call is performed
-with the queue lock held. Found this through source code review.
-
-Notes:
-- Since blk_execute_rq_nowait() must not be invoked from interrupt
-  context it is safe to invoke end_io directly from this function.
-- blk_finish_request() already invokes request.end_io with the
-  queue lock held.
-
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reported-by: Muthukumar Ratty <muthur@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- block/blk-exec.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ drivers/staging/comedi/drivers/usbdux.c | 50 +++++++++------------------------
+ 1 file changed, 14 insertions(+), 36 deletions(-)
 
-diff --git a/block/blk-exec.c b/block/blk-exec.c
-index fb2cbd5..c0fd83a 100644
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -42,7 +42,8 @@ static void blk_end_sync_rq(struct request *rq, int error)
-  *
-  * Description:
-  *    Insert a fully prepared request at the back of the I/O scheduler queue
-- *    for execution.  Don't wait for completion.
-+ *    for execution.  Don't wait for completion.  This function may invoke
-+ *    rq->end_io directly.
-  */
- void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
- 			   struct request *rq, int at_head,
-@@ -51,18 +52,20 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
- 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
+diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
+index 83ee669..586936b 100644
+--- a/drivers/staging/comedi/drivers/usbdux.c
++++ b/drivers/staging/comedi/drivers/usbdux.c
+@@ -317,7 +317,7 @@ static struct usbduxsub usbduxsub[NUMUSBDUX];
  
- 	WARN_ON(irqs_disabled());
-+
-+	rq->rq_disk = bd_disk;
-+	rq->end_io = done;
-+
- 	spin_lock_irq(q->queue_lock);
+ static DEFINE_SEMAPHORE(start_stop_sem);
  
- 	if (unlikely(blk_queue_dead(q))) {
--		spin_unlock_irq(q->queue_lock);
- 		rq->errors = -ENXIO;
- 		if (rq->end_io)
- 			rq->end_io(rq, rq->errors);
-+		spin_unlock_irq(q->queue_lock);
- 		return;
+-static struct comedi_driver driver_usbdux;	/* see below for initializer */
++static struct comedi_driver usbdux_driver;	/* see below for initializer */
+ 
+ /*
+  * Stops the data acquision
+@@ -2323,7 +2323,7 @@ static void usbdux_firmware_request_complete_handler(const struct firmware *fw,
+ 			"Could not upload firmware (err=%d)\n", ret);
+ 		goto out;
  	}
+-	comedi_usb_auto_config(uinterf, &driver_usbdux);
++	comedi_usb_auto_config(uinterf, &usbdux_driver);
+  out:
+ 	release_firmware(fw);
+ }
+@@ -2832,12 +2832,12 @@ static void usbdux_detach(struct comedi_device *dev)
+ }
  
--	rq->rq_disk = bd_disk;
--	rq->end_io = done;
- 	__elv_add_request(q, rq, where);
- 	__blk_run_queue(q);
- 	/* the queue is stopped so it won't be run */
+ /* main driver struct */
+-static struct comedi_driver driver_usbdux = {
+-	.driver_name = "usbdux",
+-	.module = THIS_MODULE,
+-	.attach = usbdux_attach,
+-	.detach = usbdux_detach,
+-	.attach_usb = usbdux_attach_usb,
++static struct comedi_driver usbdux_driver = {
++	.driver_name	= "usbdux",
++	.module		= THIS_MODULE,
++	.attach		= usbdux_attach,
++	.detach		= usbdux_detach,
++	.attach_usb	= usbdux_attach_usb,
+ };
+ 
+ /* Table with the USB-devices: just now only testing IDs */
+@@ -2849,35 +2849,13 @@ static const struct usb_device_id usbduxsub_table[] = {
+ 
+ MODULE_DEVICE_TABLE(usb, usbduxsub_table);
+ 
+-/* The usbduxsub-driver */
+-static struct usb_driver usbduxsub_driver = {
+-	.name = BOARDNAME,
+-	.probe = usbduxsub_probe,
+-	.disconnect = usbduxsub_disconnect,
+-	.id_table = usbduxsub_table,
++static struct usb_driver usbdux_usb_driver = {
++	.name		= BOARDNAME,
++	.probe		= usbduxsub_probe,
++	.disconnect	= usbduxsub_disconnect,
++	.id_table	= usbduxsub_table,
+ };
+-
+-/* Can't use the nice macro as I have also to initialise the USB */
+-/* subsystem: */
+-/* registering the usb-system _and_ the comedi-driver */
+-static int __init init_usbdux(void)
+-{
+-	printk(KERN_INFO KBUILD_MODNAME ": "
+-	       DRIVER_VERSION ":" DRIVER_DESC "\n");
+-	usb_register(&usbduxsub_driver);
+-	comedi_driver_register(&driver_usbdux);
+-	return 0;
+-}
+-
+-/* deregistering the comedi driver and the usb-subsystem */
+-static void __exit exit_usbdux(void)
+-{
+-	comedi_driver_unregister(&driver_usbdux);
+-	usb_deregister(&usbduxsub_driver);
+-}
+-
+-module_init(init_usbdux);
+-module_exit(exit_usbdux);
++module_comedi_usb_driver(usbdux_driver, usbdux_usb_driver);
+ 
+ MODULE_AUTHOR(DRIVER_AUTHOR);
+ MODULE_DESCRIPTION(DRIVER_DESC);
 -- 
-1.7.7
-
+1.7.11
 
