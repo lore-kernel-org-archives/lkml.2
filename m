@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab2FTTv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 15:51:28 -0400
-Received: from fieldses.org ([174.143.236.118]:41082 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754082Ab2FTTv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 15:51:26 -0400
-Date: Wed, 20 Jun 2012 15:51:21 -0400
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Greg KH <greg@kroah.com>,
-        ksummit-2012-discuss@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the
- question!
-Message-ID: <20120620195121.GA1719@fieldses.org>
-References: <alpine.LFD.2.02.1206152313310.3086@ionos>
- <20120615233413.GB8894@kroah.com>
- <alpine.LFD.2.02.1206161103320.3086@ionos>
- <20120616072906.7469ec24@tpl.lwn.net>
+	id S1757985Ab2FTTvj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 15:51:39 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42877 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757942Ab2FTTvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 15:51:32 -0400
+Message-ID: <4FE229BF.4080109@wwwdotorg.org>
+Date: Wed, 20 Jun 2012 13:51:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120616072906.7469ec24@tpl.lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Laxman Dewangan <ldewangan@nvidia.com>,
+        lrg@ti.com, rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, lee.jones@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 2/3] regulator: dt: regulator match by regulator-compatible
+References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com> <1340194987-23654-3-git-send-email-ldewangan@nvidia.com> <201206201924.09618.arnd@arndb.de> <20120620194609.GA4037@opensource.wolfsonmicro.com>
+In-Reply-To: <20120620194609.GA4037@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 16, 2012 at 07:29:06AM -0600, Jonathan Corbet wrote:
-> On Sat, 16 Jun 2012 12:50:05 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
+On 06/20/2012 01:46 PM, Mark Brown wrote:
+> On Wed, Jun 20, 2012 at 07:24:09PM +0000, Arnd Bergmann wrote:
 > 
-> > A good start would be if you could convert your kernel statistics into
-> > accounting the consolidation effects of contributions instead of
-> > fostering the idiocy that corporates have started to measure themself
-> > and the performance of their employees (I'm not kidding, it's the sad
-> > reality) with line and commit count statistics.
+>> 1. What is it that the new property can express that cannot
+>> already be expressed by using the phandle.
 > 
-> I would dearly love to come up with a way to measure "real work" in
-> some fashion; I've just not, yet, figured out how to do that.  I do
-> fear that the simple numbers we're able to generate end up creating the
-> wrong kinds of incentives.
+> As well as being able to refer to the object from within the device
+> tree we also need to be able to tell what the object represents -
+> we have a bunch of regulators in an array under a node for a PMIC
+> and we want to know which regulator on the physical device each
+> array entry corresponds to.  Previously this was being done by
+> parsing the phandle name but that
 
-I can't see any alternative to explaining what somebody did and why it
-was important.
+s/phandle name/node name/ in that line I think.
 
-To that end, the best resource for understanding the value of somebody's
-work is the lwn.net kernel page--if their work has been discussed there.
+At least, I don't think it's common to refer to nodes as phandles;
+phandles are usually the values used at "client" sites to refer to
+nodes IIUC.
 
-So, all you need to do is to hire a dozen more of you, and we're
-covered!
-
---b.
-
+> means we can't have more than one device with the same set of
+> names.
 > 
-> Any thoughts on how to measure "consolidation effects"?  I toss out
-> numbers on code removal sometimes, but that turns out to not be a whole
-> lot more useful than anything else on its own.
+>> 2. Why is it called "regulator-compatible"? If it's similar to
+>> the "compatible" property, don't you have to have a binding for
+>> each possible string? If it's not related to the "compatible"
+>> property, why is it named in a similar way?
 > 
-> Thanks,
-> 
-> jon
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Yes, there are bindings defined already for all the relevant
+> devices. Elsewhere in the binding document you'll see a list of all
+> the regulators on the PMIC and the names by which the device tree
+> binding knows them.
