@@ -1,95 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab2FTJcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:32:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44887 "EHLO mga11.intel.com"
+	id S1755937Ab2FTJfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:35:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58577 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754645Ab2FTJcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:32:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="167924200"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: [PATCH] power_supply: Add charge_rate_limit power supply attribute
-Date: Wed, 20 Jun 2012 13:38:03 +0530
-Message-Id: <1340179683-6548-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755845Ab2FTJf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:35:27 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 04/17] mm: allow PF_MEMALLOC from softirq context
+Date: Wed, 20 Jun 2012 10:35:07 +0100
+Message-Id: <1340184920-22288-5-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340184920-22288-1-git-send-email-mgorman@suse.de>
+References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During charging battery temperature and charger chip(die) temperature
-will go up and this intern adds upto the overall platform temperature.
-On mobile devices this can have huge impact on the user(user experience).
+This is needed to allow network softirq packet processing to make
+use of PF_MEMALLOC.
 
-This patch adds a new power supply property charge_rate_limit which can
-be used by user space app/framework(Ex: Thermal Manager) to control the
-overall platform temperature by changing the charge rate property.
+Currently softirq context cannot use PF_MEMALLOC due to it not being
+associated with a task, and therefore not having task flags to fiddle
+with - thus the gfp to alloc flag mapping ignores the task flags when
+in interrupts (hard or soft) context.
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Allowing softirqs to make use of PF_MEMALLOC therefore requires some
+trickery. This patch borrows the task flags from whatever process happens
+to be preempted by the softirq. It then modifies the gfp to alloc flags
+mapping to not exclude task flags in softirq context, and modify the
+softirq code to save, clear and restore the PF_MEMALLOC flag.
+
+The save and clear, ensures the preempted task's PF_MEMALLOC flag
+doesn't leak into the softirq. The restore ensures a softirq's
+PF_MEMALLOC flag cannot leak back into the preempted process. This
+should be safe due to the following reasons
+
+Softirqs can run on multiple CPUs sure but the same task should not be
+	executing the same softirq code. Neither should the softirq
+	handler be preempted by any other softirq handler so the flags
+	should not leak to an unrelated softirq.
+
+Softirqs re-enable hardware interrupts in __do_softirq() so can be
+	preempted by hardware interrupts so PF_MEMALLOC is inherited
+	by the hard IRQ. However, this is similar to a process in
+	reclaim being preempted by a hardirq. While PF_MEMALLOC is
+	set, gfp_to_alloc_flags() distinguishes between hard and
+	soft irqs and avoids giving a hardirq the ALLOC_NO_WATERMARKS
+	flag.
+
+If the softirq is deferred to ksoftirq then its flags may be used
+        instead of a normal tasks but as the softirq cannot be preempted,
+        the PF_MEMALLOC flag does not leak to other code by accident.
+
+[davem@davemloft.net: Document why PF_MEMALLOC is safe]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- Documentation/power/power_supply_class.txt |    4 ++++
- drivers/power/power_supply_sysfs.c         |    1 +
- include/linux/power_supply.h               |    8 ++++++++
- 3 files changed, 13 insertions(+), 0 deletions(-)
+ include/linux/sched.h |    7 +++++++
+ kernel/softirq.c      |    9 +++++++++
+ mm/page_alloc.c       |    6 +++++-
+ 3 files changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
-index c0f62ae..8345f93 100644
---- a/Documentation/power/power_supply_class.txt
-+++ b/Documentation/power/power_supply_class.txt
-@@ -116,6 +116,10 @@ CONSTANT_CHARGE_CURRENT - constant charge current programmed by charger.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4059c0f..3a33c4e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1889,6 +1889,13 @@ static inline void rcu_switch_from(struct task_struct *prev)
  
- CONSTANT_CHARGE_VOLTAGE - constant charge voltage programmed by charger.
+ #endif
  
-+CHARGE_RATE_LIMIT - interface to limit or control the charge rate from
-+user space, values corresponds to POWER_SUPPLY_CHARGE_RATE_* as defined
-+in power_supply.h
++static inline void tsk_restore_flags(struct task_struct *task,
++				unsigned long orig_flags, unsigned long flags)
++{
++	task->flags &= ~flags;
++	task->flags |= orig_flags & flags;
++}
 +
- ENERGY_FULL, ENERGY_EMPTY - same as above but for energy.
- 
- CAPACITY - capacity in percents.
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index 58846d9..7e4272a 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -161,6 +161,7 @@ static struct device_attribute power_supply_attrs[] = {
- 	POWER_SUPPLY_ATTR(charge_counter),
- 	POWER_SUPPLY_ATTR(constant_charge_current),
- 	POWER_SUPPLY_ATTR(constant_charge_voltage),
-+	POWER_SUPPLY_ATTR(charge_rate_limit),
- 	POWER_SUPPLY_ATTR(energy_full_design),
- 	POWER_SUPPLY_ATTR(energy_empty_design),
- 	POWER_SUPPLY_ATTR(energy_full),
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index 53f177d..b9993d4 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -47,6 +47,13 @@ enum {
- };
- 
- enum {
-+	POWER_SUPPLY_CHARGE_RATE_LOW = 0,
-+	POWER_SUPPLY_CHARGE_RATE_MEDIUM,
-+	POWER_SUPPLY_CHARGE_RATE_HIGH,
-+	POWER_SUPPLY_CHARGE_RATE_FULL,
-+};
+ #ifdef CONFIG_SMP
+ extern void do_set_cpus_allowed(struct task_struct *p,
+ 			       const struct cpumask *new_mask);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 671f959..b73e681 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -210,6 +210,14 @@ asmlinkage void __do_softirq(void)
+ 	__u32 pending;
+ 	int max_restart = MAX_SOFTIRQ_RESTART;
+ 	int cpu;
++	unsigned long old_flags = current->flags;
 +
-+enum {
- 	POWER_SUPPLY_HEALTH_UNKNOWN = 0,
- 	POWER_SUPPLY_HEALTH_GOOD,
- 	POWER_SUPPLY_HEALTH_OVERHEAT,
-@@ -111,6 +118,7 @@ enum power_supply_property {
- 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
- 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
- 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
-+	POWER_SUPPLY_PROP_CHARGE_RATE_LIMIT,
- 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
- 	POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN,
- 	POWER_SUPPLY_PROP_ENERGY_FULL,
++	/*
++	 * Mask out PF_MEMALLOC s current task context is borrowed for the
++	 * softirq. A softirq handled such as network RX might set PF_MEMALLOC
++	 * again if the socket is related to swap
++	 */
++	current->flags &= ~PF_MEMALLOC;
+ 
+ 	pending = local_softirq_pending();
+ 	account_system_vtime(current);
+@@ -265,6 +273,7 @@ restart:
+ 
+ 	account_system_vtime(current);
+ 	__local_bh_enable(SOFTIRQ_OFFSET);
++	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
+ }
+ 
+ #ifndef __ARCH_HAS_DO_SOFTIRQ
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ebffeaa..c059f51 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2267,7 +2267,11 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+ 		if (gfp_mask & __GFP_MEMALLOC)
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+-		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
++		else if (in_serving_softirq() && (current->flags & PF_MEMALLOC))
++			alloc_flags |= ALLOC_NO_WATERMARKS;
++		else if (!in_interrupt() &&
++				((current->flags & PF_MEMALLOC) ||
++				 unlikely(test_thread_flag(TIF_MEMDIE))))
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+ 	}
+ 
 -- 
-1.7.0.4
+1.7.9.2
 
