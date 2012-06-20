@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab2FTSmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:42:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537Ab2FTSVJ (ORCPT
+	id S1757567Ab2FTSnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:43:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756986Ab2FTSVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:21:09 -0400
-Message-Id: <20120620173021.518580540@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:21:03 -0400
+Message-Id: <20120620173021.249009253@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:26 -0700
+Date: Wed, 20 Jun 2012 10:30:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?M=C3=A1rton=20N=C3=A9meth?= <nm127@freemail.hu>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 06/61] drm via: initialize object_idr
+        Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [ 03/61] ARM i.MX imx21ads: Fix overlapping static i/o mappings
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,58 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Márton Németh <nm127@freemail.hu>
+From: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
 
-commit ce020ea53264f1460ae619cfc12f968dbd0b8974 upstream.
+commit 350ab15bb2ffe7103bc6bf6c634f3c5b286eaf2a upstream.
 
-The field obejct_idr of struct drm_via_private was introduced with the
-commit http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=77ee8f3825054f23b17e9c8f728f061defd86cdc .
-In that patch idr_init(&dev->object_name_idr) was called instead of
-idr_init(&dev_priv->object_idr) by mistake, leaving the dev_priv->object_idr
-uninitialized. To be more exact, the object_idr buffer is filled with zeros
-because of kzalloc(), but the dev_priv->object_idr.lock spinlock can cause
-system freeze at lib/idr.c:move_to_free_list() when spin_lock_irqsave()
-is called on this spinlock.
+The statically defined I/O memory regions for the i.MX21 on chip
+peripherals and the on board I/O peripherals of the i.MX21ADS board
+overlap. This results in a kernel crash during startup. This is fixed
+by reducing the memory range for the on board I/O peripherals to the
+actually required range.
 
-The patch was tested on Clevo D4J, model D410J laptop, on the following
-hardware, without AGP kernel module loaded:
-
-  # lspci -s 01:00.0 -n
-  01:00.0 0300: 1106:3108 (rev 01)
-  # lspci -s 01:00.0 -v
-  01:00.0 VGA compatible controller: VIA Technologies, Inc. K8M800/K8N800/K8N800A [S3 UniChrome Pro] (rev 01) (prog-if 00 [VGA controller])
-          Subsystem: CLEVO/KAPOK Computer Device 4702
-          Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 16
-          Memory at f0000000 (32-bit, prefetchable) [size=64M]
-          Memory at d1000000 (32-bit, non-prefetchable) [size=16M]
-          Expansion ROM at <unassigned> [disabled]
-          Capabilities: [60] Power Management version 2
-          Capabilities: [70] AGP version 3.0
-
-Signed-off-by: Márton Németh <nm127@freemail.hu>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/via/via_map.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/mach-imx/mach-mx21ads.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/via/via_map.c
-+++ b/drivers/gpu/drm/via/via_map.c
-@@ -100,12 +100,11 @@ int via_driver_load(struct drm_device *d
- 	if (dev_priv == NULL)
- 		return -ENOMEM;
+--- a/arch/arm/mach-imx/mach-mx21ads.c
++++ b/arch/arm/mach-imx/mach-mx21ads.c
+@@ -32,7 +32,7 @@
+  * Memory-mapped I/O on MX21ADS base board
+  */
+ #define MX21ADS_MMIO_BASE_ADDR   0xf5000000
+-#define MX21ADS_MMIO_SIZE        SZ_16M
++#define MX21ADS_MMIO_SIZE        0xc00000
  
-+	idr_init(&dev_priv->object_idr);
- 	dev->dev_private = (void *)dev_priv;
- 
- 	dev_priv->chipset = chipset;
- 
--	idr_init(&dev->object_name_idr);
--
- 	pci_set_master(dev->pdev);
- 
- 	ret = drm_vblank_init(dev, 1);
+ #define MX21ADS_REG_ADDR(offset)    (void __force __iomem *) \
+ 		(MX21ADS_MMIO_BASE_ADDR + (offset))
 
 
