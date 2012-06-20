@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab2FTQup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:50:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38149 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab2FTQuo (ORCPT
+	id S1754371Ab2FTQvR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:51:17 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:43298 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab2FTQvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:50:44 -0400
-Date: Wed, 20 Jun 2012 09:50:20 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-8bxozh5lyixgjmziqaxo9675@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf lib: Introduce rtrim
-Git-Commit-ID: cb1a28a0cbf9dac5a7a0ca02ebebc12db260d2f8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 20 Jun 2012 12:51:16 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao5QAKT+4U9V5qg+PGdsb2JhbABFihKrPRkBAQEBNzSCGAEBBAEnExwjBQsIAy0ZFCUKGhOIBgm5TBSLI4JqgkhgA5UphWaMfYFU
+X-IronPort-AV: E=Sophos;i="4.77,445,1336341600"; 
+   d="scan'208";a="138945349"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 20 Jun 2012 18:53:56 +0200
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] HID: hid-multitouch: support arrays for the split of
+ the touches in a report
+Message-ID: <20120620165356.GA2850@polaris.bitmath.org>
+References: <1340109594-10732-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1340109594-10732-2-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:50:26 -0700 (PDT)
+In-Reply-To: <1340109594-10732-2-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb1a28a0cbf9dac5a7a0ca02ebebc12db260d2f8
-Gitweb:     http://git.kernel.org/tip/cb1a28a0cbf9dac5a7a0ca02ebebc12db260d2f8
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 7 Jun 2012 18:23:31 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 19 Jun 2012 13:06:19 -0300
+Hi Benjamin,
 
-perf lib: Introduce rtrim
+> Win8 certification introduced the ability to transmit two X and two Y per
+> touch. The specification precises that it must be in an array, with a
+> report count == 2.
+> 
+> This test guarantees that we split the touches on the last element
+> in this array.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> ---
+>  drivers/hid/hid-multitouch.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 9a3891e..a5ef877 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -601,7 +601,10 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+>  			return 0;
+>  		}
+>  
+> -		if (usage->hid == td->last_slot_field)
+> +		if (usage->hid == td->last_slot_field &&
+> +			usage == &field->usage[field->maxusage - 1])
+> +			/* we only take into account the last report
+> +			 * of a field if report_count > 1 */
 
-Remove the trailing whitespaces.
+This just looks so fragile... The report index should really be amount
+the arguments to mt_event(). Since we rely on the pointer to reveal
+the index, why not try something like (usage - &field->usage[0]) ==
+(field->report_count - 1)? At least it shows clearly what we use the
+point for.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-8bxozh5lyixgjmziqaxo9675@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/string.c |   22 ++++++++++++++++++++++
- tools/perf/util/util.h   |    2 ++
- 2 files changed, 24 insertions(+), 0 deletions(-)
+>  			mt_complete_slot(td);
+>  
+>  		if (field->index == td->last_field_index
+> -- 
+> 1.7.10.2
+> 
 
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index d583638..199bc4d 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -313,3 +313,25 @@ int strtailcmp(const char *s1, const char *s2)
- 	return 0;
- }
- 
-+/**
-+ * rtrim - Removes trailing whitespace from @s.
-+ * @s: The string to be stripped.
-+ *
-+ * Note that the first trailing whitespace is replaced with a %NUL-terminator
-+ * in the given string @s. Returns @s.
-+ */
-+char *rtrim(char *s)
-+{
-+	size_t size = strlen(s);
-+	char *end;
-+
-+	if (!size)
-+		return s;
-+
-+	end = s + size - 1;
-+	while (end >= s && isspace(*end))
-+		end--;
-+	*(end + 1) = '\0';
-+
-+	return s;
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 2daaedb..b13c733 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -264,4 +264,6 @@ bool is_power_of_2(unsigned long n)
- 
- size_t hex_width(u64 v);
- 
-+char *rtrim(char *s);
-+
- #endif
+Thanks,
+Henrik
