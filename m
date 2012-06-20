@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab2FTBlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 21:41:04 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57128 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab2FTBlB (ORCPT
+	id S1753964Ab2FTByo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 21:54:44 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:48085 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401Ab2FTByn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 21:41:01 -0400
-From: "NickCheng" <nick.cheng@areca.com.tw>
-To: "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
-Cc: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1340121415.3004.57.camel@dabdike.int.hansenpartnership.com>
-Subject: RE: [Fwd: [patch] [SCSI] arcmsr: fix misuse of | instead of &]
-Date: Wed, 20 Jun 2012 09:38:10 +0800
-Message-ID: <02F0C1478CF5442C9D543E3A87B82B82@arecaaebe11fae>
+	Tue, 19 Jun 2012 21:54:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac1ONCr7kh2bxkRMQCS2L+D1se/SwwAUOZAQ
-In-Reply-To: <1340121415.3004.57.camel@dabdike.int.hansenpartnership.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+In-Reply-To: <Pine.LNX.4.44L0.1206191046000.1814-100000@iolanthe.rowland.org>
+References: <CAK9wHMQ7ZLtMTfBKWOb4A8wmjP9EQV8gA_moh5dXxvU0-b-vMQ@mail.gmail.com>
+	<Pine.LNX.4.44L0.1206191046000.1814-100000@iolanthe.rowland.org>
+Date: Wed, 20 Jun 2012 09:54:42 +0800
+Message-ID: <CAK9wHMQ6kJX06ZRjk6w_bt2HDnu=7dQEKde-Cxu8t4QbgLyTCA@mail.gmail.com>
+Subject: Re: pm runtime and system suspend resume
+From: chao xie <xiechao.linux@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        pavel@ucw.cz, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
-Sorry for be late response.
-I am OK with it.
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com] 
-Sent: Tuesday, June 19, 2012 11:57 PM
-To: Nick Cheng
-Subject: [Fwd: [patch] [SCSI] arcmsr: fix misuse of | instead of &]
+>> hi
+>> PM_RUNTIME provide a way for device driver do runtime PM. so for some
+>> devices, they have some surrounded logic. For example, the device may
+>> get clock from outside, or it need PHY support(USB is a example).
+>> To get these dependency out of device driver, i define a struct
+>> dev_pm_domain, and make dev.pm_domain point to it. So in the device
+>> driver, when the hardware should be enabled, we can call
+>> pm_runtime_get_sync while when the hardware is idle or does not work,
+>> we can call pm_runtime_put_sync.
+>> It seems work well, but i have question about the suspend/resume of
+>> device. When the whole system will go to deep idle, and it will
+>> suspend the devices. for the function do device suspend
+>> __device_suspend,
+>
+> What source file is that function in?
+>
 
-Is this OK with you?
+The function is located at drivers/base/power/main.c
 
-James
+>>  it will call pm_runtime_get_noresume(dev). As i
+>> think it will make the device not do runtime suspend any more. Is that
+>> correct?
+>
+> It sounds wrong.  Why would a suspend routine do that?
+>
 
--------- Forwarded Message --------
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: James E.J. Bottomley <JBottomley@parallels.com>
-Cc: David Howells <dhowells@redhat.com>, Nick Cheng
-<nick.cheng@areca.com.tw>, , kernel-janitors@vger.kernel.org
-Subject: [patch] [SCSI] arcmsr: fix misuse of | instead of &
-Date: Sat, 9 Jun 2012 12:10:19 +0300
+I do knot know, but the code is there.
 
-ARCMSR_ARC1880_DiagWrite_ENABLE is 0x00000080 so (x | 0x00000080) is
-never zero.  The intent here was to test that loop until
-ARCMSR_ARC1880_DiagWrite_ENABLE was turned on, but because the test was
-wrong, we would do five loops regardless of whether it succeed or not.
+>> There is the question, how device driver handle the logic surrounds
+>> it? I want to add pm_runtime_put_sync in dev->driver->pm->suspend
+>> function, and pm_runtime_get_sync in dev->driver->pm->resume.
+>
+> You must not do that.  If you do, your driver will hang.
+>
 
-Also I simplified the condition a little by removing the unused
-assignement.
+why it will hang?
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-Static checker stuff.  I do not own this hardware.
+>> Because
+>> __device_suspend increase the usage_count, pm_runtime_put_sync will
+>> not do real work.
+>> So is that right that i directly call pm_runtime_suspend in
+>> dev->driver->pm->suspend and pm_runtime_resume in
+>> dev->driver->pm->resume?
+>
+> No, it works the other way around.  pm_runtime_suspend calls
+> dev->driver->pm->suspend, and pm_runtime_resume calls
+> dev->driver->pm->resume.
+>
 
-diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c
-b/drivers/scsi/arcmsr/arcmsr_hba.c
-index cbde1dc..def24a1 100644
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -2821,7 +2821,7 @@ static void arcmsr_hardware_reset(struct
-AdapterControlBlock *acb)
- 	int i, count = 0;
- 	struct MessageUnit_A __iomem *pmuA = acb->pmuA;
- 	struct MessageUnit_C __iomem *pmuC = acb->pmuC;
--	u32 temp = 0;
-+
- 	/* backup pci config data */
- 	printk(KERN_NOTICE "arcmsr%d: executing hw bus reset .....\n",
-acb->host->host_no);
- 	for (i = 0; i < 64; i++) {
-@@ -2839,7 +2839,7 @@ static void arcmsr_hardware_reset(struct
-AdapterControlBlock *acb)
- 			writel(0x2, &pmuC->write_sequence);
- 			writel(0x7, &pmuC->write_sequence);
- 			writel(0xD, &pmuC->write_sequence);
--		} while ((((temp = readl(&pmuC->host_diagnostic)) |
-ARCMSR_ARC1880_DiagWrite_ENABLE) == 0) && (count < 5));
-+		} while (((readl(&pmuC->host_diagnostic) &
-ARCMSR_ARC1880_DiagWrite_ENABLE) == 0) && (count < 5));
- 		writel(ARCMSR_ARC1880_RESET_ADAPTER,
-&pmuC->host_diagnostic);
- 	} else {
- 		pci_write_config_byte(acb->pdev, 0x84, 0x20);
---
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I have checked the pm_runtime_suspend implementation. It will call
+__pm_runtime_suspend without RPM_GET_PUT. It means that it will
+directly call rpm_suspend. in this function, the pm_ops call sequence
+is
+if (dev->pm_domain)
+               callback = dev->pm_domain->ops.runtime_suspend;
+       else if (dev->type && dev->type->pm)
+               callback = dev->type->pm->runtime_suspend;
+       else if (dev->class && dev->class->pm)
+               callback = dev->class->pm->runtime_suspend;
+       else if (dev->bus && dev->bus->pm)
+               callback = dev->bus->pm->runtime_suspend;
+       else
+               callback = NULL;
 
+       if (!callback && dev->driver && dev->driver->pm)
+               callback = dev->driver->pm->runtime_suspend;
 
+It means that if dev->pm_domain is not NULL, it will not call
+dev->driver->pm operations.
+
+Finally the real question is who will deal with the dev->pm_domain?
+when system go to sleep.
+The driver will use pm_runtime_get/put to deal with dev->pm_domain
+when it want to work or is in idle. Then when system go to sleep, the
+driver need care about dev->pm_domain too.
+Usally, dev->pm_domain is a easy way to handle the difference SOCs
+with same device IP. For example, USB. Many vendor may have same usb
+IP but difference phy and clock configuration. putting these stuff
+into dev->pm_domain can make driver be shared by different SOCs.
+
+> Alan Stern
+>
