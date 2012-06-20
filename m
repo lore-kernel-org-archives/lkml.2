@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757736Ab2FTSic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:38:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757715Ab2FTSWN (ORCPT
+	id S932302Ab2FTSiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:38:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757691Ab2FTSWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:22:13 -0400
-Message-Id: <20120620173023.180719401@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:22:06 -0400
+Message-Id: <20120620173023.015928307@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:46 -0700
+Date: Wed, 20 Jun 2012 10:30:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Janne=20Kalliom=C3=A4ki?= <janne@tuxera.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [ 26/61] hfsplus: fix overflow in sector calculations in hfsplus_submit_bio
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
+Subject: [ 24/61] USB: option: fix port-data abuse
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +24,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Janne Kalliomäki <janne@tuxera.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit a6dc8c04218eb752ff79cdc24a995cf51866caed upstream.
+commit 4273f9878b0a8271df055e3c8f2e7f08c6a4a2f4 upstream.
 
-The variable io_size was unsigned int, which caused the wrong sector number
-to be calculated after aligning it. This then caused mount to fail with big
-volumes, as backup volume header information was searched from a
-wrong sector.
+Commit 8b4c6a3ab596961b78465 ("USB: option: Use generic USB wwan code")
+moved option port-data allocation to usb_wwan_startup but still cast the
+port data to the old struct...
 
-Signed-off-by: Janne Kalliomäki <janne@tuxera.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/hfsplus/wrapper.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |   34 +++-------------------------------
+ 1 file changed, 3 insertions(+), 31 deletions(-)
 
---- a/fs/hfsplus/wrapper.c
-+++ b/fs/hfsplus/wrapper.c
-@@ -56,7 +56,7 @@ int hfsplus_submit_bio(struct super_bloc
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct bio *bio;
- 	int ret = 0;
--	unsigned int io_size;
-+	u64 io_size;
- 	loff_t start;
- 	int offset;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1288,35 +1288,6 @@ static struct usb_serial_driver * const
  
+ static bool debug;
+ 
+-/* per port private data */
+-
+-#define N_IN_URB 4
+-#define N_OUT_URB 4
+-#define IN_BUFLEN 4096
+-#define OUT_BUFLEN 4096
+-
+-struct option_port_private {
+-	/* Input endpoints and buffer for this port */
+-	struct urb *in_urbs[N_IN_URB];
+-	u8 *in_buffer[N_IN_URB];
+-	/* Output endpoints and buffer for this port */
+-	struct urb *out_urbs[N_OUT_URB];
+-	u8 *out_buffer[N_OUT_URB];
+-	unsigned long out_busy;		/* Bit vector of URBs in use */
+-	int opened;
+-	struct usb_anchor delayed;
+-
+-	/* Settings for the port */
+-	int rts_state;	/* Handshaking pins (outputs) */
+-	int dtr_state;
+-	int cts_state;	/* Handshaking pins (inputs) */
+-	int dsr_state;
+-	int dcd_state;
+-	int ri_state;
+-
+-	unsigned long tx_start_time[N_OUT_URB];
+-};
+-
+ module_usb_serial_driver(option_driver, serial_drivers);
+ 
+ static bool is_blacklisted(const u8 ifnum, enum option_blacklist_reason reason,
+@@ -1399,7 +1370,8 @@ static void option_instat_callback(struc
+ 	int err;
+ 	int status = urb->status;
+ 	struct usb_serial_port *port =  urb->context;
+-	struct option_port_private *portdata = usb_get_serial_port_data(port);
++	struct usb_wwan_port_private *portdata =
++					usb_get_serial_port_data(port);
+ 
+ 	dbg("%s", __func__);
+ 	dbg("%s: urb %p port %p has data %p", __func__, urb, port, portdata);
+@@ -1460,7 +1432,7 @@ static int option_send_setup(struct usb_
+ 	struct usb_serial *serial = port->serial;
+ 	struct usb_wwan_intf_private *intfdata =
+ 		(struct usb_wwan_intf_private *) serial->private;
+-	struct option_port_private *portdata;
++	struct usb_wwan_port_private *portdata;
+ 	int ifNum = serial->interface->cur_altsetting->desc.bInterfaceNumber;
+ 	int val = 0;
+ 	dbg("%s", __func__);
 
 
