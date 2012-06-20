@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab2FTJiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:38:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59223 "EHLO mx2.suse.de"
+	id S1756236Ab2FTJi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:38:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59296 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756094Ab2FTJiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:38:11 -0400
+	id S1756080Ab2FTJiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:38:18 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/12] mm: Add get_kernel_page[s] for pinning of kernel addresses for I/O
-Date: Wed, 20 Jun 2012 10:37:55 +0100
-Message-Id: <1340185081-22525-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 11/12] nfs: Prevent page allocator recursions with swap over NFS.
+Date: Wed, 20 Jun 2012 10:38:00 +0100
+Message-Id: <1340185081-22525-12-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1340185081-22525-1-git-send-email-mgorman@suse.de>
 References: <1340185081-22525-1-git-send-email-mgorman@suse.de>
@@ -27,132 +27,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds two new APIs get_kernel_pages() and get_kernel_page()
-that may be used to pin a vector of kernel addresses for IO. The initial
-user is expected to be NFS for allowing pages to be written to swap
-using aops->direct_IO(). Strictly speaking, swap-over-NFS only needs
-to pin one page for IO but it makes sense to express the API in terms
-of a vector and add a helper for pinning single pages.
+GFP_NOFS is _more_ permissive than GFP_NOIO in that it will initiate
+IO, just not of any filesystem data.
 
+The problem is that previously NOFS was correct because that avoids
+recursion into the NFS code. With swap-over-NFS, it is no longer
+correct as swap IO can lead to this recursion.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/blk_types.h |    2 ++
- include/linux/fs.h        |    2 ++
- include/linux/mm.h        |    4 ++++
- mm/memory.c               |   53 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 61 insertions(+)
+ fs/nfs/pagelist.c |    2 +-
+ fs/nfs/write.c    |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 0edb65d..7b7ac9c 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -160,6 +160,7 @@ enum rq_flag_bits {
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
-+	__REQ_KERNEL, 		/* direct IO to kernel pages */
- 	__REQ_NR_BITS,		/* stops here */
- };
+diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
+index 9ef8b3c..7de1646 100644
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -70,7 +70,7 @@ void nfs_set_pgio_error(struct nfs_pgio_header *hdr, int error, loff_t pos)
+ static inline struct nfs_page *
+ nfs_page_alloc(void)
+ {
+-	struct nfs_page	*p = kmem_cache_zalloc(nfs_page_cachep, GFP_KERNEL);
++	struct nfs_page	*p = kmem_cache_zalloc(nfs_page_cachep, GFP_NOIO);
+ 	if (p)
+ 		INIT_LIST_HEAD(&p->wb_list);
+ 	return p;
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index f45b9ca..6f90681 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -52,7 +52,7 @@ static mempool_t *nfs_commit_mempool;
  
-@@ -201,5 +202,6 @@ enum rq_flag_bits {
- #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
- #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
- #define REQ_SECURE		(1 << __REQ_SECURE)
-+#define REQ_KERNEL		(1 << __REQ_KERNEL)
+ struct nfs_commit_data *nfs_commitdata_alloc(void)
+ {
+-	struct nfs_commit_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOFS);
++	struct nfs_commit_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOIO);
  
- #endif /* __LINUX_BLK_TYPES_H */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0186d67..f21da77 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -165,6 +165,8 @@ struct inodes_stat_t {
- #define READ			0
- #define WRITE			RW_MASK
- #define READA			RWA_MASK
-+#define KERNEL_READ		(READ|REQ_KERNEL)
-+#define KERNEL_WRITE		(WRITE|REQ_KERNEL)
+ 	if (p) {
+ 		memset(p, 0, sizeof(*p));
+@@ -70,7 +70,7 @@ EXPORT_SYMBOL_GPL(nfs_commit_free);
  
- #define READ_SYNC		(READ | REQ_SYNC)
- #define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE)
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0c0301c..b4924f0 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1019,6 +1019,10 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			struct page **pages, struct vm_area_struct **vmas);
- int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 			struct page **pages);
-+struct kvec;
-+int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
-+			struct page **pages);
-+int get_kernel_page(unsigned long start, int write, struct page **pages);
- struct page *get_dump_page(unsigned long addr);
+ struct nfs_write_header *nfs_writehdr_alloc(void)
+ {
+-	struct nfs_write_header *p = mempool_alloc(nfs_wdata_mempool, GFP_NOFS);
++	struct nfs_write_header *p = mempool_alloc(nfs_wdata_mempool, GFP_NOIO);
  
- extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
-diff --git a/mm/memory.c b/mm/memory.c
-index 1b7dc66..2d55992 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1834,6 +1834,59 @@ next_page:
- EXPORT_SYMBOL(__get_user_pages);
- 
- /*
-+ * get_kernel_pages() - pin kernel pages in memory
-+ * @kiov:	An array of struct kvec structures
-+ * @nr_segs:	number of segments to pin
-+ * @write:	pinning for read/write, currently ignored
-+ * @pages:	array that receives pointers to the pages pinned.
-+ *		Should be at least nr_segs long.
-+ *
-+ * Returns number of pages pinned. This may be fewer than the number
-+ * requested. If nr_pages is 0 or negative, returns 0. If no pages
-+ * were pinned, returns -errno. Each page returned must be released
-+ * with a put_page() call when it is finished with.
-+ */
-+int get_kernel_pages(const struct kvec *kiov, int nr_segs, int write,
-+		struct page **pages)
-+{
-+	int seg;
-+
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		if (WARN_ON(kiov[seg].iov_len != PAGE_SIZE))
-+			return seg;
-+
-+		/* virt_to_page sanity checks the PFN */
-+		pages[seg] = virt_to_page(kiov[seg].iov_base);
-+		page_cache_get(pages[seg]);
-+	}
-+
-+	return seg;
-+}
-+EXPORT_SYMBOL_GPL(get_kernel_pages);
-+
-+/*
-+ * get_kernel_page() - pin a kernel page in memory
-+ * @start:	starting kernel address
-+ * @write:	pinning for read/write, currently ignored
-+ * @pages:	array that receives pointer to the page pinned.
-+ *		Must be at least nr_segs long.
-+ *
-+ * Returns 1 if page is pinned. If the page was not pinned, returns
-+ * -errno. The page returned must be released with a put_page() call
-+ * when it is finished with.
-+ */
-+int get_kernel_page(unsigned long start, int write, struct page **pages)
-+{
-+	const struct kvec kiov = {
-+		.iov_base = (void *)start,
-+		.iov_len = PAGE_SIZE
-+	};
-+
-+	return get_kernel_pages(&kiov, 1, write, pages);
-+}
-+EXPORT_SYMBOL_GPL(get_kernel_page);
-+
-+/*
-  * fixup_user_fault() - manually resolve a user page fault
-  * @tsk:	the task_struct to use for page fault accounting, or
-  *		NULL if faults are not to be recorded.
+ 	if (p) {
+ 		struct nfs_pgio_header *hdr = &p->header;
 -- 
 1.7.9.2
 
