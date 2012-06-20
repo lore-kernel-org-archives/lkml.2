@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab2FTCI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 22:08:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46240 "EHLO
+	id S1754420Ab2FTCRR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 22:17:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38135 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab2FTCI0 (ORCPT
+	with ESMTP id S1752401Ab2FTCRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 22:08:26 -0400
+	Tue, 19 Jun 2012 22:17:16 -0400
 From: Mandeep Singh Baines <mandeep.baines@gmail.com>
 To: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: Mandeep Singh Baines <msb@chromium.org>, linux-pm@vger.kernel.org,
@@ -17,8 +17,8 @@ Cc: Mandeep Singh Baines <msb@chromium.org>, linux-pm@vger.kernel.org,
         Colin Cross <ccross@android.com>, Sameer Nanda <snanda@chromium.org>,
         Olof Johansson <olofj@chromium.org>
 Subject: [PATCH] PM: Prevent waiting forever on asynchronous suspend after abort
-Date: Tue, 19 Jun 2012 19:08:12 -0700
-Message-Id: <1340158092-7530-1-git-send-email-msb@chromium.org>
+Date: Tue, 19 Jun 2012 19:17:07 -0700
+Message-Id: <1340158627-7586-1-git-send-email-msb@chromium.org>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
