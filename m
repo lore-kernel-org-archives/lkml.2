@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab2FTS2e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:28:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
+	id S1757718Ab2FTS2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:28:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53819 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514Ab2FTSYZ (ORCPT
+	with ESMTP id S932493Ab2FTSYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:24:25 -0400
-Message-Id: <20120620173039.657617120@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:24:18 -0400
+Message-Id: <20120620173040.002637524@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:40 -0700
+Date: Wed, 20 Jun 2012 10:30:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [ 01/20] ARM i.MX imx21ads: Fix overlapping static i/o mappings
+        alan@lxorguk.ukuu.org.uk, Andrew Bird <ajb@spheresystems.co.uk>
+Subject: [ 05/20] USB: option: Updated Huawei K4605 has better id
 In-Reply-To: <20120620173044.GA6910@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
+From: Andrew Bird <ajb@spheresystems.co.uk>
 
-commit 350ab15bb2ffe7103bc6bf6c634f3c5b286eaf2a upstream.
+commit 42ca7da1c2363dbef4ba1b6917c4c02274b6a5e2 upstream.
 
-The statically defined I/O memory regions for the i.MX21 on chip
-peripherals and the on board I/O peripherals of the i.MX21ADS board
-overlap. This results in a kernel crash during startup. This is fixed
-by reducing the memory range for the on board I/O peripherals to the
-actually required range.
+Later firmwares for this device now have proper subclass and
+protocol info so we can identify it nicely without needing to use
+the blacklist. I'm not removing the old 0xff matching as there
+may be devices in the field that still need that.
 
-Signed-off-by: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/mach-mx21ads.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/mach-imx/mach-mx21ads.c
-+++ b/arch/arm/mach-imx/mach-mx21ads.c
-@@ -32,7 +32,7 @@
-  * Memory-mapped I/O on MX21ADS base board
-  */
- #define MX21ADS_MMIO_BASE_ADDR   0xf5000000
--#define MX21ADS_MMIO_SIZE        SZ_16M
-+#define MX21ADS_MMIO_SIZE        0xc00000
- 
- #define MX21ADS_REG_ADDR(offset)    (void __force __iomem *) \
- 		(MX21ADS_MMIO_BASE_ADDR + (offset))
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -667,6 +667,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0x01, 0x31) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0x01, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K5005, 0xff, 0x01, 0x33) },
 
 
