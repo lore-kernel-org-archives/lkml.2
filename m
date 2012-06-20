@@ -1,193 +1,619 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab2FTQsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:48:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38105 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723Ab2FTQsv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:48:51 -0400
-Date: Wed, 20 Jun 2012 09:48:35 -0700
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Message-ID: <tip-a6b702c117f839023814c1e03453c701d26de522@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        penberg@kernel.org, namhyung@gmail.com, fan4326@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        penberg@kernel.org, fan4326@gmail.com, tglx@linutronix.de,
-        namhyung@gmail.com
-In-Reply-To: <1338265382-6872-7-git-send-email-namhyung@gmail.com>
-References: <1338265382-6872-7-git-send-email-namhyung@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui/gtk:
-  Add GTK info_bar widget to browser window
-Git-Commit-ID: a6b702c117f839023814c1e03453c701d26de522
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:48:41 -0700 (PDT)
+	id S1754166Ab2FTQtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:49:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753699Ab2FTQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 12:49:15 -0400
+Message-ID: <1340210921.5076.76.camel@bling.home>
+Subject: Re: [PATCH v2 2/7] iommu: IOMMU Groups
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: joerg.roedel@amd.com, dwmw2@infradead.org,
+        iommu@lists.linux-foundation.org, bhelgaas@google.com, aik@ozlabs.ru,
+        david@gibson.dropbear.id.au, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        gregkh@linuxfoundation.org, ddutile@redhat.com, liuj97@gmail.com
+Date: Wed, 20 Jun 2012 10:48:41 -0600
+In-Reply-To: <1340186501.28143.158.camel@pasglop>
+References: <20120530201424.31527.33142.stgit@bling.home>
+	 <20120530201852.31527.23265.stgit@bling.home>
+	 <1340186501.28143.158.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a6b702c117f839023814c1e03453c701d26de522
-Gitweb:     http://git.kernel.org/tip/a6b702c117f839023814c1e03453c701d26de522
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Tue, 29 May 2012 13:23:01 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 19 Jun 2012 13:06:19 -0300
+On Wed, 2012-06-20 at 20:01 +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2012-05-30 at 14:18 -0600, Alex Williamson wrote:
+> 
+> > IOMMU groups also include a userspace representation in sysfs under
+> > /sys/kernel/iommu_groups.  When allocated, each group is given a
+> > dynamically assign ID (int).  The ID is managed by the core IOMMU group
+> > code to support multiple heterogeneous iommu drivers, which could
+> > potentially collide in group naming/numbering.  This also keeps group
+> > IDs to small, easily managed values.  A directory is created under
+> > /sys/kernel/iommu_groups for each group.  A further subdirectory named
+> > "devices" contains links to each device within the group.  The iommu_group
+> > file in the device's sysfs directory, which formerly contained a group
+> > number when read, is now a link to the iommu group.  Example:
+> 
+> So first, I'm generally ok with the patch, I have a few comments mostly
+> for discussion and possible further improvements, but so far nothing
+> that can't be done via subsequent patches, so let's start with
+> 
+> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-perf ui/gtk: Add GTK info_bar widget to browser window
+Thanks!
 
-The GtkInfoBar is a modern UI component to display messages without
-bothering the main window. It'll be used for showing a warning message.
+> ---
+> 
+> Now:
+> 
+> How easy would it be add our own files there (in sysfs) ? I'm thinking
+> mostly for debug/diagnostic purposes it would be handy to show some HW
+> state related to the group or should I just add debugfs stuff
+> elsewhere ?
 
-As the GtkInfoBar requires 2.18 (or newer) version of GTK+ library, add
-availability check to Makefile too.
+Well, you've got a name in sysfs that you can do whatever you want with.
+You can update that as often as you like, with whatever you want.  Is
+there a practical way to passthrough more attributes to the iommu
+driver?
 
-Suggested-by: Sunjin Yang <fan4326@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338265382-6872-7-git-send-email-namhyung@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile                 |    3 +++
- tools/perf/config/feature-tests.mak |   13 +++++++++++++
- tools/perf/ui/gtk/browser.c         |   33 +++++++++++++++++++++++++++++++++
- tools/perf/ui/gtk/gtk.h             |   12 ++++++++++++
- 4 files changed, 61 insertions(+), 0 deletions(-)
+> > This patch also extends the IOMMU API to allow attaching groups to
+> > domains.  This is currently a simple wrapper for iterating through
+> > devices within a group, but it's expected that the IOMMU API may
+> > eventually make groups a more integral part of domains.
+> 
+> I assume that by domains you mean "iommu domains" ? Just to be sure
+> because we also have PCI domains so it can be confusing :-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c0ee917..d698c11 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -523,6 +523,9 @@ else
- 		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
- 		BASIC_CFLAGS += -DNO_GTK2_SUPPORT
- 	else
-+		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2)),y)
-+			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
-+		endif
- 		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
- 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
- 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index d9084e0..6c18785 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -78,6 +78,19 @@ int main(int argc, char *argv[])
-         return 0;
- }
- endef
-+
-+define SOURCE_GTK2_INFOBAR
-+#pragma GCC diagnostic ignored \"-Wstrict-prototypes\"
-+#include <gtk/gtk.h>
-+#pragma GCC diagnostic error \"-Wstrict-prototypes\"
-+
-+int main(void)
-+{
-+	gtk_info_bar_new();
-+
-+	return 0;
-+}
-+endef
- endif
- 
- ifndef NO_LIBPERL
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index ece360d..fd41e8d 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -122,6 +122,34 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 	gtk_container_add(GTK_CONTAINER(window), view);
- }
- 
-+#ifdef HAVE_GTK_INFO_BAR
-+static GtkWidget *perf_gtk__setup_info_bar(void)
-+{
-+	GtkWidget *info_bar;
-+	GtkWidget *label;
-+	GtkWidget *content_area;
-+
-+	info_bar = gtk_info_bar_new();
-+	gtk_widget_set_no_show_all(info_bar, TRUE);
-+
-+	label = gtk_label_new("");
-+	gtk_widget_show(label);
-+
-+	content_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
-+	gtk_container_add(GTK_CONTAINER(content_area), label);
-+
-+	gtk_info_bar_add_button(GTK_INFO_BAR(info_bar), GTK_STOCK_OK,
-+				GTK_RESPONSE_OK);
-+	g_signal_connect(info_bar, "response",
-+			 G_CALLBACK(gtk_widget_hide), NULL);
-+
-+	pgctx->info_bar = info_bar;
-+	pgctx->message_label = label;
-+
-+	return info_bar;
-+}
-+#endif
-+
- static GtkWidget *perf_gtk__setup_statusbar(void)
- {
- 	GtkWidget *stbar;
-@@ -145,6 +173,7 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 	struct perf_evsel *pos;
- 	GtkWidget *vbox;
- 	GtkWidget *notebook;
-+	GtkWidget *info_bar;
- 	GtkWidget *statbar;
- 	GtkWidget *window;
- 
-@@ -189,6 +218,10 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 
- 	gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
- 
-+	info_bar = perf_gtk__setup_info_bar();
-+	if (info_bar)
-+		gtk_box_pack_start(GTK_BOX(vbox), info_bar, FALSE, FALSE, 0);
-+
- 	statbar = perf_gtk__setup_statusbar();
- 	gtk_box_pack_start(GTK_BOX(vbox), statbar, FALSE, FALSE, 0);
- 
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index 2061678..a4d0f2b 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -10,6 +10,11 @@
- 
- struct perf_gtk_context {
- 	GtkWidget *main_window;
-+
-+#ifdef HAVE_GTK_INFO_BAR
-+	GtkWidget *info_bar;
-+	GtkWidget *message_label;
-+#endif
- 	GtkWidget *statbar;
- 	guint statbar_ctx_id;
- };
-@@ -24,4 +29,11 @@ static inline bool perf_gtk__is_active_context(struct perf_gtk_context *ctx)
- struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
- int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
- 
-+#ifndef HAVE_GTK_INFO_BAR
-+static inline GtkWidget *perf_gtk__setup_info_bar(void)
-+{
-+	return NULL;
-+}
-+#endif
-+
- #endif /* _PERF_GTK_H_ */
+Yes, and yes it's confusing.  Just remember nothing about the IOMMU API
+is PCI specific ;)
+
+> > +/**
+> > + * iommu_group_alloc - Allocate a new group
+> > + * @name: Optional name to associate with group, visible in sysfs
+> > + *
+> > + * This function is called by an iommu driver to allocate a new iommu
+> > + * group.  The iommu group represents the minimum granularity of the iommu.
+> > + * Upon successful return, the caller holds a reference to the supplied
+> > + * group in order to hold the group until devices are added.  Use
+> > + * iommu_group_put() to release this extra reference count, allowing the
+> > + * group to be automatically reclaimed once it has no devices or external
+> > + * references.
+> > + */
+> > +struct iommu_group *iommu_group_alloc(void)
+> >  {
+> > -	unsigned int groupid;
+> > +	struct iommu_group *group;
+> > +	int ret;
+> > +
+> > +	group = kzalloc(sizeof(*group), GFP_KERNEL);
+> > +	if (!group)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	group->kobj.kset = iommu_group_kset;
+> > +	mutex_init(&group->mutex);
+> > +	INIT_LIST_HEAD(&group->devices);
+> > +	BLOCKING_INIT_NOTIFIER_HEAD(&group->notifier);
+> > +
+> > +	mutex_lock(&iommu_group_mutex);
+> > +
+> > +again:
+> > +	if (unlikely(0 == ida_pre_get(&iommu_group_ida, GFP_KERNEL))) {
+> > +		kfree(group);
+> > +		mutex_unlock(&iommu_group_mutex);
+> > +		return ERR_PTR(-ENOMEM);
+> > +	}
+> > +
+> > +	if (-EAGAIN == ida_get_new(&iommu_group_ida, &group->id))
+> > +		goto again;
+> > +
+> > +	mutex_unlock(&iommu_group_mutex);
+> >  
+> > -	if (iommu_device_group(dev, &groupid) == 0)
+> > -		return device_create_file(dev, &dev_attr_iommu_group);
+> > +	ret = kobject_init_and_add(&group->kobj, &iommu_group_ktype,
+> > +				   NULL, "%d", group->id);
+> > +	if (ret) {
+> > +		mutex_lock(&iommu_group_mutex);
+> > +		ida_remove(&iommu_group_ida, group->id);
+> > +		mutex_unlock(&iommu_group_mutex);
+> > +		kfree(group);
+> > +		return ERR_PTR(ret);
+> > +	}
+> > +
+> > +	group->devices_kobj = kobject_create_and_add("devices", &group->kobj);
+> > +	if (!group->devices_kobj) {
+> > +		kobject_put(&group->kobj); /* triggers .release & free */
+> > +		return ERR_PTR(-ENOMEM);
+> > +	}
+> > +
+> > +	/*
+> > +	 * The devices_kobj holds a reference on the group kobject, so
+> > +	 * as long as that exists so will the group.  We can therefore
+> > +	 * use the devices_kobj for reference counting.
+> > +	 */
+> > +	kobject_put(&group->kobj);
+> > +
+> > +	return group;
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_alloc);
+> > +
+> > +/**
+> > + * iommu_group_get_iommudata - retrieve iommu_data registered for a group
+> > + * @group: the group
+> > + *
+> > + * iommu drivers can store data in the group for use when doing iommu
+> > + * operations.  This function provides a way to retrieve it.  Caller
+> > + * should hold a group reference.
+> > + */
+> > +void *iommu_group_get_iommudata(struct iommu_group *group)
+> > +{
+> > +	return group->iommu_data;
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_get_iommudata);
+> 
+> That probably wants to be a static inline ? No biggie, could be done in
+> a followup patch if we really care.
+
+The intention was to keep struct iommu_group private.  Anything outside
+of iommu.c should just use it as an opaque object.  Exposing the struct
+tempts other uses.
+
+> > +/**
+> > + * iommu_group_set_iommudata - set iommu_data for a group
+> > + * @group: the group
+> > + * @iommu_data: new data
+> > + * @release: release function for iommu_data
+> > + *
+> > + * iommu drivers can store data in the group for use when doing iommu
+> > + * operations.  This function provides a way to set the data after
+> > + * the group has been allocated.  Caller should hold a group reference.
+> > + */
+> > +void iommu_group_set_iommudata(struct iommu_group *group, void *iommu_data,
+> > +			       void (*release)(void *iommu_data))
+> > +{
+> > +	group->iommu_data = iommu_data;
+> > +	group->iommu_data_release = release;
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_set_iommudata);
+> > +
+> > +/**
+> > + * iommu_group_set_name - set name for a group
+> > + * @group: the group
+> > + * @name: name
+> > + *
+> > + * Allow iommu driver to set a name for a group.  When set it will
+> > + * appear in a name attribute file under the group in sysfs.
+> > + */
+> > +int iommu_group_set_name(struct iommu_group *group, const char *name)
+> > +{
+> > +	int ret;
+> > +
+> > +	if (group->name) {
+> > +		iommu_group_remove_file(group, &iommu_group_attr_name);
+> > +		kfree(group->name);
+> > +		group->name = NULL;
+> > +		if (!name)
+> > +			return 0;
+> > +	}
+> > +
+> > +	group->name = kstrdup(name, GFP_KERNEL);
+> > +	if (!group->name)
+> > +		return -ENOMEM;
+> > +
+> > +	ret = iommu_group_create_file(group, &iommu_group_attr_name);
+> > +	if (ret) {
+> > +		kfree(group->name);
+> > +		group->name = NULL;
+> > +		return ret;
+> > +	}
+> >  
+> >  	return 0;
+> >  }
+> > +EXPORT_SYMBOL_GPL(iommu_group_set_name);
+> >  
+> > -static int remove_iommu_group(struct device *dev)
+> > +/**
+> > + * iommu_group_add_device - add a device to an iommu group
+> > + * @group: the group into which to add the device (reference should be held)
+> > + * @dev: the device
+> > + *
+> > + * This function is called by an iommu driver to add a device into a
+> > + * group.  Adding a device increments the group reference count.
+> > + */
+> > +int iommu_group_add_device(struct iommu_group *group, struct device *dev)
+> >  {
+> > -	unsigned int groupid;
+> > +	int ret, i = 0;
+> > +	struct iommu_device *device;
+> > +
+> > +	device = kzalloc(sizeof(*device), GFP_KERNEL);
+> > +	if (!device)
+> > +		return -ENOMEM;
+> > +
+> > +	device->dev = dev;
+> >  
+> > -	if (iommu_device_group(dev, &groupid) == 0)
+> > -		device_remove_file(dev, &dev_attr_iommu_group);
+> > +	ret = sysfs_create_link(&dev->kobj, &group->kobj, "iommu_group");
+> > +	if (ret) {
+> > +		kfree(device);
+> > +		return ret;
+> > +	}
+> > +
+> > +	device->name = kasprintf(GFP_KERNEL, "%s", kobject_name(&dev->kobj));
+> > +rename:
+> > +	if (!device->name) {
+> > +		sysfs_remove_link(&dev->kobj, "iommu_group");
+> > +		kfree(device);
+> > +		return -ENOMEM;
+> > +	}
+> >  
+> > +	ret = sysfs_create_link_nowarn(group->devices_kobj,
+> > +				       &dev->kobj, device->name);
+> > +	if (ret) {
+> > +		kfree(device->name);
+> > +		if (ret == -EEXIST && i >= 0) {
+> > +			/*
+> > +			 * Account for the slim chance of collision
+> > +			 * and append an instance to the name.
+> > +			 */
+> > +			device->name = kasprintf(GFP_KERNEL, "%s.%d",
+> > +						 kobject_name(&dev->kobj), i++);
+> > +			goto rename;
+> > +		}
+> > +
+> > +		sysfs_remove_link(&dev->kobj, "iommu_group");
+> > +		kfree(device);
+> > +		return ret;
+> > +	}
+> > +
+> > +	kobject_get(group->devices_kobj);
+> > +
+> > +	dev->iommu_group = group;
+> > +
+> > +	mutex_lock(&group->mutex);
+> > +	list_add_tail(&device->list, &group->devices);
+> > +	mutex_unlock(&group->mutex);
+> > +
+> > +	/* Notify any listeners about change to group. */
+> > +	blocking_notifier_call_chain(&group->notifier,
+> > +				     IOMMU_GROUP_NOTIFY_ADD_DEVICE, dev);
+> >  	return 0;
+> >  }
+> > +EXPORT_SYMBOL_GPL(iommu_group_add_device);
+> 
+> There's of course a race here, not sure what we can do about it though
+> (if the device is removed before the notification is finalized). It
+> might not even be worth bothering. I suppose we assume the caller holds
+> a reference so the struct device itself won't go away until we have
+> returned anyway, however I worry that the "client" might end up getting
+> the remove notification before it gets the add :-)
+> 
+> Here too, something that we can sort out in a subsequent patch if worth
+> it.
+> 
+> Or we can just say that it's up to the callers (platform, hotplug
+> code, ...) to not call add and remove racily.
+
+Yes, I was assuming the caller held a reference to the struct device to
+prevent such a race, looks like I forgot to document that in the
+comments.  I'll have to think about if we can fix the ordering problem.
+We can re-order the list_add vs notification, but then we just risk
+dropping the remove.  Perhaps we need to extend the lock or add another
+to group {list add, notify add}, {list lookup, remove, notify remove}.
+I'm not even sure this race is possible though w/ a device reference.
+
+> > -static int iommu_device_notifier(struct notifier_block *nb,
+> > -				 unsigned long action, void *data)
+> > +/**
+> > + * iommu_group_remove_device - remove a device from it's current group
+> > + * @dev: device to be removed
+> > + *
+> > + * This function is called by an iommu driver to remove the device from
+> > + * it's current group.  This decrements the iommu group reference count.
+> > + */
+> > +void iommu_group_remove_device(struct device *dev)
+> > +{
+> > +	struct iommu_group *group = dev->iommu_group;
+> > +	struct iommu_device *tmp_device, *device = NULL;
+> > +
+> > +	/* Pre-notify listeners that a device is being removed. */
+> > +	blocking_notifier_call_chain(&group->notifier,
+> > +				     IOMMU_GROUP_NOTIFY_DEL_DEVICE, dev);
+> > +
+> > +	mutex_lock(&group->mutex);
+> > +	list_for_each_entry(tmp_device, &group->devices, list) {
+> > +		if (tmp_device->dev == dev) {
+> > +			device = tmp_device;
+> > +			list_del(&device->list);
+> > +			break;
+> > +		}
+> > +	}
+> > +	mutex_unlock(&group->mutex);
+> > +
+> > +	if (!device)
+> > +		return;
+> > +
+> > +	sysfs_remove_link(group->devices_kobj, device->name);
+> > +	sysfs_remove_link(&dev->kobj, "iommu_group");
+> > +
+> > +	kfree(device->name);
+> > +	kfree(device);
+> > +	dev->iommu_group = NULL;
+> > +	kobject_put(group->devices_kobj);
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_remove_device);
+> > +
+> > +/**
+> > + * iommu_group_for_each_dev - iterate over each device in the group
+> > + * @group: the group
+> > + * @data: caller opaque data to be passed to callback function
+> > + * @fn: caller supplied callback function
+> > + *
+> > + * This function is called by group users to iterate over group devices.
+> > + * Callers should hold a reference count to the group during callback.
+> > + * The group->mutex is held across callbacks, which will block calls to
+> > + * iommu_group_add/remove_device.
+> > + */
+> > +int iommu_group_for_each_dev(struct iommu_group *group, void *data,
+> > +			     int (*fn)(struct device *, void *))
+> > +{
+> > +	struct iommu_device *device;
+> > +	int ret = 0;
+> > +
+> > +	mutex_lock(&group->mutex);
+> > +	list_for_each_entry(device, &group->devices, list) {
+> > +		ret = fn(device->dev, data);
+> > +		if (ret)
+> > +			break;
+> > +	}
+> > +	mutex_unlock(&group->mutex);
+> > +	return ret;
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_for_each_dev);
+> > +
+> > +/**
+> > + * iommu_group_get - Return the group for a device and increment reference
+> > + * @dev: get the group that this device belongs to
+> > + *
+> > + * This function is called by iommu drivers and users to get the group
+> > + * for the specified device.  If found, the group is returned and the group
+> > + * reference in incremented, else NULL.
+> > + */
+> > +struct iommu_group *iommu_group_get(struct device *dev)
+> > +{
+> > +	struct iommu_group *group = dev->iommu_group;
+> > +
+> > +	if (group)
+> > +		kobject_get(group->devices_kobj);
+> > +
+> > +	return group;
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_get);
+> > +
+> > +/**
+> > + * iommu_group_put - Decrement group reference
+> > + * @group: the group to use
+> > + *
+> > + * This function is called by iommu drivers and users to release the
+> > + * iommu group.  Once the reference count is zero, the group is released.
+> > + */
+> > +void iommu_group_put(struct iommu_group *group)
+> > +{
+> > +	if (group)
+> > +		kobject_put(group->devices_kobj);
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_put);
+> > +
+> > +/**
+> > + * iommu_group_register_notifier - Register a notifier for group changes
+> > + * @group: the group to watch
+> > + * @nb: notifier block to signal
+> > + *
+> > + * This function allows iommu group users to track changes in a group.
+> > + * See include/linux/iommu.h for actions sent via this notifier.  Caller
+> > + * should hold a reference to the group throughout notifier registration.
+> > + */
+> > +int iommu_group_register_notifier(struct iommu_group *group,
+> > +				  struct notifier_block *nb)
+> > +{
+> > +	return blocking_notifier_chain_register(&group->notifier, nb);
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_register_notifier);
+> > +
+> > +/**
+> > + * iommu_group_unregister_notifier - Unregister a notifier
+> > + * @group: the group to watch
+> > + * @nb: notifier block to signal
+> > + *
+> > + * Unregister a previously registered group notifier block.
+> > + */
+> > +int iommu_group_unregister_notifier(struct iommu_group *group,
+> > +				    struct notifier_block *nb)
+> > +{
+> > +	return blocking_notifier_chain_unregister(&group->notifier, nb);
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_unregister_notifier);
+> > +
+> > +/**
+> > + * iommu_group_id - Return ID for a group
+> > + * @group: the group to ID
+> > + *
+> > + * Return the unique ID for the group matching the sysfs group number.
+> > + */
+> > +int iommu_group_id(struct iommu_group *group)
+> > +{
+> > +	return group->id;
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_group_id);
+> > +
+> > +static int add_iommu_group(struct device *dev, void *data)
+> > +{
+> > +	struct iommu_ops *ops = data;
+> > +
+> > +	if (!ops->add_device)
+> > +		return -ENODEV;
+> > +
+> > +	WARN_ON(dev->iommu_group);
+> > +
+> > +	ops->add_device(dev);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int iommu_bus_notifier(struct notifier_block *nb,
+> > +			      unsigned long action, void *data)
+> >  {
+> >  	struct device *dev = data;
+> > +	struct iommu_ops *ops = dev->bus->iommu_ops;
+> > +	struct iommu_group *group;
+> > +	unsigned long group_action = 0;
+> > +
+> > +	/*
+> > +	 * ADD/DEL call into iommu driver ops if provided, which may
+> > +	 * result in ADD/DEL notifiers to group->notifier
+> > +	 */
+> > +	if (action == BUS_NOTIFY_ADD_DEVICE) {
+> > +		if (ops->add_device)
+> > +			return ops->add_device(dev);
+> > +	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
+> > +		if (ops->remove_device && dev->iommu_group) {
+> > +			ops->remove_device(dev);
+> > +			return 0;
+> > +		}
+> > +	}
+> >  
+> > -	if (action == BUS_NOTIFY_ADD_DEVICE)
+> > -		return add_iommu_group(dev, NULL);
+> > -	else if (action == BUS_NOTIFY_DEL_DEVICE)
+> > -		return remove_iommu_group(dev);
+> > +	/*
+> > +	 * Remaining BUS_NOTIFYs get filtered and republished to the
+> > +	 * group, if anyone is listening
+> > +	 */
+> > +	group = iommu_group_get(dev);
+> > +	if (!group)
+> > +		return 0;
+> >  
+> > +	switch (action) {
+> > +	case BUS_NOTIFY_BIND_DRIVER:
+> > +		group_action = IOMMU_GROUP_NOTIFY_BIND_DRIVER;
+> > +		break;
+> > +	case BUS_NOTIFY_BOUND_DRIVER:
+> > +		group_action = IOMMU_GROUP_NOTIFY_BOUND_DRIVER;
+> > +		break;
+> > +	case BUS_NOTIFY_UNBIND_DRIVER:
+> > +		group_action = IOMMU_GROUP_NOTIFY_UNBIND_DRIVER;
+> > +		break;
+> > +	case BUS_NOTIFY_UNBOUND_DRIVER:
+> > +		group_action = IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER;
+> > +		break;
+> > +	}
+> > +
+> > +	if (group_action)
+> > +		blocking_notifier_call_chain(&group->notifier,
+> > +					     group_action, dev);
+> > +
+> > +	iommu_group_put(group);
+> >  	return 0;
+> >  }
+> >
+> > -static struct notifier_block iommu_device_nb = {
+> > -	.notifier_call = iommu_device_notifier,
+> > +static struct notifier_block iommu_bus_nb = {
+> > +	.notifier_call = iommu_bus_notifier,
+> >  };
+> >  
+> >  static void iommu_bus_init(struct bus_type *bus, struct iommu_ops *ops)
+> >  {
+> > -	bus_register_notifier(bus, &iommu_device_nb);
+> > -	bus_for_each_dev(bus, NULL, NULL, add_iommu_group);
+> > +	bus_register_notifier(bus, &iommu_bus_nb);
+> > +	bus_for_each_dev(bus, NULL, ops, add_iommu_group);
+> >  }
+> 
+> So if I understand correctly this is a rework of a piece of
+> infrastructure that powerpc doesn't use today, which uses the existing
+> "iommu_ops" to automatically signal the iommu of added/removed devices,
+> right ?
+
+Right, and add_device/remove_device are optional in the struct
+iommu_ops.  amd_iommu already has a bus notifier, so I don't try to
+replace it with this.  intel-iommu creates iommu domain dynamically, so
+it does use this to enumerate devices for iommu groups.
+
+> Do we need to warn somewhere that the above code is racy vs. concurrent
+> hotplug and thus might end up adding a device twice ? (It's up to
+> iommu->add_device implementation to then ensure it doesn't mess up I
+> assume).
+
+Is it sufficient to test !dev->iommu_group before calling
+iommu->add_device?  We already do this on the DEL path.  I can follow-up
+with a patch for that.
+
+
+> >  /**
+> > @@ -192,6 +667,45 @@ void iommu_detach_device(struct iommu_domain *domain, struct device *dev)
+> >  }
+> >  EXPORT_SYMBOL_GPL(iommu_detach_device);
+> >  
+> > +/*
+> > + * IOMMU groups are really the natrual working unit of the IOMMU, but
+> > + * the IOMMU API works on domains and devices.  Bridge that gap by
+> > + * iterating over the devices in a group.  Ideally we'd have a single
+> > + * device which represents the requestor ID of the group, but we also
+> > + * allow IOMMU drivers to create policy defined minimum sets, where
+> > + * the physical hardware may be able to distiguish members, but we
+> > + * wish to group them at a higher level (ex. untrusted multi-function
+> > + * PCI devices).  Thus we attach each device.
+> > + */
+> > +static int iommu_group_do_attach_device(struct device *dev, void *data)
+> > +{
+> > +	struct iommu_domain *domain = data;
+> > +
+> > +	return iommu_attach_device(domain, dev);
+> > +}
+> > +
+> > +int iommu_attach_group(struct iommu_domain *domain, struct iommu_group *group)
+> > +{
+> > +	return iommu_group_for_each_dev(group, domain,
+> > +					iommu_group_do_attach_device);
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_attach_group);
+> > +
+> > +static int iommu_group_do_detach_device(struct device *dev, void *data)
+> > +{
+> > +	struct iommu_domain *domain = data;
+> > +
+> > +	iommu_detach_device(domain, dev);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +void iommu_detach_group(struct iommu_domain *domain, struct iommu_group *group)
+> > +{
+> > +	iommu_group_for_each_dev(group, domain, iommu_group_do_detach_device);
+> > +}
+> > +EXPORT_SYMBOL_GPL(iommu_detach_group);
+> > +
+> 
+> So as you probably are aware by now, we have a 1:1 group/domain
+> relationship on power (and don't implement the iommu API today) but I
+> have no objection with the API, I'll have to check how Alexey hooked our
+> code up (I haven't had a chance to look at it just yet).
+
+Yes, I've tried to design it for both.  I expect your iommu driver to
+reject adding a device to a domain where it doesn't belong and I think
+this is how Alexey has coded it.  You really want that protection anyway
+I think, so this just takes advantage of that failing.  Thanks for the
+review!
+
+Alex
+
