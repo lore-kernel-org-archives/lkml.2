@@ -1,40 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab2FTH7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 03:59:20 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:45523 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755507Ab2FTH7K (ORCPT
+	id S1755547Ab2FTH7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 03:59:49 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:58390 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422Ab2FTH7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 03:59:10 -0400
+	Wed, 20 Jun 2012 03:59:48 -0400
+Message-ID: <4FE182ED.40200@linux.vnet.ibm.com>
+Date: Wed, 20 Jun 2012 15:59:41 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1340041564-30168-1-git-send-email-devendra.aaru@gmail.com>
-References: <1340041564-30168-1-git-send-email-devendra.aaru@gmail.com>
-Date: Wed, 20 Jun 2012 09:59:09 +0200
-Message-ID: <CACRpkdZoTPCjaPOrP1EzbGucm-frgV0uTdHecmuL3FC__avJCw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pinctrl/pinctrl-spear: remove IS_ERR checking of pmx->pctl
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@st.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v7 08/10] KVM: MMU: trace fast page fault
+References: <4FE1822D.8010002@linux.vnet.ibm.com>
+In-Reply-To: <4FE1822D.8010002@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062007-2674-0000-0000-000004F5C259
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 7:46 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+To see what happen on this path and help us to optimize it
 
-> pinctrl_register returns a pointer of struct type struct pinctrl_dev,
-> if successfully registered to pinctrl subsystem, otherwise returns
-> NULL, and there wont' be any pointers which are not dereferencible.
->
-> They are not type of pointer addresses but are kind of error
-> codes rather actual addresses, but are a kind of return
-> codes of functions returning integer types.
->
-> return -ENODEV if device registration fails.
->
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c      |    2 ++
+ arch/x86/kvm/mmutrace.h |   38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+), 0 deletions(-)
 
-Applied, thanks!
-Linus Walleij
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 37c0230..fc221f9 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2778,6 +2778,8 @@ static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, int level,
+ 	 */
+ 	ret = fast_pf_fix_direct_spte(vcpu, iterator.sptep, spte);
+ exit:
++	trace_fast_page_fault(vcpu, gva, error_code, iterator.sptep,
++			      spte, ret);
+ 	walk_shadow_page_lockless_end(vcpu);
+
+ 	return ret;
+diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+index 89fb0e8..c364abc 100644
+--- a/arch/x86/kvm/mmutrace.h
++++ b/arch/x86/kvm/mmutrace.h
+@@ -243,6 +243,44 @@ TRACE_EVENT(
+ 	TP_printk("addr:%llx gfn %llx access %x", __entry->addr, __entry->gfn,
+ 		  __entry->access)
+ );
++
++#define __spte_satisfied(__spte)				\
++	(__entry->retry && is_writable_pte(__entry->__spte))
++
++TRACE_EVENT(
++	fast_page_fault,
++	TP_PROTO(struct kvm_vcpu *vcpu, gva_t gva, u32 error_code,
++		 u64 *sptep, u64 old_spte, bool retry),
++	TP_ARGS(vcpu, gva, error_code, sptep, old_spte, retry),
++
++	TP_STRUCT__entry(
++		__field(int, vcpu_id)
++		__field(gva_t, gva)
++		__field(u32, error_code)
++		__field(u64 *, sptep)
++		__field(u64, old_spte)
++		__field(u64, new_spte)
++		__field(bool, retry)
++	),
++
++	TP_fast_assign(
++		__entry->vcpu_id = vcpu->vcpu_id;
++		__entry->gva = gva;
++		__entry->error_code = error_code;
++		__entry->sptep = sptep;
++		__entry->old_spte = old_spte;
++		__entry->new_spte = *sptep;
++		__entry->retry = retry;
++	),
++
++	TP_printk("vcpu %d gva %lx error_code %s sptep %p old %#llx"
++		  " new %llx spurious %d fixed %d", __entry->vcpu_id,
++		  __entry->gva, __print_flags(__entry->error_code, "|",
++		  kvm_mmu_trace_pferr_flags), __entry->sptep,
++		  __entry->old_spte, __entry->new_spte,
++		  __spte_satisfied(old_spte), __spte_satisfied(new_spte)
++	)
++);
+ #endif /* _TRACE_KVMMMU_H */
+
+ #undef TRACE_INCLUDE_PATH
+-- 
+1.7.7.6
+
