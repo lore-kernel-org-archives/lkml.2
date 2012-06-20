@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab2FTFVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 01:21:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35398 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878Ab2FTFVD (ORCPT
+	id S1753540Ab2FTFY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 01:24:27 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36680 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab2FTFY0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 01:21:03 -0400
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>, Axel Lin <axel.lin@gmail.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [PATCH v2] regulator: max77686: Implement .set_ramp_delay() callback.
-Date: Wed, 20 Jun 2012 10:50:51 +0530
-Message-Id: <1340169651-7844-1-git-send-email-yadi.brar@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 20 Jun 2012 01:24:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <1340130159-10408-1-git-send-email-devendra.aaru@gmail.com>
+References: <1340130159-10408-1-git-send-email-devendra.aaru@gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 20 Jun 2012 13:24:05 +0800
+X-Google-Sender-Auth: ZFN7D6RgKcAtcU6cluAR0sb8NIs
+Message-ID: <CAK5ve-+7upSnKLB5DkLgBFTQgiKpXAG1uKWK=U45Z94fT864FA@mail.gmail.com>
+Subject: Re: [PATCH] leds: [trivial]Remove unnecesary return
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Jiri Kosina <trivial@kernel.org>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements the .set_ramp_delay callback to set the ramp_delay on
-hardware for BUCK2/3/4 if ramp_delay is set in regulator constraints.
+On Wed, Jun 20, 2012 at 2:22 AM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+> the ret is got the status returned by the
+> led_classdev_register, returning ret if the
+> led_classdev_register fails and returning 0
+> if the led_classdev_register success, can be done
+> by doing just "return ret" at the end.
+>
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 
-This patch also do some cleaning work for unrequired members of
-struct max77686_data.
+Thanks, applied to my for-next branch.
 
-Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
----
- drivers/regulator/max77686.c |   37 +++++++++++++++++++++++++++++--------
- 1 files changed, 29 insertions(+), 8 deletions(-)
+-Bryan
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index a29eee3..5c2a32f 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -65,11 +65,34 @@ enum max77686_ramp_rate {
- };
- 
- struct max77686_data {
--	struct device *dev;
--	struct max77686_dev *iodev;
- 	struct regulator_dev **rdev;
- };
- 
-+static int max77686_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
-+{
-+	unsigned int ramp_value = RAMP_RATE_NO_CTRL;
-+
-+	switch (ramp_delay) {
-+	case 1 ... 13750:
-+		ramp_value = RAMP_RATE_13P75MV;
-+		break;
-+	case 13751 ... 27500:
-+		ramp_value = RAMP_RATE_27P5MV;
-+		break;
-+	case 27501 ... 55000:
-+		ramp_value = RAMP_RATE_55MV;
-+		break;
-+	case 55001 ... 100000:
-+		break;
-+	default:
-+		pr_warn("%s: ramp_delay: %d not supported, setting 100000\n",
-+			rdev->desc->name, ramp_delay);
-+	}
-+
-+	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+				  MAX77686_RAMP_RATE_MASK, ramp_value << 6);
-+}
-+
- static struct regulator_ops max77686_ops = {
- 	.list_voltage		= regulator_list_voltage_linear,
- 	.map_voltage		= regulator_map_voltage_linear,
-@@ -90,6 +113,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
- 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+	.set_ramp_delay		= max77686_set_ramp_delay,
- };
- 
- #define regulator_desc_ldo(num)		{				\
-@@ -238,20 +262,17 @@ static __devinit int max77686_pmic_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 
- 	rdev = max77686->rdev;
--	max77686->dev = &pdev->dev;
--	max77686->iodev = iodev;
-+	config.dev = &pdev->dev;
-+	config.regmap = iodev->regmap;
- 	platform_set_drvdata(pdev, max77686);
- 
- 	for (i = 0; i < MAX77686_REGULATORS; i++) {
--		config.dev = max77686->dev;
--		config.regmap = iodev->regmap;
--		config.driver_data = max77686;
- 		config.init_data = pdata->regulators[i].initdata;
- 
- 		rdev[i] = regulator_register(&regulators[i], &config);
- 		if (IS_ERR(rdev[i])) {
- 			ret = PTR_ERR(rdev[i]);
--			dev_err(max77686->dev,
-+			dev_err(&pdev->dev,
- 				"regulator init failed for %d\n", i);
- 				rdev[i] = NULL;
- 				goto err;
+> ---
+>
+> Tested by build with the gcc linaro (arm-linux-gnueabihf) (4.7.1).
+>
+>  drivers/leds/leds-s3c24xx.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+> index bd0a5ed..e6ee105 100644
+> --- a/drivers/leds/leds-s3c24xx.c
+> +++ b/drivers/leds/leds-s3c24xx.c
+> @@ -106,10 +106,9 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+>        if (ret < 0) {
+>                dev_err(&dev->dev, "led_classdev_register failed\n");
+>                kfree(led);
+> -               return ret;
+>        }
+>
+> -       return 0;
+> +       return ret;
+>  }
+>
+>  static struct platform_driver s3c24xx_led_driver = {
+> --
+> 1.7.9.5
+
+
+
 -- 
-1.7.0.4
-
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
