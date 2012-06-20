@@ -1,128 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab2FTKpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:45:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34424 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756462Ab2FTKpv (ORCPT
+	id S1756509Ab2FTKqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:46:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35992 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756498Ab2FTKqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:45:51 -0400
-Date: Wed, 20 Jun 2012 03:45:35 -0700
-From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Message-ID: <tip-b451c38428c5682348b6f661d767e358d1d70c41@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de
-In-Reply-To: <20120524141635.3692.893.stgit@srivatsabhat.in.ibm.com>
-References: <20120524141635.3692.893.stgit@srivatsabhat.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] cpusets, hotplug:
-  Implement cpuset tree traversal in a helper function
-Git-Commit-ID: b451c38428c5682348b6f661d767e358d1d70c41
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 20 Jun 2012 06:46:22 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120620100031.GI1478@erda.amd.com>
+References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
+	<CABPqkBS9hRxKLsecVK+AgRue6oqTtAg4=0Dpd5Z2VwAUja50fw@mail.gmail.com>
+	<20120620092932.GH1478@erda.amd.com>
+	<1340185084.21745.81.camel@twins>
+	<20120620100031.GI1478@erda.amd.com>
+Date: Wed, 20 Jun 2012 12:46:21 +0200
+Message-ID: <CABPqkBRzeSB4SHMSnGbu+HfPyVMSwCUHKoeoa68UF4VrjjxKsQ@mail.gmail.com>
+Subject: Re: [PATCH 00/10] perf, x86: Add northbridge counter support for AMD
+ family 15h
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:45:40 -0700 (PDT)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b451c38428c5682348b6f661d767e358d1d70c41
-Gitweb:     http://git.kernel.org/tip/b451c38428c5682348b6f661d767e358d1d70c41
-Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-AuthorDate: Thu, 24 May 2012 19:46:41 +0530
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 18 Jun 2012 11:45:04 +0200
+On Wed, Jun 20, 2012 at 12:00 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 20.06.12 11:38:04, Peter Zijlstra wrote:
+>> On Wed, 2012-06-20 at 11:29 +0200, Robert Richter wrote:
+>> > Second, since nb perfctr are implemented the same way as core
+>> > counters, the same code would have been used. Thus multiple (two) x86
+>> > pmus (struct x86_pmu) would reside in parallel in the kernel.
+>>
+>> Well, no. The I take it the uncore counters are nb wide, thus you need
+>> special goo to make counter rotation work properly, x86_pmu is unsuited
+>> for that.
+>
+> The code for nb and core counters is identical. There would be the
+> same nmi handler, same code to setup the event, same code to
+> start/stop cpus. The only difference are per-node msrs, even the msr
+> offset calculation is the same as for core counters on family 15h. It
+> would not make sense to duplicate all this code. And, as said, current
+> design does not fit to use x86_pmus in parallel or to easy reuse x86
+> functions. Separating nb counters would make the same sense as
+> implementing a separate pmu for fixed counters.
+>
+Being identical does not necessarily mean you have to copy the code,
+you can also simply call it.
 
-cpusets, hotplug: Implement cpuset tree traversal in a helper function
+I don't see the explanation for the non-contiguous counter indexes.
+What's that about? With a separate PMU, would you have that problem.
+I see uncore CTL base MSRC001_0240, next is 0242, and so on. But
+that's already the case with core counters on Fam15h.
 
-At present, the functions that deal with cpusets during CPU/Mem hotplug
-are quite messy, since a lot of the functionality is mixed up without clear
-separation. And this takes a toll on optimization as well. For example,
-the function cpuset_update_active_cpus() is called on both CPU offline and CPU
-online events; and it invokes scan_for_empty_cpusets(), which makes sense
-only for CPU offline events. And hence, the current code ends up unnecessarily
-traversing the cpuset tree during CPU online also.
+As Peter said, having your own PMU would alleviate the need for
+Patch 10. Those filters would simply not be visible to tools via
+sysfs.
 
-As a first step towards cleaning up those functions, encapsulate the cpuset
-tree traversal in a helper function, so as to facilitate upcoming changes.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20120524141635.3692.893.stgit@srivatsabhat.in.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/cpuset.c |   36 +++++++++++++++++++++++++++---------
- 1 files changed, 27 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 77abe1a..e0b29bb 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1990,6 +1990,32 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
- }
- 
- /*
-+ * Helper function to traverse cpusets.
-+ * It can be used to walk the cpuset tree from top to bottom, completing
-+ * one layer before dropping down to the next (thus always processing a
-+ * node before any of its children).
-+ */
-+static struct cpuset *cpuset_next(struct list_head *queue)
-+{
-+	struct cpuset *cp;
-+	struct cpuset *child;	/* scans child cpusets of cp */
-+	struct cgroup *cont;
-+
-+	if (list_empty(queue))
-+		return NULL;
-+
-+	cp = list_first_entry(queue, struct cpuset, stack_list);
-+	list_del(queue->next);
-+	list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
-+		child = cgroup_cs(cont);
-+		list_add_tail(&child->stack_list, queue);
-+	}
-+
-+	return cp;
-+}
-+
-+
-+/*
-  * Walk the specified cpuset subtree and look for empty cpusets.
-  * The tasks of such cpuset must be moved to a parent cpuset.
-  *
-@@ -2008,19 +2034,11 @@ static void scan_for_empty_cpusets(struct cpuset *root)
- {
- 	LIST_HEAD(queue);
- 	struct cpuset *cp;	/* scans cpusets being updated */
--	struct cpuset *child;	/* scans child cpusets of cp */
--	struct cgroup *cont;
- 	static nodemask_t oldmems;	/* protected by cgroup_mutex */
- 
- 	list_add_tail((struct list_head *)&root->stack_list, &queue);
- 
--	while (!list_empty(&queue)) {
--		cp = list_first_entry(&queue, struct cpuset, stack_list);
--		list_del(queue.next);
--		list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
--			child = cgroup_cs(cont);
--			list_add_tail(&child->stack_list, &queue);
--		}
-+	while ((cp = cpuset_next(&queue)) != NULL) {
- 
- 		/* Continue past cpusets with all cpus, mems online */
- 		if (cpumask_subset(cp->cpus_allowed, cpu_active_mask) &&
+> And wrt counter rotation, this only affects code to assign counters.
+> You don't need a separate pmu for this.
+>
+> -Robert
+>
+> --
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
