@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab2FTMHJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:07:09 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:48386 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab2FTMHH (ORCPT
+	id S1754889Ab2FTMKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:10:33 -0400
+Received: from smtp-out-159.synserver.de ([212.40.185.159]:1030 "EHLO
+	smtp-out-150.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754037Ab2FTMKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:07:07 -0400
-Date: Wed, 20 Jun 2012 13:07:02 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Robin Holt <holt@sgi.com>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] phys_efi_set_virtual_address_map needs va, no pa.
-Message-ID: <20120620120702.GA3983@srcf.ucam.org>
-References: <20120620082457.GE3464@sgi.com>
+	Wed, 20 Jun 2012 08:10:32 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 22274
+Message-ID: <4FE1BE79.5080903@metafoo.de>
+Date: Wed, 20 Jun 2012 14:13:45 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120620082457.GE3464@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] dmaengine: Add wrapper for device_tx_status callback
+References: <1339438302-12417-1-git-send-email-lars@metafoo.de> <1340189662.1927.1648.camel@vkoul-udesk3>
+In-Reply-To: <1340189662.1927.1648.camel@vkoul-udesk3>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 03:24:57AM -0500, Robin Holt wrote:
-> The kernel allocated memmap may end up being beyond the first
-> 512GB of memory.  That early range is identity mapped, while the
-> remainder of memory is not.  The net result is the memmap allocated by
-> efi_enter_virtual_mode will not be accessible via its __pa as is currently
-> passed back to EFI.
+On 06/20/2012 12:54 PM, Vinod Koul wrote:
+> On Mon, 2012-06-11 at 20:11 +0200, Lars-Peter Clausen wrote:
+>> This patch adds a small inline wrapper for the devivce_tx_status callback of a
+>> dma device. This makes the source code of users of this function a bit more
+>> compact and a bit more legible.
+> Applied, thanks
 > 
-> Since EFI is going to have to parse the passed in table, I believe the
-> EFI documentation is wrong.
+> rest of the series should go thru ASoC tree.
 > 
-> I asked one of our BIOS engineers to look at the Intel reference code
-> and he said it was obvious that the address would have to be a virtaully
-> accessible address as we are in virtual mode while EFI is handling the
-> callback.
 
-No, that's completely wrong. UEFI can't be called in virtual mode until 
-*after* SetVirtualAddressMap(). The UEFI spec indicates that all 
-physical memory must have an identity mapping at this stage (section 
-2.3.4), so if we don't then that's a bug that needs to be fixed.
+Thanks.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+There is a compile time dependency between the patches, so this patch should
+go through the ASoC tree as well, or we'll have to wait another release
+before the ASoC patches can be applied.
+
+- Lars
