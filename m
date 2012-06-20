@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483Ab2FTXuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:50:54 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59769 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932187Ab2FTXuv convert rfc822-to-8bit (ORCPT
+	id S1758616Ab2FTXzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:55:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50915 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758597Ab2FTXzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:50:51 -0400
+	Wed, 20 Jun 2012 19:55:08 -0400
+Date: Wed, 20 Jun 2012 16:55:03 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/w1: free the w1_master at w1_free_dev and return
+ a correct return value
+Message-ID: <20120620235503.GA31520@kroah.com>
+References: <1339949879-26085-1-git-send-email-devendra.aaru@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1340000766-129148-3-git-send-email-ming.m.lin@intel.com>
-References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
-	<1340000766-129148-3-git-send-email-ming.m.lin@intel.com>
-Date: Wed, 20 Jun 2012 16:50:50 -0700
-X-Google-Sender-Auth: dnPhYS1O3lFx5sTCtqny5Yqe4Ic
-Message-ID: <CAA9_cmcX2pajewz1v864Ni2Z3XAy8UrCRg+mg3Y2qFEd2j=nDg@mail.gmail.com>
-Subject: Re: [PATCH v5 02/12] libata: bind the Linux device tree to the ACPI
- device tree
-From: Dan Williams <dan.j.williams@intel.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
-        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339949879-26085-1-git-send-email-devendra.aaru@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 17, 2012 at 11:25 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> From: Matthew Garrett <mjg@redhat.com>
->
-> Associate the ACPI device tree and libata devices.
-> This patch uses the generic ACPI glue framework to do so.
->
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> Signed-off-by: Holger Macht <holger@homac.de>
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+On Sun, Jun 17, 2012 at 09:47:59PM +0530, Devendra Naga wrote:
+> the w1_master pointer is allced at the w1_alloc_master and is not freed when called with
+> w1_remove_master.
+> 
+> when w1_alloc_dev fails the return should be -ENODEV as it does
+> device_register, and that is the last case where that function
+> will fail.
+> 
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 > ---
->
-> Changelog:
->
-> - fixed crash reported at https://lkml.org/lkml/2012/2/24/2 (Aaron Lu)
-> - rename is_pci_ata to compat_pci_ata (Alan Cox)
->
->  drivers/acpi/glue.c       |    4 +-
->  drivers/ata/libata-acpi.c |  125 +++++++++++++++++++++++++++++++++++++++++++++
->  drivers/ata/libata-core.c |    3 ++
->  drivers/ata/libata.h      |    4 ++
->  4 files changed, 134 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
-> index 1564e09..18d6812 100644
-> --- a/drivers/acpi/glue.c
-> +++ b/drivers/acpi/glue.c
-[..]
-> +static int ata_acpi_bind_host(struct device *dev, int host, acpi_handle *handle)
-> +{
-> +       struct Scsi_Host *shost = dev_to_shost(dev);
-> +       struct ata_port *ap = ata_shost_to_port(shost);
-> +
-> +       if (ap->flags & ATA_FLAG_ACPI_SATA)
-> +               return -ENODEV;
-> +
-> +       *handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent), ap->port_no);
-> +
-> +       if (!*handle)
-> +               return -ENODEV;
-> +
-> +       return 0;
-> +}
+>  drivers/w1/w1_int.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
+> index 6828835..a3cf27d 100644
+> --- a/drivers/w1/w1_int.c
+> +++ b/drivers/w1/w1_int.c
+> @@ -100,6 +100,7 @@ static struct w1_master * w1_alloc_dev(u32 id, int slave_count, int slave_ttl,
+>  static void w1_free_dev(struct w1_master *dev)
+>  {
+>  	device_unregister(&dev->dev);
+> +	kfree(dev);
 
-I think this patch should be squashed with patch 4, right?  That is if
-we keep the hard-coded ->parent chasing...
+No, this is wrong, the memory will be freed in w1_master_release(),
+right?  It is not freed here, sorry, this patch is incorrect.
 
-> +static int ata_acpi_find_device(struct device *dev, acpi_handle *handle)
-> +{
-> +       unsigned int host, channel, id, lun;
-> +
-> +       if (sscanf(dev_name(dev), "host%u", &host) == 1) {
-> +               if (!compat_pci_ata(dev->parent))
-> +                       return -ENODEV;
-> +
-> +               return ata_acpi_bind_host(dev, host, handle);
-> +       } else if (sscanf(dev_name(dev), "%d:%d:%d:%d",
-> +                       &host, &channel, &id, &lun) == 4) {
-> +               if (!compat_pci_ata(dev->parent->parent->parent))
-> +                       return -ENODEV;
-
-...this looks like it should be using a dev_to_ata_port() helper which
-like dev_to_shost() skips the need to remember just how many parents
-until we get back to our ata_port, scsi_host, etc.
-
---
-Dan
+greg k-h
