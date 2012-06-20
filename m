@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab2FTOz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:55:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33710 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab2FTOz5 (ORCPT
+	id S932115Ab2FTO62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:58:28 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36971 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756603Ab2FTO60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:55:57 -0400
-Message-ID: <1340204150.8003.8.camel@phoenix>
-Subject: [PATCH] regulator: tps62360: Convert to
- regulator_set_voltage_time_sel()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 20 Jun 2012 22:55:50 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 20 Jun 2012 10:58:26 -0400
+Date: Wed, 20 Jun 2012 10:58:25 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Mandeep Singh Baines <mandeep.baines@gmail.com>
+cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mandeep Singh Baines <msb@chromium.org>, <linux-pm@vger.kernel.org>,
+        <stable@kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kevin Hilman <khilman@ti.com>, Colin Cross <ccross@android.com>,
+        Sameer Nanda <snanda@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous suspend
+ after abort
+In-Reply-To: <1340158627-7586-1-git-send-email-msb@chromium.org>
+Message-ID: <Pine.LNX.4.44L0.1206201046020.1804-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps62360-regulator.c |   15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+On Tue, 19 Jun 2012, Mandeep Singh Baines wrote:
 
-diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
-index d044a58..d5b02fc 100644
---- a/drivers/regulator/tps62360-regulator.c
-+++ b/drivers/regulator/tps62360-regulator.c
-@@ -76,7 +76,6 @@ struct tps62360_chip {
- 	int lru_index[4];
- 	int curr_vset_vsel[4];
- 	int curr_vset_id;
--	int change_uv_per_us;
- };
- 
- /*
-@@ -175,16 +174,6 @@ static int tps62360_dcdc_set_voltage_sel(struct regulator_dev *dev,
- 	return 0;
- }
- 
--static int tps62360_set_voltage_time_sel(struct regulator_dev *rdev,
--		unsigned int old_selector, unsigned int new_selector)
--{
--	struct tps62360_chip *tps = rdev_get_drvdata(rdev);
--
--	return DIV_ROUND_UP(abs(new_selector - old_selector) *
--			    rdev->desc->uV_step,
--			    tps->change_uv_per_us);
--}
--
- static int tps62360_set_mode(struct regulator_dev *rdev, unsigned int mode)
- {
- 	struct tps62360_chip *tps = rdev_get_drvdata(rdev);
-@@ -251,7 +240,7 @@ static struct regulator_ops tps62360_dcdc_ops = {
- 	.set_voltage_sel	= tps62360_dcdc_set_voltage_sel,
- 	.list_voltage		= regulator_list_voltage_linear,
- 	.map_voltage		= regulator_map_voltage_linear,
--	.set_voltage_time_sel	= tps62360_set_voltage_time_sel,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
- 	.set_mode		= tps62360_set_mode,
- 	.get_mode		= tps62360_get_mode,
- };
-@@ -294,7 +283,7 @@ static int __devinit tps62360_init_dcdc(struct tps62360_chip *tps,
- 	ramp_ctrl = (ramp_ctrl >> 4) & 0x7;
- 
- 	/* ramp mV/us = 32/(2^ramp_ctrl) */
--	tps->change_uv_per_us = DIV_ROUND_UP(32000, BIT(ramp_ctrl));
-+	tps->desc.ramp_delay = DIV_ROUND_UP(32000, BIT(ramp_ctrl));
- 	return ret;
- }
- 
--- 
-1.7.9.5
+> __device_suspend() must always send a completion. Otherwise, parent
+> devices will wait forever.
+> 
+> Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
+> system sleep (v2)", introduced a regression by short-circuiting the
+> complete_all() for certain error cases.
+> 
+> This patch fixes the bug by always signalling a completion.
+> 
+> Addresses http://crosbug.com/31972
+> 
+> Tested by injecting an abort via the following patch:
+> 
+> diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+> index a004db3..e5a6fce 100644
+> --- a/drivers/usb/core/hcd-pci.c
+> +++ b/drivers/usb/core/hcd-pci.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/pci.h>
+>  #include <linux/usb.h>
+>  #include <linux/usb/hcd.h>
+> +#include <linux/string.h>
+> 
+>  #include <asm/io.h>
+>  #include <asm/irq.h>
+> @@ -477,6 +478,8 @@ static int resume_common(struct device *dev, int event)
+> 
+>  static int hcd_pci_suspend(struct device *dev)
+>  {
+> +       if (!strcmp("0000:00:1d.3", dev_name(dev)))
+> +               return -EBUSY;
+>         return suspend_common(dev, device_may_wakeup(dev));
+>  }
 
+When you include one patch in front of another like this, doesn't it 
+confuse the automatic tools?  You might end up getting both changes 
+include in the final commit.  :-)
 
+>  drivers/base/power/main.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index e0fb5b0..9cb845e 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	dpm_wait_for_children(dev, async);
+>  
+>  	if (async_error)
+> -		return 0;
+> +		goto Complete;
+>  
+>  	pm_runtime_get_noresume(dev);
+>  	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
+> @@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	if (pm_wakeup_pending()) {
+>  		pm_runtime_put_sync(dev);
+>  		async_error = -EBUSY;
+> -		return 0;
+> +		goto Complete;
+>  	}
+>  
+>  	device_lock(dev);
+> @@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	}
+>  
+>  	device_unlock(dev);
+> +
+> + Complete:
+>  	complete_all(&dev->power.completion);
+>  
+>  	if (error) {
+
+Otherwise this looks right to me.
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
