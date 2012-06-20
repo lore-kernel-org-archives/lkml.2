@@ -1,750 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab2FTNIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:08:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39595 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab2FTNIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755458Ab2FTNIC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:08:02 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34200 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685Ab2FTNIA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jun 2012 09:08:00 -0400
-Date: Wed, 20 Jun 2012 15:07:54 +0200
-From: Jiri Pirko <jpirko@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Fengguang Wu <wfg@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [net-next:master 257/266]
- drivers/net/team/team_mode_loadbalance.c:99:30: sparse: incompatible types
- in comparison expression (different address spaces)
-Message-ID: <20120620130754.GC1580@minipsycho.brq.redhat.com>
-References: <20120620042743.GA7640@localhost>
- <20120620063607.GA1491@minipsycho>
- <20120620065055.GA5872@localhost>
- <20120620124913.GF2432@linux.vnet.ibm.com>
+Message-ID: <4FE1CB2C.5040208@gmail.com>
+Date: Wed, 20 Jun 2012 08:07:56 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120620124913.GF2432@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dong Aisheng <b29396@freescale.com>
+CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 1/1] of: reform prom_update_property function
+References: <1340171647-2815-1-git-send-email-b29396@freescale.com>
+In-Reply-To: <1340171647-2815-1-git-send-email-b29396@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wed, Jun 20, 2012 at 02:49:13PM CEST, paulmck@linux.vnet.ibm.com wrote:
->On Wed, Jun 20, 2012 at 02:50:55PM +0800, Fengguang Wu wrote:
->> [CC Paul, the RCU maintainer]
->> 
->> On Wed, Jun 20, 2012 at 08:36:07AM +0200, Jiri Pirko wrote:
->> > Wed, Jun 20, 2012 at 06:27:43AM CEST, wfg@linux.intel.com wrote:
->> > >Hi Jiri,
->> > >
->> > >There are new sparse warnings show up in
->> > >
->> > >tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
->> > >head:   677a3d60fb3153f786a0d28fcf0287670e7bd3c2
->> > >commit: ab8250d70063f77929fc404c02390a1f64d66416 [257/266] team: lb: introduce infrastructure for userspace driven tx loadbalancing
->> > >
->> > >All sparse warnings:
->> > >
->> > >drivers/net/team/team_mode_loadbalance.c:99:30: sparse: incompatible types in comparison expression (different address spaces)
->> > >
->> > >drivers/net/team/team_mode_loadbalance.c:99:
->> > >    96			struct lb_port_mapping *pm;
->> > >    97	
->> > >    98			pm = &lb_priv->ex->tx_hash_to_port_mapping[i];
->> > >  > 99			if (pm->port == port) {
->> > 
->> > This looks like your checker does not like
->> > (struct team_port __rcu *) == (struct team_port *)
->> > But I wonder why (or how should I fix that)
->
->Because you said that it was an RCU-protected pointer, but then did
->not use an RCU primitive to access it.  In this case, where you are
->just using the value but not dereferencing it, you can use
->rcu_access_pointer().
+On 06/20/2012 12:54 AM, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> prom_update_property() currently fails if the property doesn't
+> actually exist yet which isn't what we want. Change to add-or-update
+> instead of update-only, then we can remove a lot duplicated lines.
+> 
+> Suggested-by: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> ---
 
-Will do that. Thanks!
+Looks fine, but you need to cc powerpc maintainers.
 
->
->							Thanx, Paul
->
->> > Thanks!
->> > 
->> > Jirka
->> > 
->> > >   100				rcu_assign_pointer(pm->port, NULL);
->> > >   101				team_option_inst_set_change(pm->opt_inst_info);
->> > >   102				changed = true;
->> > >
->> > >---
->> > >0-DAY kernel build testing backend         Open Source Technology Centre
->> > >Fengguang Wu <wfg@linux.intel.com>                     Intel Corporation
->> > 
->> > >>From ab8250d70063f77929fc404c02390a1f64d66416 Mon Sep 17 00:00:00 2001
->> > >From: Jiri Pirko <jpirko@redhat.com>
->> > >Date: Tue, 19 Jun 2012 05:54:17 +0000
->> > >Subject: [PATCH] team: lb: introduce infrastructure for userspace driven tx
->> > > loadbalancing
->> > >
->> > >Signed-off-by: Jiri Pirko <jpirko@redhat.com>
->> > >Signed-off-by: David S. Miller <davem@davemloft.net>
->> > >---
->> > > drivers/net/team/team_mode_loadbalance.c |  517 +++++++++++++++++++++++++++++-
->> > > 1 file changed, 500 insertions(+), 17 deletions(-)
->> > >
->> > >diff --git a/drivers/net/team/team_mode_loadbalance.c b/drivers/net/team/team_mode_loadbalance.c
->> > >index a475b13..33e30ed 100644
->> > >--- a/drivers/net/team/team_mode_loadbalance.c
->> > >+++ b/drivers/net/team/team_mode_loadbalance.c
->> > >@@ -11,72 +11,241 @@
->> > > #include <linux/kernel.h>
->> > > #include <linux/types.h>
->> > > #include <linux/module.h>
->> > > #include <linux/init.h>
->> > > #include <linux/errno.h>
->> > > #include <linux/netdevice.h>
->> > > #include <linux/filter.h>
->> > > #include <linux/if_team.h>
->> > > 
->> > >+struct lb_priv;
->> > >+
->> > >+typedef struct team_port *lb_select_tx_port_func_t(struct team *,
->> > >+						   struct lb_priv *,
->> > >+						   struct sk_buff *,
->> > >+						   unsigned char);
->> > >+
->> > >+#define LB_TX_HASHTABLE_SIZE 256 /* hash is a char */
->> > >+
->> > >+struct lb_stats {
->> > >+	u64 tx_bytes;
->> > >+};
->> > >+
->> > >+struct lb_pcpu_stats {
->> > >+	struct lb_stats hash_stats[LB_TX_HASHTABLE_SIZE];
->> > >+	struct u64_stats_sync syncp;
->> > >+};
->> > >+
->> > >+struct lb_stats_info {
->> > >+	struct lb_stats stats;
->> > >+	struct lb_stats last_stats;
->> > >+	struct team_option_inst_info *opt_inst_info;
->> > >+};
->> > >+
->> > >+struct lb_port_mapping {
->> > >+	struct team_port __rcu *port;
->> > >+	struct team_option_inst_info *opt_inst_info;
->> > >+};
->> > >+
->> > >+struct lb_priv_ex {
->> > >+	struct team *team;
->> > >+	struct lb_port_mapping tx_hash_to_port_mapping[LB_TX_HASHTABLE_SIZE];
->> > >+	struct sock_fprog *orig_fprog;
->> > >+	struct {
->> > >+		unsigned int refresh_interval; /* in tenths of second */
->> > >+		struct delayed_work refresh_dw;
->> > >+		struct lb_stats_info info[LB_TX_HASHTABLE_SIZE];
->> > >+	} stats;
->> > >+};
->> > >+
->> > > struct lb_priv {
->> > > 	struct sk_filter __rcu *fp;
->> > >-	struct sock_fprog *orig_fprog;
->> > >+	lb_select_tx_port_func_t __rcu *select_tx_port_func;
->> > >+	struct lb_pcpu_stats __percpu *pcpu_stats;
->> > >+	struct lb_priv_ex *ex; /* priv extension */
->> > > };
->> > > 
->> > >-static struct lb_priv *lb_priv(struct team *team)
->> > >+static struct lb_priv *get_lb_priv(struct team *team)
->> > > {
->> > > 	return (struct lb_priv *) &team->mode_priv;
->> > > }
->> > > 
->> > >-static unsigned char lb_get_skb_hash(struct lb_priv *lb_priv,
->> > >-				     struct sk_buff *skb)
->> > >+struct lb_port_priv {
->> > >+	struct lb_stats __percpu *pcpu_stats;
->> > >+	struct lb_stats_info stats_info;
->> > >+};
->> > >+
->> > >+static struct lb_port_priv *get_lb_port_priv(struct team_port *port)
->> > >+{
->> > >+	return (struct lb_port_priv *) &port->mode_priv;
->> > >+}
->> > >+
->> > >+#define LB_HTPM_PORT_BY_HASH(lp_priv, hash) \
->> > >+	(lb_priv)->ex->tx_hash_to_port_mapping[hash].port
->> > >+
->> > >+#define LB_HTPM_OPT_INST_INFO_BY_HASH(lp_priv, hash) \
->> > >+	(lb_priv)->ex->tx_hash_to_port_mapping[hash].opt_inst_info
->> > >+
->> > >+static void lb_tx_hash_to_port_mapping_null_port(struct team *team,
->> > >+						 struct team_port *port)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	bool changed = false;
->> > >+	int i;
->> > >+
->> > >+	for (i = 0; i < LB_TX_HASHTABLE_SIZE; i++) {
->> > >+		struct lb_port_mapping *pm;
->> > >+
->> > >+		pm = &lb_priv->ex->tx_hash_to_port_mapping[i];
->> > >+		if (pm->port == port) {
->> > >+			rcu_assign_pointer(pm->port, NULL);
->> > >+			team_option_inst_set_change(pm->opt_inst_info);
->> > >+			changed = true;
->> > >+		}
->> > >+	}
->> > >+	if (changed)
->> > >+		team_options_change_check(team);
->> > >+}
->> > >+
->> > >+/* Basic tx selection based solely by hash */
->> > >+static struct team_port *lb_hash_select_tx_port(struct team *team,
->> > >+						struct lb_priv *lb_priv,
->> > >+						struct sk_buff *skb,
->> > >+						unsigned char hash)
->> > >+{
->> > >+	int port_index;
->> > >+
->> > >+	port_index = hash % team->en_port_count;
->> > >+	return team_get_port_by_index_rcu(team, port_index);
->> > >+}
->> > >+
->> > >+/* Hash to port mapping select tx port */
->> > >+static struct team_port *lb_htpm_select_tx_port(struct team *team,
->> > >+						struct lb_priv *lb_priv,
->> > >+						struct sk_buff *skb,
->> > >+						unsigned char hash)
->> > >+{
->> > >+	return rcu_dereference(LB_HTPM_PORT_BY_HASH(lb_priv, hash));
->> > >+}
->> > >+
->> > >+struct lb_select_tx_port {
->> > >+	char *name;
->> > >+	lb_select_tx_port_func_t *func;
->> > >+};
->> > >+
->> > >+static const struct lb_select_tx_port lb_select_tx_port_list[] = {
->> > >+	{
->> > >+		.name = "hash",
->> > >+		.func = lb_hash_select_tx_port,
->> > >+	},
->> > >+	{
->> > >+		.name = "hash_to_port_mapping",
->> > >+		.func = lb_htpm_select_tx_port,
->> > >+	},
->> > >+};
->> > >+#define LB_SELECT_TX_PORT_LIST_COUNT ARRAY_SIZE(lb_select_tx_port_list)
->> > >+
->> > >+static char *lb_select_tx_port_get_name(lb_select_tx_port_func_t *func)
->> > >+{
->> > >+	int i;
->> > >+
->> > >+	for (i = 0; i < LB_SELECT_TX_PORT_LIST_COUNT; i++) {
->> > >+		const struct lb_select_tx_port *item;
->> > >+
->> > >+		item = &lb_select_tx_port_list[i];
->> > >+		if (item->func == func)
->> > >+			return item->name;
->> > >+	}
->> > >+	return NULL;
->> > >+}
->> > >+
->> > >+static lb_select_tx_port_func_t *lb_select_tx_port_get_func(const char *name)
->> > >+{
->> > >+	int i;
->> > >+
->> > >+	for (i = 0; i < LB_SELECT_TX_PORT_LIST_COUNT; i++) {
->> > >+		const struct lb_select_tx_port *item;
->> > >+
->> > >+		item = &lb_select_tx_port_list[i];
->> > >+		if (!strcmp(item->name, name))
->> > >+			return item->func;
->> > >+	}
->> > >+	return NULL;
->> > >+}
->> > >+
->> > >+static unsigned int lb_get_skb_hash(struct lb_priv *lb_priv,
->> > >+				    struct sk_buff *skb)
->> > > {
->> > > 	struct sk_filter *fp;
->> > > 	uint32_t lhash;
->> > > 	unsigned char *c;
->> > > 
->> > > 	fp = rcu_dereference(lb_priv->fp);
->> > > 	if (unlikely(!fp))
->> > > 		return 0;
->> > > 	lhash = SK_RUN_FILTER(fp, skb);
->> > > 	c = (char *) &lhash;
->> > > 	return c[0] ^ c[1] ^ c[2] ^ c[3];
->> > > }
->> > > 
->> > >+static void lb_update_tx_stats(unsigned int tx_bytes, struct lb_priv *lb_priv,
->> > >+			       struct lb_port_priv *lb_port_priv,
->> > >+			       unsigned char hash)
->> > >+{
->> > >+	struct lb_pcpu_stats *pcpu_stats;
->> > >+	struct lb_stats *port_stats;
->> > >+	struct lb_stats *hash_stats;
->> > >+
->> > >+	pcpu_stats = this_cpu_ptr(lb_priv->pcpu_stats);
->> > >+	port_stats = this_cpu_ptr(lb_port_priv->pcpu_stats);
->> > >+	hash_stats = &pcpu_stats->hash_stats[hash];
->> > >+	u64_stats_update_begin(&pcpu_stats->syncp);
->> > >+	port_stats->tx_bytes += tx_bytes;
->> > >+	hash_stats->tx_bytes += tx_bytes;
->> > >+	u64_stats_update_end(&pcpu_stats->syncp);
->> > >+}
->> > >+
->> > > static bool lb_transmit(struct team *team, struct sk_buff *skb)
->> > > {
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	lb_select_tx_port_func_t *select_tx_port_func;
->> > > 	struct team_port *port;
->> > >-	int port_index;
->> > >+	unsigned char hash;
->> > >+	unsigned int tx_bytes = skb->len;
->> > > 
->> > >-	port_index = lb_get_skb_hash(lb_priv(team), skb) % team->en_port_count;
->> > >-	port = team_get_port_by_index_rcu(team, port_index);
->> > >+	hash = lb_get_skb_hash(lb_priv, skb);
->> > >+	select_tx_port_func = rcu_dereference(lb_priv->select_tx_port_func);
->> > >+	port = select_tx_port_func(team, lb_priv, skb, hash);
->> > > 	if (unlikely(!port))
->> > > 		goto drop;
->> > > 	skb->dev = port->dev;
->> > > 	if (dev_queue_xmit(skb))
->> > > 		return false;
->> > >+	lb_update_tx_stats(tx_bytes, lb_priv, get_lb_port_priv(port), hash);
->> > > 	return true;
->> > > 
->> > > drop:
->> > > 	dev_kfree_skb_any(skb);
->> > > 	return false;
->> > > }
->> > > 
->> > > static int lb_bpf_func_get(struct team *team, struct team_gsetter_ctx *ctx)
->> > > {
->> > >-	if (!lb_priv(team)->orig_fprog) {
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+
->> > >+	if (!lb_priv->ex->orig_fprog) {
->> > > 		ctx->data.bin_val.len = 0;
->> > > 		ctx->data.bin_val.ptr = NULL;
->> > > 		return 0;
->> > > 	}
->> > >-	ctx->data.bin_val.len = lb_priv(team)->orig_fprog->len *
->> > >+	ctx->data.bin_val.len = lb_priv->ex->orig_fprog->len *
->> > > 				sizeof(struct sock_filter);
->> > >-	ctx->data.bin_val.ptr = lb_priv(team)->orig_fprog->filter;
->> > >+	ctx->data.bin_val.ptr = lb_priv->ex->orig_fprog->filter;
->> > > 	return 0;
->> > > }
->> > > 
->> > > static int __fprog_create(struct sock_fprog **pfprog, u32 data_len,
->> > > 			  const void *data)
->> > > {
->> > > 	struct sock_fprog *fprog;
->> > > 	struct sock_filter *filter = (struct sock_filter *) data;
->> > > 
->> > >@@ -97,76 +266,390 @@ static int __fprog_create(struct sock_fprog **pfprog, u32 data_len,
->> > > 
->> > > static void __fprog_destroy(struct sock_fprog *fprog)
->> > > {
->> > > 	kfree(fprog->filter);
->> > > 	kfree(fprog);
->> > > }
->> > > 
->> > > static int lb_bpf_func_set(struct team *team, struct team_gsetter_ctx *ctx)
->> > > {
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > > 	struct sk_filter *fp = NULL;
->> > > 	struct sock_fprog *fprog = NULL;
->> > > 	int err;
->> > > 
->> > > 	if (ctx->data.bin_val.len) {
->> > > 		err = __fprog_create(&fprog, ctx->data.bin_val.len,
->> > > 				     ctx->data.bin_val.ptr);
->> > > 		if (err)
->> > > 			return err;
->> > > 		err = sk_unattached_filter_create(&fp, fprog);
->> > > 		if (err) {
->> > > 			__fprog_destroy(fprog);
->> > > 			return err;
->> > > 		}
->> > > 	}
->> > > 
->> > >-	if (lb_priv(team)->orig_fprog) {
->> > >+	if (lb_priv->ex->orig_fprog) {
->> > > 		/* Clear old filter data */
->> > >-		__fprog_destroy(lb_priv(team)->orig_fprog);
->> > >-		sk_unattached_filter_destroy(lb_priv(team)->fp);
->> > >+		__fprog_destroy(lb_priv->ex->orig_fprog);
->> > >+		sk_unattached_filter_destroy(lb_priv->fp);
->> > > 	}
->> > > 
->> > >-	rcu_assign_pointer(lb_priv(team)->fp, fp);
->> > >-	lb_priv(team)->orig_fprog = fprog;
->> > >+	rcu_assign_pointer(lb_priv->fp, fp);
->> > >+	lb_priv->ex->orig_fprog = fprog;
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_tx_method_get(struct team *team, struct team_gsetter_ctx *ctx)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	char *name;
->> > >+
->> > >+	name = lb_select_tx_port_get_name(lb_priv->select_tx_port_func);
->> > >+	BUG_ON(!name);
->> > >+	ctx->data.str_val = name;
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_tx_method_set(struct team *team, struct team_gsetter_ctx *ctx)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	lb_select_tx_port_func_t *func;
->> > >+
->> > >+	func = lb_select_tx_port_get_func(ctx->data.str_val);
->> > >+	if (!func)
->> > >+		return -EINVAL;
->> > >+	rcu_assign_pointer(lb_priv->select_tx_port_func, func);
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_tx_hash_to_port_mapping_init(struct team *team,
->> > >+					   struct team_option_inst_info *info)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	unsigned char hash = info->array_index;
->> > >+
->> > >+	LB_HTPM_OPT_INST_INFO_BY_HASH(lb_priv, hash) = info;
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_tx_hash_to_port_mapping_get(struct team *team,
->> > >+					  struct team_gsetter_ctx *ctx)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	struct team_port *port;
->> > >+	unsigned char hash = ctx->info->array_index;
->> > >+
->> > >+	port = LB_HTPM_PORT_BY_HASH(lb_priv, hash);
->> > >+	ctx->data.u32_val = port ? port->dev->ifindex : 0;
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_tx_hash_to_port_mapping_set(struct team *team,
->> > >+					  struct team_gsetter_ctx *ctx)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	struct team_port *port;
->> > >+	unsigned char hash = ctx->info->array_index;
->> > >+
->> > >+	list_for_each_entry(port, &team->port_list, list) {
->> > >+		if (ctx->data.u32_val == port->dev->ifindex) {
->> > >+			rcu_assign_pointer(LB_HTPM_PORT_BY_HASH(lb_priv, hash),
->> > >+					   port);
->> > >+			return 0;
->> > >+		}
->> > >+	}
->> > >+	return -ENODEV;
->> > >+}
->> > >+
->> > >+static int lb_hash_stats_init(struct team *team,
->> > >+			      struct team_option_inst_info *info)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	unsigned char hash = info->array_index;
->> > >+
->> > >+	lb_priv->ex->stats.info[hash].opt_inst_info = info;
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_hash_stats_get(struct team *team, struct team_gsetter_ctx *ctx)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	unsigned char hash = ctx->info->array_index;
->> > >+
->> > >+	ctx->data.bin_val.ptr = &lb_priv->ex->stats.info[hash].stats;
->> > >+	ctx->data.bin_val.len = sizeof(struct lb_stats);
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_port_stats_init(struct team *team,
->> > >+			      struct team_option_inst_info *info)
->> > >+{
->> > >+	struct team_port *port = info->port;
->> > >+	struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
->> > >+
->> > >+	lb_port_priv->stats_info.opt_inst_info = info;
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_port_stats_get(struct team *team, struct team_gsetter_ctx *ctx)
->> > >+{
->> > >+	struct team_port *port = ctx->info->port;
->> > >+	struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
->> > >+
->> > >+	ctx->data.bin_val.ptr = &lb_port_priv->stats_info.stats;
->> > >+	ctx->data.bin_val.len = sizeof(struct lb_stats);
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static void __lb_stats_info_refresh_prepare(struct lb_stats_info *s_info)
->> > >+{
->> > >+	memcpy(&s_info->last_stats, &s_info->stats, sizeof(struct lb_stats));
->> > >+	memset(&s_info->stats, 0, sizeof(struct lb_stats));
->> > >+}
->> > >+
->> > >+static bool __lb_stats_info_refresh_check(struct lb_stats_info *s_info,
->> > >+					  struct team *team)
->> > >+{
->> > >+	if (memcmp(&s_info->last_stats, &s_info->stats,
->> > >+	    sizeof(struct lb_stats))) {
->> > >+		team_option_inst_set_change(s_info->opt_inst_info);
->> > >+		return true;
->> > >+	}
->> > >+	return false;
->> > >+}
->> > >+
->> > >+static void __lb_one_cpu_stats_add(struct lb_stats *acc_stats,
->> > >+				   struct lb_stats *cpu_stats,
->> > >+				   struct u64_stats_sync *syncp)
->> > >+{
->> > >+	unsigned int start;
->> > >+	struct lb_stats tmp;
->> > >+
->> > >+	do {
->> > >+		start = u64_stats_fetch_begin_bh(syncp);
->> > >+		tmp.tx_bytes = cpu_stats->tx_bytes;
->> > >+	} while (u64_stats_fetch_retry_bh(syncp, start));
->> > >+	acc_stats->tx_bytes += tmp.tx_bytes;
->> > >+}
->> > >+
->> > >+static void lb_stats_refresh(struct work_struct *work)
->> > >+{
->> > >+	struct team *team;
->> > >+	struct lb_priv *lb_priv;
->> > >+	struct lb_priv_ex *lb_priv_ex;
->> > >+	struct lb_pcpu_stats *pcpu_stats;
->> > >+	struct lb_stats *stats;
->> > >+	struct lb_stats_info *s_info;
->> > >+	struct team_port *port;
->> > >+	bool changed = false;
->> > >+	int i;
->> > >+	int j;
->> > >+
->> > >+	lb_priv_ex = container_of(work, struct lb_priv_ex,
->> > >+				  stats.refresh_dw.work);
->> > >+
->> > >+	team = lb_priv_ex->team;
->> > >+	lb_priv = get_lb_priv(team);
->> > >+
->> > >+	if (!mutex_trylock(&team->lock)) {
->> > >+		schedule_delayed_work(&lb_priv_ex->stats.refresh_dw, 0);
->> > >+		return;
->> > >+	}
->> > >+
->> > >+	for (j = 0; j < LB_TX_HASHTABLE_SIZE; j++) {
->> > >+		s_info = &lb_priv->ex->stats.info[j];
->> > >+		__lb_stats_info_refresh_prepare(s_info);
->> > >+		for_each_possible_cpu(i) {
->> > >+			pcpu_stats = per_cpu_ptr(lb_priv->pcpu_stats, i);
->> > >+			stats = &pcpu_stats->hash_stats[j];
->> > >+			__lb_one_cpu_stats_add(&s_info->stats, stats,
->> > >+					       &pcpu_stats->syncp);
->> > >+		}
->> > >+		changed |= __lb_stats_info_refresh_check(s_info, team);
->> > >+	}
->> > >+
->> > >+	list_for_each_entry(port, &team->port_list, list) {
->> > >+		struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
->> > >+
->> > >+		s_info = &lb_port_priv->stats_info;
->> > >+		__lb_stats_info_refresh_prepare(s_info);
->> > >+		for_each_possible_cpu(i) {
->> > >+			pcpu_stats = per_cpu_ptr(lb_priv->pcpu_stats, i);
->> > >+			stats = per_cpu_ptr(lb_port_priv->pcpu_stats, i);
->> > >+			__lb_one_cpu_stats_add(&s_info->stats, stats,
->> > >+					       &pcpu_stats->syncp);
->> > >+		}
->> > >+		changed |= __lb_stats_info_refresh_check(s_info, team);
->> > >+	}
->> > >+
->> > >+	if (changed)
->> > >+		team_options_change_check(team);
->> > >+
->> > >+	schedule_delayed_work(&lb_priv_ex->stats.refresh_dw,
->> > >+			      (lb_priv_ex->stats.refresh_interval * HZ) / 10);
->> > >+
->> > >+	mutex_unlock(&team->lock);
->> > >+}
->> > >+
->> > >+static int lb_stats_refresh_interval_get(struct team *team,
->> > >+					 struct team_gsetter_ctx *ctx)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+
->> > >+	ctx->data.u32_val = lb_priv->ex->stats.refresh_interval;
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static int lb_stats_refresh_interval_set(struct team *team,
->> > >+					 struct team_gsetter_ctx *ctx)
->> > >+{
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	unsigned int interval;
->> > >+
->> > >+	interval = ctx->data.u32_val;
->> > >+	if (lb_priv->ex->stats.refresh_interval == interval)
->> > >+		return 0;
->> > >+	lb_priv->ex->stats.refresh_interval = interval;
->> > >+	if (interval)
->> > >+		schedule_delayed_work(&lb_priv->ex->stats.refresh_dw, 0);
->> > >+	else
->> > >+		cancel_delayed_work(&lb_priv->ex->stats.refresh_dw);
->> > > 	return 0;
->> > > }
->> > > 
->> > > static const struct team_option lb_options[] = {
->> > > 	{
->> > > 		.name = "bpf_hash_func",
->> > > 		.type = TEAM_OPTION_TYPE_BINARY,
->> > > 		.getter = lb_bpf_func_get,
->> > > 		.setter = lb_bpf_func_set,
->> > > 	},
->> > >+	{
->> > >+		.name = "lb_tx_method",
->> > >+		.type = TEAM_OPTION_TYPE_STRING,
->> > >+		.getter = lb_tx_method_get,
->> > >+		.setter = lb_tx_method_set,
->> > >+	},
->> > >+	{
->> > >+		.name = "lb_tx_hash_to_port_mapping",
->> > >+		.array_size = LB_TX_HASHTABLE_SIZE,
->> > >+		.type = TEAM_OPTION_TYPE_U32,
->> > >+		.init = lb_tx_hash_to_port_mapping_init,
->> > >+		.getter = lb_tx_hash_to_port_mapping_get,
->> > >+		.setter = lb_tx_hash_to_port_mapping_set,
->> > >+	},
->> > >+	{
->> > >+		.name = "lb_hash_stats",
->> > >+		.array_size = LB_TX_HASHTABLE_SIZE,
->> > >+		.type = TEAM_OPTION_TYPE_BINARY,
->> > >+		.init = lb_hash_stats_init,
->> > >+		.getter = lb_hash_stats_get,
->> > >+	},
->> > >+	{
->> > >+		.name = "lb_port_stats",
->> > >+		.per_port = true,
->> > >+		.type = TEAM_OPTION_TYPE_BINARY,
->> > >+		.init = lb_port_stats_init,
->> > >+		.getter = lb_port_stats_get,
->> > >+	},
->> > >+	{
->> > >+		.name = "lb_stats_refresh_interval",
->> > >+		.type = TEAM_OPTION_TYPE_U32,
->> > >+		.getter = lb_stats_refresh_interval_get,
->> > >+		.setter = lb_stats_refresh_interval_set,
->> > >+	},
->> > > };
->> > > 
->> > > static int lb_init(struct team *team)
->> > > {
->> > >-	return team_options_register(team, lb_options,
->> > >-				     ARRAY_SIZE(lb_options));
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+	lb_select_tx_port_func_t *func;
->> > >+	int err;
->> > >+
->> > >+	/* set default tx port selector */
->> > >+	func = lb_select_tx_port_get_func("hash");
->> > >+	BUG_ON(!func);
->> > >+	rcu_assign_pointer(lb_priv->select_tx_port_func, func);
->> > >+
->> > >+	lb_priv->ex = kzalloc(sizeof(*lb_priv->ex), GFP_KERNEL);
->> > >+	if (!lb_priv->ex)
->> > >+		return -ENOMEM;
->> > >+	lb_priv->ex->team = team;
->> > >+
->> > >+	lb_priv->pcpu_stats = alloc_percpu(struct lb_pcpu_stats);
->> > >+	if (!lb_priv->pcpu_stats) {
->> > >+		err = -ENOMEM;
->> > >+		goto err_alloc_pcpu_stats;
->> > >+	}
->> > >+
->> > >+	INIT_DELAYED_WORK(&lb_priv->ex->stats.refresh_dw, lb_stats_refresh);
->> > >+
->> > >+	err = team_options_register(team, lb_options, ARRAY_SIZE(lb_options));
->> > >+	if (err)
->> > >+		goto err_options_register;
->> > >+	return 0;
->> > >+
->> > >+err_options_register:
->> > >+	free_percpu(lb_priv->pcpu_stats);
->> > >+err_alloc_pcpu_stats:
->> > >+	kfree(lb_priv->ex);
->> > >+	return err;
->> > > }
->> > > 
->> > > static void lb_exit(struct team *team)
->> > > {
->> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
->> > >+
->> > > 	team_options_unregister(team, lb_options,
->> > > 				ARRAY_SIZE(lb_options));
->> > >+	cancel_delayed_work_sync(&lb_priv->ex->stats.refresh_dw);
->> > >+	free_percpu(lb_priv->pcpu_stats);
->> > >+	kfree(lb_priv->ex);
->> > >+}
->> > >+
->> > >+static int lb_port_enter(struct team *team, struct team_port *port)
->> > >+{
->> > >+	struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
->> > >+
->> > >+	lb_port_priv->pcpu_stats = alloc_percpu(struct lb_stats);
->> > >+	if (!lb_port_priv->pcpu_stats)
->> > >+		return -ENOMEM;
->> > >+	return 0;
->> > >+}
->> > >+
->> > >+static void lb_port_leave(struct team *team, struct team_port *port)
->> > >+{
->> > >+	struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
->> > >+
->> > >+	free_percpu(lb_port_priv->pcpu_stats);
->> > >+}
->> > >+
->> > >+static void lb_port_disabled(struct team *team, struct team_port *port)
->> > >+{
->> > >+	lb_tx_hash_to_port_mapping_null_port(team, port);
->> > > }
->> > > 
->> > > static const struct team_mode_ops lb_mode_ops = {
->> > > 	.init			= lb_init,
->> > > 	.exit			= lb_exit,
->> > >+	.port_enter		= lb_port_enter,
->> > >+	.port_leave		= lb_port_leave,
->> > >+	.port_disabled		= lb_port_disabled,
->> > > 	.transmit		= lb_transmit,
->> > > };
->> > > 
->> > > static const struct team_mode lb_mode = {
->> > > 	.kind		= "loadbalance",
->> > > 	.owner		= THIS_MODULE,
->> > > 	.priv_size	= sizeof(struct lb_priv),
->> > >+	.port_priv_size	= sizeof(struct lb_port_priv),
->> > > 	.ops		= &lb_mode_ops,
->> > > };
->> > > 
->> > > static int __init lb_init_module(void)
->> > > {
->> > > 	return team_mode_register(&lb_mode);
->> > > }
->> > > 
->> > > static void __exit lb_cleanup_module(void)
->> > >-- 
->> > >1.7.10
->> > >
->> 
->
+Rob
+
+>  arch/powerpc/platforms/85xx/p1022_ds.c    |    8 +-------
+>  arch/powerpc/platforms/pseries/mobility.c |    8 +-------
+>  arch/powerpc/platforms/pseries/reconfig.c |   13 +++----------
+>  drivers/of/base.c                         |   15 +++++++++++----
+>  fs/proc/proc_devtree.c                    |    5 +++++
+>  include/linux/of.h                        |    3 +--
+>  6 files changed, 22 insertions(+), 30 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/85xx/p1022_ds.c b/arch/powerpc/platforms/85xx/p1022_ds.c
+> index f700c81..d66631c 100644
+> --- a/arch/powerpc/platforms/85xx/p1022_ds.c
+> +++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+> @@ -348,13 +348,7 @@ void __init p1022_ds_pic_init(void)
+>   */
+>  static void __init disable_one_node(struct device_node *np, struct property *new)
+>  {
+> -	struct property *old;
+> -
+> -	old = of_find_property(np, new->name, NULL);
+> -	if (old)
+> -		prom_update_property(np, new, old);
+> -	else
+> -		prom_add_property(np, new);
+> +	prom_update_property(np, new);
+>  }
+>  
+>  /* TRUE if there is a "video=fslfb" command-line parameter. */
+> diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
+> index 029a562..dd30b12 100644
+> --- a/arch/powerpc/platforms/pseries/mobility.c
+> +++ b/arch/powerpc/platforms/pseries/mobility.c
+> @@ -67,7 +67,6 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+>  			      const char *name, u32 vd, char *value)
+>  {
+>  	struct property *new_prop = *prop;
+> -	struct property *old_prop;
+>  	int more = 0;
+>  
+>  	/* A negative 'vd' value indicates that only part of the new property
+> @@ -117,12 +116,7 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+>  	}
+>  
+>  	if (!more) {
+> -		old_prop = of_find_property(dn, new_prop->name, NULL);
+> -		if (old_prop)
+> -			prom_update_property(dn, new_prop, old_prop);
+> -		else
+> -			prom_add_property(dn, new_prop);
+> -
+> +		prom_update_property(dn, new_prop);
+>  		new_prop = NULL;
+>  	}
+>  
+> diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
+> index 7b3bf76..4c92f1c 100644
+> --- a/arch/powerpc/platforms/pseries/reconfig.c
+> +++ b/arch/powerpc/platforms/pseries/reconfig.c
+> @@ -432,7 +432,7 @@ static int do_update_property(char *buf, size_t bufsize)
+>  	unsigned char *value;
+>  	char *name, *end, *next_prop;
+>  	int rc, length;
+> -	struct property *newprop, *oldprop;
+> +	struct property *newprop;
+>  	buf = parse_node(buf, bufsize, &np);
+>  	end = buf + bufsize;
+>  
+> @@ -450,18 +450,11 @@ static int do_update_property(char *buf, size_t bufsize)
+>  	if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
+>  		slb_set_size(*(int *)value);
+>  
+> -	oldprop = of_find_property(np, name,NULL);
+> -	if (!oldprop) {
+> -		if (strlen(name))
+> -			return prom_add_property(np, newprop);
+> -		return -ENODEV;
+> -	}
+> -
+>  	upd_value.node = np;
+>  	upd_value.property = newprop;
+>  	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
+>  
+> -	rc = prom_update_property(np, newprop, oldprop);
+> +	rc = prom_update_property(np, newprop);
+>  	if (rc)
+>  		return rc;
+>  
+> @@ -486,7 +479,7 @@ static int do_update_property(char *buf, size_t bufsize)
+>  
+>  		rc = pSeries_reconfig_notify(action, value);
+>  		if (rc) {
+> -			prom_update_property(np, oldprop, newprop);
+> +			prom_update_property(np, newprop);
+>  			return rc;
+>  		}
+>  	}
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index d9bfd49..a14f109 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1051,7 +1051,8 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+>  }
+>  
+>  /*
+> - * prom_update_property - Update a property in a node.
+> + * prom_update_property - Update a property in a node, if the property does
+> + * not exist, add it.
+>   *
+>   * Note that we don't actually remove it, since we have given out
+>   * who-knows-how-many pointers to the data using get-property.
+> @@ -1059,13 +1060,19 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+>   * and add the new property to the property list
+>   */
+>  int prom_update_property(struct device_node *np,
+> -			 struct property *newprop,
+> -			 struct property *oldprop)
+> +			 struct property *newprop)
+>  {
+> -	struct property **next;
+> +	struct property **next, *oldprop;
+>  	unsigned long flags;
+>  	int found = 0;
+>  
+> +	if (!newprop->name)
+> +		return -EINVAL;
+> +
+> +	oldprop = of_find_property(np, newprop->name, NULL);
+> +	if (!oldprop)
+> +		return prom_add_property(np, newprop);
+> +
+>  	write_lock_irqsave(&devtree_lock, flags);
+>  	next = &np->properties;
+>  	while (*next) {
+> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+> index 927cbd1..df7dd08 100644
+> --- a/fs/proc/proc_devtree.c
+> +++ b/fs/proc/proc_devtree.c
+> @@ -101,6 +101,11 @@ void proc_device_tree_update_prop(struct proc_dir_entry *pde,
+>  {
+>  	struct proc_dir_entry *ent;
+>  
+> +	if (!oldprop) {
+> +		proc_device_tree_add_prop(pde, newprop);
+> +		return;
+> +	}
+> +
+>  	for (ent = pde->subdir; ent != NULL; ent = ent->next)
+>  		if (ent->data == oldprop)
+>  			break;
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 2ec1083..b27c871 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -260,8 +260,7 @@ extern int of_machine_is_compatible(const char *compat);
+>  extern int prom_add_property(struct device_node* np, struct property* prop);
+>  extern int prom_remove_property(struct device_node *np, struct property *prop);
+>  extern int prom_update_property(struct device_node *np,
+> -				struct property *newprop,
+> -				struct property *oldprop);
+> +				struct property *newprop);
+>  
+>  #if defined(CONFIG_OF_DYNAMIC)
+>  /* For updating the device tree at runtime */
+
