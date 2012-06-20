@@ -1,129 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab2FTQmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:42:45 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59714 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757076Ab2FTQmn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:42:43 -0400
-Date: Wed, 20 Jun 2012 18:42:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Subject: Re: [PATCH 02/23] perf: Unified API to record selective sets of arch
- registers
-Message-ID: <20120620164233.GB7714@somewhere.redhat.com>
-References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
- <1340120894-9465-3-git-send-email-jolsa@redhat.com>
+	id S1757282Ab2FTQnc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:43:32 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:43919 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757105Ab2FTQna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 12:43:30 -0400
+Message-ID: <4FE1FD93.9050508@us.ibm.com>
+Date: Wed, 20 Jun 2012 09:42:59 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340120894-9465-3-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Ben Hutchings <ben@decadent.org.uk>, Jonathan Nieder <jrnieder@gmail.com>,
+        stable@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -stable]  ntp: Correct TAI offset during leap second
+References: <4FDB8563.3030805@us.ibm.com> <1339944223.4942.240.camel@deadeye.wl.decadent.org.uk> <20120617164751.GJ12429@burratino> <20120617173456.GA3684@netboy.at.omicron.at> <1340027711.9372.29.camel@deadeye.wl.decadent.org.uk> <20120618162854.GA3111@netboy.at.omicron.at> <1340106888.6871.20.camel@deadeye.wl.decadent.org.uk> <4FE0B659.9090604@us.ibm.com> <20120620162528.GB2180@netboy.at.omicron.at>
+In-Reply-To: <20120620162528.GB2180@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062016-1976-0000-0000-00000E5D0F33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 05:47:53PM +0200, Jiri Olsa wrote:
-> This brings a new API to help the selective dump of registers on
-> event sampling, and its implementation for x86 arch.
-> 
-> Added HAVE_PERF_REGS config option to determine if the architecture
-> provides perf registers ABI.
-> 
-> The information about desired registers will be passed in u64 mask.
-> It's up to the architecture to map the registers into the mask bits.
-> 
-> For the x86 arch implementation, both 32 and 64 bit registers
-> bits are defined within single enum to ensure 64 bit system can
-> provide register dump for compat task if needed in the future.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  arch/Kconfig                     |    6 +++
->  arch/x86/Kconfig                 |    1 +
->  arch/x86/include/asm/perf_regs.h |   34 ++++++++++++++
->  arch/x86/kernel/Makefile         |    2 +
->  arch/x86/kernel/perf_regs.c      |   90 ++++++++++++++++++++++++++++++++++++++
->  include/linux/perf_regs.h        |   19 ++++++++
->  6 files changed, 152 insertions(+), 0 deletions(-)
->  create mode 100644 arch/x86/include/asm/perf_regs.h
->  create mode 100644 arch/x86/kernel/perf_regs.c
->  create mode 100644 include/linux/perf_regs.h
-> 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 8c3d957..32f4873 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -222,6 +222,12 @@ config HAVE_PERF_EVENTS_NMI
->  	  subsystem.  Also has support for calculating CPU cycle events
->  	  to determine how many clock cycles in a given period.
->  
-> +config HAVE_PERF_REGS
-> +	bool
-> +	help
-> +	  Support selective register dumps for perf events. This includes
-> +	  bit-mapping of each registers and a unique architecture id.
-> +
->  config HAVE_ARCH_JUMP_LABEL
->  	bool
->  
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index d35438e..457d8d6 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -60,6 +60,7 @@ config X86
->  	select HAVE_MIXED_BREAKPOINTS_REGS
->  	select PERF_EVENTS
->  	select HAVE_PERF_EVENTS_NMI
-> +	select HAVE_PERF_REGS
->  	select ANON_INODES
->  	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
->  	select HAVE_CMPXCHG_LOCAL if !M386
-> diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
-> new file mode 100644
-> index 0000000..0397bfc
-> --- /dev/null
-> +++ b/arch/x86/include/asm/perf_regs.h
-> @@ -0,0 +1,34 @@
-> +#ifndef _ASM_X86_PERF_REGS_H
-> +#define _ASM_X86_PERF_REGS_H
-> +
-> +enum perf_event_x86_regs {
-> +	PERF_REG_X86_AX,
-> +	PERF_REG_X86_BX,
-> +	PERF_REG_X86_CX,
-> +	PERF_REG_X86_DX,
-> +	PERF_REG_X86_SI,
-> +	PERF_REG_X86_DI,
-> +	PERF_REG_X86_BP,
-> +	PERF_REG_X86_SP,
-> +	PERF_REG_X86_IP,
-> +	PERF_REG_X86_FLAGS,
-> +	PERF_REG_X86_CS,
-> +	PERF_REG_X86_DS,
-> +	PERF_REG_X86_ES,
-> +	PERF_REG_X86_FS,
-> +	PERF_REG_X86_GS,
-> +	PERF_REG_X86_R8,
-> +	PERF_REG_X86_R9,
-> +	PERF_REG_X86_R10,
-> +	PERF_REG_X86_R11,
-> +	PERF_REG_X86_R12,
-> +	PERF_REG_X86_R13,
-> +	PERF_REG_X86_R14,
-> +	PERF_REG_X86_R15,
-> +	PERF_REG_X86_SS,
-> +
-> +	/* non ABI */
-> +	PERF_REG_X86_64_MAX = PERF_REG_X86_SS + 1,
+On 06/20/2012 09:25 AM, Richard Cochran wrote:
+> On Tue, Jun 19, 2012 at 10:26:49AM -0700, John Stultz wrote:
+>> Richard, are you planning on taking another go at those changes? Or
+>> were my last suggestions just too daft? ;)
+> I wonder if it is really worth the effort to fix up adjtimex.
+>
+> But I am strongly in favor of adding CLOCK_TAI, since that would be
+> easy to add (as you showed), is free from the tick issue, and would be
+> really useful for Test and Measurement style applications
+I've got the CLOCK_TAI patches queued for 3.6. I should send them to 
+-tip soon here.
 
-SS also exist in 32 bits, right?
-Although I guess userspace doesn't care much.
+thanks
+-john
+
