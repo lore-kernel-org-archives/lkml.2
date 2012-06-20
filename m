@@ -1,127 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab2FTCj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 22:39:57 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43231 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab2FTCj4 (ORCPT
+	id S1755400Ab2FTCuS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 22:50:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28792 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754441Ab2FTCuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 22:39:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120618200131.GA12351@fieldses.org>
-References: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
-	<1339815965-1171-2-git-send-email-filbranden@gmail.com>
-	<20120618200131.GA12351@fieldses.org>
-Date: Tue, 19 Jun 2012 22:39:55 -0400
-Message-ID: <CABe66sW0k4N_7vMduOZMRak-U4A+6E7i+fiGwKEVBazJ1npBeg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] locks: prevent side-effects of locks_release_private
- before file_lock is initialized
-From: Filipe Brandenburger <filbranden@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Jun 2012 22:50:07 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=C2gnn1LOoZAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=9PgPiwaQxtW9giTdnEwA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=T1yCy-6XXuVCl0wbWyAA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120620025005.198307619@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 19 Jun 2012 22:06:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Cc: John David Yost <johnyost@ptd.net>
+Subject: [PATCH 4/4] localmodconfig: Add debug environment variable LOCALMODCONFIG_DEBUG
+References: <20120620020608.911616775@goodmis.org>
+Content-Disposition: inline; filename=0004-localmodconfig-Add-debug-environment-variable-LOCALM.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jun 18, 2012 at 4:01 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> But clearest might be to separate allocation and initialization and
-> delay the latter till we know we're going to need it?
+From: Steven Rostedt <srostedt@redhat.com>
 
-I started playing with this second idea of yours... Unfortunately
-having fl_lmops unset before it's fully initialized doesn't really
-work because its methods are needed by vfs_setlease()... also, that
-would change the API for other users of that function...
+If the environment variable LOCALMODCONFIG_DEBUG is set, then debug output
+will appear in the make localmodconfig. This will simplify debugging what
+people get with their output, as I can just tell people to do:
 
-But I thought of a way of setting a flag to mark the struct as
-uninitialized and then have vfs_setlease() clear that flag once it
-decides to use that struct. If it doesn't and changes the flp pointer
-to the one that was in use before, then it doesn't clear that flag
-which means the locks_free_lock() function will not do any calls into
-fl_lmops which might have side effects on the process...
+  LOCALMODCONFIG_DEBUG=3D1 make localmodconfig 2>out.txt
 
-Here's the patch:
+and have them send me the out.txt. I'll be able to see why things are not
+working as they think it should be.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/kconfig/streamline_config.pl |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streaml=
+ine_config.pl
+index fcfcb30..2fbbbc1 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -45,6 +45,16 @@
+ use strict;
+ use Getopt::Long;
+=20
++# set the environment variable LOCALMODCONFIG_DEBUG to get
++# debug output.
++my $debugprint =3D 0;
++$debugprint =3D 1 if (defined($ENV{LOCALMODCONFIG_DEBUG}));
++
++sub dprint {
++    return if (!$debugprint);
++    print STDERR @_;
++}
++
+ my $config =3D ".config";
+=20
+ my $uname =3D `uname -r`;
+@@ -389,6 +399,7 @@ foreach my $module (keys(%modules)) {
+ 	my @arr =3D @{$objects{$module}};
+ 	foreach my $conf (@arr) {
+ 	    $configs{$conf} =3D $module;
++	    dprint "$conf added by direct ($module)\n";
+ 	}
+     } else {
+ 	# Most likely, someone has a custom (binary?) module loaded.
+@@ -412,6 +423,8 @@ foreach my $line (@config_file) {
+=20
+ my $repeat =3D 1;
+=20
++my $depconfig;
++
+ #
+ # Note, we do not care about operands (like: &&, ||, !) we want to add any
+ # config that is in the depend list of another config. This script does
+@@ -440,6 +453,7 @@ sub parse_config_depends
+ 		# We must make sure that this config has its
+ 		# dependencies met.
+ 		$repeat =3D 1; # do again
++		dprint "$conf selected by depend $depconfig\n";
+ 		$configs{$conf} =3D 1;
+ 	    }
+ 	} else {
+@@ -473,15 +487,18 @@ sub parse_config_selects
+=20
+ 	    # Make sure that this config exists in the current .config file
+ 	    if (!defined($orig_configs{$conf})) {
++		dprint "$conf not set for $config select\n";
+ 		next;
+ 	    }
+=20
+ 	    # Check if something other than a module selects this config
+ 	    if (defined($orig_configs{$conf}) && $orig_configs{$conf} ne "m") {
++		dprint "$conf (non module) selects config, we are good\n";
+ 		# we are good with this
+ 		return;
+ 	    }
+ 	    if (defined($configs{$conf})) {
++		dprint "$conf selects $config so we are good\n";
+ 		# A set config selects this config, we are good
+ 		return;
+ 	    }
+@@ -506,6 +523,7 @@ sub parse_config_selects
+     $repeat =3D 1;
+     # Make this config need to be selected
+     $configs{$next_config} =3D 1;
++    dprint "$next_config selected by select $config\n";
+ }
+=20
+ my %process_selects;
+@@ -526,6 +544,7 @@ sub loop_depend {
+ 	    }
+=20
+ 	    $config =3D~ s/^CONFIG_//;
++	    $depconfig =3D $config;
+=20
+ 	    if (defined($depends{$config})) {
+ 		# This config has dependencies. Make sure they are also included
+@@ -546,6 +565,8 @@ sub loop_select {
+     foreach my $config (keys %process_selects) {
+ 	$config =3D~ s/^CONFIG_//;
+=20
++	dprint "Process select $config\n";
++
+ 	# config has no prompt and must be selected.
+ 	parse_config_selects $config, $selects{$config};
+     }
+--=20
+1.7.10
 
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 17fd887..8da1217 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1129,6 +1129,7 @@ static inline int file_check_writeable(struct file *filp)
- #define FL_SLEEP       128     /* A blocking lock */
- #define FL_DOWNGRADE_PENDING   256 /* Lease is being downgraded */
- #define FL_UNLOCK_PENDING      512 /* Lease is being broken */
-+#define FL_LEASE_UNINITIALIZED 1024 /* Lease was not fully initialized yet */
 
- /*
-  * Special return value from posix_lock_file() and vfs_lock_file() for
-diff --git a/fs/locks.c b/fs/locks.c
-index 814c51d..a995cc9 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -195,6 +195,8 @@ EXPORT_SYMBOL_GPL(locks_alloc_lock);
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
- void locks_release_private(struct file_lock *fl)
- {
-+       if (fl->fl_flags & FL_LEASE_UNINITIALIZED)
-+               return;
-        if (fl->fl_ops) {
-                if (fl->fl_ops->fl_release_private)
-                        fl->fl_ops->fl_release_private(fl);
-@@ -454,7 +456,7 @@ static int lease_init(struct file *filp, int type,
-struct file_lock *fl)
-        fl->fl_pid = current->tgid;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-        fl->fl_file = filp;
--       fl->fl_flags = FL_LEASE;
-+       fl->fl_flags = FL_LEASE | FL_LEASE_UNINITIALIZED;
-        fl->fl_start = 0;
-        fl->fl_end = OFFSET_MAX;
-        fl->fl_ops = NULL;
-@@ -1406,6 +1408,7 @@ int generic_add_lease(struct file *filp, long
-arg, struct file_lock **flp)
-        if (!leases_enable)
-                goto out;
+iQIcBAABAgAGBQJP4TpdAAoJEIy3vGnGbaoAoIEP+gKFhMxNw3Vql4AMkBc9KuKy
+RF5n5ofKNm6cngs9XihX19Fr45sFpO6SyGMZNx8e4CsGQCVjVc0ttRk0ljXwflSa
+WCeW5kgl7V0RRqJOhr0/q6WRTib3364s6b3KrHDjiZ0u91PQqwows5TK8QWSpEY2
+nBL+2JWXfuklQ8mTnVkpS8vlKfMZZ2oQhrDnnsHjE33PZOU1XSnvOo+KutSUuW98
+q+XeQsKzSRzoDvKhabwLNIduzGalCjxcRznTgqLDUf18US86bJwLRmigzX21UZYO
+JCpojhKvlb/Vfat0aEVlJU19fVqpVNxBzVgcvd7kGkGPmqSYa0zOvm6nz4A0opZT
+y/u/yUWL5bq/4HQpHrA0iFij6O/1Iezz0kPdsgAFsi7+yT+1TzfdCrzm98T+aRN7
+aBapD/KxTaOUxyRPlJcqJ9EnT49MLF7G1pOthFEtDikdSgF/Qv9uMYVg3UO/TJv1
+dnk2sp2qNNqgdIre5OLI/Pnp2eTHEDhHQKQbP3KH3YdmhtfEVDYwVthyOeO2ehyD
+g7z6iOxSLHD65Q4IdK2+KkTjmZ5dXMhGkIGI1frQMtJrMMhC/qsKgH8wGCOV76SL
+606lCuJSln7GtbLR9WTnbyxnYIUwNSD9EIGoiC677hsWF/YocEnRgLU8L1tTggnq
+6MtjzPaXSN4wWQoL0Ifv
+=wpqc
+-----END PGP SIGNATURE-----
 
-+       lease->fl_flags &= ~FL_LEASE_UNINITIALIZED;
-        locks_insert_lock(before, lease);
-        return 0;
-
-
-
-Unfortunately, at this point I have more questions than answers...
-* Is this a good idea?
-* Is it good to store this as an extra flag? Or would it be
-preferrable to add an extra boolean field to the file_lock struct
-instead?
-* Is FL_LEASE_UNINITIALIZED a good name for this flag?
-* Should this flag be set only in lease_init()? Or also functions such
-as flock_make_lock()? Potentially everything that is freed with
-locks_free_lock() might need it...
-* Should the flag be cleared in generic_add_lease() only? Or should
-__vfs_setlease() compare the original value of the lease pointer with
-the one returned by generic_setlease() (or filp->f_op->setlease() if
-it's set) and then clear the flag itself?
-
-Also, looking at lease_alloc(), I noticed that it calls
-locks_free_lock() if lease_init() fails, but lease_init() can only
-fail right at the beginning if assign_type() fails, but at that point
-can it be guaranteed that fl_lmops (and fl_ops for that matter) are
-properly populated or are at least NULL? Maybe locks_alloc_lock()
-should initialize the file_lock struct with a flag indicating that
-it's not fully initialized at that point yet...
-
-Another thing I noticed (after Bruce pointed me to that code) is that
-fs/nfsd/nfs4state.c:nfs4_setlease() seems to suffer from the leak bug
-that was fixed by the commits which introduced this issue, it's not
-checking whether vfs_setlease() is returning a different file_lock
-struct than the one it allocated and in that case it's not freeing the
-one it passed. But I'd say it's probably best to figure out a fix for
-that one only after this one is fixed to avoid introducing the
-regression there as well.
-
-Cheers,
-Filipe
+--00GvhwF7k39YY--
