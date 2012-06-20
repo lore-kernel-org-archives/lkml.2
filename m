@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab2FTSZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:25:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53819 "EHLO
+	id S932658Ab2FTSZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:25:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932629Ab2FTSZJ (ORCPT
+	with ESMTP id S932604Ab2FTSZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:25:09 -0400
-Message-Id: <20120620173040.943823543@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:25:06 -0400
+Message-Id: <20120620173041.312743596@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:55 -0700
+Date: Wed, 20 Jun 2012 10:30:59 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        =?UTF-8?q?D=C3=A2niel=20Fraga?= <fragabr@gmail.com>,
-        Andrey Rahmatullin <wrar@wrar.name>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 16/20] USB: add NO_D3_DURING_SLEEP flag and revert 151b61284776be2
+        alan@lxorguk.ukuu.org.uk, Daniel Mack <zonque@gmail.com>,
+        bEN <ml_all@circa.be>, Ivan Perrone <ivanperrone@hotmail.com>
+Subject: [ 20/20] USB: fix gathering of interface associations
 In-Reply-To: <20120620173044.GA6910@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,162 +25,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Daniel Mack <zonque@gmail.com>
 
-commit c2fb8a3fa25513de8fedb38509b1f15a5bbee47b upstream.
+commit b3a3dd074f7053ef824ad077e5331b52220ceba1 upstream.
 
-This patch (as1558) fixes a problem affecting several ASUS computers:
-The machine crashes or corrupts memory when going into suspend if the
-ehci-hcd driver is bound to any controllers.  Users have been forced
-to unbind or unload ehci-hcd before putting their systems to sleep.
+TEAC's UD-H01 (and probably other devices) have a gap in the interface
+number allocation of their descriptors:
 
-After extensive testing, it was determined that the machines don't
-like going into suspend when any EHCI controllers are in the PCI D3
-power state.  Presumably this is a firmware bug, but there's nothing
-we can do about it except to avoid putting the controllers in D3
-during system sleep.
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength          220
+    bNumInterfaces          3
+    [...]
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      [...]
+    Interface Association:
+      bLength                 8
+      bDescriptorType        11
+      bFirstInterface         2
+      bInterfaceCount         2
+      bFunctionClass          1 Audio
+      bFunctionSubClass       0
+      bFunctionProtocol      32
+      iFunction               4
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        2
+      bAlternateSetting       0
+      [...]
 
-The patch adds a new flag to indicate whether the problem is present,
-and avoids changing the controller's power state if the flag is set.
-Runtime suspend is unaffected; this matters only for system suspend.
-However as a side effect, the controller will not respond to remote
-wakeup requests while the system is asleep.  Hence USB wakeup is not
-functional -- but of course, this is already true in the current state
-of affairs.
+Once a configuration is selected, usb_set_configuration() walks the
+known interfaces of a given configuration and calls find_iad() on
+each of them to set the interface association pointer the interface
+is included in.
 
-A similar patch has already been applied as commit
-151b61284776be2d6f02d48c23c3625678960b97 (USB: EHCI: fix crash during
-suspend on ASUS computers).  The patch supersedes that one and reverts
-it.  There are two differences:
+The problem here is that the loop variable is taken for the interface
+number in the comparison logic that gathers the association. Which is
+fine as long as the descriptors are sane.
 
-	The old patch added the flag at the USB level; this patch
-	adds it at the PCI level.
+In the case above, however, the logic gets out of sync and the
+interface association fields of all interfaces beyond the interface
+number gap are wrong.
 
-	The old patch applied to all chipsets with the same vendor,
-	subsystem vendor, and product IDs; this patch makes an
-	exception for a known-good system (based on DMI information).
+Fix this by passing the interface's bInterfaceNumber to find_iad()
+instead.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Dâniel Fraga <fragabr@gmail.com>
-Tested-by: Andrey Rahmatullin <wrar@wrar.name>
-Tested-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-by: bEN <ml_all@circa.be>
+Reported-by: Ivan Perrone <ivanperrone@hotmail.com>
+Tested-by: ivan perrone <ivanperrone@hotmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci.c           |    5 +++++
- drivers/pci/quirks.c        |   26 ++++++++++++++++++++++++++
- drivers/usb/core/hcd-pci.c  |    9 ---------
- drivers/usb/host/ehci-pci.c |    8 --------
- include/linux/pci.h         |    2 ++
- include/linux/usb/hcd.h     |    2 --
- 6 files changed, 33 insertions(+), 19 deletions(-)
+ drivers/usb/core/message.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1682,6 +1682,11 @@ int pci_prepare_to_sleep(struct pci_dev
- 	if (target_state == PCI_POWER_ERROR)
- 		return -EIO;
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1803,7 +1803,6 @@ free_interfaces:
+ 		intfc = cp->intf_cache[i];
+ 		intf->altsetting = intfc->altsetting;
+ 		intf->num_altsetting = intfc->num_altsetting;
+-		intf->intf_assoc = find_iad(dev, cp, i);
+ 		kref_get(&intfc->ref);
  
-+	/* Some devices mustn't be in D3 during system sleep */
-+	if (target_state == PCI_D3hot &&
-+			(dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP))
-+		return 0;
-+
- 	pci_enable_wake(dev, target_state, device_may_wakeup(&dev->dev));
+ 		alt = usb_altnum_to_altsetting(intf, 0);
+@@ -1816,6 +1815,8 @@ free_interfaces:
+ 		if (!alt)
+ 			alt = &intf->altsetting[0];
  
- 	error = pci_set_power_state(dev, target_state);
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2856,6 +2856,32 @@ static void __devinit disable_igfx_irq(s
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
- 
-+/*
-+ * The Intel 6 Series/C200 Series chipset's EHCI controllers on many
-+ * ASUS motherboards will cause memory corruption or a system crash
-+ * if they are in D3 while the system is put into S3 sleep.
-+ */
-+static void __devinit asus_ehci_no_d3(struct pci_dev *dev)
-+{
-+	const char *sys_info;
-+	static const char good_Asus_board[] = "P8Z68-V";
-+
-+	if (dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP)
-+		return;
-+	if (dev->subsystem_vendor != PCI_VENDOR_ID_ASUSTEK)
-+		return;
-+	sys_info = dmi_get_system_info(DMI_BOARD_NAME);
-+	if (sys_info && memcmp(sys_info, good_Asus_board,
-+			sizeof(good_Asus_board) - 1) == 0)
-+		return;
-+
-+	dev_info(&dev->dev, "broken D3 during system sleep on ASUS\n");
-+	dev->dev_flags |= PCI_DEV_FLAGS_NO_D3_DURING_SLEEP;
-+	device_set_wakeup_capable(&dev->dev, false);
-+}
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x1c26, asus_ehci_no_d3);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x1c2d, asus_ehci_no_d3);
-+
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
- {
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -495,15 +495,6 @@ static int hcd_pci_suspend_noirq(struct
- 
- 	pci_save_state(pci_dev);
- 
--	/*
--	 * Some systems crash if an EHCI controller is in D3 during
--	 * a sleep transition.  We have to leave such controllers in D0.
--	 */
--	if (hcd->broken_pci_sleep) {
--		dev_dbg(dev, "Staying in PCI D0\n");
--		return retval;
--	}
--
- 	/* If the root hub is dead rather than suspended, disallow remote
- 	 * wakeup.  usb_hc_died() should ensure that both hosts are marked as
- 	 * dying, so we only need to check the primary roothub.
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -144,14 +144,6 @@ static int ehci_pci_setup(struct usb_hcd
- 			hcd->has_tt = 1;
- 			tdi_reset(ehci);
- 		}
--		if (pdev->subsystem_vendor == PCI_VENDOR_ID_ASUSTEK) {
--			/* EHCI #1 or #2 on 6 Series/C200 Series chipset */
--			if (pdev->device == 0x1c26 || pdev->device == 0x1c2d) {
--				ehci_info(ehci, "broken D3 during system sleep on ASUS\n");
--				hcd->broken_pci_sleep = 1;
--				device_set_wakeup_capable(&pdev->dev, false);
--			}
--		}
- 		break;
- 	case PCI_VENDOR_ID_TDI:
- 		if (pdev->device == PCI_DEVICE_ID_TDI_EHCI) {
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -174,6 +174,8 @@ enum pci_dev_flags {
- 	PCI_DEV_FLAGS_MSI_INTX_DISABLE_BUG = (__force pci_dev_flags_t) 1,
- 	/* Device configuration is irrevocably lost if disabled into D3 */
- 	PCI_DEV_FLAGS_NO_D3 = (__force pci_dev_flags_t) 2,
-+	/* Device causes system crash if in D3 during S3 sleep */
-+	PCI_DEV_FLAGS_NO_D3_DURING_SLEEP = (__force pci_dev_flags_t) 8,
- };
- 
- enum pci_irq_reroute_variant {
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -128,8 +128,6 @@ struct usb_hcd {
- 	unsigned		wireless:1;	/* Wireless USB HCD */
- 	unsigned		authorized_default:1;
- 	unsigned		has_tt:1;	/* Integrated TT in root hub */
--	unsigned		broken_pci_sleep:1;	/* Don't put the
--			controller in PCI-D3 for system sleep */
- 
- 	int			irq;		/* irq allocated */
- 	void __iomem		*regs;		/* device memory/io */
++		intf->intf_assoc =
++			find_iad(dev, cp, alt->desc.bInterfaceNumber);
+ 		intf->cur_altsetting = alt;
+ 		usb_enable_interface(dev, intf, true);
+ 		intf->dev.parent = &dev->dev;
 
 
