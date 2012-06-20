@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab2FTDcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 23:32:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56846 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2FTDcw (ORCPT
+	id S1754646Ab2FTDeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 23:34:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38789 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab2FTDd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 23:32:52 -0400
-Date: Tue, 19 Jun 2012 20:31:03 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: "'Nikolaus Voss'" <n.voss@weinmann.de>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/power/sbs-battery.c: don't trigger false
- supply_changed event
-Message-ID: <20120620033103.GA18365@lizard>
-References: <201205090803.q4983lYa013593@gatekeeper.vosshq.de>
- <2C89F4165782854891CDE0F3198B753C14F523E30A@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <2C89F4165782854891CDE0F3198B753C14F523E30A@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Jun 2012 23:33:59 -0400
+Date: Wed, 20 Jun 2012 13:33:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Federico Vaga <federico.vaga@gmail.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Bhupesh Sharma <bhupesh.sharma@st.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-Id: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Jun_2012_13_33_48_+1000_2_WaiczBDualKph2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 09, 2012 at 07:51:05AM -0700, Rhyland Klein wrote:
-> On Wed, 2012-05-09 at 2:31, Nikolaus Voss wrote:
-> >power_supply_changed() events are triggerd based on the return value
-> >of a get_property() call. However the property TECHNOLOGY is
-> >hard-coded to LION in this driver, thus always succeeds.
-> >
-> >So, with the battery removed, this triggers a false battery present
-> >uevent. This uevent triggers a new query via power_supply_uevent()
-> >which again starts to query all known properties and thus leads to
-> >an infinite loop of battery present/not-present uevents.
-> >
-> >This patch skips the battery presence detection for the hard-coded
-> >property TECHNOLOGY.
-> >
-> >Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
-> 
-> Acked-by Rhyland Klein <rklein@nvidia.com>
+--Signature=_Wed__20_Jun_2012_13_33_48_+1000_2_WaiczBDualKph2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Applied, thanks!
+Hi all,
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+After merging the net-next tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+ERROR: "clk_get_rate" [drivers/net/can/c_can/c_can_pci.ko] undefined!
+ERROR: "clk_get" [drivers/net/can/c_can/c_can_pci.ko] undefined!
+ERROR: "clk_put" [drivers/net/can/c_can/c_can_pci.ko] undefined!
+
+Caused by commit 5b92da0443c2 ("c_can_pci: generic module for C_CAN/D_CAN
+on PCI").  Maybe a missing Kconfig dependency/select?
+
+I have used the net-next tree from next-20120619 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__20_Jun_2012_13_33_48_+1000_2_WaiczBDualKph2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP4UScAAoJEECxmPOUX5FEZFIP/1gN7qk1GBfHYBEUJtcRKeTU
+pnJywtaUffgBvr+LJtF6eJITj+GjoqaUWZ/WXQweBNTcnUZsjE0c37LBweHi8BY8
+YZuCl+TKJWrxpzF+DkjrwdI+FVLN9OjQWKtFmTcp6U5ej77hHR+y1p0ae3nSuVwT
+4apdL3hx8BRppYyN0kPyyn+u2ztAuc2KjOkKEDn2Prtuil/uwnXq3TuLzFLJXBBR
+EcL6i9k250HNZ44SlNEulQRz6vdzyDQ/asDhHJyRQ9u9BngT+q5lDCbd3PMxpDvm
+6tKjfLr6lAJSlNlB0VOoacpYxxh7dMVaWORSnTFjhilJFNDvSypPc6/qaDtOUgyd
+3ftRQwBbBC+auYltX8EQCyGB+VUYUyVK6S09KvzB178uBdbMVhnA/hAYitDuw012
+Flh0fozKw0iwrXkL1RCTjlGYI6vCg08Tmlp/+zYgUMWerHBpBs80hoDdpzKkRC+v
+W5LTs3sRIn1pLzHV8T7b7sGLgAOZFuk28+xTEHKc/LHqJPTLMZbBO7+khX0ORARn
+l/mDwgBNoE0wVQsM3Gw4RPe6Wr9ItgcctxVqOZ+6EhV+lfgSO+pTdZlcTXzCUCZo
+B37+ABx3uSWgwTLyQnF9KAGQhx/amyjfZmk8nqV80KiU7Yq9o5C7uitzPrtvlSW9
+1XuYEVg266iL9CvdEz1j
+=qyxe
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Jun_2012_13_33_48_+1000_2_WaiczBDualKph2--
