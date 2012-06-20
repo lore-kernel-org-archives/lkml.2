@@ -1,177 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab2FTJfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:35:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58717 "EHLO mx2.suse.de"
+	id S1756193Ab2FTJiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:38:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59223 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755997Ab2FTJfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:35:40 -0400
+	id S1756094Ab2FTJiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:38:11 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 17/17] netvm: Prevent a stream-specific deadlock
-Date: Wed, 20 Jun 2012 10:35:20 +0100
-Message-Id: <1340184920-22288-18-git-send-email-mgorman@suse.de>
+Subject: [PATCH 06/12] mm: Add get_kernel_page[s] for pinning of kernel addresses for I/O
+Date: Wed, 20 Jun 2012 10:37:55 +0100
+Message-Id: <1340185081-22525-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340184920-22288-1-git-send-email-mgorman@suse.de>
-References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1340185081-22525-1-git-send-email-mgorman@suse.de>
+References: <1340185081-22525-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It could happen that all !SOCK_MEMALLOC sockets have buffered so
-much data that we're over the global rmem limit. This will prevent
-SOCK_MEMALLOC buffers from receiving data, which will prevent userspace
-from running, which is needed to reduce the buffered data.
+This patch adds two new APIs get_kernel_pages() and get_kernel_page()
+that may be used to pin a vector of kernel addresses for IO. The initial
+user is expected to be NFS for allowing pages to be written to swap
+using aops->direct_IO(). Strictly speaking, swap-over-NFS only needs
+to pin one page for IO but it makes sense to express the API in terms
+of a vector and add a helper for pinning single pages.
 
-Fix this by exempting the SOCK_MEMALLOC sockets from the rmem limit.
-Once this change it applied, it is important that sockets that set
-SOCK_MEMALLOC do not clear the flag until the socket is being torn down.
-If this happens, a warning is generated and the tokens reclaimed to
-avoid accounting errors until the bug is fixed.
-
-[davem@davemloft.net: Warning about clearing SOCK_MEMALLOC]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David S. Miller <davem@davemloft.net>
 ---
- include/net/sock.h     |    7 ++++---
- net/caif/caif_socket.c |    2 +-
- net/core/sock.c        |   14 +++++++++++++-
- net/ipv4/tcp_input.c   |   12 ++++++------
- net/sctp/ulpevent.c    |    2 +-
- 5 files changed, 25 insertions(+), 12 deletions(-)
+ include/linux/blk_types.h |    2 ++
+ include/linux/fs.h        |    2 ++
+ include/linux/mm.h        |    4 ++++
+ mm/memory.c               |   53 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 61 insertions(+)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 772577f..9ab9934 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1315,12 +1315,13 @@ static inline bool sk_wmem_schedule(struct sock *sk, int size)
- 		__sk_mem_schedule(sk, size, SK_MEM_SEND);
- }
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 0edb65d..7b7ac9c 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -160,6 +160,7 @@ enum rq_flag_bits {
+ 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
+ 	__REQ_IO_STAT,		/* account I/O stat */
+ 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
++	__REQ_KERNEL, 		/* direct IO to kernel pages */
+ 	__REQ_NR_BITS,		/* stops here */
+ };
  
--static inline bool sk_rmem_schedule(struct sock *sk, int size)
-+static inline bool sk_rmem_schedule(struct sock *sk, struct sk_buff *skb)
- {
- 	if (!sk_has_account(sk))
- 		return true;
--	return size <= sk->sk_forward_alloc ||
--		__sk_mem_schedule(sk, size, SK_MEM_RECV);
-+	return skb->truesize <= sk->sk_forward_alloc ||
-+		__sk_mem_schedule(sk, skb->truesize, SK_MEM_RECV) ||
-+		skb_pfmemalloc(skb);
- }
+@@ -201,5 +202,6 @@ enum rq_flag_bits {
+ #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
+ #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+ #define REQ_SECURE		(1 << __REQ_SECURE)
++#define REQ_KERNEL		(1 << __REQ_KERNEL)
  
- static inline void sk_mem_reclaim(struct sock *sk)
-diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
-index fb89443..5855b3a 100644
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -141,7 +141,7 @@ static int caif_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
- 	err = sk_filter(sk, skb);
- 	if (err)
- 		return err;
--	if (!sk_rmem_schedule(sk, skb->truesize) && rx_flow_is_on(cf_sk)) {
-+	if (!sk_rmem_schedule(sk, skb) && rx_flow_is_on(cf_sk)) {
- 		set_rx_flow_off(cf_sk);
- 		net_dbg_ratelimited("sending flow OFF due to rmem_schedule\n");
- 		caif_flow_ctrl(sk, CAIF_MODEMCMD_FLOW_OFF_REQ);
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 4388a8a..b51a49a 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -294,6 +294,18 @@ void sk_clear_memalloc(struct sock *sk)
- 	sock_reset_flag(sk, SOCK_MEMALLOC);
- 	sk->sk_allocation &= ~__GFP_MEMALLOC;
- 	static_key_slow_dec(&memalloc_socks);
+ #endif /* __LINUX_BLK_TYPES_H */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 0186d67..f21da77 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -165,6 +165,8 @@ struct inodes_stat_t {
+ #define READ			0
+ #define WRITE			RW_MASK
+ #define READA			RWA_MASK
++#define KERNEL_READ		(READ|REQ_KERNEL)
++#define KERNEL_WRITE		(WRITE|REQ_KERNEL)
+ 
+ #define READ_SYNC		(READ | REQ_SYNC)
+ #define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 0c0301c..b4924f0 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1019,6 +1019,10 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 			struct page **pages, struct vm_area_struct **vmas);
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
++struct kvec;
++int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
++			struct page **pages);
++int get_kernel_page(unsigned long start, int write, struct page **pages);
+ struct page *get_dump_page(unsigned long addr);
+ 
+ extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
+diff --git a/mm/memory.c b/mm/memory.c
+index 1b7dc66..2d55992 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1834,6 +1834,59 @@ next_page:
+ EXPORT_SYMBOL(__get_user_pages);
+ 
+ /*
++ * get_kernel_pages() - pin kernel pages in memory
++ * @kiov:	An array of struct kvec structures
++ * @nr_segs:	number of segments to pin
++ * @write:	pinning for read/write, currently ignored
++ * @pages:	array that receives pointers to the pages pinned.
++ *		Should be at least nr_segs long.
++ *
++ * Returns number of pages pinned. This may be fewer than the number
++ * requested. If nr_pages is 0 or negative, returns 0. If no pages
++ * were pinned, returns -errno. Each page returned must be released
++ * with a put_page() call when it is finished with.
++ */
++int get_kernel_pages(const struct kvec *kiov, int nr_segs, int write,
++		struct page **pages)
++{
++	int seg;
 +
-+	/*
-+	 * SOCK_MEMALLOC is allowed to ignore rmem limits to ensure forward
-+	 * progress of swapping. However, if SOCK_MEMALLOC is cleared while
-+	 * it has rmem allocations there is a risk that the user of the
-+	 * socket cannot make forward progress due to exceeding the rmem
-+	 * limits. By rights, sk_clear_memalloc() should only be called
-+	 * on sockets being torn down but warn and reset the accounting if
-+	 * that assumption breaks.
-+	 */
-+	if (WARN_ON(sk->sk_forward_alloc))
-+		sk_mem_reclaim(sk);
- }
- EXPORT_SYMBOL_GPL(sk_clear_memalloc);
- 
-@@ -395,7 +407,7 @@ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
- 	if (err)
- 		return err;
- 
--	if (!sk_rmem_schedule(sk, skb->truesize)) {
-+	if (!sk_rmem_schedule(sk, skb)) {
- 		atomic_inc(&sk->sk_drops);
- 		return -ENOBUFS;
- 	}
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index b224eb8..c121d6a 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -4512,19 +4512,19 @@ static void tcp_ofo_queue(struct sock *sk)
- static bool tcp_prune_ofo_queue(struct sock *sk);
- static int tcp_prune_queue(struct sock *sk);
- 
--static int tcp_try_rmem_schedule(struct sock *sk, unsigned int size)
-+static int tcp_try_rmem_schedule(struct sock *sk, struct sk_buff *skb)
- {
- 	if (atomic_read(&sk->sk_rmem_alloc) > sk->sk_rcvbuf ||
--	    !sk_rmem_schedule(sk, size)) {
-+	    !sk_rmem_schedule(sk, skb)) {
- 
- 		if (tcp_prune_queue(sk) < 0)
- 			return -1;
- 
--		if (!sk_rmem_schedule(sk, size)) {
-+		if (!sk_rmem_schedule(sk, skb)) {
- 			if (!tcp_prune_ofo_queue(sk))
- 				return -1;
- 
--			if (!sk_rmem_schedule(sk, size))
-+			if (!sk_rmem_schedule(sk, skb))
- 				return -1;
- 		}
- 	}
-@@ -4579,7 +4579,7 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
- 
- 	TCP_ECN_check_ce(tp, skb);
- 
--	if (tcp_try_rmem_schedule(sk, skb->truesize)) {
-+	if (tcp_try_rmem_schedule(sk, skb)) {
- 		/* TODO: should increment a counter */
- 		__kfree_skb(skb);
- 		return;
-@@ -4791,7 +4791,7 @@ static void tcp_data_queue(struct sock *sk, struct sk_buff *skb)
- 		if (eaten <= 0) {
- queue_and_out:
- 			if (eaten < 0 &&
--			    tcp_try_rmem_schedule(sk, skb->truesize))
-+			    tcp_try_rmem_schedule(sk, skb))
- 				goto drop;
- 
- 			eaten = tcp_queue_rcv(sk, skb, 0, &fragstolen);
-diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
-index 8a84017..6c6ed2d 100644
---- a/net/sctp/ulpevent.c
-+++ b/net/sctp/ulpevent.c
-@@ -702,7 +702,7 @@ struct sctp_ulpevent *sctp_ulpevent_make_rcvmsg(struct sctp_association *asoc,
- 	if (rx_count >= asoc->base.sk->sk_rcvbuf) {
- 
- 		if ((asoc->base.sk->sk_userlocks & SOCK_RCVBUF_LOCK) ||
--		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb->truesize)))
-+		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb)))
- 			goto fail;
- 	}
- 
++	for (seg = 0; seg < nr_segs; seg++) {
++		if (WARN_ON(kiov[seg].iov_len != PAGE_SIZE))
++			return seg;
++
++		/* virt_to_page sanity checks the PFN */
++		pages[seg] = virt_to_page(kiov[seg].iov_base);
++		page_cache_get(pages[seg]);
++	}
++
++	return seg;
++}
++EXPORT_SYMBOL_GPL(get_kernel_pages);
++
++/*
++ * get_kernel_page() - pin a kernel page in memory
++ * @start:	starting kernel address
++ * @write:	pinning for read/write, currently ignored
++ * @pages:	array that receives pointer to the page pinned.
++ *		Must be at least nr_segs long.
++ *
++ * Returns 1 if page is pinned. If the page was not pinned, returns
++ * -errno. The page returned must be released with a put_page() call
++ * when it is finished with.
++ */
++int get_kernel_page(unsigned long start, int write, struct page **pages)
++{
++	const struct kvec kiov = {
++		.iov_base = (void *)start,
++		.iov_len = PAGE_SIZE
++	};
++
++	return get_kernel_pages(&kiov, 1, write, pages);
++}
++EXPORT_SYMBOL_GPL(get_kernel_page);
++
++/*
+  * fixup_user_fault() - manually resolve a user page fault
+  * @tsk:	the task_struct to use for page fault accounting, or
+  *		NULL if faults are not to be recorded.
 -- 
 1.7.9.2
 
