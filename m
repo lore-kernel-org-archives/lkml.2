@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab2FTLDY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:03:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29955 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab2FTLDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:03:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158599289"
-Subject: Re: [PATCH v2 3/3] ASoC: dmaengine-pcm: Add support for querying
- stream position from DMA driver
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1339438302-12417-3-git-send-email-lars@metafoo.de>
-References: <1339438302-12417-1-git-send-email-lars@metafoo.de>
-	 <1339438302-12417-3-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jun 2012 16:25:33 +0530
-Message-ID: <1340189733.1927.1651.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754067Ab2FTLFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:05:40 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:50732 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751658Ab2FTLFi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:05:38 -0400
+Date: Wed, 20 Jun 2012 13:05:13 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 01/17] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20120620110512.GA4208@breakpoint.cc>
+References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
+ <1340184920-22288-2-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340184920-22288-2-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 20:11 +0200, Lars-Peter Clausen wrote:
-> Currently the sound dmaengine pcm helper functions implement the pcm_pointer
-> callback by trying to count the number of elapsed periods. This is done by
-> advancing the stream position in the dmaengine callback by one period.
-> Unfortunately there is no guarantee that the callback will be called for each
-> elapsed period. It may be possible that under high system load it is only called
-> once for multiple elapsed periods. This patch addresses the issue by
-> implementing support for querying the current stream position directly from the
-> dmaengine driver. Since not all dmaengine drivers support reporting the stream
-> position yet the old period counting implementation is kept for now.
-> 
-> Furthermore the new mechanism allows to report the stream position with a
-> sub-period granularity, given that the dmaengine driver supports this.
-> 
-Acked-by: Vinod Koul <vinod.koul@intel.com>
+On Wed, Jun 20, 2012 at 10:35:04AM +0100, Mel Gorman wrote:
+> [a.p.zijlstra@chello.nl: Original implementation]
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+> diff --git a/mm/slab.c b/mm/slab.c
+> index e901a36..b190cac 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -1851,6 +1984,7 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+>  	while (i--) {
+>  		BUG_ON(!PageSlab(page));
+>  		__ClearPageSlab(page);
+> +		__ClearPageSlabPfmemalloc(page);
+>  		page++;
+>  	}
+>  	if (current->reclaim_state)
+> @@ -3120,16 +3254,19 @@ bad:
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 8c691fa..43738c9 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -1414,6 +1418,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+>  		-pages);
+>  
+>  	__ClearPageSlab(page);
+> +	__ClearPageSlabPfmemalloc(page);
+>  	reset_page_mapcount(page);
+>  	if (current->reclaim_state)
+>  		current->reclaim_state->reclaimed_slab += pages;
 
--- 
-~Vinod
+So you mention a change here in v11's changelog but I don't see it.
 
+Sebastian
