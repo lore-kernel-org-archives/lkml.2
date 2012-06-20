@@ -1,96 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab2FTHpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 03:45:44 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:49022 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab2FTHpn (ORCPT
+	id S1755135Ab2FTHuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 03:50:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50736 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978Ab2FTHuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 03:45:43 -0400
-Message-ID: <4FE17F9E.3090009@atmel.com>
-Date: Wed, 20 Jun 2012 09:45:34 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] at91: platform data for atmel-mci (for 3.5)
-References: <4FBE4FE7.3010005@atmel.com> <4FC722B7.10409@atmel.com> <CAOesGMhq8uzei+Dn8=1iYrTiAOtuByjm58j9zgFyORVG5VZuNQ@mail.gmail.com> <4FCCD8D9.2070005@atmel.com> <4FD8C476.3080904@atmel.com> <CAOesGMi+2-xEv5+s0xEX7UzoC500q87zrXV4bHynQyzXE8Virw@mail.gmail.com>
-In-Reply-To: <CAOesGMi+2-xEv5+s0xEX7UzoC500q87zrXV4bHynQyzXE8Virw@mail.gmail.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
+	Wed, 20 Jun 2012 03:50:23 -0400
+Date: Wed, 20 Jun 2012 17:50:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: build failure after merge of the final tree (powerpc
+ related)
+Message-Id: <20120620175014.a822a766e0f91f7b44f48fa0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Jun_2012_17_50_14_+1000_267of1xduDZ4C/IM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 03:49 PM, Olof Johansson :
-> Hi,
-> 
-> On Wed, Jun 13, 2012 at 9:48 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
->> On 06/04/2012 05:48 PM, Nicolas Ferre :
->>> On 05/31/2012 11:04 PM, Olof Johansson :
->>>> Hi Nicolas,
->>>>
->>>> On Thu, May 31, 2012 at 12:50 AM, Nicolas Ferre <nicolas.ferre@atmel.com
->>>> <mailto:nicolas.ferre@atmel.com>> wrote:
->>>>
->>>>     On 05/24/2012 05:12 PM, Nicolas Ferre :
->>>>     > Hi Arnd, hi Olof,
->>>>
->>>>     Ping?
->>>>
->>>>     (or maybe you will have a look at this after the merge window...)
->>>>
->>>>
->>>> So, I looked at this branch yesterday but I wasn't entirely happy with
->>>> the number of ifdefs it adds.
->>>
->>> Unfortunately, this is the usual shape of any devices/boards files on
->>> AT91. This amount will be reduced when we remove the old driver and when
->>> we move newer/popular devices to Device Tree...
->>>
->>>> If the idea is to deprecate the old driver, wouldn't it make more sense
->>>> to just cut everyone over instead of having both sets of setup in the
->>>> kernel?
->>>
->>> Well, the old driver has existed since a very long time and I think that
->>> people are used to it on oldest platforms. This is why we put in place a
->>> overlapping period. This way we hope that the transition will be smoother.
->>> On the other hand, the old code will be removed in 3.7 so the
->>> overlapping period will not be so long.
->>> I hope that it will allow people to track bugs if some are remaining and
->>> switch to newer driver easily.
->>
->> Olof, Arnd,
->>
->> So, do you have made up your mind about this pull request?
-> 
-> Sorry for the delays in handling this, I should have been quicker at replying.
-> 
-> That said, the driver is staged for removal in 3.7, and this patch is
-> 3.6 material at this time. But I think it makes sense to cut every
-> in-tree board over completely one release before the driver is
-> removed, and thus not keep the old platform data around for them.
-> 
-> That way the out-of-tree users still have a one-release grace period,
-> but everyone with an in-tree board (and the reference platforms) will
-> move over sooner. I think I would prefer that over having all these
-> ifdefs in the tree, even if it's just for one release.
-> 
-> I could be convinced otherwise if there's a good reason though. Either
-> way, 3.6 is the way to go.
+--Signature=_Wed__20_Jun_2012_17_50_14_+1000_267of1xduDZ4C/IM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Fair enough, we will prepare a patch to remove the old platform data
-combined with this patch. We will integrate in an "at91-3.6-soc"
-series/branch that we will submit to you soon.
+Hi all,
 
-Thanks, best regards,
--- 
-Nicolas Ferre
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+powerpc64-linux-ld: arch/powerpc/net/built-in.o: In function `bpf_slow_path=
+_word':
+(.text+0x90): sibling call optimization to `skb_copy_bits' does not allow a=
+utomatic multiple TOCs; recompile with -mminimal-toc or -fno-optimize-sibli=
+ng-calls, or make `skb_copy_bits' extern
+powerpc64-linux-ld: arch/powerpc/net/built-in.o: In function `bpf_slow_path=
+_half':
+(.text+0xe0): sibling call optimization to `skb_copy_bits' does not allow a=
+utomatic multiple TOCs; recompile with -mminimal-toc or -fno-optimize-sibli=
+ng-calls, or make `skb_copy_bits' extern
+powerpc64-linux-ld: arch/powerpc/net/built-in.o: In function `bpf_slow_path=
+_byte':
+(.text+0x130): sibling call optimization to `skb_copy_bits' does not allow =
+automatic multiple TOCs; recompile with -mminimal-toc or -fno-optimize-sibl=
+ing-calls, or make `skb_copy_bits' extern
+powerpc64-linux-ld: arch/powerpc/net/built-in.o: In function `bpf_slow_path=
+_byte_msh':
+(.text+0x180): sibling call optimization to `skb_copy_bits' does not allow =
+automatic multiple TOCs; recompile with -mminimal-toc or -fno-optimize-sibl=
+ing-calls, or make `skb_copy_bits' extern
+powerpc64-linux-ld: arch/powerpc/net/built-in.o: In function `sk_load_word_=
+negative_offset':
+(.text+0x1dc): sibling call optimization to `bpf_internal_load_pointer_neg_=
+helper' does not allow automatic multiple TOCs; recompile with -mminimal-to=
+c or -fno-optimize-sibling-calls, or make `bpf_internal_load_pointer_neg_he=
+lper' extern
+powerpc64-linux-ld: arch/powerpc/net/built-in.o: In function `sk_load_half_=
+negative_offset':
+(.text+0x238): sibling call optimization to `bpf_internal_load_pointer_neg_=
+helper' does not allow automatic multiple TOCs; recompile with -mminimal-to=
+c or -fno-optimize-sibling-calls, or make `bpf_internal_load_pointer_neg_he=
+lper' extern
+powerpc64-linux-ld: arch/powerpc/net/built-in.o: In function `sk_load_byte_=
+negative_offset':
+(.text+0x294): sibling call optimization to `bpf_internal_load_pointer_neg_=
+helper' does not allow automatic multiple TOCs; recompile with -mminimal-to=
+c or -fno-optimize-sibling-calls, or make `bpf_internal_load_pointer_neg_he=
+lper' extern
+powerpc64-linux-ld: arch/powerpc/net/built-in.o: In function `sk_load_byte_=
+msh_negative_offset':
+(.text+0x2f0): sibling call optimization to `bpf_internal_load_pointer_neg_=
+helper' does not allow automatic multiple TOCs; recompile with -mminimal-to=
+c or -fno-optimize-sibling-calls, or make `bpf_internal_load_pointer_neg_he=
+lper' extern
+powerpc64-linux-ld: final link failed: Bad value
+
+I started building with gcc 4.6.3/binutils 2.22 today.  gcc
+4.6.0/binutils 2.21 do not produce this error, it produces this instead
+(which has been happening for a long time):
+
+powerpc64-linux-ld: TOC section size exceeds 64k
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__20_Jun_2012_17_50_14_+1000_267of1xduDZ4C/IM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP4YC2AAoJEECxmPOUX5FEJQQP/ivHbYTDlx+67ASMOUaoCXT4
+eUEdWbgFVOs7JS8QCJdu/kYUWrxnny3gtcgmZH3tzkC74z0mgHe/MFciHAFh7OmY
+YkdMwh5nApiaBoTH00P/f3jCaOVlj7MS4JHq0iVaMhZDVSq4/ti1RrjhclLfRdKU
+865WfyWQBZPYf5AWuSMozx6wupOilXsWjE28TYAeu2prq9MHfw+JncAN75UaffDA
+IVtv8rskdOb6s3LFfdtDJhAKCIsg3ZWj8tqa1OQ4+q77DKjfVgrfZFOcDWBE9VQr
+2OsjNkWnuOHMZCGxcZNA0dKlFz+om2KuberiMIHenTv5/AqOPTtw+ujZI1VjWoy7
+zol94kuRMz+nPyNPn+3Q35lrQOQUw4vMWFAWxkv+t35cHTkoOJQdPVXOiYKqSsmA
+Mjn1HNoiBn8YFiNCFM9/Q378hc7la63v9wBpfXSZaFlR5G3ZzgKwyFAql9NAnbuP
+3cOs3Kkf3T5lJma88DNBZ2HHnPmcjoufm6sorZvTe6ntK+kiErDP44oYKqZbjeNk
+L+9XNDm9MEgZfCMO5ZGsZYIDMQ2iln42yysk36chmgbncGJtN+ZtxuApBotV3Ynh
+AgZh7sgQXbdnA/XZMxlu2DKTy9a5NDDnqKWTDWMd7bgum8qaUEgby7giwS4QdnzB
+HlzCQPV8QC19/GfH5qOK
+=qpp2
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Jun_2012_17_50_14_+1000_267of1xduDZ4C/IM--
