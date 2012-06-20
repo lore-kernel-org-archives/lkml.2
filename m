@@ -1,213 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab2FTFPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 01:15:37 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:64094 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab2FTFPf (ORCPT
+	id S1753441Ab2FTFVF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 01:21:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35398 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752878Ab2FTFVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 01:15:35 -0400
-X-AuditID: cbfee61a-b7f9f6d0000016a8-60-4fe15c7590ce
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Paul Bolle'" <pebolle@tiscali.nl>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1339616647.30984.174.camel@x61.thuisdomein>
-In-reply-to: <1339616647.30984.174.camel@x61.thuisdomein>
-Subject: RE: [PATCH] ARM: remove unused SPI clock headers
-Date: Wed, 20 Jun 2012 14:15:32 +0900
-Message-id: <029101cd4ea3$b744fd40$25cef7c0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1JnOdsfTyGdSOtSkeRdqBkb6b1RwFBQ7Tg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jAd3SmIf+BpdbVC0u75rDZjHj/D4m
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKeHTEseGdYcfLGefYGxtuaXYycHBICJhL3GnqYIGwx
-	iQv31rN1MXJxCAksYpS4M20LlPOXUWLLgn/sIFVsAhoSh98/A7NFBIolzv14xdjFyMHBLJAt
-	seUV2CAhAQuJs4/PgNmcApYSv3/uYAEpEQayG27zgIRZBFQlbva3soDYvAK2EnNmf2ODsAUl
-	fky+BxZnFlCXmDRvETOELS+xec1bZpAxEkDxR391IQ4wktjfuhyqXERi34t3jBMYhWYhmTQL
-	yaRZSCbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwMD+T2sG4ssHiEKMAB6MS
-	D++JwIf+QqyJZcWVuYcYJTiYlUR4+7888BfiTUmsrEotyo8vKs1JLT7EKM3BoiTO22R9wV9I
-	ID2xJDU7NbUgtQgmy8TBKdXAuMJf1i30xBGFHQpH/sxuEllUo3m0lF2wL0SbXST2+vJPt41O
-	PC6NNNmjtMJLIlJWtv7QrkbHvU2uP89kOZ/8K/Bm+9ZS8aBs9Zgtx5U9PsWnRPzYK73XgWvv
-	tJme18XPnj/ftKpUYlpPgepibrfHGZMZjrd8TObSdqis4eFcasuxzfnc17XMSizFGYmGWsxF
-	xYkAWBoOMGICAAA=
-X-TM-AS-MML: No
+	Wed, 20 Jun 2012 01:21:03 -0400
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>, Axel Lin <axel.lin@gmail.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: [PATCH v2] regulator: max77686: Implement .set_ramp_delay() callback.
+Date: Wed, 20 Jun 2012 10:50:51 +0530
+Message-Id: <1340169651-7844-1-git-send-email-yadi.brar@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle wrote:
-> 
-> Commit 875a59374cd10200ac24f03877ccd8f73af590cc ("ARM: SAMSUNG:
-> Consolidation of SPI platform devices to plat-samsung") deleted all
-> (four) files that included one of the "spi-clocks.h" headers. It seems
-> it was just an oversight to not remove those headers too. They can
-> safely be removed now.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Only tested by using various git commands on the (history of the)
-> tree.
-> 
-> 1) The history of arch/arm/mach-exynos/include/mach/spi-clocks.h
-> actually differs from the history of the other four headers. It got
-> added by commit 74ac23a3e4962bf4f935a5579ae08754d21f9d5a ("ARM: EXYNOS:
-> Modified files for SPI consolidation work"). That commit actually got
-> added (very shortly) after commit
-> 875a59374cd10200ac24f03877ccd8f73af590cc removed all files that included
-> spi-clocks.h.
-> 
->  arch/arm/mach-exynos/include/mach/spi-clocks.h  |   16 ----------------
->  arch/arm/mach-s3c64xx/include/mach/spi-clocks.h |   18 ------------------
->  arch/arm/mach-s5p64x0/include/mach/spi-clocks.h |   20 -------------------
-> -
->  arch/arm/mach-s5pc100/include/mach/spi-clocks.h |   18 ------------------
->  arch/arm/mach-s5pv210/include/mach/spi-clocks.h |   17 -----------------
->  5 files changed, 0 insertions(+), 89 deletions(-)
->  delete mode 100644 arch/arm/mach-exynos/include/mach/spi-clocks.h
->  delete mode 100644 arch/arm/mach-s3c64xx/include/mach/spi-clocks.h
->  delete mode 100644 arch/arm/mach-s5p64x0/include/mach/spi-clocks.h
->  delete mode 100644 arch/arm/mach-s5pc100/include/mach/spi-clocks.h
->  delete mode 100644 arch/arm/mach-s5pv210/include/mach/spi-clocks.h
-> 
-> diff --git a/arch/arm/mach-exynos/include/mach/spi-clocks.h
-> b/arch/arm/mach-exynos/include/mach/spi-clocks.h
-> deleted file mode 100644
-> index c71a5fb..0000000
-> --- a/arch/arm/mach-exynos/include/mach/spi-clocks.h
-> +++ /dev/null
-> @@ -1,16 +0,0 @@
-> -/* linux/arch/arm/mach-exynos4/include/mach/spi-clocks.h
-> - *
-> - * Copyright (C) 2011 Samsung Electronics Co. Ltd.
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License version 2 as
-> - * published by the Free Software Foundation.
-> - */
-> -
-> -#ifndef __ASM_ARCH_SPI_CLKS_H
-> -#define __ASM_ARCH_SPI_CLKS_H __FILE__
-> -
-> -/* Must source from SCLK_SPI */
-> -#define EXYNOS_SPI_SRCCLK_SCLK		0
-> -
-> -#endif /* __ASM_ARCH_SPI_CLKS_H */
-> diff --git a/arch/arm/mach-s3c64xx/include/mach/spi-clocks.h
-> b/arch/arm/mach-s3c64xx/include/mach/spi-clocks.h
-> deleted file mode 100644
-> index 9d0c43b..0000000
-> --- a/arch/arm/mach-s3c64xx/include/mach/spi-clocks.h
-> +++ /dev/null
-> @@ -1,18 +0,0 @@
-> -/* linux/arch/arm/mach-s3c64xx/include/mach/spi-clocks.h
-> - *
-> - * Copyright (C) 2009 Samsung Electronics Ltd.
-> - *	Jaswinder Singh <jassi.brar@samsung.com>
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License version 2 as
-> - * published by the Free Software Foundation.
-> - */
-> -
-> -#ifndef __S3C64XX_PLAT_SPI_CLKS_H
-> -#define __S3C64XX_PLAT_SPI_CLKS_H __FILE__
-> -
-> -#define S3C64XX_SPI_SRCCLK_PCLK		0
-> -#define S3C64XX_SPI_SRCCLK_SPIBUS	1
-> -#define S3C64XX_SPI_SRCCLK_48M		2
-> -
-> -#endif /* __S3C64XX_PLAT_SPI_CLKS_H */
-> diff --git a/arch/arm/mach-s5p64x0/include/mach/spi-clocks.h
-> b/arch/arm/mach-s5p64x0/include/mach/spi-clocks.h
-> deleted file mode 100644
-> index 170a20a..0000000
-> --- a/arch/arm/mach-s5p64x0/include/mach/spi-clocks.h
-> +++ /dev/null
-> @@ -1,20 +0,0 @@
-> -/* linux/arch/arm/mach-s5p64x0/include/mach/spi-clocks.h
-> - *
-> - * Copyright (c) 2010 Samsung Electronics Co., Ltd.
-> - *		http://www.samsung.com
-> - *
-> - * Copyright (C) 2010 Samsung Electronics Co. Ltd.
-> - *	Jaswinder Singh <jassi.brar@samsung.com>
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License version 2 as
-> - * published by the Free Software Foundation.
-> -*/
-> -
-> -#ifndef __ASM_ARCH_SPI_CLKS_H
-> -#define __ASM_ARCH_SPI_CLKS_H __FILE__
-> -
-> -#define S5P64X0_SPI_SRCCLK_PCLK		0
-> -#define S5P64X0_SPI_SRCCLK_SCLK		1
-> -
-> -#endif /* __ASM_ARCH_SPI_CLKS_H */
-> diff --git a/arch/arm/mach-s5pc100/include/mach/spi-clocks.h
-> b/arch/arm/mach-s5pc100/include/mach/spi-clocks.h
-> deleted file mode 100644
-> index 65e4263..0000000
-> --- a/arch/arm/mach-s5pc100/include/mach/spi-clocks.h
-> +++ /dev/null
-> @@ -1,18 +0,0 @@
-> -/* linux/arch/arm/mach-s5pc100/include/mach/spi-clocks.h
-> - *
-> - * Copyright (C) 2010 Samsung Electronics Co. Ltd.
-> - *	Jaswinder Singh <jassi.brar@samsung.com>
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License version 2 as
-> - * published by the Free Software Foundation.
-> - */
-> -
-> -#ifndef __S5PC100_PLAT_SPI_CLKS_H
-> -#define __S5PC100_PLAT_SPI_CLKS_H __FILE__
-> -
-> -#define S5PC100_SPI_SRCCLK_PCLK		0
-> -#define S5PC100_SPI_SRCCLK_48M		1
-> -#define S5PC100_SPI_SRCCLK_SPIBUS	2
-> -
-> -#endif /* __S5PC100_PLAT_SPI_CLKS_H */
-> diff --git a/arch/arm/mach-s5pv210/include/mach/spi-clocks.h
-> b/arch/arm/mach-s5pv210/include/mach/spi-clocks.h
-> deleted file mode 100644
-> index 02acded..0000000
-> --- a/arch/arm/mach-s5pv210/include/mach/spi-clocks.h
-> +++ /dev/null
-> @@ -1,17 +0,0 @@
-> -/* linux/arch/arm/mach-s5pv210/include/mach/spi-clocks.h
-> - *
-> - * Copyright (C) 2010 Samsung Electronics Co. Ltd.
-> - *	Jaswinder Singh <jassi.brar@samsung.com>
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License version 2 as
-> - * published by the Free Software Foundation.
-> - */
-> -
-> -#ifndef __S5PV210_PLAT_SPI_CLKS_H
-> -#define __S5PV210_PLAT_SPI_CLKS_H __FILE__
-> -
-> -#define S5PV210_SPI_SRCCLK_PCLK		0
-> -#define S5PV210_SPI_SRCCLK_SCLK		1
-> -
-> -#endif /* __S5PV210_PLAT_SPI_CLKS_H */
-> --
-> 1.7.7.6
+This patch implements the .set_ramp_delay callback to set the ramp_delay on
+hardware for BUCK2/3/4 if ramp_delay is set in regulator constraints.
 
-Yes, looks ok to me and will apply this into cleanup branch.
-Thanks.
+This patch also do some cleaning work for unrequired members of
+struct max77686_data.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ drivers/regulator/max77686.c |   37 +++++++++++++++++++++++++++++--------
+ 1 files changed, 29 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index a29eee3..5c2a32f 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -65,11 +65,34 @@ enum max77686_ramp_rate {
+ };
+ 
+ struct max77686_data {
+-	struct device *dev;
+-	struct max77686_dev *iodev;
+ 	struct regulator_dev **rdev;
+ };
+ 
++static int max77686_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
++{
++	unsigned int ramp_value = RAMP_RATE_NO_CTRL;
++
++	switch (ramp_delay) {
++	case 1 ... 13750:
++		ramp_value = RAMP_RATE_13P75MV;
++		break;
++	case 13751 ... 27500:
++		ramp_value = RAMP_RATE_27P5MV;
++		break;
++	case 27501 ... 55000:
++		ramp_value = RAMP_RATE_55MV;
++		break;
++	case 55001 ... 100000:
++		break;
++	default:
++		pr_warn("%s: ramp_delay: %d not supported, setting 100000\n",
++			rdev->desc->name, ramp_delay);
++	}
++
++	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				  MAX77686_RAMP_RATE_MASK, ramp_value << 6);
++}
++
+ static struct regulator_ops max77686_ops = {
+ 	.list_voltage		= regulator_list_voltage_linear,
+ 	.map_voltage		= regulator_map_voltage_linear,
+@@ -90,6 +113,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+ 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_ramp_delay		= max77686_set_ramp_delay,
+ };
+ 
+ #define regulator_desc_ldo(num)		{				\
+@@ -238,20 +262,17 @@ static __devinit int max77686_pmic_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	rdev = max77686->rdev;
+-	max77686->dev = &pdev->dev;
+-	max77686->iodev = iodev;
++	config.dev = &pdev->dev;
++	config.regmap = iodev->regmap;
+ 	platform_set_drvdata(pdev, max77686);
+ 
+ 	for (i = 0; i < MAX77686_REGULATORS; i++) {
+-		config.dev = max77686->dev;
+-		config.regmap = iodev->regmap;
+-		config.driver_data = max77686;
+ 		config.init_data = pdata->regulators[i].initdata;
+ 
+ 		rdev[i] = regulator_register(&regulators[i], &config);
+ 		if (IS_ERR(rdev[i])) {
+ 			ret = PTR_ERR(rdev[i]);
+-			dev_err(max77686->dev,
++			dev_err(&pdev->dev,
+ 				"regulator init failed for %d\n", i);
+ 				rdev[i] = NULL;
+ 				goto err;
+-- 
+1.7.0.4
 
