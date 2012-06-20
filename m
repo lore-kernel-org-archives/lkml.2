@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab2FTB23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 21:28:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41979 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab2FTB21 (ORCPT
+	id S1754336Ab2FTBlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 21:41:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50218 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937Ab2FTBlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 21:28:27 -0400
-Date: Tue, 19 Jun 2012 18:25:41 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Len Brown <len.brown@intel.com>, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] thermal: Constify 'type' argument for the registration
- routine
-Message-ID: <20120620012541.GA3564@lizard>
-References: <1339995037-19561-1-git-send-email-cbouatmailru@gmail.com>
- <20120619171128.377fc971.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120619171128.377fc971.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Jun 2012 21:41:13 -0400
+Message-ID: <1340156457.13830.1.camel@phoenix>
+Subject: [PATCH] mfd: MFD_MAX77693 needs to select IRQ_DOMAIN
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Date: Wed, 20 Jun 2012 09:40:57 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 05:11:28PM -0700, Andrew Morton wrote:
-> On Sun, 17 Jun 2012 21:50:37 -0700
-> Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
-> 
-> > thermal_zone_device_register() does not modify 'type' argument, so
-> > it is safe to declare it as const. Otherwise, if we pass a const
-> > string, we are getting the ugly warning:
-> > 
-> > ...
-> >
-> 
-> For some reason I can't apply this.
+This fixes below build errors:
 
-The reason is the same patch in ACPI tree that "broke" battery tree;
-we're just touching the same lines of code and that causes some pain.
+  CC      drivers/mfd/max77693-irq.o
+drivers/mfd/max77693-irq.c: In function 'max77693_irq_thread':
+drivers/mfd/max77693-irq.c:217:4: error: implicit declaration of function 'irq_find_mapping' [-Werror=implicit-function-declaration]
+drivers/mfd/max77693-irq.c: In function 'max77693_irq_init':
+drivers/mfd/max77693-irq.c:286:2: error: implicit declaration of function 'irq_domain_add_linear' [-Werror=implicit-function-declaration]
+drivers/mfd/max77693-irq.c:286:9: warning: assignment makes pointer from integer without a cast [enabled by default]
+cc1: some warnings being treated as errors
+make[2]: *** [drivers/mfd/max77693-irq.o] Error 1
+make[1]: *** [drivers/mfd] Error 2
+make: *** [drivers] Error 2
 
-> I typed it in again and it seems
-> to work OK.  I'll assume that someone else will merge it into
-> whatever-tree-broke.
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Len, will you merge this patch? Or should I take it into battery
-tree? (If I'm taking it, then Stephen will have to resolve some
-conflicts upon next -next tree generation.)
-
-> > +struct thermal_zone_device *
-> > +thermal_zone_device_register(const char *, int, void *,
-> >  		const struct thermal_zone_device_ops *, int tc1, int tc2,
-> >  		int passive_freq, int polling_freq);
-> >  void thermal_zone_device_unregister(struct thermal_zone_device *);
-> 
-> Personally, I prefer it when the arguments are named in the declaration
-> - if you ever have reason to *read* the thing, the lack of names is
-> quite maddening.  Particularly when the function has 72 arguments.
-
-:-)
-
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index e129c82..79f1d4b 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -427,6 +427,7 @@ config MFD_MAX77693
+ 	depends on I2C=y && GENERIC_HARDIRQS
+ 	select MFD_CORE
+ 	select REGMAP_I2C
++	select IRQ_DOMAIN
+ 	help
+ 	  Say yes here to support for Maxim Semiconductor MAX77693.
+ 	  This is a companion Power Management IC with Flash, Haptic, Charger,
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.9.5
+
+
+
