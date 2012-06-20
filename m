@@ -1,222 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab2FTN5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:57:24 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:35721
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751740Ab2FTN5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 09:57:23 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1202hzz8275dhz2dh2a8h668h839h944hd25hf0ah)
-Date: Wed, 20 Jun 2012 21:53:38 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 1/1] of: reform prom_update_property function
-Message-ID: <20120620135337.GM10387@shlinux2.ap.freescale.net>
-References: <1340171647-2815-1-git-send-email-b29396@freescale.com>
- <4FE1CB2C.5040208@gmail.com>
+	id S1756099Ab2FTN7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:59:32 -0400
+Received: from antcom.de ([188.40.178.216]:39655 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751678Ab2FTN7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 09:59:30 -0400
+Message-ID: <4FE1D73F.4060007@antcom.de>
+Date: Wed, 20 Jun 2012 15:59:27 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FE1CB2C.5040208@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Kevin Wells <kevin.wells@nxp.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: LPC32XX: Cleanup USB clock init
+References: <1340193675-30717-1-git-send-email-aletes.xgr@gmail.com>
+In-Reply-To: <1340193675-30717-1-git-send-email-aletes.xgr@gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 09:07:56PM +0800, Rob Herring wrote:
-> On 06/20/2012 12:54 AM, Dong Aisheng wrote:
-> > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > 
-> > prom_update_property() currently fails if the property doesn't
-> > actually exist yet which isn't what we want. Change to add-or-update
-> > instead of update-only, then we can remove a lot duplicated lines.
-> > 
-> > Suggested-by: Grant Likely <grant.likely@secretlab.ca>
-> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > ---
+On 06/20/2012 02:01 PM, Alexandre Pereira da Silva wrote:
+> Move most of usb clock initialization from lpc32xx_udc and ohci-nxp to
+> clock.c. Also adds ohci clocks and otg clocks.
 > 
-> Looks fine, but you need to cc powerpc maintainers.
-> 
-Sorry, i missed that.
-Thanks for reminder.
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-Regards
-Dong Aisheng
+Acked-by: Roland Stigge <stigge@antcom.de>
 
+> ---
+>  arch/arm/mach-lpc32xx/clock.c                 |   73 ++++++++++++++++++++++++-
+>  arch/arm/mach-lpc32xx/include/mach/platform.h |   14 +++++
+>  2 files changed, 86 insertions(+), 1 deletion(-)
 > 
-> >  arch/powerpc/platforms/85xx/p1022_ds.c    |    8 +-------
-> >  arch/powerpc/platforms/pseries/mobility.c |    8 +-------
-> >  arch/powerpc/platforms/pseries/reconfig.c |   13 +++----------
-> >  drivers/of/base.c                         |   15 +++++++++++----
-> >  fs/proc/proc_devtree.c                    |    5 +++++
-> >  include/linux/of.h                        |    3 +--
-> >  6 files changed, 22 insertions(+), 30 deletions(-)
-> > 
-> > diff --git a/arch/powerpc/platforms/85xx/p1022_ds.c b/arch/powerpc/platforms/85xx/p1022_ds.c
-> > index f700c81..d66631c 100644
-> > --- a/arch/powerpc/platforms/85xx/p1022_ds.c
-> > +++ b/arch/powerpc/platforms/85xx/p1022_ds.c
-> > @@ -348,13 +348,7 @@ void __init p1022_ds_pic_init(void)
-> >   */
-> >  static void __init disable_one_node(struct device_node *np, struct property *new)
-> >  {
-> > -	struct property *old;
-> > -
-> > -	old = of_find_property(np, new->name, NULL);
-> > -	if (old)
-> > -		prom_update_property(np, new, old);
-> > -	else
-> > -		prom_add_property(np, new);
-> > +	prom_update_property(np, new);
-> >  }
-> >  
-> >  /* TRUE if there is a "video=fslfb" command-line parameter. */
-> > diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
-> > index 029a562..dd30b12 100644
-> > --- a/arch/powerpc/platforms/pseries/mobility.c
-> > +++ b/arch/powerpc/platforms/pseries/mobility.c
-> > @@ -67,7 +67,6 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
-> >  			      const char *name, u32 vd, char *value)
-> >  {
-> >  	struct property *new_prop = *prop;
-> > -	struct property *old_prop;
-> >  	int more = 0;
-> >  
-> >  	/* A negative 'vd' value indicates that only part of the new property
-> > @@ -117,12 +116,7 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
-> >  	}
-> >  
-> >  	if (!more) {
-> > -		old_prop = of_find_property(dn, new_prop->name, NULL);
-> > -		if (old_prop)
-> > -			prom_update_property(dn, new_prop, old_prop);
-> > -		else
-> > -			prom_add_property(dn, new_prop);
-> > -
-> > +		prom_update_property(dn, new_prop);
-> >  		new_prop = NULL;
-> >  	}
-> >  
-> > diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-> > index 7b3bf76..4c92f1c 100644
-> > --- a/arch/powerpc/platforms/pseries/reconfig.c
-> > +++ b/arch/powerpc/platforms/pseries/reconfig.c
-> > @@ -432,7 +432,7 @@ static int do_update_property(char *buf, size_t bufsize)
-> >  	unsigned char *value;
-> >  	char *name, *end, *next_prop;
-> >  	int rc, length;
-> > -	struct property *newprop, *oldprop;
-> > +	struct property *newprop;
-> >  	buf = parse_node(buf, bufsize, &np);
-> >  	end = buf + bufsize;
-> >  
-> > @@ -450,18 +450,11 @@ static int do_update_property(char *buf, size_t bufsize)
-> >  	if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
-> >  		slb_set_size(*(int *)value);
-> >  
-> > -	oldprop = of_find_property(np, name,NULL);
-> > -	if (!oldprop) {
-> > -		if (strlen(name))
-> > -			return prom_add_property(np, newprop);
-> > -		return -ENODEV;
-> > -	}
-> > -
-> >  	upd_value.node = np;
-> >  	upd_value.property = newprop;
-> >  	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
-> >  
-> > -	rc = prom_update_property(np, newprop, oldprop);
-> > +	rc = prom_update_property(np, newprop);
-> >  	if (rc)
-> >  		return rc;
-> >  
-> > @@ -486,7 +479,7 @@ static int do_update_property(char *buf, size_t bufsize)
-> >  
-> >  		rc = pSeries_reconfig_notify(action, value);
-> >  		if (rc) {
-> > -			prom_update_property(np, oldprop, newprop);
-> > +			prom_update_property(np, newprop);
-> >  			return rc;
-> >  		}
-> >  	}
-> > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > index d9bfd49..a14f109 100644
-> > --- a/drivers/of/base.c
-> > +++ b/drivers/of/base.c
-> > @@ -1051,7 +1051,8 @@ int prom_remove_property(struct device_node *np, struct property *prop)
-> >  }
-> >  
-> >  /*
-> > - * prom_update_property - Update a property in a node.
-> > + * prom_update_property - Update a property in a node, if the property does
-> > + * not exist, add it.
-> >   *
-> >   * Note that we don't actually remove it, since we have given out
-> >   * who-knows-how-many pointers to the data using get-property.
-> > @@ -1059,13 +1060,19 @@ int prom_remove_property(struct device_node *np, struct property *prop)
-> >   * and add the new property to the property list
-> >   */
-> >  int prom_update_property(struct device_node *np,
-> > -			 struct property *newprop,
-> > -			 struct property *oldprop)
-> > +			 struct property *newprop)
-> >  {
-> > -	struct property **next;
-> > +	struct property **next, *oldprop;
-> >  	unsigned long flags;
-> >  	int found = 0;
-> >  
-> > +	if (!newprop->name)
-> > +		return -EINVAL;
-> > +
-> > +	oldprop = of_find_property(np, newprop->name, NULL);
-> > +	if (!oldprop)
-> > +		return prom_add_property(np, newprop);
-> > +
-> >  	write_lock_irqsave(&devtree_lock, flags);
-> >  	next = &np->properties;
-> >  	while (*next) {
-> > diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
-> > index 927cbd1..df7dd08 100644
-> > --- a/fs/proc/proc_devtree.c
-> > +++ b/fs/proc/proc_devtree.c
-> > @@ -101,6 +101,11 @@ void proc_device_tree_update_prop(struct proc_dir_entry *pde,
-> >  {
-> >  	struct proc_dir_entry *ent;
-> >  
-> > +	if (!oldprop) {
-> > +		proc_device_tree_add_prop(pde, newprop);
-> > +		return;
-> > +	}
-> > +
-> >  	for (ent = pde->subdir; ent != NULL; ent = ent->next)
-> >  		if (ent->data == oldprop)
-> >  			break;
-> > diff --git a/include/linux/of.h b/include/linux/of.h
-> > index 2ec1083..b27c871 100644
-> > --- a/include/linux/of.h
-> > +++ b/include/linux/of.h
-> > @@ -260,8 +260,7 @@ extern int of_machine_is_compatible(const char *compat);
-> >  extern int prom_add_property(struct device_node* np, struct property* prop);
-> >  extern int prom_remove_property(struct device_node *np, struct property *prop);
-> >  extern int prom_update_property(struct device_node *np,
-> > -				struct property *newprop,
-> > -				struct property *oldprop);
-> > +				struct property *newprop);
-> >  
-> >  #if defined(CONFIG_OF_DYNAMIC)
-> >  /* For updating the device tree at runtime */
-> 
-> 
+> diff --git a/arch/arm/mach-lpc32xx/clock.c b/arch/arm/mach-lpc32xx/clock.c
+> index f6a3ffe..c80f064 100644
+> --- a/arch/arm/mach-lpc32xx/clock.c
+> +++ b/arch/arm/mach-lpc32xx/clock.c
+> @@ -727,14 +727,82 @@ static struct clk clk_rtc = {
+>  	.get_rate	= local_return_parent_rate,
+>  };
+>  
+> +static int local_usb_enable(struct clk *clk, int enable)
+> +{
+> +	u32 tmp;
+> +
+> +	if (enable) {
+> +		/* Set up I2C pull levels
+> +		 *
+> +		 * This should never be disabled as the host/gadget driver may
+> +		 * need to talk to the usb transceiver while the main clocks are
+> +		 * disabled to save power.
+> +		 */
+> +		tmp = __raw_readl(LPC32XX_CLKPWR_I2C_CLK_CTRL);
+> +		tmp |= LPC32XX_CLKPWR_I2CCLK_USBI2CHI_DRIVE;
+> +		__raw_writel(tmp, LPC32XX_CLKPWR_I2C_CLK_CTRL);
+> +	}
+> +
+> +	return local_onoff_enable(clk, enable);
+> +}
+> +
+>  static struct clk clk_usbd = {
+>  	.parent		= &clk_usbpll,
+> -	.enable		= local_onoff_enable,
+> +	.enable		= local_usb_enable,
+>  	.enable_reg	= LPC32XX_CLKPWR_USB_CTRL,
+>  	.enable_mask	= LPC32XX_CLKPWR_USBCTRL_HCLK_EN,
+>  	.get_rate	= local_return_parent_rate,
+>  };
+>  
+> +#define OTG_ALWAYS_MASK		(LPC32XX_USB_OTG_OTG_CLOCK_ON | \
+> +				 LPC32XX_USB_OTG_I2C_CLOCK_ON)
+> +
+> +static int local_usb_otg_enable(struct clk *clk, int enable)
+> +{
+> +	int to = 1000;
+> +
+> +	if (enable) {
+> +		__raw_writel(clk->enable_mask, clk->enable_reg);
+> +
+> +		while (((__raw_readl(LPC32XX_USB_OTG_CLK_STAT) &
+> +			clk->enable_mask) != clk->enable_mask) && (to > 0))
+> +			to--;
+> +	} else {
+> +		__raw_writel(OTG_ALWAYS_MASK, clk->enable_reg);
+> +
+> +		while (((__raw_readl(LPC32XX_USB_OTG_CLK_STAT) &
+> +			OTG_ALWAYS_MASK) != OTG_ALWAYS_MASK) && (to > 0))
+> +			to--;
+> +	}
+> +
+> +	if (to)
+> +		return 0;
+> +	else
+> +		return -1;
+> +}
+> +
+> +static struct clk clk_usb_otg_dev = {
+> +	.parent		= &clk_usbpll,
+> +	.enable		= local_usb_otg_enable,
+> +	.enable_reg	= LPC32XX_USB_OTG_CLK_CTRL,
+> +	.enable_mask	= LPC32XX_USB_OTG_AHB_M_CLOCK_ON |
+> +			  LPC32XX_USB_OTG_OTG_CLOCK_ON |
+> +			  LPC32XX_USB_OTG_DEV_CLOCK_ON |
+> +			  LPC32XX_USB_OTG_I2C_CLOCK_ON,
+> +	.get_rate	= local_return_parent_rate,
+> +};
+> +
+> +static struct clk clk_usb_otg_host = {
+> +	.parent		= &clk_usbpll,
+> +	.enable		= local_usb_otg_enable,
+> +	.enable_reg	= LPC32XX_USB_OTG_CLK_CTRL,
+> +	.enable_mask	= LPC32XX_USB_OTG_AHB_M_CLOCK_ON |
+> +			  LPC32XX_USB_OTG_OTG_CLOCK_ON |
+> +			  LPC32XX_USB_OTG_HOST_CLOCK_ON |
+> +			  LPC32XX_USB_OTG_I2C_CLOCK_ON,
+> +	.get_rate	= local_return_parent_rate,
+> +};
+> +
+>  static int tsc_onoff_enable(struct clk *clk, int enable)
+>  {
+>  	u32 tmp;
+> @@ -1130,6 +1198,9 @@ static struct clk_lookup lookups[] = {
+>  	CLKDEV_INIT("31060000.ethernet", NULL, &clk_net),
+>  	CLKDEV_INIT("dev:clcd", NULL, &clk_lcd),
+>  	CLKDEV_INIT("31020000.usbd", "ck_usbd", &clk_usbd),
+> +	CLKDEV_INIT("31020000.ohci", "ck_usbd", &clk_usbd),
+> +	CLKDEV_INIT("31020000.usbd", "ck_usb_otg", &clk_usb_otg_dev),
+> +	CLKDEV_INIT("31020000.ohci", "ck_usb_otg", &clk_usb_otg_host),
+>  	CLKDEV_INIT("lpc32xx_rtc", NULL, &clk_rtc),
+>  };
+>  
+> diff --git a/arch/arm/mach-lpc32xx/include/mach/platform.h b/arch/arm/mach-lpc32xx/include/mach/platform.h
+> index c584f5b..acc4aab 100644
+> --- a/arch/arm/mach-lpc32xx/include/mach/platform.h
+> +++ b/arch/arm/mach-lpc32xx/include/mach/platform.h
+> @@ -694,4 +694,18 @@
+>  #define LPC32XX_GPIO_P2_MUX_CLR			_GPREG(0x02C)
+>  #define LPC32XX_GPIO_P2_MUX_STATE		_GPREG(0x030)
+>  
+> +/*
+> + * USB Otg Registers
+> + */
+> +#define _OTGREG(x)			io_p2v(LPC32XX_USB_OTG_BASE + (x))
+> +#define LPC32XX_USB_OTG_CLK_CTRL	_OTGREG(0xFF4)
+> +#define LPC32XX_USB_OTG_CLK_STAT	_OTGREG(0xFF8)
+> +
+> +/* USB OTG CLK CTRL bit defines */
+> +#define LPC32XX_USB_OTG_AHB_M_CLOCK_ON	_BIT(4)
+> +#define LPC32XX_USB_OTG_OTG_CLOCK_ON	_BIT(3)
+> +#define LPC32XX_USB_OTG_I2C_CLOCK_ON	_BIT(2)
+> +#define LPC32XX_USB_OTG_DEV_CLOCK_ON	_BIT(1)
+> +#define LPC32XX_USB_OTG_HOST_CLOCK_ON	_BIT(0)
+> +
+>  #endif
 
