@@ -1,153 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125Ab2FTJg3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:36:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58893 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755976Ab2FTJgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:36:22 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/12] mm: Methods for teaching filesystems about PG_swapcache pages
-Date: Wed, 20 Jun 2012 10:36:07 +0100
-Message-Id: <1340184977-22356-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340184977-22356-1-git-send-email-mgorman@suse.de>
-References: <1340184977-22356-1-git-send-email-mgorman@suse.de>
+	id S1756148Ab2FTJgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:36:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54970 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab2FTJgt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:36:49 -0400
+Message-ID: <1340185002.21745.80.camel@twins>
+Subject: Re: [PATCH 05/10] perf, x86: Move Intel specific code to
+ intel_pmu_init()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Jun 2012 11:36:42 +0200
+In-Reply-To: <1340129448-8690-6-git-send-email-robert.richter@amd.com>
+References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
+	 <1340129448-8690-6-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to teach filesystems to handle swap cache pages, three new
-page functions are introduced:
+On Tue, 2012-06-19 at 20:10 +0200, Robert Richter wrote:
+> There is some Intel specific code in the generic x86 path. Move it to
+> intel_pmu_init().
+> 
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
 
-  pgoff_t page_file_index(struct page *);
-  loff_t page_file_offset(struct page *);
-  struct address_space *page_file_mapping(struct page *);
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 1eb9f00..90d7097 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -1760,7 +1760,7 @@ static __init void intel_nehalem_quirk(void)
+>  	}
+>  }
+>  
+> -__init int intel_pmu_init(void)
+> +static __init int __intel_pmu_init(void)
+>  {
+>  	union cpuid10_edx edx;
+>  	union cpuid10_eax eax;
+> @@ -1955,3 +1955,46 @@ __init int intel_pmu_init(void)
+>  
+>  	return 0;
+>  }
+> +
+> +__init int intel_pmu_init(void)
+> +{
+> +	struct event_constraint *c;
+> +	int ret = __intel_pmu_init();
 
-page_file_index() - gives the offset of this page in the file in
-PAGE_CACHE_SIZE blocks. Like page->index is for mapped pages, this
-function also gives the correct index for PG_swapcache pages.
 
-page_file_offset() - uses page_file_index(), so that it will give
-the expected result, even for PG_swapcache pages.
-
-page_file_mapping() - gives the mapping backing the actual page;
-that is for swap cache pages it will give swap_file->f_mapping.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mm.h      |   25 +++++++++++++++++++++++++
- include/linux/pagemap.h |    5 +++++
- mm/swapfile.c           |   19 +++++++++++++++++++
- 3 files changed, 49 insertions(+)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b36d08c..0c0301c 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -805,6 +805,17 @@ static inline void *page_rmapping(struct page *page)
- 	return (void *)((unsigned long)page->mapping & ~PAGE_MAPPING_FLAGS);
- }
- 
-+extern struct address_space *__page_file_mapping(struct page *);
-+
-+static inline
-+struct address_space *page_file_mapping(struct page *page)
-+{
-+	if (unlikely(PageSwapCache(page)))
-+		return __page_file_mapping(page);
-+
-+	return page->mapping;
-+}
-+
- static inline int PageAnon(struct page *page)
- {
- 	return ((unsigned long)page->mapping & PAGE_MAPPING_ANON) != 0;
-@@ -821,6 +832,20 @@ static inline pgoff_t page_index(struct page *page)
- 	return page->index;
- }
- 
-+extern pgoff_t __page_file_index(struct page *page);
-+
-+/*
-+ * Return the file index of the page. Regular pagecache pages use ->index
-+ * whereas swapcache pages use swp_offset(->private)
-+ */
-+static inline pgoff_t page_file_index(struct page *page)
-+{
-+	if (unlikely(PageSwapCache(page)))
-+		return __page_file_index(page);
-+
-+	return page->index;
-+}
-+
- /*
-  * Return true if this page is mapped into pagetables.
-  */
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 7cfad3b..e42c762 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -286,6 +286,11 @@ static inline loff_t page_offset(struct page *page)
- 	return ((loff_t)page->index) << PAGE_CACHE_SHIFT;
- }
- 
-+static inline loff_t page_file_offset(struct page *page)
-+{
-+	return ((loff_t)page_file_index(page)) << PAGE_CACHE_SHIFT;
-+}
-+
- extern pgoff_t linear_hugepage_index(struct vm_area_struct *vma,
- 				     unsigned long address);
- 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index de5bc51..f03a560 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -33,6 +33,7 @@
- #include <linux/oom.h>
- #include <linux/frontswap.h>
- #include <linux/swapfile.h>
-+#include <linux/export.h>
- 
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
-@@ -2290,6 +2291,24 @@ int swapcache_prepare(swp_entry_t entry)
- }
- 
- /*
-+ * out-of-line __page_file_ methods to avoid include hell.
-+ */
-+struct address_space *__page_file_mapping(struct page *page)
-+{
-+	VM_BUG_ON(!PageSwapCache(page));
-+	return page_swap_info(page)->swap_file->f_mapping;
-+}
-+EXPORT_SYMBOL_GPL(__page_file_mapping);
-+
-+pgoff_t __page_file_index(struct page *page)
-+{
-+	swp_entry_t swap = { .val = page_private(page) };
-+	VM_BUG_ON(!PageSwapCache(page));
-+	return swp_offset(swap);
-+}
-+EXPORT_SYMBOL_GPL(__page_file_index);
-+
-+/*
-  * add_swap_count_continuation - called when a swap count is duplicated
-  * beyond SWAP_MAP_MAX, it allocates a new page and links that to the entry's
-  * page of the original vmalloc'ed swap_map, to hold the continuation count
--- 
-1.7.9.2
-
+This seems like a nice enough cleanup all on its own, but why make it
+two functions?
