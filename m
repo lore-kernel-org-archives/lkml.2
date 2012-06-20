@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516Ab2FTXXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:23:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab2FTXXf (ORCPT
+	id S1758546Ab2FTXYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:24:04 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49325 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658Ab2FTXYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:23:35 -0400
-Date: Wed, 20 Jun 2012 16:23:31 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: comedi: skel: use module_comedi_{pci_,}driver()
-Message-ID: <20120620232331.GA25587@kroah.com>
-References: <201206201556.51336.hartleys@visionengravers.com>
- <20120620231230.GA28411@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F0020698E77071@AUSP01VMBX24.collaborationhost.net>
+	Wed, 20 Jun 2012 19:24:02 -0400
+Date: Thu, 21 Jun 2012 01:23:59 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@amd64.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+Message-ID: <20120620232359.GD2016@aftab.osrc.amd.com>
+References: <1340121811-4477-1-git-send-email-bp@amd64.org>
+ <1340121811-4477-3-git-send-email-bp@amd64.org>
+ <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
+ <20120619232857.GH5996@aftab.osrc.amd.com>
+ <1340182778.21745.75.camel@twins>
+ <20120620230856.GA4223@khazad-dum.debian.net>
+ <4FE2585A.3000505@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698E77071@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <4FE2585A.3000505@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 06:16:52PM -0500, H Hartley Sweeten wrote:
-> On Wednesday, June 20, 2012 4:13 PM, Greg KH wrote:
-> > On Wed, Jun 20, 2012 at 03:56:50PM -0700, H Hartley Sweeten wrote:
-> >> If PCI boards are supported, use the module_comedi_pci_driver() macro
-> >> to register the module as a comedi driver and a PCI driver. Otherwise,
-> >> only ISA boards are supported to use the module_comedi_driver() macro
-> >> to register the module as a comedi driver.
-> >> 
-> >> Refactor the code a bit due to the use of the module_comedi_* macros.
-> >> 
-> >> Rename the comedi_driver and pci_driver variables as well as the pci
-> >> driver related functions for aesthetic reasons. This makes the skel
-> >> driver conform to the changes to the other comedi drivers.
-> >> 
-> >> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> >> Cc: Ian Abbott <abbotti@mev.co.uk>
-> >> Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-> >
-> > This patch fails to apply:
-> >
-> > patching file drivers/staging/comedi/drivers/skel.c
-> > Hunk #4 FAILED at 543.
-> > 1 out of 4 hunks FAILED -- saving rejects to file drivers/staging/comedi/drivers/skel.c.rej
-> >
-> > Care to rediff it and resend?
-> 
-> Hmm. It was based on next-20120620 and created with git format-patch.
-> 
-> Do you have any other patches to that file in your staging tree that
-> have not reached the next tree yet?
+On Wed, Jun 20, 2012 at 04:10:18PM -0700, H. Peter Anvin wrote:
+> I'm wondering about the new format... it seems to potentially make it
+> harder to do the proper retaining of compatible CPU microcodes.
 
-Possibly, depending on when -next was created, I did just apply a bunch
-of other patches a few hours ago.
+.. and if you don't split the blob, you have all the ucode patches in
+one package. So are there any advantages in splitting the single blob?
 
-> Regardless, I have some other cleanup patches for that file. I'll
-> put them together as a series and repost it later.
+-- 
+Regards/Gruss,
+Boris.
 
-That would be great, thanks.
-
-greg k-h
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
