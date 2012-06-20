@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2FTFqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 01:46:21 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54936 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752277Ab2FTFqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 01:46:19 -0400
-Message-ID: <1340171140.28143.72.camel@pasglop>
-Subject: Re: [PATCH v2 1/7] driver core: Add iommu_group tracking to struct
- device
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: joerg.roedel@amd.com, dwmw2@infradead.org,
-        iommu@lists.linux-foundation.org, bhelgaas@google.com, aik@ozlabs.ru,
-        david@gibson.dropbear.id.au, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        gregkh@linuxfoundation.org, ddutile@redhat.com, liuj97@gmail.com
-Date: Wed, 20 Jun 2012 15:45:40 +1000
-In-Reply-To: <20120530201840.31527.47813.stgit@bling.home>
-References: <20120530201424.31527.33142.stgit@bling.home>
-	 <20120530201840.31527.47813.stgit@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753643Ab2FTFxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 01:53:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37074 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab2FTFxS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 01:53:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
+References: <1340067097.3696.6.camel@sbsiddha-desk.sc.intel.com>
+	<1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
+Date: Tue, 19 Jun 2012 22:53:18 -0700
+X-Google-Sender-Auth: wB_fVX7EwVwctH8EY_phBnzS8b4
+Message-ID: <CAE9FiQXc_Sbm3uPi4YFQaR1a8DzWD1YCaZ2tiXupi9+ff=Smeg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86, apic: optimize cpu traversal in
+ __assign_irq_vector() using domain membership
+From: Yinghai Lu <yinghai@kernel.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org, gorcunov@openvz.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 14:18 -0600, Alex Williamson wrote:
-> IOMMU groups allow IOMMU drivers to represent DMA visibility
-> and isolation of devices.  Multiple devices may be grouped
-> together for the purposes of DMA.  Placing a pointer on
-> struct device enable easy access for things like streaming
-> DMA programming and drivers like VFIO.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Tue, Jun 19, 2012 at 4:43 PM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> Currently __assign_irq_vector() goes through each cpu in the specified mask
+> until it finds a free vector in all the cpu's that are part of the same
+> interrupt domain. We visit all the interrupt domain sibling cpus to reserve
+> the free vector. So, when we fail to find a free vector in an interrupt
+> domain, it is safe to continue our search with a cpu belonging to a new
+> interrupt domain. No need to go through each cpu, if the domain
+> containing that cpu is already visited.
+>
+> Use the irq_cfg's old_domain to track the visited domains and optimize
+> the cpu traversal while finding a free vector in the given cpumask.
+>
+> NOTE: We can also optimize the search by using for_each_cpu and skip the
+> current cpu, if it is not the first cpu in the mask returned by the
+> vector_allocation_domain(). But re-using the cfg->old_domain to track
+> the visited domains will be slightly faster.
+>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-
-> ---
-> 
->  include/linux/device.h |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index 161d962..d0e4d99 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -36,6 +36,7 @@ struct subsys_private;
->  struct bus_type;
->  struct device_node;
->  struct iommu_ops;
-> +struct iommu_group;
->  
->  struct bus_attribute {
->  	struct attribute	attr;
-> @@ -687,6 +688,7 @@ struct device {
->  	const struct attribute_group **groups;	/* optional groups */
->  
->  	void	(*release)(struct device *dev);
-> +	struct iommu_group	*iommu_group;
->  };
->  
->  /* Get the wakeup routines, which depend on struct device */
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+Acked-by: Yinghai Lu <yinghai@kernel.org>
