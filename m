@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab2FTSZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:25:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
+	id S932663Ab2FTS0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:26:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53819 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932604Ab2FTSZG (ORCPT
+	with ESMTP id S932609Ab2FTSY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:25:06 -0400
-Message-Id: <20120620173041.312743596@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:24:59 -0400
+Message-Id: <20120620173041.116611988@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:59 -0700
+Date: Wed, 20 Jun 2012 10:30:57 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Mack <zonque@gmail.com>,
-        bEN <ml_all@circa.be>, Ivan Perrone <ivanperrone@hotmail.com>
-Subject: [ 20/20] USB: fix gathering of interface associations
+        alan@lxorguk.ukuu.org.uk, Tomas Cassidy <tomas.cassidy@gmail.com>
+Subject: [ 18/20] USB: serial: sierra: Add support for Sierra Wireless AirCard 320U modem
 In-Reply-To: <20120620173044.GA6910@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,85 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Tom Cassidy <tomas.cassidy@gmail.com>
 
-commit b3a3dd074f7053ef824ad077e5331b52220ceba1 upstream.
+commit 19a3dd1575e954e8c004413bee3e12d3962f2525 upstream.
 
-TEAC's UD-H01 (and probably other devices) have a gap in the interface
-number allocation of their descriptors:
+Add support for Sierra Wireless AirCard 320U modem
 
-  Configuration Descriptor:
-    bLength                 9
-    bDescriptorType         2
-    wTotalLength          220
-    bNumInterfaces          3
-    [...]
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        0
-      bAlternateSetting       0
-      [...]
-    Interface Association:
-      bLength                 8
-      bDescriptorType        11
-      bFirstInterface         2
-      bInterfaceCount         2
-      bFunctionClass          1 Audio
-      bFunctionSubClass       0
-      bFunctionProtocol      32
-      iFunction               4
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        2
-      bAlternateSetting       0
-      [...]
-
-Once a configuration is selected, usb_set_configuration() walks the
-known interfaces of a given configuration and calls find_iad() on
-each of them to set the interface association pointer the interface
-is included in.
-
-The problem here is that the loop variable is taken for the interface
-number in the comparison logic that gathers the association. Which is
-fine as long as the descriptors are sane.
-
-In the case above, however, the logic gets out of sync and the
-interface association fields of all interfaces beyond the interface
-number gap are wrong.
-
-Fix this by passing the interface's bInterfaceNumber to find_iad()
-instead.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: bEN <ml_all@circa.be>
-Reported-by: Ivan Perrone <ivanperrone@hotmail.com>
-Tested-by: ivan perrone <ivanperrone@hotmail.com>
+Signed-off-by: Tomas Cassidy <tomas.cassidy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/message.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/sierra.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1803,7 +1803,6 @@ free_interfaces:
- 		intfc = cp->intf_cache[i];
- 		intf->altsetting = intfc->altsetting;
- 		intf->num_altsetting = intfc->num_altsetting;
--		intf->intf_assoc = find_iad(dev, cp, i);
- 		kref_get(&intfc->ref);
- 
- 		alt = usb_altnum_to_altsetting(intf, 0);
-@@ -1816,6 +1815,8 @@ free_interfaces:
- 		if (!alt)
- 			alt = &intf->altsetting[0];
- 
-+		intf->intf_assoc =
-+			find_iad(dev, cp, alt->desc.bInterfaceNumber);
- 		intf->cur_altsetting = alt;
- 		usb_enable_interface(dev, intf, true);
- 		intf->dev.parent = &dev->dev;
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -304,6 +304,10 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
++	/* AT&T Direct IP LTE modems */
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68AA, 0xFF, 0xFF, 0xFF),
++	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
++	},
+ 	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
 
 
