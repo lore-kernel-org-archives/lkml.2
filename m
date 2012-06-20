@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab2FTJgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:36:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58883 "EHLO mx2.suse.de"
+	id S1756125Ab2FTJg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:36:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58893 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755947Ab2FTJgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755976Ab2FTJgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Jun 2012 05:36:22 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -17,9 +17,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/12] selinux: tag avc cache alloc as non-critical
-Date: Wed, 20 Jun 2012 10:36:06 +0100
-Message-Id: <1340184977-22356-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 02/12] mm: Methods for teaching filesystems about PG_swapcache pages
+Date: Wed, 20 Jun 2012 10:36:07 +0100
+Message-Id: <1340184977-22356-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1340184977-22356-1-git-send-email-mgorman@suse.de>
 References: <1340184977-22356-1-git-send-email-mgorman@suse.de>
@@ -27,30 +27,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Failing to allocate a cache entry will only harm performance not
-correctness.  Do not consume valuable reserve pages for something
-like that.
+In order to teach filesystems to handle swap cache pages, three new
+page functions are introduced:
+
+  pgoff_t page_file_index(struct page *);
+  loff_t page_file_offset(struct page *);
+  struct address_space *page_file_mapping(struct page *);
+
+page_file_index() - gives the offset of this page in the file in
+PAGE_CACHE_SIZE blocks. Like page->index is for mapped pages, this
+function also gives the correct index for PG_swapcache pages.
+
+page_file_offset() - uses page_file_index(), so that it will give
+the expected result, even for PG_swapcache pages.
+
+page_file_mapping() - gives the mapping backing the actual page;
+that is for swap cache pages it will give swap_file->f_mapping.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Eric Paris <eparis@redhat.com>
 ---
- security/selinux/avc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mm.h      |   25 +++++++++++++++++++++++++
+ include/linux/pagemap.h |    5 +++++
+ mm/swapfile.c           |   19 +++++++++++++++++++
+ 3 files changed, 49 insertions(+)
 
-diff --git a/security/selinux/avc.c b/security/selinux/avc.c
-index 68d82da..4d3fab4 100644
---- a/security/selinux/avc.c
-+++ b/security/selinux/avc.c
-@@ -274,7 +274,7 @@ static struct avc_node *avc_alloc_node(void)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b36d08c..0c0301c 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -805,6 +805,17 @@ static inline void *page_rmapping(struct page *page)
+ 	return (void *)((unsigned long)page->mapping & ~PAGE_MAPPING_FLAGS);
+ }
+ 
++extern struct address_space *__page_file_mapping(struct page *);
++
++static inline
++struct address_space *page_file_mapping(struct page *page)
++{
++	if (unlikely(PageSwapCache(page)))
++		return __page_file_mapping(page);
++
++	return page->mapping;
++}
++
+ static inline int PageAnon(struct page *page)
  {
- 	struct avc_node *node;
+ 	return ((unsigned long)page->mapping & PAGE_MAPPING_ANON) != 0;
+@@ -821,6 +832,20 @@ static inline pgoff_t page_index(struct page *page)
+ 	return page->index;
+ }
  
--	node = kmem_cache_zalloc(avc_node_cachep, GFP_ATOMIC);
-+	node = kmem_cache_zalloc(avc_node_cachep, GFP_ATOMIC|__GFP_NOMEMALLOC);
- 	if (!node)
- 		goto out;
++extern pgoff_t __page_file_index(struct page *page);
++
++/*
++ * Return the file index of the page. Regular pagecache pages use ->index
++ * whereas swapcache pages use swp_offset(->private)
++ */
++static inline pgoff_t page_file_index(struct page *page)
++{
++	if (unlikely(PageSwapCache(page)))
++		return __page_file_index(page);
++
++	return page->index;
++}
++
+ /*
+  * Return true if this page is mapped into pagetables.
+  */
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 7cfad3b..e42c762 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -286,6 +286,11 @@ static inline loff_t page_offset(struct page *page)
+ 	return ((loff_t)page->index) << PAGE_CACHE_SHIFT;
+ }
  
++static inline loff_t page_file_offset(struct page *page)
++{
++	return ((loff_t)page_file_index(page)) << PAGE_CACHE_SHIFT;
++}
++
+ extern pgoff_t linear_hugepage_index(struct vm_area_struct *vma,
+ 				     unsigned long address);
+ 
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index de5bc51..f03a560 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -33,6 +33,7 @@
+ #include <linux/oom.h>
+ #include <linux/frontswap.h>
+ #include <linux/swapfile.h>
++#include <linux/export.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+@@ -2290,6 +2291,24 @@ int swapcache_prepare(swp_entry_t entry)
+ }
+ 
+ /*
++ * out-of-line __page_file_ methods to avoid include hell.
++ */
++struct address_space *__page_file_mapping(struct page *page)
++{
++	VM_BUG_ON(!PageSwapCache(page));
++	return page_swap_info(page)->swap_file->f_mapping;
++}
++EXPORT_SYMBOL_GPL(__page_file_mapping);
++
++pgoff_t __page_file_index(struct page *page)
++{
++	swp_entry_t swap = { .val = page_private(page) };
++	VM_BUG_ON(!PageSwapCache(page));
++	return swp_offset(swap);
++}
++EXPORT_SYMBOL_GPL(__page_file_index);
++
++/*
+  * add_swap_count_continuation - called when a swap count is duplicated
+  * beyond SWAP_MAP_MAX, it allocates a new page and links that to the entry's
+  * page of the original vmalloc'ed swap_map, to hold the continuation count
 -- 
 1.7.9.2
 
