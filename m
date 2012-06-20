@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab2FTDTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 23:19:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60181 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2FTDTE (ORCPT
+	id S1754899Ab2FTDYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 23:24:43 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:35625 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2FTDYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 23:19:04 -0400
-Date: Wed, 20 Jun 2012 13:18:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Graf <tgraf@suug.ch>
-Subject: linux-next: manual merge of the net-next tree with the  tree
-Message-Id: <20120620131854.583604935bf9fd9f69f7ebe1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Jun_2012_13_18_54_+1000_msYOeJIq6E/zySxt"
+	Tue, 19 Jun 2012 23:24:42 -0400
+Message-ID: <4FE14149.7030807@linux.vnet.ibm.com>
+Date: Wed, 20 Jun 2012 11:19:37 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 02/10] zcache: fix refcount leak
+References: <4FE0392E.3090300@linux.vnet.ibm.com> <4FE03949.4080308@linux.vnet.ibm.com> <4FE08C9A.3010701@linux.vnet.ibm.com> <c10bcaf9-aa56-4d6a-bc2c-310096b4198b@default> <4FE0DBDD.2090005@linux.vnet.ibm.com> <4FE13B76.6020703@linux.vnet.ibm.com>
+In-Reply-To: <4FE13B76.6020703@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12061916-9264-0000-0000-000001BBD43D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Jun_2012_13_18_54_+1000_msYOeJIq6E/zySxt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/20/2012 10:54 AM, Xiao Guangrong wrote:
 
-Hi all,
+> On 06/20/2012 04:06 AM, Seth Jennings wrote:
+> 
+>> On 06/19/2012 02:49 PM, Dan Magenheimer wrote:
+>>
+>>> My preference would be to fix it the opposite way, by
+>>> checking and ignoring zcache_host in zcache_put_pool.
+>>> The ref-counting is to ensure that a client isn't
+>>> accidentally destroyed while in use (for multiple-client
+>>> users such as ramster and kvm) and since zcache_host is a static
+>>> struct, it should never be deleted so need not be ref-counted.
+>>
+>>
+>> If we do that, we'll need to comment it.  If we don't, it won't be
+>> obvious why we are refcounting every zcache client except one.  It'll
+>> look like a bug.
+> 
+> 
+> Okay, i will fix it like Dan's way and comment it.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/ipv6/route.c between commit d189634ecab9 ("ipv6: Move ipv6 proc file
-registration to end of init order") from the net tree and commit
-c3426b47190d ("inet: Initialize per-netns inetpeer roots in net/ipv
-{4,6}/route.c") from the net-next tree.
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Hmm...But i notice that zcache_host is the same as other clients, all
+of them are static struct:
 
-diff --cc net/ipv6/route.c
-index becb048,e649cd7..0000000
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@@ -3007,11 -2929,31 +2938,36 @@@ static struct pernet_operations ip6_rou
-  	.exit =3D ip6_route_net_exit,
-  };
- =20
- +static struct pernet_operations ip6_route_net_late_ops =3D {
- +	.init =3D ip6_route_net_init_late,
- +	.exit =3D ip6_route_net_exit_late,
- +};
- +
-+ static int __net_init ipv6_inetpeer_init(struct net *net)
-+ {
-+ 	struct inet_peer_base *bp =3D kmalloc(sizeof(*bp), GFP_KERNEL);
-+=20
-+ 	if (!bp)
-+ 		return -ENOMEM;
-+ 	inet_peer_base_init(bp);
-+ 	net->ipv6.peers =3D bp;
-+ 	return 0;
-+ }
-+=20
-+ static void __net_exit ipv6_inetpeer_exit(struct net *net)
-+ {
-+ 	struct inet_peer_base *bp =3D net->ipv6.peers;
-+=20
-+ 	net->ipv6.peers =3D NULL;
-+ 	inetpeer_invalidate_tree(bp);
-+ 	kfree(bp);
-+ }
-+=20
-+ static struct pernet_operations ipv6_inetpeer_ops =3D {
-+ 	.init	=3D	ipv6_inetpeer_init,
-+ 	.exit	=3D	ipv6_inetpeer_exit,
-+ };
-+=20
-  static struct notifier_block ip6_route_dev_notifier =3D {
-  	.notifier_call =3D ip6_route_dev_notify,
-  	.priority =3D 0,
+| static struct zcache_client zcache_host;
+| static struct zcache_client zcache_clients[MAX_CLIENTS];
 
---Signature=_Wed__20_Jun_2012_13_18_54_+1000_msYOeJIq6E/zySxt
-Content-Type: application/pgp-signature
+And all of them are not destroyed.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP4UEeAAoJEECxmPOUX5FE2P4P/jq6etcqtes7J8xS3jsk5732
-BYhfN5HqgvoWRlJ+z2B6xHxrbO0XCnw5sueytgxZxcX+t0YjDMvMKQpCJlg/4Emk
-mKDnh0dlayRRiR9f9DCexhuiTMPSiM1sXqcX7Yrx866GJ60WJKsWCOw1th9QWwB4
-Z5mBUdbe6hGsysO+54e3wn/+TSKA5k2ec7+FyJ9Tqnum3h4G0ec8GzH8lh1ybCCQ
-Ba+fTsT8BhLHLO/Z1vUMoAI1o3FiGDZUV6D+Jb+63b1f57ZxSuCF4A1AdyEYEVvs
-OLGcjP8Nqil9gogfv3cVGG7Fu5eTOaD8J2vrhiahTM2ifCsgdlSkzRNS0EurOFbB
-en2BG+QfS7OddXrG9T1SZy72uwlOdWaVYtoCYDaTik1mlWfmRJnkXhGfG49EkatF
-qAYpbKCNrKk+wPzEtp+xRQukbmqpFs0e4IfRd20ssWl2G586bKxol2BNpFCPnUFe
-R2opsVcO9IjV1Y6atP/ju4wBfjcE9s4xyOaGhwhNKNpLd0tL0PugfC7O0i2cXcCh
-LKgJEagXctGnzNqzZbtR/JqlmAP4d6v+C/rOGZfJYvCX9iq0mSrcq0PoTEuFasHj
-M8PV+2PVXLhSZTuZJQ+i8XWO5s1a7uTlD4C7itwurdYkO1lK6HhgkxaDIGe9xBkG
-spY8uOfE/XsFPqN0lS7z
-=f9tL
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Jun_2012_13_18_54_+1000_msYOeJIq6E/zySxt--
