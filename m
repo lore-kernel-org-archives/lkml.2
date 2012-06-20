@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab2FTW0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 18:26:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39872 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507Ab2FTW0t convert rfc822-to-8bit (ORCPT
+	id S1758274Ab2FTW3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 18:29:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59601 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766Ab2FTW3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 18:26:49 -0400
-Message-ID: <1340231192.21745.154.camel@twins>
-Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
- and consolidation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Date: Thu, 21 Jun 2012 00:26:32 +0200
-In-Reply-To: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
-References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 20 Jun 2012 18:29:13 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Bret Towe <magnade@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ocfs2-devel@oss.oracle.com, mfasheh@suse.com, jlbec@evilplan.org,
+        Sunil Mushran <sunil.mushran@oracle.com>
+Subject: Re: BUG in ofcs2_change_file_space
+References: <CALjC5haTNDMOTDPL1m1uBTc2a-Qb8cvR44SCaVDFMzGc+Gw3+w@mail.gmail.com>
+	<CALjC5hac=Wh_8J0qn0MCo6qXRtjQf1R-8jn79hMma0Qghg7jSQ@mail.gmail.com>
+	<CALjC5hZBizcq0DwP=yX0z=_G3MibD2Ztjid2U86ez5YyZZRkYQ@mail.gmail.com>
+	<87bokddfr9.fsf@canonical.com>
+	<20120620145659.a5fff5f6.akpm@linux-foundation.org>
+Date: Wed, 20 Jun 2012 23:29:10 +0100
+In-Reply-To: <20120620145659.a5fff5f6.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Wed, 20 Jun 2012 14:56:59 -0700")
+Message-ID: <87pq8tk47d.fsf@canonical.com>
+User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-19 at 15:43 +0200, Frederic Weisbecker wrote:
-> 
-> I wish we could do more vtime cputime accounting consolidation
-> but archs do the things pretty differently although I bet the
-> behaviour could be more unified.
-> 
-Yes.. so s390,ia64 use thread_info, ppc uses their paca (arch private
-precursor to per-cpu data).
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-So I understand why s390,ia64 want the sched hook, but I don't see why
-ppc would need it, their account_process_tick() can fold whatever they
-need on the tick.
+> On Wed, 20 Jun 2012 19:01:30 +0100
+> Luis Henriques <luis.henriques@canonical.com> wrote:
+>
+>> >> a patch has been available for this for a while now
+>> >> found here: http://oss.oracle.com/pipermail/ocfs2-devel/2012-January/008464.html
+>> >> but it still has not hit mainline
+>> >> is there any way we can get this included?
+>> 
+>> I believe something like this would be more appropriated, as a NULL as the
+>> 'file' parameter seems to be valid in that context:
+>> 
+>> ---
+>>  fs/ocfs2/file.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+>> index 6e39668..84822a4 100644
+>> --- a/fs/ocfs2/file.c
+>> +++ b/fs/ocfs2/file.c
+>> @@ -1950,7 +1950,7 @@ static int __ocfs2_change_file_space(struct file *file, struct inode *inode,
+>>  	if (ret < 0)
+>>  		mlog_errno(ret);
+>>  
+>> -	if (file->f_flags & O_SYNC)
+>> +	if (file && (file->f_flags & O_SYNC))
+>>  		handle->h_sync = 1;
+>>  
+>>  	ocfs2_commit_trans(osb, handle);
+>
+> Sunil, does this look OK to you?  And Bret, can you please test it?
+>
+> Luis, can you please prepare a proper, signed-off, changelogged version
+> of this and I'll grab it, thanks.
+>
 
-So I think reworking s390,ia64 to use per-cpu storage should get rid of
-this switch hook altogether.
+Sure, I'll send it in a minute.
 
+Cheers,
+--
+Luis
 
-Now everybody using VIRT_CPU_ACCOUNTING has the
-syscall/__irq_{enter,exit} hooks and uses 64bit cputime_t.
-
-IRQ_TIME_ACCOUNTING only has the __irq_{enter,exit} hook and uses
-unsigned long cputime_t, it adds cputime_one_jiffy every tick when the
-per-cpu counter is ahead of the cputime.
-
-
-We could merge both and do away with the 64bit cputime thing by keeping
-a (2nd) per-cpu kernel_cpustat which we fill with optional syscall/irq
-hooks and have account_process_tick() first check if any of the
-fine-grained fields overflow and if not, fall back to the regular tick
-accounting (much like an extended irqtime_account_process_tick).
-
-
-This would merge the fine-grain and tick based code-paths and do away
-with the whole cputime_t mess, it would also merge the VIRT and IRQ
-paths and make Frederic's optional syscall accounting trivial.
-
-Or am I missing something obvious here? -- its late after all.
-
-I'll try and write some code tomorrow.
+>
+>
+> I'm not seeing any OCFS2 activity in mainline from Joel and Mark in six
+> months, so I'm getting those i-have-a-new-subsystem-to-maintain
+> feelings.
+>
+> If anyone else has any urgent OCFS2 patches then please resend them, cc
+> myself and cc linux-kernel.
