@@ -1,194 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab2FTF4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 01:56:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61853 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab2FTF4a convert rfc822-to-8bit (ORCPT
+	id S1753688Ab2FTF5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 01:57:46 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:5200 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752104Ab2FTF5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 01:56:30 -0400
+	Wed, 20 Jun 2012 01:57:44 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275dhz2dh2a8h668h839hd24he5bhf0ah)
+From: Dong Aisheng <b29396@freescale.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <shawn.guo@linaro.org>
+Subject: [PATCH 1/1] of: reform prom_update_property function
+Date: Wed, 20 Jun 2012 13:54:07 +0800
+Message-ID: <1340171647-2815-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <1340149411-2972-2-git-send-email-suresh.b.siddha@intel.com>
-References: <1340067097.3696.6.camel@sbsiddha-desk.sc.intel.com>
-	<1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
-	<1340149411-2972-2-git-send-email-suresh.b.siddha@intel.com>
-Date: Tue, 19 Jun 2012 22:56:29 -0700
-X-Google-Sender-Auth: OV6vP-frM-6DeiLyDWCm_kAUShA
-Message-ID: <CAE9FiQWsx9smPtca-w83g91q8eb5BBJ+wNenjxKNAFFgYO=Abw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86, x2apic: limit the vector reservation to the user
- specified mask
-From: Yinghai Lu <yinghai@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, x86@kernel.org, gorcunov@openvz.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 4:43 PM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
-> For the x2apic cluster mode, vector for an interrupt is currently reserved on
-> all the cpu's that are part of the x2apic cluster. But the interrupts will
-> be routed only to the cluster (derived from the first cpu in the mask) members
-> specified in the mask. So there is no need to reserve the vector in the unused
-> cluster members.
->
-> Modify __assign_irq_vector() to reserve the vectors based on the user
-> specified irq destination mask and the corresponding vector domain specified
-> by the apic driver.
->
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
->  arch/x86/include/asm/apic.h           |   14 +++++++++---
->  arch/x86/kernel/apic/apic_noop.c      |    5 +++-
->  arch/x86/kernel/apic/io_apic.c        |   36 ++++++++++++++++++++++-----------
->  arch/x86/kernel/apic/x2apic_cluster.c |    8 ++++--
->  4 files changed, 43 insertions(+), 20 deletions(-)
->
-> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-> index b37fa12..7746acb 100644
-> --- a/arch/x86/include/asm/apic.h
-> +++ b/arch/x86/include/asm/apic.h
-> @@ -306,7 +306,9 @@ struct apic {
->        unsigned long (*check_apicid_used)(physid_mask_t *map, int apicid);
->        unsigned long (*check_apicid_present)(int apicid);
->
-> -       void (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
-> +       void (*vector_allocation_domain)(const struct cpumask *mask,
-> +                                        struct cpumask *retmask,
-> +                                        const struct cpumask *prevmask);
->        void (*init_apic_ldr)(void);
->
->        void (*ioapic_phys_id_map)(physid_mask_t *phys_map, physid_mask_t *retmap);
-> @@ -615,7 +617,9 @@ default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
->                               unsigned int *apicid);
->
->  static inline void
-> -flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +flat_vector_allocation_domain(const struct cpumask *mask,
-> +                             struct cpumask *retmask,
-> +                             const struct cpumask *prevmask)
->  {
->        /* Careful. Some cpus do not strictly honor the set of cpus
->         * specified in the interrupt destination when using lowest
-> @@ -630,9 +634,11 @@ flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
->  }
->
->  static inline void
-> -default_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +default_vector_allocation_domain(const struct cpumask *mask,
-> +                                struct cpumask *retmask,
-> +                                const struct cpumask *prevmask)
->  {
-> -       cpumask_copy(retmask, cpumask_of(cpu));
-> +       cpumask_copy(retmask, cpumask_of(cpumask_first(retmask)));
->  }
->
->  static inline unsigned long default_check_apicid_used(physid_mask_t *map, int apicid)
-> diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-> index 08c337b..847ece1 100644
-> --- a/arch/x86/kernel/apic/apic_noop.c
-> +++ b/arch/x86/kernel/apic/apic_noop.c
-> @@ -100,8 +100,11 @@ static unsigned long noop_check_apicid_present(int bit)
->        return physid_isset(bit, phys_cpu_present_map);
->  }
->
-> -static void noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +static void noop_vector_allocation_domain(const struct cpumask *mask,
-> +                                         struct cpumask *retmask,
-> +                                         const struct cpumask *prevmask)
->  {
-> +       int cpu = cpumask_first(retmask);
->        if (cpu != 0)
->                pr_warning("APIC: Vector allocated for non-BSP cpu\n");
->        cpumask_copy(retmask, cpumask_of(cpu));
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 7a945f8..0a55eb8 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -1097,6 +1097,22 @@ void unlock_vector_lock(void)
->        raw_spin_unlock(&vector_lock);
->  }
->
-> +/*
-> + * New cpu mask using the vector is a subset of the current in use mask.
-> + * So cleanup the vector allocation for the members that are not used anymore.
-> + */
-> +static inline int
-> +cleanup_unused_subset(struct cpumask *mask, struct irq_cfg *cfg)
-> +{
-> +       if (!cpumask_equal(mask, cfg->domain)) {
-> +               cpumask_andnot(cfg->old_domain, cfg->domain, mask);
-> +               cfg->move_in_progress = 1;
-> +               cpumask_and(cfg->domain, cfg->domain, mask);
-> +       }
-> +       free_cpumask_var(mask);
-> +       return 0;
-> +}
-> +
->  static int
->  __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
->  {
-> @@ -1126,10 +1142,9 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
->        old_vector = cfg->vector;
->        if (old_vector) {
->                cpumask_and(tmp_mask, mask, cpu_online_mask);
-> -               if (cpumask_subset(tmp_mask, cfg->domain)) {
-> -                       free_cpumask_var(tmp_mask);
-> -                       return 0;
-> -               }
-> +               apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
-> +               if (cpumask_subset(tmp_mask, cfg->domain))
-> +                       return cleanup_unused_subset(tmp_mask, cfg);
->        }
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-This whole check could be removed.
+prom_update_property() currently fails if the property doesn't
+actually exist yet which isn't what we want. Change to add-or-update
+instead of update-only, then we can remove a lot duplicated lines.
 
->
->        /* Only try and allocate irqs on cpus that are present */
-> @@ -1137,15 +1152,12 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
->        cpumask_clear(cfg->old_domain);
->        cpu = cpumask_first_and(mask, cpu_online_mask);
->        while (cpu < nr_cpu_ids) {
-> -               int new_cpu;
-> -               int vector, offset;
-> +               int new_cpu, vector, offset;
->
-> -               apic->vector_allocation_domain(cpu, tmp_mask);
-> -
-> -               if (cpumask_subset(tmp_mask, cfg->domain)) {
-> -                       free_cpumask_var(tmp_mask);
-> -                       return 0;
-> -               }
-> +               cpumask_copy(tmp_mask, cpumask_of(cpu));
-> +               apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
-> +               if (cpumask_subset(tmp_mask, cfg->domain))
-> +                       return cleanup_unused_subset(tmp_mask, cfg);
->
->                vector = current_vector;
->                offset = current_offset;
-> diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-> index b5d889b..4d49512 100644
-> --- a/arch/x86/kernel/apic/x2apic_cluster.c
-> +++ b/arch/x86/kernel/apic/x2apic_cluster.c
-> @@ -212,10 +212,12 @@ static int x2apic_cluster_probe(void)
->  /*
->  * Each x2apic cluster is an allocation domain.
->  */
-> -static void cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +static void cluster_vector_allocation_domain(const struct cpumask *mask,
-> +                                            struct cpumask *retmask,
-> +                                            const struct cpumask *prevmask)
->  {
-> -       cpumask_clear(retmask);
-> -       cpumask_copy(retmask, per_cpu(cpus_in_cluster, cpu));
-> +       int cpu = cpumask_first(retmask);
-> +       cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
+Suggested-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+---
+ arch/powerpc/platforms/85xx/p1022_ds.c    |    8 +-------
+ arch/powerpc/platforms/pseries/mobility.c |    8 +-------
+ arch/powerpc/platforms/pseries/reconfig.c |   13 +++----------
+ drivers/of/base.c                         |   15 +++++++++++----
+ fs/proc/proc_devtree.c                    |    5 +++++
+ include/linux/of.h                        |    3 +--
+ 6 files changed, 22 insertions(+), 30 deletions(-)
 
-prevmask is not used. could be removed.
+diff --git a/arch/powerpc/platforms/85xx/p1022_ds.c b/arch/powerpc/platforms/85xx/p1022_ds.c
+index f700c81..d66631c 100644
+--- a/arch/powerpc/platforms/85xx/p1022_ds.c
++++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+@@ -348,13 +348,7 @@ void __init p1022_ds_pic_init(void)
+  */
+ static void __init disable_one_node(struct device_node *np, struct property *new)
+ {
+-	struct property *old;
+-
+-	old = of_find_property(np, new->name, NULL);
+-	if (old)
+-		prom_update_property(np, new, old);
+-	else
+-		prom_add_property(np, new);
++	prom_update_property(np, new);
+ }
+ 
+ /* TRUE if there is a "video=fslfb" command-line parameter. */
+diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
+index 029a562..dd30b12 100644
+--- a/arch/powerpc/platforms/pseries/mobility.c
++++ b/arch/powerpc/platforms/pseries/mobility.c
+@@ -67,7 +67,6 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+ 			      const char *name, u32 vd, char *value)
+ {
+ 	struct property *new_prop = *prop;
+-	struct property *old_prop;
+ 	int more = 0;
+ 
+ 	/* A negative 'vd' value indicates that only part of the new property
+@@ -117,12 +116,7 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+ 	}
+ 
+ 	if (!more) {
+-		old_prop = of_find_property(dn, new_prop->name, NULL);
+-		if (old_prop)
+-			prom_update_property(dn, new_prop, old_prop);
+-		else
+-			prom_add_property(dn, new_prop);
+-
++		prom_update_property(dn, new_prop);
+ 		new_prop = NULL;
+ 	}
+ 
+diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
+index 7b3bf76..4c92f1c 100644
+--- a/arch/powerpc/platforms/pseries/reconfig.c
++++ b/arch/powerpc/platforms/pseries/reconfig.c
+@@ -432,7 +432,7 @@ static int do_update_property(char *buf, size_t bufsize)
+ 	unsigned char *value;
+ 	char *name, *end, *next_prop;
+ 	int rc, length;
+-	struct property *newprop, *oldprop;
++	struct property *newprop;
+ 	buf = parse_node(buf, bufsize, &np);
+ 	end = buf + bufsize;
+ 
+@@ -450,18 +450,11 @@ static int do_update_property(char *buf, size_t bufsize)
+ 	if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
+ 		slb_set_size(*(int *)value);
+ 
+-	oldprop = of_find_property(np, name,NULL);
+-	if (!oldprop) {
+-		if (strlen(name))
+-			return prom_add_property(np, newprop);
+-		return -ENODEV;
+-	}
+-
+ 	upd_value.node = np;
+ 	upd_value.property = newprop;
+ 	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
+ 
+-	rc = prom_update_property(np, newprop, oldprop);
++	rc = prom_update_property(np, newprop);
+ 	if (rc)
+ 		return rc;
+ 
+@@ -486,7 +479,7 @@ static int do_update_property(char *buf, size_t bufsize)
+ 
+ 		rc = pSeries_reconfig_notify(action, value);
+ 		if (rc) {
+-			prom_update_property(np, oldprop, newprop);
++			prom_update_property(np, newprop);
+ 			return rc;
+ 		}
+ 	}
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index d9bfd49..a14f109 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -1051,7 +1051,8 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+ }
+ 
+ /*
+- * prom_update_property - Update a property in a node.
++ * prom_update_property - Update a property in a node, if the property does
++ * not exist, add it.
+  *
+  * Note that we don't actually remove it, since we have given out
+  * who-knows-how-many pointers to the data using get-property.
+@@ -1059,13 +1060,19 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+  * and add the new property to the property list
+  */
+ int prom_update_property(struct device_node *np,
+-			 struct property *newprop,
+-			 struct property *oldprop)
++			 struct property *newprop)
+ {
+-	struct property **next;
++	struct property **next, *oldprop;
+ 	unsigned long flags;
+ 	int found = 0;
+ 
++	if (!newprop->name)
++		return -EINVAL;
++
++	oldprop = of_find_property(np, newprop->name, NULL);
++	if (!oldprop)
++		return prom_add_property(np, newprop);
++
+ 	write_lock_irqsave(&devtree_lock, flags);
+ 	next = &np->properties;
+ 	while (*next) {
+diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+index 927cbd1..df7dd08 100644
+--- a/fs/proc/proc_devtree.c
++++ b/fs/proc/proc_devtree.c
+@@ -101,6 +101,11 @@ void proc_device_tree_update_prop(struct proc_dir_entry *pde,
+ {
+ 	struct proc_dir_entry *ent;
+ 
++	if (!oldprop) {
++		proc_device_tree_add_prop(pde, newprop);
++		return;
++	}
++
+ 	for (ent = pde->subdir; ent != NULL; ent = ent->next)
+ 		if (ent->data == oldprop)
+ 			break;
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 2ec1083..b27c871 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -260,8 +260,7 @@ extern int of_machine_is_compatible(const char *compat);
+ extern int prom_add_property(struct device_node* np, struct property* prop);
+ extern int prom_remove_property(struct device_node *np, struct property *prop);
+ extern int prom_update_property(struct device_node *np,
+-				struct property *newprop,
+-				struct property *oldprop);
++				struct property *newprop);
+ 
+ #if defined(CONFIG_OF_DYNAMIC)
+ /* For updating the device tree at runtime */
+-- 
+1.7.0.4
 
-Other than those two,
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
