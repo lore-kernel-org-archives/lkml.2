@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab2FTO62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:58:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36971 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756603Ab2FTO60 (ORCPT
+	id S1756710Ab2FTPEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 11:04:16 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61404 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab2FTPEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:58:26 -0400
-Date: Wed, 20 Jun 2012 10:58:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mandeep Singh Baines <mandeep.baines@gmail.com>
-cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mandeep Singh Baines <msb@chromium.org>, <linux-pm@vger.kernel.org>,
-        <stable@kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kevin Hilman <khilman@ti.com>, Colin Cross <ccross@android.com>,
-        Sameer Nanda <snanda@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous suspend
- after abort
-In-Reply-To: <1340158627-7586-1-git-send-email-msb@chromium.org>
-Message-ID: <Pine.LNX.4.44L0.1206201046020.1804-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 20 Jun 2012 11:04:15 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Wed, 20 Jun 2012 09:36:29 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: Len Brown <len.brown@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] thermal: Fix potential out-of-bounds memory access
+Date: Wed, 20 Jun 2012 07:36:34 -0700
+Message-Id: <1340202994-12744-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jun 2012, Mandeep Singh Baines wrote:
+temp_crit.name and temp_input.name have a length of 16 bytes. Using
+THERMAL_NAME_LENGTH (20) as length parameter for snprintf() may result
+in out-of-bounds memory accesses. Replace it with sizeof().
 
-> __device_suspend() must always send a completion. Otherwise, parent
-> devices will wait forever.
-> 
-> Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
-> system sleep (v2)", introduced a regression by short-circuiting the
-> complete_all() for certain error cases.
-> 
-> This patch fixes the bug by always signalling a completion.
-> 
-> Addresses http://crosbug.com/31972
-> 
-> Tested by injecting an abort via the following patch:
-> 
-> diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-> index a004db3..e5a6fce 100644
-> --- a/drivers/usb/core/hcd-pci.c
-> +++ b/drivers/usb/core/hcd-pci.c
-> @@ -21,6 +21,7 @@
->  #include <linux/pci.h>
->  #include <linux/usb.h>
->  #include <linux/usb/hcd.h>
-> +#include <linux/string.h>
-> 
->  #include <asm/io.h>
->  #include <asm/irq.h>
-> @@ -477,6 +478,8 @@ static int resume_common(struct device *dev, int event)
-> 
->  static int hcd_pci_suspend(struct device *dev)
->  {
-> +       if (!strcmp("0000:00:1d.3", dev_name(dev)))
-> +               return -EBUSY;
->         return suspend_common(dev, device_may_wakeup(dev));
->  }
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+Coverity #115679
 
-When you include one patch in front of another like this, doesn't it 
-confuse the automatic tools?  You might end up getting both changes 
-include in the final commit.  :-)
+ drivers/thermal/thermal_sys.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
->  drivers/base/power/main.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index e0fb5b0..9cb845e 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->  	dpm_wait_for_children(dev, async);
->  
->  	if (async_error)
-> -		return 0;
-> +		goto Complete;
->  
->  	pm_runtime_get_noresume(dev);
->  	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-> @@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->  	if (pm_wakeup_pending()) {
->  		pm_runtime_put_sync(dev);
->  		async_error = -EBUSY;
-> -		return 0;
-> +		goto Complete;
->  	}
->  
->  	device_lock(dev);
-> @@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->  	}
->  
->  	device_unlock(dev);
-> +
-> + Complete:
->  	complete_all(&dev->power.completion);
->  
->  	if (error) {
-
-Otherwise this looks right to me.
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index 9f2a35c..d9a682e 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -549,7 +549,7 @@ thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+ 	temp->tz = tz;
+ 	hwmon->count++;
+ 
+-	snprintf(temp->temp_input.name, THERMAL_NAME_LENGTH,
++	snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
+ 		 "temp%d_input", hwmon->count);
+ 	temp->temp_input.attr.attr.name = temp->temp_input.name;
+ 	temp->temp_input.attr.attr.mode = 0444;
+@@ -562,7 +562,8 @@ thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+ 	if (tz->ops->get_crit_temp) {
+ 		unsigned long temperature;
+ 		if (!tz->ops->get_crit_temp(tz, &temperature)) {
+-			snprintf(temp->temp_crit.name, THERMAL_NAME_LENGTH,
++			snprintf(temp->temp_crit.name,
++				 sizeof(temp->temp_crit.name),
+ 				"temp%d_crit", hwmon->count);
+ 			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
+ 			temp->temp_crit.attr.attr.mode = 0444;
+-- 
+1.7.9.7
 
