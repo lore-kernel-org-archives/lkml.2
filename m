@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab2FTKsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:48:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34480 "EHLO
+	id S1756475Ab2FTKtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:49:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34490 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab2FTKsa (ORCPT
+	with ESMTP id S1752859Ab2FTKtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:48:30 -0400
-Date: Wed, 20 Jun 2012 03:48:13 -0700
-From: tip-bot for Mike Galbraith <efault@gmx.de>
-Message-ID: <tip-9e7849c1579c93cc3c1926833e23f3d48ddc9bc6@git.kernel.org>
+	Wed, 20 Jun 2012 06:49:21 -0400
+Date: Wed, 20 Jun 2012 03:49:06 -0700
+From: tip-bot for Salman Qazi <sqazi@google.com>
+Message-ID: <tip-9c5da09d266ca9b32eb16cf940f8161d949c2fe5@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        akpm@linux-foundation.org, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, sqazi@google.com, tj@kernel.org,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, efault@gmx.de, tglx@linutronix.de
-In-Reply-To: <1339471112.7352.32.camel@marge.simpson.net>
-References: <1339471112.7352.32.camel@marge.simpson.net>
+        a.p.zijlstra@chello.nl, sqazi@google.com, tj@kernel.org,
+        tglx@linutronix.de
+In-Reply-To: <20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com>
+References: <20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Improve scalability via 'CPU buddies',
-  which withstand random perturbations
-Git-Commit-ID: 9e7849c1579c93cc3c1926833e23f3d48ddc9bc6
+Subject: [tip:perf/core] perf: Use css_tryget()
+  to avoid propping up css refcount
+Git-Commit-ID: 9c5da09d266ca9b32eb16cf940f8161d949c2fe5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,167 +30,107 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:48:19 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:49:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9e7849c1579c93cc3c1926833e23f3d48ddc9bc6
-Gitweb:     http://git.kernel.org/tip/9e7849c1579c93cc3c1926833e23f3d48ddc9bc6
-Author:     Mike Galbraith <efault@gmx.de>
-AuthorDate: Tue, 12 Jun 2012 05:18:32 +0200
+Commit-ID:  9c5da09d266ca9b32eb16cf940f8161d949c2fe5
+Gitweb:     http://git.kernel.org/tip/9c5da09d266ca9b32eb16cf940f8161d949c2fe5
+Author:     Salman Qazi <sqazi@google.com>
+AuthorDate: Thu, 14 Jun 2012 15:31:09 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 18 Jun 2012 11:45:07 +0200
+CommitDate: Mon, 18 Jun 2012 11:45:57 +0200
 
-sched: Improve scalability via 'CPU buddies', which withstand random perturbations
+perf: Use css_tryget() to avoid propping up css refcount
 
-Traversing an entire package is not only expensive, it also leads to tasks
-bouncing all over a partially idle and possible quite large package.  Fix
-that up by assigning a 'buddy' CPU to try to motivate.  Each buddy may try
-to motivate that one other CPU, if it's busy, tough, it may then try its
-SMT sibling, but that's all this optimization is allowed to cost.
+An rmdir pushes css's ref count to zero.  However, if the associated
+directory is open at the time, the dentry ref count is non-zero.  If
+the fd for this directory is then passed into perf_event_open, it
+does a css_get().  This bounces the ref count back up from zero.  This
+is a problem by itself.  But what makes it turn into a crash is the
+fact that we end up doing an extra dput, since we perform a dput
+when css_put sees the ref count go down to zero.
 
-Sibling cache buddies are cross-wired to prevent bouncing.
+css_tryget() does not fall into that trap. So, we use that instead.
 
-4 socket 40 core + SMT Westmere box, single 30 sec tbench runs, higher is better:
+Reproduction test-case for the bug:
 
- clients     1       2       4        8       16       32       64      128
- ..........................................................................
- pre        30      41     118      645     3769     6214    12233    14312
- post      299     603    1211     2418     4697     6847    11606    14557
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ #include <linux/unistd.h>
+ #include <linux/perf_event.h>
+ #include <string.h>
+ #include <errno.h>
+ #include <stdio.h>
 
-A nice increase in performance.
+ #define PERF_FLAG_PID_CGROUP    (1U << 2)
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+ int perf_event_open(struct perf_event_attr *hw_event_uptr,
+                     pid_t pid, int cpu, int group_fd, unsigned long flags) {
+         return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
+                 group_fd, flags);
+ }
+
+ /*
+  * Directly poke at the perf_event bug, since it's proving hard to repro
+  * depending on where in the kernel tree.  what moved?
+  */
+ int main(int argc, char **argv)
+ {
+        int fd;
+        struct perf_event_attr attr;
+        memset(&attr, 0, sizeof(attr));
+        attr.exclude_kernel = 1;
+        attr.size = sizeof(attr);
+        mkdir("/dev/cgroup/perf_event/blah", 0777);
+        fd = open("/dev/cgroup/perf_event/blah", O_RDONLY);
+        perror("open");
+        rmdir("/dev/cgroup/perf_event/blah");
+        sleep(2);
+        perf_event_open(&attr, fd, 0, -1,  PERF_FLAG_PID_CGROUP);
+        perror("perf_event_open");
+        close(fd);
+        return 0;
+ }
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1339471112.7352.32.camel@marge.simpson.net
+Acked-by: Tejun Heo <tj@kernel.org>
+Link: http://lkml.kernel.org/r/20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |   39 ++++++++++++++++++++++++++++++++++++++-
- kernel/sched/fair.c   |   28 +++++++---------------------
- 3 files changed, 46 insertions(+), 22 deletions(-)
+ kernel/events/core.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 293e900..9dced2e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -950,6 +950,7 @@ struct sched_domain {
- 	unsigned int smt_gain;
- 	int flags;			/* See SD_* */
- 	int level;
-+	int idle_buddy;			/* cpu assigned to select_idle_sibling() */
- 
- 	/* Runtime fields. */
- 	unsigned long last_balance;	/* init to jiffies. units in jiffies */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index eee1908..9bb7d28 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5897,6 +5897,11 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
-  * SD_SHARE_PKG_RESOURCE set (Last Level Cache Domain) for this
-  * allows us to avoid some pointer chasing select_idle_sibling().
-  *
-+ * Iterate domains and sched_groups downward, assigning CPUs to be
-+ * select_idle_sibling() hw buddy.  Cross-wiring hw makes bouncing
-+ * due to random perturbation self canceling, ie sw buddies pull
-+ * their counterpart to their CPU's hw counterpart.
-+ *
-  * Also keep a unique ID per domain (we use the first cpu number in
-  * the cpumask of the domain), this allows us to quickly tell if
-  * two cpus are in the same cache domain, see cpus_share_cache().
-@@ -5912,8 +5917,40 @@ static void update_domain_cache(int cpu)
- 	int id = cpu;
- 
- 	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
--	if (sd)
-+	if (sd) {
-+		struct sched_domain *tmp = sd;
-+		struct sched_group *sg, *prev;
-+		bool right;
-+
-+		/*
-+		 * Traverse to first CPU in group, and count hops
-+		 * to cpu from there, switching direction on each
-+		 * hop, never ever pointing the last CPU rightward.
-+		 */
-+		do {
-+			id = cpumask_first(sched_domain_span(tmp));
-+			prev = sg = tmp->groups;
-+			right = 1;
-+
-+			while (cpumask_first(sched_group_cpus(sg)) != id)
-+				sg = sg->next;
-+
-+			while (!cpumask_test_cpu(cpu, sched_group_cpus(sg))) {
-+				prev = sg;
-+				sg = sg->next;
-+				right = !right;
-+			}
-+
-+			/* A CPU went down, never point back to domain start. */
-+			if (right && cpumask_first(sched_group_cpus(sg->next)) == id)
-+				right = false;
-+
-+			sg = right ? sg->next : prev;
-+			tmp->idle_buddy = cpumask_first(sched_group_cpus(sg));
-+		} while ((tmp = tmp->child));
-+
- 		id = cpumask_first(sched_domain_span(sd));
-+	}
- 
- 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
- 	per_cpu(sd_llc_id, cpu) = id;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index a397c00..3704ad3 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2642,8 +2642,6 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	struct sched_domain *sd;
--	struct sched_group *sg;
--	int i;
- 
- 	/*
- 	 * If the task is going to be woken-up on this cpu and if it is
-@@ -2660,29 +2658,17 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 		return prev_cpu;
- 
- 	/*
--	 * Otherwise, iterate the domains and find an elegible idle cpu.
-+	 * Otherwise, check assigned siblings to find an elegible idle cpu.
- 	 */
- 	sd = rcu_dereference(per_cpu(sd_llc, target));
--	for_each_lower_domain(sd) {
--		sg = sd->groups;
--		do {
--			if (!cpumask_intersects(sched_group_cpus(sg),
--						tsk_cpus_allowed(p)))
--				goto next;
--
--			for_each_cpu(i, sched_group_cpus(sg)) {
--				if (!idle_cpu(i))
--					goto next;
--			}
- 
--			target = cpumask_first_and(sched_group_cpus(sg),
--					tsk_cpus_allowed(p));
--			goto done;
--next:
--			sg = sg->next;
--		} while (sg != sd->groups);
-+	for_each_lower_domain(sd) {
-+		if (!cpumask_test_cpu(sd->idle_buddy, tsk_cpus_allowed(p)))
-+			continue;
-+		if (idle_cpu(sd->idle_buddy))
-+			return sd->idle_buddy;
- 	}
--done:
-+
- 	return target;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f85c015..d7d71d6 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -253,9 +253,9 @@ perf_cgroup_match(struct perf_event *event)
+ 	return !event->cgrp || event->cgrp == cpuctx->cgrp;
  }
  
+-static inline void perf_get_cgroup(struct perf_event *event)
++static inline bool perf_tryget_cgroup(struct perf_event *event)
+ {
+-	css_get(&event->cgrp->css);
++	return css_tryget(&event->cgrp->css);
+ }
+ 
+ static inline void perf_put_cgroup(struct perf_event *event)
+@@ -484,7 +484,11 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 	event->cgrp = cgrp;
+ 
+ 	/* must be done before we fput() the file */
+-	perf_get_cgroup(event);
++	if (!perf_tryget_cgroup(event)) {
++		event->cgrp = NULL;
++		ret = -ENOENT;
++		goto out;
++	}
+ 
+ 	/*
+ 	 * all events in a group must monitor
