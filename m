@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab2FTK7D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:59:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34644 "EHLO
+	id S1755953Ab2FTK7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:59:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34654 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab2FTK7A (ORCPT
+	with ESMTP id S1752001Ab2FTK7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:59:00 -0400
-Date: Wed, 20 Jun 2012 03:58:44 -0700
-From: tip-bot for Zheng Yan <zheng.z.yan@intel.com>
-Message-ID: <tip-ac20de6fff445d6deb0c44c25946d198f79f2f00@git.kernel.org>
+	Wed, 20 Jun 2012 06:59:51 -0400
+Date: Wed, 20 Jun 2012 03:59:36 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-90e2b22dee908c13df256140a0d6527e3e8ea3f4@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de,
-        jolsa@redhat.com
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, jolsa@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <1339741902-8449-11-git-send-email-zheng.z.yan@intel.com>
-References: <1339741902-8449-11-git-send-email-zheng.z.yan@intel.com>
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <1339741902-8449-12-git-send-email-zheng.z.yan@intel.com>
+References: <1339741902-8449-12-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/tool: Make the event parser re-entrant
-Git-Commit-ID: ac20de6fff445d6deb0c44c25946d198f79f2f00
+Subject: [tip:perf/core] perf/tool:
+  Add support to reuse event grammar to parse out terms
+Git-Commit-ID: 90e2b22dee908c13df256140a0d6527e3e8ea3f4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,359 +28,194 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:58:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:59:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ac20de6fff445d6deb0c44c25946d198f79f2f00
-Gitweb:     http://git.kernel.org/tip/ac20de6fff445d6deb0c44c25946d198f79f2f00
-Author:     Zheng Yan <zheng.z.yan@intel.com>
-AuthorDate: Fri, 15 Jun 2012 14:31:39 +0800
+Commit-ID:  90e2b22dee908c13df256140a0d6527e3e8ea3f4
+Gitweb:     http://git.kernel.org/tip/90e2b22dee908c13df256140a0d6527e3e8ea3f4
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 15 Jun 2012 14:31:40 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 18 Jun 2012 12:13:24 +0200
+CommitDate: Mon, 18 Jun 2012 12:13:25 +0200
 
-perf/tool: Make the event parser re-entrant
+perf/tool: Add support to reuse event grammar to parse out terms
 
-Make the event parser reentrant by creating separate
-scanner for each parsing. The scanner is passed to the bison
-as and argument to the lexer.
+We want to reuse the event grammar for parsing aliased terms.
+The obvious reason is we dont need to add new code when there's
+already support for this in event grammar.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-[ Cleaned up the patch. ]
+Doing this by adding terms and event start entries into event
+parse grammar. The grammar forks on the begining based on the
+starting token, which is supplied via bison interface into the
+lexer.  The lexer then returns the starting token as the first
+token, thus making the grammar switch accordingly.
+
+Currently 2 starting tokens/grammars are supported:
+
+	PE_START_TERMS, PE_START_EVENTS
+
+The PE_START_TERMS related grammar uses 'event_config' part
+of the grammar for term parsing.
+
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1339741902-8449-11-git-send-email-zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/1339741902-8449-12-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/util/parse-events.c |   35 ++++++++----
- tools/perf/util/parse-events.h |    2 +-
- tools/perf/util/parse-events.l |  116 +++++++++++++++++++++++-----------------
- tools/perf/util/parse-events.y |    9 ++-
- 4 files changed, 98 insertions(+), 64 deletions(-)
+ tools/perf/util/parse-events.c |   28 +++++++++++++++++++++++++---
+ tools/perf/util/parse-events.h |    5 +++++
+ tools/perf/util/parse-events.l |   13 +++++++++++++
+ tools/perf/util/parse-events.y |   12 ++++++++++++
+ 4 files changed, 55 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index c71b29a..ca8665e 100644
+index ca8665e..d002170 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -11,6 +11,7 @@
- #include "cache.h"
+@@ -12,6 +12,7 @@
  #include "header.h"
  #include "debugfs.h"
-+#include "parse-events-bison.h"
+ #include "parse-events-bison.h"
++#define YY_EXTRA_TYPE int
  #include "parse-events-flex.h"
  #include "pmu.h"
  
-@@ -26,7 +27,7 @@ struct event_symbol {
- #ifdef PARSER_DEBUG
- extern int parse_events_debug;
- #endif
--int parse_events_parse(void *data);
-+int parse_events_parse(void *data, void *scanner);
- 
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -787,26 +788,38 @@ int parse_events_modifier(struct list_head *list, char *str)
+@@ -788,13 +789,13 @@ int parse_events_modifier(struct list_head *list, char *str)
  	return 0;
  }
  
--int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
-+static int parse_events__scanner(const char *str, void *data)
+-static int parse_events__scanner(const char *str, void *data)
++static int parse_events__scanner(const char *str, void *data, int start_token)
  {
--	struct parse_events_data__events data = {
--		.list = LIST_HEAD_INIT(data.list),
--		.idx  = evlist->nr_entries,
--	};
  	YY_BUFFER_STATE buffer;
-+	void *scanner;
+ 	void *scanner;
  	int ret;
  
--	buffer = parse_events__scan_string(str);
-+	ret = parse_events_lex_init(&scanner);
-+	if (ret)
-+		return ret;
-+
-+	buffer = parse_events__scan_string(str, scanner);
+-	ret = parse_events_lex_init(&scanner);
++	ret = parse_events_lex_init_extra(start_token, &scanner);
+ 	if (ret)
+ 		return ret;
  
- #ifdef PARSER_DEBUG
- 	parse_events_debug = 1;
- #endif
--	ret = parse_events_parse(&data);
-+	ret = parse_events_parse(data, scanner);
-+
-+	parse_events__flush_buffer(buffer, scanner);
-+	parse_events__delete_buffer(buffer, scanner);
-+	parse_events_lex_destroy(scanner);
-+	return ret;
-+}
+@@ -811,6 +812,27 @@ static int parse_events__scanner(const char *str, void *data)
+ 	return ret;
+ }
  
--	parse_events__flush_buffer(buffer);
--	parse_events__delete_buffer(buffer);
--	parse_events_lex_destroy();
-+int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
++/*
++ * parse event config string, return a list of event terms.
++ */
++int parse_events_terms(struct list_head *terms, const char *str)
 +{
-+	struct parse_events_data__events data = {
-+		.list = LIST_HEAD_INIT(data.list),
-+		.idx  = evlist->nr_entries,
++	struct parse_events_data__terms data = {
++		.terms = NULL,
 +	};
 +	int ret;
++
++	ret = parse_events__scanner(str, &data, PE_START_TERMS);
++	if (!ret) {
++		list_splice(data.terms, terms);
++		free(data.terms);
++		return 0;
++	}
++
++	parse_events__free_terms(data.terms);
++	return ret;
++}
++
+ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
+ {
+ 	struct parse_events_data__events data = {
+@@ -819,7 +841,7 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
+ 	};
+ 	int ret;
  
-+	ret = parse_events__scanner(str, &data);
+-	ret = parse_events__scanner(str, &data);
++	ret = parse_events__scanner(str, &data, PE_START_EVENTS);
  	if (!ret) {
  		int entries = data.idx - evlist->nr_entries;
  		perf_evlist__splice_list_tail(evlist, &data.list, entries);
 diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index dc3c83a..fa2b19b 100644
+index fa2b19b..9896eda 100644
 --- a/tools/perf/util/parse-events.h
 +++ b/tools/perf/util/parse-events.h
-@@ -88,7 +88,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *pmu , struct list_head *head_config);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
--void parse_events_error(void *data, char const *msg);
-+void parse_events_error(void *data, void *scanner, char const *msg);
- int parse_events__test(void);
+@@ -33,6 +33,7 @@ extern int parse_events_option(const struct option *opt, const char *str,
+ 			       int unset);
+ extern int parse_events(struct perf_evlist *evlist, const char *str,
+ 			int unset);
++extern int parse_events_terms(struct list_head *terms, const char *str);
+ extern int parse_filter(const struct option *opt, const char *str, int unset);
  
- void print_events(const char *event_glob);
+ #define EVENTS_HELP_MAX (128*1024)
+@@ -68,6 +69,10 @@ struct parse_events_data__events {
+ 	int idx;
+ };
+ 
++struct parse_events_data__terms {
++	struct list_head *terms;
++};
++
+ int parse_events__is_hardcoded_term(struct parse_events__term *term);
+ int parse_events__term_num(struct parse_events__term **_term,
+ 			   int type_term, char *config, long num);
 diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 618a8e7..329794e 100644
+index 329794e..488362e 100644
 --- a/tools/perf/util/parse-events.l
 +++ b/tools/perf/util/parse-events.l
-@@ -1,4 +1,6 @@
- 
-+%option reentrant
-+%option bison-bridge
- %option prefix="parse_events_"
- %option stack
- 
-@@ -8,7 +10,10 @@
- #include "parse-events-bison.h"
- #include "parse-events.h"
- 
--static int __value(char *str, int base, int token)
-+char *parse_events_get_text(yyscan_t yyscanner);
-+YYSTYPE *parse_events_get_lval(yyscan_t yyscanner);
-+
-+static int __value(YYSTYPE *yylval, char *str, int base, int token)
- {
- 	long num;
- 
-@@ -17,35 +22,48 @@ static int __value(char *str, int base, int token)
- 	if (errno)
- 		return PE_ERROR;
- 
--	parse_events_lval.num = num;
-+	yylval->num = num;
- 	return token;
- }
- 
--static int value(int base)
-+static int value(yyscan_t scanner, int base)
- {
--	return __value(parse_events_text, base, PE_VALUE);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
-+
-+	return __value(yylval, text, base, PE_VALUE);
- }
- 
--static int raw(void)
-+static int raw(yyscan_t scanner)
- {
--	return __value(parse_events_text + 1, 16, PE_RAW);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
-+
-+	return __value(yylval, text + 1, 16, PE_RAW);
- }
- 
--static int str(int token)
-+static int str(yyscan_t scanner, int token)
- {
--	parse_events_lval.str = strdup(parse_events_text);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
-+
-+	yylval->str = strdup(text);
- 	return token;
- }
- 
--static int sym(int type, int config)
-+static int sym(yyscan_t scanner, int type, int config)
- {
--	parse_events_lval.num = (type << 16) + config;
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+
-+	yylval->num = (type << 16) + config;
- 	return PE_VALUE_SYM;
- }
- 
--static int term(int type)
-+static int term(yyscan_t scanner, int type)
- {
--	parse_events_lval.num = type;
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+
-+	yylval->num = type;
- 	return PE_TERM;
- }
- 
-@@ -61,25 +79,25 @@ modifier_event	[ukhpGH]{1,8}
+@@ -79,6 +79,19 @@ modifier_event	[ukhpGH]{1,8}
  modifier_bp	[rwx]
  
  %%
--cpu-cycles|cycles				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
--stalled-cycles-frontend|idle-cycles-frontend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
--stalled-cycles-backend|idle-cycles-backend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
--instructions					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
--cache-references				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
--cache-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
--branch-instructions|branches			{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
--branch-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
--bus-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
--ref-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
--cpu-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
--task-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
--page-faults|faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
--minor-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
--major-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
--context-switches|cs				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
--cpu-migrations|migrations			{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
--alignment-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
--emulation-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
-+cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
-+stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
-+stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-+instructions					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
-+cache-references				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
-+cache-misses					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
-+branch-instructions|branches			{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
-+branch-misses					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
-+bus-cycles					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
-+ref-cycles					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
-+cpu-clock					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
-+task-clock					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
-+page-faults|faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
-+minor-faults					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
-+major-faults					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
-+context-switches|cs				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
-+cpu-migrations|migrations			{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
-+alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
-+emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
- 
- L1-dcache|l1-d|l1d|L1-data		|
- L1-icache|l1-i|l1i|L1-instruction	|
-@@ -87,14 +105,14 @@ LLC|L2					|
- dTLB|d-tlb|Data-TLB			|
- iTLB|i-tlb|Instruction-TLB		|
- branch|branches|bpu|btb|bpc		|
--node					{ return str(PE_NAME_CACHE_TYPE); }
-+node					{ return str(yyscanner, PE_NAME_CACHE_TYPE); }
- 
- load|loads|read				|
- store|stores|write			|
- prefetch|prefetches			|
- speculative-read|speculative-load	|
- refs|Reference|ops|access		|
--misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
-+misses|miss				{ return str(yyscanner, PE_NAME_CACHE_OP_RESULT); }
- 
- 	/*
- 	 * These are event config hardcoded term names to be specified
-@@ -102,20 +120,20 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
- 	 * so we can put them here directly. In case the we have a conflict
- 	 * in future, this needs to go into '//' condition block.
- 	 */
--config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
--config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
--config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
--name			{ return term(PARSE_EVENTS__TERM_TYPE_NAME); }
--period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
--branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
-+config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
-+config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
-+config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
-+period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
-+branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- 
- mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
--r{num_raw_hex}		{ return raw(); }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+r{num_raw_hex}		{ return raw(yyscanner); }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
- 
--{modifier_event}	{ return str(PE_MODIFIER_EVENT); }
--{name}			{ return str(PE_NAME); }
-+{modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
-+{name}			{ return str(yyscanner, PE_NAME); }
- "/"			{ return '/'; }
- -			{ return '-'; }
- ,			{ return ','; }
-@@ -123,17 +141,17 @@ r{num_raw_hex}		{ return raw(); }
- =			{ return '='; }
- 
- <mem>{
--{modifier_bp}		{ return str(PE_MODIFIER_BP); }
-+{modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
- :			{ return ':'; }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
- 	/*
- 	 * We need to separate 'mem:' scanner part, in order to get specific
- 	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
- 	 * and we'd need to parse it manually. During the escape from <mem>
- 	 * state we need to put the escaping char back, so we dont miss it.
- 	 */
--.			{ unput(*parse_events_text); BEGIN(INITIAL); }
-+.			{ unput(*yytext); BEGIN(INITIAL); }
- 	/*
- 	 * We destroy the scanner after reaching EOF,
- 	 * but anyway just to be sure get back to INIT state.
-@@ -143,7 +161,7 @@ r{num_raw_hex}		{ return raw(); }
- 
- %%
- 
--int parse_events_wrap(void)
-+int parse_events_wrap(void *scanner __used)
- {
- 	return 1;
- }
++
++%{
++	{
++		int start_token;
++
++		start_token = (int) parse_events_get_extra(yyscanner);
++		if (start_token) {
++			parse_events_set_extra(NULL, yyscanner);
++			return start_token;
++		}
++         }
++%}
++
+ cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
+ stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
+ stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
 diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index e533bf7..2a93d5c 100644
+index 2a93d5c..9525c45 100644
 --- a/tools/perf/util/parse-events.y
 +++ b/tools/perf/util/parse-events.y
-@@ -1,6 +1,8 @@
--
-+%pure-parser
- %name-prefix "parse_events_"
- %parse-param {void *_data}
-+%parse-param {void *scanner}
-+%lex-param {void* scanner}
+@@ -25,6 +25,7 @@ do { \
  
- %{
+ %}
  
-@@ -11,8 +13,9 @@
- #include "types.h"
- #include "util.h"
- #include "parse-events.h"
-+#include "parse-events-bison.h"
- 
--extern int parse_events_lex (void);
-+extern int parse_events_lex (YYSTYPE* lvalp, void* scanner);
- 
- #define ABORT_ON(val) \
- do { \
-@@ -286,7 +289,7 @@ sep_slash_dc: '/' | ':' |
- 
++%token PE_START_EVENTS PE_START_TERMS
+ %token PE_VALUE PE_VALUE_SYM PE_RAW PE_TERM
+ %token PE_NAME
+ %token PE_MODIFIER_EVENT PE_MODIFIER_BP
+@@ -60,6 +61,11 @@ do { \
+ }
  %%
  
--void parse_events_error(void *data __used,
-+void parse_events_error(void *data __used, void *scanner __used,
- 			char const *msg __used)
- {
++start:
++PE_START_EVENTS events
++|
++PE_START_TERMS  terms
++
+ events:
+ events ',' event | event
+ 
+@@ -209,6 +215,12 @@ PE_RAW
+ 	$$ = list;
  }
+ 
++terms: event_config
++{
++	struct parse_events_data__terms *data = _data;
++	data->terms = $1;
++}
++
+ event_config:
+ event_config ',' event_term
+ {
