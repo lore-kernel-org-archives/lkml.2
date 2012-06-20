@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab2FTNhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:37:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49564 "EHLO mx2.suse.de"
+	id S1756051Ab2FTNnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:43:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23615 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab2FTNhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 09:37:01 -0400
-Date: Wed, 20 Jun 2012 14:36:56 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: Re: [PATCH 08/17] net: Do not coalesce skbs belonging to PFMEMALLOC
- sockets
-Message-ID: <20120620133656.GH4011@suse.de>
-References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
- <1340192652-31658-9-git-send-email-mgorman@suse.de>
- <1340193892.4604.865.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1340193892.4604.865.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751799Ab2FTNne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 09:43:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114207580"
+Subject: Re: [PATCH v2 1/3] dmaengine: Add wrapper for device_tx_status
+ callback
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4FE1BE79.5080903@metafoo.de>
+References: <1339438302-12417-1-git-send-email-lars@metafoo.de>
+	 <1340189662.1927.1648.camel@vkoul-udesk3>  <4FE1BE79.5080903@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Jun 2012 19:05:46 +0530
+Message-ID: <1340199346.1927.1655.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 02:04:52PM +0200, Eric Dumazet wrote:
-> On Wed, 2012-06-20 at 12:44 +0100, Mel Gorman wrote:
-> > Commit [bad43ca8: net: introduce skb_try_coalesce()] introduced an
-> > optimisation to coalesce skbs to reduce memory usage and cache line
-> > misses. In the case where the socket is used for swapping this can result
-> > in a warning like the following.
+On Wed, 2012-06-20 at 14:13 +0200, Lars-Peter Clausen wrote:
+> On 06/20/2012 12:54 PM, Vinod Koul wrote:
+> > On Mon, 2012-06-11 at 20:11 +0200, Lars-Peter Clausen wrote:
+> >> This patch adds a small inline wrapper for the devivce_tx_status callback of a
+> >> dma device. This makes the source code of users of this function a bit more
+> >> compact and a bit more legible.
+> > Applied, thanks
 > > 
-> > [  110.476565] nbd0: page allocation failure: order:0, mode:0x20
-> > [  110.476568] Pid: 2714, comm: nbd0 Not tainted 3.5.0-rc2-swapnbd-v12r2-slab #3
-> > [  110.476569] Call Trace:
-> > [  110.476573]  [<ffffffff811042d3>] warn_alloc_failed+0xf3/0x160
-> > [  110.476578]  [<ffffffff81107c92>] __alloc_pages_nodemask+0x6e2/0x930
-> >
-> > <SNIP
-> >  
+> > rest of the series should go thru ASoC tree.
+> > 
 > 
+> Thanks.
 > 
-> This makes absolutely no sense to me.
+> There is a compile time dependency between the patches, so this patch should
+> go through the ASoC tree as well, or we'll have to wait another release
+> before the ASoC patches can be applied.
 > 
-> This patch changes input path, while your stack trace is about output
-> path and a packet being fragmented.
-> 
-
-The intention was to avoid any coalescing in the input path due to avoid
-packets that "were held back due to TCP_CORK or attempt at coalescing
-tiny packet". I recognise that it is clumsy and will take the approach
-instead of having __tcp_push_pending_frames() use sk_gfp_atomic() in the
-output path.
-
-Thanks.
+Yes and rest of the two patches depend on components in asoc-next so
+they don't apply for me as well.
+Mark, it would make sense to take all three to your tree. I will retain
+this in my next for others to use.
+So, 
+Acked-by Vinod Koul <vinod.koul@linux.intel.com>
 
 -- 
-Mel Gorman
-SUSE Labs
+~Vinod
+
