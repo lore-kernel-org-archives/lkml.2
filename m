@@ -1,92 +1,665 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab2FTGLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:11:52 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:35989 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab2FTGLu (ORCPT
+	id S1753849Ab2FTGL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:11:58 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46696 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab2FTGLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:11:50 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6747"; a="200371266"
-X-IronPort-AV: E=Sophos;i="4.77,440,1336374000"; 
-   d="scan'208";a="331053782"
-Date: Wed, 20 Jun 2012 11:43:05 +0530
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-To: Michael Leun <lkml20120218@newton.leun.net>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>,
-        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
-Message-ID: <20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
-References: <20120619085137.337838c0@xenia.leun.net>
- <CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
- <20120620003315.2eaf6460@xenia.leun.net>
+	Wed, 20 Jun 2012 02:11:54 -0400
+X-AuditID: 9c930197-b7b87ae000000e4d-89-4fe169a7e44e
+Message-ID: <4FE169B1.7020600@kernel.org>
+Date: Wed, 20 Jun 2012 15:12:01 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120620003315.2eaf6460@xenia.leun.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [172.30.48.1]
+To: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Accounting problem of MIGRATE_ISOLATED freed page
+Content-Type: multipart/mixed;
+ boundary="------------000707090707070002060305"
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 12:33:15AM +0200, Michael Leun wrote:
-> On Tue, 19 Jun 2012 15:11:38 +0530
-> Mohammed Shafi <shafi.wireless@gmail.com> wrote:
-> 
-> > Hi,
-> > 
-> > On Tue, Jun 19, 2012 at 12:21 PM, Michael Leun
-> > <lkml20120218@newton.leun.net> wrote:
-> > > Hi,
-> > >
-> > > ne-wlan1@elektra:/home/ml4> ping 192.168.2.1
-> > > PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
-> > > 64 bytes from 192.168.2.1: icmp_seq=1 ttl=64 time=2010 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=2 ttl=64 time=1011 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=3 ttl=64 time=11.5 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=4 ttl=64 time=1.12 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=5 ttl=64 time=1002 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=6 ttl=64 time=3.83 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=7 ttl=64 time=1003 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=8 ttl=64 time=4.10 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=9 ttl=64 time=1003 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=10 ttl=64 time=3.95 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=11 ttl=64 time=1003 ms
-> > > 64 bytes from 192.168.2.1: icmp_seq=12 ttl=64 time=3.78 ms
-> > >
-> > >
-> > > Please note the additional delay of ~1000ms every 2nd packet. This
-> > > is Kernel 3.4.3, have seen it in 3.4.2 also. Does NOT happen in
-> > > 3.3.1.
-> > >
-> > > Is this Issue already known? If so, I can save the work bisecting...
-> > 
-> > looks like some one reported this bug in kernel bugzilla. would be
-> > saving us lot of time
-> > if you can bisect it!
-> > 
-> 
-> 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 is the first bad commit
-> commit 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45
-> Author: Johannes Berg <johannes.berg@intel.com>
-> Date:   Thu Mar 8 15:02:06 2012 +0100
-> 
->     mac80211: remove spurious BSSID change flag
-> 
->     The BSSID has been set a lot earlier already and
->     didn't change again in ieee80211_set_associated().
-> 
->     Signed-off-by: Johannes Berg <johannes.berg@intel.com>
->     Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> 
-> :040000 040000 67a19a39e4b04c16921a3758ddd2362e02e81dd3 4a7cbd327b59345b83fa613f893770fbf44220bb M      net
-> 
-> Reverting 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 from 3.4.3 fixes the issue.
-> 
-Michael,
+This is a multi-part message in MIME format.
+--------------000707090707070002060305
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Thanks for the analysis. Can you please try with the attached patch without
-reverting mac80211 change?
 
--Rajkumar
+Hi Aaditya,
+
+I want to discuss this problem on another thread.
+
+On 06/19/2012 10:18 PM, Aaditya Kumar wrote:
+> On Mon, Jun 18, 2012 at 6:13 AM, Minchan Kim <minchan@kernel.org> wrote:
+>> On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
+>>
+>>> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
+>>>
+>>>>>
+>>>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
+>>>>> if node has multiple zones. Hm ok, I realized my descriptions was
+>>>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
+>>>>> pgdat_balanced()
+>>>>> every priority. Most easy case is, movable zone has a lot of free pages and
+>>>>> normal zone has no reclaimable page.
+>>>>>
+>>>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
+>>>>> sleep only if every zones have much free pages than high water mark
+>>>>> _and_ 25% of present pages in node are free.
+>>>>>
+>>>>
+>>>>
+>>>> Sorry. I can't understand your point.
+>>>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
+>>>> It seems I am missing your point.
+>>>> Please anybody correct me.
+>>>
+>>> Since currently direct reclaim is given up based on
+>>> zone->all_unreclaimable flag,
+>>> so for e.g in one of the scenarios:
+>>>
+>>> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
+>>> hot-remove the all the pages of the MOVABLE zone.
+>>>
+>>> While migrating pages during memory hot-unplugging, the allocation function
+>>> (for new page to which the page in MOVABLE zone would be moved)  can end up
+>>> looping in direct reclaim path for ever.
+>>>
+>>> This is so because when most of the pages in the MOVABLE zone have
+>>> been migrated,
+>>> the zone now contains lots of free memory (basically above low watermark)
+>>> BUT all are in MIGRATE_ISOLATE list of the buddy list.
+>>>
+>>> So kswapd() would not balance this zone as free pages are above low watermark
+>>> (but all are in isolate list). So zone->all_unreclaimable flag would
+>>> never be set for this zone
+>>> and allocation function would end up looping forever. (assuming the
+>>> zone NORMAL is
+>>> left with no reclaimable memory)
+>>>
+>>
+>>
+>> Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
+>> But I don't see it's a problem of kswapd.
+> 
+> Hi Kim,
+
+I like called Minchan rather than Kim
+Never mind. :)
+
+> 
+> Yes I agree it is not a problem of kswapd.
+
+Yeb.
+
+> 
+>> a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
+>> but we can't allocate it. :(
+>> It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
+>> Kswapd is just one of them confused.
+>> As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too.
+>>
+>> This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
+> 
+> 
+> I assume that by the inconsistency you mention above, you mean
+> temporary inconsistency.
+> 
+> Sorry, but IMHO as for memory hot plug the main issue with this patch
+> is that the inconsistency you mentioned above would NOT be a temporary
+> inconsistency.
+> 
+> Every time say 'x' number of page frames are off lined, they will
+> introduce a difference of 'x' pages between
+> NR_FREE_PAGES and SumOf[free_area[order].nr_free].
+> (So for e.g. if we do a frequent offline/online it will make
+> NR_FREE_PAGES  negative)
+> 
+> This is so because, unset_migratetype_isolate() is called from
+> offlining  code (to set the migrate type of off lined pages again back
+> to MIGRATE_MOVABLE)
+> after the pages have been off lined and removed from the buddy list.
+> Since the pages for which unset_migratetype_isolate() is called are
+> not buddy pages so move_freepages_block() does not move any page, and
+> thus introducing a permanent inconsistency.
+
+Good point. Negative NR_FREE_PAGES is caused by double counting by my patch and __offline_isolated_pages.
+I think at first MIGRATE_ISOLATE type freed page shouldn't account as free page.
+
+> 
+>> and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
+>> free_area[order].nr_free exactly.
+>>
+>> Any thought?
+> 
+> As for fixing move_freepages_block(), At least for memory hot plug,
+> the pages stay in MIGRATE_ISOLATE list only for duration
+> offline_pages() function,
+> I mean only temporarily. Since fixing move_freepages_block() for will
+> introduce some overhead, So I am not very sure whether that overhead
+> is justified
+> for a temporary condition. What do you think?
+
+Yes. I don't like hurt fast path, either.
+How about this? (Passed just compile test :(  )
+The patch's goal is to NOT increase nr_free and NR_FREE_PAGES about freed page into MIGRATE_ISOLATED.
+
+This patch hurts high order page free path but I think it's not critical because higher order allocation
+is rare than order-0 allocation and we already have done same thing on free_hot_cold_page on order-0 free path
+which is more hot.
+
+Maybe below patch is completed malformed. I can't inline the code at the office. Sorry.
+Instead, I will attach the patch.
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4403009..d2a515d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -676,6 +676,24 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+        spin_unlock(&zone->lock);
+ }
+ 
++/*
++ * This function is almost same with free_one_page except that it
++ * doesn't increase NR_FREE_PAGES and free_area[order].nr_free.
++ * Because page allocator can't allocate MIGRATE_ISOLATE type page.
++ *
++ * Caller should hold zone->lock.
++ */
++static void free_one_isolated_page(struct zone *zone, struct page *page,
++                               int order)
++{
++       zone->all_unreclaimable = 0;
++       zone->pages_scanned = 0;
++
++       __free_one_page(page, zone, order, MIGRATE_ISOLATE);
++       /* rollback nr_free increased by __free_one_page */
++       zone->free_area[order].nr_free--;
++}
++
+ static void free_one_page(struct zone *zone, struct page *page, int order,
+                                int migratetype)
+ {
+@@ -683,6 +701,13 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+        zone->all_unreclaimable = 0;
+        zone->pages_scanned = 0;
+ 
++       /*
++        * Freed MIGRATE_ISOLATE page should be free_one_isolated_page path
++        * because page allocator don't want to increase NR_FREE_PAGES and
++        * free_area[order].nr_free.
++        */
++       VM_BUG_ON(migratetype == MIGRATE_ISOLATE);
++
+        __free_one_page(page, zone, order, migratetype);
+        __mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+        spin_unlock(&zone->lock);
+@@ -718,6 +743,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ {
+        unsigned long flags;
+        int wasMlocked = __TestClearPageMlocked(page);
++       int migratetype;
+ 
+        if (!free_pages_prepare(page, order))
+                return;
+@@ -726,8 +752,21 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+        if (unlikely(wasMlocked))
+                free_page_mlock(page);
+        __count_vm_events(PGFREE, 1 << order);
+-       free_one_page(page_zone(page), page, order,
+-                                       get_pageblock_migratetype(page));
++       migratetype = get_pageblock_migratetype(page);
++       /*
++        * High order page alloc/free is rare compared to
++        * order-0. So this condition check should be not
++        * critical about performance.
++        */
++       if (unlikely(migratetype == MIGRATE_ISOLATE)) {
++               struct zone *zone = page_zone(page);
++               spin_lock(&zone->lock);
++               free_one_isolated_page(zone, page, order);
++               spin_unlock(&zone->lock);
++       }
++       else {
++               free_one_page(page_zone(page), page, order, migratetype);
++       }
+        local_irq_restore(flags);
+ }
+ 
+@@ -906,6 +945,55 @@ static int fallbacks[MIGRATE_TYPES][4] = {
+        [MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
+ };
+ 
++static int hotplug_move_freepages(struct zone *zone,
++                         struct page *start_page, struct page *end_page,
++                         int from_migratetype, int to_migratetype)
++{
++       struct page *page;
++       unsigned long order;
++       int pages_moved = 0;
++
++#ifndef CONFIG_HOLES_IN_ZONE
++       /*
++        * page_zone is not safe to call in this context when
++        * CONFIG_HOLES_IN_ZONE is set. This bug check is probably redundant
++        * anyway as we check zone boundaries in move_freepages_block().
++        * Remove at a later date when no bug reports exist related to
++        * grouping pages by mobility
++        */
++       BUG_ON(page_zone(start_page) != page_zone(end_page));
++#endif
++
++       BUG_ON(from_migratetype == to_migratetype);
++
++       for (page = start_page; page <= end_page;) {
++               /* Make sure we are not inadvertently changing nodes */
++               VM_BUG_ON(page_to_nid(page) != zone_to_nid(zone));
++
++               if (!pfn_valid_within(page_to_pfn(page))) {
++                       page++;
++                       continue;
++               }
++
++               if (!PageBuddy(page)) {
++                       page++;
++                       continue;
++               }
++
++               order = page_order(page);
++               list_move(&page->lru,
++                         &zone->free_area[order].free_list[to_migratetype]);
++               if (to_migratetype == MIGRATE_ISOLATE)
++                       zone->free_area[order].nr_free--;
++               else if (from_migratetype == MIGRATE_ISOLATE)
++                       zone->free_area[order].nr_free++;
++               page += 1 << order;
++               pages_moved += 1 << order;
++       }
++
++       return pages_moved;
++}
++
+ /*
+  * Move the free pages in a range to the free lists of the requested type.
+  * Note that start_page and end_pages are not aligned on a pageblock
+@@ -954,6 +1042,32 @@ static int move_freepages(struct zone *zone,
+        return pages_moved;
+ }
+ 
++/*
++ * It's almost same with move_freepages_block except [from, to] migratetype.
++ * We need it for accounting zone->free_area[order].nr_free exactly.
++ */
++static int hotplug_move_freepages_block(struct zone *zone, struct page *page,
++                               int from_migratetype, int to_migratetype)
++{
++       unsigned long start_pfn, end_pfn;
++       struct page *start_page, *end_page;
++
++       start_pfn = page_to_pfn(page);
++       start_pfn = start_pfn & ~(pageblock_nr_pages-1);
++       start_page = pfn_to_page(start_pfn);
++       end_page = start_page + pageblock_nr_pages - 1;
++       end_pfn = start_pfn + pageblock_nr_pages - 1;
++
++       /* Do not cross zone boundaries */
++       if (start_pfn < zone->zone_start_pfn)
++               start_page = page;
++       if (end_pfn >= zone->zone_start_pfn + zone->spanned_pages)
++               return 0;
++
++       return hotplug_move_freepages(zone, start_page, end_page,
++                       from_migratetype, to_migratetype);
++}
++
+ static int move_freepages_block(struct zone *zone, struct page *page,
+                                int migratetype)
+ {
+@@ -1311,7 +1425,9 @@ void free_hot_cold_page(struct page *page, int cold)
+         */
+        if (migratetype >= MIGRATE_PCPTYPES) {
+                if (unlikely(migratetype == MIGRATE_ISOLATE)) {
+-                       free_one_page(zone, page, 0, migratetype);
++                       spin_lock(&zone->lock);
++                       free_one_isolated_page(zone, page, 0);
++                       spin_unlock(&zone->lock);
+                        goto out;
+                }
+                migratetype = MIGRATE_MOVABLE;
+@@ -1388,6 +1504,7 @@ int split_free_page(struct page *page)
+        unsigned int order;
+        unsigned long watermark;
+        struct zone *zone;
++       int migratetype;
+ 
+        BUG_ON(!PageBuddy(page));
+ 
+@@ -1400,10 +1517,17 @@ int split_free_page(struct page *page)
+                return 0;
+ 
+        /* Remove page from free list */
++       migratetype = get_pageblock_migratetype(page);
+        list_del(&page->lru);
+-       zone->free_area[order].nr_free--;
++       /*
++        * Page allocator didn't increase nr_free and NR_FREE_PAGES on pages
++        * which are in free_area[order].free_list[MIGRATE_ISOLATE] pages.
++        */
++       if (migratetype != MIGRATE_ISOLATE) {
++               zone->free_area[order].nr_free--;
++               __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
++       }
+        rmv_page_order(page);
+-       __mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+ 
+        /* Split into individual pages */
+        set_page_refcounted(page);
+@@ -5593,8 +5717,11 @@ int set_migratetype_isolate(struct page *page)
+ 
+ out:
+        if (!ret) {
++               int pages_moved;
+                set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+-               move_freepages_block(zone, page, MIGRATE_ISOLATE);
++               pages_moved = hotplug_move_freepages_block(zone, page,
++                       MIGRATE_MOVABLE, MIGRATE_ISOLATE);
++               __mod_zone_page_state(zone, NR_FREE_PAGES, -pages_moved);
+        }
+ 
+        spin_unlock_irqrestore(&zone->lock, flags);
+@@ -5607,12 +5734,15 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
+ {
+        struct zone *zone;
+        unsigned long flags;
++       int pages_moved;
+        zone = page_zone(page);
+        spin_lock_irqsave(&zone->lock, flags);
+        if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+                goto out;
+        set_pageblock_migratetype(page, migratetype);
+-       move_freepages_block(zone, page, migratetype);
++       pages_moved = hotplug_move_freepages_block(zone, page,
++                                       MIGRATE_ISOLATE, migratetype);
++       __mod_zone_page_state(zone, NR_FREE_PAGES, pages_moved);
+ out:
+        spin_unlock_irqrestore(&zone->lock, flags);
+ }
+@@ -5900,9 +6030,6 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ #endif
+                list_del(&page->lru);
+                rmv_page_order(page);
+-               zone->free_area[order].nr_free--;
+-               __mod_zone_page_state(zone, NR_FREE_PAGES,
+-                                     - (1UL << order));
+                for (i = 0; i < (1 << order); i++)
+                        SetPageReserved((page+i));
+                pfn += (1 << order);
+
+
+
+
+
+
+-- 
+Kind regards,
+Minchan Kim
+
+--------------000707090707070002060305
+Content-Type: text/x-patch;
+ name="patch.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="patch.patch"
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4403009..d2a515d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -676,6 +676,24 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 	spin_unlock(&zone->lock);
+ }
+ 
++/*
++ * This function is almost same with free_one_page except that it
++ * doesn't increase NR_FREE_PAGES and free_area[order].nr_free.
++ * Because page allocator can't allocate MIGRATE_ISOLATE type page.
++ *
++ * Caller should hold zone->lock.
++ */
++static void free_one_isolated_page(struct zone *zone, struct page *page,
++				int order)
++{
++	zone->all_unreclaimable = 0;
++	zone->pages_scanned = 0;
++
++	__free_one_page(page, zone, order, MIGRATE_ISOLATE);
++	/* rollback nr_free increased by __free_one_page */
++	zone->free_area[order].nr_free--;
++}
++
+ static void free_one_page(struct zone *zone, struct page *page, int order,
+ 				int migratetype)
+ {
+@@ -683,6 +701,13 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
+ 
++	/*
++	 * Freed MIGRATE_ISOLATE page should be free_one_isolated_page path
++	 * because page allocator don't want to increase NR_FREE_PAGES and
++	 * free_area[order].nr_free.
++	 */
++	VM_BUG_ON(migratetype == MIGRATE_ISOLATE);
++
+ 	__free_one_page(page, zone, order, migratetype);
+ 	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+ 	spin_unlock(&zone->lock);
+@@ -718,6 +743,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ {
+ 	unsigned long flags;
+ 	int wasMlocked = __TestClearPageMlocked(page);
++	int migratetype;
+ 
+ 	if (!free_pages_prepare(page, order))
+ 		return;
+@@ -726,8 +752,21 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ 	if (unlikely(wasMlocked))
+ 		free_page_mlock(page);
+ 	__count_vm_events(PGFREE, 1 << order);
+-	free_one_page(page_zone(page), page, order,
+-					get_pageblock_migratetype(page));
++	migratetype = get_pageblock_migratetype(page);
++	/*
++	 * High order page alloc/free is rare compared to
++	 * order-0. So this condition check should be not
++	 * critical about performance.
++	 */
++	if (unlikely(migratetype == MIGRATE_ISOLATE)) {
++		struct zone *zone = page_zone(page);
++		spin_lock(&zone->lock);
++		free_one_isolated_page(zone, page, order);
++		spin_unlock(&zone->lock);
++	}
++	else {
++		free_one_page(page_zone(page), page, order, migratetype);
++	}
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -906,6 +945,55 @@ static int fallbacks[MIGRATE_TYPES][4] = {
+ 	[MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
+ };
+ 
++static int hotplug_move_freepages(struct zone *zone,
++			  struct page *start_page, struct page *end_page,
++			  int from_migratetype, int to_migratetype)
++{
++	struct page *page;
++	unsigned long order;
++	int pages_moved = 0;
++
++#ifndef CONFIG_HOLES_IN_ZONE
++	/*
++	 * page_zone is not safe to call in this context when
++	 * CONFIG_HOLES_IN_ZONE is set. This bug check is probably redundant
++	 * anyway as we check zone boundaries in move_freepages_block().
++	 * Remove at a later date when no bug reports exist related to
++	 * grouping pages by mobility
++	 */
++	BUG_ON(page_zone(start_page) != page_zone(end_page));
++#endif
++
++	BUG_ON(from_migratetype == to_migratetype);
++
++	for (page = start_page; page <= end_page;) {
++		/* Make sure we are not inadvertently changing nodes */
++		VM_BUG_ON(page_to_nid(page) != zone_to_nid(zone));
++
++		if (!pfn_valid_within(page_to_pfn(page))) {
++			page++;
++			continue;
++		}
++
++		if (!PageBuddy(page)) {
++			page++;
++			continue;
++		}
++
++		order = page_order(page);
++		list_move(&page->lru,
++			  &zone->free_area[order].free_list[to_migratetype]);
++		if (to_migratetype == MIGRATE_ISOLATE)
++			zone->free_area[order].nr_free--;
++		else if (from_migratetype == MIGRATE_ISOLATE)
++			zone->free_area[order].nr_free++;
++		page += 1 << order;
++		pages_moved += 1 << order;
++	}
++
++	return pages_moved;
++}
++
+ /*
+  * Move the free pages in a range to the free lists of the requested type.
+  * Note that start_page and end_pages are not aligned on a pageblock
+@@ -954,6 +1042,32 @@ static int move_freepages(struct zone *zone,
+ 	return pages_moved;
+ }
+ 
++/*
++ * It's almost same with move_freepages_block except [from, to] migratetype.
++ * We need it for accounting zone->free_area[order].nr_free exactly.
++ */
++static int hotplug_move_freepages_block(struct zone *zone, struct page *page,
++				int from_migratetype, int to_migratetype)
++{
++	unsigned long start_pfn, end_pfn;
++	struct page *start_page, *end_page;
++
++	start_pfn = page_to_pfn(page);
++	start_pfn = start_pfn & ~(pageblock_nr_pages-1);
++	start_page = pfn_to_page(start_pfn);
++	end_page = start_page + pageblock_nr_pages - 1;
++	end_pfn = start_pfn + pageblock_nr_pages - 1;
++
++	/* Do not cross zone boundaries */
++	if (start_pfn < zone->zone_start_pfn)
++		start_page = page;
++	if (end_pfn >= zone->zone_start_pfn + zone->spanned_pages)
++		return 0;
++
++	return hotplug_move_freepages(zone, start_page, end_page,
++			from_migratetype, to_migratetype);
++}
++
+ static int move_freepages_block(struct zone *zone, struct page *page,
+ 				int migratetype)
+ {
+@@ -1311,7 +1425,9 @@ void free_hot_cold_page(struct page *page, int cold)
+ 	 */
+ 	if (migratetype >= MIGRATE_PCPTYPES) {
+ 		if (unlikely(migratetype == MIGRATE_ISOLATE)) {
+-			free_one_page(zone, page, 0, migratetype);
++			spin_lock(&zone->lock);
++			free_one_isolated_page(zone, page, 0);
++			spin_unlock(&zone->lock);
+ 			goto out;
+ 		}
+ 		migratetype = MIGRATE_MOVABLE;
+@@ -1388,6 +1504,7 @@ int split_free_page(struct page *page)
+ 	unsigned int order;
+ 	unsigned long watermark;
+ 	struct zone *zone;
++	int migratetype;
+ 
+ 	BUG_ON(!PageBuddy(page));
+ 
+@@ -1400,10 +1517,17 @@ int split_free_page(struct page *page)
+ 		return 0;
+ 
+ 	/* Remove page from free list */
++	migratetype = get_pageblock_migratetype(page);
+ 	list_del(&page->lru);
+-	zone->free_area[order].nr_free--;
++	/*
++	 * Page allocator didn't increase nr_free and NR_FREE_PAGES on pages
++	 * which are in free_area[order].free_list[MIGRATE_ISOLATE] pages.
++	 */
++	if (migratetype != MIGRATE_ISOLATE) {
++		zone->free_area[order].nr_free--;
++		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
++	}
+ 	rmv_page_order(page);
+-	__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
+ 
+ 	/* Split into individual pages */
+ 	set_page_refcounted(page);
+@@ -5593,8 +5717,11 @@ int set_migratetype_isolate(struct page *page)
+ 
+ out:
+ 	if (!ret) {
++		int pages_moved;
+ 		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+-		move_freepages_block(zone, page, MIGRATE_ISOLATE);
++		pages_moved = hotplug_move_freepages_block(zone, page,
++			MIGRATE_MOVABLE, MIGRATE_ISOLATE);
++		__mod_zone_page_state(zone, NR_FREE_PAGES, -pages_moved);
+ 	}
+ 
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+@@ -5607,12 +5734,15 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
+ {
+ 	struct zone *zone;
+ 	unsigned long flags;
++	int pages_moved;
+ 	zone = page_zone(page);
+ 	spin_lock_irqsave(&zone->lock, flags);
+ 	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+ 		goto out;
+ 	set_pageblock_migratetype(page, migratetype);
+-	move_freepages_block(zone, page, migratetype);
++	pages_moved = hotplug_move_freepages_block(zone, page,
++					MIGRATE_ISOLATE, migratetype);
++	__mod_zone_page_state(zone, NR_FREE_PAGES, pages_moved);
+ out:
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+ }
+@@ -5900,9 +6030,6 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ #endif
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+-		zone->free_area[order].nr_free--;
+-		__mod_zone_page_state(zone, NR_FREE_PAGES,
+-				      - (1UL << order));
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
+
+--------------000707090707070002060305--
