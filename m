@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab2FTCHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 22:07:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62311 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256Ab2FTCHP (ORCPT
+	id S1754430Ab2FTCI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 22:08:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46240 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469Ab2FTCI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 22:07:15 -0400
-Date: Tue, 19 Jun 2012 19:03:59 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        "Tc, Jenny" <jenny.tc@intel.com>
-Subject: Re: [PATCH v2] charger_manager: update charge profile upon
- temperature zone change
-Message-ID: <20120620020359.GA14363@lizard>
-References: <1336413485-4585-1-git-send-email-ramakrishna.pallala@intel.com>
- <20120619235022.GA12508@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120619235022.GA12508@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Jun 2012 22:08:26 -0400
+From: Mandeep Singh Baines <mandeep.baines@gmail.com>
+To: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-pm@vger.kernel.org,
+        stable@kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Colin Cross <ccross@android.com>, Sameer Nanda <snanda@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: [PATCH] PM: Prevent waiting forever on asynchronous suspend after abort
+Date: Tue, 19 Jun 2012 19:08:12 -0700
+Message-Id: <1340158092-7530-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 04:50:22PM -0700, Anton Vorontsov wrote:
-> On Mon, May 07, 2012 at 11:28:05PM +0530, Ramakrishna Pallala wrote:
-> > Battery vendors like UER suggest to program Low Charge Voltage in case
-> > of high or low temperatures. So a battery can have different charge profile
-> > with in the battery operating temperature limits.
-> > 
-> > Next, there could be events like drop or rise in VBUS voltage in that case
-> > we might have to adjust the charge current to stabilize VBUS voltage.
-> > 
-> > This patch allows the Charger-Manager to adjust the charging parameters
-> > upon events like VBUS rise or drop and allows batteries to have multiple
-> > charge profiles for different temperature zones.
-> > 
-> > Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> > ---
-> 
-> Applied, thanks a lot!
+__device_suspend() must always send a completion. Otherwise, parent
+devices will wait forever.
 
-Oh, actually. I see the feature is still under discussion. I really
-need some kind of OK/Ack from charger-manager folks before applying.
+Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
+system sleep (v2)", introduced a regression by short-circuiting the
+complete_all() for certain error cases.
 
-Thanks,
+This patch fixes the bug by always signalling a completion.
 
+Addresses http://crosbug.com/31972
+
+Tested by injecting an abort via the following patch:
+
+diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+index a004db3..e5a6fce 100644
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -21,6 +21,7 @@
+ #include <linux/pci.h>
+ #include <linux/usb.h>
+ #include <linux/usb/hcd.h>
++#include <linux/string.h>
+
+ #include <asm/io.h>
+ #include <asm/irq.h>
+@@ -477,6 +478,8 @@ static int resume_common(struct device *dev, int event)
+
+ static int hcd_pci_suspend(struct device *dev)
+ {
++       if (!strcmp("0000:00:1d.3", dev_name(dev)))
++               return -EBUSY;
+        return suspend_common(dev, device_may_wakeup(dev));
+ }
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org
+Cc: stable@kernel.org
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Colin Cross <ccross@android.com>
+Cc: Sameer Nanda <snanda@chromium.org>
+Cc: Olof Johansson <olofj@chromium.org>
+---
+ drivers/base/power/main.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index e0fb5b0..9cb845e 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	dpm_wait_for_children(dev, async);
+ 
+ 	if (async_error)
+-		return 0;
++		goto Complete;
+ 
+ 	pm_runtime_get_noresume(dev);
+ 	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
+@@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	if (pm_wakeup_pending()) {
+ 		pm_runtime_put_sync(dev);
+ 		async_error = -EBUSY;
+-		return 0;
++		goto Complete;
+ 	}
+ 
+ 	device_lock(dev);
+@@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	}
+ 
+ 	device_unlock(dev);
++
++ Complete:
+ 	complete_all(&dev->power.completion);
+ 
+ 	if (error) {
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.3.4
+
