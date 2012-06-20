@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2FTSfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:35:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932266Ab2FTSWv (ORCPT
+	id S932295Ab2FTSgD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:36:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223Ab2FTSWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:22:51 -0400
-Message-Id: <20120620173024.099461098@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:22:38 -0400
+Message-Id: <20120620173023.860207229@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:57 -0700
+Date: Wed, 20 Jun 2012 10:30:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Grazvydas Ignotas <notasas@gmail.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 37/61] usb: musb_gadget: fix crash caused by dangling pointer
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 34/61] USB: qcserial: Add Sierra Wireless device IDs
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grazvydas Ignotas <notasas@gmail.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 08f75bf14fadaa81fe362d5acda9b77b113dd0a2 upstream.
+commit c41444ccfa33a1c20efa319e554cb531576e64a2 upstream.
 
-usb_ep_ops.disable must clear external copy of the endpoint descriptor,
-otherwise musb crashes after loading/unloading several gadget modules
-in a row:
+Some additional IDs found in the BSD/GPL licensed out-of-tree
+GobiSerial driver from Sierra Wireless.
 
-Unable to handle kernel paging request at virtual address bf013730
-pgd = c0004000
-[bf013730] *pgd=8f26d811, *pte=00000000, *ppte=00000000
-Internal error: Oops: 7 [#1]
-Modules linked in: g_cdc [last unloaded: g_file_storage]
-CPU: 0    Not tainted  (3.2.17 #647)
-PC is at musb_gadget_enable+0x4c/0x24c
-LR is at _raw_spin_lock_irqsave+0x4c/0x58
-[<c027c030>] (musb_gadget_enable+0x4c/0x24c) from [<bf01b760>] (gether_connect+0x3c/0x19c [g_cdc])
-[<bf01b760>] (gether_connect+0x3c/0x19c [g_cdc]) from [<bf01ba1c>] (ecm_set_alt+0x15c/0x180 [g_cdc])
-[<bf01ba1c>] (ecm_set_alt+0x15c/0x180 [g_cdc]) from [<bf01ecd4>] (composite_setup+0x85c/0xac4 [g_cdc])
-[<bf01ecd4>] (composite_setup+0x85c/0xac4 [g_cdc]) from [<c027b744>] (musb_g_ep0_irq+0x844/0x924)
-[<c027b744>] (musb_g_ep0_irq+0x844/0x924) from [<c027a97c>] (musb_interrupt+0x79c/0x864)
-[<c027a97c>] (musb_interrupt+0x79c/0x864) from [<c027aaa8>] (generic_interrupt+0x64/0x7c)
-[<c027aaa8>] (generic_interrupt+0x64/0x7c) from [<c00797cc>] (handle_irq_event_percpu+0x28/0x178)
-...
-
-Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_gadget.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/qcserial.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -1232,6 +1232,7 @@ static int musb_gadget_disable(struct us
- 	}
- 
- 	musb_ep->desc = NULL;
-+	musb_ep->end_point.desc = NULL;
- 
- 	/* abort all pending DMA and requests */
- 	nuke(musb_ep, -ESHUTDOWN);
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -105,7 +105,13 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE(0x1410, 0xa021)},	/* Novatel Gobi 3000 Composite */
+ 	{USB_DEVICE(0x413c, 0x8193)},	/* Dell Gobi 3000 QDL */
+ 	{USB_DEVICE(0x413c, 0x8194)},	/* Dell Gobi 3000 Composite */
++	{USB_DEVICE(0x1199, 0x9010)},	/* Sierra Wireless Gobi 3000 QDL */
++	{USB_DEVICE(0x1199, 0x9012)},	/* Sierra Wireless Gobi 3000 QDL */
+ 	{USB_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
++	{USB_DEVICE(0x1199, 0x9014)},	/* Sierra Wireless Gobi 3000 QDL */
++	{USB_DEVICE(0x1199, 0x9015)},	/* Sierra Wireless Gobi 3000 Modem device */
++	{USB_DEVICE(0x1199, 0x9018)},	/* Sierra Wireless Gobi 3000 QDL */
++	{USB_DEVICE(0x1199, 0x9019)},	/* Sierra Wireless Gobi 3000 Modem device */
+ 	{USB_DEVICE(0x12D1, 0x14F0)},	/* Sony Gobi 3000 QDL */
+ 	{USB_DEVICE(0x12D1, 0x14F1)},	/* Sony Gobi 3000 Composite */
+ 	{ }				/* Terminating entry */
 
 
