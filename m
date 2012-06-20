@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab2FTM4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:56:34 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15185 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2FTM4c (ORCPT
+	id S1754928Ab2FTM5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:57:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46062 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545Ab2FTM46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:56:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 20 Jun 2012 05:53:29 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <khali@linux-fr.org>, <w.sang@pengutronix.de>, <swarren@nvidia.com>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <pgaikwad@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] i2c: tegra: use clk_disable_unprepare in place of clk_disable
-Date: Wed, 20 Jun 2012 18:26:00 +0530
-Message-ID: <1340196960-3002-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 20 Jun 2012 08:56:58 -0400
+Date: Wed, 20 Jun 2012 21:56:53 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v7 02/10] KVM: MMU: abstract spte write-protect
+Message-Id: <20120620215653.15930f3467bc13748d548b0d@gmail.com>
+In-Reply-To: <4FE193AA.8010801@linux.vnet.ibm.com>
+References: <4FE1822D.8010002@linux.vnet.ibm.com>
+	<4FE1825B.1030402@linux.vnet.ibm.com>
+	<20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp>
+	<4FE193AA.8010801@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use clk_disable_unprepare() inplace of clk_disable().
-This was missed as part of moving clock enable/disable to
-prepare/unprepare for using the common clock framework.
+On Wed, 20 Jun 2012 17:11:06 +0800
+Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/i2c/busses/i2c-tegra.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Strange! Why do you think it is wrong? It is just debug code.
 
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 00cdc10..d071cf0 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -696,7 +696,7 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to add I2C adapter\n");
--		clk_disable(i2c_dev->i2c_clk);
-+		clk_disable_unprepare(i2c_dev->i2c_clk);
- 		return ret;
- 	}
- 
--- 
-1.7.1.1
+kvm_mmu_slot_remove_write_access() does not use rmap but the debug code says:
+	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
 
+> > If you think it is not a problem, please explain why you think so in
+> > the changelog.
+> 
+> 
+> It is a from the first place and it is used to debug and not compiled at all.
+
+It was not in kvm_mmu_slot_remove_write_access() before, no?
+
+This patch says that the write protection code becomes commonly usable
+function, but it still has rmap_write_protect specific debug code in it;
+using it in kvm_mmu_slot_remove_write_access(), which is not at all related
+to rmap_write_protect, is strange.
+
+As you say, this is just debug code and does not have any practical problem.
+But randomly putting debug code is not a good thing.
+
+Thanks,
+	Takuya
