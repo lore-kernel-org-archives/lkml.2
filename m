@@ -1,179 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab2FTJnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:43:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59125 "EHLO mx2.suse.de"
+	id S932128Ab2FTJo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:44:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58674 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755716Ab2FTJiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:38:04 -0400
+	id S1755970Ab2FTJfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:35:36 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
         Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/12] netvm: Prevent a stream-specific deadlock
-Date: Wed, 20 Jun 2012 10:37:50 +0100
-Message-Id: <1340185081-22525-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 13/17] mm: Micro-optimise slab to avoid a function call
+Date: Wed, 20 Jun 2012 10:35:16 +0100
+Message-Id: <1340184920-22288-14-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340185081-22525-1-git-send-email-mgorman@suse.de>
-References: <1340185081-22525-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1340184920-22288-1-git-send-email-mgorman@suse.de>
+References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It could happen that all !SOCK_MEMALLOC sockets have buffered so
-much data that we're over the global rmem limit. This will prevent
-SOCK_MEMALLOC buffers from receiving data, which will prevent userspace
-from running, which is needed to reduce the buffered data.
+Getting and putting objects in SLAB currently requires a function call
+but the bulk of the work is related to PFMEMALLOC reserves which are
+only consumed when network-backed storage is critical. Use an inline
+function to determine if the function call is required.
 
-Fix this by exempting the SOCK_MEMALLOC sockets from the rmem limit.
-Once this change it applied, it is important that sockets that set
-SOCK_MEMALLOC do not clear the flag until the socket is being torn down.
-If this happens, a warning is generated and the tokens reclaimed to
-avoid accounting errors until the bug is fixed.
-
-[davem@davemloft.net: Warning about clearing SOCK_MEMALLOC]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David S. Miller <davem@davemloft.net>
 ---
- include/net/sock.h     |    7 ++++---
- net/caif/caif_socket.c |    2 +-
- net/core/sock.c        |   14 +++++++++++++-
- net/ipv4/tcp_input.c   |   12 ++++++------
- net/sctp/ulpevent.c    |    2 +-
- 5 files changed, 25 insertions(+), 12 deletions(-)
+ mm/slab.c |   28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 772577f..9ab9934 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1315,12 +1315,13 @@ static inline bool sk_wmem_schedule(struct sock *sk, int size)
- 		__sk_mem_schedule(sk, size, SK_MEM_SEND);
- }
+diff --git a/mm/slab.c b/mm/slab.c
+index 417ae71..00c601b 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -117,6 +117,8 @@
+ #include	<linux/memory.h>
+ #include	<linux/prefetch.h>
  
--static inline bool sk_rmem_schedule(struct sock *sk, int size)
-+static inline bool sk_rmem_schedule(struct sock *sk, struct sk_buff *skb)
- {
- 	if (!sk_has_account(sk))
- 		return true;
--	return size <= sk->sk_forward_alloc ||
--		__sk_mem_schedule(sk, size, SK_MEM_RECV);
-+	return skb->truesize <= sk->sk_forward_alloc ||
-+		__sk_mem_schedule(sk, skb->truesize, SK_MEM_RECV) ||
-+		skb_pfmemalloc(skb);
- }
- 
- static inline void sk_mem_reclaim(struct sock *sk)
-diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
-index fb89443..5855b3a 100644
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -141,7 +141,7 @@ static int caif_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
- 	err = sk_filter(sk, skb);
- 	if (err)
- 		return err;
--	if (!sk_rmem_schedule(sk, skb->truesize) && rx_flow_is_on(cf_sk)) {
-+	if (!sk_rmem_schedule(sk, skb) && rx_flow_is_on(cf_sk)) {
- 		set_rx_flow_off(cf_sk);
- 		net_dbg_ratelimited("sending flow OFF due to rmem_schedule\n");
- 		caif_flow_ctrl(sk, CAIF_MODEMCMD_FLOW_OFF_REQ);
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 17f0813..14d290f 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -295,6 +295,18 @@ void sk_clear_memalloc(struct sock *sk)
- 	sock_reset_flag(sk, SOCK_MEMALLOC);
- 	sk->sk_allocation &= ~__GFP_MEMALLOC;
- 	static_key_slow_dec(&memalloc_socks);
++#include	<net/sock.h>
 +
-+	/*
-+	 * SOCK_MEMALLOC is allowed to ignore rmem limits to ensure forward
-+	 * progress of swapping. However, if SOCK_MEMALLOC is cleared while
-+	 * it has rmem allocations there is a risk that the user of the
-+	 * socket cannot make forward progress due to exceeding the rmem
-+	 * limits. By rights, sk_clear_memalloc() should only be called
-+	 * on sockets being torn down but warn and reset the accounting if
-+	 * that assumption breaks.
-+	 */
-+	if (WARN_ON(sk->sk_forward_alloc))
-+		sk_mem_reclaim(sk);
+ #include	<asm/cacheflush.h>
+ #include	<asm/tlbflush.h>
+ #include	<asm/page.h>
+@@ -1016,7 +1018,7 @@ out:
+ 	spin_unlock_irqrestore(&l3->list_lock, flags);
  }
- EXPORT_SYMBOL_GPL(sk_clear_memalloc);
  
-@@ -396,7 +408,7 @@ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
- 	if (err)
- 		return err;
- 
--	if (!sk_rmem_schedule(sk, skb->truesize)) {
-+	if (!sk_rmem_schedule(sk, skb)) {
- 		atomic_inc(&sk->sk_drops);
- 		return -ENOBUFS;
- 	}
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 448f130..dbd87ea 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -4512,19 +4512,19 @@ static void tcp_ofo_queue(struct sock *sk)
- static bool tcp_prune_ofo_queue(struct sock *sk);
- static int tcp_prune_queue(struct sock *sk);
- 
--static int tcp_try_rmem_schedule(struct sock *sk, unsigned int size)
-+static int tcp_try_rmem_schedule(struct sock *sk, struct sk_buff *skb)
+-static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
++static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 						gfp_t flags, bool force_refill)
  {
- 	if (atomic_read(&sk->sk_rmem_alloc) > sk->sk_rcvbuf ||
--	    !sk_rmem_schedule(sk, size)) {
-+	    !sk_rmem_schedule(sk, skb)) {
+ 	int i;
+@@ -1063,7 +1065,20 @@ static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 	return objp;
+ }
  
- 		if (tcp_prune_queue(sk) < 0)
- 			return -1;
- 
--		if (!sk_rmem_schedule(sk, size)) {
-+		if (!sk_rmem_schedule(sk, skb)) {
- 			if (!tcp_prune_ofo_queue(sk))
- 				return -1;
- 
--			if (!sk_rmem_schedule(sk, size))
-+			if (!sk_rmem_schedule(sk, skb))
- 				return -1;
- 		}
+-static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
++static inline void *ac_get_obj(struct kmem_cache *cachep,
++			struct array_cache *ac, gfp_t flags, bool force_refill)
++{
++	void *objp;
++
++	if (unlikely(sk_memalloc_socks()))
++		objp = __ac_get_obj(cachep, ac, flags, force_refill);
++	else
++		objp = ac->entry[--ac->avail];
++
++	return objp;
++}
++
++static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 								void *objp)
+ {
+ 	if (unlikely(pfmemalloc_active)) {
+@@ -1073,6 +1088,15 @@ static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 			set_obj_pfmemalloc(&objp);
  	}
-@@ -4587,7 +4587,7 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
  
- 	TCP_ECN_check_ce(tp, skb);
- 
--	if (tcp_try_rmem_schedule(sk, skb->truesize)) {
-+	if (tcp_try_rmem_schedule(sk, skb)) {
- 		/* TODO: should increment a counter */
- 		__kfree_skb(skb);
- 		return;
-@@ -4799,7 +4799,7 @@ static void tcp_data_queue(struct sock *sk, struct sk_buff *skb)
- 		if (eaten <= 0) {
- queue_and_out:
- 			if (eaten < 0 &&
--			    tcp_try_rmem_schedule(sk, skb->truesize))
-+			    tcp_try_rmem_schedule(sk, skb))
- 				goto drop;
- 
- 			eaten = tcp_queue_rcv(sk, skb, 0, &fragstolen);
-diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
-index 8a84017..6c6ed2d 100644
---- a/net/sctp/ulpevent.c
-+++ b/net/sctp/ulpevent.c
-@@ -702,7 +702,7 @@ struct sctp_ulpevent *sctp_ulpevent_make_rcvmsg(struct sctp_association *asoc,
- 	if (rx_count >= asoc->base.sk->sk_rcvbuf) {
- 
- 		if ((asoc->base.sk->sk_userlocks & SOCK_RCVBUF_LOCK) ||
--		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb->truesize)))
-+		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb)))
- 			goto fail;
- 	}
++	return objp;
++}
++
++static inline void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
++								void *objp)
++{
++	if (unlikely(sk_memalloc_socks()))
++		objp = __ac_put_obj(cachep, ac, objp);
++
+ 	ac->entry[ac->avail++] = objp;
+ }
  
 -- 
 1.7.9.2
