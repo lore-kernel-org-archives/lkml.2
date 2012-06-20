@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab2FTM2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:28:37 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:53947 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751950Ab2FTM2g (ORCPT
+	id S1755888Ab2FTM3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:29:50 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45398 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab2FTM3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:28:36 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18+/m89j4Y+nrafJLtY3X4VoJLrJuFUWtneK5zBu6
-	2J/gk9ujKEPea/
-Message-ID: <1340195298.15707.3.camel@marge.simpson.net>
-Subject: Re: Attaching a process to cgroups
-From: Mike Galbraith <efault@gmx.de>
-To: Alexey Vlasov <renton@renton.name>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 20 Jun 2012 14:28:18 +0200
-In-Reply-To: <20120619185856.GC31797@beaver>
-References: <20120619185856.GC31797@beaver>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Wed, 20 Jun 2012 08:29:49 -0400
+Message-ID: <4FE1C238.7070106@gmail.com>
+Date: Wed, 20 Jun 2012 07:29:44 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Michal Simek <monstr@monstr.eu>
+CC: linux-kernel@vger.kernel.org, arnd@arndb.de, John.Linn@xilinx.com,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] arm: zynq: Support GIC OF initialization
+References: <1340173451-14613-1-git-send-email-monstr@monstr.eu>
+In-Reply-To: <1340173451-14613-1-git-send-email-monstr@monstr.eu>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-19 at 22:58 +0400, Alexey Vlasov wrote: 
-> Hi.
+On 06/20/2012 01:24 AM, Michal Simek wrote:
+> Zynq is OF driven platfrom which requires OF initialization.
 > 
-> Is it possible to somehow fasten a process of pid attaching to cgroup?
-> The problem is the pid attaches to a task-file with some strange delay:
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
+
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+
 > 
-> 22:28:00.788224 open("/sys/fs/cgroup/memory/virtwww/w_test-l24-apache1_4bdf3d13/apache/tasks", O_WRONLY|O_CREAT|O_APPEND, 0666) = 3 <0.000035>
-> 22:28:00.788289 fstat(3, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0 <0.000004>
-> 22:28:00.788326 mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f5e78074000 <0.000005>
-> 22:28:00.788355 fstat(3, {st_mode=S_IFREG|0644, st_size=0, ...}) = 0 <0.000004>
-> 22:28:00.788389 lseek(3, 0, SEEK_SET)   = 0 <0.000004>
-> 22:28:00.788426 write(3, "16317\n", 6)  = 6 <0.128094>
-> 22:28:00.916578 close(3)                = 0 <0.000006>
-
-
-kernel/cgroup.c::cgroup_attach_task()
-{
-...
-	synchronize_rcu();
-...
-}
+> ---
+> v2: Remove also corresponding defines
+> ---
+>  arch/arm/mach-zynq/common.c                |    7 ++++++-
+>  arch/arm/mach-zynq/include/mach/zynq_soc.h |    2 --
+>  2 files changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+> index 17d68d6..7941544 100644
+> --- a/arch/arm/mach-zynq/common.c
+> +++ b/arch/arm/mach-zynq/common.c
+> @@ -56,12 +56,17 @@ static void __init xilinx_init_machine(void)
+>  	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
+>  }
+>  
+> +static const struct of_device_id zynq_dt_irq_match[] __initconst = {
+> +	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init },
+> +	{ }
+> +};
+> +
+>  /**
+>   * xilinx_irq_init() - Interrupt controller initialization for the GIC.
+>   */
+>  static void __init xilinx_irq_init(void)
+>  {
+> -	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
+> +	of_irq_init(zynq_dt_irq_match);
+>  }
+>  
+>  /* The minimum devices needed to be mapped before the VM system is up and
+> diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> index 6ff7015..eab11a0 100644
+> --- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> +++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> @@ -41,9 +41,7 @@
+>  
+>  #define TTC0_BASE			IOMEM(TTC0_VIRT)
+>  #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
+> -#define SCU_GIC_CPU_BASE		(SCU_PERIPH_BASE + 0x100)
+>  #define SCU_CPU_TIMER_BASE		(SCU_PERIPH_BASE + 0x600)
+> -#define SCU_GIC_DIST_BASE		(SCU_PERIPH_BASE + 0x1000)
+>  #define PL310_L2CC_BASE			IOMEM(PL310_L2CC_VIRT)
+>  
+>  /*
 
