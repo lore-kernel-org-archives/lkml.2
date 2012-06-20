@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab2FTXtt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:49:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42926 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758582Ab2FTXts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:49:48 -0400
-Message-ID: <4FE26182.5070107@zytor.com>
-Date: Wed, 20 Jun 2012 16:49:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932429Ab2FTXuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:50:08 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42701 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758585Ab2FTXuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 19:50:05 -0400
+X-Sasl-enc: NwDkx0egEgJfBEZVLHjChTl1D8GZ2JjtfePguzEy6ckS 1340236205
+Date: Wed, 20 Jun 2012 20:50:03 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+Message-ID: <20120620235002.GE4223@khazad-dum.debian.net>
+References: <1340121811-4477-3-git-send-email-bp@amd64.org>
+ <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
+ <20120619232857.GH5996@aftab.osrc.amd.com>
+ <1340182778.21745.75.camel@twins>
+ <20120620230856.GA4223@khazad-dum.debian.net>
+ <4FE2585A.3000505@zytor.com>
+ <20120620232359.GD2016@aftab.osrc.amd.com>
+ <4FE25C7E.9030109@zytor.com>
+ <20120620233231.GF2016@aftab.osrc.amd.com>
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@amd64.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-References: <20120615125240.GD6083@aftab.osrc.amd.com> <20120615165231.GA9169@aftab.osrc.amd.com> <20120619024639.GB6186@khazad-dum.debian.net> <4FDFF27C.5000205@zytor.com> <20120619051116.GB31591@aftab.osrc.amd.com> <1340093864.21745.6.camel@twins> <20120619102250.GA787@aftab.osrc.amd.com> <1340101568.21745.37.camel@twins> <20120619182228.GA18816@khazad-dum.debian.net> <4FE0DF9F.10401@zytor.com> <20120620234651.GD4223@khazad-dum.debian.net>
-In-Reply-To: <20120620234651.GD4223@khazad-dum.debian.net>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120620233231.GF2016@aftab.osrc.amd.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 04:46 PM, Henrique de Moraes Holschuh wrote:
+On Thu, 21 Jun 2012, Borislav Petkov wrote:
+> Which means that
 > 
-> Well, it makes the kernel tell us what (amd/intel/whatever) firmware it
-> wants, and requires (after patching) a simple echo 1 >foo to activate.  It
-> is also harmless if activated without updated firmware in place.
+> static enum ucode_state request_microcode_fw(int cpu, struct device *device)
+> {
+>         char name[30];
 > 
-> /dev/cpu/microcode requires special software (or a dd with bs>=file size),
-> since it borks if userspace breaks a microcode into two write() syscalls,
-> and requires detection of the cpu vendor.  Very annoying.
+> 	...
 > 
+>         sprintf(name, "intel-ucode/%02x-%02x-%02x",
+>                 c->x86, c->x86_model, c->x86_mask);
+> 
+> needs to be changed to the name of the microcode blob you guys use for
+> distributing and we can drop the OLD INTERFACE and there'll be no need
+> for userspace tools doing anything with the ucode patches.
 
-Yeah, because dd is such an exotic piece of software...
-
-	-hpa
+Only if Intel will stop distributing that text crap and distribute the
+binary microcode already.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
