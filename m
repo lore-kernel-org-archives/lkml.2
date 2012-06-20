@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab2FTLuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:50:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40112 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753913Ab2FTLoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:44:17 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/17] mm: slub: Optimise the SLUB fast path to avoid pfmemalloc checks
-Date: Wed, 20 Jun 2012 12:43:57 +0100
-Message-Id: <1340192652-31658-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340192652-31658-1-git-send-email-mgorman@suse.de>
-References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+	id S1755902Ab2FTLwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:52:23 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59936 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab2FTLwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:52:21 -0400
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
+Subject: [PATCH] scripts/get_maintainer.pl: Add tested-by signature
+Date: Wed, 20 Jun 2012 08:51:44 -0300
+Message-Id: <1340193105-10734-1-git-send-email-aletes.xgr@gmail.com>
+X-Mailer: git-send-email 1.7.10
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Lameter <cl@linux.com>
+The tester of the patch should also be listed to receive patch
+notifications.
 
-This patch removes the check for pfmemalloc from the alloc hotpath and
-puts the logic after the election of a new per cpu slab. For a pfmemalloc
-page we do not use the fast path but force the use of the slow path which
-is also used for the debug case.
-
-This has the side-effect of weakening pfmemalloc processing in the
-following way;
-
-1. A process that is allocating for network swap calls __slab_alloc.
-   pfmemalloc_match is true so the freelist is loaded and c->freelist is
-   now pointing to a pfmemalloc page.
-
-2. A process that is attempting normal allocations calls slab_alloc,
-   finds the pfmemalloc page on the freelist and uses it because it did
-   not check pfmemalloc_match()
-
-The patch allows non-pfmemalloc allocations to use pfmemalloc pages with
-the kmalloc slabs being the most vunerable caches on the grounds they
-are most likely to have a mix of pfmemalloc and !pfmemalloc requests. A
-later patch will still protect the system as processes will get throttled
-if the pfmemalloc reserves get depleted but performance will not degrade
-as smoothly.
-
-[mgorman@suse.de: Expanded changelog]
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 ---
- mm/slub.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ scripts/get_maintainer.pl |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 3cf24b4..dd13305 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2301,11 +2301,11 @@ new_slab:
- 		}
- 	}
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index 0948c6b..5715773 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -81,6 +81,7 @@ my $penguin_chiefs = "\(" . join("|", @penguin_chief_names) . "\)";
+ my @signature_tags = ();
+ push(@signature_tags, "Signed-off-by:");
+ push(@signature_tags, "Reviewed-by:");
++push(@signature_tags, "Tested-by:");
+ push(@signature_tags, "Acked-by:");
  
--	if (likely(!kmem_cache_debug(s)))
-+	if (likely(!kmem_cache_debug(s) && pfmemalloc_match(c, gfpflags)))
- 		goto load_freelist;
- 
- 	/* Only entered in the debug case */
--	if (!alloc_debug_processing(s, c->page, object, addr))
-+	if (kmem_cache_debug(s) && !alloc_debug_processing(s, c->page, object, addr))
- 		goto new_slab;	/* Slab failed checks. Next slab needed */
- 
- 	c->freelist = get_freepointer(s, object);
-@@ -2355,8 +2355,7 @@ redo:
- 	barrier();
- 
- 	object = c->freelist;
--	if (unlikely(!object || !node_match(c, node) ||
--					!pfmemalloc_match(c, gfpflags)))
-+	if (unlikely(!object || !node_match(c, node)))
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 
- 	else {
+ # rfc822 email address - preloaded methods go here.
 -- 
-1.7.9.2
+1.7.10
 
