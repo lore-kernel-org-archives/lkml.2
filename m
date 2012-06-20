@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab2FTFCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 01:02:45 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:6193 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751214Ab2FTFCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 01:02:43 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1202hzz8275dhz2dh87h2a8h668h839h944hd25he96hf0ah)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 20 Jun 2012 13:23:15 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linus.walleij@stericsson.com>, <swarren@wwwdotorg.org>,
-        <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>
-Subject: Re: [PATCH 1/1] pinctrl: pinctrl-mxs: fix a compiling error
-Message-ID: <20120620052312.GA1568@S2100-06.ap.freescale.net>
-References: <1340167717-13082-1-git-send-email-b29396@freescale.com>
+	id S1752536Ab2FTFIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 01:08:49 -0400
+Received: from plane.gmane.org ([80.91.229.3]:48835 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342Ab2FTFIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 01:08:48 -0400
+X-AuditID: 9c930179-b7bd3ae000000e80-66-4fe1201076a9
+From: Namhyung Kim <namhyung@kernel.org>
+To: Vincent Guittot 
+	<public-vincent.guittot-QSEj5FYQhm4dnm+yROfE0A@plane.gmane.org>
+Cc: public-linux-arm-kernel-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@plane.gmane.org,
+        public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org,
+        public-linaro-dev-cunTk1MwBs8s++Sfvej+rw@plane.gmane.org,
+        public-devicetree-discuss-uLR06cmDAlY/bJ5BZ2RsiQ@plane.gmane.org,
+        public-a.p.zijlstra-/NLkJaSkS4VmR6Xm/wNWPw@plane.gmane.org,
+        public-rob.herring-bsGFqQB8/DxBDgjK7y7TUQ@plane.gmane.org,
+        public-linux-lFZ/pmaqli7XmaaqVzeoHQ@plane.gmane.org
+Subject: Re: [PATCH v2 2/5] ARM: topology: factorize the update of sibling masks
+References: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
+	<1340094536-20873-3-git-send-email-vincent.guittot@linaro.org>
+Date: Wed, 20 Jun 2012 09:54:31 +0900
+In-Reply-To: <1340094536-20873-3-git-send-email-vincent.guittot@linaro.org>
+	(Vincent Guittot's message of "Tue, 19 Jun 2012 10:28:53 +0200")
+Message-ID: <87bokehkfs.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1340167717-13082-1-git-send-email-b29396@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
+X-TMDA-Confirmed: Wed, 20 Jun 2012 07:08:40 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 12:48:37PM +0800, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> The compiling error is:
-> drivers/pinctrl/pinctrl-mxs.c: In function 'mxs_dt_node_to_map':
-> drivers/pinctrl/pinctrl-mxs.c:140: error: implicit declaration of function 'free'
-> drivers/pinctrl/pinctrl-mxs.c:140: warning: incompatible implicit declaration of built-in function 'free'
-> It should be kfree.
-> 
 
-Already fixed by Fabio.
 
-http://git.kernel.org/?p=linux/kernel/git/linusw/linux-pinctrl.git;a=commit;h=14e1e9f5cadb7cff3a2846c27cc1b9c8f207ee18
 
-Regards,
-Shawn
-
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+On Tue, 19 Jun 2012 10:28:53 +0200, Vincent Guittot wrote:
+> This factorization has also been proposed in another patchset that has not been
+> merged yet:
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/080873.html
+> So, this patch could be dropped depending of the state of the other one.
+>
+> Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi-5wv7dgnIgG8@public.gmane.org>
+> Signed-off-by: Vincent Guittot <vincent.guittot-QSEj5FYQhm4dnm+yROfE0A@public.gmane.org>
 > ---
->  drivers/pinctrl/pinctrl-mxs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-mxs.c b/drivers/pinctrl/pinctrl-mxs.c
-> index afb50ee..4ba4636 100644
-> --- a/drivers/pinctrl/pinctrl-mxs.c
-> +++ b/drivers/pinctrl/pinctrl-mxs.c
-> @@ -137,7 +137,7 @@ static int mxs_dt_node_to_map(struct pinctrl_dev *pctldev,
+>  arch/arm/kernel/topology.c |   47 ++++++++++++++++++++++++--------------------
+>  1 file changed, 26 insertions(+), 21 deletions(-)
+>
+> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+> index 37e2e57..92c2fb3 100644
+> --- a/arch/arm/kernel/topology.c
+> +++ b/arch/arm/kernel/topology.c
+> @@ -82,6 +82,31 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
+>  	return &cpu_topology[cpu].core_sibling;
+>  }
 >  
->  free_group:
->  	if (!purecfg)
-> -		free(group);
-> +		kfree(group);
->  free:
->  	kfree(new_map);
->  	return ret;
-> -- 
-> 1.7.0.4
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +void update_siblings_masks(unsigned int cpuid)
+> +{
+> +	struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
+> +	int cpu;
+> +	/* update core and thread sibling masks */
+> +	for_each_possible_cpu(cpu) {
+> +		cpu_topo = &cpu_topology[cpu];
+> +
+> +		if (cpuid_topo->socket_id == cpu_topo->socket_id) {
+
+I think this will make the code a little bit cleaner:
+
+                if (cpuid_topo->socket_id != cpu_topo->socket_id)
+                	continue;
+
+Thanks,
+Namhyung
+
+
+> +			cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
+> +			if (cpu != cpuid)
+> +				cpumask_set_cpu(cpu, &cpuid_topo->core_sibling);
+> +
+> +			if (cpuid_topo->core_id == cpu_topo->core_id) {
+> +				cpumask_set_cpu(cpuid,
+> +					&cpu_topo->thread_sibling);
+> +				if (cpu != cpuid)
+> +					cpumask_set_cpu(cpu,
+> +						&cpuid_topo->thread_sibling);
+> +			}
+> +		}
+> +	}
+> +	smp_wmb();
+> +}
+> +
+
 
