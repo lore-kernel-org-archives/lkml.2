@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab2FTSYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:24:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
+	id S932533Ab2FTS3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:29:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab2FTSYF (ORCPT
+	with ESMTP id S932464Ab2FTSYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:24:05 -0400
-Message-Id: <20120620173025.662447538@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:24:08 -0400
+Message-Id: <20120620173039.740348485@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:31:15 -0700
+Date: Wed, 20 Jun 2012 10:30:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Boot <bootc@bootc.net>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        Nix <nix@esperi.org.uk>, Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 55/61] e1000e: Disable ASPM L1 on 82574
-In-Reply-To: <20120620173033.GA5634@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 02/20] xen/setup: filter APERFMPERF cpuid feature out
+In-Reply-To: <20120620173044.GA6910@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Boot <bootc@bootc.net>
+From: Andre Przywara <andre.przywara@amd.com>
 
-commit d4a4206ebbaf48b55803a7eb34e330530d83a889 upstream.
+commit 5e626254206a709c6e937f3dda69bf26c7344f6f upstream.
 
-ASPM on the 82574 causes trouble. Currently the driver disables L0s for
-this NIC but only disables L1 if the MTU is >1500. This patch simply
-causes L1 to be disabled regardless of the MTU setting.
+Xen PV kernels allow access to the APERF/MPERF registers to read the
+effective frequency. Access to the MSRs is however redirected to the
+currently scheduled physical CPU, making consecutive read and
+compares unreliable. In addition each rdmsr traps into the hypervisor.
+So to avoid bogus readouts and expensive traps, disable the kernel
+internal feature flag for APERF/MPERF if running under Xen.
+This will
+a) remove the aperfmperf flag from /proc/cpuinfo
+b) not mislead the power scheduler (arch/x86/kernel/cpu/sched.c) to
+   use the feature to improve scheduling (by default disabled)
+c) not mislead the cpufreq driver to use the MSRs
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
-Cc: Nix <nix@esperi.org.uk>
-Link: https://lkml.org/lkml/2012/3/19/362
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+This does not cover userland programs which access the MSRs via the
+device file interface, but this will be addressed separately.
+
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/82571.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/xen/enlighten.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/ethernet/intel/e1000e/82571.c
-+++ b/drivers/net/ethernet/intel/e1000e/82571.c
-@@ -2061,8 +2061,9 @@ const struct e1000_info e1000_82574_info
- 				  | FLAG_HAS_SMART_POWER_DOWN
- 				  | FLAG_HAS_AMT
- 				  | FLAG_HAS_CTRLEXT_ON_LOAD,
--	.flags2			  = FLAG2_CHECK_PHY_HANG
-+	.flags2			= FLAG2_CHECK_PHY_HANG
- 				  | FLAG2_DISABLE_ASPM_L0S
-+				  | FLAG2_DISABLE_ASPM_L1
- 				  | FLAG2_NO_DISABLE_RX,
- 	.pba			= 32,
- 	.max_hw_frame_size	= DEFAULT_JUMBO,
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -198,6 +198,9 @@ static void __init xen_banner(void)
+ 	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
+ }
+ 
++#define CPUID_THERM_POWER_LEAF 6
++#define APERFMPERF_PRESENT 0
++
+ static __read_mostly unsigned int cpuid_leaf1_edx_mask = ~0;
+ static __read_mostly unsigned int cpuid_leaf1_ecx_mask = ~0;
+ 
+@@ -218,6 +221,11 @@ static void xen_cpuid(unsigned int *ax,
+ 		maskedx = cpuid_leaf1_edx_mask;
+ 		break;
+ 
++	case CPUID_THERM_POWER_LEAF:
++		/* Disabling APERFMPERF for kernel usage */
++		maskecx = ~(1 << APERFMPERF_PRESENT);
++		break;
++
+ 	case 0xb:
+ 		/* Suppress extended topology stuff */
+ 		maskebx = 0;
 
 
