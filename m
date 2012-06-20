@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635Ab2FTSVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:21:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44755 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757546Ab2FTSVs (ORCPT
+	id S932349Ab2FTSj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:39:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757626Ab2FTSVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:21:48 -0400
-Message-Id: <20120620173022.519191101@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:21:51 -0400
+Message-Id: <20120620173022.597329751@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:38 -0700
+Date: Wed, 20 Jun 2012 10:30:39 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 18/61] SCSI: mpt2sas: Fix unsafe using smp_processor_id() in preemptible
+        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>
+Subject: [ 19/61] swap: fix shmem swapping when more than 8 areas
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +24,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "nagalakshmi.nandigama@lsi.com" <nagalakshmi.nandigama@lsi.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit a2c658505bf5c75516ee0a79287223e86a2474af upstream.
+commit 9b15b817f3d62409290fd56fe3cbb076a931bb0a upstream.
 
-When CONFIG_DEBUG_PREEMPT is enabled, bug is observed in the smp_processor_id().
-This is because smp_processor_id() is not called in preempt safe condition.
+Minchan Kim reports that when a system has many swap areas, and tmpfs
+swaps out to the ninth or more, shmem_getpage_gfp()'s attempts to read
+back the page cannot locate it, and the read fails with -ENOMEM.
 
-To fix this issue, use raw_smp_processor_id instead of smp_processor_id.
+Whoops.  Yes, I blindly followed read_swap_header()'s pte_to_swp_entry(
+swp_entry_to_pte()) technique for determining maximum usable swap
+offset, without stopping to realize that that actually depends upon the
+pte swap encoding shifting swap offset to the higher bits and truncating
+it there.  Whereas our radix_tree swap encoding leaves offset in the
+lower bits: it's swap "type" (that is, index of swap area) that was
+truncated.
 
-Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Fix it by reducing the SWP_TYPE_SHIFT() in swapops.h, and removing the
+broken radix_to_swp_entry(swp_to_radix_entry()) from read_swap_header().
+
+This does not reduce the usable size of a swap area any further, it
+leaves it as claimed when making the original commit: no change from 3.0
+on x86_64, nor on i386 without PAE; but 3.0's 512GB is reduced to 128GB
+per swapfile on i386 with PAE.  It's not a change I would have risked
+five years ago, but with x86_64 supported for ten years, I believe it's
+appropriate now.
+
+Hmm, and what if some architecture implements its swap pte with offset
+encoded below type? That would equally break the maximum usable swap
+offset check.  Happily, they all follow the same tradition of encoding
+offset above type, but I'll prepare a check on that for next.
+
+Reported-and-Reviewed-and-Tested-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/swapops.h |    8 +++++---
+ mm/swapfile.c           |   12 ++++--------
+ 2 files changed, 9 insertions(+), 11 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -1785,7 +1785,7 @@ static inline void _base_writeq(__u64 b,
- static inline u8
- _base_get_msix_index(struct MPT2SAS_ADAPTER *ioc)
- {
--	return ioc->cpu_msix_table[smp_processor_id()];
-+	return ioc->cpu_msix_table[raw_smp_processor_id()];
- }
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -9,13 +9,15 @@
+  * get good packing density in that tree, so the index should be dense in
+  * the low-order bits.
+  *
+- * We arrange the `type' and `offset' fields so that `type' is at the five
++ * We arrange the `type' and `offset' fields so that `type' is at the seven
+  * high-order bits of the swp_entry_t and `offset' is right-aligned in the
+- * remaining bits.
++ * remaining bits.  Although `type' itself needs only five bits, we allow for
++ * shmem/tmpfs to shift it all up a further two bits: see swp_to_radix_entry().
+  *
+  * swp_entry_t's are *never* stored anywhere in their arch-dependent format.
+  */
+-#define SWP_TYPE_SHIFT(e)	(sizeof(e.val) * 8 - MAX_SWAPFILES_SHIFT)
++#define SWP_TYPE_SHIFT(e)	((sizeof(e.val) * 8) - \
++			(MAX_SWAPFILES_SHIFT + RADIX_TREE_EXCEPTIONAL_SHIFT))
+ #define SWP_OFFSET_MASK(e)	((1UL << SWP_TYPE_SHIFT(e)) - 1)
  
- /**
+ /*
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1924,24 +1924,20 @@ static unsigned long read_swap_header(st
+ 
+ 	/*
+ 	 * Find out how many pages are allowed for a single swap
+-	 * device. There are three limiting factors: 1) the number
++	 * device. There are two limiting factors: 1) the number
+ 	 * of bits for the swap offset in the swp_entry_t type, and
+ 	 * 2) the number of bits in the swap pte as defined by the
+-	 * the different architectures, and 3) the number of free bits
+-	 * in an exceptional radix_tree entry. In order to find the
++	 * different architectures. In order to find the
+ 	 * largest possible bit mask, a swap entry with swap type 0
+ 	 * and swap offset ~0UL is created, encoded to a swap pte,
+ 	 * decoded to a swp_entry_t again, and finally the swap
+ 	 * offset is extracted. This will mask all the bits from
+ 	 * the initial ~0UL mask that can't be encoded in either
+ 	 * the swp_entry_t or the architecture definition of a
+-	 * swap pte.  Then the same is done for a radix_tree entry.
++	 * swap pte.
+ 	 */
+ 	maxpages = swp_offset(pte_to_swp_entry(
+-			swp_entry_to_pte(swp_entry(0, ~0UL))));
+-	maxpages = swp_offset(radix_to_swp_entry(
+-			swp_to_radix_entry(swp_entry(0, maxpages)))) + 1;
+-
++			swp_entry_to_pte(swp_entry(0, ~0UL)))) + 1;
+ 	if (maxpages > swap_header->info.last_page) {
+ 		maxpages = swap_header->info.last_page + 1;
+ 		/* p->max is an unsigned int: don't overflow it */
 
 
