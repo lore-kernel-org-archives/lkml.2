@@ -1,64 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab2FTJT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:19:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54565 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab2FTJT6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:19:58 -0400
-Message-ID: <1340183979.21745.78.camel@twins>
-Subject: Re: [PATCH v2 5/5] sched: cpu_power: enable ARCH_POWER
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux@arm.linux.org.uk,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com
-Date: Wed, 20 Jun 2012 11:19:39 +0200
-In-Reply-To: <CAKfTPtAdSMJ1RnDPDYZZ378QW9DUCKLA+oC3TWJD7v5KAkFitA@mail.gmail.com>
-References: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
-	 <1340094536-20873-6-git-send-email-vincent.guittot@linaro.org>
-	 <20120619090110.GA1692@zhy>
-	 <CAKfTPtAdSMJ1RnDPDYZZ378QW9DUCKLA+oC3TWJD7v5KAkFitA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755723Ab2FTJUT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:20:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57647 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540Ab2FTJUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:20:16 -0400
+Date: Wed, 20 Jun 2012 10:20:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH -mm] memcg: prevent from OOM with too many dirty pages
+Message-ID: <20120620092011.GB4011@suse.de>
+References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
+ <20120619150014.1ebc108c.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120619150014.1ebc108c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 11:11 +0200, Vincent Guittot wrote:
-> On 19 June 2012 11:01, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> > On Tue, Jun 19, 2012 at 10:28:56AM +0200, Vincent Guittot wrote:
-> >> Heteregeneous ARM platform uses arch_scale_freq_power function
-> >> to reflect the relative capacity of each core
-> >>
-> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> >> ---
-> >>  kernel/sched/features.h |    2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-> >> index de00a48..d98ae90 100644
-> >> --- a/kernel/sched/features.h
-> >> +++ b/kernel/sched/features.h
-> >> @@ -42,7 +42,7 @@ SCHED_FEAT(CACHE_HOT_BUDDY, true)
-> >>  /*
-> >>   * Use arch dependent cpu power functions
-> >>   */
-> >> -SCHED_FEAT(ARCH_POWER, false)
-> >> +SCHED_FEAT(ARCH_POWER, true)
-> >
-> > Hmmm...seems we can remove this knob completely.
-> >
+On Tue, Jun 19, 2012 at 03:00:14PM -0700, Andrew Morton wrote:
+> On Tue, 19 Jun 2012 16:50:04 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> Peter,
+> > Current implementation of dirty pages throttling is not memcg aware which makes
+> > it easy to have LRUs full of dirty pages which might lead to memcg OOM if the
+> > hard limit is small and so the lists are scanned faster than pages written
+> > back.
 > 
-> Do you prefer to keep it or remove it completely ?
+> This is a bit hard to parse.  I changed it to
+> 
+> : The current implementation of dirty pages throttling is not memcg aware
+> : which makes it easy to have memcg LRUs full of dirty pages.  Without
+> : throttling, these LRUs can be scanned faster than the rate of writeback,
+> : leading to memcg OOM conditions when the hard limit is small.
+> 
+> does that still say what you meant to say?
+> 
+> > The solution is far from being ideal - long term solution is memcg aware
+> > dirty throttling - but it is meant to be a band aid until we have a real
+> > fix.
+> 
+> Fair enough I guess.  The fix is small and simple and if it makes the
+> kernel better, why not?
+> 
+> Would like to see a few more acks though.  Why hasn't everyone been
+> hitting this?
+> 
 
-I prefer to keep it, the 'we can remove it' is true for all feature
-bits, they should never be twiddled in normal circumstances, its a debug
-feature. As such it makes sense to allow disabling the arch cpu-power
-fiddling.
+I had been quiet because Acks from people in the same company tend to not
+carry much weight.
+
+I think this patch is appropriate. It is not necessarily the *best*
+and potentially there is a better solution out there which is why I think
+people have been reluctent to ack it. However, some of the better solutions
+also had corner cases where they could simply break again or require a lot
+of new infrastructure such as dirty-limit tracking within memcgs that we
+are just not ready for.  This patch may not be subtle but it fixes a very
+annoying issue that currently makes memcg dangerous to use for workloads
+that dirty a lot of their memory. When the all singing all dancing fix
+exists then it can be reverted if necessary but from me;
+
+Reviewed-by: Mel Gorman <mgorman@suse.de>
+
+Some caveats with may_enter_fs below.
+
+> > We are seeing this happening during nightly backups which are placed into
+> > containers to prevent from eviction of the real working set.
+> 
+> Well that's a trick which we want to work well.  It's a killer
+> featurelet for people who wonder what all this memcg crap is for ;)
+> 
+
+Turns out people get really pissed when their straight-forward workload
+blows up.
+
+> > +			/*
+> > +			 * memcg doesn't have any dirty pages throttling so we
+> > +			 * could easily OOM just because too many pages are in
+> > +			 * writeback from reclaim and there is nothing else to
+> > +			 * reclaim.
+> > +			 */
+> > +			if (PageReclaim(page)
+> > +					&& may_enter_fs && !global_reclaim(sc))
+> > +				wait_on_page_writeback(page);
+> > +			else {
+> > +				nr_writeback++;
+> > +				unlock_page(page);
+> > +				goto keep;
+> > +			}
+> 
+> A couple of things here.
+> 
+> With my gcc and CONFIG_CGROUP_MEM_RES_CTLR=n (for gawd's sake can we
+> please rename this to CONFIG_MEMCG?), this:
+> 
+> --- a/mm/vmscan.c~memcg-prevent-from-oom-with-too-many-dirty-pages-fix
+> +++ a/mm/vmscan.c
+> @@ -726,8 +726,8 @@ static unsigned long shrink_page_list(st
+>  			 * writeback from reclaim and there is nothing else to
+>  			 * reclaim.
+>  			 */
+> -			if (PageReclaim(page)
+> -					&& may_enter_fs && !global_reclaim(sc))
+> +			if (!global_reclaim(sc) && PageReclaim(page) &&
+> +					may_enter_fs)
+>  				wait_on_page_writeback(page);
+>  			else {
+>  				nr_writeback++;
+> 
+> 
+> reduces vmscan.o's .text by 48 bytes(!).  Because the compiler can
+> avoid generating any code for PageReclaim() and perhaps the
+> may_enter_fs test.  Because global_reclaim() evaluates to constant
+> true.  Do you think that's an improvement?
+> 
+
+Looks functionally equivalent to me so why not get the 48 bytes!
+
+> Also, why do we test may_enter_fs here? 
+
+I think this is partially my fault because it's based on a similar test
+lumpy reclaim used to do and I at least didn't reconsider it properly during
+review. Back then, there were two reasons for the may_enter_fs check. The
+first was to avoid processes like kjournald ever stalling on page writeback
+because it caused the system to "stutter". The more relevant reason was
+because callers that lacked may_enter_fs were also likely to fail lumpy
+reclaim if they could not write dirty pages and wait on them so it was
+better to give up or move to another block.
+
+In the context of memcg reclaim there should be no concern about kernel
+threads getting stuck on writeback and it does not have the same problem
+as lumpy reclaim had with being unable to writeout pages. IMO, the check
+is safe to drop. Michal?
+
+> Finally, I wonder if there should be some timeout of that wait.  I
+> don't know why, but I wouldn't be surprised if we hit some glitch which
+> causes us to add one!
+> 
+
+If we hit such a situation it means that flush is no longer working which
+is interesting in itself. I guess one possibility where it can occur is
+if we hit global dirty limits (or memcg dirty limits when they exist)
+and the page is backed by NFS that is disconnected. That would stall here
+potentially forever but it's already the case that a system that hits its
+dirty limits with a disconnected NFS is in trouble and a timeout here will
+not do much to help.
+
+-- 
+Mel Gorman
+SUSE Labs
