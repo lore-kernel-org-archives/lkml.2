@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab2FTJr7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:47:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58555 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755582Ab2FTJfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:35:25 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/17] mm: slub: Optimise the SLUB fast path to avoid pfmemalloc checks
-Date: Wed, 20 Jun 2012 10:35:05 +0100
-Message-Id: <1340184920-22288-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340184920-22288-1-git-send-email-mgorman@suse.de>
-References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
+	id S1756120Ab2FTJs4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:48:56 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:22054
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755832Ab2FTJsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:48:55 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -12
+X-BigFish: VPS-12(zz98dI1432Izz1202hzz15d4Rz2dh668h839h944hd25he5bhf0ah)
+X-WSS-ID: 0M5WTX9-01-36S-02
+X-M-MSG: 
+Date: Wed, 20 Jun 2012 11:48:44 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        <e1000-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
+Subject: Re: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
+Message-ID: <20120620094844.GL2624@amd.com>
+References: <20120619102041.GI2624@amd.com>
+ <4FE0C2A8.50602@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FE0C2A8.50602@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Lameter <cl@linux.com>
+Hi Alexander,
 
-This patch removes the check for pfmemalloc from the alloc hotpath and
-puts the logic after the election of a new per cpu slab. For a pfmemalloc
-page we do not use the fast path but force the use of the slow path which
-is also used for the debug case.
+On Tue, Jun 19, 2012 at 11:19:20AM -0700, Alexander Duyck wrote:
+> Based on the faults it would look like accessing the descriptor rings is
+> probably triggering the errors.  We allocate the descriptor rings using
+> dma_alloc_coherent so the rings should be mapped correctly.
 
-This has the side-effect of weakening pfmemalloc processing in the
-following way;
+Can this happen before the driver actually allocated the descriptors? As
+I said, the faults appear before any DMA-API call was made for that
+device (hence, domain=0x0000, because the domain is assigned on the
+first call to the DMA-API for a device).
 
-1. A process that is allocating for network swap calls __slab_alloc.
-   pfmemalloc_match is true so the freelist is loaded and c->freelist is
-   now pointing to a pfmemalloc page.
+Also, I don't see the faults every time. One out of ten times
+(estimated) there are not faults. Is it possible that this is a race
+condition, e.g. that the card trys to access its descriptor rings before
+the driver allocated them (or something like that).
 
-2. A process that is attempting normal allocations calls slab_alloc,
-   finds the pfmemalloc page on the freelist and uses it because it did
-   not check pfmemalloc_match()
+> The PF and VF will end up being locked out since they are hung on an
+> uncompleted DMA transaction.  Normally we recommend that PCIe Advanced
+> Error Reporting be enabled if an IOMMU is enabled so the device can be
+> reset after triggering a page fault event.
+> 
+> The first thing that pops into my head for possible issues would be that
+> maybe the VF pci_dev structure or the device structure isn't being
+> correctly initialized when SR-IOV is enabled on the igb interface.  Do
+> you know if there are any AMD IOMMU specific values on those structures,
+> such as the domain, that are supposed to be initialized prior to calling
+> the DMA API calls?  If so, have you tried adding debug output to verify
+> if those values are initialized on a VF prior to bringing up a VF interface?
 
-The patch allows non-pfmemalloc allocations to use pfmemalloc pages with
-the kmalloc slabs being the most vunerable caches on the grounds they
-are most likely to have a mix of pfmemalloc and !pfmemalloc requests. A
-later patch will still protect the system as processes will get throttled
-if the pfmemalloc reserves get depleted but performance will not degrade
-as smoothly.
+Well, when the device appears in the system the IOMMU driver gets
+notified about it using the device_change notifiers. It will then
+allocate all necessary data structures. I also verified that this works
+correctly while debugging this issue. So I am pretty sure the problem
+isn't there :)
 
-[mgorman@suse.de: Expanded changelog]
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/slub.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+> Also have you tried any other SR-IOV capable devices on this system? 
+> That would be a valuable data point because we could then exclude the
+> SR-IOV code as being a possible cause for the issues if other SR-IOV
+> devices are working without any issues.
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 43738c9..9446176 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2301,11 +2301,11 @@ new_slab:
- 		}
- 	}
- 
--	if (likely(!kmem_cache_debug(s)))
-+	if (likely(!kmem_cache_debug(s) && pfmemalloc_match(c, gfpflags)))
- 		goto load_freelist;
- 
- 	/* Only entered in the debug case */
--	if (!alloc_debug_processing(s, c->page, object, addr))
-+	if (kmem_cache_debug(s) && !alloc_debug_processing(s, c->page, object, addr))
- 		goto new_slab;	/* Slab failed checks. Next slab needed */
- 
- 	c->freelist = get_freepointer(s, object);
-@@ -2355,8 +2355,7 @@ redo:
- 	barrier();
- 
- 	object = c->freelist;
--	if (unlikely(!object || !node_match(c, node) ||
--					!pfmemalloc_match(c, gfpflags)))
-+	if (unlikely(!object || !node_match(c, node)))
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 
- 	else {
+I have another SR-IOV device, but that fails to even enable SR-IOV
+because the BIOS did not let enough MMIO resources left. So I couldn't
+try it with that device. With the 82576 card enabling SR-IOV works fine
+but results in the faults from the VF.
+
+Regards,
+
+	Joerg
+
 -- 
-1.7.9.2
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
