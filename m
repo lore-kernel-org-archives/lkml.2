@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499Ab2FTSbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:31:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44755 "EHLO
+	id S932412Ab2FTSXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:23:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53819 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932415Ab2FTSXq (ORCPT
+	with ESMTP id S932375Ab2FTSXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:23:46 -0400
-Message-Id: <20120620173025.751840203@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:23:40 -0400
+Message-Id: <20120620173025.573839472@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:31:16 -0700
+Date: Wed, 20 Jun 2012 10:31:14 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Boot <bootc@bootc.net>,
-        Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 56/61] e1000e: Remove special case for 82573/82574 ASPM L1 disablement
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 54/61] remoteproc: fix missing fault indication in error-path
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Boot <bootc@bootc.net>
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-commit 59aed95263bdd0e2b48eb9be5a94346d2d4abf90 upstream.
+commit 30338cf09f82523d8747670f7363cc8af347c79f upstream.
 
-For the 82573, ASPM L1 gets disabled wholesale so this special-case code
-is not required. For the 82574 the previous patch does the same as for
-the 82573, disabling L1 on the adapter. Thus, this code is no longer
-required and can be removed.
+If rproc_find_rsc_table() fails, rproc_fw_boot() must set
+return-value before jumping to clean_up label. Otherwise no
+error value is returned.
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/netdev.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/remoteproc/remoteproc_core.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -5293,14 +5293,6 @@ static int e1000_change_mtu(struct net_d
- 		return -EINVAL;
- 	}
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -1041,8 +1041,10 @@ static int rproc_fw_boot(struct rproc *r
  
--	/* 82573 Errata 17 */
--	if (((adapter->hw.mac.type == e1000_82573) ||
--	     (adapter->hw.mac.type == e1000_82574)) &&
--	    (max_frame > ETH_FRAME_LEN + ETH_FCS_LEN)) {
--		adapter->flags2 |= FLAG2_DISABLE_ASPM_L1;
--		e1000e_disable_aspm(adapter->pdev, PCIE_LINK_STATE_L1);
--	}
--
- 	while (test_and_set_bit(__E1000_RESETTING, &adapter->state))
- 		usleep_range(1000, 2000);
- 	/* e1000e_down -> e1000e_reset dependent on max_frame_size & mtu */
+ 	/* look for the resource table */
+ 	table = rproc_find_rsc_table(rproc, fw->data, fw->size, &tablesz);
+-	if (!table)
++	if (!table) {
++		ret = -EINVAL;
+ 		goto clean_up;
++	}
+ 
+ 	/* handle fw resources which are required to boot rproc */
+ 	ret = rproc_handle_boot_rsc(rproc, table, tablesz);
 
 
