@@ -1,110 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab2FTCRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 22:17:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38135 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2FTCRQ (ORCPT
+	id S1754445Ab2FTCj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 22:39:57 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43231 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab2FTCj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 22:17:16 -0400
-From: Mandeep Singh Baines <mandeep.baines@gmail.com>
-To: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-pm@vger.kernel.org,
-        stable@kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Colin Cross <ccross@android.com>, Sameer Nanda <snanda@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: [PATCH] PM: Prevent waiting forever on asynchronous suspend after abort
-Date: Tue, 19 Jun 2012 19:17:07 -0700
-Message-Id: <1340158627-7586-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.4
+	Tue, 19 Jun 2012 22:39:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120618200131.GA12351@fieldses.org>
+References: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
+	<1339815965-1171-2-git-send-email-filbranden@gmail.com>
+	<20120618200131.GA12351@fieldses.org>
+Date: Tue, 19 Jun 2012 22:39:55 -0400
+Message-ID: <CABe66sW0k4N_7vMduOZMRak-U4A+6E7i+fiGwKEVBazJ1npBeg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] locks: prevent side-effects of locks_release_private
+ before file_lock is initialized
+From: Filipe Brandenburger <filbranden@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__device_suspend() must always send a completion. Otherwise, parent
-devices will wait forever.
+Hi,
 
-Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
-system sleep (v2)", introduced a regression by short-circuiting the
-complete_all() for certain error cases.
+On Mon, Jun 18, 2012 at 4:01 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> But clearest might be to separate allocation and initialization and
+> delay the latter till we know we're going to need it?
 
-This patch fixes the bug by always signalling a completion.
+I started playing with this second idea of yours... Unfortunately
+having fl_lmops unset before it's fully initialized doesn't really
+work because its methods are needed by vfs_setlease()... also, that
+would change the API for other users of that function...
 
-Addresses http://crosbug.com/31972
+But I thought of a way of setting a flag to mark the struct as
+uninitialized and then have vfs_setlease() clear that flag once it
+decides to use that struct. If it doesn't and changes the flp pointer
+to the one that was in use before, then it doesn't clear that flag
+which means the locks_free_lock() function will not do any calls into
+fl_lmops which might have side effects on the process...
 
-Tested by injecting an abort via the following patch:
+Here's the patch:
 
-diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-index a004db3..e5a6fce 100644
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -21,6 +21,7 @@
- #include <linux/pci.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
-+#include <linux/string.h>
 
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -477,6 +478,8 @@ static int resume_common(struct device *dev, int event)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 17fd887..8da1217 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1129,6 +1129,7 @@ static inline int file_check_writeable(struct file *filp)
+ #define FL_SLEEP       128     /* A blocking lock */
+ #define FL_DOWNGRADE_PENDING   256 /* Lease is being downgraded */
+ #define FL_UNLOCK_PENDING      512 /* Lease is being broken */
++#define FL_LEASE_UNINITIALIZED 1024 /* Lease was not fully initialized yet */
 
- static int hcd_pci_suspend(struct device *dev)
+ /*
+  * Special return value from posix_lock_file() and vfs_lock_file() for
+diff --git a/fs/locks.c b/fs/locks.c
+index 814c51d..a995cc9 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -195,6 +195,8 @@ EXPORT_SYMBOL_GPL(locks_alloc_lock);
+
+ void locks_release_private(struct file_lock *fl)
  {
-+       if (!strcmp("0000:00:1d.3", dev_name(dev)))
-+               return -EBUSY;
-        return suspend_common(dev, device_may_wakeup(dev));
- }
++       if (fl->fl_flags & FL_LEASE_UNINITIALIZED)
++               return;
+        if (fl->fl_ops) {
+                if (fl->fl_ops->fl_release_private)
+                        fl->fl_ops->fl_release_private(fl);
+@@ -454,7 +456,7 @@ static int lease_init(struct file *filp, int type,
+struct file_lock *fl)
+        fl->fl_pid = current->tgid;
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org
-Cc: stable@kernel.org
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Colin Cross <ccross@android.com>
-Cc: Sameer Nanda <snanda@chromium.org>
-Cc: Olof Johansson <olofj@chromium.org>
----
- drivers/base/power/main.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+        fl->fl_file = filp;
+-       fl->fl_flags = FL_LEASE;
++       fl->fl_flags = FL_LEASE | FL_LEASE_UNINITIALIZED;
+        fl->fl_start = 0;
+        fl->fl_end = OFFSET_MAX;
+        fl->fl_ops = NULL;
+@@ -1406,6 +1408,7 @@ int generic_add_lease(struct file *filp, long
+arg, struct file_lock **flp)
+        if (!leases_enable)
+                goto out;
 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index e0fb5b0..9cb845e 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 	dpm_wait_for_children(dev, async);
- 
- 	if (async_error)
--		return 0;
-+		goto Complete;
- 
- 	pm_runtime_get_noresume(dev);
- 	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-@@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 	if (pm_wakeup_pending()) {
- 		pm_runtime_put_sync(dev);
- 		async_error = -EBUSY;
--		return 0;
-+		goto Complete;
- 	}
- 
- 	device_lock(dev);
-@@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 	}
- 
- 	device_unlock(dev);
-+
-+ Complete:
- 	complete_all(&dev->power.completion);
- 
- 	if (error) {
--- 
-1.7.3.4
++       lease->fl_flags &= ~FL_LEASE_UNINITIALIZED;
+        locks_insert_lock(before, lease);
+        return 0;
 
+
+
+Unfortunately, at this point I have more questions than answers...
+* Is this a good idea?
+* Is it good to store this as an extra flag? Or would it be
+preferrable to add an extra boolean field to the file_lock struct
+instead?
+* Is FL_LEASE_UNINITIALIZED a good name for this flag?
+* Should this flag be set only in lease_init()? Or also functions such
+as flock_make_lock()? Potentially everything that is freed with
+locks_free_lock() might need it...
+* Should the flag be cleared in generic_add_lease() only? Or should
+__vfs_setlease() compare the original value of the lease pointer with
+the one returned by generic_setlease() (or filp->f_op->setlease() if
+it's set) and then clear the flag itself?
+
+Also, looking at lease_alloc(), I noticed that it calls
+locks_free_lock() if lease_init() fails, but lease_init() can only
+fail right at the beginning if assign_type() fails, but at that point
+can it be guaranteed that fl_lmops (and fl_ops for that matter) are
+properly populated or are at least NULL? Maybe locks_alloc_lock()
+should initialize the file_lock struct with a flag indicating that
+it's not fully initialized at that point yet...
+
+Another thing I noticed (after Bruce pointed me to that code) is that
+fs/nfsd/nfs4state.c:nfs4_setlease() seems to suffer from the leak bug
+that was fixed by the commits which introduced this issue, it's not
+checking whether vfs_setlease() is returning a different file_lock
+struct than the one it allocated and in that case it's not freeing the
+one it passed. But I'd say it's probably best to figure out a fix for
+that one only after this one is fixed to avoid introducing the
+regression there as well.
+
+Cheers,
+Filipe
