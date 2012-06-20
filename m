@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab2FTLh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:37:57 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33076 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab2FTLhy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:37:54 -0400
-Message-ID: <4FE1B60E.4020500@linaro.org>
-Date: Wed, 20 Jun 2012 12:37:50 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 3/3] ARM: dts: db8500: add node property "regulator-compatible"
- regulator node
-References: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com> <1340116099-17629-4-git-send-email-ldewangan@nvidia.com> <4FE0A546.1010707@linaro.org> <4FE0B79D.4090201@wwwdotorg.org> <4FE1772A.2010806@linaro.org> <4FE17E24.8050702@nvidia.com> <4FE18371.2020602@linaro.org> <4FE1877C.4090103@nvidia.com> <4FE19036.1060008@linaro.org> <20120620100631.GE3978@opensource.wolfsonmicro.com> <4FE1B31C.6030100@linaro.org> <4FE1B3A6.6090600@nvidia.com>
-In-Reply-To: <4FE1B3A6.6090600@nvidia.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755509Ab2FTLk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:40:56 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:37135 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754538Ab2FTLky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:40:54 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, <devel@openvz.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 2/2] expose fine-grained per-cpu data for cpuacct stats
+Date: Wed, 20 Jun 2012 15:38:16 +0400
+Message-Id: <1340192296-15939-3-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1340192296-15939-1-git-send-email-glommer@parallels.com>
+References: <1340192296-15939-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/06/12 12:27, Laxman Dewangan wrote:
-> On Wednesday 20 June 2012 04:55 PM, Lee Jones wrote:
->> On 20/06/12 11:06, Mark Brown wrote:
->>> On Wed, Jun 20, 2012 at 09:56:22AM +0100, Lee Jones wrote:
->>>
->>>>> Are you OK to have the first patch with adding property
->>> ...
->>>
->>>> Yes I'm fine with it.
->>> So is that an ack?
->> Sure why not. Although, Linus Walleij has the final say.
->>
->> Acked-by: Lee Jones<lee.jones@linaro.org>
->>
->
-> I am going to send the new patch having "regulator-compatible" on each
-> child node only for db8500.dtsi, and removing all other changes.
+The cpuacct cgroup already exposes user and system numbers in a per-cgroup
+fashion. But they are a summation along the whole group, not a per-cpu figure.
+Also, they are coarse-grained version of the stats usually shown at places
+like /proc/stat.
 
-That's fine. Keep me CC'ed on other related correspondence and I'll make 
-any other necessary changes with regards to node naming at a later date.
+I want to have enough cgroup data to emulate the /proc/stat interface. To
+achieve that, I am creating a new file "stat_percpu" that displays the
+fine-grained per-cpu data. The original data is left alone.
 
+The format of this file is as follows:
+
+1line header
+cpux val1 val2 ... valn.
+
+It is the same format used for the cpu part /proc/stat, except for the header,
+that may allow us to add fields in the future if they prove themselves needed.
+
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
+---
+ kernel/sched/core.c |   37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4ce68f6..5c19754 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -8155,6 +8155,39 @@ static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
+ 	return 0;
+ }
+ 
++static inline void do_fill_seq(struct seq_file *m, struct cpuacct *ca,
++			       int cpu, int index)
++{
++	struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
++	u64 val;
++
++	val = cputime64_to_clock_t(kcpustat->cpustat[index]);
++	seq_put_decimal_ull(m, ' ', val);
++}
++
++static int cpuacct_stats_percpu_show(struct cgroup *cgrp, struct cftype *cft,
++				     struct seq_file *m)
++{
++	struct cpuacct *ca = cgroup_ca(cgrp);
++	int cpu;
++
++	seq_printf(m, "user nice system irq softirq guest guest_nice\n");
++
++	for_each_online_cpu(cpu) {
++		seq_printf(m, "cpu%d", cpu);
++		do_fill_seq(m, ca, cpu, CPUTIME_USER);
++		do_fill_seq(m, ca, cpu, CPUTIME_NICE);
++		do_fill_seq(m, ca, cpu, CPUTIME_SYSTEM);
++		do_fill_seq(m, ca, cpu, CPUTIME_IRQ);
++		do_fill_seq(m, ca, cpu, CPUTIME_SOFTIRQ);
++		do_fill_seq(m, ca, cpu, CPUTIME_GUEST);
++		do_fill_seq(m, ca, cpu, CPUTIME_GUEST_NICE);
++		seq_putc(m, '\n');
++	}
++
++	return 0;
++}
++
+ static struct cftype files[] = {
+ 	{
+ 		.name = "usage",
+@@ -8169,6 +8202,10 @@ static struct cftype files[] = {
+ 		.name = "stat",
+ 		.read_map = cpuacct_stats_show,
+ 	},
++	{
++		.name = "stat_percpu",
++		.read_seq_string = cpuacct_stats_percpu_show,
++	},
+ 	{ }	/* terminate */
+ };
+ 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.10.2
+
