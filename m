@@ -1,89 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab2FTPyi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 11:54:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34003 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756803Ab2FTPyh convert rfc822-to-8bit (ORCPT
+	id S1756930Ab2FTP4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 11:56:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34162 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752895Ab2FTP4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 11:54:37 -0400
-Message-ID: <1340207670.21745.108.camel@twins>
-Subject: Re: [PATCH 00/10] perf, x86: Add northbridge counter support for
- AMD family 15h
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Jun 2012 17:54:30 +0200
-In-Reply-To: <20120620122941.GH5046@erda.amd.com>
-References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
-	 <CABPqkBS9hRxKLsecVK+AgRue6oqTtAg4=0Dpd5Z2VwAUja50fw@mail.gmail.com>
-	 <20120620092932.GH1478@erda.amd.com> <1340185084.21745.81.camel@twins>
-	 <20120620100031.GI1478@erda.amd.com> <1340187373.21745.95.camel@twins>
-	 <20120620122941.GH5046@erda.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 20 Jun 2012 11:56:33 -0400
+Date: Wed, 20 Jun 2012 08:56:26 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: daniel.vetter@ffwll.ch, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Thunderbolt, Apple Monitor & MBA, and excess kworker load
+Message-ID: <20120620155626.GA3384@kroah.com>
+References: <20120620154842.GA5788@air.dominikbrodowski.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120620154842.GA5788@air.dominikbrodowski.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 14:29 +0200, Robert Richter wrote:
-> On 20.06.12 12:16:13, Peter Zijlstra wrote:
-> > Sure it can be done, just not pretty. Combine that with all the other
-> > special casing like patches 3 and 10 and one really starts to wonder if
-> > its all worth it.
+On Wed, Jun 20, 2012 at 05:48:42PM +0200, Dominik Brodowski wrote:
+> Hi,
 > 
-> I actually started writing the code by implementing a different pmu.
-> It turned out to be the wrong direction. The pmus would be almost
-> identical, just some different config values and a bit nb related
-> special code. But you can't really reuse the functions on a 2nd
-> running pmu, there are hard wired functions in the x86 pmu code and
-> x86_pmu ops do not fit for such a split. It would mean a complete
-> rework of x86 perf code. Really, I tried that already. And all this
-> effort just to implement nb counters? If someone is willing to help
-> here this would be ok, but I guess I would have to do all this on my
-> own. And to be fair, this effort was also not make for fixed counters,
-> pebs, bts, etc. Maybe the uncore implementation is different here, but
-> today is the first day the uncore patches are in tip.
+> At work, I wish to attach a 27" Apple Display using thunderbolt to my Mac
+> Book Air 4,2 13". Using OS X, it works fine, but as I prefer using Linux, I
+> tested out Ubuntu's stock kernel and (among other) 3.5.0-rc3+ as of f40759e.
+> Hotplug doesn't work (known issue), but also with coldplug the display
+> reacts _very_ slow, way too slow for real use: The screen updates only every
+> half second or so. Is this a known bug? Might something go afoul with
+> kworker -- they need about 75% of the CPU with the large display attached,
+> and less than 1% _without_ the large display.
 
-Yeah, the Intel uncore implements an entire new pmu. The code is a
-little over the top because Intel went there and decided it was a good
-thing to have numerous uncore pmus instead of 1, some in PCI space some
-in MSR space.
+It's not really a known bug, but it is known that Thunderbolt doesn't
+work all that well, if at all, in Linux due to the BIOS issues that you
+have run into (the hotplug stuff.)
 
-Still their programming is similar to the core ones -- just like for
-AMD.
+Once the device is seen, it should just work like any other PCI device,
+and so, that might be a DRM driver issue somehow.
 
-Yeah, there's a little bit of 'duplicated' code, but that's unavoidable.
-
-> I also do not see the advantage of a separate pmu. Just to have a
-> different msr base to avoid the use of counter masks and some
-> optimized pmu ops? Masks are wide spread used in the kernel and on x86
-> the bsf instruction takes not more than an increment. And switches in
-> the code paths to special nb code are not more expensive than other
-> switches for other special code.
-
-Well, as it stands this thing is almost certainly doing things wrong. An
-uncore pmu wants to put all events for the same NB on the same cpu, not
-on whatever cpu they are registered, otherwise event rotation doesn't
-work right.
-
-It also wants to migrate events to another cpu if the designated cpu
-gets unplugged but there's still active cpus on the NB.
-
-Furthermore, if the uncore does PMI, you want PMI steering, if it
-doesn't do PMIs you want to poll the thing to avoid overflowing the
-counter.
-
-/me rummages on the interwebs to find the BKDG for Fam15h..
-
-OK, it looks like it does do PMI and it broadcast interrupts to the
-entire NB.. ok so that wants special magic too -- you might even want to
-disallow sampling on the thing until someone has a good use-case for
-that -- but you still need the PMI to deal with the counter overflow
-stuff.
-
-
-
+greg k-h
