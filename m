@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756495Ab2FTSL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:11:29 -0400
-Received: from smtp207.alice.it ([82.57.200.103]:44518 "EHLO smtp207.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210Ab2FTSL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:11:28 -0400
-Message-ID: <4FE2125A.5080806@libero.it>
-Date: Wed, 20 Jun 2012 20:11:38 +0200
-From: Goffredo Baroncelli <kreijack@libero.it>
-Reply-To: kreijack@inwind.it
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120418 Icedove/11.0
-MIME-Version: 1.0
-To: Calvin Walton <calvin.walton@kepstin.ca>
-CC: Alexander Block <ablock84@googlemail.com>, kreijack@inwind.it,
-        linux-btrfs@vger.kernel.org, dave@jikos.cz, hch@infradead.org,
-        linux-fsdevel@vger.kernel.org, chris.mason@fusionio.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Allow cross subvolume reflinks (2nd attempt)
-References: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>  <4FE205CF.9020509@libero.it>  <CAB9VWqB8z_faPNRJo8+9JWsQFDe507iTxwQK4sctUYGF9zCL4Q@mail.gmail.com> <1340215644.6961.12.camel@cwalton-XPS-8300>
-In-Reply-To: <1340215644.6961.12.camel@cwalton-XPS-8300>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756750Ab2FTSU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:20:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756377Ab2FTSU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 14:20:57 -0400
+Message-Id: <20120620173021.084285277@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
+Date: Wed, 20 Jun 2012 10:30:21 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [ 01/61] ARM i.MX53: Fix PLL4 base address
+In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 08:07 PM, Calvin Walton wrote:
-> On Wed, 2012-06-20 at 19:27 +0200, Alexander Block wrote:
->> On Wed, Jun 20, 2012 at 7:18 PM, Goffredo Baroncelli <kreijack@libero.it> wrote:
->>> Hi Alexander,
->>>
->>> On 06/20/2012 12:35 PM, Alexander Block wrote:
->>>> The patch also does proper vfs mount checks, so cross mount
->>>> point reflinks are not possible with this patch. It only allows cross
->>>> reflinks between two subvolumes which are in the same mount point.
->>>
->>> Thanks for working on that. What happens if two subvolumes of the same
->>> filesystem are mounted on two different places ?
->>>
->>> I usually do:
->>>  mount -o subvol=__active /dev/sdX /
->>>  mount -o subvol=.        /dev/sdX /var/btrfs
->>>
->>> So two different subvolumes of the same filesystem (the one on /dev/sdX)
->>> are mounted on two different places.
->>>
->>> Is it possible to do
->>>  cp --reflink /tmp/foo /var/btrfs/tmp/foo2
->> This will fail with -EXDEV. The patch explicitly forbids reflinks crossing vfs
->> mount boundaries.
-> 
-> Which means that if I want to do a reflink copy between two separately
-> mounted subvolumes, I will have to go and do a third mount with a common
-> subvolume above those two, then do the reflink operation within this
-> extra mount? This seems slightly impractical.
-> 
-> Is it any extra code to enable doing cross-mount reflinks? Why was the
-> decision made not to allow them?
-> 
-> Is there some particular opposition to supporting cross-mount operations
-> on multiple mounts of the same filesystem in general? (I'd love to have
-> rename() work across bind mounts, for example...)
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Yes please, could someone explain the reason behind this decision ? May
-be there are valid reasons, I am asking only to know which ones ?
+------------------
+
+From: Sascha Hauer <s.hauer@pengutronix.de>
+
+commit cdd781ab1906d039c2a93078385645d2d5af8491 upstream.
+
+MX53_DPLL4_BASE accidently returned the base address of PLL3.
+Fix this.
+
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/mach-imx/crm-regs-imx5.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/arm/mach-imx/crm-regs-imx5.h
++++ b/arch/arm/mach-imx/crm-regs-imx5.h
+@@ -23,7 +23,7 @@
+ #define MX53_DPLL1_BASE		MX53_IO_ADDRESS(MX53_PLL1_BASE_ADDR)
+ #define MX53_DPLL2_BASE		MX53_IO_ADDRESS(MX53_PLL2_BASE_ADDR)
+ #define MX53_DPLL3_BASE		MX53_IO_ADDRESS(MX53_PLL3_BASE_ADDR)
+-#define MX53_DPLL4_BASE		MX53_IO_ADDRESS(MX53_PLL3_BASE_ADDR)
++#define MX53_DPLL4_BASE		MX53_IO_ADDRESS(MX53_PLL4_BASE_ADDR)
+ 
+ /* PLL Register Offsets */
+ #define MXC_PLL_DP_CTL			0x00
+
 
