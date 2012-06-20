@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab2FTOtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:49:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51790 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab2FTOtJ (ORCPT
+	id S1756669Ab2FTOz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:55:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33710 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842Ab2FTOz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:49:09 -0400
-Date: Wed, 20 Jun 2012 16:49:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Arun Sharma <asharma@fb.com>,
-        Benjamin Redelings <benjamin.redelings@nescent.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, David Ahern <dsahern@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Shan Wei <davidshan@tencent.com>,
-        Stephane Eranian <eranian@google.com>, Sunjin Yang <fan4326@gmail.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/20] perf/core improvements
-Message-ID: <20120620144902.GB2007@gmail.com>
-References: <1340128221-17348-1-git-send-email-acme@infradead.org>
- <20120620120141.GB1925@gmail.com>
- <1340201223.1520.5.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1340201223.1520.5.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Jun 2012 10:55:57 -0400
+Message-ID: <1340204150.8003.8.camel@phoenix>
+Subject: [PATCH] regulator: tps62360: Convert to
+ regulator_set_voltage_time_sel()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 20 Jun 2012 22:55:50 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/tps62360-regulator.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
-* Namhyung Kim <namhyung@gmail.com> wrote:
+diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+index d044a58..d5b02fc 100644
+--- a/drivers/regulator/tps62360-regulator.c
++++ b/drivers/regulator/tps62360-regulator.c
+@@ -76,7 +76,6 @@ struct tps62360_chip {
+ 	int lru_index[4];
+ 	int curr_vset_vsel[4];
+ 	int curr_vset_id;
+-	int change_uv_per_us;
+ };
+ 
+ /*
+@@ -175,16 +174,6 @@ static int tps62360_dcdc_set_voltage_sel(struct regulator_dev *dev,
+ 	return 0;
+ }
+ 
+-static int tps62360_set_voltage_time_sel(struct regulator_dev *rdev,
+-		unsigned int old_selector, unsigned int new_selector)
+-{
+-	struct tps62360_chip *tps = rdev_get_drvdata(rdev);
+-
+-	return DIV_ROUND_UP(abs(new_selector - old_selector) *
+-			    rdev->desc->uV_step,
+-			    tps->change_uv_per_us);
+-}
+-
+ static int tps62360_set_mode(struct regulator_dev *rdev, unsigned int mode)
+ {
+ 	struct tps62360_chip *tps = rdev_get_drvdata(rdev);
+@@ -251,7 +240,7 @@ static struct regulator_ops tps62360_dcdc_ops = {
+ 	.set_voltage_sel	= tps62360_dcdc_set_voltage_sel,
+ 	.list_voltage		= regulator_list_voltage_linear,
+ 	.map_voltage		= regulator_map_voltage_linear,
+-	.set_voltage_time_sel	= tps62360_set_voltage_time_sel,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+ 	.set_mode		= tps62360_set_mode,
+ 	.get_mode		= tps62360_get_mode,
+ };
+@@ -294,7 +283,7 @@ static int __devinit tps62360_init_dcdc(struct tps62360_chip *tps,
+ 	ramp_ctrl = (ramp_ctrl >> 4) & 0x7;
+ 
+ 	/* ramp mV/us = 32/(2^ramp_ctrl) */
+-	tps->change_uv_per_us = DIV_ROUND_UP(32000, BIT(ramp_ctrl));
++	tps->desc.ramp_delay = DIV_ROUND_UP(32000, BIT(ramp_ctrl));
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
 
-> 2012-06-20 (수), 14:01 +0200, Ingo Molnar:
-> > One Makefile bug I noticed is that lib/tracevents does not clean 
-> > out these files:
-> > 
-> >  .event-parse.d
-> >  .parse-filter.d
-> >  .parse-utils.d
-> >  .trace-seq.d
-> > 
-> > and this can break the build when the libgcc package upgraded:
-> > 
-> >  comet:~/tip/tools/perf> make -j
-> >      SUBDIR ../lib/traceevent/
-> >  make[1]: *** No rule to make target `/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include/stddef.h', 
-> >   needed by `event-parse.o'.  Stop.
-> >  make: *** [../lib/traceevent//libtraceevent.a] Error 2
-> 
-> So how should we deal with it? Just plain 'make clean' should 
-> delete *.d files or add something like 'make distclean' to do 
-> that?
 
-Well, 'make' should notice that they are stale or should 
-regenerate them all the time.
 
-Thanks,
-
-	Ingo
