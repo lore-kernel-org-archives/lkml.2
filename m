@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985Ab2FTTvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 15:51:39 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42877 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757942Ab2FTTvc (ORCPT
+	id S1757998Ab2FTTyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 15:54:21 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:53150 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757970Ab2FTTyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 15:51:32 -0400
-Message-ID: <4FE229BF.4080109@wwwdotorg.org>
-Date: Wed, 20 Jun 2012 13:51:27 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 20 Jun 2012 15:54:20 -0400
+Message-ID: <4FE22A53.9090309@xenotime.net>
+Date: Wed, 20 Jun 2012 12:53:55 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Laxman Dewangan <ldewangan@nvidia.com>,
-        lrg@ti.com, rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, lee.jones@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 2/3] regulator: dt: regulator match by regulator-compatible
-References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com> <1340194987-23654-3-git-send-email-ldewangan@nvidia.com> <201206201924.09618.arnd@arndb.de> <20120620194609.GA4037@opensource.wolfsonmicro.com>
-In-Reply-To: <20120620194609.GA4037@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5pre
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: [PATCH] mfd: TWL6040_CORE needs to select IRQ_DOMAIN
+References: <1340156457.13830.1.camel@phoenix>
+In-Reply-To: <1340156457.13830.1.camel@phoenix>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 01:46 PM, Mark Brown wrote:
-> On Wed, Jun 20, 2012 at 07:24:09PM +0000, Arnd Bergmann wrote:
-> 
->> 1. What is it that the new property can express that cannot
->> already be expressed by using the phandle.
-> 
-> As well as being able to refer to the object from within the device
-> tree we also need to be able to tell what the object represents -
-> we have a bunch of regulators in an array under a node for a PMIC
-> and we want to know which regulator on the physical device each
-> array entry corresponds to.  Previously this was being done by
-> parsing the phandle name but that
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-s/phandle name/node name/ in that line I think.
+Fix build error by selecting IRQ_DOMAIN:
 
-At least, I don't think it's common to refer to nodes as phandles;
-phandles are usually the values used at "client" sites to refer to
-nodes IIUC.
+drivers/mfd/twl6040-irq.c:164:2: error: implicit declaration of function 'irq_domain_add_legacy'
+drivers/mfd/twl6040-irq.c:165:11: error: 'irq_domain_simple_ops' undeclared (first use in this function)
 
-> means we can't have more than one device with the same set of
-> names.
-> 
->> 2. Why is it called "regulator-compatible"? If it's similar to
->> the "compatible" property, don't you have to have a binding for
->> each possible string? If it's not related to the "compatible"
->> property, why is it named in a similar way?
-> 
-> Yes, there are bindings defined already for all the relevant
-> devices. Elsewhere in the binding document you'll see a list of all
-> the regulators on the PMIC and the names by which the device tree
-> binding knows them.
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Samuel Ortiz <sameo@linux.intel.com>
+Cc:	Misael Lopez Cruz <misael.lopez@ti.com>
+---
+ drivers/mfd/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20120620.orig/drivers/mfd/Kconfig
++++ linux-next-20120620/drivers/mfd/Kconfig
+@@ -286,6 +286,7 @@ config TWL6040_CORE
+ 	depends on I2C=y && GENERIC_HARDIRQS
+ 	select MFD_CORE
+ 	select REGMAP_I2C
++	select IRQ_DOMAIN
+ 	default n
+ 	help
+ 	  Say yes here if you want support for Texas Instruments TWL6040 audio
