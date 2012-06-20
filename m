@@ -1,135 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab2FTLoc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:44:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40159 "EHLO mx2.suse.de"
+	id S932209Ab2FTLo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:44:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40298 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755746Ab2FTLoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:44:23 -0400
+	id S932103Ab2FTLoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:44:54 -0400
+Date: Wed, 20 Jun 2012 12:44:50 +0100
 From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/17] net: Introduce sk_gfp_atomic() to allow addition of GFP flags depending on the individual socket
-Date: Wed, 20 Jun 2012 12:44:02 +0100
-Message-Id: <1340192652-31658-8-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340192652-31658-1-git-send-email-mgorman@suse.de>
-References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 01/17] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20120620114450.GF4011@suse.de>
+References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
+ <1340184920-22288-2-git-send-email-mgorman@suse.de>
+ <20120620110512.GA4208@breakpoint.cc>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120620110512.GA4208@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce sk_gfp_atomic(), this function allows to inject sock specific
-flags to each sock related allocation. It is only used on allocation
-paths that may be required for writing pages back to network storage.
+On Wed, Jun 20, 2012 at 01:05:13PM +0200, Sebastian Andrzej Siewior wrote:
+> On Wed, Jun 20, 2012 at 10:35:04AM +0100, Mel Gorman wrote:
+> > [a.p.zijlstra@chello.nl: Original implementation]
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> > diff --git a/mm/slab.c b/mm/slab.c
+> > index e901a36..b190cac 100644
+> > --- a/mm/slab.c
+> > +++ b/mm/slab.c
+> > @@ -1851,6 +1984,7 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+> >  	while (i--) {
+> >  		BUG_ON(!PageSlab(page));
+> >  		__ClearPageSlab(page);
+> > +		__ClearPageSlabPfmemalloc(page);
+> >  		page++;
+> >  	}
+> >  	if (current->reclaim_state)
+> > @@ -3120,16 +3254,19 @@ bad:
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 8c691fa..43738c9 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -1414,6 +1418,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+> >  		-pages);
+> >  
+> >  	__ClearPageSlab(page);
+> > +	__ClearPageSlabPfmemalloc(page);
+> >  	reset_page_mapcount(page);
+> >  	if (current->reclaim_state)
+> >  		current->reclaim_state->reclaimed_slab += pages;
+> 
+> So you mention a change here in v11's changelog but I don't see it.
+> 
 
-[davem@davemloft.net: Use sk_gfp_atomic only when necessary]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David S. Miller <davem@davemloft.net>
----
- include/net/sock.h    |    5 +++++
- net/ipv4/tcp_output.c |    9 +++++----
- net/ipv6/tcp_ipv6.c   |    8 +++++---
- 3 files changed, 15 insertions(+), 7 deletions(-)
+Because I'm an idiot and send out the wrong branch and then was rude
+enough to not include you on the CC. I have resent the series, correctly
+this time I hope. Sorry about that.
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 4a45216..5b47673 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -656,6 +656,11 @@ static inline bool sock_flag(const struct sock *sk, enum sock_flags flag)
- 	return test_bit(flag, &sk->sk_flags);
- }
- 
-+static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
-+{
-+	return GFP_ATOMIC;
-+}
-+
- static inline void sk_acceptq_removed(struct sock *sk)
- {
- 	sk->sk_ack_backlog--;
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 803cbfe..440b47e 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2461,7 +2461,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
- 
- 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
- 		s_data_desired = cvp->s_data_desired;
--	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1, GFP_ATOMIC);
-+	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
-+			   sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (skb == NULL)
- 		return NULL;
- 
-@@ -2759,7 +2760,7 @@ void tcp_send_ack(struct sock *sk)
- 	 * tcp_transmit_skb() will set the ownership to this
- 	 * sock.
- 	 */
--	buff = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	buff = alloc_skb(MAX_TCP_HEADER, sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (buff == NULL) {
- 		inet_csk_schedule_ack(sk);
- 		inet_csk(sk)->icsk_ack.ato = TCP_ATO_MIN;
-@@ -2774,7 +2775,7 @@ void tcp_send_ack(struct sock *sk)
- 
- 	/* Send it off, this clears delayed acks for us. */
- 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
--	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
-+	tcp_transmit_skb(sk, buff, 0, sk_gfp_atomic(sk, GFP_ATOMIC));
- }
- 
- /* This routine sends a packet with an out of date sequence
-@@ -2794,7 +2795,7 @@ static int tcp_xmit_probe_skb(struct sock *sk, int urgent)
- 	struct sk_buff *skb;
- 
- 	/* We don't queue it, tcp_transmit_skb() sets ownership. */
--	skb = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	skb = alloc_skb(MAX_TCP_HEADER, sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (skb == NULL)
- 		return -1;
- 
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 3a9aec2..7d7b5e1 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1353,7 +1353,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
- 	/* Clone pktoptions received with SYN */
- 	newnp->pktoptions = NULL;
- 	if (treq->pktopts != NULL) {
--		newnp->pktoptions = skb_clone(treq->pktopts, GFP_ATOMIC);
-+		newnp->pktoptions = skb_clone(treq->pktopts,
-+					      sk_gfp_atomic(sk, GFP_ATOMIC));
- 		consume_skb(treq->pktopts);
- 		treq->pktopts = NULL;
- 		if (newnp->pktoptions)
-@@ -1406,7 +1407,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
- 		 * across. Shucks.
- 		 */
- 		tcp_md5_do_add(newsk, (union tcp_md5_addr *)&newnp->daddr,
--			       AF_INET6, key->key, key->keylen, GFP_ATOMIC);
-+			       AF_INET6, key->key, key->keylen,
-+			       sk_gfp_atomic(sk, GFP_ATOMIC));
- 	}
- #endif
- 
-@@ -1501,7 +1503,7 @@ static int tcp_v6_do_rcv(struct sock *sk, struct sk_buff *skb)
- 					       --ANK (980728)
- 	 */
- 	if (np->rxopt.all)
--		opt_skb = skb_clone(skb, GFP_ATOMIC);
-+		opt_skb = skb_clone(skb, sk_gfp_atomic(sk, GFP_ATOMIC));
- 
- 	if (sk->sk_state == TCP_ESTABLISHED) { /* Fast path */
- 		sock_rps_save_rxhash(sk, skb);
 -- 
-1.7.9.2
-
+Mel Gorman
+SUSE Labs
