@@ -1,81 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab2FTJ3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:29:44 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:55812 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751561Ab2FTJ3m (ORCPT
+	id S1755795Ab2FTJ34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:29:56 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:27798 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704Ab2FTJ3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:29:42 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dIzz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M5WT1B-02-50A-02
-X-M-MSG: 
-Date: Wed, 20 Jun 2012 11:29:32 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/10] perf, x86: Add northbridge counter support for AMD
- family 15h
-Message-ID: <20120620092932.GH1478@erda.amd.com>
-References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
- <CABPqkBS9hRxKLsecVK+AgRue6oqTtAg4=0Dpd5Z2VwAUja50fw@mail.gmail.com>
+	Wed, 20 Jun 2012 05:29:50 -0400
+From: Jiang Liu <jiang.liu@huawei.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jiang Liu <jiang.liu@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [Resend with ACK][PATCH] memory hotplug: fix invalid memory access caused by stale kswapd pointer
+Date: Wed, 20 Jun 2012 17:21:53 +0800
+Message-ID: <1340184113-5028-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.8.msysgit.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CABPqkBS9hRxKLsecVK+AgRue6oqTtAg4=0Dpd5Z2VwAUja50fw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephane,
+Function kswapd_stop() will be called to destroy the kswapd work thread
+when all memory of a NUMA node has been offlined. But kswapd_stop() only
+terminates the work thread without resetting NODE_DATA(nid)->kswapd to NULL.
+The stale pointer will prevent kswapd_run() from creating a new work thread
+when adding memory to the memory-less NUMA node again. Eventually the stale
+pointer may cause invalid memory access.
 
-On 20.06.12 10:23:48, Stephane Eranian wrote:
-> I dont' quite understand the design choice here. In Fam15h, there is
-> a clean design for the uncore PMU. It has its own distinct set of 4
-> counters. Unlike Fam10h, where you program core counters to access
-> the NB counters. So why not like with Intel uncore, create a
-> separate NB PMU which would advertise its characteristics? That does
-> not preclude re-using the existing AMD-specific routines wherever
-> possible. I think the advantage is that muxing or starting/stopping
-> of the core PMU would not affect uncore and vice-versa for
-> instance. Wouldn't this also alleviate the problems with assigning
-> indexes to uncore PMU counters?
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David Rientjes <rientjes@google.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-I was thinking of creating a separate pmu too. There were 2
-fundamental problems with it. First, the implementation would have
-been different to the family 10h implementation. But besides the new
-counter msr range and the per-node counter msrs there is not much
-difference to perfctrs of family 10h and also family 15h. Otherwise NB
-events would have been programmed different for both families.
+---
+An example stack dump as below. It's reproduced with 2.6.32, but latest
+kernel has the same issue.
 
-Second, since nb perfctr are implemented the same way as core
-counters, the same code would have been used. Thus multiple (two) x86
-pmus (struct x86_pmu) would reside in parallel in the kernel. The
-current implemenation is not designed for this. A complete rework of
-the x86 perf implementation with impact to more code than this
-implemetation was the main reason against that approach and for
-choosing this design.
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff81051a94>] exit_creds+0x12/0x78
+PGD 0
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/memory/memory391/state
+CPU 11
+Modules linked in: cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq microcode fuse loop dm_mod tpm_tis rtc_cmos i2c_i801 rtc_core tpm serio_raw pcspkr sg tpm_bios igb i2c_core iTCO_wdt rtc_lib mptctl iTCO_vendor_support button dca bnx2 usbhid hid uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif edd ext3 mbcache jbd fan ide_pci_generic ide_core ata_generic ata_piix libata thermal processor thermal_sys hwmon mptsas mptscsih mptbase scsi_transport_sas scsi_mod
+Pid: 7949, comm: sh Not tainted 2.6.32.12-qiuxishi-5-default #92 Tecal RH2285
+RIP: 0010:[<ffffffff81051a94>]  [<ffffffff81051a94>] exit_creds+0x12/0x78
+RSP: 0018:ffff8806044f1d78  EFLAGS: 00010202
+RAX: 0000000000000000 RBX: ffff880604f22140 RCX: 0000000000019502
+RDX: 0000000000000000 RSI: 0000000000000202 RDI: 0000000000000000
+RBP: ffff880604f22150 R08: 0000000000000000 R09: ffffffff81a4dc10
+R10: 00000000000032a0 R11: ffff880006202500 R12: 0000000000000000
+R13: 0000000000c40000 R14: 0000000000008000 R15: 0000000000000001
+FS:  00007fbc03d066f0(0000) GS:ffff8800282e0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 000000060f029000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process sh (pid: 7949, threadinfo ffff8806044f0000, task ffff880603d7c600)
+Stack:
+ ffff880604f22140 ffffffff8103aac5 ffff880604f22140 ffffffff8104d21e
+<0> ffff880006202500 0000000000008000 0000000000c38000 ffffffff810bd5b1
+<0> 0000000000000000 ffff880603d7c600 00000000ffffdd29 0000000000000003
+Call Trace:
+ [<ffffffff8103aac5>] __put_task_struct+0x5d/0x97
+ [<ffffffff8104d21e>] kthread_stop+0x50/0x58
+ [<ffffffff810bd5b1>] offline_pages+0x324/0x3da
+ [<ffffffff8121111f>] memory_block_change_state+0x179/0x1db
+ [<ffffffff8121121f>] store_mem_state+0x9e/0xbb
+ [<ffffffff8111a1f1>] sysfs_write_file+0xd0/0x107
+ [<ffffffff810c7fe0>] vfs_write+0xad/0x169
+ [<ffffffff810c8158>] sys_write+0x45/0x6e
+ [<ffffffff8100296b>] system_call_fastpath+0x16/0x1b
+ [<00007fbc0344df60>] 0x7fbc0344df60
+Code: ff 4d 00 0f 94 c0 84 c0 74 08 48 89 ef e8 1f fd ff ff 5b 5d 31 c0 41 5c c3 53 48 8b 87 20 06 00 00 48 89 fb 48 8b bf 18 06 00 00 <8b> 00 48 c7 83 18 06 00 00 00 00 00 00 f0 ff 0f 0f 94 c0 84 c0
+RIP  [<ffffffff81051a94>] exit_creds+0x12/0x78
+ RSP <ffff8806044f1d78>
+CR2: 0000000000000000
+---[ end trace 75959287252338a5 ]---
+---
+ mm/vmscan.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-The main problem with my approach was the introduction of counter
-masks and conflicts with Intel's fixed counter. I think my patches
-address this in a clean way which also led to a bit code cleanup.
-Another advantage I see is the unification of AMD pmus and a straight
-AMD setup code that is not widely spread other multiple pmus. The
-setup code uses cpuid and is family independent.
-
-I generally could imagine to switch AMD NB implementation to an
-uncore-like counter support. But then I would prefer a homogeneous
-implementation over all AMD families. This would be a separate patch
-set that is independent from family 15h nb counter implementation.
-
--Robert
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index eeb3bc9..7585101 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2961,8 +2961,10 @@ void kswapd_stop(int nid)
+ {
+ 	struct task_struct *kswapd = NODE_DATA(nid)->kswapd;
+ 
+-	if (kswapd)
++	if (kswapd) {
+ 		kthread_stop(kswapd);
++		NODE_DATA(nid)->kswapd = NULL;
++	}
+ }
+ 
+ static int __init kswapd_init(void)
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+1.7.1
+
 
