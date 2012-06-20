@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758340Ab2FTWsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 18:48:45 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41456 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758317Ab2FTWsk (ORCPT
+	id S1758384Ab2FTWtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 18:49:21 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41271 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757955Ab2FTWsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 18:48:40 -0400
+	Wed, 20 Jun 2012 18:48:39 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
@@ -14,9 +14,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 15/15] ARM: etm: Add sysfs entry to enable return stack if supported
-Date: Wed, 20 Jun 2012 18:47:47 -0400
-Message-Id: <1340232467-6023-16-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 06/15] ARM: etm: Add some missing locks and error checks
+Date: Wed, 20 Jun 2012 18:47:38 -0400
+Message-Id: <1340232467-6023-7-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
 References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
@@ -24,14 +24,22 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062022-7282-0000-0000-00000A239097
+x-cbid: 12062022-1780-0000-0000-000006A6DDE2
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000282; HX=3.00000190; KW=3.00000007;
+ PH=3.00000001; SC=3.00000003; SDB=6.00149807; UDB=6.00034058; UTC=2012-06-20
+ 22:48:37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arve Hjønnevåg <arve@android.com>
 
-Add sysfs entry to enable return stack if supported
+It is not safe to call etm_lock or etb_lock without holding the
+mutex since another thread may also have unlocked the registers.
+
+Also add some missing checks for valid etb_regs in the etm sysfs
+entries.
 
 CC: Russell King <linux@arm.linux.org.uk>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -40,130 +48,143 @@ Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 Signed-off-by: Arve Hjønnevåg <arve@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/arm/include/asm/hardware/coresight.h |    4 +++
- arch/arm/kernel/etm.c                     |   51 +++++++++++++++++++++++++++--
- 2 files changed, 53 insertions(+), 2 deletions(-)
+ arch/arm/kernel/etm.c |   57 +++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 39 insertions(+), 18 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
-index 727ba0f..dcf74d7 100644
---- a/arch/arm/include/asm/hardware/coresight.h
-+++ b/arch/arm/include/asm/hardware/coresight.h
-@@ -20,12 +20,14 @@
- #define TRACER_TRACE_DATA_BIT	3
- #define TRACER_TIMESTAMP_BIT	4
- #define TRACER_BRANCHOUTPUT_BIT	5
-+#define TRACER_RETURN_STACK_BIT	6
- #define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
- #define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
- #define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
- #define TRACER_TRACE_DATA	BIT(TRACER_TRACE_DATA_BIT)
- #define TRACER_TIMESTAMP	BIT(TRACER_TIMESTAMP_BIT)
- #define TRACER_BRANCHOUTPUT	BIT(TRACER_BRANCHOUTPUT_BIT)
-+#define TRACER_RETURN_STACK	BIT(TRACER_RETURN_STACK_BIT)
- 
- #define TRACER_TIMEOUT 10000
- 
-@@ -62,6 +64,7 @@
- #define ETMCTRL_BRANCH_OUTPUT	(1 << 8)
- #define ETMCTRL_CYCLEACCURATE	(1 << 12)
- #define ETMCTRL_TIMESTAMP_EN	(1 << 28)
-+#define ETMCTRL_RETURN_STACK_EN	(1 << 29)
- 
- /* ETM configuration code register */
- #define ETMR_CONFCODE		(0x04)
-@@ -136,6 +139,7 @@
- #define ETMIDR_VERSION_PFT_1_0	0x30
- 
- #define ETMR_CCE		0x1e8
-+#define ETMCCER_RETURN_STACK_IMPLEMENTED	BIT(23)
- #define ETMCCER_TIMESTAMPING_IMPLEMENTED	BIT(22)
- 
- #define ETMR_TRACEIDR		0x200
 diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index 8e84d5c..c5fb6c9 100644
+index c651cf9..3d21cf6 100644
 --- a/arch/arm/kernel/etm.c
 +++ b/arch/arm/kernel/etm.c
-@@ -124,6 +124,9 @@ static int trace_start_etm(struct tracectx *t, int id)
- 	if (t->flags & TRACER_TIMESTAMP)
- 		v |= ETMCTRL_TIMESTAMP_EN;
+@@ -264,8 +264,13 @@ static void etm_dump(void)
  
-+	if (t->flags & TRACER_RETURN_STACK)
-+		v |= ETMCTRL_RETURN_STACK_EN;
+ static void sysrq_etm_dump(int key)
+ {
++	if (!mutex_trylock(&tracer.mutex)) {
++		printk(KERN_INFO "Tracing hardware busy\n");
++		return;
++	}
+ 	dev_dbg(tracer.dev, "Dumping ETB buffer\n");
+ 	etm_dump();
++	mutex_unlock(&tracer.mutex);
+ }
+ 
+ static struct sysrq_key_op sysrq_etm_op = {
+@@ -374,6 +379,7 @@ static int __devinit etb_probe(struct amba_device *dev, const struct amba_id *id
+ 	if (ret)
+ 		goto out;
+ 
++	mutex_lock(&t->mutex);
+ 	t->etb_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
+ 	if (!t->etb_regs) {
+ 		ret = -ENOMEM;
+@@ -382,6 +388,16 @@ static int __devinit etb_probe(struct amba_device *dev, const struct amba_id *id
+ 
+ 	amba_set_drvdata(dev, t);
+ 
++	etb_unlock(t);
++	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
++	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
 +
- 	etm_unlock(t, id);
++	/* make sure trace capture is disabled */
++	etb_writel(t, 0, ETBR_CTRL);
++	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
++	etb_lock(t);
++	mutex_unlock(&t->mutex);
++
+ 	etb_miscdev.parent = &dev->dev;
  
- 	etm_writel(t, id, v, ETMR_CTRL);
-@@ -703,10 +706,13 @@ static ssize_t trace_branch_output_store(struct kobject *kobj,
+ 	ret = misc_register(&etb_miscdev);
+@@ -395,25 +411,19 @@ static int __devinit etb_probe(struct amba_device *dev, const struct amba_id *id
+ 	else
+ 		clk_enable(t->emu_clk);
+ 
+-	etb_unlock(t);
+-	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
+-	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
+-
+-	/* make sure trace capture is disabled */
+-	etb_writel(t, 0, ETBR_CTRL);
+-	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
+-	etb_lock(t);
+-
+ 	dev_dbg(&dev->dev, "ETB AMBA driver initialized.\n");
+ 
+ out:
+ 	return ret;
+ 
+ out_unmap:
++	mutex_lock(&t->mutex);
+ 	amba_set_drvdata(dev, NULL);
+ 	iounmap(t->etb_regs);
++	t->etb_regs = NULL;
+ 
+ out_release:
++	mutex_unlock(&t->mutex);
+ 	amba_release_regions(dev);
+ 
+ 	return ret;
+@@ -475,7 +485,10 @@ static ssize_t trace_running_store(struct kobject *kobj,
  		return -EINVAL;
  
  	mutex_lock(&tracer.mutex);
--	if (branch_output)
-+	if (branch_output) {
- 		tracer.flags |= TRACER_BRANCHOUTPUT;
--	else
-+		/* Branch broadcasting is incompatible with the return stack */
-+		tracer.flags &= ~TRACER_RETURN_STACK;
-+	} else {
- 		tracer.flags &= ~TRACER_BRANCHOUTPUT;
-+	}
+-	ret = value ? trace_start(&tracer) : trace_stop(&tracer);
++	if (!tracer.etb_regs)
++		ret = -ENODEV;
++	else
++		ret = value ? trace_start(&tracer) : trace_stop(&tracer);
  	mutex_unlock(&tracer.mutex);
  
- 	return n;
-@@ -716,6 +722,39 @@ static struct kobj_attribute trace_branch_output_attr =
- 	__ATTR(trace_branch_output, 0644,
- 		trace_branch_output_show, trace_branch_output_store);
+ 	return ret ? : n;
+@@ -491,18 +504,25 @@ static ssize_t trace_info_show(struct kobject *kobj,
+ 	u32 etb_wa, etb_ra, etb_st, etb_fc, etm_ctrl, etm_st;
+ 	int datalen;
  
-+static ssize_t trace_return_stack_show(struct kobject *kobj,
-+				  struct kobj_attribute *attr,
-+				  char *buf)
-+{
-+	return sprintf(buf, "%d\n", !!(tracer.flags & TRACER_RETURN_STACK));
-+}
-+
-+static ssize_t trace_return_stack_store(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   const char *buf, size_t n)
-+{
-+	unsigned int return_stack;
-+
-+	if (sscanf(buf, "%u", &return_stack) != 1)
-+		return -EINVAL;
-+
+-	etb_unlock(&tracer);
+-	datalen = etb_getdatalen(&tracer);
+-	etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
+-	etb_ra = etb_readl(&tracer, ETBR_READADDR);
+-	etb_st = etb_readl(&tracer, ETBR_STATUS);
+-	etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
+-	etb_lock(&tracer);
 +	mutex_lock(&tracer.mutex);
-+	if (return_stack) {
-+		tracer.flags |= TRACER_RETURN_STACK;
-+		/* Return stack is incompatible with branch broadcasting */
-+		tracer.flags &= ~TRACER_BRANCHOUTPUT;
++	if (tracer.etb_regs) {
++		etb_unlock(&tracer);
++		datalen = etb_getdatalen(&tracer);
++		etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
++		etb_ra = etb_readl(&tracer, ETBR_READADDR);
++		etb_st = etb_readl(&tracer, ETBR_STATUS);
++		etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
++		etb_lock(&tracer);
 +	} else {
-+		tracer.flags &= ~TRACER_RETURN_STACK;
++		etb_wa = etb_ra = etb_st = etb_fc = ~0;
++		datalen = -1;
 +	}
-+	mutex_unlock(&tracer.mutex);
-+
-+	return n;
-+}
-+
-+static struct kobj_attribute trace_return_stack_attr =
-+	__ATTR(trace_return_stack, 0644,
-+		trace_return_stack_show, trace_return_stack_store);
-+
- static ssize_t trace_timestamp_show(struct kobject *kobj,
- 				  struct kobj_attribute *attr,
- 				  char *buf)
-@@ -900,6 +939,14 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
- 		dev_dbg(&dev->dev,
- 			"Failed to create trace_branch_output in sysfs\n");
  
-+	if (etmccer & ETMCCER_RETURN_STACK_IMPLEMENTED) {
-+		ret = sysfs_create_file(&dev->dev.kobj,
-+					&trace_return_stack_attr.attr);
-+		if (ret)
-+			dev_dbg(&dev->dev,
-+			      "Failed to create trace_return_stack in sysfs\n");
-+	}
+ 	etm_unlock(&tracer);
+ 	etm_ctrl = etm_readl(&tracer, ETMR_CTRL);
+ 	etm_st = etm_readl(&tracer, ETMR_STATUS);
+ 	etm_lock(&tracer);
++	mutex_unlock(&tracer.mutex);
+ 
+ 	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
+ 			"ETBR_WRITEADDR:\t%08x\n"
+@@ -652,7 +672,6 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
+ 
+ 	amba_set_drvdata(dev, t);
+ 
+-	mutex_init(&t->mutex);
+ 	t->dev = &dev->dev;
+ 	t->flags = TRACER_CYCLE_ACC | TRACER_TRACE_DATA;
+ 	t->etm_portsz = 1;
+@@ -746,6 +765,8 @@ static int __init etm_init(void)
+ {
+ 	int retval;
+ 
++	mutex_init(&tracer.mutex);
 +
- 	if (etmccer & ETMCCER_TIMESTAMPING_IMPLEMENTED) {
- 		ret = sysfs_create_file(&dev->dev.kobj,
- 					&trace_timestamp_attr.attr);
+ 	retval = amba_driver_register(&etb_driver);
+ 	if (retval) {
+ 		printk(KERN_ERR "Failed to register etb\n");
 -- 
 1.7.9.5
 
