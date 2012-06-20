@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab2FSX6S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 19:58:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37512 "EHLO
+	id S1755340Ab2FTALa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 20:11:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37616 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab2FSX6Q (ORCPT
+	with ESMTP id S1751829Ab2FTAL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 19:58:16 -0400
-Date: Tue, 19 Jun 2012 16:58:15 -0700
+	Tue, 19 Jun 2012 20:11:29 -0400
+Date: Tue, 19 Jun 2012 17:11:28 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 2/2] memcg: clean up force_empty_list() return value
- check
-Message-Id: <20120619165815.5ce24be7.akpm@linux-foundation.org>
-In-Reply-To: <4FDF1830.1000504@jp.fujitsu.com>
-References: <4FDF17A3.9060202@jp.fujitsu.com>
-	<4FDF1830.1000504@jp.fujitsu.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Len Brown <len.brown@intel.com>, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thermal: Constify 'type' argument for the registration
+ routine
+Message-Id: <20120619171128.377fc971.akpm@linux-foundation.org>
+In-Reply-To: <1339995037-19561-1-git-send-email-cbouatmailru@gmail.com>
+References: <1339995037-19561-1-git-send-email-cbouatmailru@gmail.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,38 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Jun 2012 20:59:44 +0900
-Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Sun, 17 Jun 2012 21:50:37 -0700
+Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
 
+> thermal_zone_device_register() does not modify 'type' argument, so
+> it is safe to declare it as const. Otherwise, if we pass a const
+> string, we are getting the ugly warning:
 > 
-> By commit "memcg: move charges to root cgroup if use_hierarchy=0"
-> mem_cgroup_move_parent() only returns -EBUSY, -EINVAL.
-> So, we can remove -ENOMEM and -EINTR checks.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index cf8a0f6..726b7c6 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3847,8 +3847,6 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->  		pc = lookup_page_cgroup(page);
+> ...
+>
+
+For some reason I can't apply this.  I typed it in again and it seems
+to work OK.  I'll assume that someone else will merge it into
+whatever-tree-broke.
+
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -137,7 +137,8 @@ enum {
+>  };
+>  #define THERMAL_GENL_CMD_MAX (__THERMAL_GENL_CMD_MAX - 1)
 >  
->  		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
-> -		if (ret == -ENOMEM || ret == -EINTR)
-> -			break;
->  
->  		if (ret == -EBUSY || ret == -EINVAL) {
+> -struct thermal_zone_device *thermal_zone_device_register(char *, int, void *,
+> +struct thermal_zone_device *
+> +thermal_zone_device_register(const char *, int, void *,
+>  		const struct thermal_zone_device_ops *, int tc1, int tc2,
+>  		int passive_freq, int polling_freq);
+>  void thermal_zone_device_unregister(struct thermal_zone_device *);
 
-This looks a bit fragile - if mem_cgroup_move_parent() is later changed
-(intentionally or otherwise!) to return -Esomethingelse then
-mem_cgroup_force_empty_list() will subtly break.  Why not just do
+Personally, I prefer it when the arguments are named in the declaration
+- if you ever have reason to *read* the thing, the lack of names is
+quite maddening.  Particularly when the function has 72 arguments.
 
-		if (ret < 0)
-
-here?
-
-
+But naming some of them and not others is just daft.
