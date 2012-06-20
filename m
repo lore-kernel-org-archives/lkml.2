@@ -1,189 +1,447 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab2FTHT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 03:19:59 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:37246 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab2FTHT6 convert rfc822-to-8bit (ORCPT
+	id S1753852Ab2FTHXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 03:23:40 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:13064 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab2FTHXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 03:19:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339176197-13270-3-git-send-email-js1304@gmail.com>
-References: <1339176197-13270-1-git-send-email-js1304@gmail.com>
-	<1339176197-13270-3-git-send-email-js1304@gmail.com>
-Date: Wed, 20 Jun 2012 10:19:56 +0300
-X-Google-Sender-Auth: dEVeA_32lAnlThWwSSlwYdlA0r0
-Message-ID: <CAOJsxLFwNs2frWBkF-ns0Wo8gZ3OeyNRV6ARo1ukXHRjvW9PMw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] slub: refactoring unfreeze_partials()
-From: Pekka Enberg <penberg@kernel.org>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Jun 2012 03:23:38 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-be-4fe17a78bc38
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Namjae Jeon'" <linkinjeon@gmail.com>, merez@codeaurora.org,
+        "'Chris Ball'" <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Chris Ball'" <cjb@laptop.org>,
+        "'Subhash Jadavani'" <subhashj@codeaurora.org>,
+        "'S, Venkatraman'" <svenkatr@ti.com>
+References: <007c01cd4d15$b7ca1aa0$275e4fe0$%jun@samsung.com>
+ <21efe0f84cde4f8317a4ebb4de0b8207.squirrel@www.codeaurora.org>
+ <CAKYAXd9_szMcE=pPWBrOw_7j6XMvpVQhBq9-HfwJq92BEV9Lcg@mail.gmail.com>
+ <e7edc69762637ef2e68e38ec83e3b44f.squirrel@www.codeaurora.org>
+ <CAKYAXd9eakYoyDH131K6m7RkXgK0rHWjGecpKycSB+cvkQgFNA@mail.gmail.com>
+In-reply-to: <CAKYAXd9eakYoyDH131K6m7RkXgK0rHWjGecpKycSB+cvkQgFNA@mail.gmail.com>
+Subject: RE: [PATCH RESEND v7 3/3] mmc: core: Support packed read command for
+ eMMC4.5 device
+Date: Wed, 20 Jun 2012 16:23:35 +0900
+Message-id: <000001cd4eb5$9af113b0$d0d33b10$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1ODttWpQ8F6nKXSrKG4VEvqZLv8AAYlL6A
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jAd2Kqof+BtdnClhc3jWHzeLI/35G
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDIWLA0u+FRR8WbpA7YGxnWhXYycHBICJhKvFh5nhrDF
+	JC7cW8/WxcjFISSwiFHi59GVzBDOH0aJx4veMYFUsQloSfx98wasQ0QgXuLh6/fsIEXMApsY
+	Jd50H4dqP8sk8fpbLyNIFadAsMSl44tYQGxhgTiJTX//s4PYLAKqEmt2rQGbyitgKzGj8xI7
+	hC0o8WPyPaB6DqCp6hJTpuSChJkF5CU2r3nLDBKWAAo/+qsLcYORxKpXDxkhSkQk9r14xziB
+	UWgWkkGzEAbNQjJoFpKOBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCA/qZ9A7GVQ0W
+	hxgFOBiVeHg/lDz0F2JNLCuuzD3EKMHBrCTCy5wAFOJNSaysSi3Kjy8qzUktPsQozcGiJM7b
+	ZH3BX0ggPbEkNTs1tSC1CCbLxMEp1cAY0b/UUTxx7s5bx5eyKzWrt+TmH/nY2NW4gdsoPdzR
+	v+fv+spVMapPbV8JSy/h3r6gIeXm6vLbKgsleU0U8zcYSy+9teFXU3LgkWnPdsUzbJe6c2H+
+	3f3v/BZruWi/qTjgcHWV6epzN07WB6hvPPfo+s9KOx+lqJn7d6vu/JehW2Sw3m2R8VsZJZbi
+	jERDLeai4kQA0V1OYGQCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 8:23 PM, Joonsoo Kim <js1304@gmail.com> wrote:
-> Current implementation of unfreeze_partials() is so complicated,
-> but benefit from it is insignificant. In addition many code in
-> do {} while loop have a bad influence to a fail rate of cmpxchg_double_slab.
-> Under current implementation which test status of cpu partial slab
-> and acquire list_lock in do {} while loop,
-> we don't need to acquire a list_lock and gain a little benefit
-> when front of the cpu partial slab is to be discarded, but this is a rare case.
-> In case that add_partial is performed and cmpxchg_double_slab is failed,
-> remove_partial should be called case by case.
->
-> I think that these are disadvantages of current implementation,
-> so I do refactoring unfreeze_partials().
->
-> Minimizing code in do {} while loop introduce a reduced fail rate
-> of cmpxchg_double_slab. Below is output of 'slabinfo -r kmalloc-256'
-> when './perf stat -r 33 hackbench 50 process 4000 > /dev/null' is done.
->
-> ** before **
-> Cmpxchg_double Looping
-> ------------------------
-> Locked Cmpxchg Double redos   182685
-> Unlocked Cmpxchg Double redos 0
->
-> ** after **
-> Cmpxchg_double Looping
-> ------------------------
-> Locked Cmpxchg Double redos   177995
-> Unlocked Cmpxchg Double redos 1
->
-> We can see cmpxchg_double_slab fail rate is improved slightly.
->
-> Bolow is output of './perf stat -r 30 hackbench 50 process 4000 > /dev/null'.
->
-> ** before **
->  Performance counter stats for './hackbench 50 process 4000' (30 runs):
->
->     108517.190463 task-clock                #    7.926 CPUs utilized            ( +-  0.24% )
->         2,919,550 context-switches          #    0.027 M/sec                    ( +-  3.07% )
->           100,774 CPU-migrations            #    0.929 K/sec                    ( +-  4.72% )
->           124,201 page-faults               #    0.001 M/sec                    ( +-  0.15% )
->   401,500,234,387 cycles                    #    3.700 GHz                      ( +-  0.24% )
->   <not supported> stalled-cycles-frontend
->   <not supported> stalled-cycles-backend
->   250,576,913,354 instructions              #    0.62  insns per cycle          ( +-  0.13% )
->    45,934,956,860 branches                  #  423.297 M/sec                    ( +-  0.14% )
->       188,219,787 branch-misses             #    0.41% of all branches          ( +-  0.56% )
->
->      13.691837307 seconds time elapsed                                          ( +-  0.24% )
->
-> ** after **
->  Performance counter stats for './hackbench 50 process 4000' (30 runs):
->
->     107784.479767 task-clock                #    7.928 CPUs utilized            ( +-  0.22% )
->         2,834,781 context-switches          #    0.026 M/sec                    ( +-  2.33% )
->            93,083 CPU-migrations            #    0.864 K/sec                    ( +-  3.45% )
->           123,967 page-faults               #    0.001 M/sec                    ( +-  0.15% )
->   398,781,421,836 cycles                    #    3.700 GHz                      ( +-  0.22% )
->   <not supported> stalled-cycles-frontend
->   <not supported> stalled-cycles-backend
->   250,189,160,419 instructions              #    0.63  insns per cycle          ( +-  0.09% )
->    45,855,370,128 branches                  #  425.436 M/sec                    ( +-  0.10% )
->       169,881,248 branch-misses             #    0.37% of all branches          ( +-  0.43% )
->
->      13.596272341 seconds time elapsed                                          ( +-  0.22% )
->
-> No regression is found, but rather we can see slightly better result.
->
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+We have already shared the result of packed read. Currently there is no benefit with packed read.
+It would be better to examine more if we can test the improved device for packed read.
+I'll check over this patch for improvement.
+Thanks to constant reviews.
 
-Applied, thanks!
+Hi Chris,
+Could you check the following two patches for merging?
+[PATCH RESEND v7 1/3] mmc: core: Add packed command feature of eMMC4.5
+[PATCH RESEND v7 2/3] mmc: core: Support packed write command for eMMC4.5 device
 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 686ed90..b5f2108 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1886,18 +1886,24 @@ redo:
->  */
->  static void unfreeze_partials(struct kmem_cache *s)
->  {
-> -       struct kmem_cache_node *n = NULL;
-> +       struct kmem_cache_node *n = NULL, *n2 = NULL;
->        struct kmem_cache_cpu *c = this_cpu_ptr(s->cpu_slab);
->        struct page *page, *discard_page = NULL;
->
->        while ((page = c->partial)) {
-> -               enum slab_modes { M_PARTIAL, M_FREE };
-> -               enum slab_modes l, m;
->                struct page new;
->                struct page old;
->
->                c->partial = page->next;
-> -               l = M_FREE;
-> +
-> +               n2 = get_node(s, page_to_nid(page));
-> +               if (n != n2) {
-> +                       if (n)
-> +                               spin_unlock(&n->list_lock);
-> +
-> +                       n = n2;
-> +                       spin_lock(&n->list_lock);
-> +               }
->
->                do {
->
-> @@ -1910,43 +1916,17 @@ static void unfreeze_partials(struct kmem_cache *s)
->
->                        new.frozen = 0;
->
-> -                       if (!new.inuse && (!n || n->nr_partial > s->min_partial))
-> -                               m = M_FREE;
-> -                       else {
-> -                               struct kmem_cache_node *n2 = get_node(s,
-> -                                                       page_to_nid(page));
-> -
-> -                               m = M_PARTIAL;
-> -                               if (n != n2) {
-> -                                       if (n)
-> -                                               spin_unlock(&n->list_lock);
-> -
-> -                                       n = n2;
-> -                                       spin_lock(&n->list_lock);
-> -                               }
-> -                       }
-> -
-> -                       if (l != m) {
-> -                               if (l == M_PARTIAL) {
-> -                                       remove_partial(n, page);
-> -                                       stat(s, FREE_REMOVE_PARTIAL);
-> -                               } else {
-> -                                       add_partial(n, page,
-> -                                               DEACTIVATE_TO_TAIL);
-> -                                       stat(s, FREE_ADD_PARTIAL);
-> -                               }
-> -
-> -                               l = m;
-> -                       }
-> -
->                } while (!__cmpxchg_double_slab(s, page,
->                                old.freelist, old.counters,
->                                new.freelist, new.counters,
->                                "unfreezing slab"));
->
-> -               if (m == M_FREE) {
-> +               if (unlikely(!new.inuse && n->nr_partial > s->min_partial)) {
->                        page->next = discard_page;
->                        discard_page = page;
-> +               } else {
-> +                       add_partial(n, page, DEACTIVATE_TO_TAIL);
-> +                       stat(s, FREE_ADD_PARTIAL);
->                }
->        }
->
+Best regards,
+Seungwon Jeon
+
+Namjae Jeon <linkinjeon@gmail.com> wrote:
+> 2012/6/19, merez@codeaurora.org <merez@codeaurora.org>:
+> > Hi Namjae,
+> >
+> > We have seen that read packing causes degradation to read performance and
+> > also got reports for the same from card vendors.
+> > When vendors will improve this feature and it will be proven to be
+> > beneficial we can open the discussion on it again.
+> > Until then, there is no point in merging a massive amount of code that
+> > will be disabled.
+> 
+> Okay, I agree about big changing. As I know, packed read speed on
+> sequecial read is better than original. random read is not. because of
+> overhead of header sector tranfering and error checking.
+> 
+> Hi. Seungwon.
+> When you measure packed read performance using lmdd, Is there any
+> improved performance ?
+> 
+> Thanks.
+> 
+> >
+> > Thanks,
+> > Maya
+> > On Mon, June 18, 2012 7:22 am, Namjae Jeon wrote:
+> >> 2012/6/18  <merez@codeaurora.org>:
+> >>> I would prefer that you didn't submit this.
+> >>> Let's wait with packed read until it is proven to be beneficial.
+> >> Hi. Merez.
+> >> I have reported packed read speed issue was because of firmware of mmc
+> >> card before.
+> >> And host can select packed read and write cmd by each performance.
+> >> mmc vendors willl be considering to improve packed read cmd.
+> >>
+> >> Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+> >>
+> >> Thanks.
+> >>>
+> >>> Thanks,
+> >>> Maya
+> >>> On Sun, June 17, 2012 10:46 pm, Seungwon Jeon wrote:
+> >>>> Add the packed read command for issuing data. Unlike the
+> >>>> packed write, command header is handled separately.
+> >>>>
+> >>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+> >>>> ---
+> >>>>  drivers/mmc/card/block.c |  134
+> >>>> +++++++++++++++++++++++++++++++++++++++++++---
+> >>>>  drivers/mmc/card/queue.c |    6 ++-
+> >>>>  drivers/mmc/card/queue.h |    2 +
+> >>>>  3 files changed, 133 insertions(+), 9 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> >>>> index eb99e35..25f42e8 100644
+> >>>> --- a/drivers/mmc/card/block.c
+> >>>> +++ b/drivers/mmc/card/block.c
+> >>>> @@ -62,6 +62,7 @@ MODULE_ALIAS("mmc:block");
+> >>>>                       (req->cmd_flags & REQ_META)) && \
+> >>>>                       (rq_data_dir(req) == WRITE))
+> >>>>  #define PACKED_CMD_VER               0x01
+> >>>> +#define PACKED_CMD_RD                0x01
+> >>>>  #define PACKED_CMD_WR                0x02
+> >>>>
+> >>>>  static DEFINE_MUTEX(block_mutex);
+> >>>> @@ -104,6 +105,7 @@ struct mmc_blk_data {
+> >>>>  #define MMC_BLK_WRITE                BIT(1)
+> >>>>  #define MMC_BLK_DISCARD              BIT(2)
+> >>>>  #define MMC_BLK_SECDISCARD   BIT(3)
+> >>>> +#define MMC_BLK_WR_HDR               BIT(4)
+> >>>>
+> >>>>       /*
+> >>>>        * Only set in main mmc_blk_data associated
+> >>>> @@ -1062,7 +1064,8 @@ static int mmc_blk_err_check(struct mmc_card
+> >>>> *card,
+> >>>>        * kind.  If it was a write, we may have transitioned to
+> >>>>        * program mode, which we have to wait for it to complete.
+> >>>>        */
+> >>>> -     if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
+> >>>> +     if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
+> >>>> ||
+> >>>> +                     (mq_mrq->packed_cmd ==
+> >>>> MMC_PACKED_WR_HDR)) {
+> >>>>               u32 status;
+> >>>>               do {
+> >>>>                       int err = get_card_status(card,
+> >>>> &status, 5);
+> >>>> @@ -1087,7 +1090,8 @@ static int mmc_blk_err_check(struct mmc_card
+> >>>> *card,
+> >>>>                      (unsigned)blk_rq_sectors(req),
+> >>>>                      brq->cmd.resp[0], brq->stop.resp[0]);
+> >>>>
+> >>>> -             if (rq_data_dir(req) == READ) {
+> >>>> +             if (rq_data_dir(req) == READ &&
+> >>>> +                             mq_mrq->packed_cmd !=
+> >>>> MMC_PACKED_WR_HDR) {
+> >>>>                       if (ecc_err)
+> >>>>                               return MMC_BLK_ECC_ERR;
+> >>>>                       return MMC_BLK_DATA_ERR;
+> >>>> @@ -1330,6 +1334,9 @@ static u8 mmc_blk_prep_packed_list(struct
+> >>>> mmc_queue
+> >>>> *mq, struct request *req)
+> >>>>       if ((rq_data_dir(cur) == WRITE) &&
+> >>>>                       (card->host->caps2 &
+> >>>> MMC_CAP2_PACKED_WR))
+> >>>>               max_packed_rw = card->ext_csd.max_packed_writes;
+> >>>> +     else if ((rq_data_dir(cur) == READ) &&
+> >>>> +                     (card->host->caps2 &
+> >>>> MMC_CAP2_PACKED_RD))
+> >>>> +             max_packed_rw = card->ext_csd.max_packed_reads;
+> >>>>
+> >>>>       if (max_packed_rw == 0)
+> >>>>               goto no_packed;
+> >>>> @@ -1426,13 +1433,16 @@ static void mmc_blk_packed_hdr_wrq_prep(struct
+> >>>> mmc_queue_req *mqrq,
+> >>>>       u32 *packed_cmd_hdr = mqrq->packed_cmd_hdr;
+> >>>>       u8 i = 1;
+> >>>>
+> >>>> -     mqrq->packed_cmd = MMC_PACKED_WRITE;
+> >>>> +     mqrq->packed_cmd = (rq_data_dir(req) == READ) ?
+> >>>> +             MMC_PACKED_WR_HDR : MMC_PACKED_WRITE;
+> >>>>       mqrq->packed_blocks = 0;
+> >>>>       mqrq->packed_fail_idx = MMC_PACKED_N_IDX;
+> >>>>
+> >>>>       memset(packed_cmd_hdr, 0, sizeof(mqrq->packed_cmd_hdr));
+> >>>>       packed_cmd_hdr[0] = (mqrq->packed_num << 16) |
+> >>>> -             (PACKED_CMD_WR << 8) | PACKED_CMD_VER;
+> >>>> +             (((rq_data_dir(req) == READ) ?
+> >>>> +               PACKED_CMD_RD : PACKED_CMD_WR) << 8) |
+> >>>> +             PACKED_CMD_VER;
+> >>>>
+> >>>>       /*
+> >>>>        * Argument for each entry of packed group
+> >>>> @@ -1464,7 +1474,8 @@ static void mmc_blk_packed_hdr_wrq_prep(struct
+> >>>> mmc_queue_req *mqrq,
+> >>>>       brq->mrq.stop = &brq->stop;
+> >>>>
+> >>>>       brq->sbc.opcode = MMC_SET_BLOCK_COUNT;
+> >>>> -     brq->sbc.arg = MMC_CMD23_ARG_PACKED | (mqrq->packed_blocks +
+> >>>> 1);
+> >>>> +     brq->sbc.arg = MMC_CMD23_ARG_PACKED |
+> >>>> +             ((rq_data_dir(req) == READ) ? 1 :
+> >>>> mqrq->packed_blocks + 1);
+> >>>>       brq->sbc.flags = MMC_RSP_R1 | MMC_CMD_AC;
+> >>>>
+> >>>>       brq->cmd.opcode = MMC_WRITE_MULTIPLE_BLOCK;
+> >>>> @@ -1474,7 +1485,12 @@ static void mmc_blk_packed_hdr_wrq_prep(struct
+> >>>> mmc_queue_req *mqrq,
+> >>>>       brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
+> >>>>
+> >>>>       brq->data.blksz = 512;
+> >>>> -     brq->data.blocks = mqrq->packed_blocks + 1;
+> >>>> +     /*
+> >>>> +      * Write separately the packd command header only for packed
+> >>>> read.
+> >>>> +      * In case of packed write, header is sent with blocks of
+> >>>> data.
+> >>>> +      */
+> >>>> +     brq->data.blocks = (rq_data_dir(req) == READ) ?
+> >>>> +             1 : mqrq->packed_blocks + 1;
+> >>>>       brq->data.flags |= MMC_DATA_WRITE;
+> >>>>
+> >>>>       brq->stop.opcode = MMC_STOP_TRANSMISSION;
+> >>>> @@ -1487,6 +1503,45 @@ static void mmc_blk_packed_hdr_wrq_prep(struct
+> >>>> mmc_queue_req *mqrq,
+> >>>>       brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
+> >>>>
+> >>>>       mqrq->mmc_active.mrq = &brq->mrq;
+> >>>> +     mqrq->mmc_active.err_check = (rq_data_dir(req) == READ) ?
+> >>>> +             mmc_blk_err_check : mmc_blk_packed_err_check;
+> >>>> +
+> >>>> +     mmc_queue_bounce_pre(mqrq);
+> >>>> +}
+> >>>> +
+> >>>> +static void mmc_blk_packed_rrq_prep(struct mmc_queue_req *mqrq,
+> >>>> +                                 struct mmc_card
+> >>>> *card,
+> >>>> +                                 struct mmc_queue *mq)
+> >>>> +{
+> >>>> +     struct mmc_blk_request *brq = &mqrq->brq;
+> >>>> +     struct request *req = mqrq->req;
+> >>>> +
+> >>>> +     mqrq->packed_cmd = MMC_PACKED_READ;
+> >>>> +
+> >>>> +     memset(brq, 0, sizeof(struct mmc_blk_request));
+> >>>> +     brq->mrq.cmd = &brq->cmd;
+> >>>> +     brq->mrq.data = &brq->data;
+> >>>> +     brq->mrq.stop = &brq->stop;
+> >>>> +
+> >>>> +     brq->cmd.opcode = MMC_READ_MULTIPLE_BLOCK;
+> >>>> +     brq->cmd.arg = blk_rq_pos(req);
+> >>>> +     if (!mmc_card_blockaddr(card))
+> >>>> +             brq->cmd.arg <<= 9;
+> >>>> +     brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
+> >>>> +     brq->data.blksz = 512;
+> >>>> +     brq->data.blocks = mqrq->packed_blocks;
+> >>>> +     brq->data.flags |= MMC_DATA_READ;
+> >>>> +
+> >>>> +     brq->stop.opcode = MMC_STOP_TRANSMISSION;
+> >>>> +     brq->stop.arg = 0;
+> >>>> +     brq->stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
+> >>>> +
+> >>>> +     mmc_set_data_timeout(&brq->data, card);
+> >>>> +
+> >>>> +     brq->data.sg = mqrq->sg;
+> >>>> +     brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
+> >>>> +
+> >>>> +     mqrq->mmc_active.mrq = &brq->mrq;
+> >>>>       mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
+> >>>>
+> >>>>       mmc_queue_bounce_pre(mqrq);
+> >>>> @@ -1521,6 +1576,56 @@ static int mmc_blk_cmd_err(struct mmc_blk_data
+> >>>> *md,
+> >>>> struct mmc_card *card,
+> >>>>       return ret;
+> >>>>  }
+> >>>>
+> >>>> +static int mmc_blk_chk_hdr_err(struct mmc_queue *mq, int status)
+> >>>> +{
+> >>>> +     struct mmc_blk_data *md = mq->data;
+> >>>> +     struct mmc_card *card = md->queue.card;
+> >>>> +     int type = MMC_BLK_WR_HDR, err = 0;
+> >>>> +
+> >>>> +     switch (status) {
+> >>>> +     case MMC_BLK_PARTIAL:
+> >>>> +     case MMC_BLK_RETRY:
+> >>>> +             err = 0;
+> >>>> +             break;
+> >>>> +     case MMC_BLK_CMD_ERR:
+> >>>> +     case MMC_BLK_ABORT:
+> >>>> +     case MMC_BLK_DATA_ERR:
+> >>>> +     case MMC_BLK_ECC_ERR:
+> >>>> +             err = mmc_blk_reset(md, card->host, type);
+> >>>> +             if (!err)
+> >>>> +                     mmc_blk_reset_success(md, type);
+> >>>> +             break;
+> >>>> +     }
+> >>>> +
+> >>>> +     return err;
+> >>>> +}
+> >>>> +
+> >>>> +static int mmc_blk_issue_packed_rd(struct mmc_queue *mq,
+> >>>> +                                struct mmc_queue_req
+> >>>> *mq_rq)
+> >>>> +{
+> >>>> +     struct mmc_blk_data *md = mq->data;
+> >>>> +     struct mmc_card *card = md->queue.card;
+> >>>> +     int status, ret, retry = 2;
+> >>>> +
+> >>>> +     do {
+> >>>> +             mmc_start_req(card->host, NULL, (int *) &status);
+> >>>> +             if (status) {
+> >>>> +                     ret = mmc_blk_chk_hdr_err(mq, status);
+> >>>> +                     if (ret)
+> >>>> +                             break;
+> >>>> +                     mmc_blk_packed_hdr_wrq_prep(mq_rq,
+> >>>> card, mq);
+> >>>> +                     mmc_start_req(card->host,
+> >>>> &mq_rq->mmc_active, NULL);
+> >>>> +             } else {
+> >>>> +                     mmc_blk_packed_rrq_prep(mq_rq, card,
+> >>>> mq);
+> >>>> +                     mmc_start_req(card->host,
+> >>>> &mq_rq->mmc_active, NULL);
+> >>>> +                     ret = 0;
+> >>>> +                     break;
+> >>>> +             }
+> >>>> +     } while (retry-- > 0);
+> >>>> +
+> >>>> +     return ret;
+> >>>> +}
+> >>>> +
+> >>>>  static int mmc_blk_end_packed_req(struct mmc_queue_req *mq_rq)
+> >>>>  {
+> >>>>       struct request *prq;
+> >>>> @@ -1626,8 +1731,12 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
+> >>>> *mq, struct request *rqc)
+> >>>>               } else
+> >>>>                       areq = NULL;
+> >>>>               areq = mmc_start_req(card->host, areq, (int *)
+> >>>> &status);
+> >>>> -             if (!areq)
+> >>>> -                     return 0;
+> >>>> +             if (!areq) {
+> >>>> +                     if (mq->mqrq_cur->packed_cmd ==
+> >>>> MMC_PACKED_WR_HDR)
+> >>>> +                             goto snd_packed_rd;
+> >>>> +                     else
+> >>>> +                             return 0;
+> >>>> +             }
+> >>>>
+> >>>>               mq_rq = container_of(areq, struct mmc_queue_req,
+> >>>> mmc_active);
+> >>>>               brq = &mq_rq->brq;
+> >>>> @@ -1726,10 +1835,19 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
+> >>>> *mq, struct request *rqc)
+> >>>>
+> >>>> mmc_blk_packed_hdr_wrq_prep(mq_rq, card, mq);
+> >>>>                               mmc_start_req(card->host,
+> >>>>
+> >>>> &mq_rq->mmc_active, NULL);
+> >>>> +                             if (mq_rq->packed_cmd ==
+> >>>> MMC_PACKED_WR_HDR) {
+> >>>> +                                     if
+> >>>> (mmc_blk_issue_packed_rd(mq, mq_rq))
+> >>>> +
+> >>>> goto cmd_abort;
+> >>>> +                             }
+> >>>>                       }
+> >>>>               }
+> >>>>       } while (ret);
+> >>>>
+> >>>> +snd_packed_rd:
+> >>>> +     if (mq->mqrq_cur->packed_cmd == MMC_PACKED_WR_HDR) {
+> >>>> +             if (mmc_blk_issue_packed_rd(mq, mq->mqrq_cur))
+> >>>> +                     goto start_new_req;
+> >>>> +     }
+> >>>>       return 1;
+> >>>>
+> >>>>   cmd_abort:
+> >>>> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> >>>> index 165d85a..277905e 100644
+> >>>> --- a/drivers/mmc/card/queue.c
+> >>>> +++ b/drivers/mmc/card/queue.c
+> >>>> @@ -389,11 +389,15 @@ static unsigned int
+> >>>> mmc_queue_packed_map_sg(struct
+> >>>> mmc_queue *mq,
+> >>>>
+> >>>>       cmd = mqrq->packed_cmd;
+> >>>>
+> >>>> -     if (cmd == MMC_PACKED_WRITE) {
+> >>>> +     if (cmd == MMC_PACKED_WR_HDR || cmd == MMC_PACKED_WRITE) {
+> >>>>               __sg = sg;
+> >>>>               sg_set_buf(__sg, mqrq->packed_cmd_hdr,
+> >>>>
+> >>>> sizeof(mqrq->packed_cmd_hdr));
+> >>>>               sg_len++;
+> >>>> +             if (cmd == MMC_PACKED_WR_HDR) {
+> >>>> +                     sg_mark_end(__sg);
+> >>>> +                     return sg_len;
+> >>>> +             }
+> >>>>               __sg->page_link &= ~0x02;
+> >>>>       }
+> >>>>
+> >>>> diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
+> >>>> index 5e04938..a8cad1f 100644
+> >>>> --- a/drivers/mmc/card/queue.h
+> >>>> +++ b/drivers/mmc/card/queue.h
+> >>>> @@ -14,7 +14,9 @@ struct mmc_blk_request {
+> >>>>
+> >>>>  enum mmc_packed_cmd {
+> >>>>       MMC_PACKED_NONE = 0,
+> >>>> +     MMC_PACKED_WR_HDR,
+> >>>>       MMC_PACKED_WRITE,
+> >>>> +     MMC_PACKED_READ,
+> >>>>  };
+> >>>>
+> >>>>  struct mmc_queue_req {
+> >>>> --
+> >>>> 1.7.0.4
+> >>>>
+> >>>>
+> >>>>
+> >>>
+> >>>
+> >>> --
+> >>> Sent by consultant of Qualcomm Innovation Center, Inc.
+> >>> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> >>>
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> >
+> >
+> > --
+> > Sent by consultant of Qualcomm Innovation Center, Inc.
+> > Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> >
+> >
 > --
-> 1.7.9.5
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
