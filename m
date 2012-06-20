@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab2FTJFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:05:25 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38558 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867Ab2FTJFW convert rfc822-to-8bit (ORCPT
+	id S1755921Ab2FTJGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:06:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35922 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583Ab2FTJGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:05:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331850130-32085-1-git-send-email-tony@bakeyournoodle.com>
-References: <1331850130-32085-1-git-send-email-tony@bakeyournoodle.com>
-Date: Wed, 20 Jun 2012 11:05:21 +0200
-X-Google-Sender-Auth: 3Y4ISZVqbUYqQhh5n69P1Ox7snA
-Message-ID: <CAMuHMdWmxwba4sfC9Eg6O=SQM0EJhquh0J9ca6DhjOc7wkv8cA@mail.gmail.com>
-Subject: Re: [PATCH] mn10300: Remove -mmemfuncs from KBUILD_CFLAGS
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Tony Breeds <tony@bakeyournoodle.com>
-Cc: David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Jun 2012 05:06:12 -0400
+Date: Wed, 20 Jun 2012 02:06:11 -0700 (PDT)
+Message-Id: <20120620.020611.1696375957120854262.davem@davemloft.net>
+To: federico.vaga@gmail.com
+Cc: mkl@pengutronix.de, bhupesh.sharma@st.com, sfr@canb.auug.org.au,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        wg@grandegger.com
+Subject: Re: linux-next: build failure after merge of the net-next tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <3170667.1PZa2330KE@harkonnen>
+References: <D5ECB3C7A6F99444980976A8C6D896384FAA275CBE@EAPEX1MAIL1.st.com>
+	<4FE18A5E.204@pengutronix.de>
+	<3170667.1PZa2330KE@harkonnen>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 11:22 PM, Tony Breeds <tony@bakeyournoodle.com> wrote:
-> It seems the current (gcc 4.6.3) no longer provide this so remove it.
->
-> With this patch the mn10300 architecture cross-compiles with gcc-4.6.3
->
-> Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
-> ---
->  arch/mn10300/Makefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/mn10300/Makefile b/arch/mn10300/Makefile
-> index 7120282..d6116c5 100644
-> --- a/arch/mn10300/Makefile
-> +++ b/arch/mn10300/Makefile
-> @@ -26,7 +26,7 @@ CHECKFLAGS    +=
->  PROCESSOR      := unset
->  UNIT           := unset
->
-> -KBUILD_CFLAGS  += -mam33 -mmem-funcs -DCPU=AM33
-> +KBUILD_CFLAGS  += -mam33 -DCPU=AM33
->  KBUILD_AFLAGS  += -mam33 -DCPU=AM33
->
->  ifeq ($(CONFIG_MN10300_CURRENT_IN_E2),y)
+From: Federico Vaga <federico.vaga@gmail.com>
+Date: Wed, 20 Jun 2012 11:03:08 +0200
 
-Still needed: http://kisskb.ellerman.id.au/kisskb/buildresult/6546343/
+>> I think the driver is currently used/tested only on ARM only, so what
+>> about adding a HAVE_CLK dependency, until Viresh Kumar's patches are
+>> available in net-next. Later we can remove it.
+> 
+> This driver is tested only on an x86 with AMBA peripherals on PCI. We 
+> are developing the clk side for this new platform. 
 
-Should it use $(call cc-option ...) instead?
+Then the driver should NEVER have been submitted without the
+required infrastructure in place first.
 
-Gr{oetje,eeting}s,
+If what you say is true, I'm extremely pissed off about this now.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+This submission was a complete cluster fuck, and it means the person
+who submitted this to me didn't test the damn build even.
