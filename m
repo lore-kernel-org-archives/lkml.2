@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab2FTShl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:37:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35553 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131Ab2FTShf (ORCPT
+	id S932326Ab2FTSiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:38:00 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:48332 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932142Ab2FTShz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:37:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
-References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
-	<CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
-	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
-	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
-	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
-	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
-	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
-	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
-	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
-Date: Wed, 20 Jun 2012 11:37:33 -0700
-X-Google-Sender-Auth: 1HlyN86vS75AQKGaZjxz2SAaMOE
-Message-ID: <CAE9FiQWR2E8NEdxOc=+3pzXcnOV_Wt7itqsO3QCJX+x7FzGUJg@mail.gmail.com>
-Subject: Re: SNB PCI root information
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, jbarnes@virtuousgeek.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7b339cc145af3204c2ebb174
+	Wed, 20 Jun 2012 14:37:55 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: next-20120620 build error in netfilter
+In-Reply-To: Your message of "Wed, 20 Jun 2012 19:28:01 +0200."
+             <20120620172801.GA9385@1984>
+From: valdis.kletnieks@vt.edu
+References: <32596.1340212473@turing-police.cc.vt.edu>
+            <20120620172801.GA9385@1984>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1340217472_2019P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Jun 2012 14:37:52 -0400
+Message-ID: <55558.1340217472@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 209.85.160.180 mail-gh0-f180.google.com valdis@vt.edu 4 softfail
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.4FE21883.0040,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b339cc145af3204c2ebb174
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+--==_Exmh_1340217472_2019P
+Content-Type: text/plain; charset=us-ascii
 
-On Wed, Jun 20, 2012 at 10:59 AM, Ulrich Drepper <drepper@gmail.com> wrote:
-> On Wed, Jun 20, 2012 at 1:17 PM, Bjorn Helgaas <bhelgaas@google.com> wrot=
-e:
+On Wed, 20 Jun 2012 19:28:01 +0200, Pablo Neira Ayuso said:
+> On Wed, Jun 20, 2012 at 01:14:33PM -0400, Valdis Kletnieks wrote:
+> > Today's linux-next fails to build with CONFIG_NF_NAT_NEEDED=y and CONFIG_NF_NAT=m
+> >
+> >   LD      init/built-in.o
+> > net/built-in.o:(.data+0x4408): undefined reference to `nf_nat_tcp_seq_adjust'
+> > make: *** [vmlinux] Error 1
 >
-> I'd be willing to go with Yinghai's recommendation and give the BIOS
-> writers the benefit of a doubt that they get things right. =A0If they
-> prove to be incapable again we can still change the option handling to
-> overwrite the kernel setting regardless.
+> I guess you have NF_CT_NETLINK=y, right?
 
-good, please check updated patch with fix from you.
+Yes.
 
-Thanks
+Temporary workaround was setting NF_NAT=n (I don't use NAT, I just usually
+build all the netfilter modules as =m even if I don't use them, just to provide
+build coverage and trip over stuff like this).
 
-Yinghai
 
---047d7b339cc145af3204c2ebb174
-Content-Type: application/octet-stream; name="busnum_node_v2.patch"
-Content-Disposition: attachment; filename="busnum_node_v2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3oqv94t0
+--==_Exmh_1340217472_2019P
+Content-Type: application/pgp-signature
 
-U3ViamVjdDogW1BBVENIXSBQQ0ksIFg4NjogYnVzbnVtL25vZGUgYm9vdCBjb21tYW5kIGxpbmUg
-Zm9yIG1pc3NpbmcgX1BYTQoKU29tZSBpbnRlbCBuZXcgc2FuZHlicmlkZ2Ugb3IgbmV3ZXIgdHdv
-IHNvY2tldHMgc3lzdGVtIGRvIHN1cHBvcnQgc3VwcG9ydCBudW1hCmZvciBwY2kgZGV2aWNlcy4g
-QnV0IEJJT1MgZG9lcyBub3QgcHJvdmlkZSBfUFhNIHVuZGVyIHRob3NlIHJvb3QgYnVzIGluIERT
-RFQuCgpBZGQgYm9vdCBjb21tYW5kIGxpbmUsIHNvIHVzZXIgY291bGQgaGF2ZSBjaGFuY2UgdG8g
-aW5wdXQgbm9kZSBpbmZvIGJlZm9yZQpCSU9TIGd1eXMgZmlndXJlIG91dCB0byBhZGQgX1BYTS4K
-CkZvbGQgZml4IGZyb20gVWxyaWNoIHRvIHVzZSAiOyIgaW5zdGVhZCBvZiAiLCIuCnwgVGhlIHBy
-b2JsZW0gaXMgdGhlIHBjaT0gcGFyYW1ldGVyCnwgaGFuZGxpbmcgdXNlcyAnLCcgdG8gc2VwYXJh
-dGUgcGFyYW1ldGVycyBhbmQgdGhlcmVmb3JlIHRoZSBzZWNvbmQgUENJCnwgcm9vdCBpbmZvcm1h
-dGlvbiwgc2VwYXJhdGVkIGJ5IGEgY29tbWEsIGlzIGludGVycHJldGVkIGFzIGEgbmV3IHBjaT0K
-fCBwYXJhbWV0ZXIuCgpSZXBvcnRlZC1ieTogVWxyaWNoIERyZXBwZXIgPGRyZXBwZXJAZ21haWwu
-Y29tPgpUZXN0ZWQtYnk6IFVscmljaCBEcmVwcGVyIDxkcmVwcGVyQGdtYWlsLmNvbT4KU2lnbmVk
-LW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKZGlmZiAtLWdpdCBhL0Rv
-Y3VtZW50YXRpb24va2VybmVsLXBhcmFtZXRlcnMudHh0IGIvRG9jdW1lbnRhdGlvbi9rZXJuZWwt
-cGFyYW1ldGVycy50eHQKaW5kZXggYTkyYzVlYi4uYTY2NDg1ZiAxMDA2NDQKLS0tIGEvRG9jdW1l
-bnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKKysrIGIvRG9jdW1lbnRhdGlvbi9rZXJuZWwt
-cGFyYW1ldGVycy50eHQKQEAgLTIxOTAsNiArMjE5MCwxMCBAQCBieXRlcyByZXNwZWN0aXZlbHku
-IFN1Y2ggbGV0dGVyIHN1ZmZpeGVzIGNhbiBhbHNvIGJlIGVudGlyZWx5IG9taXR0ZWQuCiAJCQkJ
-b2ZmOiBUdXJuIHJlYWxsb2Mgb2ZmCiAJCQkJb246IFR1cm4gcmVhbGxvYyBvbgogCQlyZWFsbG9j
-CQlzYW1lIGFzIHJlYWxsb2M9b24KKwkJYnVzbnVtX25vZGU9CisJCQkJRm9ybWF0OgorCQkJCTxi
-dXM+Ojxub2RlPls7IC4uLl0KKwkJCQlTcGVjaWZpZXMgbm9kZSBmb3IgYnVzLCBvbmx5IHdvcmtz
-IGZvciBtaXNzaW5nIF9QWE0KIAkJbm9hcmkJCWRvIG5vdCB1c2UgUENJZSBBUkkuCiAJCXBjaWVf
-c2Nhbl9hbGwJU2NhbiBhbGwgcG9zc2libGUgUENJZSBkZXZpY2VzLiAgT3RoZXJ3aXNlIHdlCiAJ
-CQkJb25seSBsb29rIGZvciBvbmUgZGV2aWNlIGJlbG93IGEgUENJZSBkb3duc3RyZWFtCmRpZmYg
-LS1naXQgYS9hcmNoL3g4Ni9wY2kvY29tbW9uLmMgYi9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKaW5k
-ZXggMGFkOTkwYS4uYTY1MjdmZSAxMDA2NDQKLS0tIGEvYXJjaC94ODYvcGNpL2NvbW1vbi5jCisr
-KyBiL2FyY2gveDg2L3BjaS9jb21tb24uYwpAQCAtNDk0LDYgKzQ5NCwyOCBAQCBpbnQgX19pbml0
-IHBjaWJpb3NfaW5pdCh2b2lkKQogCXJldHVybiAwOwogfQogCitzdGF0aWMgdm9pZCBfX2luaXQg
-cGFyc2VfYnVzbnVtX25vZGUoY2hhciAqc3RyKQoreworCWludCBidXMsIG5vZGUsIGNvdW50Owor
-CWNoYXIgKnA7CisKKwlwID0gc3RyOworCXdoaWxlICgqcCkgeworCQljb3VudCA9IDA7CisJCWlm
-IChzc2NhbmYocCwgIiV4OiV4JW4iLCAmYnVzLCAmbm9kZSwgJmNvdW50KSAhPSAyKSB7CisJCQlw
-cmludGsoS0VSTl9FUlIgIlBDSTogQ2FuJ3QgcGFyc2UgYnVzbnVtX25vZGUgaW5wdXQ6ICVzXG4i
-LAorCQkJCQlwKTsKKwkJCWJyZWFrOworCQl9CisJCXNldF9tcF9idXNfdG9fbm9kZShidXMsIG5v
-ZGUpOworCQlwICs9IGNvdW50OworCQlpZiAoKnAgIT0gJzsnKQorCQkJYnJlYWs7CisJCXArKzsK
-Kwl9Cit9CisKKwogY2hhciAqIF9fZGV2aW5pdCAgcGNpYmlvc19zZXR1cChjaGFyICpzdHIpCiB7
-CiAJaWYgKCFzdHJjbXAoc3RyLCAib2ZmIikpIHsKQEAgLTU3OSw2ICs2MDEsOSBAQCBjaGFyICog
-X19kZXZpbml0ICBwY2liaW9zX3NldHVwKGNoYXIgKnN0cikKIAl9IGVsc2UgaWYgKCFzdHJjbXAo
-c3RyLCAibm9jcnMiKSkgewogCQlwY2lfcHJvYmUgfD0gUENJX1JPT1RfTk9fQ1JTOwogCQlyZXR1
-cm4gTlVMTDsKKwl9IGVsc2UgaWYgKCFzdHJuY21wKHN0ciwgImJ1c251bV9ub2RlPSIsIDEyKSkg
-eworCQlwYXJzZV9idXNudW1fbm9kZShzdHIgKyAxMik7CisJCXJldHVybiBOVUxMOwogCX0gZWxz
-ZSBpZiAoIXN0cmNtcChzdHIsICJlYXJseWR1bXAiKSkgewogCQlwY2lfZWFybHlfZHVtcF9yZWdz
-ID0gMTsKIAkJcmV0dXJuIE5VTEw7Cg==
---047d7b339cc145af3204c2ebb174--
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT+IYgAdmEQWDXROgAQIG+hAAnd4idYSLEklTd82AQOhDPhRvr4jA0c/K
+IRQGXnRDKD6IUDtCfexbACThnal6Hn6txdUXOGEEGyD//VG4lBhBMEyhjZ1kfhBN
+gyjYXvS85DmuQAxJyevfeWzPAPGhzThav84pgGgX23/ehPhuAQtDPxGi0IBfO4tV
+0vvmSCgR4yMSkGJDLQL5NKAriOKu5s0tAgnWaFqAXluRefFctURVchN3tU2TJ7Sf
+1giz5jbhJbcPWWGOL2ABjPiVKmbhFFfP8K7TeHkQVfZguI6wTZMrcJir7pzLyNnz
+Vn/ylnMBBZHYMIrVJBWQOpdWIIVhTpFtJTmdxvDe6u6+JtbvpEla1ptocsATka9T
+EvxwPdviqg4+TRXZAx51ogD9wBvr+ed7QJriXhXmaYOxQ7nsqxfre4F4+PqHVVQ4
+MBQSKu+6WIDbU3zzidDkJnrbIjtmQLepVGPLh9Gf6jO4dmQmomTqpV6Y7UmYKWDN
+r3zQqiGKTeITfeCv9eyT8JiLQuSNfFwBCNxGChJdoTuqFRXf4vswEJmKQPbpVs+w
+adWo0xrRLJGC+zUbL27GdNEpDsJeRRhJk7AMumsXvOjfQHnchINWZAl58d5k1Tb4
+8XH5kOXR2utnFXVMZ1950XuvFZO6vOim9w/aKzWERc8aAPCMX5uJ1GUCCYNTSR8F
+ii2gO+qSgl4=
+=rHCK
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1340217472_2019P--
+
