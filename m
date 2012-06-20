@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab2FTNvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:51:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab2FTNvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 09:51:48 -0400
-Date: Wed, 20 Jun 2012 15:49:11 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] uprobes: write_opcode: alloc the new page outside
-	of "retry" loop
-Message-ID: <20120620134911.GB11582@redhat.com>
-References: <20120619194636.GA30137@redhat.com> <20120619194759.GE30146@redhat.com> <20120620122939.GA4018@bandura.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120620122939.GA4018@bandura.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756234Ab2FTNwC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:52:02 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57744 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab2FTNv7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 09:51:59 -0400
+Subject: Re: [PATCH 08/17] net: Do not coalesce skbs belonging to
+ PFMEMALLOC sockets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+In-Reply-To: <20120620133656.GH4011@suse.de>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+	 <1340192652-31658-9-git-send-email-mgorman@suse.de>
+	 <1340193892.4604.865.camel@edumazet-glaptop>
+	 <20120620133656.GH4011@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Jun 2012 15:51:52 +0200
+Message-ID: <1340200312.4604.1008.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20, Anton Arapov wrote:
->
-> On Tue, Jun 19, 2012 at 09:47:59PM +0200, Oleg Nesterov wrote:
-> > @@ -214,19 +214,18 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
-> >  	struct vm_area_struct *vma;
-> >  	int ret;
-> >
-> > -retry:
-> > -	/* Read the page with vaddr into memory */
-> > -	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &old_page, &vma);
-> > -	if (ret <= 0)
-> > -		return ret;
-> > -
-> > -	ret = -ENOMEM;
-> >  	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
->   Should we want NULL instead of vma in alloc_page_vma()? Or
-> initialize vma with NULL...
+On Wed, 2012-06-20 at 14:36 +0100, Mel Gorman wrote:
+> The intention was to avoid any coalescing in the input path due to avoid
+> packets that "were held back due to TCP_CORK or attempt at coalescing
+> tiny packet". I recognise that it is clumsy and will take the approach
+> instead of having __tcp_push_pending_frames() use sk_gfp_atomic() in the
+> output path.
 
-OOPS. Thanks Anton, this should be fixed.
+But coalescing in input path needs no additional memory allocation, it
+can actually free some memory.
 
-Oleg.
+And it avoids most of the time the infamous "tcp collapses" that needed
+extra memory allocations to group tcp payload on single pages.
+
+
+If you want tcp output path being safer, you should disable TSO/GSO
+because some drivers have special handling for skbs that cannot be
+mapped because of various hardware limitations.
+
+(for example, tg3 and its tg3_tso_bug() or tigon3_dma_hwbug_workaround()
+functions)
+
+
+
 
