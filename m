@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab2FTSWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:22:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44755 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757661Ab2FTSV5 (ORCPT
+	id S1757754Ab2FTSjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:39:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757677Ab2FTSWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:21:57 -0400
-Message-Id: <20120620173022.107918859@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:22:03 -0400
+Message-Id: <20120620173022.934229502@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:33 -0700
+Date: Wed, 20 Jun 2012 10:30:43 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 13/61] NFSv4.1: Fix a request leak on the back channel
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
+Subject: [ 23/61] USB: option: fix memory leak
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +24,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit b3b02ae5865c2dcd506322e0fc6def59a042e72f upstream.
+commit b9c3aab315b51f81649a0d737c4c73783fbd8de0 upstream.
 
-If the call to svc_process_common() fails, then the request
-needs to be freed before we can exit bc_svc_process.
+Fix memory leak introduced by commit 383cedc3bb435de7a2 ("USB: serial:
+full autosuspend support for the option driver") which allocates
+usb-serial data but never frees it.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -1379,7 +1379,8 @@ bc_svc_process(struct svc_serv *serv, st
- 						sizeof(req->rq_snd_buf));
- 		return bc_send(req);
- 	} else {
--		/* Nothing to do to drop request */
-+		/* drop request */
-+		xprt_free_bc_request(req);
- 		return 0;
- 	}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -47,6 +47,7 @@
+ /* Function prototypes */
+ static int  option_probe(struct usb_serial *serial,
+ 			const struct usb_device_id *id);
++static void option_release(struct usb_serial *serial);
+ static int option_send_setup(struct usb_serial_port *port);
+ static void option_instat_callback(struct urb *urb);
+ 
+@@ -1273,7 +1274,7 @@ static struct usb_serial_driver option_1
+ 	.ioctl             = usb_wwan_ioctl,
+ 	.attach            = usb_wwan_startup,
+ 	.disconnect        = usb_wwan_disconnect,
+-	.release           = usb_wwan_release,
++	.release           = option_release,
+ 	.read_int_callback = option_instat_callback,
+ #ifdef CONFIG_PM
+ 	.suspend           = usb_wwan_suspend,
+@@ -1384,6 +1385,15 @@ static int option_probe(struct usb_seria
+ 	return 0;
  }
+ 
++static void option_release(struct usb_serial *serial)
++{
++	struct usb_wwan_intf_private *priv = usb_get_serial_data(serial);
++
++	usb_wwan_release(serial);
++
++	kfree(priv);
++}
++
+ static void option_instat_callback(struct urb *urb)
+ {
+ 	int err;
 
 
