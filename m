@@ -1,117 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2FTLc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:32:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39369 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658Ab2FTLcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:32:55 -0400
-Date: Wed, 20 Jun 2012 12:32:52 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Subject: MMTests 0.04
-Message-ID: <20120620113252.GE4011@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754205Ab2FTLfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:35:41 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36605 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab2FTLfj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:35:39 -0400
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, JJ Ding <dgdunix@gmail.com>,
+        Roland Stigge <stigge@antcom.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH RESEND] input: gpio_keys_polled: convert to dt
+Date: Wed, 20 Jun 2012 08:34:21 -0300
+Message-Id: <1340192062-10565-1-git-send-email-aletes.xgr@gmail.com>
+X-Mailer: git-send-email 1.7.10
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MMTests 0.04 is a configurable test suite that runs a number of common
-workloads of interest to MM developers. Apparently I never sent a release
-note for 0.03 so here is the changelog for both
+Add device tree support to gpio_keys_polled.c
 
-v0.04
-o Add benchmarks for tbench, pipetest, lmbench, starve, memcachedtest
-o Add basic benchmark to run trinity fuzz testing tool
-o Add monitor that runs parallel IO in the background. Measures how much
-  IO interferes with a target workload.
-o Allow limited run of sysbench to save time
-o Add helpers for running oprofile, taken from libhugetlbfs
-o Add fsmark configurations suitable for page reclaim and metadata tests
-o Add a mailserver simulator (needs work, takes too long to run)
-o Tune page fault test configuration for page allocator comparisons 
-o Allow greater skew when running STREAM on NUMA machines
-o Add a monitor that roughly measures interactive app startup times
-o Add a monitor that tracks read() latency (useful for interactivity tests)
-o Add script for calculating quartiles (incomplete, not tested properly)
-o Add config examples for measuring interactivity during IO (not validated)
-o Add background allocator for hugepage allocations (not validated)
-o Patch SystemTap installation to work with 3.4 and later kernels
-o Allow use of out-of-box THP configuration
+Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Tested-by: Roland Stigge <stigge@antcom.de>
+---
+ drivers/input/keyboard/gpio_keys_polled.c |  121 +++++++++++++++++++++++++++--
+ 1 file changed, 113 insertions(+), 8 deletions(-)
 
-v0.03
-o Add a page allocator micro-benchmark
-o Add monitor for tracking processes stuck in D state
-o Add a page fault micro-benchmark
-o Add a memory compaction micro-benchmark
-o Patch a tiobench divide-by-0 error
-o Adapt systemtap for >= 3.3 kernel
-o Reporting scripts for kernbench
-o Reporting scripts for ddresidency
-
-At LSF/MM at some point a request was made that a series of tests
-be identified that were of interest to MM developers and that could be
-used for testing the Linux memory management subsystem. There is renewed
-interest in some sort of general testing framework during discussions for
-Kernel Summit 2012 so here is what I use.
-
-http://www.csn.ul.ie/~mel/projects/mmtests/
-http://www.csn.ul.ie/~mel/projects/mmtests/mmtests-0.04-mmtests-0.01.tar.gz
-
-In this release there are a number of stock configuration options added.
-For example config-global-dhp__pagealloc-performance runs a number of tests
-that may be able to identify performance regressions or gains in the page
-allocator. Similarly there network and scheduler configs. There are also
-more complex options. config-global-dhp__parallelio-memcachetest will run
-memcachetest in the foreground while doing IO of different sizes in the
-background to measure how much unrelated IO affects the throughput of an
-in-memory database.
-
-This release is a little half-baked but decided to release anyway due to
-current discussions. By my own admission there are areas that need cleaning
-up and there is some serious cut&paste-itis going on in parts.  I wanted
-to get that all fixed up before releasing but that could take too long.
-The biggest warts by far are in how reports are generated due to being
-able to crank a new one out in 3 minutes where as doing it properly would
-require redesign.  What should have happened is that the stats generation and
-reporting be completely separated but that can be still fixed because the raw
-data is captured.  The stats reporting in general needs better work because
-while some tests know how to make a better estimate of mean by filtering
-outliers it is not being handled consistently and the methodology needs work.
-The raw data is there which I considered to be a higher priority initially.
-
-I ran a number of tests against kernels since 2.6.32 and there is a lot of
-interesting stuff in there. Unfortunately I have not had the chance to dig
-through it all and validate all the tests are working exactly as expected
-so they are not all available. However, this is an example report for one
-test configuration on one machine. It's a bit ugly but that was not a high
-priority. The other tests work on a similar principal
-
-http://www.csn.ul.ie/~mel/postings/mmtests-20120620/global-dhp__pagealloc-performance/comparison.html
-
-Just glancing through, it's possible to see interesting things and additional
-investigation work that is required.
-
-o Something awful happened in 3.2.9 across the board according to this
-  machine
-o Kernbench in 3.3 and 3.4 was still not great in comparison to 3.1
-o Page allocator performance was ruined for a large number of releases
-  but generally improved in 3.3 although it's still a bit all over
-  the place [*]
-o hackbench-pipes had a fun history but is mostly good in 3.4
-o hackbench-sockets had a similarly fun history
-o aim9 shows that page-test took a big drop after 2.6.32 and has not
-  recovered yet. Some of the other tests are also very alarming
-o STREAM is ok at least but that is not heavily dependant on kernel
-
-[*] It was this report that led to commit cc9a6c877 and the effect is
-    visible if you squint hard enough. Needs a graph generator and
-    a double checking that true-mean is measuring the right thing.
-
+diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
+index 20c8ab1..a64b361 100644
+--- a/drivers/input/keyboard/gpio_keys_polled.c
++++ b/drivers/input/keyboard/gpio_keys_polled.c
+@@ -25,6 +25,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
+ #include <linux/gpio_keys.h>
++#include <linux/of_platform.h>
++#include <linux/of_gpio.h>
+ 
+ #define DRV_NAME	"gpio-keys-polled"
+ 
+@@ -38,7 +40,7 @@ struct gpio_keys_button_data {
+ struct gpio_keys_polled_dev {
+ 	struct input_polled_dev *poll_dev;
+ 	struct device *dev;
+-	struct gpio_keys_platform_data *pdata;
++	struct gpio_keys_platform_data pdata;
+ 	struct gpio_keys_button_data data[0];
+ };
+ 
+@@ -67,11 +69,11 @@ static void gpio_keys_polled_check_state(struct input_dev *input,
+ static void gpio_keys_polled_poll(struct input_polled_dev *dev)
+ {
+ 	struct gpio_keys_polled_dev *bdev = dev->private;
+-	struct gpio_keys_platform_data *pdata = bdev->pdata;
++	struct gpio_keys_platform_data *pdata = &bdev->pdata;
+ 	struct input_dev *input = dev->input;
+ 	int i;
+ 
+-	for (i = 0; i < bdev->pdata->nbuttons; i++) {
++	for (i = 0; i < pdata->nbuttons; i++) {
+ 		struct gpio_keys_button_data *bdata = &bdev->data[i];
+ 
+ 		if (bdata->count < bdata->threshold)
+@@ -85,7 +87,7 @@ static void gpio_keys_polled_poll(struct input_polled_dev *dev)
+ static void gpio_keys_polled_open(struct input_polled_dev *dev)
+ {
+ 	struct gpio_keys_polled_dev *bdev = dev->private;
+-	struct gpio_keys_platform_data *pdata = bdev->pdata;
++	struct gpio_keys_platform_data *pdata = &bdev->pdata;
+ 
+ 	if (pdata->enable)
+ 		pdata->enable(bdev->dev);
+@@ -94,23 +96,125 @@ static void gpio_keys_polled_open(struct input_polled_dev *dev)
+ static void gpio_keys_polled_close(struct input_polled_dev *dev)
+ {
+ 	struct gpio_keys_polled_dev *bdev = dev->private;
+-	struct gpio_keys_platform_data *pdata = bdev->pdata;
++	struct gpio_keys_platform_data *pdata = &bdev->pdata;
+ 
+ 	if (pdata->disable)
+ 		pdata->disable(bdev->dev);
+ }
++#ifdef CONFIG_OF
++static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
++			    struct gpio_keys_platform_data *pdata)
++{
++	struct device_node *node, *pp;
++	int i;
++	struct gpio_keys_button *buttons;
++	u32 reg;
++
++	node = dev->of_node;
++	if (node == NULL)
++		return -ENODEV;
++
++	memset(pdata, 0, sizeof *pdata);
++
++	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
++
++	if (of_property_read_u32(node, "poll-interval", &reg) == 0)
++		pdata->poll_interval = reg;
++
++	/* First count the subnodes */
++	pdata->nbuttons = 0;
++	pp = NULL;
++	while ((pp = of_get_next_child(node, pp)))
++		pdata->nbuttons++;
++
++	if (pdata->nbuttons == 0)
++		return -ENODEV;
++
++	buttons = kzalloc(pdata->nbuttons * (sizeof *buttons), GFP_KERNEL);
++	if (!buttons)
++		return -ENOMEM;
++
++	pp = NULL;
++	i = 0;
++	while ((pp = of_get_next_child(node, pp))) {
++		enum of_gpio_flags flags;
++
++		if (!of_find_property(pp, "gpios", NULL)) {
++			pdata->nbuttons--;
++			dev_warn(dev, "Found button without gpios\n");
++			continue;
++		}
++		buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
++		buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
++
++		if (of_property_read_u32(pp, "linux,code", &reg)) {
++			dev_err(dev, "Button without keycode: 0x%x\n", buttons[i].gpio);
++			goto out_fail;
++		}
++		buttons[i].code = reg;
++
++		buttons[i].desc = of_get_property(pp, "label", NULL);
++
++		if (of_property_read_u32(pp, "linux,input-type", &reg) == 0)
++			buttons[i].type = reg;
++		else
++			buttons[i].type = EV_KEY;
++
++		buttons[i].wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
++
++		if (of_property_read_u32(pp, "debounce-interval", &reg) == 0)
++			buttons[i].debounce_interval = reg;
++		else
++			buttons[i].debounce_interval = 5;
++
++		i++;
++	}
++
++	pdata->buttons = buttons;
++
++	return 0;
++
++out_fail:
++	kfree(buttons);
++	return -ENODEV;
++}
++
++static struct of_device_id gpio_keys_polled_of_match[] = {
++	{ .compatible = "gpio-keys-polled", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
++#else
++
++static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
++			    struct gpio_keys_platform_data *altp)
++{
++	return -ENODEV;
++}
++
++#define gpio_keys_polled_of_match NULL
++
++#endif
+ 
+ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
+ {
+ 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
+ 	struct device *dev = &pdev->dev;
++	struct gpio_keys_platform_data alt_pdata;
+ 	struct gpio_keys_polled_dev *bdev;
+ 	struct input_polled_dev *poll_dev;
+ 	struct input_dev *input;
+ 	int error;
+ 	int i;
+ 
+-	if (!pdata || !pdata->poll_interval)
++	if (!pdata) {
++	    error = gpio_keys_polled_get_devtree_pdata(dev, &alt_pdata);
++		if (error)
++			return error;
++		pdata = &alt_pdata;
++	}
++
++	if (!pdata->poll_interval)
+ 		return -EINVAL;
+ 
+ 	bdev = kzalloc(sizeof(struct gpio_keys_polled_dev) +
+@@ -184,7 +288,7 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
+ 
+ 	bdev->poll_dev = poll_dev;
+ 	bdev->dev = dev;
+-	bdev->pdata = pdata;
++	bdev->pdata = *pdata;
+ 	platform_set_drvdata(pdev, bdev);
+ 
+ 	error = input_register_polled_device(poll_dev);
+@@ -217,7 +321,7 @@ err_free_bdev:
+ static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
+ {
+ 	struct gpio_keys_polled_dev *bdev = platform_get_drvdata(pdev);
+-	struct gpio_keys_platform_data *pdata = bdev->pdata;
++	struct gpio_keys_platform_data *pdata = &bdev->pdata;
+ 	int i;
+ 
+ 	input_unregister_polled_device(bdev->poll_dev);
+@@ -239,6 +343,7 @@ static struct platform_driver gpio_keys_polled_driver = {
+ 	.driver	= {
+ 		.name	= DRV_NAME,
+ 		.owner	= THIS_MODULE,
++		.of_match_table = gpio_keys_polled_of_match,
+ 	},
+ };
+ module_platform_driver(gpio_keys_polled_driver);
 -- 
-Mel Gorman
-SUSE Labs
+1.7.10
+
