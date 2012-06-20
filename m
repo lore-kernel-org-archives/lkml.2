@@ -1,174 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab2FTT0B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 15:26:01 -0400
-Received: from h9.dl5rb.org.uk ([81.2.74.9]:43719 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757295Ab2FTT0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 15:26:00 -0400
-Date: Wed, 20 Jun 2012 20:25:51 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Kelvin Cheung <keguang.zhang@gmail.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, zhzhl555@gmail.com
-Subject: Re: [PATCH V7 2/4] MIPS: Add board support for Loongson1B
-Message-ID: <20120620192551.GC29446@linux-mips.org>
-References: <1339757617-2187-1-git-send-email-keguang.zhang@gmail.com>
- <1339757617-2187-3-git-send-email-keguang.zhang@gmail.com>
+	id S1757916Ab2FTT2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 15:28:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56927 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757549Ab2FTT2M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 15:28:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339757617-2187-3-git-send-email-keguang.zhang@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
+References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
+	<CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
+	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
+	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
+	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
+	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
+	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
+	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
+	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
+	<CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
+Date: Wed, 20 Jun 2012 12:28:12 -0700
+X-Google-Sender-Auth: qT4aS6cUrJVUrme3vdS-oSiyUzk
+Message-ID: <CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
+Subject: Re: SNB PCI root information
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Ulrich Drepper <drepper@gmail.com>, jbarnes@virtuousgeek.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 06:53:35PM +0800, Kelvin Cheung wrote:
+On Wed, Jun 20, 2012 at 11:46 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-> +#include <linux/clk.h>
+> As far as I can tell, here's Yinghai's recommendation:  the user
+> argument should not override BIOS _PXM because if the BIOS gets the
+> _PXM wrong, the user won't be able to work around it with the
+> argument, which will force the vendor to fix the BIOS.
+>
+> I'm not buying it.  The convention that user-supplied arguments always
+> take precedence is useful, easy to document, and matches user
+> expectations.  It allows the user to work around both missing _PXM and
+> incorrect _PXM.
 
-> +static LIST_HEAD(clocks);
-> +static DEFINE_MUTEX(clocks_mutex);
-> +
-> +struct clk *clk_get(struct device *dev, const char *name)
-> +{
-> +	struct clk *c;
-> +	struct clk *ret = NULL;
-> +
-> +	mutex_lock(&clocks_mutex);
-> +	list_for_each_entry(c, &clocks, node) {
-> +		if (!strcmp(c->name, name)) {
-> +			ret = c;
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&clocks_mutex);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(clk_get);
+if the vendor provide _PXM, that _PXM should be right and be trusted.
 
-This redefines a function that already is declared in <linux/clk.h> and
-defined in drivers/clk/clkdev.c.  Why?
+if the vendor does not provide _PXM, we can have command line to input
+it before user can get one updated BIOS from vendor.
 
-> +int clk_register(struct clk *clk)
-> +{
-> +	mutex_lock(&clocks_mutex);
-> +	list_add(&clk->node, &clocks);
-> +	if (clk->ops->init)
-> +		clk->ops->init(clk);
-> +	mutex_unlock(&clocks_mutex);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(clk_register);
-
-Same here.
-
-> diff --git a/arch/mips/loongson1/common/prom.c b/arch/mips/loongson1/common/prom.c
-> new file mode 100644
-> index 0000000..1f8e49f
-> --- /dev/null
-> +++ b/arch/mips/loongson1/common/prom.c
-> @@ -0,0 +1,87 @@
-> +/*
-> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-> + *
-> + * Modified from arch/mips/pnx833x/common/prom.c.
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + */
-> +
-> +#include <linux/serial_reg.h>
-> +#include <asm/bootinfo.h>
-> +
-> +#include <loongson1.h>
-> +#include <prom.h>
-> +
-> +int prom_argc;
-> +char **prom_argv, **prom_envp;
-> +unsigned long memsize, highmemsize;
-> +
-> +char *prom_getenv(char *envname)
-> +{
-> +	char **env = prom_envp;
-> +	int i;
-> +
-> +	i = strlen(envname);
-> +
-> +	while (*env) {
-> +		if (strncmp(envname, *env, i) == 0 && *(*env+i) == '=')
-> +			return *env + i + 1;
-> +		env++;
-> +	}
-> +
-> +	return 0;
-> +}
-[...]
-
-Please take a look at sjhill's firmware cleanup patchset which is going to
-remove a fair chunk of duplication of firmware related code.
-
-This is just a heads up; you need to do nothing because that patchset is not
-applied yet.)
-
-> +const char *get_system_type(void)
-> +{
-> +	unsigned int processor_id = (&current_cpu_data)->processor_id;
-> +
-> +	switch (processor_id & PRID_REV_MASK) {
-> +	case PRID_REV_LOONGSON1B:
-> +		return "LOONGSON LS1B";
-> +	default:
-> +		return "LOONGSON (unknown)";
-> +	}
-> +}
-
-You probably should return a string identifying the system, not the SOC
-being used.  So this function should probably go to board.c.
-
-> diff --git a/arch/mips/loongson1/ls1b/board.c b/arch/mips/loongson1/ls1b/board.c
-> new file mode 100644
-> index 0000000..1ec350d
-> --- /dev/null
-> +++ b/arch/mips/loongson1/ls1b/board.c
-> @@ -0,0 +1,39 @@
-> +/*
-> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + */
-> +
-> +#include <platform.h>
-> +
-> +#include <linux/serial_8250.h>
-> +#include <loongson1.h>
-> +
-> +static struct platform_device *ls1b_platform_devices[] __initdata = {
-> +	&ls1x_uart_device,
-> +#if IS_ENABLED(CONFIG_STMMAC_ETH)
-> +	&ls1x_eth0_device,
-> +#endif
-> +#if IS_ENABLED(CONFIG_USB_EHCI_HCD)
-> +	&ls1x_ehci_device,
-> +#endif
-> +#if IS_ENABLED(CONFIG_RTC_DRV_LOONGSON1)
-> +	&ls1x_rtc_device,
-> +#endif
-> +};
-
-Don't ifdef the platform devices.  The platform devices should always
-be registered if a system actually has the underlying hardware.  If the
-driver has been compiled or not does not matter.
-
-And the final plug - take a look at FDT for a future revision of this
-code :)
-
-  Ralf
+Yinghai
