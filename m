@@ -1,55 +1,623 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab2FTQp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:45:26 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1425 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab2FTQpY convert rfc822-to-8bit (ORCPT
+	id S1753579Ab2FTQqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:46:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38066 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab2FTQqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:45:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="114273230"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: madovsky <infos@madovsky.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: e1000e, 3.4.1, , jumbo frames are not working
-Thread-Topic: e1000e, 3.4.1, , jumbo frames are not working
-Thread-Index: AQHNTvh0BwMhEmzK90Ss53WzeFK/6JcDZ6Cg
-Date: Wed, 20 Jun 2012 16:45:19 +0000
-Message-ID: <804857E1F29AAC47BF68C404FC60A1842846965C@ORSMSX102.amr.corp.intel.com>
-References: <loom.20120620T164714-725@post.gmane.org>
-In-Reply-To: <loom.20120620T164714-725@post.gmane.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Jun 2012 12:46:21 -0400
+Date: Wed, 20 Jun 2012 09:45:57 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-ba47a142d9f9b84e0464a11b7a067e5ad95c5d4b@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung.kim@lge.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        penberg@kernel.org, namhyung.kim@lge.com, tglx@linutronix.de
+In-Reply-To: <1338265382-6872-4-git-send-email-namhyung@gmail.com>
+References: <1338265382-6872-4-git-send-email-namhyung@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui: Introduce struct perf_error_ops
+Git-Commit-ID: ba47a142d9f9b84e0464a11b7a067e5ad95c5d4b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:46:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of madovsky
-> Sent: Wednesday, June 20, 2012 7:49 AM
-> To: linux-kernel@vger.kernel.org
-> Subject: RE: e1000e, 3.4.1, , jumbo frames are not working
-> 
-> it's the same on kernel 3.4.3.
-> I can't activate jumbo frames
-> my mobo is S5000PAL
+Commit-ID:  ba47a142d9f9b84e0464a11b7a067e5ad95c5d4b
+Gitweb:     http://git.kernel.org/tip/ba47a142d9f9b84e0464a11b7a067e5ad95c5d4b
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 29 May 2012 13:22:58 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 19 Jun 2012 13:06:18 -0300
 
-This is already known and discussed on previous threads.  If you look at
-the system log file you will see a message from the driver which states
-"Jumbo frames cannot be enabled  when both receive checksum offload and
-receive hashing are enabled.  Disable one of the receive offload features
-before enabling jumbos."  A patch that removes this incompatibility is
-currently in test here at Intel and should be passed upstream soon.
+perf ui: Introduce struct perf_error_ops
 
-Thanks,
-Bruce.
+The struct perf_error_ops is for flexible error logging.
 
+We can register appropriate functions based on front-end.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1338265382-6872-4-git-send-email-namhyung@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile            |    3 +
+ tools/perf/ui/gtk/util.c       |   20 +++
+ tools/perf/ui/tui/setup.c      |    6 +
+ tools/perf/ui/{ => tui}/util.c |   49 +++----
+ tools/perf/ui/util.c           |  277 ++++++++--------------------------------
+ tools/perf/ui/util.h           |    9 +-
+ tools/perf/util/debug.c        |    2 +-
+ tools/perf/util/debug.h        |   23 +++-
+ 8 files changed, 135 insertions(+), 254 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 0eee64c..c0ee917 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -503,6 +503,7 @@ else
+ 		LIB_OBJS += $(OUTPUT)ui/progress.o
+ 		LIB_OBJS += $(OUTPUT)ui/util.o
+ 		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
++		LIB_OBJS += $(OUTPUT)ui/tui/util.o
+ 		LIB_H += ui/browser.h
+ 		LIB_H += ui/browsers/map.h
+ 		LIB_H += ui/helpline.h
+@@ -526,9 +527,11 @@ else
+ 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
++		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+ 		# Make sure that it'd be included only once.
+ 		ifneq ($(findstring -DNO_NEWT_SUPPORT,$(BASIC_CFLAGS)),)
+ 			LIB_OBJS += $(OUTPUT)ui/setup.o
++			LIB_OBJS += $(OUTPUT)ui/util.o
+ 		endif
+ 	endif
+ endif
+diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
+new file mode 100644
+index 0000000..a727fe3
+--- /dev/null
++++ b/tools/perf/ui/gtk/util.c
+@@ -0,0 +1,20 @@
++#include "../util.h"
++#include "../../util/debug.h"
++#include "gtk.h"
++
++
++/*
++ * FIXME: Functions below should be implemented properly.
++ *        For now, just add stubs for NO_NEWT=1 build.
++ */
++#ifdef NO_NEWT_SUPPORT
++int ui_helpline__show_help(const char *format __used, va_list ap __used)
++{
++	return 0;
++}
++
++void ui_progress__update(u64 curr __used, u64 total __used,
++			 const char *title __used)
++{
++}
++#endif
+diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+index d33e943..e813c1d 100644
+--- a/tools/perf/ui/tui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -15,6 +15,8 @@ pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
+ 
+ static volatile int ui__need_resize;
+ 
++extern struct perf_error_ops perf_tui_eops;
++
+ void ui__refresh_dimensions(bool force)
+ {
+ 	if (force || ui__need_resize) {
+@@ -122,6 +124,8 @@ int ui__init(void)
+ 	signal(SIGINT, ui__signal);
+ 	signal(SIGQUIT, ui__signal);
+ 	signal(SIGTERM, ui__signal);
++
++	perf_error__register(&perf_tui_eops);
+ out:
+ 	return err;
+ }
+@@ -137,4 +141,6 @@ void ui__exit(bool wait_for_ok)
+ 	SLsmg_refresh();
+ 	SLsmg_reset_smg();
+ 	SLang_reset_tty();
++
++	perf_error__unregister(&perf_tui_eops);
+ }
+diff --git a/tools/perf/ui/util.c b/tools/perf/ui/tui/util.c
+similarity index 86%
+copy from tools/perf/ui/util.c
+copy to tools/perf/ui/tui/util.c
+index ad4374a..092902e 100644
+--- a/tools/perf/ui/util.c
++++ b/tools/perf/ui/tui/util.c
+@@ -1,17 +1,17 @@
+-#include "../util.h"
++#include "../../util/util.h"
+ #include <signal.h>
+ #include <stdbool.h>
+ #include <string.h>
+ #include <sys/ttydefaults.h>
+ 
+-#include "../cache.h"
+-#include "../debug.h"
+-#include "browser.h"
+-#include "keysyms.h"
+-#include "helpline.h"
+-#include "ui.h"
+-#include "util.h"
+-#include "libslang.h"
++#include "../../util/cache.h"
++#include "../../util/debug.h"
++#include "../browser.h"
++#include "../keysyms.h"
++#include "../helpline.h"
++#include "../ui.h"
++#include "../util.h"
++#include "../libslang.h"
+ 
+ static void ui_browser__argv_write(struct ui_browser *browser,
+ 				   void *entry, int row)
+@@ -208,11 +208,11 @@ int ui__dialog_yesno(const char *msg)
+ 	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
+ }
+ 
+-int __ui__warning(const char *title, const char *format, va_list args)
++static int __ui__warning(const char *title, const char *format, va_list args)
+ {
+ 	char *s;
+ 
+-	if (use_browser > 0 && vasprintf(&s, format, args) > 0) {
++	if (vasprintf(&s, format, args) > 0) {
+ 		int key;
+ 
+ 		pthread_mutex_lock(&ui__lock);
+@@ -222,29 +222,22 @@ int __ui__warning(const char *title, const char *format, va_list args)
+ 		return key;
+ 	}
+ 
+-	fprintf(stderr, "%s:\n", title);
++	fprintf(stderr, "%s\n", title);
+ 	vfprintf(stderr, format, args);
+ 	return K_ESC;
+ }
+ 
+-int ui__warning(const char *format, ...)
++static int perf_tui__error(const char *format, va_list args)
+ {
+-	int key;
+-	va_list args;
+-
+-	va_start(args, format);
+-	key = __ui__warning("Warning", format, args);
+-	va_end(args);
+-	return key;
++	return __ui__warning("Error:", format, args);
+ }
+ 
+-int ui__error(const char *format, ...)
++static int perf_tui__warning(const char *format, va_list args)
+ {
+-	int key;
+-	va_list args;
+-
+-	va_start(args, format);
+-	key = __ui__warning("Error", format, args);
+-	va_end(args);
+-	return key;
++	return __ui__warning("Warning:", format, args);
+ }
++
++struct perf_error_ops perf_tui_eops = {
++	.error		= perf_tui__error,
++	.warning	= perf_tui__warning,
++};
+diff --git a/tools/perf/ui/util.c b/tools/perf/ui/util.c
+index ad4374a..4f98977 100644
+--- a/tools/perf/ui/util.c
++++ b/tools/perf/ui/util.c
+@@ -1,250 +1,85 @@
+-#include "../util.h"
+-#include <signal.h>
+-#include <stdbool.h>
+-#include <string.h>
+-#include <sys/ttydefaults.h>
+-
+-#include "../cache.h"
+-#include "../debug.h"
+-#include "browser.h"
+-#include "keysyms.h"
+-#include "helpline.h"
+-#include "ui.h"
+ #include "util.h"
+-#include "libslang.h"
+-
+-static void ui_browser__argv_write(struct ui_browser *browser,
+-				   void *entry, int row)
+-{
+-	char **arg = entry;
+-	bool current_entry = ui_browser__is_current_entry(browser, row);
+-
+-	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
+-						       HE_COLORSET_NORMAL);
+-	slsmg_write_nstring(*arg, browser->width);
+-}
+-
+-static int popup_menu__run(struct ui_browser *menu)
+-{
+-	int key;
+-
+-	if (ui_browser__show(menu, " ", "ESC: exit, ENTER|->: Select option") < 0)
+-		return -1;
++#include "../debug.h"
+ 
+-	while (1) {
+-		key = ui_browser__run(menu, 0);
+-
+-		switch (key) {
+-		case K_RIGHT:
+-		case K_ENTER:
+-			key = menu->index;
+-			break;
+-		case K_LEFT:
+-		case K_ESC:
+-		case 'q':
+-		case CTRL('c'):
+-			key = -1;
+-			break;
+-		default:
+-			continue;
+-		}
+-
+-		break;
+-	}
+-
+-	ui_browser__hide(menu);
+-	return key;
+-}
+ 
+-int ui__popup_menu(int argc, char * const argv[])
++/*
++ * Default error logging functions
++ */
++static int perf_stdio__error(const char *format, va_list args)
+ {
+-	struct ui_browser menu = {
+-		.entries    = (void *)argv,
+-		.refresh    = ui_browser__argv_refresh,
+-		.seek	    = ui_browser__argv_seek,
+-		.write	    = ui_browser__argv_write,
+-		.nr_entries = argc,
+-	};
+-
+-	return popup_menu__run(&menu);
++	fprintf(stderr, "Error:\n");
++	vfprintf(stderr, format, args);
++	return 0;
+ }
+ 
+-int ui_browser__input_window(const char *title, const char *text, char *input,
+-			     const char *exit_msg, int delay_secs)
++static int perf_stdio__warning(const char *format, va_list args)
+ {
+-	int x, y, len, key;
+-	int max_len = 60, nr_lines = 0;
+-	static char buf[50];
+-	const char *t;
+-
+-	t = text;
+-	while (1) {
+-		const char *sep = strchr(t, '\n');
+-
+-		if (sep == NULL)
+-			sep = strchr(t, '\0');
+-		len = sep - t;
+-		if (max_len < len)
+-			max_len = len;
+-		++nr_lines;
+-		if (*sep == '\0')
+-			break;
+-		t = sep + 1;
+-	}
+-
+-	max_len += 2;
+-	nr_lines += 8;
+-	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
+-	x = SLtt_Screen_Cols / 2 - max_len / 2;
+-
+-	SLsmg_set_color(0);
+-	SLsmg_draw_box(y, x++, nr_lines, max_len);
+-	if (title) {
+-		SLsmg_gotorc(y, x + 1);
+-		SLsmg_write_string((char *)title);
+-	}
+-	SLsmg_gotorc(++y, x);
+-	nr_lines -= 7;
+-	max_len -= 2;
+-	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
+-				   nr_lines, max_len, 1);
+-	y += nr_lines;
+-	len = 5;
+-	while (len--) {
+-		SLsmg_gotorc(y + len - 1, x);
+-		SLsmg_write_nstring((char *)" ", max_len);
+-	}
+-	SLsmg_draw_box(y++, x + 1, 3, max_len - 2);
+-
+-	SLsmg_gotorc(y + 3, x);
+-	SLsmg_write_nstring((char *)exit_msg, max_len);
+-	SLsmg_refresh();
+-
+-	x += 2;
+-	len = 0;
+-	key = ui__getch(delay_secs);
+-	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
+-		if (key == K_BKSPC) {
+-			if (len == 0)
+-				goto next_key;
+-			SLsmg_gotorc(y, x + --len);
+-			SLsmg_write_char(' ');
+-		} else {
+-			buf[len] = key;
+-			SLsmg_gotorc(y, x + len++);
+-			SLsmg_write_char(key);
+-		}
+-		SLsmg_refresh();
+-
+-		/* XXX more graceful overflow handling needed */
+-		if (len == sizeof(buf) - 1) {
+-			ui_helpline__push("maximum size of symbol name reached!");
+-			key = K_ENTER;
+-			break;
+-		}
+-next_key:
+-		key = ui__getch(delay_secs);
+-	}
+-
+-	buf[len] = '\0';
+-	strncpy(input, buf, len+1);
+-	return key;
++	fprintf(stderr, "Warning:\n");
++	vfprintf(stderr, format, args);
++	return 0;
+ }
+ 
+-int ui__question_window(const char *title, const char *text,
+-			const char *exit_msg, int delay_secs)
++static struct perf_error_ops default_eops =
+ {
+-	int x, y;
+-	int max_len = 0, nr_lines = 0;
+-	const char *t;
+-
+-	t = text;
+-	while (1) {
+-		const char *sep = strchr(t, '\n');
+-		int len;
+-
+-		if (sep == NULL)
+-			sep = strchr(t, '\0');
+-		len = sep - t;
+-		if (max_len < len)
+-			max_len = len;
+-		++nr_lines;
+-		if (*sep == '\0')
+-			break;
+-		t = sep + 1;
+-	}
+-
+-	max_len += 2;
+-	nr_lines += 4;
+-	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
+-	x = SLtt_Screen_Cols / 2 - max_len / 2;
+-
+-	SLsmg_set_color(0);
+-	SLsmg_draw_box(y, x++, nr_lines, max_len);
+-	if (title) {
+-		SLsmg_gotorc(y, x + 1);
+-		SLsmg_write_string((char *)title);
+-	}
+-	SLsmg_gotorc(++y, x);
+-	nr_lines -= 2;
+-	max_len -= 2;
+-	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
+-				   nr_lines, max_len, 1);
+-	SLsmg_gotorc(y + nr_lines - 2, x);
+-	SLsmg_write_nstring((char *)" ", max_len);
+-	SLsmg_gotorc(y + nr_lines - 1, x);
+-	SLsmg_write_nstring((char *)exit_msg, max_len);
+-	SLsmg_refresh();
+-	return ui__getch(delay_secs);
+-}
++	.error		= perf_stdio__error,
++	.warning	= perf_stdio__warning,
++};
+ 
+-int ui__help_window(const char *text)
+-{
+-	return ui__question_window("Help", text, "Press any key...", 0);
+-}
++static struct perf_error_ops *perf_eops = &default_eops;
+ 
+-int ui__dialog_yesno(const char *msg)
+-{
+-	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
+-}
+ 
+-int __ui__warning(const char *title, const char *format, va_list args)
++int ui__error(const char *format, ...)
+ {
+-	char *s;
+-
+-	if (use_browser > 0 && vasprintf(&s, format, args) > 0) {
+-		int key;
++	int ret;
++	va_list args;
+ 
+-		pthread_mutex_lock(&ui__lock);
+-		key = ui__question_window(title, s, "Press any key...", 0);
+-		pthread_mutex_unlock(&ui__lock);
+-		free(s);
+-		return key;
+-	}
++	va_start(args, format);
++	ret = perf_eops->error(format, args);
++	va_end(args);
+ 
+-	fprintf(stderr, "%s:\n", title);
+-	vfprintf(stderr, format, args);
+-	return K_ESC;
++	return ret;
+ }
+ 
+ int ui__warning(const char *format, ...)
+ {
+-	int key;
++	int ret;
+ 	va_list args;
+ 
+ 	va_start(args, format);
+-	key = __ui__warning("Warning", format, args);
++	ret = perf_eops->warning(format, args);
+ 	va_end(args);
+-	return key;
++
++	return ret;
+ }
+ 
+-int ui__error(const char *format, ...)
++
++/**
++ * perf_error__register - Register error logging functions
++ * @eops: The pointer to error logging function struct
++ *
++ * Register UI-specific error logging functions. Before calling this,
++ * other logging functions should be unregistered, if any.
++ */
++int perf_error__register(struct perf_error_ops *eops)
+ {
+-	int key;
+-	va_list args;
++	if (perf_eops != &default_eops)
++		return -1;
+ 
+-	va_start(args, format);
+-	key = __ui__warning("Error", format, args);
+-	va_end(args);
+-	return key;
++	perf_eops = eops;
++	return 0;
++}
++
++/**
++ * perf_error__unregister - Unregister error logging functions
++ * @eops: The pointer to error logging function struct
++ *
++ * Unregister already registered error logging functions.
++ */
++int perf_error__unregister(struct perf_error_ops *eops)
++{
++	if (perf_eops != eops)
++		return -1;
++
++	perf_eops = &default_eops;
++	return 0;
+ }
+diff --git a/tools/perf/ui/util.h b/tools/perf/ui/util.h
+index 2d1738b..361f08c 100644
+--- a/tools/perf/ui/util.h
++++ b/tools/perf/ui/util.h
+@@ -9,6 +9,13 @@ int ui__help_window(const char *text);
+ int ui__dialog_yesno(const char *msg);
+ int ui__question_window(const char *title, const char *text,
+ 			const char *exit_msg, int delay_secs);
+-int __ui__warning(const char *title, const char *format, va_list args);
++
++struct perf_error_ops {
++	int (*error)(const char *format, va_list args);
++	int (*warning)(const char *format, va_list args);
++};
++
++int perf_error__register(struct perf_error_ops *eops);
++int perf_error__unregister(struct perf_error_ops *eops);
+ 
+ #endif /* _PERF_UI_UTIL_H_ */
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index efb1fce..4dfe0bb 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -47,7 +47,7 @@ int dump_printf(const char *fmt, ...)
+ 	return ret;
+ }
+ 
+-#ifdef NO_NEWT_SUPPORT
++#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+ int ui__warning(const char *format, ...)
+ {
+ 	va_list args;
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 6bebe7f..015c91d 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -12,8 +12,9 @@ int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+ void trace_event(union perf_event *event);
+ 
+ struct ui_progress;
++struct perf_error_ops;
+ 
+-#ifdef NO_NEWT_SUPPORT
++#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+ static inline int ui_helpline__show_help(const char *format __used, va_list ap __used)
+ {
+ 	return 0;
+@@ -23,12 +24,28 @@ static inline void ui_progress__update(u64 curr __used, u64 total __used,
+ 				       const char *title __used) {}
+ 
+ #define ui__error(format, arg...) ui__warning(format, ##arg)
+-#else
++
++static inline int
++perf_error__register(struct perf_error_ops *eops __used)
++{
++	return 0;
++}
++
++static inline int
++perf_error__unregister(struct perf_error_ops *eops __used)
++{
++	return 0;
++}
++
++#else /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
++
+ extern char ui_helpline__last_msg[];
+ int ui_helpline__show_help(const char *format, va_list ap);
+ #include "../ui/progress.h"
+ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+-#endif
++#include "../ui/util.h"
++
++#endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
+ 
+ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ int ui__error_paranoid(void);
