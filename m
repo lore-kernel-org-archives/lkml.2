@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab2FTIHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 04:07:00 -0400
-Received: from intermatrixgroup.ru ([195.178.208.66]:53313 "EHLO
-	tservice.net.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754168Ab2FTIGz (ORCPT
+	id S1755556Ab2FTIHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 04:07:50 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:44784 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab2FTIHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 04:06:55 -0400
-Date: Wed, 20 Jun 2012 12:06:52 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/w1: free the w1_master at w1_free_dev and
- return a correct return value
-Message-ID: <20120620080652.GA15937@ioremap.net>
-References: <1339949879-26085-1-git-send-email-devendra.aaru@gmail.com>
+	Wed, 20 Jun 2012 04:07:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339949879-26085-1-git-send-email-devendra.aaru@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1340088918-4081-1-git-send-email-rabin.vincent@stericsson.com>
+References: <1340088918-4081-1-git-send-email-rabin.vincent@stericsson.com>
+Date: Wed, 20 Jun 2012 10:07:42 +0200
+Message-ID: <CACRpkda0uOB_4i0aa4DWMGKamXnDnkJeZnRuo-iwsrcarO6pkA@mail.gmail.com>
+Subject: Re: [PATCH] uprobes: move function declarations out of arch
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rabin Vincent <rabin.vincent@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Jun 19, 2012 at 8:55 AM, Rabin Vincent
+<rabin.vincent@stericsson.com> wrote:
 
-On Sun, Jun 17, 2012 at 09:47:59PM +0530, Devendra Naga (devendra.aaru@gmail.com) wrote:
-> the w1_master pointer is allced at the w1_alloc_master and is not freed when called with
-> w1_remove_master.
-> 
-> when w1_alloc_dev fails the return should be -ENODEV as it does
-> device_register, and that is the last case where that function
-> will fail.
-> 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> Move the arch_* function declarations to the common header so that they
+> don't have to be copy/pasted verbatim across arches.
+>
+> Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
 
-Hmm, looks correct, but I wonder how whatever_free() function happend
-not to free its arguments.
+Looping in Arnd as arch maintainer to get some traction.
+(Looks good to me!)
 
-Looks like device_unregister() calls release callback, but we do not
-provide one.
-
-Greg, please pull it into your tree. Thank you.
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-
--- 
-	Evgeniy Polyakov
+Yours,
+Linus Walleij
