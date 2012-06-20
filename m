@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab2FTSjQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:39:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757677Ab2FTSWD (ORCPT
+	id S932267Ab2FTSjg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:39:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44755 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757671Ab2FTSWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:22:03 -0400
-Message-Id: <20120620173022.934229502@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:22:00 -0400
+Message-Id: <20120620173022.850763321@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:43 -0700
+Date: Wed, 20 Jun 2012 10:30:42 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
-Subject: [ 23/61] USB: option: fix memory leak
+        alan@lxorguk.ukuu.org.uk, gavin zhu <gavin.zhu@qq.com>
+Subject: [ 22/61] USB: option: add more YUGA device ids
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,55 +24,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: =?UTF-8?q?=E8=AF=B4=E4=B8=8D=E5=BE=97?= <gavin.kx@qq.com>
 
-commit b9c3aab315b51f81649a0d737c4c73783fbd8de0 upstream.
+commit 0ef0be15fd2564767f114c249fc4af704d8e16f4 upstream.
 
-Fix memory leak introduced by commit 383cedc3bb435de7a2 ("USB: serial:
-full autosuspend support for the option driver") which allocates
-usb-serial data but never frees it.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: gavin zhu <gavin.zhu@qq.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |   42 ++++++++++++++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 16 deletions(-)
 
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -47,6 +47,7 @@
- /* Function prototypes */
- static int  option_probe(struct usb_serial *serial,
- 			const struct usb_device_id *id);
-+static void option_release(struct usb_serial *serial);
- static int option_send_setup(struct usb_serial_port *port);
- static void option_instat_callback(struct urb *urb);
+@@ -426,7 +426,7 @@ static void option_instat_callback(struc
+ #define SAMSUNG_VENDOR_ID                       0x04e8
+ #define SAMSUNG_PRODUCT_GT_B3730                0x6889
  
-@@ -1273,7 +1274,7 @@ static struct usb_serial_driver option_1
- 	.ioctl             = usb_wwan_ioctl,
- 	.attach            = usb_wwan_startup,
- 	.disconnect        = usb_wwan_disconnect,
--	.release           = usb_wwan_release,
-+	.release           = option_release,
- 	.read_int_callback = option_instat_callback,
- #ifdef CONFIG_PM
- 	.suspend           = usb_wwan_suspend,
-@@ -1384,6 +1385,15 @@ static int option_probe(struct usb_seria
- 	return 0;
- }
+-/* YUGA products  www.yuga-info.com*/
++/* YUGA products  www.yuga-info.com gavin.kx@qq.com */
+ #define YUGA_VENDOR_ID				0x257A
+ #define YUGA_PRODUCT_CEM600			0x1601
+ #define YUGA_PRODUCT_CEM610			0x1602
+@@ -443,6 +443,8 @@ static void option_instat_callback(struc
+ #define YUGA_PRODUCT_CEU516			0x160C
+ #define YUGA_PRODUCT_CEU528			0x160D
+ #define YUGA_PRODUCT_CEU526			0x160F
++#define YUGA_PRODUCT_CEU881			0x161F
++#define YUGA_PRODUCT_CEU882			0x162F
  
-+static void option_release(struct usb_serial *serial)
-+{
-+	struct usb_wwan_intf_private *priv = usb_get_serial_data(serial);
+ #define YUGA_PRODUCT_CWM600			0x2601
+ #define YUGA_PRODUCT_CWM610			0x2602
+@@ -458,23 +460,26 @@ static void option_instat_callback(struc
+ #define YUGA_PRODUCT_CWU518			0x260B
+ #define YUGA_PRODUCT_CWU516			0x260C
+ #define YUGA_PRODUCT_CWU528			0x260D
++#define YUGA_PRODUCT_CWU581			0x260E
+ #define YUGA_PRODUCT_CWU526			0x260F
++#define YUGA_PRODUCT_CWU582			0x261F
++#define YUGA_PRODUCT_CWU583			0x262F
+ 
+-#define YUGA_PRODUCT_CLM600			0x2601
+-#define YUGA_PRODUCT_CLM610			0x2602
+-#define YUGA_PRODUCT_CLM500			0x2603
+-#define YUGA_PRODUCT_CLM510			0x2604
+-#define YUGA_PRODUCT_CLM800			0x2605
+-#define YUGA_PRODUCT_CLM900			0x2606
+-
+-#define YUGA_PRODUCT_CLU718			0x2607
+-#define YUGA_PRODUCT_CLU716			0x2608
+-#define YUGA_PRODUCT_CLU728			0x2609
+-#define YUGA_PRODUCT_CLU726			0x260A
+-#define YUGA_PRODUCT_CLU518			0x260B
+-#define YUGA_PRODUCT_CLU516			0x260C
+-#define YUGA_PRODUCT_CLU528			0x260D
+-#define YUGA_PRODUCT_CLU526			0x260F
++#define YUGA_PRODUCT_CLM600			0x3601
++#define YUGA_PRODUCT_CLM610			0x3602
++#define YUGA_PRODUCT_CLM500			0x3603
++#define YUGA_PRODUCT_CLM510			0x3604
++#define YUGA_PRODUCT_CLM800			0x3605
++#define YUGA_PRODUCT_CLM900			0x3606
 +
-+	usb_wwan_release(serial);
-+
-+	kfree(priv);
-+}
-+
- static void option_instat_callback(struct urb *urb)
- {
- 	int err;
++#define YUGA_PRODUCT_CLU718			0x3607
++#define YUGA_PRODUCT_CLU716			0x3608
++#define YUGA_PRODUCT_CLU728			0x3609
++#define YUGA_PRODUCT_CLU726			0x360A
++#define YUGA_PRODUCT_CLU518			0x360B
++#define YUGA_PRODUCT_CLU516			0x360C
++#define YUGA_PRODUCT_CLU528			0x360D
++#define YUGA_PRODUCT_CLU526			0x360F
+ 
+ /* Viettel products */
+ #define VIETTEL_VENDOR_ID			0x2262
+@@ -1215,6 +1220,11 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU516) },
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU528) },
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU526) },
++	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEU881) },
++	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEU882) },
++	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CWU581) },
++	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CWU582) },
++	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CWU583) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(LG_VENDOR_ID, LG_PRODUCT_L02C) }, /* docomo L-02C modem */
 
 
