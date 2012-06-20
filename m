@@ -1,67 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab2FTNTX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:19:23 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50280 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab2FTNTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 09:19:22 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/TLjEhUKmdqaWOEwNsJ1+F
-Date: Wed, 20 Jun 2012 06:19:19 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: mathieu.poirier@linaro.org
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH] arm: OMAP depends on MMU
-Message-ID: <20120620131918.GJ12766@atomide.com>
-References: <1339116651-18051-1-git-send-email-mathieu.poirier@linaro.org>
+	id S1755464Ab2FTNUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:20:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48610 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753790Ab2FTNUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 09:20:52 -0400
+Date: Wed, 20 Jun 2012 15:20:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        cgroups@vger.kernel.org, devel@openvz.org,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Suleiman Souhlal <suleiman@google.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v4 05/25] memcg: Always free struct memcg through
+ schedule_work()
+Message-ID: <20120620132050.GE5541@tiehlicka.suse.cz>
+References: <1340015298-14133-1-git-send-email-glommer@parallels.com>
+ <1340015298-14133-6-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339116651-18051-1-git-send-email-mathieu.poirier@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1340015298-14133-6-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* mathieu.poirier@linaro.org <mathieu.poirier@linaro.org> [120607 17:55]:
-> From: Arnd Bergmann <arnd@arndb.de>
+On Mon 18-06-12 14:27:58, Glauber Costa wrote:
+> Right now we free struct memcg with kfree right after a
+> rcu grace period, but defer it if we need to use vfree() to get
+> rid of that memory area. We do that by need, because we need vfree
+> to be called in a process context.
 > 
-> There is no way to build OMAP kernels without an MMU
-> at this point because of dependencies on MMU-only functions.
-> 
-> As long as nobody is interested in fixing this, let's just disable
-> this platforms for nommu kernels.
+> This patch unifies this behavior, by ensuring that even kfree will
+> happen in a separate thread. The goal is to have a stable place to
+> call the upcoming jump label destruction function outside the realm
+> of the complicated and quite far-reaching cgroup lock (that can't be
+> held when calling neither the cpu_hotplug.lock nor the jump_label_mutex)
 
-Thanks, applying into fixes non-critical.
+This one is in memcg-devel (mmotm) tree for quite some time with acks
+from me and Kamezawa.
 
-Tony
-
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Li Zefan <lizefan@huawei.com>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Michal Hocko <mhocko@suse.cz>
 > ---
->  arch/arm/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>  mm/memcontrol.c |   24 +++++++++++++-----------
+>  1 file changed, 13 insertions(+), 11 deletions(-)
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 84449dd..4b1fc0d 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -934,6 +934,7 @@ config ARCH_DAVINCI
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index e3b528e..ce15be4 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -245,8 +245,8 @@ struct mem_cgroup {
+>  		 */
+>  		struct rcu_head rcu_freeing;
+>  		/*
+> -		 * But when using vfree(), that cannot be done at
+> -		 * interrupt time, so we must then queue the work.
+> +		 * We also need some space for a worker in deferred freeing.
+> +		 * By the time we call it, rcu_freeing is not longer in use.
+>  		 */
+>  		struct work_struct work_freeing;
+>  	};
+> @@ -4826,23 +4826,28 @@ out_free:
+>  }
 >  
->  config ARCH_OMAP
->  	bool "TI OMAP"
-> +	depends on MMU
->  	select HAVE_CLK
->  	select ARCH_REQUIRE_GPIOLIB
->  	select ARCH_HAS_CPUFREQ
+>  /*
+> - * Helpers for freeing a vzalloc()ed mem_cgroup by RCU,
+> + * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
+>   * but in process context.  The work_freeing structure is overlaid
+>   * on the rcu_freeing structure, which itself is overlaid on memsw.
+>   */
+> -static void vfree_work(struct work_struct *work)
+> +static void free_work(struct work_struct *work)
+>  {
+>  	struct mem_cgroup *memcg;
+> +	int size = sizeof(struct mem_cgroup);
+>  
+>  	memcg = container_of(work, struct mem_cgroup, work_freeing);
+> -	vfree(memcg);
+> +	if (size < PAGE_SIZE)
+> +		kfree(memcg);
+> +	else
+> +		vfree(memcg);
+>  }
+> -static void vfree_rcu(struct rcu_head *rcu_head)
+> +
+> +static void free_rcu(struct rcu_head *rcu_head)
+>  {
+>  	struct mem_cgroup *memcg;
+>  
+>  	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+> -	INIT_WORK(&memcg->work_freeing, vfree_work);
+> +	INIT_WORK(&memcg->work_freeing, free_work);
+>  	schedule_work(&memcg->work_freeing);
+>  }
+>  
+> @@ -4868,10 +4873,7 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  		free_mem_cgroup_per_zone_info(memcg, node);
+>  
+>  	free_percpu(memcg->stat);
+> -	if (sizeof(struct mem_cgroup) < PAGE_SIZE)
+> -		kfree_rcu(memcg, rcu_freeing);
+> -	else
+> -		call_rcu(&memcg->rcu_freeing, vfree_rcu);
+> +	call_rcu(&memcg->rcu_freeing, free_rcu);
+>  }
+>  
+>  static void mem_cgroup_get(struct mem_cgroup *memcg)
 > -- 
-> 1.7.5.4
+> 1.7.10.2
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
