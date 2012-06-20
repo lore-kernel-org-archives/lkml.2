@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab2FTJMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:12:08 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:44056 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab2FTJMG convert rfc822-to-8bit (ORCPT
+	id S1755586Ab2FTJT7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:19:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54565 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab2FTJT6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:12:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120618102003.GB12029@n2100.arm.linux.org.uk>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
-	<1339428307-3850-9-git-send-email-lee.jones@linaro.org>
-	<20120614183231.GA30185@sirena.org.uk>
-	<4FDEEEBD.5070108@linaro.org>
-	<20120618102003.GB12029@n2100.arm.linux.org.uk>
-Date: Wed, 20 Jun 2012 11:12:05 +0200
-Message-ID: <CACRpkdZDVDZYKsT9Lxg3_ef6YKgmcWFa7-o+2PAmYpy47JDysw@mail.gmail.com>
-Subject: Re: [PATCH 08/14] mfd: Add IRQ domain support for the AB8500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        Mattias WALLIN <mattias.wallin@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Jun 2012 05:19:58 -0400
+Message-ID: <1340183979.21745.78.camel@twins>
+Subject: Re: [PATCH v2 5/5] sched: cpu_power: enable ARCH_POWER
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux@arm.linux.org.uk,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com
+Date: Wed, 20 Jun 2012 11:19:39 +0200
+In-Reply-To: <CAKfTPtAdSMJ1RnDPDYZZ378QW9DUCKLA+oC3TWJD7v5KAkFitA@mail.gmail.com>
+References: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
+	 <1340094536-20873-6-git-send-email-vincent.guittot@linaro.org>
+	 <20120619090110.GA1692@zhy>
+	 <CAKfTPtAdSMJ1RnDPDYZZ378QW9DUCKLA+oC3TWJD7v5KAkFitA@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 12:20 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, Jun 18, 2012 at 10:02:53AM +0100, Lee Jones wrote:
->> @@ -361,7 +362,7 @@ static void ab8500_irq_sync_unlock(struct irq_data *data)
->>  static void ab8500_irq_mask(struct irq_data *data)
->>  {
->>       struct ab8500 *ab8500 = irq_data_get_irq_chip_data(data);
->> -     int offset = data->irq - ab8500->irq_base;
->> +     int offset = data->irq;
->
-> Are you sure this is right?  I thought irq_data->irq was the Linux IRQ
-> number, irq_data->hwirq was the interrupt number inside the domain.
+On Wed, 2012-06-20 at 11:11 +0200, Vincent Guittot wrote:
+> On 19 June 2012 11:01, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> > On Tue, Jun 19, 2012 at 10:28:56AM +0200, Vincent Guittot wrote:
+> >> Heteregeneous ARM platform uses arch_scale_freq_power function
+> >> to reflect the relative capacity of each core
+> >>
+> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> >> ---
+> >>  kernel/sched/features.h |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+> >> index de00a48..d98ae90 100644
+> >> --- a/kernel/sched/features.h
+> >> +++ b/kernel/sched/features.h
+> >> @@ -42,7 +42,7 @@ SCHED_FEAT(CACHE_HOT_BUDDY, true)
+> >>  /*
+> >>   * Use arch dependent cpu power functions
+> >>   */
+> >> -SCHED_FEAT(ARCH_POWER, false)
+> >> +SCHED_FEAT(ARCH_POWER, true)
+> >
+> > Hmmm...seems we can remove this knob completely.
+> >
+> 
+> Peter,
+> 
+> Do you prefer to keep it or remove it completely ?
 
-Agree, this need to be fixed and respin...
-
-Yours,
-Linus Walleij
+I prefer to keep it, the 'we can remove it' is true for all feature
+bits, they should never be twiddled in normal circumstances, its a debug
+feature. As such it makes sense to allow disabling the arch cpu-power
+fiddling.
