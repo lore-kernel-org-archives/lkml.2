@@ -1,56 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab2FTImr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 04:42:47 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58715 "EHLO mx2.parallels.com"
+	id S1755469Ab2FTInx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 04:43:53 -0400
+Received: from plane.gmane.org ([80.91.229.3]:39792 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab2FTImp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 04:42:45 -0400
-Message-ID: <4FE18C6B.1020503@parallels.com>
-Date: Wed, 20 Jun 2012 12:40:11 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754731Ab2FTInv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 04:43:51 -0400
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH v4 05/25] memcg: Always free struct memcg through schedule_work()
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-6-git-send-email-glommer@parallels.com> <4FDF1A0D.6080204@jp.fujitsu.com> <4FDF1AAE.4080209@parallels.com> <alpine.LFD.2.02.1206201031150.2989@tux.localdomain>
-In-Reply-To: <alpine.LFD.2.02.1206201031150.2989@tux.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <877gv2hjhb.fsf@sejong.aot.lge.com>
+References: <1340094536-20873-1-git-send-email-vincent.guittot@linaro.org>
+	<1340094536-20873-4-git-send-email-vincent.guittot@linaro.org>
+	<877gv2hjhb.fsf@sejong.aot.lge.com>
+Date: Wed, 20 Jun 2012 10:43:34 +0200
+Message-ID: <CAKfTPtDhS3Hj+ErN5E_U_Ji=zE75m2Ya68UW4jLDEjoiO9bAsg@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] ARM: topology: Update cpu_power according to DT information
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Vincent Guittot 
+	<public-vincent.guittot-QSEj5FYQhm4dnm+yROfE0A@plane.gmane.org>,
+        public-a.p.zijlstra-/NLkJaSkS4VmR6Xm/wNWPw@plane.gmane.org,
+        public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org,
+        public-rob.herring-bsGFqQB8/DxBDgjK7y7TUQ@plane.gmane.org,
+        public-linux-arm-kernel-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@plane.gmane.org,
+        public-linaro-dev-cunTk1MwBs8s++Sfvej+rw@plane.gmane.org,
+        public-devicetree-discuss-uLR06cmDAlY/bJ5BZ2RsiQ@plane.gmane.org,
+        public-linux-lFZ/pmaqli7XmaaqVzeoHQ@plane.gmane.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 11:32 AM, Pekka Enberg wrote:
->> >Maybe Pekka can merge the current -mm with his tree?
-> I first want to have a stable base from Christoph's "common slab" series
-> before I am comfortable with going forward with the memcg parts.
+
+
+On 20 June 2012 03:15, Namhyung Kim <namhyung@kernel.org> wrote:
 >
-> Feel free to push forward any preparational patches to the slab
-> allocators, though.
 >
-> 			Pekka
+>
+> On Tue, 19 Jun 2012 10:28:54 +0200, Vincent Guittot wrote:
+>> Use cpu compatibility field and clock-frequency field of DT to
+>> estimate the capacity of each core of the system and to update
+>> the cpu_power field accordingly.
+>> This patch enables to put more running tasks on big cores than
+>> on LITTLE ones. But this patch doesn't ensure that long running
+>> tasks will run on big cores and short ones on LITTLE cores.
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot-QSEj5FYQhm4dnm+yROfE0A@public.gmane.org>
+>> ---
+> [snip]
+>> +static void __init parse_dt_topology(void)
+>> +{
+>> +     struct cpu_efficiency *cpu_eff;
+>> +     struct device_node *cn = NULL;
+>> +     unsigned long min_capacity = (unsigned long)(-1);
+>> +     unsigned long max_capacity = 0;
+>> +     unsigned long capacity = 0;
+>> +     int alloc_size, cpu = 0;
+>> +
+>> +     alloc_size = nr_cpu_ids * sizeof(struct cpu_capacity);
+>> +     cpu_capacity = (struct cpu_capacity *)kzalloc(alloc_size, GFP_NOWAIT);
+>> +
+>> +     while ((cn = of_find_node_by_type(cn, "cpu"))) {
+>> +             const u32 *rate, *reg;
+>> +             char *compatible;
+>> +             int len;
+>> +
+>> +             if (cpu >= num_possible_cpus())
+>> +                     break;
+>> +
+>> +             compatible = of_get_property(cn, "compatible", &len);
+>
+> Why is this line needed?
 
-Kame and others:
+not needed is the final version, should have been removed.
 
-If you are already comfortable with the general shape of the series, it 
-would do me good to do the same with the memcg preparation patches, so 
-we have less code to review and merge in the next window.
+>
+>
+>> +
+>> +             for (cpu_eff = table_efficiency; cpu_eff->compatible; cpu_eff++)
+>> +                     if (of_device_is_compatible(cn, cpu_eff->compatible))
+>> +                             break;
+>> +
+>> +             if (cpu_eff->compatible == NULL)
+>> +                     continue;
+>> +
+>> +             rate = of_get_property(cn, "clock-frequency", &len);
+>> +             if (!rate || len != 4) {
+>> +                     pr_err("%s missing clock-frequency property\n",
+>> +                             cn->full_name);
+>> +                     continue;
+>> +             }
+>> +
+>> +             reg = of_get_property(cn, "reg", &len);
+>> +             if (!reg || len != 4) {
+>> +                     pr_err("%s missing reg property\n", cn->full_name);
+>> +                     continue;
+>> +             }
+>> +
+>> +             capacity = ((be32_to_cpup(rate)) >> 20)
+>> +                     * cpu_eff->efficiency;
+>
+> Why did you break this line?
 
-They are:
+It was more than 80 chars large previously but no more the case.
+I'm going to correct
 
-     memcg: Make it possible to use the stock for more than one page.
-     memcg: Reclaim when more than one page needed.
-     memcg: change defines to an enum
-
-Do you see any value in merging them now ?
-
+Thanks
+>
+> Thanks,
+> Namhyung
+>
+>
+>
+>
+> _______________________________________________
+> linaro-dev mailing list
+> linaro-dev@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-dev
 
