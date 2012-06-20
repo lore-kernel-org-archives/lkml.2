@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758165Ab2FTVqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 17:46:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41661 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754629Ab2FTVqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 17:46:23 -0400
-Message-ID: <4FE2449F.8000700@zytor.com>
-Date: Wed, 20 Jun 2012 14:46:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758177Ab2FTVvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 17:51:20 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18415 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754859Ab2FTVvT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 17:51:19 -0400
+Date: Wed, 20 Jun 2012 23:51:17 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Joe Perches <joe@perches.com>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/get_maintainer.pl: Add tested-by signature
+In-Reply-To: <20120620143959.394b9930.akpm@linux-foundation.org>
+Message-ID: <alpine.LNX.2.00.1206202349190.7671@swampdragon.chaosbits.net>
+References: <1340193105-10734-1-git-send-email-aletes.xgr@gmail.com> <1340209526.29885.14.camel@joe2Laptop> <20120620143959.394b9930.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: mingo@kernel.org, agordeev@redhat.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/apic] x86/apic: Try to spread IRQ vectors to different
- priority levels
-References: <20120607131514.GD4759@dhcp-26-207.brq.redhat.com>  <tip-1bccd58bfffc5a677051937b332b71f0686187c1@git.kernel.org>  <4FE2071B.5040602@zytor.com> <1340228471.3696.62.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1340228471.3696.62.camel@sbsiddha-desk.sc.intel.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 02:41 PM, Suresh Siddha wrote:
->>
->> OK, stupid question: WHY?
->>
->> In general, in Linux the random prioritization is actually a negative.
-> 
-> Thinking loud in the context of your e-mail. With the relatively recent
-> changes like the commit mentioned below, window of higher priority class
-> preempting the lower priority class is minimized to the point at which
-> the cpu decides which interrupt to be serviced next. And in this case,
-> it doesn't matter if the two vectors are in two different priority
-> classes or the same class. Higher the vector number higher the priority
-> for the cpu to service next.
->  
-> commit e58aa3d2d0cc01ad8d6f7f640a0670433f794922
-> Author: Ingo Molnar <mingo@elte.hu>
-> Date:   Fri Mar 26 00:06:51 2010 +0000
-> 
->     genirq: Run irq handlers with interrupts disabled
-> 
-> 
->> The only reason for the spreading by 8 is because of bugs/misfeatures in
->> old APIC implementations which made them handle more than two interrupts
->> per priority level rather inefficiently.
-> 
-> Peter, Is it just inefficiency or a functional bug in those old apic's?
-> Just wondering if it is just inefficiency and given the above linux
-> behavior does the inefficiency matter?
-> 
-> Anyways, these are old platforms that we probably don't want to mess
-> with. Perhaps we should go back to '8' and add a comment with all this
-> info, that the real intention is not to spread them across different
-> priority class but to avoid running into some old apic bugs.
-> 
+On Wed, 20 Jun 2012, Andrew Morton wrote:
 
-I think it's just an inefficiency, in the sense that the interrupt will
-be held at the IOAPIC until the LAPIC frees up a slot, but I could be
-wrong.  xAPIC implementations can queue an interrupt per vector, and so
-are unaffected; arguably we might not even want to do the "spread by 8"
-at all on those implementations.
+> On Wed, 20 Jun 2012 09:25:26 -0700
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > On Wed, 2012-06-20 at 08:51 -0300, Alexandre Pereira da Silva wrote:
+> > > The tester of the patch should also be listed to receive patch
+> > > notifications.
+> > []
+> > > diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+> > []
+> > > @@ -81,6 +81,7 @@ my $penguin_chiefs = "\(" . join("|", @penguin_chief_names) . "\)";
+> > >  my @signature_tags = ();
+> > >  push(@signature_tags, "Signed-off-by:");
+> > >  push(@signature_tags, "Reviewed-by:");
+> > > +push(@signature_tags, "Tested-by:");
+> > >  push(@signature_tags, "Acked-by:");
+> > 
+> > I have no objections to this, but maybe Florian Mickler
+> > (cc'd) who did analysis on signatures awhile ago might.
+> > 
+> 
+> Yes.  In my experience, a lot of tested-by's come from random internet
+> victims who happened to report a bug and who we'll never hear from
+> again and who don't want to be told other things about
+> whatever-part-of-the-kernel-that-was.
+> 
+> Perhaps the set "has a tested-by, doesn't have reported-by" would
+> filter out a lot of these, dunno.  It all sounds a bit marginal.
+> 
+> 
+> 
+> Also, lots of people have used a "Reported-and-tested-by" and there are
+> even a few lysdexic "Tested-and-[rR]eported-by" tags in there.
+> 
+> Any time I see one of these things I stomp on it and turn it into
+> separate reported-by and tested-by lines, as Reported-and-tested-by
+> just adds pointless duplication, work and noise.  But I appear to have
+> lost that fight.
+> 
+> 
+> This fashion of adding new and innovative changelog tags just creates
+> inaccuracy and work for people who wish to mine that data for something
+> useful, as Alexandre is finding out.
+> 
+> <does some data mining>
+> 
+> Geeze, guys.  Who knew there were so many Kernel Komedians?
+> 
+Andrew - stomp harder!
 
-Overall, I think there is no real upside or downside, but the poster
-seemed to assume that there would be an automatic upside, and I don't
-think there is.
-
-	-hpa
-
+I'm well aware that it's not your job to fix this mess - just couldn't 
+help myself commenting on your "Any time I see one of these things I stomp 
+on it" comment...  You should stomp, and stomp HARD!
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
