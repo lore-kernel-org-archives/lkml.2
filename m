@@ -1,120 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab2FTQvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:51:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46397 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754249Ab2FTQvi convert rfc822-to-8bit (ORCPT
+	id S1757241Ab2FTQwi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:52:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38183 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab2FTQwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:51:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="168085906"
-From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-To: Joerg Roedel <joerg.roedel@amd.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
-CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
-Thread-Topic: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
-Thread-Index: AQHNTgU+lKeEBPkI2E+A1o6+OmqXspcCaWUAgAEDqwD///pesA==
-Date: Wed, 20 Jun 2012 16:51:36 +0000
-Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A070C73A57E@ORSMSX106.amr.corp.intel.com>
-References: <20120619102041.GI2624@amd.com> <4FE0C2A8.50602@intel.com>
- <20120620094844.GL2624@amd.com>
-In-Reply-To: <20120620094844.GL2624@amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Jun 2012 12:52:36 -0400
+Date: Wed, 20 Jun 2012 09:52:05 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-9gmd5wewsrvtny8tzxjfp471@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf evsel: Carve out event modifier formatting
+Git-Commit-ID: 27f18617b01dbbc928e9bd3731d1766222fb7e0d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:52:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joerg.roedel@amd.com]
-> Sent: Wednesday, June 20, 2012 2:49 AM
-> To: Duyck, Alexander H
-> Cc: Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce W; Wyborny,
-> Carolyn; Skidmore, Donald C; Rose, Gregory V; Waskiewicz Jr, Peter P;
-> Ronciak, John; e1000-devel@lists.sourceforge.net; linux-
-> kernel@vger.kernel.org
-> Subject: Re: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
-> 
-> Hi Alexander,
-> 
-> On Tue, Jun 19, 2012 at 11:19:20AM -0700, Alexander Duyck wrote:
-> > Based on the faults it would look like accessing the descriptor rings
-> > is probably triggering the errors.  We allocate the descriptor rings
-> > using dma_alloc_coherent so the rings should be mapped correctly.
-> 
-> Can this happen before the driver actually allocated the descriptors? As I
-> said, the faults appear before any DMA-API call was made for that device
-> (hence, domain=0x0000, because the domain is assigned on the first call to
-> the DMA-API for a device).
-> 
-> Also, I don't see the faults every time. One out of ten times
-> (estimated) there are not faults. Is it possible that this is a race
-> condition, e.g. that the card trys to access its descriptor rings before
-> the driver allocated them (or something like that).
-> 
-> > The PF and VF will end up being locked out since they are hung on an
-> > uncompleted DMA transaction.  Normally we recommend that PCIe Advanced
-> > Error Reporting be enabled if an IOMMU is enabled so the device can be
-> > reset after triggering a page fault event.
-> >
-> > The first thing that pops into my head for possible issues would be
-> > that maybe the VF pci_dev structure or the device structure isn't
-> > being correctly initialized when SR-IOV is enabled on the igb
-> > interface.  Do you know if there are any AMD IOMMU specific values on
-> > those structures, such as the domain, that are supposed to be
-> > initialized prior to calling the DMA API calls?  If so, have you tried
-> > adding debug output to verify if those values are initialized on a VF
-> prior to bringing up a VF interface?
-> 
-> Well, when the device appears in the system the IOMMU driver gets notified
-> about it using the device_change notifiers. It will then allocate all
-> necessary data structures. I also verified that this works correctly while
-> debugging this issue. So I am pretty sure the problem isn't there :)
-> 
-> > Also have you tried any other SR-IOV capable devices on this system?
-> > That would be a valuable data point because we could then exclude the
-> > SR-IOV code as being a possible cause for the issues if other SR-IOV
-> > devices are working without any issues.
-> 
-> I have another SR-IOV device, but that fails to even enable SR-IOV because
-> the BIOS did not let enough MMIO resources left. So I couldn't try it with
-> that device. With the 82576 card enabling SR-IOV works fine but results in
-> the faults from the VF.
+Commit-ID:  27f18617b01dbbc928e9bd3731d1766222fb7e0d
+Gitweb:     http://git.kernel.org/tip/27f18617b01dbbc928e9bd3731d1766222fb7e0d
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 11 Jun 2012 13:33:09 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 19 Jun 2012 13:06:20 -0300
 
-That sounds very suspicious to me.  The 82576 might still seem to work because it only has less than 8 VFs, which might be why it isn't reporting the MMIO resources issue.  That doesn't mean it would work correctly and I suspect that the IO_PAGE_FAULT error is due to an MMIO access, not a DMA access.  MMIO resources for devices are page mapped and if your BIOS is broken that might not be done correctly.
+perf evsel: Carve out event modifier formatting
 
-I have the feeling the issue is the BIOS.  You probably want to contact your system vendor and make sure you have the correct BIOS installed or even whether they claim that the system is supposed to support SR-IOV.
+>From perf_evsel__hw_name, so that we can use it for the other kinds of
+events (tracepoints, software, hw cache, etc).
 
-- Greg
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-9gmd5wewsrvtny8tzxjfp471@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evsel.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
 
-> 
-> Regards,
-> 
-> 	Joerg
-> 
-> --
-> AMD Operating System Research Center
-> 
-> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach General
-> Managers: Alberto Bozzo
-> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr.
-> 43632
-
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 9f6cebd..dab8938 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -86,16 +86,15 @@ const char *__perf_evsel__hw_name(u64 config)
+ 	return "unknown-hardware";
+ }
+ 
+-static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
++static int perf_evsel__add_modifiers(struct perf_evsel *evsel, char *bf, size_t size)
+ {
+-	int colon = 0;
++	int colon = 0, r = 0;
+ 	struct perf_event_attr *attr = &evsel->attr;
+-	int r = scnprintf(bf, size, "%s", __perf_evsel__hw_name(attr->config));
+ 	bool exclude_guest_default = false;
+ 
+ #define MOD_PRINT(context, mod)	do {					\
+ 		if (!attr->exclude_##context) {				\
+-			if (!colon) colon = r++;			\
++			if (!colon) colon = ++r;			\
+ 			r += scnprintf(bf + r, size - r, "%c", mod);	\
+ 		} } while(0)
+ 
+@@ -108,7 +107,7 @@ static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
+ 
+ 	if (attr->precise_ip) {
+ 		if (!colon)
+-			colon = r++;
++			colon = ++r;
+ 		r += scnprintf(bf + r, size - r, "%.*s", attr->precise_ip, "ppp");
+ 		exclude_guest_default = true;
+ 	}
+@@ -119,10 +118,16 @@ static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
+ 	}
+ #undef MOD_PRINT
+ 	if (colon)
+-		bf[colon] = ':';
++		bf[colon - 1] = ':';
+ 	return r;
+ }
+ 
++static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
++{
++	int r = scnprintf(bf, size, "%s", __perf_evsel__hw_name(evsel->attr.config));
++	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
++}
++
+ int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size)
+ {
+ 	int ret;
