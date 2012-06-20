@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab2FTLfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:35:50 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60755 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab2FTLfr (ORCPT
+	id S1754600Ab2FTLh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:37:57 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33076 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab2FTLhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:35:47 -0400
-Date: Wed, 20 Jun 2012 12:35:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Miller <davem@davemloft.net>
-Cc: bhupesh.sharma@st.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        federico.vaga@gmail.com, giancarlo.asnaghi@st.com, wg@grandegger.com,
-        mkl@pengutronix.de
-Subject: Re: linux-next: build failure after merge of the net-next tree
-Message-ID: <20120620113539.GA928@sirena.org.uk>
-References: <D5ECB3C7A6F99444980976A8C6D896384FAA275CA8@EAPEX1MAIL1.st.com>
- <20120619.213703.513466167861199217.davem@davemloft.net>
- <D5ECB3C7A6F99444980976A8C6D896384FAA275CBE@EAPEX1MAIL1.st.com>
- <20120619.214759.2265041580160751452.davem@davemloft.net>
+	Wed, 20 Jun 2012 07:37:54 -0400
+Message-ID: <4FE1B60E.4020500@linaro.org>
+Date: Wed, 20 Jun 2012 12:37:50 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120619.214759.2265041580160751452.davem@davemloft.net>
-X-Cookie: On the eighth day, God created FORTRAN.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 3/3] ARM: dts: db8500: add node property "regulator-compatible"
+ regulator node
+References: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com> <1340116099-17629-4-git-send-email-ldewangan@nvidia.com> <4FE0A546.1010707@linaro.org> <4FE0B79D.4090201@wwwdotorg.org> <4FE1772A.2010806@linaro.org> <4FE17E24.8050702@nvidia.com> <4FE18371.2020602@linaro.org> <4FE1877C.4090103@nvidia.com> <4FE19036.1060008@linaro.org> <20120620100631.GE3978@opensource.wolfsonmicro.com> <4FE1B31C.6030100@linaro.org> <4FE1B3A6.6090600@nvidia.com>
+In-Reply-To: <4FE1B3A6.6090600@nvidia.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 09:47:59PM -0700, David Miller wrote:
-> From: Bhupesh SHARMA <bhupesh.sharma@st.com>
+On 20/06/12 12:27, Laxman Dewangan wrote:
+> On Wednesday 20 June 2012 04:55 PM, Lee Jones wrote:
+>> On 20/06/12 11:06, Mark Brown wrote:
+>>> On Wed, Jun 20, 2012 at 09:56:22AM +0100, Lee Jones wrote:
+>>>
+>>>>> Are you OK to have the first patch with adding property
+>>> ...
+>>>
+>>>> Yes I'm fine with it.
+>>> So is that an ack?
+>> Sure why not. Although, Linus Walleij has the final say.
+>>
+>> Acked-by: Lee Jones<lee.jones@linaro.org>
+>>
+>
+> I am going to send the new patch having "regulator-compatible" on each
+> child node only for db8500.dtsi, and removing all other changes.
 
-> > So, whether adding a check in Kconfig for HAVE_CLK be a proper
-> > solution ?  But that will limit the compilation of this driver for
-> > only platforms which are ARM based.
+That's fine. Keep me CC'ed on other related correspondence and I'll make 
+any other necessary changes with regards to node naming at a later date.
 
-> > One may need to support this driver on x86 like platforms also..
-
-> Then x86 will need to provide clock operations, or there needs to
-> be dummy ones for such platforms.
-
-Not directly germane but I've been sending patches for this to the x86
-guys for a little while though they're doing a /dev/null impression.
-
-> This isn't rocket science.
-
-The other option is that the clock API stubs itself out when not enabled
-which is going into mainline (not sure quite where it is at the minute).
-
-These sort of per-arch APIs should be a legacy thing, hopefully we'll
-manage to squash them at some point and we should certainly work to
-avoid introducing new ones.
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
