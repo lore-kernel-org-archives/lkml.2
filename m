@@ -1,162 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab2FTG4a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:56:30 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:38558 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab2FTG43 (ORCPT
+	id S1753799Ab2FTG46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:56:58 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:35375 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369Ab2FTG44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:56:29 -0400
-X-AuditID: cbfee612-b7fbe6d000007898-16-4fe1741984e1
-Date: Wed, 20 Jun 2012 06:56:25 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v2] regulator: max77686: Implement .set_ramp_delay()
- callback.
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        =?euc-kr?Q?=C0=CC=C1=BE=C8=AD?= <jonghwa3.lee@samsung.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        =?euc-kr?Q?=BA=AF=C4=A1=BF=F5?= <woong.byun@samsung.com>,
-        Axel Lin <axel.lin@gmail.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120620065049740@myungjoo.ham
-Msgkey: 20120620065049740@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120620065049740@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <8918866.625501340175384370.JavaMail.weblogic@epml24>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t/tGbqSJQ/9DT4cYLS4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZh3pTC94oVGydtIK5gfGPfBcjJ4eQgLrEoiUn2UBsCQETiXnT
-	e5ggbDGJC/fWA8W5gGrmM0oc3bAEyOHgYBFQlZj0WxHEZBPQk5j5ORmkXFggSOLD5hWMIGER
-	gWKJ15cUQMLMAq+YJDYv54TYpCSxZt8rFhCbV0BQ4uTMJywg5RJAAx9/j4UIq0nMffieFeIA
-	CYlZ0y9A2bwSM9qfskDYchLTvq5hhrClJc7P2sAIc/Di74+h4vwSx27vYIIYzyvx5H4wzJjd
-	m79A/SogMfXMQahWLYmfd25C/c0nsWbhWxaYMbtOLWeG+ERRYkr3Q3YIW0viy499bOg+4RVw
-	lFjX6zWBUXYWkswsJN2zkHQjq1nAyLKKUTS1ILmgOCk91UKvODG3uDQvXS85P3cTIziGnwnt
-	YFzWYHGIUYCDUYmHd0L2Q38h1sSy4srcQ4wSHMxKIrzMCUAh3pTEyqrUovz4otKc1OJDjNIc
-	LErivH3WF/yFBNITS1KzU1MLUotgskwcnFINjM2fFaemWmgu8igy4wt8KbqwxyLVcaaVn57M
-	ZRWu2PcuoitWvZww02Gx3qzVOVxX23ke/S/bG8/zbarh8dWOWidqVv+5/Tru7iz77O9bWmtf
-	dNo6tDBaR1cczJSbwV/jnZ6w6oLcoy/3zxpPu6S3bpWe9BzPrcnXEzc+F5kdOzdyzsx9Zed/
-	xyqxFGckGmoxFxUnAgB482/73QIAAA==
-X-TM-AS-MML: No
+	Wed, 20 Jun 2012 02:56:56 -0400
+From: Cong Meng <mc@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
+        Anthony Liguori <anthony@codemonkey.ws>, senwang@linux.vnet.ibm.com,
+        zwanp@cn.ibm.com,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Cong Meng <mc@linux.vnet.ibm.com>
+Subject: [PATCH] virtio-scsi: hotplug suppot for virtio-scsi
+Date: Wed, 20 Jun 2012 14:55:33 +0800
+Message-Id: <1340175333-16803-1-git-send-email-mc@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
+x-cbid: 12062006-0542-0000-0000-00000235E4BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5K6uZHR000369
 
-> This patch implements the .set_ramp_delay callback to set the ramp_delay on
-> hardware for BUCK2/3/4 if ramp_delay is set in regulator constraints.
-> 
-> This patch also do some cleaning work for unrequired members of
-> struct max77686_data.
-> 
-> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+This patch implements the hotplug support for virtio-scsi.
+When there is a device attached/detached, the virtio-scsi driver will be
+signaled via event virtual queue and it will add/remove the scsi device 
+in question automatically.
 
-I guess code-clean part may be seperated. Anyway, except that, it looks good.
+Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
+---
+ drivers/scsi/virtio_scsi.c  |  109 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/virtio_scsi.h |    9 ++++
+ 2 files changed, 116 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 1b38431..6dad625 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -25,6 +25,7 @@
+ #include <scsi/scsi_cmnd.h>
+ 
+ #define VIRTIO_SCSI_MEMPOOL_SZ 64
++#define VIRTIO_SCSI_EVENT_LEN 8
+ 
+ /* Command queue element */
+ struct virtio_scsi_cmd {
+@@ -43,9 +44,15 @@ struct virtio_scsi_cmd {
+ 	} resp;
+ } ____cacheline_aligned_in_smp;
+ 
++struct virtio_scsi_event_node {
++	struct virtio_scsi *vscsi;
++	struct virtio_scsi_event event;
++	struct work_struct work;
++};
++
+ /* Driver instance state */
+ struct virtio_scsi {
+-	/* Protects ctrl_vq, req_vq and sg[] */
++	/* Protects ctrl_vq, event_vq, req_vq and sg[] */
+ 	spinlock_t vq_lock;
+ 
+ 	struct virtio_device *vdev;
+@@ -53,6 +60,9 @@ struct virtio_scsi {
+ 	struct virtqueue *event_vq;
+ 	struct virtqueue *req_vq;
+ 
++	/* Get some buffers reday for event vq */
++	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
++
+ 	/* For sglist construction when adding commands to the virtqueue.  */
+ 	struct scatterlist sg[];
+ };
+@@ -184,9 +194,93 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
+ 	virtscsi_vq_done(vq, virtscsi_complete_free);
+ };
+ 
++static int virtscsi_kick_event(struct virtio_scsi *vscsi,
++			       struct virtio_scsi_event_node *event_node)
++{
++	int ret;
++	struct scatterlist sg;
++	unsigned long flags;
++
++	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
++
++	spin_lock_irqsave(&vscsi->vq_lock, flags);
++
++	ret = virtqueue_add_buf(vscsi->event_vq, &sg, 0, 1, event_node, GFP_ATOMIC);
++	if (ret >= 0)
++		virtqueue_kick(vscsi->event_vq);
++
++	spin_unlock_irqrestore(&vscsi->vq_lock, flags);
++
++	return ret;
++}
++
++static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
++{
++	int i;
++
++	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
++		vscsi->event_list[i].vscsi = vscsi;
++		virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
++	}
++
++	return 0;
++}
++
++static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
++                                            struct virtio_scsi_event *event)
++{
++	struct scsi_device *sdev;
++	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
++	unsigned int target = event->lun[1];
++	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
++
++	switch (event->reason) {
++	case VIRTIO_SCSI_EVT_RESET_RESCAN:
++		scsi_add_device(shost, 0, target, lun);
++		break;
++	case VIRTIO_SCSI_EVT_RESET_REMOVED:
++		sdev = scsi_device_lookup(shost, 0, target, lun);
++		if (sdev) {
++			scsi_remove_device(sdev);
++			scsi_device_put(sdev);
++		} else {
++			pr_err("SCSI device %d 0 %d %d not found\n",
++				shost->host_no, target, lun);
++		}
++		break;
++	default:
++		pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
++	}
++}
++
++static void virtscsi_handle_event(struct work_struct *work)
++{
++	struct virtio_scsi_event_node *event_node = 
++		container_of(work, struct virtio_scsi_event_node, work);
++	struct virtio_scsi *vscsi = event_node->vscsi;
++	struct virtio_scsi_event *event = &event_node->event;
++
++	switch (event->event) {
++	case VIRTIO_SCSI_T_TRANSPORT_RESET:
++		virtscsi_handle_transport_reset(vscsi, event);
++		break;
++	default:
++		pr_err("Unsupport virtio scsi event %x\n", event->event);
++	}
++	virtscsi_kick_event(vscsi, event_node);
++}
++
++static void virtscsi_complete_event(void *buf)
++{
++	struct virtio_scsi_event_node *event_node = buf;
++
++	INIT_WORK(&event_node->work, virtscsi_handle_event);
++	schedule_work(&event_node->work);
++}
++
+ static void virtscsi_event_done(struct virtqueue *vq)
+ {
+-	virtscsi_vq_done(vq, virtscsi_complete_free);
++	virtscsi_vq_done(vq, virtscsi_complete_event);
+ };
+ 
+ static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+@@ -435,6 +529,11 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 
+ 	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+ 	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
++
++	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
++		virtscsi_kick_event_all(vscsi);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -532,7 +631,13 @@ static struct virtio_device_id id_table[] = {
+ 	{ 0 },
+ };
+ 
++static unsigned int features[] = {
++	VIRTIO_SCSI_F_HOTPLUG
++};
++
+ static struct virtio_driver virtio_scsi_driver = {
++	.feature_table = features,
++	.feature_table_size = ARRAY_SIZE(features),
+ 	.driver.name = KBUILD_MODNAME,
+ 	.driver.owner = THIS_MODULE,
+ 	.id_table = id_table,
+diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+index 8ddeafd..dc8d305 100644
+--- a/include/linux/virtio_scsi.h
++++ b/include/linux/virtio_scsi.h
+@@ -69,6 +69,10 @@ struct virtio_scsi_config {
+ 	u32 max_lun;
+ } __packed;
+ 
++/* Feature Bits */
++#define VIRTIO_SCSI_F_INOUT                    0
++#define VIRTIO_SCSI_F_HOTPLUG                  1
++
+ /* Response codes */
+ #define VIRTIO_SCSI_S_OK                       0
+ #define VIRTIO_SCSI_S_OVERRUN                  1
+@@ -105,6 +109,11 @@ struct virtio_scsi_config {
+ #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
+ #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
+ 
++/* Reasons of transport reset event */
++#define VIRTIO_SCSI_EVT_RESET_HARD             0
++#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
++#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
++
+ #define VIRTIO_SCSI_S_SIMPLE                   0
+ #define VIRTIO_SCSI_S_ORDERED                  1
+ #define VIRTIO_SCSI_S_HEAD                     2
+-- 
+1.7.7.6
 
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-
-> ---
->  drivers/regulator/max77686.c |   37 +++++++++++++++++++++++++++++--------
->  1 files changed, 29 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-> index a29eee3..5c2a32f 100644
-> --- a/drivers/regulator/max77686.c
-> +++ b/drivers/regulator/max77686.c
-> @@ -65,11 +65,34 @@ enum max77686_ramp_rate {
->  };
->  
->  struct max77686_data {
-> -	struct device *dev;
-> -	struct max77686_dev *iodev;
->  	struct regulator_dev **rdev;
->  };
->  
-> +static int max77686_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
-> +{
-> +	unsigned int ramp_value = RAMP_RATE_NO_CTRL;
-> +
-> +	switch (ramp_delay) {
-> +	case 1 ... 13750:
-> +		ramp_value = RAMP_RATE_13P75MV;
-> +		break;
-> +	case 13751 ... 27500:
-> +		ramp_value = RAMP_RATE_27P5MV;
-> +		break;
-> +	case 27501 ... 55000:
-> +		ramp_value = RAMP_RATE_55MV;
-> +		break;
-> +	case 55001 ... 100000:
-> +		break;
-> +	default:
-> +		pr_warn("%s: ramp_delay: %d not supported, setting 100000\n",
-> +			rdev->desc->name, ramp_delay);
-> +	}
-> +
-> +	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-> +				  MAX77686_RAMP_RATE_MASK, ramp_value << 6);
-> +}
-> +
->  static struct regulator_ops max77686_ops = {
->  	.list_voltage		= regulator_list_voltage_linear,
->  	.map_voltage		= regulator_map_voltage_linear,
-> @@ -90,6 +113,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
->  	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
->  	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
->  	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-> +	.set_ramp_delay		= max77686_set_ramp_delay,
->  };
->  
->  #define regulator_desc_ldo(num)		{				\
-> @@ -238,20 +262,17 @@ static __devinit int max77686_pmic_probe(struct platform_device *pdev)
->  		return -ENOMEM;
->  
->  	rdev = max77686->rdev;
-> -	max77686->dev = &pdev->dev;
-> -	max77686->iodev = iodev;
-> +	config.dev = &pdev->dev;
-> +	config.regmap = iodev->regmap;
->  	platform_set_drvdata(pdev, max77686);
->  
->  	for (i = 0; i < MAX77686_REGULATORS; i++) {
-> -		config.dev = max77686->dev;
-> -		config.regmap = iodev->regmap;
-> -		config.driver_data = max77686;
->  		config.init_data = pdata->regulators[i].initdata;
->  
->  		rdev[i] = regulator_register(&regulators[i], &config);
->  		if (IS_ERR(rdev[i])) {
->  			ret = PTR_ERR(rdev[i]);
-> -			dev_err(max77686->dev,
-> +			dev_err(&pdev->dev,
->  				"regulator init failed for %d\n", i);
->  				rdev[i] = NULL;
->  				goto err;
-> -- 
-> 1.7.0.4
-> 
-> 
-> 
-> 
->        
->   
->          
-> 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
