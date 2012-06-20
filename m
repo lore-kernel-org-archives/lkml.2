@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab2FTQt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:49:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43283 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab2FTQto (ORCPT
+	id S1754219Ab2FTQup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:50:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38149 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab2FTQuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:49:44 -0400
+	Wed, 20 Jun 2012 12:50:44 -0400
+Date: Wed, 20 Jun 2012 09:50:20 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-8bxozh5lyixgjmziqaxo9675@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf lib: Introduce rtrim
+Git-Commit-ID: cb1a28a0cbf9dac5a7a0ca02ebebc12db260d2f8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x=noV1bOzV7p7F6_iKjt2y1tcd1j5o2Ys0cuwC5+efLCHw@mail.gmail.com>
-References: <1338704660-30921-1-git-send-email-devendra.aaru@gmail.com>
-	<e9129201-3636-49f6-9e97-156cb9823fd3@googlegroups.com>
-	<CAHdPZaP7SekiCYcciYpcf7AGbRgRG7E8q97HvnCf0qRPQOA55A@mail.gmail.com>
-	<CAOh2x=noV1bOzV7p7F6_iKjt2y1tcd1j5o2Ys0cuwC5+efLCHw@mail.gmail.com>
-Date: Wed, 20 Jun 2012 22:19:44 +0530
-Message-ID: <CAHdPZaM1BXSFvA4LyEEiRP5FX55n3f5D-U+Fu7C-7ZEZPwYGCg@mail.gmail.com>
-Subject: Re: [PATCH] rtc/rtc-spear: free the config right after the rtc_device_unregister
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: viresh kumar <viresh.linux@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        rajeev <rajeev-dlh.kumar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:50:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+Commit-ID:  cb1a28a0cbf9dac5a7a0ca02ebebc12db260d2f8
+Gitweb:     http://git.kernel.org/tip/cb1a28a0cbf9dac5a7a0ca02ebebc12db260d2f8
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 7 Jun 2012 18:23:31 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 19 Jun 2012 13:06:19 -0300
 
-On Wed, Jun 20, 2012 at 8:14 PM, viresh kumar <viresh.linux@gmail.com> wrote:
-> On Wed, Jun 20, 2012 at 3:39 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
->> On Wed, Jun 20, 2012 at 7:57 PM, Viresh Kumar <viresh.linux@gmail.com> wrote:
->>> Reviewed-by: Viresh Kumar <viresh.linux@gmail.com>
->>
->> Thanks, at last :-).
->>
->> Is there any tree through which it can reach torvalds?
->
-> The way I would have found this information about any driver is by
-> looking at its
-> git-log and check via which path patches have been going till date. Maintainers
-> normally adds there signed-off's to patches that go through them.
->
-> Andrew Morton, is the one who applied rtc-spear patches till now. Added in cc.
->
-Thanks a lot for the information.
-> --
-> viresh
+perf lib: Introduce rtrim
 
-Devendra.
+Remove the trailing whitespaces.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-8bxozh5lyixgjmziqaxo9675@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/string.c |   22 ++++++++++++++++++++++
+ tools/perf/util/util.h   |    2 ++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
+index d583638..199bc4d 100644
+--- a/tools/perf/util/string.c
++++ b/tools/perf/util/string.c
+@@ -313,3 +313,25 @@ int strtailcmp(const char *s1, const char *s2)
+ 	return 0;
+ }
+ 
++/**
++ * rtrim - Removes trailing whitespace from @s.
++ * @s: The string to be stripped.
++ *
++ * Note that the first trailing whitespace is replaced with a %NUL-terminator
++ * in the given string @s. Returns @s.
++ */
++char *rtrim(char *s)
++{
++	size_t size = strlen(s);
++	char *end;
++
++	if (!size)
++		return s;
++
++	end = s + size - 1;
++	while (end >= s && isspace(*end))
++		end--;
++	*(end + 1) = '\0';
++
++	return s;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 2daaedb..b13c733 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -264,4 +264,6 @@ bool is_power_of_2(unsigned long n)
+ 
+ size_t hex_width(u64 v);
+ 
++char *rtrim(char *s);
++
+ #endif
