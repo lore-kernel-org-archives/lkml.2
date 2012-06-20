@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab2FTKdf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:33:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39987 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756355Ab2FTKdd (ORCPT
+	id S1756341Ab2FTKfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:35:14 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34877 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab2FTKfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:33:33 -0400
-Message-ID: <4FE1A6EC.6070206@pengutronix.de>
-Date: Wed, 20 Jun 2012 12:33:16 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: David Miller <davem@davemloft.net>, viresh.kumar2@arm.com,
-        bhupesh.sharma@st.com, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        federico.vaga@gmail.com, giancarlo.asnaghi@st.com, wg@grandegger.com,
-        spear-devel@list.st.com, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-References: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au> <D5ECB3C7A6F99444980976A8C6D896384FAA275CA8@EAPEX1MAIL1.st.com> <4FE18502.6040409@arm.com> <20120620.012037.783895812206310043.davem@davemloft.net> <20120620202604.407af721f746045ae00c8268@canb.auug.org.au>
-In-Reply-To: <20120620202604.407af721f746045ae00c8268@canb.auug.org.au>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig6BA6434F43A835D50614C9A8"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 20 Jun 2012 06:35:11 -0400
+From: Alexander Block <ablock84@googlemail.com>
+To: linux-btrfs@vger.kernel.org
+Cc: dave@jikos.cz, hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        chris.mason@fusionio.com, linux-kernel@vger.kernel.org,
+        Alexander Block <ablock84@googlemail.com>
+Subject: [PATCH] Allow cross subvolume reflinks (2nd attempt)
+Date: Wed, 20 Jun 2012 12:35:11 +0200
+Message-Id: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6BA6434F43A835D50614C9A8
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-On 06/20/2012 12:26 PM, Stephen Rothwell wrote:
-> Hi all,
->=20
-> On Wed, 20 Jun 2012 01:20:37 -0700 (PDT) David Miller <davem@davemloft.=
-net> wrote:
->>
->> From: viresh kumar <viresh.kumar2@arm.com>
->> Date: Wed, 20 Jun 2012 09:08:34 +0100
->>
->>> Please see following patchset from me, that got applied in linux-next=
+This is the second attempt to bring in cross subvolume reflinks into btrfs.
+The first attempt was NAKed due to missing vfs mount checks and a clear
+description of what btrfs subvolumes are and probably also why cross 
+subvolume reflinks are ok in the case of btrfs. This version of the patch 
+comes from David and is in SUSE kernels since a long time, so it is tested 
+and working. The patch also does proper vfs mount checks, so cross mount 
+point reflinks are not possible with this patch. It only allows cross 
+reflinks between two subvolumes which are in the same mount point. 
 
->>>
->>> https://lkml.org/lkml/2012/4/24/154
->>>
->>> Please check if this patchset is present in your build repo. I believ=
-e it should be
->>> there. If it is, then you shouldn't get these errors.
->>
->> Well, then Stephen shouldn't get those errors either.
->>
->> But obviously he did.
->>
->> But all of this talk about changes existing only in linux-next is
->> entirely moot.  Because The damn thing MUST build independently inside=
+As requested in the older discussion, I'll try to describe what subvolumes
+in btrfs are. From the users point of view, a subvolume is just a directory
+in the mounted fs with its own inode space. This means, that two inodes
+with the same number from different subvolumes are different files. 
+Parallel to the sub directory form, a subvolume may be mounted in its own
+vfs mount point (I'm however not sure if this is already possible or just
+planned). Internally, a btrfs subvolume is a separate btree, containing
+all the metadata needed to store the fs of the subvolume.
+Additionally to the subvolumes, btrfs has snapshots, which are basically
+the same as subvolumes, with the difference that they share metadata and
+data with the snapshot origin/parent. Everything that applies to 
+subvolumes also applies to snapshots.
 
->> of net-next which doesn't have those clock layer changes.
->>
->> Someone send me a clean fix for net-next now.
->=20
-> I get those errors because those patches are in the akpm tree which is
-> merged after everything else ...
->=20
-> One possibility is to put those changes in another (stable) tree and
-> merge that into the net-next tree (and any other tree that needs it).
+The clone ioctl requires the destination file to be already existing and
+opened for writing. This means that we do not touch any vfs semantics
+regarding creation/opening of files. The ioctl only copies the extents 
+information from the source to the destination, doing proper access 
+checks before. In my opinion, we can compare the clone ioctl to the 
+sendfile syscall, with the difference that we don't copy data but the 
+information where the data lies.
 
-We're about to remove the offending clk_*() functions from the driver,
-as they are untested anyway. The hardware the driver was developed for
-uses a hardcoded clock rate in the driver anyway, as it cannot be
-retrieved from clock tree. As soon as there is hardware available that
-will work with the clock tree, we can add those functions back.
+Link to the old discussion:
+http://thread.gmane.org/gmane.comp.file-systems.btrfs/9864 
+Only PATCH 2/2 is of interrest now. The discussion also contains some
+arguments why cross subvolume reflinks are a good thing, but I think
+this should not be the matter of the new discussion.
 
-Sorry for the noise,
-Marc
+Alex.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+David Sterba (1):
+  btrfs: allow cross-subvolume file clone
 
+ fs/btrfs/ioctl.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---------------enig6BA6434F43A835D50614C9A8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+-- 
+1.7.10
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk/hpuwACgkQjTAFq1RaXHNE3wCeKwWQ+5LR0n4b5PpVlKhO5bjj
-xwcAnighlfHs1b7EAny+CoK2sUaTPOsj
-=BLOd
------END PGP SIGNATURE-----
-
---------------enig6BA6434F43A835D50614C9A8--
