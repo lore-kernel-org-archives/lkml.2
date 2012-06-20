@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab2FTSVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:21:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
+	id S1757557Ab2FTSVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:21:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757575Ab2FTSVf (ORCPT
+	with ESMTP id S1757501Ab2FTSVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:21:35 -0400
-Message-Id: <20120620173022.187381499@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:21:21 -0400
+Message-Id: <20120620173021.851052224@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:34 -0700
+Date: Wed, 20 Jun 2012 10:30:30 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Fred Isaman <iisaman@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 14/61] NFSv4: Fix unnecessary delegation returns in nfs4_do_open
+        alan@lxorguk.ukuu.org.uk,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 10/61] xen/hvc: Fix error cases around HVM_PARAM_CONSOLE_PFN
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 2d0dbc6ae8a5194aaecb9cfffb9053f38fce8b86 upstream.
+commit a32c88b9386ce3df87f28dd46bdc3776cd6edf75 upstream.
 
-While nfs4_do_open() expects the fmode argument to be restricted to
-combinations of FMODE_READ and FMODE_WRITE, both nfs4_atomic_open()
-and nfs4_proc_create will pass the nfs_open_context->mode,
-which contains the full fmode_t.
+We weren't resetting the parameter to be passed in to a
+known default. Nor were we checking the return value of
+hvm_get_parameter.
 
-This patch ensures that nfs4_do_open strips the other fmode_t bits,
-fixing a problem in which the nfs4_do_open call would result in an
-unnecessary delegation return.
-
-Reported-by: Fred Isaman <iisaman@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/tty/hvc/hvc_xen.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1861,6 +1861,7 @@ static struct nfs4_state *nfs4_do_open(s
- 	struct nfs4_state *res;
- 	int status;
- 
-+	fmode &= FMODE_READ|FMODE_WRITE;
- 	do {
- 		status = _nfs4_do_open(dir, dentry, fmode, flags, sattr, cred, &res);
- 		if (status == 0)
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -219,7 +219,8 @@ static int xen_hvm_console_init(void)
+ 	if (r < 0)
+ 		goto err;
+ 	info->evtchn = v;
+-	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
++	v = 0;
++	r = hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+ 	if (r < 0)
+ 		goto err;
+ 	mfn = v;
 
 
