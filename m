@@ -1,295 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab2FTQvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:51:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38168 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab2FTQvd (ORCPT
+	id S1757288Ab2FTQvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:51:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46397 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754249Ab2FTQvi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:51:33 -0400
-Date: Wed, 20 Jun 2012 09:51:13 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-wr9xx4ba0utrynu5j6wotd79@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf hists browser:
-  Implement printing snapshots to files
-Git-Commit-ID: aff3f3f68ae6002a30543726b2ae48cafce109e6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 20 Jun 2012 12:51:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="168085906"
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: Joerg Roedel <joerg.roedel@amd.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
+Thread-Topic: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
+Thread-Index: AQHNTgU+lKeEBPkI2E+A1o6+OmqXspcCaWUAgAEDqwD///pesA==
+Date: Wed, 20 Jun 2012 16:51:36 +0000
+Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A070C73A57E@ORSMSX106.amr.corp.intel.com>
+References: <20120619102041.GI2624@amd.com> <4FE0C2A8.50602@intel.com>
+ <20120620094844.GL2624@amd.com>
+In-Reply-To: <20120620094844.GL2624@amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:51:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aff3f3f68ae6002a30543726b2ae48cafce109e6
-Gitweb:     http://git.kernel.org/tip/aff3f3f68ae6002a30543726b2ae48cafce109e6
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 7 Jun 2012 19:31:28 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 19 Jun 2012 13:06:19 -0300
+> -----Original Message-----
+> From: Joerg Roedel [mailto:joerg.roedel@amd.com]
+> Sent: Wednesday, June 20, 2012 2:49 AM
+> To: Duyck, Alexander H
+> Cc: Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce W; Wyborny,
+> Carolyn; Skidmore, Donald C; Rose, Gregory V; Waskiewicz Jr, Peter P;
+> Ronciak, John; e1000-devel@lists.sourceforge.net; linux-
+> kernel@vger.kernel.org
+> Subject: Re: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
+> 
+> Hi Alexander,
+> 
+> On Tue, Jun 19, 2012 at 11:19:20AM -0700, Alexander Duyck wrote:
+> > Based on the faults it would look like accessing the descriptor rings
+> > is probably triggering the errors.  We allocate the descriptor rings
+> > using dma_alloc_coherent so the rings should be mapped correctly.
+> 
+> Can this happen before the driver actually allocated the descriptors? As I
+> said, the faults appear before any DMA-API call was made for that device
+> (hence, domain=0x0000, because the domain is assigned on the first call to
+> the DMA-API for a device).
+> 
+> Also, I don't see the faults every time. One out of ten times
+> (estimated) there are not faults. Is it possible that this is a race
+> condition, e.g. that the card trys to access its descriptor rings before
+> the driver allocated them (or something like that).
+> 
+> > The PF and VF will end up being locked out since they are hung on an
+> > uncompleted DMA transaction.  Normally we recommend that PCIe Advanced
+> > Error Reporting be enabled if an IOMMU is enabled so the device can be
+> > reset after triggering a page fault event.
+> >
+> > The first thing that pops into my head for possible issues would be
+> > that maybe the VF pci_dev structure or the device structure isn't
+> > being correctly initialized when SR-IOV is enabled on the igb
+> > interface.  Do you know if there are any AMD IOMMU specific values on
+> > those structures, such as the domain, that are supposed to be
+> > initialized prior to calling the DMA API calls?  If so, have you tried
+> > adding debug output to verify if those values are initialized on a VF
+> prior to bringing up a VF interface?
+> 
+> Well, when the device appears in the system the IOMMU driver gets notified
+> about it using the device_change notifiers. It will then allocate all
+> necessary data structures. I also verified that this works correctly while
+> debugging this issue. So I am pretty sure the problem isn't there :)
+> 
+> > Also have you tried any other SR-IOV capable devices on this system?
+> > That would be a valuable data point because we could then exclude the
+> > SR-IOV code as being a possible cause for the issues if other SR-IOV
+> > devices are working without any issues.
+> 
+> I have another SR-IOV device, but that fails to even enable SR-IOV because
+> the BIOS did not let enough MMIO resources left. So I couldn't try it with
+> that device. With the 82576 card enabling SR-IOV works fine but results in
+> the faults from the VF.
 
-perf hists browser: Implement printing snapshots to files
+That sounds very suspicious to me.  The 82576 might still seem to work because it only has less than 8 VFs, which might be why it isn't reporting the MMIO resources issue.  That doesn't mean it would work correctly and I suspect that the IO_PAGE_FAULT error is due to an MMIO access, not a DMA access.  MMIO resources for devices are page mapped and if your BIOS is broken that might not be done correctly.
 
-To avoid having to resort to --stdio, that expands everything, instead
-allow the user to go on expanding the relevant callchains and then press
-'P' to print that view.
+I have the feeling the issue is the BIOS.  You probably want to contact your system vendor and make sure you have the correct BIOS installed or even whether they claim that the system is supposed to support SR-IOV.
 
-As the hists browser is used for both static (report) and dynamic (top)
-views, it prints to a 'perf.hists.N' sequence, i.e. multiple snapshots
-can be taken in report and top.
+- Greg
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-wr9xx4ba0utrynu5j6wotd79@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/hists.c |  195 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 195 insertions(+), 0 deletions(-)
+> 
+> Regards,
+> 
+> 	Joerg
+> 
+> --
+> AMD Operating System Research Center
+> 
+> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach General
+> Managers: Alberto Bozzo
+> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr.
+> 43632
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 53f6697..f556e5f 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -23,6 +23,7 @@ struct hist_browser {
- 	struct hists	    *hists;
- 	struct hist_entry   *he_selection;
- 	struct map_symbol   *selection;
-+	int		     print_seq;
- 	bool		     has_symbols;
- };
- 
-@@ -800,6 +801,196 @@ do_offset:
- 	}
- }
- 
-+static int hist_browser__fprintf_callchain_node_rb_tree(struct hist_browser *browser,
-+							struct callchain_node *chain_node,
-+							u64 total, int level,
-+							FILE *fp)
-+{
-+	struct rb_node *node;
-+	int offset = level * LEVEL_OFFSET_STEP;
-+	u64 new_total, remaining;
-+	int printed = 0;
-+
-+	if (callchain_param.mode == CHAIN_GRAPH_REL)
-+		new_total = chain_node->children_hit;
-+	else
-+		new_total = total;
-+
-+	remaining = new_total;
-+	node = rb_first(&chain_node->rb_root);
-+	while (node) {
-+		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
-+		struct rb_node *next = rb_next(node);
-+		u64 cumul = callchain_cumul_hits(child);
-+		struct callchain_list *chain;
-+		char folded_sign = ' ';
-+		int first = true;
-+		int extra_offset = 0;
-+
-+		remaining -= cumul;
-+
-+		list_for_each_entry(chain, &child->val, list) {
-+			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
-+			const char *str;
-+			bool was_first = first;
-+
-+			if (first)
-+				first = false;
-+			else
-+				extra_offset = LEVEL_OFFSET_STEP;
-+
-+			folded_sign = callchain_list__folded(chain);
-+
-+			alloc_str = NULL;
-+			str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+			if (was_first) {
-+				double percent = cumul * 100.0 / new_total;
-+
-+				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
-+					str = "Not enough memory!";
-+				else
-+					str = alloc_str;
-+			}
-+
-+			printed += fprintf(fp, "%*s%c %s\n", offset + extra_offset, " ", folded_sign, str);
-+			free(alloc_str);
-+			if (folded_sign == '+')
-+				break;
-+		}
-+
-+		if (folded_sign == '-') {
-+			const int new_level = level + (extra_offset ? 2 : 1);
-+			printed += hist_browser__fprintf_callchain_node_rb_tree(browser, child, new_total,
-+										new_level, fp);
-+		}
-+
-+		node = next;
-+	}
-+
-+	return printed;
-+}
-+
-+static int hist_browser__fprintf_callchain_node(struct hist_browser *browser,
-+						struct callchain_node *node,
-+						int level, FILE *fp)
-+{
-+	struct callchain_list *chain;
-+	int offset = level * LEVEL_OFFSET_STEP;
-+	char folded_sign = ' ';
-+	int printed = 0;
-+
-+	list_for_each_entry(chain, &node->val, list) {
-+		char ipstr[BITS_PER_LONG / 4 + 1], *s;
-+
-+		folded_sign = callchain_list__folded(chain);
-+		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+		printed += fprintf(fp, "%*s%c %s\n", offset, " ", folded_sign, s);
-+	}
-+
-+	if (folded_sign == '-')
-+		printed += hist_browser__fprintf_callchain_node_rb_tree(browser, node,
-+									browser->hists->stats.total_period,
-+									level + 1,  fp);
-+	return printed;
-+}
-+
-+static int hist_browser__fprintf_callchain(struct hist_browser *browser,
-+					   struct rb_root *chain, int level, FILE *fp)
-+{
-+	struct rb_node *nd;
-+	int printed = 0;
-+
-+	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
-+		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
-+
-+		printed += hist_browser__fprintf_callchain_node(browser, node, level, fp);
-+	}
-+
-+	return printed;
-+}
-+
-+static int hist_browser__fprintf_entry(struct hist_browser *browser,
-+				       struct hist_entry *he, FILE *fp)
-+{
-+	char s[8192];
-+	double percent;
-+	int printed = 0;
-+	char folded_sign = ' ';
-+
-+	if (symbol_conf.use_callchain)
-+		folded_sign = hist_entry__folded(he);
-+
-+	hist_entry__snprintf(he, s, sizeof(s), browser->hists);
-+	percent = (he->period * 100.0) / browser->hists->stats.total_period;
-+
-+	if (symbol_conf.use_callchain)
-+		printed += fprintf(fp, "%c ", folded_sign);
-+
-+	printed += fprintf(fp, " %5.2f%%", percent);
-+
-+	if (symbol_conf.show_nr_samples)
-+		printed += fprintf(fp, " %11u", he->nr_events);
-+
-+	if (symbol_conf.show_total_period)
-+		printed += fprintf(fp, " %12" PRIu64, he->period);
-+
-+	printed += fprintf(fp, "%s\n", rtrim(s));
-+
-+	if (folded_sign == '-')
-+		printed += hist_browser__fprintf_callchain(browser, &he->sorted_chain, 1, fp);
-+
-+	return printed;
-+}
-+
-+static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
-+{
-+	struct rb_node *nd = hists__filter_entries(rb_first(browser->b.entries));
-+	int printed = 0;
-+
-+	while (nd) {
-+		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+
-+		printed += hist_browser__fprintf_entry(browser, h, fp);
-+		nd = hists__filter_entries(rb_next(nd));
-+	}
-+
-+	return printed;
-+}
-+
-+static int hist_browser__dump(struct hist_browser *browser)
-+{
-+	char filename[64];
-+	FILE *fp;
-+
-+	while (1) {
-+		scnprintf(filename, sizeof(filename), "perf.hist.%d", browser->print_seq);
-+		if (access(filename, F_OK))
-+			break;
-+		/*
-+ 		 * XXX: Just an arbitrary lazy upper limit
-+ 		 */
-+		if (++browser->print_seq == 8192) {
-+			ui_helpline__fpush("Too many perf.hist.N files, nothing written!");
-+			return -1;
-+		}
-+	}
-+
-+	fp = fopen(filename, "w");
-+	if (fp == NULL) {
-+		char bf[64];
-+		strerror_r(errno, bf, sizeof(bf));
-+		ui_helpline__fpush("Couldn't write to %s: %s", filename, bf);
-+		return -1;
-+	}
-+
-+	++browser->print_seq;
-+	hist_browser__fprintf(browser, fp);
-+	fclose(fp);
-+	ui_helpline__fpush("%s written!", filename);
-+
-+	return 0;
-+}
-+
- static struct hist_browser *hist_browser__new(struct hists *hists)
- {
- 	struct hist_browser *browser = zalloc(sizeof(*browser));
-@@ -937,6 +1128,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			    browser->selection->map->dso->annotate_warned)
- 				continue;
- 			goto do_annotate;
-+		case 'P':
-+			hist_browser__dump(browser);
-+			continue;
- 		case 'd':
- 			goto zoom_dso;
- 		case 't':
-@@ -969,6 +1163,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 					"E             Expand all callchains\n"
- 					"d             Zoom into current DSO\n"
- 					"t             Zoom into current Thread\n"
-+					"P             Print histograms to perf.hist.N\n"
- 					"/             Filter symbol by name");
- 			continue;
- 		case K_ENTER:
