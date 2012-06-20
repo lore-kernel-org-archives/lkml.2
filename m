@@ -1,38 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab2FTQNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:13:14 -0400
-Received: from h9.dl5rb.org.uk ([81.2.74.9]:42611 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757108Ab2FTQNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:13:12 -0400
-Date: Wed, 20 Jun 2012 17:12:49 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Yoichi Yuasa <yuasa@linux-mips.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>
-Subject: Re: [PATCH] MIPS: fix bug.h MIPS build regression
-Message-ID: <20120620161249.GB29196@linux-mips.org>
-References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org>
- <CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com>
- <20120620152759.2caceb8c.yuasa@linux-mips.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120620152759.2caceb8c.yuasa@linux-mips.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757156Ab2FTQNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:13:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34491 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757139Ab2FTQNd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 12:13:33 -0400
+From: mandeep.baines@gmail.com
+To: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-pm@vger.kernel.org,
+        stable@kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Colin Cross <ccross@android.com>, Sameer Nanda <snanda@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: [PATCH] PM: Prevent waiting forever on asynchronous suspend after abort
+Date: Wed, 20 Jun 2012 09:13:15 -0700
+Message-Id: <1340208795-8049-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1340158627-7586-1-git-send-email-msb@chromium.org>
+References: <1340158627-7586-1-git-send-email-msb@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 03:27:59PM +0900, Yoichi Yuasa wrote:
+From: Mandeep Singh Baines <msb@chromium.org>
 
-> Commit: 3777808873b0c49c5cf27e44c948dfb02675d578 breaks all MIPS builds.
+__device_suspend() must always send a completion. Otherwise, parent
+devices will wait forever.
 
-Thanks, fix applied.
+Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
+system sleep (v2)", introduced a regression by short-circuiting the
+complete_all() for certain error cases.
 
-  Ralf
+This patch fixes the bug by always signalling a completion.
+
+Addresses http://crosbug.com/31972
+
+Tested by injecting an abort.
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org
+Cc: stable@kernel.org
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Colin Cross <ccross@android.com>
+Cc: Sameer Nanda <snanda@chromium.org>
+Cc: Olof Johansson <olofj@chromium.org>
+---
+ drivers/base/power/main.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index e0fb5b0..9cb845e 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	dpm_wait_for_children(dev, async);
+ 
+ 	if (async_error)
+-		return 0;
++		goto Complete;
+ 
+ 	pm_runtime_get_noresume(dev);
+ 	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
+@@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	if (pm_wakeup_pending()) {
+ 		pm_runtime_put_sync(dev);
+ 		async_error = -EBUSY;
+-		return 0;
++		goto Complete;
+ 	}
+ 
+ 	device_lock(dev);
+@@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	}
+ 
+ 	device_unlock(dev);
++
++ Complete:
+ 	complete_all(&dev->power.completion);
+ 
+ 	if (error) {
+-- 
+1.7.3.4
+
