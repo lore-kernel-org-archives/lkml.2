@@ -1,54 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616Ab2FTXzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:55:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50915 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758597Ab2FTXzI (ORCPT
+	id S1758634Ab2FTX6N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:58:13 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62462 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530Ab2FTX6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:55:08 -0400
-Date: Wed, 20 Jun 2012 16:55:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/w1: free the w1_master at w1_free_dev and return
- a correct return value
-Message-ID: <20120620235503.GA31520@kroah.com>
-References: <1339949879-26085-1-git-send-email-devendra.aaru@gmail.com>
+	Wed, 20 Jun 2012 19:58:11 -0400
+X-AuditID: 9c930179-b7befae000006417-16-4fe2638d427d
+Message-ID: <4FE26398.2020708@kernel.org>
+Date: Thu, 21 Jun 2012 08:58:16 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339949879-26085-1-git-send-email-devendra.aaru@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Hillf Danton <dhillf@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
+References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com> <4FE18187.3050103@kernel.org> <CAJd=RBC2PdP0ggZ=RvXwXbToFmzRdpxYKWvkX_8qr7-Zw+DB1Q@mail.gmail.com>
+In-Reply-To: <CAJd=RBC2PdP0ggZ=RvXwXbToFmzRdpxYKWvkX_8qr7-Zw+DB1Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 17, 2012 at 09:47:59PM +0530, Devendra Naga wrote:
-> the w1_master pointer is allced at the w1_alloc_master and is not freed when called with
-> w1_remove_master.
-> 
-> when w1_alloc_dev fails the return should be -ENODEV as it does
-> device_register, and that is the last case where that function
-> will fail.
-> 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-> ---
->  drivers/w1/w1_int.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
-> index 6828835..a3cf27d 100644
-> --- a/drivers/w1/w1_int.c
-> +++ b/drivers/w1/w1_int.c
-> @@ -100,6 +100,7 @@ static struct w1_master * w1_alloc_dev(u32 id, int slave_count, int slave_ttl,
->  static void w1_free_dev(struct w1_master *dev)
->  {
->  	device_unregister(&dev->dev);
-> +	kfree(dev);
+On 06/20/2012 09:44 PM, Hillf Danton wrote:
 
-No, this is wrong, the memory will be freed in w1_master_release(),
-right?  It is not freed here, sorry, this patch is incorrect.
+> On Wed, Jun 20, 2012 at 3:53 PM, Minchan Kim <minchan@kernel.org> wrote:
+>> On 06/20/2012 03:32 PM, KOSAKI Motohiro wrote:
+>>
+>>> (6/20/12 2:12 AM), Minchan Kim wrote:
+>>>>
+>>>> Hi Aaditya,
+>>>>
+>>>> I want to discuss this problem on another thread.
+>>>>
+>>>> On 06/19/2012 10:18 PM, Aaditya Kumar wrote:
+>>>>> On Mon, Jun 18, 2012 at 6:13 AM, Minchan Kim <minchan@kernel.org> wrote:
+>>>>>> On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
+>>>>>>
+>>>>>>> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
+>>>>>>>
+>>>>>>>>>
+>>>>>>>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
+>>>>>>>>> if node has multiple zones. Hm ok, I realized my descriptions was
+>>>>>>>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
+>>>>>>>>> pgdat_balanced()
+>>>>>>>>> every priority. Most easy case is, movable zone has a lot of free pages and
+>>>>>>>>> normal zone has no reclaimable page.
+>>>>>>>>>
+>>>>>>>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
+>>>>>>>>> sleep only if every zones have much free pages than high water mark
+>>>>>>>>> _and_ 25% of present pages in node are free.
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> Sorry. I can't understand your point.
+>>>>>>>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
+>>>>>>>> It seems I am missing your point.
+>>>>>>>> Please anybody correct me.
+>>>>>>>
+>>>>>>> Since currently direct reclaim is given up based on
+>>>>>>> zone->all_unreclaimable flag,
+>>>>>>> so for e.g in one of the scenarios:
+>>>>>>>
+>>>>>>> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
+>>>>>>> hot-remove the all the pages of the MOVABLE zone.
+>>>>>>>
+>>>>>>> While migrating pages during memory hot-unplugging, the allocation function
+>>>>>>> (for new page to which the page in MOVABLE zone would be moved)  can end up
+>>>>>>> looping in direct reclaim path for ever.
+>>>>>>>
+>>>>>>> This is so because when most of the pages in the MOVABLE zone have
+>>>>>>> been migrated,
+>>>>>>> the zone now contains lots of free memory (basically above low watermark)
+>>>>>>> BUT all are in MIGRATE_ISOLATE list of the buddy list.
+>>>>>>>
+>>>>>>> So kswapd() would not balance this zone as free pages are above low watermark
+>>>>>>> (but all are in isolate list). So zone->all_unreclaimable flag would
+>>>>>>> never be set for this zone
+>>>>>>> and allocation function would end up looping forever. (assuming the
+>>>>>>> zone NORMAL is
+>>>>>>> left with no reclaimable memory)
+>>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
+>>>>>> But I don't see it's a problem of kswapd.
+>>>>>
+>>>>> Hi Kim,
+>>>>
+>>>> I like called Minchan rather than Kim
+>>>> Never mind. :)
+>>>>
+>>>>>
+>>>>> Yes I agree it is not a problem of kswapd.
+>>>>
+>>>> Yeb.
+>>>>
+>>>>>
+>>>>>> a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
+>>>>>> but we can't allocate it. :(
+>>>>>> It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
+>>>>>> Kswapd is just one of them confused.
+>>>>>> As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too.
+>>>>>>
+>>>>>> This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
+>>>>>
+>>>>>
+>>>>> I assume that by the inconsistency you mention above, you mean
+>>>>> temporary inconsistency.
+>>>>>
+>>>>> Sorry, but IMHO as for memory hot plug the main issue with this patch
+>>>>> is that the inconsistency you mentioned above would NOT be a temporary
+>>>>> inconsistency.
+>>>>>
+>>>>> Every time say 'x' number of page frames are off lined, they will
+>>>>> introduce a difference of 'x' pages between
+>>>>> NR_FREE_PAGES and SumOf[free_area[order].nr_free].
+>>>>> (So for e.g. if we do a frequent offline/online it will make
+>>>>> NR_FREE_PAGES  negative)
+>>>>>
+>>>>> This is so because, unset_migratetype_isolate() is called from
+>>>>> offlining  code (to set the migrate type of off lined pages again back
+>>>>> to MIGRATE_MOVABLE)
+>>>>> after the pages have been off lined and removed from the buddy list.
+>>>>> Since the pages for which unset_migratetype_isolate() is called are
+>>>>> not buddy pages so move_freepages_block() does not move any page, and
+>>>>> thus introducing a permanent inconsistency.
+>>>>
+>>>> Good point. Negative NR_FREE_PAGES is caused by double counting by my patch and __offline_isolated_pages.
+>>>> I think at first MIGRATE_ISOLATE type freed page shouldn't account as free page.
+>>>>
+>>>>>
+>>>>>> and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
+>>>>>> free_area[order].nr_free exactly.
+>>>>>>
+>>>>>> Any thought?
+>>>>>
+>>>>> As for fixing move_freepages_block(), At least for memory hot plug,
+>>>>> the pages stay in MIGRATE_ISOLATE list only for duration
+>>>>> offline_pages() function,
+>>>>> I mean only temporarily. Since fixing move_freepages_block() for will
+>>>>> introduce some overhead, So I am not very sure whether that overhead
+>>>>> is justified
+>>>>> for a temporary condition. What do you think?
+>>>>
+>>>> Yes. I don't like hurt fast path, either.
+>>>> How about this? (Passed just compile test :(  )
+>>>> The patch's goal is to NOT increase nr_free and NR_FREE_PAGES about freed page into MIGRATE_ISOLATED.
+>>>>
+>>>> This patch hurts high order page free path but I think it's not critical because higher order allocation
+>>>> is rare than order-0 allocation and we already have done same thing on free_hot_cold_page on order-0 free path
+>>>> which is more hot.
+>>>
+>>> Can't we change zone_water_mark_ok_safe() instead of page allocator? memory hotplug is really rare event.
+>>
+>>
+>> +1
+>>
+>> Firstly, I want to make zone_page_state(z, NR_FREE_PAGES) itself more accurately because it is used by
+>> several places. As I looked over places, I can't find critical places except kswapd forever sleep case.
+>> So it's a nice idea!
+>>
+>> In that case, we need zone->lock whenever zone_watermark_ok_safe is called.
+>>
+> Ifdefinery could be utilized for builds with CMA disabled, first.
 
-greg k-h
+
+Yeb.
+if system doesn't use CMA and MEMORY_HOTPLUG, we can avoid it.
+I can do it in formal patch later.
+
+#if defined CONFIG_CMA || CONFIG_MEMORY_HOTPLUG
+
+Still, my concern is that I'm not sure this approach is good or not.
+As I mentioned, MIGRATE_ISOLATE is very irony type because it's a type which represent NOT allocatable
+but they are in _free_ list, even they increase NR_FREE_PAGES and nr_free of free_area.
+So, if someone in future uses it, we have to add new CONFIG like this.
+
+#if defined CONFIG_CMA || CONFIG_MEMORY_HOTPLUG || CONFIG_XXX
+
+If another someone try it, 
+
+#if defined CONFIG_CMA || CONFIG_MEMORY_HOTPLUG || CONFIG_XXX || CONFIG_YYY
+
+I know we can guess that user of MIGRATE_ISOLATE will be small. But who can make sure it?
+Important thing is we provide such interface and any user who want it can use it anytime.
+
+If users of NR_FREE_PAGES and nr_free are increased, they will get confused more than now. Sigh.
+IMHO, right approach is that we shouldn't account it at free page at the beginning
+although it adds a new condition check in higher order free page path.
+Look at my attached patch in previous mail.
+
+Of course, we can redesign isolated page machinery of hotplug but I have no idea.
+Because we can isolate pages which are already in freelist to another list instead of free_area.
+But the problem is we can't isolate pages which are going to free later, ie returned to buddy allocator
+after we mark pageblock to MIGRATE_ISOLATE. For it, we should touch page free patch which is hot path, too.
+
+
+> 
+>> Most of cases, it's unnecessary and it might hurt alloc/free performance when memory pressure is high.
+>> But if memory pressure is high, it may be already meaningless alloc/free performance.
+>> So it does make sense, IMHO.
+>>
+>> Please raise your hands if anyone has a concern about this.
+>>
+>> barrios@bbox:~/linux-next$ git diff
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index d2a515d..82cc0a2 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -1748,16 +1748,38 @@ bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+>>                                        zone_page_state(z, NR_FREE_PAGES));
+>>  }
+>>
+>> -bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
+>> +bool zone_watermark_ok_safe(struct zone *z, int alloc_order, unsigned long mark,
+>>                      int classzone_idx, int alloc_flags)
+>>  {
+>> +       struct free_area *area;
+>> +       struct list_head *curr;
+>> +       int order;
+>> +       unsigned long flags;
+>>        long free_pages = zone_page_state(z, NR_FREE_PAGES);
+>>
+>>        if (z->percpu_drift_mark && free_pages < z->percpu_drift_mark)
+>>                free_pages = zone_page_state_snapshot(z, NR_FREE_PAGES);
+>>
+>> -       return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
+>> -                                                               free_pages);
+>> +       /*
+>> +        * Memory hotplug/CMA can isolate freed page into MIGRATE_ISOLATE
+>> +        * so that buddy can't allocate it although they are in free list.
+>> +        */
+>> +       spin_lock_irqsave(&z->lock, flags);
+>> +       for (order = 0; order < MAX_ORDER; order++) {
+>> +               int count = 0;
+>> +               area = &(z->free_area[order]);
+>> +               if (unlikely(!list_empty(&area->free_list[MIGRATE_ISOLATE]))) {
+>> +                       list_for_each(curr, &area->free_list[MIGRATE_ISOLATE])
+>> +                               count++;
+>> +                       free_pages -= (count << order);
+>> +               }
+>> +       }
+>> +       if (free_pages < 0)
+>> +               free_pages = 0;
+>> +       spin_unlock_irqrestore(&z->lock, flags);
+>> +
+>> +       return __zone_watermark_ok(z, alloc_order, mark,
+>> +                               classzone_idx, alloc_flags, free_pages);
+>>  }
+>>
+> Then isolated pages could be scanned in another direction?
+> 
+> 	spin_lock_irqsave(&z->lock, flags);
+> 	for (order = MAX_ORDER - 1; order >= 0; order--) {
+> 		struct free_area *area = &z->free_area[order];
+> 		long count = 0;
+> 		struct list_head *curr;
+> 
+> 		list_for_each(curr, &area->free_list[MIGRATE_ISOLATE])
+> 			count++;
+> 
+> 		free_pages -= (count << order);
+> 		if (free_pages < 0) {
+> 			free_pages = 0;
+> 			break;
+> 		}
+> 	}
+> 	spin_unlock_irqrestore(&z->lock, flags);
+
+I'm not sure how it helps reducing loop enumeration but it's no problem.
+Anyway, before sending formal patch, I want to discuss above my concern.
+
+Thanks, Hillf.
+
+-- 
+Kind regards,
+Minchan Kim
