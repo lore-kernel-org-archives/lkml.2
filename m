@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab2FTSWf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:22:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53819 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757747Ab2FTSW3 (ORCPT
+	id S932232Ab2FTSWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:22:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932208Ab2FTSWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:22:29 -0400
-Message-Id: <20120620173023.590222681@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:22:35 -0400
+Message-Id: <20120620173023.769909913@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:51 -0700
+Date: Wed, 20 Jun 2012 10:30:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [ 31/61] xHCI: Increase the timeout for controller save/restore state operation
+        alan@lxorguk.ukuu.org.uk, Tony Zelenoff <antonz@parallels.com>
+Subject: [ 33/61] USB: mos7840: Fix compilation of usb serial driver
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,63 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@gmail.com>
+From: Tony Zelenoff <antonz@parallels.com>
 
-commit 622eb783fe6ff4c1baa47db16c3a5db97f9e6e50 upstream.
+commit b9c87663eead64c767e72a373ae6f8a94bead459 upstream.
 
-When system software decides to power down the xHC with the intent of
-resuming operation at a later time, it will ask xHC to save the internal
-state and restore it when resume to correctly recover from a power event.
-Two bits are used to enable this operation: Save State and Restore State.
+The __devinitconst section can't be referenced
+from usb_serial_device structure. Thus removed it as
+it done in other mos* device drivers.
 
-xHCI spec 4.23.2 says software should "Set the Controller Save/Restore
-State flag in the USBCMD register and wait for the Save/Restore State
-Status flag in the USBSTS register to transition to '0'". However, it does
-not define how long software should wait for the SSS/RSS bit to transition
-to 0.
+Error itself:
+WARNING: drivers/usb/serial/mos7840.o(.data+0x8): Section mismatch in reference
+from the variable moschip7840_4port_device to the variable
+.devinit.rodata:id_table
+The variable moschip7840_4port_device references
+the variable __devinitconst id_table
 
-Currently the timeout is set to 1ms. There is bug report
-(https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1002697)
-indicates that the timeout is too short for ASMedia ASM1042 host controller
-to save/restore the state successfully. Increase the timeout to 10ms helps to
-resolve the issue.
+[v2] no attach now
 
-This patch should be backported to stable kernels as old as 2.6.37, that
-contain the commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI:
-PCI power management implementation"
-
-Signed-off-by: Andiry Xu <andiry.xu@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Tony Zelenoff <antonz@parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/serial/mos7840.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -795,8 +795,8 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 	command = xhci_readl(xhci, &xhci->op_regs->command);
- 	command |= CMD_CSS;
- 	xhci_writel(xhci, command, &xhci->op_regs->command);
--	if (handshake(xhci, &xhci->op_regs->status, STS_SAVE, 0, 10*100)) {
--		xhci_warn(xhci, "WARN: xHC CMD_CSS timeout\n");
-+	if (handshake(xhci, &xhci->op_regs->status, STS_SAVE, 0, 10 * 1000)) {
-+		xhci_warn(xhci, "WARN: xHC save state timeout\n");
- 		spin_unlock_irq(&xhci->lock);
- 		return -ETIMEDOUT;
- 	}
-@@ -848,8 +848,8 @@ int xhci_resume(struct xhci_hcd *xhci, b
- 		command |= CMD_CRS;
- 		xhci_writel(xhci, command, &xhci->op_regs->command);
- 		if (handshake(xhci, &xhci->op_regs->status,
--			      STS_RESTORE, 0, 10*100)) {
--			xhci_dbg(xhci, "WARN: xHC CMD_CSS timeout\n");
-+			      STS_RESTORE, 0, 10 * 1000)) {
-+			xhci_warn(xhci, "WARN: xHC restore state timeout\n");
- 			spin_unlock_irq(&xhci->lock);
- 			return -ETIMEDOUT;
- 		}
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -206,7 +206,7 @@ static const struct usb_device_id moschi
+ 	{}			/* terminating entry */
+ };
+ 
+-static const struct usb_device_id moschip_id_table_combined[] __devinitconst = {
++static const struct usb_device_id moschip_id_table_combined[] = {
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2)},
 
 
