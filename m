@@ -1,43 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758421Ab2FTWtf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 18:49:35 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53482 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758403Ab2FTWtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 18:49:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Thu, 21 Jun 2012 00:54:56 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sameer Nanda <snanda@chromium.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <20120620150140.64b8bd622e00638d3ceed40c@canb.auug.org.au>
-In-Reply-To: <20120620150140.64b8bd622e00638d3ceed40c@canb.auug.org.au>
+	id S1758436Ab2FTWtv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 18:49:51 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:33734 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758345Ab2FTWts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 18:49:48 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 01/15] ARM: etm: Don't require clock control
+Date: Wed, 20 Jun 2012 18:47:33 -0400
+Message-Id: <1340232467-6023-2-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
+References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206210054.56235.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062022-2398-0000-0000-000007B78DE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 20, 2012, Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> After merging the pm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> drivers/built-in.o:(.toc1+0x37f0): undefined reference to `pm_print_times_enabled'
-> 
-> Caused by commit 0eb8c06cb620 ("PM / Sleep: Separate printing suspend
-> times from initcall_debug") or maybe 1873ce64491a ("M / Sleep: add knob
-> for printing device resume times").
+From: Arve Hjønnevåg <arve@android.com>
 
-That should be fixed now, sorry for the breakage.
+If clk_get fail, assume the etb does not need a separate clock.
 
-Thanks,
-Rafael
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ arch/arm/kernel/etm.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+index 36d20bd..bd295e8 100644
+--- a/arch/arm/kernel/etm.c
++++ b/arch/arm/kernel/etm.c
+@@ -362,13 +362,12 @@ static int __devinit etb_probe(struct amba_device *dev, const struct amba_id *id
+ 	if (ret)
+ 		goto out_unmap;
+ 
++	/* Get optional clock. Currently used to select clock source on omap3 */
+ 	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
+-	if (IS_ERR(t->emu_clk)) {
++	if (IS_ERR(t->emu_clk))
+ 		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
+-		return -EFAULT;
+-	}
+-
+-	clk_enable(t->emu_clk);
++	else
++		clk_enable(t->emu_clk);
+ 
+ 	etb_unlock(t);
+ 	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
+@@ -403,8 +402,10 @@ static int etb_remove(struct amba_device *dev)
+ 	iounmap(t->etb_regs);
+ 	t->etb_regs = NULL;
+ 
+-	clk_disable(t->emu_clk);
+-	clk_put(t->emu_clk);
++	if (!IS_ERR(t->emu_clk)) {
++		clk_disable(t->emu_clk);
++		clk_put(t->emu_clk);
++	}
+ 
+ 	amba_release_regions(dev);
+ 
+-- 
+1.7.9.5
+
