@@ -1,218 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab2FTQos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:44:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38031 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab2FTQor (ORCPT
+	id S1752238Ab2FTQp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:45:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1425 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751366Ab2FTQpY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:44:47 -0400
-Date: Wed, 20 Jun 2012 09:44:06 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-pdmqbng9twz06jzkbgtuwbp8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
-        peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add sort by src line/number
-Git-Commit-ID: 409a8be61560c5875816da6dcb0c575d78145a5c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 20 Jun 2012 12:45:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114273230"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: madovsky <infos@madovsky.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: e1000e, 3.4.1, , jumbo frames are not working
+Thread-Topic: e1000e, 3.4.1, , jumbo frames are not working
+Thread-Index: AQHNTvh0BwMhEmzK90Ss53WzeFK/6JcDZ6Cg
+Date: Wed, 20 Jun 2012 16:45:19 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A1842846965C@ORSMSX102.amr.corp.intel.com>
+References: <loom.20120620T164714-725@post.gmane.org>
+In-Reply-To: <loom.20120620T164714-725@post.gmane.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:44:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  409a8be61560c5875816da6dcb0c575d78145a5c
-Gitweb:     http://git.kernel.org/tip/409a8be61560c5875816da6dcb0c575d78145a5c
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 30 May 2012 10:33:24 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 19 Jun 2012 13:06:18 -0300
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of madovsky
+> Sent: Wednesday, June 20, 2012 7:49 AM
+> To: linux-kernel@vger.kernel.org
+> Subject: RE: e1000e, 3.4.1, , jumbo frames are not working
+> 
+> it's the same on kernel 3.4.3.
+> I can't activate jumbo frames
+> my mobo is S5000PAL
 
-perf tools: Add sort by src line/number
+This is already known and discussed on previous threads.  If you look at
+the system log file you will see a message from the driver which states
+"Jumbo frames cannot be enabled  when both receive checksum offload and
+receive hashing are enabled.  Disable one of the receive offload features
+before enabling jumbos."  A patch that removes this incompatibility is
+currently in test here at Intel and should be passed upstream soon.
 
-Using addr2line for now, requires debuginfo, needs more work to support
-detached debuginfo, aka foo-debuginfo packages.
+Thanks,
+Bruce.
 
-Example:
-
-	[root@sandy ~]# perf record -a sleep 3
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.555 MB perf.data (~24236 samples) ]
-	[root@sandy ~]# perf report -s dso,srcline 2>&1 | grep -v ^# | head -5
-	    22.41%  [kernel.kallsyms]  /home/git/linux/drivers/idle/intel_idle.c:280
-	     4.79%  [kernel.kallsyms]  /home/git/linux/drivers/cpuidle/cpuidle.c:148
-	     4.78%  [kernel.kallsyms]  /home/git/linux/arch/x86/include/asm/atomic64_64.h:121
-	     4.49%  [kernel.kallsyms]  /home/git/linux/kernel/sched/core.c:1690
-	     4.30%  [kernel.kallsyms]  /home/git/linux/include/linux/seqlock.h:90
-	[root@sandy ~]#
-
-[root@sandy ~]# perf top -U -s dso,symbol,srcline
-Samples: 1K of event 'cycles', Event count (approx.): 589617389
- 18.66%  [kernel]  [k] copy_user_generic_unrolled   /home/git/linux/arch/x86/lib/copy_user_64.S:143
-  7.83%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:39
-  6.59%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:38
-  3.66%  [kernel]  [k] page_fault                   /home/git/linux/arch/x86/kernel/entry_64.S:1379
-  3.25%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:40
-  3.12%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:37
-  2.74%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:36
-  2.39%  [kernel]  [k] clear_page                   /home/git/linux/arch/x86/lib/clear_page_64.S:43
-  2.12%  [kernel]  [k] ioread32                     /home/git/linux/lib/iomap.c:90
-  1.51%  [kernel]  [k] copy_user_generic_unrolled   /home/git/linux/arch/x86/lib/copy_user_64.S:144
-  1.19%  [kernel]  [k] copy_user_generic_unrolled   /home/git/linux/arch/x86/lib/copy_user_64.S:154
-
-Suggested-by: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-pdmqbng9twz06jzkbgtuwbp8@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-report.txt |    2 +-
- tools/perf/Documentation/perf-top.txt    |    2 +-
- tools/perf/util/hist.h                   |    1 +
- tools/perf/util/sort.c                   |   49 ++++++++++++++++++++++++++++++
- tools/perf/util/sort.h                   |    2 +
- 5 files changed, 54 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 2d89f02..495210a 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -57,7 +57,7 @@ OPTIONS
- 
- -s::
- --sort=::
--	Sort by key(s): pid, comm, dso, symbol, parent.
-+	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
- 
- -p::
- --parent=<regex>::
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 4a5680c..5b80d84 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -112,7 +112,7 @@ Default is to monitor all CPUS.
- 
- -s::
- --sort::
--	Sort by key(s): pid, comm, dso, symbol, parent
-+	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
- 
- -n::
- --show-nr-samples::
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 34bb556..0b096c2 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -47,6 +47,7 @@ enum hist_column {
- 	HISTC_SYMBOL_TO,
- 	HISTC_DSO_FROM,
- 	HISTC_DSO_TO,
-+	HISTC_SRCLINE,
- 	HISTC_NR_COLS, /* Last entry */
- };
- 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index a272374..0f5a0a4 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -241,6 +241,54 @@ struct sort_entry sort_sym = {
- 	.se_width_idx	= HISTC_SYMBOL,
- };
- 
-+/* --sort srcline */
-+
-+static int64_t
-+sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return (int64_t)(right->ip - left->ip);
-+}
-+
-+static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
-+				   size_t size, unsigned int width __used)
-+{
-+	FILE *fp;
-+	char cmd[PATH_MAX + 2], *path = self->srcline, *nl;
-+	size_t line_len;
-+
-+	if (path != NULL)
-+		goto out_path;
-+
-+	snprintf(cmd, sizeof(cmd), "addr2line -e %s %016" PRIx64,
-+		 self->ms.map->dso->long_name, self->ip);
-+	fp = popen(cmd, "r");
-+	if (!fp)
-+		goto out_ip;
-+
-+	if (getline(&path, &line_len, fp) < 0 || !line_len)
-+		goto out_ip;
-+	fclose(fp);
-+	self->srcline = strdup(path);
-+	if (self->srcline == NULL)
-+		goto out_ip;
-+
-+	nl = strchr(self->srcline, '\n');
-+	if (nl != NULL)
-+		*nl = '\0';
-+	path = self->srcline;
-+out_path:
-+	return repsep_snprintf(bf, size, "%s", path);
-+out_ip:
-+	return repsep_snprintf(bf, size, "%-#*llx", BITS_PER_LONG / 4, self->ip);
-+}
-+
-+struct sort_entry sort_srcline = {
-+	.se_header	= "Source:Line",
-+	.se_cmp		= sort__srcline_cmp,
-+	.se_snprintf	= hist_entry__srcline_snprintf,
-+	.se_width_idx	= HISTC_SRCLINE,
-+};
-+
- /* --sort parent */
- 
- static int64_t
-@@ -439,6 +487,7 @@ static struct sort_dimension sort_dimensions[] = {
- 	DIM(SORT_PARENT, "parent", sort_parent),
- 	DIM(SORT_CPU, "cpu", sort_cpu),
- 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
-+	DIM(SORT_SRCLINE, "srcline", sort_srcline),
- };
- 
- int sort_dimension__add(const char *tok)
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 472aa5a..e724b26 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -71,6 +71,7 @@ struct hist_entry {
- 	char			level;
- 	bool			used;
- 	u8			filtered;
-+	char			*srcline;
- 	struct symbol		*parent;
- 	union {
- 		unsigned long	  position;
-@@ -93,6 +94,7 @@ enum sort_type {
- 	SORT_SYM_FROM,
- 	SORT_SYM_TO,
- 	SORT_MISPREDICT,
-+	SORT_SRCLINE,
- };
- 
- /*
