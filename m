@@ -1,129 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab2FTI2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 04:28:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54293 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752967Ab2FTI17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 04:27:59 -0400
-Date: Wed, 20 Jun 2012 10:27:55 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH -mm] memcg: prevent from OOM with too many dirty pages
-Message-ID: <20120620082755.GA5541@tiehlicka.suse.cz>
-References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
- <20120619150014.1ebc108c.akpm@linux-foundation.org>
+	id S1754682Ab2FTIbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 04:31:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58148 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab2FTIbk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 04:31:40 -0400
+Message-ID: <4FE18A5E.204@pengutronix.de>
+Date: Wed, 20 Jun 2012 10:31:26 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120619150014.1ebc108c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bhupesh SHARMA <bhupesh.sharma@st.com>
+CC: David Miller <davem@davemloft.net>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "federico.vaga@gmail.com" <federico.vaga@gmail.com>,
+        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
+        "wg@grandegger.com" <wg@grandegger.com>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+References: <20120620133348.a9ff31a72ffd11818f574fe3@canb.auug.org.au> <D5ECB3C7A6F99444980976A8C6D896384FAA275CA8@EAPEX1MAIL1.st.com> <20120619.213703.513466167861199217.davem@davemloft.net> <D5ECB3C7A6F99444980976A8C6D896384FAA275CBE@EAPEX1MAIL1.st.com>
+In-Reply-To: <D5ECB3C7A6F99444980976A8C6D896384FAA275CBE@EAPEX1MAIL1.st.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigD2BF30344E566AB65597BECA"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 19-06-12 15:00:14, Andrew Morton wrote:
-> On Tue, 19 Jun 2012 16:50:04 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > Current implementation of dirty pages throttling is not memcg aware which makes
-> > it easy to have LRUs full of dirty pages which might lead to memcg OOM if the
-> > hard limit is small and so the lists are scanned faster than pages written
-> > back.
-> 
-> This is a bit hard to parse.  I changed it to
-> 
-> : The current implementation of dirty pages throttling is not memcg aware
-> : which makes it easy to have memcg LRUs full of dirty pages.  Without
-> : throttling, these LRUs can be scanned faster than the rate of writeback,
-> : leading to memcg OOM conditions when the hard limit is small.
-> 
-> does that still say what you meant to say?
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigD2BF30344E566AB65597BECA
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, Thanks!
+On 06/20/2012 06:45 AM, Bhupesh SHARMA wrote:
+> Hi David,
+>=20
+>> -----Original Message-----
+>> From: David Miller [mailto:davem@davemloft.net]
+>> Sent: Wednesday, June 20, 2012 10:07 AM
+>> To: Bhupesh SHARMA
+>> Cc: sfr@canb.auug.org.au; netdev@vger.kernel.org; linux-
+>> next@vger.kernel.org; linux-kernel@vger.kernel.org;
+>> federico.vaga@gmail.com; Giancarlo ASNAGHI; wg@grandegger.com;
+>> mkl@pengutronix.de
+>> Subject: Re: linux-next: build failure after merge of the net-next tre=
+e
+>>
+>> From: Bhupesh SHARMA <bhupesh.sharma@st.com>
+>> Date: Wed, 20 Jun 2012 12:27:11 +0800
+>>
+>>> clk_get/clk_put* variants are usually used by ARM platforms.
+>>> Protecting their calls under macro 'CONFIG_HAVE_CLK' should solve the=
 
-> > The solution is far from being ideal - long term solution is memcg aware
-> > dirty throttling - but it is meant to be a band aid until we have a real
-> > fix.
-> 
-> Fair enough I guess.  The fix is small and simple and if it makes the
-> kernel better, why not?
-> 
-> Would like to see a few more acks though. 
+>> problem.
+>>
+>> No, we don't pepper foo.c files with crappy ifdefs.
+>=20
+> So, whether adding a check in Kconfig for HAVE_CLK be a proper solution=
+ ?
+> But that will limit the compilation of this driver for only platforms w=
+hich are ARM based.
+>=20
+> One may need to support this driver on x86 like platforms also..
 
-> Why hasn't everyone been hitting this?
+I think the driver is currently used/tested only on ARM only, so what
+about adding a HAVE_CLK dependency, until Viresh Kumar's patches are
+available in net-next. Later we can remove it.
 
-Because you need very small hard limit an heavy writers. We have seen
-some complains in the past but our answer was "make the limit bigger".
+regards, Marc
 
-[...]
-> A couple of things here.
-> 
-> With my gcc and CONFIG_CGROUP_MEM_RES_CTLR=n (for gawd's sake can we
-> please rename this to CONFIG_MEMCG?), this:
-> 
-> --- a/mm/vmscan.c~memcg-prevent-from-oom-with-too-many-dirty-pages-fix
-> +++ a/mm/vmscan.c
-> @@ -726,8 +726,8 @@ static unsigned long shrink_page_list(st
->  			 * writeback from reclaim and there is nothing else to
->  			 * reclaim.
->  			 */
-> -			if (PageReclaim(page)
-> -					&& may_enter_fs && !global_reclaim(sc))
-> +			if (!global_reclaim(sc) && PageReclaim(page) &&
-> +					may_enter_fs)
->  				wait_on_page_writeback(page);
->  			else {
->  				nr_writeback++;
-> 
-> 
-> reduces vmscan.o's .text by 48 bytes(!).  Because the compiler can
-> avoid generating any code for PageReclaim() and perhaps the
-> may_enter_fs test.  Because global_reclaim() evaluates to constant
-> true.  Do you think that's an improvement?
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-Yes you are right. We should optimize for the non-memcg case.
 
-> Also, why do we test may_enter_fs here?  I should have been able to
-> work out your reasoning from either code comments or changelogging but
-> I cannot (bad).  I don't *think* there's a deadlock issue here?  If the
-> page is now under writeback, that writeback *will* complete?
+--------------enigD2BF30344E566AB65597BECA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Good question.  To be honest I mimicked what sync. lumpy reclaim
-did. You are right that we cannot deadlock here because writeback has
-been already started.  But when I was digging back into history I found
-this: https://lkml.org/lkml/2007/7/30/344
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-But now that I am thinking about it some more, memcg (hard limit) reclaim
-is different and we shouldn't end up with !may_enter_fs allocation here
-because all those allocations are for page cache or anon pages. 
-So I guess we can drop the may_enter_fs part.
-Thanks for pointing it out.
+iEYEARECAAYFAk/himIACgkQjTAFq1RaXHNu1gCgk22xh8KDyfQfaT7v6HtFg15E
+WNoAniuhRzJ1KBkQoXiPO60lqwm+YDrT
+=n41d
+-----END PGP SIGNATURE-----
 
-> Finally, I wonder if there should be some timeout of that wait.  I
-> don't know why, but I wouldn't be surprised if we hit some glitch which
-> causes us to add one!
-
-As you said, the writeback will eventually complete so we will not wait
-for ever. I have played with slow USB storages and saw only small
-stalls which are much better than OOM.
-Johannes was worried about stalls when we hit PageReclaim pages while
-there are a lot of clean pages to reclaim when we would stall without
-any good reason. This situation is rather hard to simulate even with
-artificial loads so we concluded that this is a room for additional
-improvements but this band aid is worth on its own.
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+--------------enigD2BF30344E566AB65597BECA--
