@@ -1,45 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab2FTJ6k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:58:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36558 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2FTJ6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:58:38 -0400
-Date: Wed, 20 Jun 2012 02:58:37 -0700 (PDT)
-Message-Id: <20120620.025837.721158723130014230.davem@davemloft.net>
-To: federico.vaga@gmail.com
-Cc: mkl@pengutronix.de, bhupesh.sharma@st.com, sfr@canb.auug.org.au,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        wg@grandegger.com
-Subject: Re: linux-next: build failure after merge of the net-next tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <5059693.iaLYtpk3E4@harkonnen>
-References: <3170667.1PZa2330KE@harkonnen>
-	<20120620.020611.1696375957120854262.davem@davemloft.net>
-	<5059693.iaLYtpk3E4@harkonnen>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755987Ab2FTJ7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:59:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32832 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863Ab2FTJ7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:59:11 -0400
+Date: Wed, 20 Jun 2012 11:59:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH -mm] memcg: prevent from OOM with too many dirty pages
+Message-ID: <20120620095908.GB5541@tiehlicka.suse.cz>
+References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
+ <20120619150014.1ebc108c.akpm@linux-foundation.org>
+ <20120620092011.GB4011@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120620092011.GB4011@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Federico Vaga <federico.vaga@gmail.com>
-Date: Wed, 20 Jun 2012 11:59:26 +0200
-
->> Then the driver should NEVER have been submitted without the
->> required infrastructure in place first.
+On Wed 20-06-12 10:20:11, Mel Gorman wrote:
+> On Tue, Jun 19, 2012 at 03:00:14PM -0700, Andrew Morton wrote:
+> > On Tue, 19 Jun 2012 16:50:04 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > Current implementation of dirty pages throttling is not memcg aware which makes
+> > > it easy to have LRUs full of dirty pages which might lead to memcg OOM if the
+> > > hard limit is small and so the lists are scanned faster than pages written
+> > > back.
+> > 
+> > This is a bit hard to parse.  I changed it to
+> > 
+> > : The current implementation of dirty pages throttling is not memcg aware
+> > : which makes it easy to have memcg LRUs full of dirty pages.  Without
+> > : throttling, these LRUs can be scanned faster than the rate of writeback,
+> > : leading to memcg OOM conditions when the hard limit is small.
+> > 
+> > does that still say what you meant to say?
+> > 
+> > > The solution is far from being ideal - long term solution is memcg aware
+> > > dirty throttling - but it is meant to be a band aid until we have a real
+> > > fix.
+> > 
+> > Fair enough I guess.  The fix is small and simple and if it makes the
+> > kernel better, why not?
+> > 
+> > Would like to see a few more acks though.  Why hasn't everyone been
+> > hitting this?
+> > 
 > 
-> This particular driver don't use the clk framework at the moment. I put 
-> that lines about clk to try to be generic as possibile, but I see that I 
-> made a mistake: I'm sorry.
+> I had been quiet because Acks from people in the same company tend to not
+> carry much weight.
+> 
+> I think this patch is appropriate. It is not necessarily the *best*
+> and potentially there is a better solution out there which is why I think
+> people have been reluctent to ack it. However, some of the better solutions
+> also had corner cases where they could simply break again or require a lot
+> of new infrastructure such as dirty-limit tracking within memcgs that we
+> are just not ready for.  This patch may not be subtle but it fixes a very
+> annoying issue that currently makes memcg dangerous to use for workloads
+> that dirty a lot of their memory. When the all singing all dancing fix
+> exists then it can be reverted if necessary but from me;
+> 
+> Reviewed-by: Mel Gorman <mgorman@suse.de>
 
-Why would you try to be generic by using an interface currently
-only available on certain platforms?
+Thanks, I will respin the patch and send v2.
 
-That is how you make drivers non-portable, and not generic.
+[...]
+> > Also, why do we test may_enter_fs here? 
+> 
+> I think this is partially my fault because it's based on a similar test
+> lumpy reclaim used to do and I at least didn't reconsider it properly during
+> review. Back then, there were two reasons for the may_enter_fs check. The
+> first was to avoid processes like kjournald ever stalling on page writeback
+> because it caused the system to "stutter". The more relevant reason was
+> because callers that lacked may_enter_fs were also likely to fail lumpy
+> reclaim if they could not write dirty pages and wait on them so it was
+> better to give up or move to another block.
+> 
+> In the context of memcg reclaim there should be no concern about kernel
+> threads getting stuck on writeback and it does not have the same problem
+> as lumpy reclaim had with being unable to writeout pages. IMO, the check
+> is safe to drop. Michal?
 
+Yes, Is I wrote in other email. memcg reclaim is about LRU pages so the
+may_enter_fs is not needed here.
+
+> 
+> > Finally, I wonder if there should be some timeout of that wait.  I
+> > don't know why, but I wouldn't be surprised if we hit some glitch which
+> > causes us to add one!
+> > 
+> 
+> If we hit such a situation it means that flush is no longer working which
+> is interesting in itself. I guess one possibility where it can occur is
+> if we hit global dirty limits (or memcg dirty limits when they exist)
+> and the page is backed by NFS that is disconnected. That would stall here
+> potentially forever but it's already the case that a system that hits its
+> dirty limits with a disconnected NFS is in trouble and a timeout here will
+> not do much to help.
+
+Agreed.
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
