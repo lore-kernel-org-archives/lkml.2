@@ -1,104 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab2FTGzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:55:33 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:55540 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab2FTGzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:55:32 -0400
-Date: Wed, 20 Jun 2012 08:55:15 +0200
-From: Michael Leun <lkml20120218@newton.leun.net>
-To: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Cc: Mohammed Shafi <shafi.wireless@gmail.com>,
-        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
-Message-ID: <20120620085515.421571e1@xenia.leun.net>
-In-Reply-To: <20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
-References: <20120619085137.337838c0@xenia.leun.net>
-	<CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
-	<20120620003315.2eaf6460@xenia.leun.net>
-	<20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753455Ab2FTG4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:56:30 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:38558 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab2FTG43 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 02:56:29 -0400
+X-AuditID: cbfee612-b7fbe6d000007898-16-4fe1741984e1
+Date: Wed, 20 Jun 2012 06:56:25 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v2] regulator: max77686: Implement .set_ramp_delay()
+ callback.
+To: Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        =?euc-kr?Q?=C0=CC=C1=BE=C8=AD?= <jonghwa3.lee@samsung.com>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        =?euc-kr?Q?=BA=AF=C4=A1=BF=F5?= <woong.byun@samsung.com>,
+        Axel Lin <axel.lin@gmail.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120620065049740@myungjoo.ham
+Msgkey: 20120620065049740@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120620065049740@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <8918866.625501340175384370.JavaMail.weblogic@epml24>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t/tGbqSJQ/9DT4cYLS4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZh3pTC94oVGydtIK5gfGPfBcjJ4eQgLrEoiUn2UBsCQETiXnT
+	e5ggbDGJC/fWA8W5gGrmM0oc3bAEyOHgYBFQlZj0WxHEZBPQk5j5ORmkXFggSOLD5hWMIGER
+	gWKJ15cUQMLMAq+YJDYv54TYpCSxZt8rFhCbV0BQ4uTMJywg5RJAAx9/j4UIq0nMffieFeIA
+	CYlZ0y9A2bwSM9qfskDYchLTvq5hhrClJc7P2sAIc/Di74+h4vwSx27vYIIYzyvx5H4wzJjd
+	m79A/SogMfXMQahWLYmfd25C/c0nsWbhWxaYMbtOLWeG+ERRYkr3Q3YIW0viy499bOg+4RVw
+	lFjX6zWBUXYWkswsJN2zkHQjq1nAyLKKUTS1ILmgOCk91UKvODG3uDQvXS85P3cTIziGnwnt
+	YFzWYHGIUYCDUYmHd0L2Q38h1sSy4srcQ4wSHMxKIrzMCUAh3pTEyqrUovz4otKc1OJDjNIc
+	LErivH3WF/yFBNITS1KzU1MLUotgskwcnFINjM2fFaemWmgu8igy4wt8KbqwxyLVcaaVn57M
+	ZRWu2PcuoitWvZww02Gx3qzVOVxX23ke/S/bG8/zbarh8dWOWidqVv+5/Tru7iz77O9bWmtf
+	dNo6tDBaR1cczJSbwV/jnZ6w6oLcoy/3zxpPu6S3bpWe9BzPrcnXEzc+F5kdOzdyzsx9Zed/
+	xyqxFGckGmoxFxUnAgB482/73QIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5K6uZHR000369
 
-On Wed, 20 Jun 2012 11:43:05 +0530
-Rajkumar Manoharan <rmanohar@qca.qualcomm.com> wrote:
-
-> On Wed, Jun 20, 2012 at 12:33:15AM +0200, Michael Leun wrote:
-> > On Tue, 19 Jun 2012 15:11:38 +0530
-> > Mohammed Shafi <shafi.wireless@gmail.com> wrote:
-> > 
-> > > Hi,
-> > > 
-> > > On Tue, Jun 19, 2012 at 12:21 PM, Michael Leun
-> > > <lkml20120218@newton.leun.net> wrote:
-> > > > Hi,
-> > > >
-> > > > ne-wlan1@elektra:/home/ml4> ping 192.168.2.1
-> > > > PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
-> > > > 64 bytes from 192.168.2.1: icmp_seq=1 ttl=64 time=2010 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=2 ttl=64 time=1011 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=3 ttl=64 time=11.5 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=4 ttl=64 time=1.12 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=5 ttl=64 time=1002 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=6 ttl=64 time=3.83 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=7 ttl=64 time=1003 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=8 ttl=64 time=4.10 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=9 ttl=64 time=1003 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=10 ttl=64 time=3.95 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=11 ttl=64 time=1003 ms
-> > > > 64 bytes from 192.168.2.1: icmp_seq=12 ttl=64 time=3.78 ms
-> > > >
-> > > >
-> > > > Please note the additional delay of ~1000ms every 2nd packet.
-> > > > This is Kernel 3.4.3, have seen it in 3.4.2 also. Does NOT
-> > > > happen in 3.3.1.
-> > > >
-> > > > Is this Issue already known? If so, I can save the work
-> > > > bisecting...
-> > > 
-> > > looks like some one reported this bug in kernel bugzilla. would be
-> > > saving us lot of time
-> > > if you can bisect it!
-> > > 
-> > 
-> > 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 is the first bad commit
-> > commit 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45
-> > Author: Johannes Berg <johannes.berg@intel.com>
-> > Date:   Thu Mar 8 15:02:06 2012 +0100
-> > 
-> >     mac80211: remove spurious BSSID change flag
-> > 
-> >     The BSSID has been set a lot earlier already and
-> >     didn't change again in ieee80211_set_associated().
-> > 
-> >     Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-> >     Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> > 
-> > :040000 040000 67a19a39e4b04c16921a3758ddd2362e02e81dd3
-> > 4a7cbd327b59345b83fa613f893770fbf44220bb M      net
-> > 
-> > Reverting 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 from 3.4.3 fixes
-> > the issue.
-> > 
-> Michael,
+> This patch implements the .set_ramp_delay callback to set the ramp_delay on
+> hardware for BUCK2/3/4 if ramp_delay is set in regulator constraints.
 > 
-> Thanks for the analysis. Can you please try with the attached patch
-> without reverting mac80211 change?
+> This patch also do some cleaning work for unrequired members of
+> struct max77686_data.
+> 
+> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
 
-[forgotten attachment was added in later mail]
+I guess code-clean part may be seperated. Anyway, except that, it looks good.
 
-Yes, that also solves the issue. I guess, you will look into getting
-that into mainline and stable asap?
 
--- 
-MfG,
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Michael Leun
-
+> ---
+>  drivers/regulator/max77686.c |   37 +++++++++++++++++++++++++++++--------
+>  1 files changed, 29 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+> index a29eee3..5c2a32f 100644
+> --- a/drivers/regulator/max77686.c
+> +++ b/drivers/regulator/max77686.c
+> @@ -65,11 +65,34 @@ enum max77686_ramp_rate {
+>  };
+>  
+>  struct max77686_data {
+> -	struct device *dev;
+> -	struct max77686_dev *iodev;
+>  	struct regulator_dev **rdev;
+>  };
+>  
+> +static int max77686_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+> +{
+> +	unsigned int ramp_value = RAMP_RATE_NO_CTRL;
+> +
+> +	switch (ramp_delay) {
+> +	case 1 ... 13750:
+> +		ramp_value = RAMP_RATE_13P75MV;
+> +		break;
+> +	case 13751 ... 27500:
+> +		ramp_value = RAMP_RATE_27P5MV;
+> +		break;
+> +	case 27501 ... 55000:
+> +		ramp_value = RAMP_RATE_55MV;
+> +		break;
+> +	case 55001 ... 100000:
+> +		break;
+> +	default:
+> +		pr_warn("%s: ramp_delay: %d not supported, setting 100000\n",
+> +			rdev->desc->name, ramp_delay);
+> +	}
+> +
+> +	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+> +				  MAX77686_RAMP_RATE_MASK, ramp_value << 6);
+> +}
+> +
+>  static struct regulator_ops max77686_ops = {
+>  	.list_voltage		= regulator_list_voltage_linear,
+>  	.map_voltage		= regulator_map_voltage_linear,
+> @@ -90,6 +113,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
+>  	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+>  	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+>  	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+> +	.set_ramp_delay		= max77686_set_ramp_delay,
+>  };
+>  
+>  #define regulator_desc_ldo(num)		{				\
+> @@ -238,20 +262,17 @@ static __devinit int max77686_pmic_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  
+>  	rdev = max77686->rdev;
+> -	max77686->dev = &pdev->dev;
+> -	max77686->iodev = iodev;
+> +	config.dev = &pdev->dev;
+> +	config.regmap = iodev->regmap;
+>  	platform_set_drvdata(pdev, max77686);
+>  
+>  	for (i = 0; i < MAX77686_REGULATORS; i++) {
+> -		config.dev = max77686->dev;
+> -		config.regmap = iodev->regmap;
+> -		config.driver_data = max77686;
+>  		config.init_data = pdata->regulators[i].initdata;
+>  
+>  		rdev[i] = regulator_register(&regulators[i], &config);
+>  		if (IS_ERR(rdev[i])) {
+>  			ret = PTR_ERR(rdev[i]);
+> -			dev_err(max77686->dev,
+> +			dev_err(&pdev->dev,
+>  				"regulator init failed for %d\n", i);
+>  				rdev[i] = NULL;
+>  				goto err;
+> -- 
+> 1.7.0.4
+> 
+> 
+> 
+> 
+>        
+>   
+>          
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
