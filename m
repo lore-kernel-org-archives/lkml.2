@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab2FTSWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:22:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab2FTSWf (ORCPT
+	id S932253Ab2FTSWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:22:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757684Ab2FTSWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:22:35 -0400
-Message-Id: <20120620173023.769909913@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:22:41 -0400
+Message-Id: <20120620173023.509238685@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:53 -0700
+Date: Wed, 20 Jun 2012 10:30:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tony Zelenoff <antonz@parallels.com>
-Subject: [ 33/61] USB: mos7840: Fix compilation of usb serial driver
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [ 30/61] xhci: Dont free endpoints in xhci_mem_cleanup()
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,40 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Zelenoff <antonz@parallels.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit b9c87663eead64c767e72a373ae6f8a94bead459 upstream.
+commit 32f1d2c536d0c26c5814cb0e6a0606c42d02fac1 upstream.
 
-The __devinitconst section can't be referenced
-from usb_serial_device structure. Thus removed it as
-it done in other mos* device drivers.
+This patch fixes a few issues introduced in the recent fix
+[f8a9e72d: USB: fix resource leak in xhci power loss path]
 
-Error itself:
-WARNING: drivers/usb/serial/mos7840.o(.data+0x8): Section mismatch in reference
-from the variable moschip7840_4port_device to the variable
-.devinit.rodata:id_table
-The variable moschip7840_4port_device references
-the variable __devinitconst id_table
+- The endpoints listed in bw table are just links and each entry is an
+ array member of dev->eps[].  But the commit above adds a kfree() call
+ to these instances, and thus it results in memory corruption.
 
-[v2] no attach now
+- It clears only the first entry of rh_bw[], but there can be multiple
+  ports.
 
-Signed-off-by: Tony Zelenoff <antonz@parallels.com>
+- It'd be safer to clear the list_head of ep as well, not only
+  removing from the list, as it's checked in
+  xhci_discover_or_reset_device().
+
+This patch should be backported to kernels as old as 3.2, that contain
+the commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe "xhci: Store
+information about roothubs and TTs."
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reviewed-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-mem.c |   35 ++++++++++++++---------------------
+ 1 file changed, 14 insertions(+), 21 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -206,7 +206,7 @@ static const struct usb_device_id moschi
- 	{}			/* terminating entry */
- };
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1772,17 +1772,9 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ {
+ 	struct pci_dev	*pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
+ 	struct dev_info	*dev_info, *next;
+-	struct list_head *tt_list_head;
+-	struct list_head *tt;
+-	struct list_head *endpoints;
+-	struct list_head *ep, *q;
+-	struct xhci_tt_bw_info *tt_info;
+-	struct xhci_interval_bw_table *bwt;
+-	struct xhci_virt_ep *virt_ep;
+-
+ 	unsigned long	flags;
+ 	int size;
+-	int i;
++	int i, j, num_ports;
  
--static const struct usb_device_id moschip_id_table_combined[] __devinitconst = {
-+static const struct usb_device_id moschip_id_table_combined[] = {
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
- 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2)},
+ 	/* Free the Event Ring Segment Table and the actual Event Ring */
+ 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
+@@ -1839,21 +1831,22 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	}
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+-	bwt = &xhci->rh_bw->bw_table;
+-	for (i = 0; i < XHCI_MAX_INTERVAL; i++) {
+-		endpoints = &bwt->interval_bw[i].endpoints;
+-		list_for_each_safe(ep, q, endpoints) {
+-			virt_ep = list_entry(ep, struct xhci_virt_ep, bw_endpoint_list);
+-			list_del(&virt_ep->bw_endpoint_list);
+-			kfree(virt_ep);
++	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
++	for (i = 0; i < num_ports; i++) {
++		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
++		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
++			struct list_head *ep = &bwt->interval_bw[j].endpoints;
++			while (!list_empty(ep))
++				list_del_init(ep->next);
+ 		}
+ 	}
+ 
+-	tt_list_head = &xhci->rh_bw->tts;
+-	list_for_each_safe(tt, q, tt_list_head) {
+-		tt_info = list_entry(tt, struct xhci_tt_bw_info, tt_list);
+-		list_del(tt);
+-		kfree(tt_info);
++	for (i = 0; i < num_ports; i++) {
++		struct xhci_tt_bw_info *tt, *n;
++		list_for_each_entry_safe(tt, n, &xhci->rh_bw[i].tts, tt_list) {
++			list_del(&tt->tt_list);
++			kfree(tt);
++		}
+ 	}
+ 
+ 	xhci->num_usb2_ports = 0;
 
 
