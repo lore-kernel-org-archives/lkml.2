@@ -1,108 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2FTGbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:31:41 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35417 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab2FTGbj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:31:39 -0400
-Date: Wed, 20 Jun 2012 16:31:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Ohad Ben-Cohen" <ohad@wizery.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IlNqdXIgQnLDpm5kZWxhbmQi?= 
-	<sjur.brandeland@stericsson.com>
-Subject: linux-next: manual merge of the remoteproc tree with Linus' tree
-Message-Id: <20120620163130.b7bbb33fbed65837bf386f59@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Jun_2012_16_31_30_+1000_t=ge0t/aTxgrWLxX"
+	id S1754991Ab2FTGb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:31:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:9342 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753854Ab2FTGbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 02:31:34 -0400
+X-IronPort-AV: E=Sophos;i="4.77,441,1336320000"; 
+   d="scan'208";a="5230760"
+Message-ID: <4FE16E50.9030304@cn.fujitsu.com>
+Date: Wed, 20 Jun 2012 14:31:44 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: kosaki.motohiro@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, Eric Wong <normalperson@yhbt.net>
+Subject: Re: [PATCH] mm, fadvise: don't return -EINVAL when filesystem has
+ no optimization way
+References: <1339792575-17637-1-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <1339792575-17637-1-git-send-email-kosaki.motohiro@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/20 14:31:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/20 14:31:55,
+	Serialize complete at 2012/06/20 14:31:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Jun_2012_16_31_30_+1000_t=ge0t/aTxgrWLxX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/16/2012 04:36 AM, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> Eric Wong reported his test suite was fail when /tmp is tmpfs.
+> 
+> https://lkml.org/lkml/2012/2/24/479
+> 
+> Current,input check of POSIX_FADV_WILLNEED has two problems.
+> 
+> 1) require a_ops->readpage.
+>    But in fact, force_page_cache_readahead() only require
+>    a target filesystem has either ->readpage or ->readpages.
+> 2) return -EINVAL when filesystem don't have ->readpage.
+>    But, posix says, it should be retrieved a hint. Thus fadvise()
+>    should return 0 if filesystem has no optimization way.
+>    Especially, userland application don't know a filesystem type
+>    of TMPDIR directory as Eric pointed out. Then, userland can't
+>    avoid this error. We shouldn't encourage to ignore syscall
+>    return value.
+> 
+> Thus, this patch change a return value to 0 when filesytem don't
+> support readahead.
+> 
+> Cc: linux-mm@kvack.org
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Hillf Danton <dhillf@gmail.com>
+> Signed-off-by: Eric Wong <normalperson@yhbt.net>
+> Tested-by: Eric Wong <normalperson@yhbt.net>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  mm/fadvise.c |   18 +++++++-----------
+>  1 files changed, 7 insertions(+), 11 deletions(-)
+> 
+> diff --git a/mm/fadvise.c b/mm/fadvise.c
+> index 469491e..33e6baf 100644
+> --- a/mm/fadvise.c
+> +++ b/mm/fadvise.c
+> @@ -93,11 +93,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+>  		spin_unlock(&file->f_lock);
+>  		break;
+>  	case POSIX_FADV_WILLNEED:
+> -		if (!mapping->a_ops->readpage) {
+> -			ret = -EINVAL;
+> -			break;
+> -		}
 
-Hi Ohad,
+Why not check both readpage and readpages, if they are not here,
+just beak and no following force_page_cache_readahead ?
 
-Today's linux-next merge of the remoteproc tree got conflicts in
-drivers/remoteproc/remoteproc_core.c between commits e981f6d41acd
-("remoteproc: fix print format warnings") and 30338cf09f82 ("remoteproc:
-fix missing fault indication in error-path") from Linus' tree and commits
-7826bf782364 ("remoteproc: Pass struct fw to load_segments and
-find_rsc_table"), a933c9f8ef8a ("remoteproc: Add function
-rproc_get_boot_addr") and 32d46fe7f468 ("remoteproc: Move Elf related
-functions to separate file") from the remoteproc tree.
+Thanks,
+Wanlong Gao
 
-I fixed them up (see below) and can carry the fixes as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> -
+>  		/* First and last PARTIAL page! */
+>  		start_index = offset >> PAGE_CACHE_SHIFT;
+>  		end_index = endbyte >> PAGE_CACHE_SHIFT;
+> @@ -106,12 +101,13 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+>  		nrpages = end_index - start_index + 1;
+>  		if (!nrpages)
+>  			nrpages = ~0UL;
+> -		
+> -		ret = force_page_cache_readahead(mapping, file,
+> -				start_index,
+> -				nrpages);
+> -		if (ret > 0)
+> -			ret = 0;
+> +
+> +		/*
+> +		 * Ignore return value because fadvise() shall return 
+> +		 * success even if filesystem can't retrieve a hint,
+> +		 */		
+> +		force_page_cache_readahead(mapping, file, start_index,
+> +					   nrpages);
+>  		break;
+>  	case POSIX_FADV_NOREUSE:
+>  		break;
+> 
 
-diff --cc drivers/remoteproc/remoteproc_core.c
-index 66324ee,6779c2a..0000000
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@@ -1018,9 -789,7 +789,7 @@@ static int rproc_fw_boot(struct rproc *
-  	if (ret)
-  		return ret;
- =20
-- 	ehdr =3D (struct elf32_hdr *)fw->data;
--=20
- -	dev_info(dev, "Booting fw image %s, size %d\n", name, fw->size);
- +	dev_info(dev, "Booting fw image %s, size %zd\n", name, fw->size);
- =20
-  	/*
-  	 * if enabling an IOMMU isn't relevant for this rproc, this is
-@@@ -1032,19 -801,12 +801,14 @@@
-  		return ret;
-  	}
- =20
-- 	/*
-- 	 * The ELF entry point is the rproc's boot addr (though this is not
-- 	 * a configurable property of all remote processors: some will always
-- 	 * boot at a specific hardcoded address).
-- 	 */
-- 	rproc->bootaddr =3D ehdr->e_entry;
-+ 	rproc->bootaddr =3D rproc_get_boot_addr(rproc, fw);
- =20
-  	/* look for the resource table */
-- 	table =3D rproc_find_rsc_table(rproc, fw->data, fw->size, &tablesz);
-+ 	table =3D rproc_find_rsc_table(rproc, fw, &tablesz);
- -	if (!table)
- +	if (!table) {
- +		ret =3D -EINVAL;
-  		goto clean_up;
- +	}
- =20
-  	/* handle fw resources which are required to boot rproc */
-  	ret =3D rproc_handle_boot_rsc(rproc, table, tablesz);
 
---Signature=_Wed__20_Jun_2012_16_31_30_+1000_t=ge0t/aTxgrWLxX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP4W5CAAoJEECxmPOUX5FEJOMP/R08REUYORsCIWwuwLXJxfzI
-641tpnlieZ8BzhkhxsNCe1JoiW/mlbTOFOxrNbNI+BAm/2bA1k6aA6Re9jKjSXtG
-CK7xl/olX48XPv5B7K0KVfCJKT7KdmtKsRzdoeX/FMqhHDyYxpOjxBYn7x0KIlR6
-2w/6IBXPXbPzhZjZAQhK+Q+SJwY6aqURheEiDMUOHeZp2LrsvYroh+mARUmSYWsj
-7T2tBa0UT2g9kviF+4B+/HoeKxBqHCs752pMmPgfUBVRFJjGzCRf0KNvw5/B/6yl
-HgBN6Xk2BNMwbaMJbPvDNT+26j08yjvholwCRa+sGw9L7izpMOzPZaknTuOt/a/c
-rNw344IL8qx8+iaLHtbedToRBnYf6VQTX4ZGpjs2AZb5PouwbOF6Q6qfwO2kZ/DM
-DIG64iWWZRPtQ6R8Xg5tUy6fDrfqpo5DN3XOdvBxte4GLVj4tfbBwUzAq/vGL9ZS
-n1XLZ5V/4TppaSZ74SwS11zM6ZS1QCnpCTPAD/g7ybAERvton95a45ea1HfsZF/l
-E9IuVU9Aj6RyBtRRCh1UZx4Y/07CuK7lLWOvTs9xN0P3waAccFWmR1q/P0hx19GJ
-BdN5VxfXgwfWDmrAEdBMSN8Iu3Ut+lc9GFPUZNUnfKlF0T71KRQSZk2SXr5WQyxd
-Ubt+WnU8F9i4OGLB3XOr
-=PdjK
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Jun_2012_16_31_30_+1000_t=ge0t/aTxgrWLxX--
