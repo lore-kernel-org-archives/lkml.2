@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757551Ab2FTSrE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:47:04 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:5105
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756659Ab2FTSq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:46:58 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M5XIU5-01-38W-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 4/4] perf, x86: Improve debug output in check_hw_exists()
-Date: Wed, 20 Jun 2012 20:46:36 +0200
-Message-ID: <1340217996-2254-5-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1340217996-2254-1-git-send-email-robert.richter@amd.com>
-References: <1340217996-2254-1-git-send-email-robert.richter@amd.com>
+	id S1757716Ab2FTSrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:47:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65276 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757597Ab2FTSrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 14:47:39 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Dima Tisnek <dimaqq@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        USB list <linux-usb@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: mount stuck, khubd blocked
+References: <Pine.LNX.4.44L0.1206191035340.1814-100000@iolanthe.rowland.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 20 Jun 2012 14:47:31 -0400
+In-Reply-To: <Pine.LNX.4.44L0.1206191035340.1814-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Tue, 19 Jun 2012 10:45:10 -0400 (EDT)")
+Message-ID: <x49lijhyg58.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It might be of interest which perfctr msr failed.
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/kernel/cpu/perf_event.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> On Tue, 19 Jun 2012, Dima Tisnek wrote:
+>
+>> I made a microsd flash with 2 partitions, sdb1 is data partition, and
+>> sdb2 is a sentinel partition, 1 block in size.
+>> 
+>> I attached the usb-microsd reader with that card in it and by mistake
+>> tried to mount the sentinel partition, I ran:
+>> mount /dev/sdb2 /mnt/flash/
+>> 
+>> mount got stuck, I was not able to kill or strace it, I pulled the usb
+>> reader from the port, mount was still stuck, here's the dmesg log:
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index bb340dc..8d29a35 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -178,7 +178,7 @@ static void release_pmc_hardware(void) {}
- 
- static bool check_hw_exists(void)
- {
--	u64 val, val_new = 0;
-+	u64 val, val_new = ~0;
- 	int i, reg, ret = 0;
- 
- 	/*
-@@ -229,6 +229,7 @@ bios_fail:
- 
- msr_fail:
- 	printk(KERN_CONT "Broken PMU hardware detected, using software events only.\n");
-+	printk(KERN_ERR "Failed to access perfctr msr (MSR %x is %Lx)\n", reg, val_new);
- 
- 	return false;
- }
--- 
-1.7.8.4
+Hi, Dima,
 
+Could you try the following patch?
 
+Thanks,
+Jeff
+
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 838a9cf..769b30b 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -930,7 +930,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+ 			bh->b_blocknr = block;
+ 			if (uptodate)
+ 				set_buffer_uptodate(bh);
+-			if (block < end_block)
++			if (block <= end_block)
+ 				set_buffer_mapped(bh);
+ 		}
+ 		block++;
