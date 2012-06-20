@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab2FTXqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:46:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34672 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932191Ab2FTXqv (ORCPT
+	id S932456Ab2FTXq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:46:57 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47693 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932191Ab2FTXqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:46:51 -0400
-Date: Thu, 21 Jun 2012 00:46:48 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: boot_on regulator constraint vs. regulator-boot-on DT property
-Message-ID: <20120620234648.GE4037@opensource.wolfsonmicro.com>
-References: <4FE238C9.3010408@wwwdotorg.org>
+	Wed, 20 Jun 2012 19:46:54 -0400
+X-Sasl-enc: 0qZb3wKbqNOL+xb/7EbotK+7OK7QfQNZCKBWrGRcNtM5 1340236013
+Date: Wed, 20 Jun 2012 20:46:51 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@amd64.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH] x86, microcode: Make reload interface per system
+Message-ID: <20120620234651.GD4223@khazad-dum.debian.net>
+References: <20120615125240.GD6083@aftab.osrc.amd.com>
+ <20120615165231.GA9169@aftab.osrc.amd.com>
+ <20120619024639.GB6186@khazad-dum.debian.net>
+ <4FDFF27C.5000205@zytor.com>
+ <20120619051116.GB31591@aftab.osrc.amd.com>
+ <1340093864.21745.6.camel@twins>
+ <20120619102250.GA787@aftab.osrc.amd.com>
+ <1340101568.21745.37.camel@twins>
+ <20120619182228.GA18816@khazad-dum.debian.net>
+ <4FE0DF9F.10401@zytor.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ey/N+yb7u/X9mFhi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FE238C9.3010408@wwwdotorg.org>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FE0DF9F.10401@zytor.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 19 Jun 2012, H. Peter Anvin wrote:
+> On 06/19/2012 11:22 AM, Henrique de Moraes Holschuh wrote:
+> > Even if we have the very early microcode facility, we *still* want the
+> > runtime one based on sysfs+request_firmware in order to update microcode
+> > without the need for a reboot.
+> 
+> I am slightly questioning the clause "based on sysfs+request_firmware"
+> in the above sentence, but again, not a huge deal either way.
 
---ey/N+yb7u/X9mFhi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, it makes the kernel tell us what (amd/intel/whatever) firmware it
+wants, and requires (after patching) a simple echo 1 >foo to activate.  It
+is also harmless if activated without updated firmware in place.
 
-On Wed, Jun 20, 2012 at 02:55:37PM -0600, Stephen Warren wrote:
+/dev/cpu/microcode requires special software (or a dd with bs>=file size),
+since it borks if userspace breaks a microcode into two write() syscalls,
+and requires detection of the cpu vendor.  Very annoying.
 
-> include/linux/regulator/machine.h says:
-
-> >  * @boot_on: Set if the regulator is enabled when the system is initially
-> >  *           started.  If the regulator is not enabled by the hardware or
-> >  *           bootloader then it will be enabled when the constraints are
-> >  *           applied.
-
-> Documentation/devicetree/bindings/regulator/regulator.txt says:
-
-> > - regulator-boot-on: bootloader/firmware enabled regulator
-
-> ... and of_regulator.c sets the boot_on constraint based on this property.
-
-> The former quote implies that this is a flag to tell Linux to turn on
-> the regulator when it's first registered, whereas the latter quote
-> implies that it's guaranteeing the state that previous SW placed the
-> regulator into already.
-
-> I assume the documentation from machine.h is correct, and I should send
-> a patch to make regulator.txt match it?
-
-There's no great inconsistency between the two, this is only supposed to
-be used for supplies which are already enabled on boot but if the supply
-is not already enabled then currently the API will try to make it so
-since probably there's some reason for that.  Generally it's supposed to
-be used as a crutch to keep hotplug going.
-
-I'm not sure we should clarify this since I'm not sure that for DT
-setups which (as we were discussing in the other thread) are supposed to
-be usable over many software versions it's something that should really
-be used.  We ought to in the endgame be able to have DT systems turn on
-full constraints and that probably breaks anything relying too much on
-boot-on, I'd expect they either need the regulator to be always on or
-some more consumers.
-
---ey/N+yb7u/X9mFhi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP4mDhAAoJEBus8iNuMP3dGi0P/1EFnIaEpwUdf0kC2rnuKIuc
-Dr0pKFG4C7XnE3H7bO/yluFlqm/5QwzuKfm6/l09w6jtN8YClN7GVP8r0GTaePdH
-86CnZrR7nxoIcrTkrPfCqoVXpx6AZxmHsyjeIF4qzjcFa4GWCCcEpkhgyuuJXIAJ
-wub0dd+5p0PSZYdRnIl6AnbK2GrV+xyYrdfLmFsctnIf7YYSPhYdcoeHEvJ8/X5L
-+2ykr7TalHrLfKbCEKQZGfLr5Vp0F4F9Ex6a+G4Ar3lQMcTbAnG7Fh7VRMalE+Qr
-mwoYDTvY3ogv9AVAqX4WD4x/0JcBVJbGJ1YVN3bqR3BwsclDo5Td4Ao7tUhQNIGW
-hkC+F2ffYqHlSnyNlj5OoD0Q9e6p6V1fIiJQlGW6KjOe3SFEPOLIrFZxxiZ2zIfk
-7O4mIjCWVnMO7FLI4BlGypKnd9HlNap5B2ngjCSsSzQFzv4hiUnWy7vGYsVzJ6Nw
-VgNQLo12yGi6VOYIn8kuqWwuuLpPLqpuKV2oEhJCoo/DcbnkI21SivUfKVOBVus1
-z1Xab/dhvctXHdt9TptlkBa+bIq6Th1EO5UK9/igSFMtXTpTm7mELx4EP3usfCNx
-JCBJa8dUQVozUijFDcs2wwvDvU710/DuYnYeH9c45tfvZ4J85PWFaKyAEYNjnKLy
-SW1ghxTs24yW+w8LAGbs
-=dmEY
------END PGP SIGNATURE-----
-
---ey/N+yb7u/X9mFhi--
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
