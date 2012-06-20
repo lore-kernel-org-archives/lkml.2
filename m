@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab2FTSYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:24:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
+	id S932606Ab2FTSY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:24:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932575Ab2FTSYn (ORCPT
+	with ESMTP id S932586Ab2FTSYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:24:43 -0400
-Message-Id: <20120620173040.709617380@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:24:50 -0400
+Message-Id: <20120620173040.869199341@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:52 -0700
+Date: Wed, 20 Jun 2012 10:30:54 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
-Subject: [ 13/20] USB: mct_u232: Fix incorrect TIOCMSET return
+        alan@lxorguk.ukuu.org.uk, Evan McNabb <evan@mcnabbs.org>
+Subject: [ 15/20] USB: ftdi-sio: Add support for RT Systems USB-RTS01 serial
+ adapter
 In-Reply-To: <20120620173044.GA6910@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,45 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Evan McNabb <evan@mcnabbs.org>
 
-commit 1aa3c63cf0a79153ee13c8f82e4eb6c40b66a161 upstream.
+commit e00a54d772210d450e5c1a801534c3c8a448549f upstream.
 
-The low level helper returns 1 on success. The ioctl should however return
-0. As this is the only user of the helper return, make the helper return 0 or
-an error code.
+Add support for RT Systems USB-RTS01 USB to Serial adapter:
+http://www.rtsystemsinc.com/Photos/USBRTS01.html
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=43009
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Tested by controlling Icom IC-718 amateur radio transceiver via hamlib.
+
+Signed-off-by: Evan McNabb <evan@mcnabbs.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mct_u232.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -359,13 +359,16 @@ static int mct_u232_set_modem_ctrl(struc
- 			MCT_U232_SET_REQUEST_TYPE,
- 			0, 0, buf, MCT_U232_SET_MODEM_CTRL_SIZE,
- 			WDR_TIMEOUT);
--	if (rc < 0)
--		dev_err(&serial->dev->dev,
--			"Set MODEM CTRL 0x%x failed (error = %d)\n", mcr, rc);
-+	kfree(buf);
-+
- 	dbg("set_modem_ctrl: state=0x%x ==> mcr=0x%x", control_state, mcr);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -735,6 +735,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -784,6 +784,7 @@
+ #define RTSYSTEMS_VID			0x2100	/* Vendor ID */
+ #define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
+ #define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
++#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
  
--	kfree(buf);
--	return rc;
-+	if (rc < 0) {
-+		dev_err(&serial->dev->dev,
-+			"Set MODEM CTRL 0x%x failed (error = %d)\n", mcr, rc);
-+		return rc;
-+	}
-+	return 0;
- } /* mct_u232_set_modem_ctrl */
  
- static int mct_u232_get_modem_stat(struct usb_serial *serial,
+ /*
 
 
