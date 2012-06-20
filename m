@@ -1,50 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab2FTJlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:41:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29610 "EHLO mga09.intel.com"
+	id S1756198Ab2FTJlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:41:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59238 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756176Ab2FTJlO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:41:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="159951433"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Anton Vorontsov (cbouatmailru@gmail.com)" <cbouatmailru@gmail.com>,
-        "Anton Vorontsov (anton.vorontsov@linaro.org)" 
-	<anton.vorontsov@linaro.org>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Subject: Charger Manager Proposal.
-Thread-Topic: Charger Manager Proposal.
-Thread-Index: Ac1OyM5M4skyl4l9RsWEumrV58dVvQ==
-Date: Wed, 20 Jun 2012 09:41:02 +0000
-Message-ID: <20ADAB092842284E95860F279283C564286A0B@BGSMSX101.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755755Ab2FTJiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:38:12 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 07/12] mm: Add support for direct_IO to highmem pages
+Date: Wed, 20 Jun 2012 10:37:56 +0100
+Message-Id: <1340185081-22525-8-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340185081-22525-1-git-send-email-mgorman@suse.de>
+References: <1340185081-22525-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MyungJoo,
+The patch "mm: Add support for a filesystem to activate swap files and
+use direct_IO for writing swap pages" added support for using direct_IO
+to write swap pages but it is insufficient for highmem pages.
 
-I would like to align with the charger-manager activities and would like to propose few changes for charger-manager. The changes I would like to have in the charger manager is 
+To support highmem pages, this patch kmaps() the page before calling the
+direct_IO() handler. As direct_IO deals with virtual addresses an
+additional helper is necessary for get_kernel_pages() to lookup the
+struct page for a kmap virtual address.
 
-	* Manage charging based on a battery profile - Each battery  can have a different  profile and the charging should be done based on this profile. So there should be a mechanism inside the charger-manager to read the battery profile. To start with we can make it available as platform data for the charger-manager.
-	* The charge parameters (CC and CV) needs to be changed as per the batter profile. The battery profile will have a different CC and CV for different  temperature zone. So charger-manager needs to listen  battery Temperature change events (using power_supply_changed events from FG?)  and modify the CC and CV.
-	* It's good to have a hybrid (Software and Hardware mode) full detection logic. This give more flexibility to define the charge full detection thresholds. So charger-manager can listen to charge-full detection from charger-hardware and can start a thread to verify the thresholds from software. 
-	* Need to have a maintenance upper voltage threshold. The upper threshold needs to be less than the Battery FULL voltage threshold and this can part of battery profile. This approach helps to increase the battery life.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/highmem.h |    7 +++++++
+ mm/highmem.c            |   12 ++++++++++++
+ mm/memory.c             |    3 +--
+ mm/page_io.c            |    3 ++-
+ 4 files changed, 22 insertions(+), 3 deletions(-)
 
-I would like to start implementing these features for charger manager. But I would like to align with your planned charger-manager activities so that we don't end up in duplicating the effort. Please let me know your suggestions on this.
-
--jtc
-
+diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+index d3999b4..e186e3c 100644
+--- a/include/linux/highmem.h
++++ b/include/linux/highmem.h
+@@ -39,10 +39,17 @@ extern unsigned long totalhigh_pages;
+ 
+ void kmap_flush_unused(void);
+ 
++struct page *kmap_to_page(void *addr);
++
+ #else /* CONFIG_HIGHMEM */
+ 
+ static inline unsigned int nr_free_highpages(void) { return 0; }
+ 
++static inline struct page *kmap_to_page(void *addr)
++{
++	return virt_to_page(addr);
++}
++
+ #define totalhigh_pages 0UL
+ 
+ #ifndef ARCH_HAS_KMAP
+diff --git a/mm/highmem.c b/mm/highmem.c
+index 57d82c6..d517cd1 100644
+--- a/mm/highmem.c
++++ b/mm/highmem.c
+@@ -94,6 +94,18 @@ static DECLARE_WAIT_QUEUE_HEAD(pkmap_map_wait);
+ 		do { spin_unlock(&kmap_lock); (void)(flags); } while (0)
+ #endif
+ 
++struct page *kmap_to_page(void *vaddr)
++{
++	unsigned long addr = (unsigned long)vaddr;
++
++	if (addr >= PKMAP_ADDR(0) && addr <= PKMAP_ADDR(LAST_PKMAP)) {
++		int i = (addr - PKMAP_ADDR(0)) >> PAGE_SHIFT;
++		return pte_page(pkmap_page_table[i]);
++	}
++
++	return virt_to_page(addr);
++}
++
+ static void flush_all_zero_pkmaps(void)
+ {
+ 	int i;
+diff --git a/mm/memory.c b/mm/memory.c
+index 2d55992..5948b8f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1855,8 +1855,7 @@ int get_kernel_pages(const struct kvec *kiov, int nr_segs, int write,
+ 		if (WARN_ON(kiov[seg].iov_len != PAGE_SIZE))
+ 			return seg;
+ 
+-		/* virt_to_page sanity checks the PFN */
+-		pages[seg] = virt_to_page(kiov[seg].iov_base);
++		pages[seg] = kmap_to_page(kiov[seg].iov_base);
+ 		page_cache_get(pages[seg]);
+ 	}
+ 
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 4a37962..78eee32 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -205,7 +205,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ 		struct file *swap_file = sis->swap_file;
+ 		struct address_space *mapping = swap_file->f_mapping;
+ 		struct iovec iov = {
+-			.iov_base = page_address(page),
++			.iov_base = kmap(page),
+ 			.iov_len  = PAGE_SIZE,
+ 		};
+ 
+@@ -218,6 +218,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ 		ret = mapping->a_ops->direct_IO(KERNEL_WRITE,
+ 						&kiocb, &iov,
+ 						kiocb.ki_pos, 1);
++		kunmap(page);
+ 		if (ret == PAGE_SIZE) {
+ 			count_vm_event(PSWPOUT);
+ 			ret = 0;
+-- 
+1.7.9.2
 
