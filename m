@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab2FTQ4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:56:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38259 "EHLO
+	id S1757303Ab2FTQ47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:56:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38274 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab2FTQ4M (ORCPT
+	with ESMTP id S1754391Ab2FTQ46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:56:12 -0400
-Date: Wed, 20 Jun 2012 09:55:35 -0700
+	Wed, 20 Jun 2012 12:56:58 -0400
+Date: Wed, 20 Jun 2012 09:56:28 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-mccancovi1u0wdkg8ncth509@git.kernel.org>
+Message-ID: <tip-e4f0vuy3283hmzfjjvkgm7fo@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,9 +19,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Move all users of event_name to perf_evsel__name
-Git-Commit-ID: 7289f83cceb437ca56c77eb45b8b1cda15e2e476
+Subject: [tip:perf/core] perf script:
+  Replace __event_name uses with perf_evsel__name
+Git-Commit-ID: 5bff01f66db1753abcae03a06b21e56e7e9d9fa9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,22 +30,21 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:55:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:56:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7289f83cceb437ca56c77eb45b8b1cda15e2e476
-Gitweb:     http://git.kernel.org/tip/7289f83cceb437ca56c77eb45b8b1cda15e2e476
+Commit-ID:  5bff01f66db1753abcae03a06b21e56e7e9d9fa9
+Gitweb:     http://git.kernel.org/tip/5bff01f66db1753abcae03a06b21e56e7e9d9fa9
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 12 Jun 2012 12:34:58 -0300
+AuthorDate: Tue, 12 Jun 2012 13:35:44 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 19 Jun 2012 13:06:20 -0300
+CommitDate: Tue, 19 Jun 2012 13:06:21 -0300
 
-perf tools: Move all users of event_name to perf_evsel__name
+perf script: Replace __event_name uses with perf_evsel__name
 
-So that we don't use global variables that could make us misreport event
-names when having a multi window top, for instance.
+No logic change, just remove one more user of __event_name().
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -55,416 +54,123 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-mccancovi1u0wdkg8ncth509@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-e4f0vuy3283hmzfjjvkgm7fo@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-evlist.c    |    2 +-
- tools/perf/builtin-record.c    |    4 ++--
- tools/perf/builtin-report.c    |    6 +++---
- tools/perf/builtin-stat.c      |   12 ++++++------
- tools/perf/builtin-test.c      |    2 +-
- tools/perf/builtin-top.c       |   10 +++++-----
- tools/perf/ui/browsers/hists.c |   15 ++++-----------
- tools/perf/ui/gtk/browser.c    |    2 +-
- tools/perf/util/evsel.c        |   26 +++++++++++++-------------
- tools/perf/util/evsel.h        |    2 +-
- tools/perf/util/header.c       |    2 +-
- tools/perf/util/parse-events.c |    7 -------
- tools/perf/util/parse-events.h |    1 -
- tools/perf/util/session.c      |    2 +-
- tools/perf/util/top.c          |    2 +-
- 15 files changed, 40 insertions(+), 55 deletions(-)
+ tools/perf/builtin-script.c |   38 ++++++++++++++++++++------------------
+ 1 files changed, 20 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
-index acd78dc..0dd5a05 100644
---- a/tools/perf/builtin-evlist.c
-+++ b/tools/perf/builtin-evlist.c
-@@ -60,7 +60,7 @@ static int __cmd_evlist(const char *input_name, struct perf_attr_details *detail
- 	list_for_each_entry(pos, &session->evlist->entries, node) {
- 		bool first = true;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 8e395a5..8f9f9b6 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -137,10 +137,11 @@ static const char *output_field2str(enum perf_output_field field)
  
--		printf("%s", event_name(pos));
-+		printf("%s", perf_evsel__name(pos));
+ #define PRINT_FIELD(x)  (output[attr->type].fields & PERF_OUTPUT_##x)
  
- 		if (details->verbose || details->freq) {
- 			comma_printf(&first, " sample_freq=%" PRIu64,
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f95840d..f5a6452 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -265,7 +265,7 @@ try_again:
+-static int perf_event_attr__check_stype(struct perf_event_attr *attr,
+-				  u64 sample_type, const char *sample_msg,
+-				  enum perf_output_field field)
++static int perf_evsel__check_stype(struct perf_evsel *evsel,
++				   u64 sample_type, const char *sample_msg,
++				   enum perf_output_field field)
+ {
++	struct perf_event_attr *attr = &evsel->attr;
+ 	int type = attr->type;
+ 	const char *evname;
  
- 			if (err == ENOENT) {
- 				ui__error("The %s event is not supported.\n",
--					    event_name(pos));
-+					  perf_evsel__name(pos));
- 				exit(EXIT_FAILURE);
- 			}
+@@ -148,7 +149,7 @@ static int perf_event_attr__check_stype(struct perf_event_attr *attr,
+ 		return 0;
  
-@@ -916,7 +916,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		usage_with_options(record_usage, record_options);
+ 	if (output[type].user_set) {
+-		evname = __event_name(attr->type, attr->config);
++		evname = perf_evsel__name(evsel);
+ 		pr_err("Samples for '%s' event do not have %s attribute set. "
+ 		       "Cannot print '%s' field.\n",
+ 		       evname, sample_msg, output_field2str(field));
+@@ -157,7 +158,7 @@ static int perf_event_attr__check_stype(struct perf_event_attr *attr,
  
- 	list_for_each_entry(pos, &evsel_list->entries, node) {
--		if (perf_header__push_event(pos->attr.config, event_name(pos)))
-+		if (perf_header__push_event(pos->attr.config, perf_evsel__name(pos)))
- 			goto out_free_fd;
+ 	/* user did not ask for it explicitly so remove from the default list */
+ 	output[type].fields &= ~field;
+-	evname = __event_name(attr->type, attr->config);
++	evname = perf_evsel__name(evsel);
+ 	pr_debug("Samples for '%s' event do not have %s attribute set. "
+ 		 "Skipping '%s' field.\n",
+ 		 evname, sample_msg, output_field2str(field));
+@@ -175,8 +176,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(IP)) {
+-		if (perf_event_attr__check_stype(attr, PERF_SAMPLE_IP, "IP",
+-					   PERF_OUTPUT_IP))
++		if (perf_evsel__check_stype(evsel, PERF_SAMPLE_IP, "IP",
++					    PERF_OUTPUT_IP))
+ 			return -EINVAL;
+ 
+ 		if (!no_callchain &&
+@@ -185,8 +186,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
  	}
  
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 25249f7..ea8ce8e 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -230,7 +230,7 @@ static int process_read_event(struct perf_tool *tool,
- 	struct perf_report *rep = container_of(tool, struct perf_report, tool);
+ 	if (PRINT_FIELD(ADDR) &&
+-		perf_event_attr__check_stype(attr, PERF_SAMPLE_ADDR, "ADDR",
+-				       PERF_OUTPUT_ADDR))
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_ADDR, "ADDR",
++					PERF_OUTPUT_ADDR))
+ 		return -EINVAL;
  
- 	if (rep->show_threads) {
--		const char *name = evsel ? event_name(evsel) : "unknown";
-+		const char *name = evsel ? perf_evsel__name(evsel) : "unknown";
- 		perf_read_values_add_value(&rep->show_threads_values,
- 					   event->read.pid, event->read.tid,
- 					   event->read.id,
-@@ -239,7 +239,7 @@ static int process_read_event(struct perf_tool *tool,
+ 	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP) && !PRINT_FIELD(ADDR)) {
+@@ -208,18 +209,18 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
  	}
  
- 	dump_printf(": %d %d %s %" PRIu64 "\n", event->read.pid, event->read.tid,
--		    evsel ? event_name(evsel) : "FAIL",
-+		    evsel ? perf_evsel__name(evsel) : "FAIL",
- 		    event->read.value);
+ 	if ((PRINT_FIELD(PID) || PRINT_FIELD(TID)) &&
+-		perf_event_attr__check_stype(attr, PERF_SAMPLE_TID, "TID",
+-				       PERF_OUTPUT_TID|PERF_OUTPUT_PID))
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_TID, "TID",
++					PERF_OUTPUT_TID|PERF_OUTPUT_PID))
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(TIME) &&
+-		perf_event_attr__check_stype(attr, PERF_SAMPLE_TIME, "TIME",
+-				       PERF_OUTPUT_TIME))
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_TIME, "TIME",
++					PERF_OUTPUT_TIME))
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(CPU) &&
+-		perf_event_attr__check_stype(attr, PERF_SAMPLE_CPU, "CPU",
+-				       PERF_OUTPUT_CPU))
++		perf_evsel__check_stype(evsel, PERF_SAMPLE_CPU, "CPU",
++					PERF_OUTPUT_CPU))
+ 		return -EINVAL;
  
  	return 0;
-@@ -314,7 +314,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+@@ -258,9 +259,10 @@ static int perf_session__check_output_opt(struct perf_session *session)
  
- 	list_for_each_entry(pos, &evlist->entries, node) {
- 		struct hists *hists = &pos->hists;
--		const char *evname = event_name(pos);
-+		const char *evname = perf_evsel__name(pos);
- 
- 		hists__fprintf_nr_sample_events(hists, evname, stdout);
- 		hists__fprintf(hists, NULL, false, true, 0, 0, stdout);
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 2625899..875bf26 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -391,7 +391,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
- 
- 	if (verbose) {
- 		fprintf(output, "%s: %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
--			event_name(counter), count[0], count[1], count[2]);
-+			perf_evsel__name(counter), count[0], count[1], count[2]);
- 	}
- 
- 	/*
-@@ -496,7 +496,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 			    errno == ENXIO) {
- 				if (verbose)
- 					ui__warning("%s event is not supported by the kernel.\n",
--						    event_name(counter));
-+						    perf_evsel__name(counter));
- 				counter->supported = false;
- 				continue;
- 			}
-@@ -594,7 +594,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
- 			csv_output ? 0 : -4,
- 			evsel_list->cpus->map[cpu], csv_sep);
- 
--	fprintf(output, fmt, cpustr, msecs, csv_sep, event_name(evsel));
-+	fprintf(output, fmt, cpustr, msecs, csv_sep, perf_evsel__name(evsel));
- 
- 	if (evsel->cgrp)
- 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
-@@ -792,7 +792,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 	else
- 		cpu = 0;
- 
--	fprintf(output, fmt, cpustr, avg, csv_sep, event_name(evsel));
-+	fprintf(output, fmt, cpustr, avg, csv_sep, perf_evsel__name(evsel));
- 
- 	if (evsel->cgrp)
- 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
-@@ -908,7 +908,7 @@ static void print_counter_aggr(struct perf_evsel *counter)
- 			counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
- 			csv_sep,
- 			csv_output ? 0 : -24,
--			event_name(counter));
-+			perf_evsel__name(counter));
- 
- 		if (counter->cgrp)
- 			fprintf(output, "%s%s", csv_sep, counter->cgrp->name);
-@@ -961,7 +961,7 @@ static void print_counter(struct perf_evsel *counter)
- 				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
- 				csv_sep,
- 				csv_output ? 0 : -24,
--				event_name(counter));
-+				perf_evsel__name(counter));
- 
- 			if (counter->cgrp)
- 				fprintf(output, "%s%s",
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 5a8727c..5ce3030 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -583,7 +583,7 @@ static int test__basic_mmap(void)
- 		if (nr_events[evsel->idx] != expected_nr_events[evsel->idx]) {
- 			pr_debug("expected %d %s events, got %d\n",
- 				 expected_nr_events[evsel->idx],
--				 event_name(evsel), nr_events[evsel->idx]);
-+				 perf_evsel__name(evsel), nr_events[evsel->idx]);
- 			goto out_munmap;
- 		}
- 	}
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 6bb0277..8090a28 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -245,7 +245,7 @@ static void perf_top__show_details(struct perf_top *top)
- 	if (notes->src == NULL)
- 		goto out_unlock;
- 
--	printf("Showing %s for %s\n", event_name(top->sym_evsel), symbol->name);
-+	printf("Showing %s for %s\n", perf_evsel__name(top->sym_evsel), symbol->name);
- 	printf("  Events  Pcnt (>=%d%%)\n", top->sym_pcnt_filter);
- 
- 	more = symbol__annotate_printf(symbol, he->ms.map, top->sym_evsel->idx,
-@@ -408,7 +408,7 @@ static void perf_top__print_mapped_keys(struct perf_top *top)
- 	fprintf(stdout, "\t[e]     display entries (lines).           \t(%d)\n", top->print_entries);
- 
- 	if (top->evlist->nr_entries > 1)
--		fprintf(stdout, "\t[E]     active event counter.              \t(%s)\n", event_name(top->sym_evsel));
-+		fprintf(stdout, "\t[E]     active event counter.              \t(%s)\n", perf_evsel__name(top->sym_evsel));
- 
- 	fprintf(stdout, "\t[f]     profile display filter (count).    \t(%d)\n", top->count_filter);
- 
-@@ -503,13 +503,13 @@ static void perf_top__handle_keypress(struct perf_top *top, int c)
- 				fprintf(stderr, "\nAvailable events:");
- 
- 				list_for_each_entry(top->sym_evsel, &top->evlist->entries, node)
--					fprintf(stderr, "\n\t%d %s", top->sym_evsel->idx, event_name(top->sym_evsel));
-+					fprintf(stderr, "\n\t%d %s", top->sym_evsel->idx, perf_evsel__name(top->sym_evsel));
- 
- 				prompt_integer(&counter, "Enter details event counter");
- 
- 				if (counter >= top->evlist->nr_entries) {
- 					top->sym_evsel = list_entry(top->evlist->entries.next, struct perf_evsel, node);
--					fprintf(stderr, "Sorry, no such event, using %s.\n", event_name(top->sym_evsel));
-+					fprintf(stderr, "Sorry, no such event, using %s.\n", perf_evsel__name(top->sym_evsel));
- 					sleep(1);
- 					break;
- 				}
-@@ -960,7 +960,7 @@ try_again:
- 
- 			if (err == ENOENT) {
- 				ui__error("The %s event is not supported.\n",
--					    event_name(counter));
-+					  perf_evsel__name(counter));
- 				goto out_err;
- 			} else if (err == EMFILE) {
- 				ui__error("Too many events are opened.\n"
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index f556e5f..482f051 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1367,7 +1367,7 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
- 	struct perf_evsel *evsel = list_entry(entry, struct perf_evsel, node);
- 	bool current_entry = ui_browser__is_current_entry(browser, row);
- 	unsigned long nr_events = evsel->hists.stats.nr_events[PERF_RECORD_SAMPLE];
--	const char *ev_name = event_name(evsel);
-+	const char *ev_name = perf_evsel__name(evsel);
- 	char bf[256], unit;
- 	const char *warn = " ";
- 	size_t printed;
-@@ -1435,7 +1435,7 @@ browse_hists:
- 			 */
- 			if (timer)
- 				timer(arg);
--			ev_name = event_name(pos);
-+			ev_name = perf_evsel__name(pos);
- 			key = perf_evsel__hists_browse(pos, nr_events, help,
- 						       ev_name, true, timer,
- 						       arg, delay_secs);
-@@ -1504,17 +1504,11 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 	ui_helpline__push("Press ESC to exit");
- 
- 	list_for_each_entry(pos, &evlist->entries, node) {
--		const char *ev_name = event_name(pos);
-+		const char *ev_name = perf_evsel__name(pos);
- 		size_t line_len = strlen(ev_name) + 7;
- 
- 		if (menu.b.width < line_len)
- 			menu.b.width = line_len;
--		/*
--		 * Cache the evsel name, tracepoints have a _high_ cost per
--		 * event_name() call.
--		 */
--		if (pos->name == NULL)
--			pos->name = strdup(ev_name);
- 	}
- 
- 	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, timer,
-@@ -1525,11 +1519,10 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
- 				  void(*timer)(void *arg), void *arg,
- 				  int delay_secs)
+ static void print_sample_start(struct perf_sample *sample,
+ 			       struct thread *thread,
+-			       struct perf_event_attr *attr)
++			       struct perf_evsel *evsel)
  {
--
- 	if (evlist->nr_entries == 1) {
- 		struct perf_evsel *first = list_entry(evlist->entries.next,
- 						      struct perf_evsel, node);
--		const char *ev_name = event_name(first);
-+		const char *ev_name = perf_evsel__name(first);
- 		return perf_evsel__hists_browse(first, evlist->nr_entries, help,
- 						ev_name, false, timer, arg,
- 						delay_secs);
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index fd41e8d..ec12e0b 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -199,7 +199,7 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 	int type;
++	struct perf_event_attr *attr = &evsel->attr;
+ 	struct event_format *event;
+ 	const char *evname = NULL;
+ 	unsigned long secs;
+@@ -305,7 +307,7 @@ static void print_sample_start(struct perf_sample *sample,
+ 			if (event)
+ 				evname = event->name;
+ 		} else
+-			evname = __event_name(attr->type, attr->config);
++			evname = perf_evsel__name(evsel);
  
- 	list_for_each_entry(pos, &evlist->entries, node) {
- 		struct hists *hists = &pos->hists;
--		const char *evname = event_name(pos);
-+		const char *evname = perf_evsel__name(pos);
- 		GtkWidget *scrolled_window;
- 		GtkWidget *tab_label;
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 2ddc812..236bdf2 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -252,42 +252,42 @@ static int perf_evsel__hw_cache_name(struct perf_evsel *evsel, char *bf, size_t
- 	return ret + perf_evsel__add_modifiers(evsel, bf + ret, size - ret);
- }
- 
--static int perf_evsel__tracepoint_name(struct perf_evsel *evsel, char *bf, size_t size)
-+const char *perf_evsel__name(struct perf_evsel *evsel)
- {
--	return scnprintf(bf, size, "%s", evsel->name ?: "unknown tracepoint");
--}
-+	char bf[128];
- 
--int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size)
--{
--	int ret;
-+	if (evsel->name)
-+		return evsel->name;
- 
- 	switch (evsel->attr.type) {
- 	case PERF_TYPE_RAW:
--		ret = scnprintf(bf, size, "raw 0x%" PRIx64, evsel->attr.config);
-+		scnprintf(bf, sizeof(bf), "raw 0x%" PRIx64, evsel->attr.config);
- 		break;
- 
- 	case PERF_TYPE_HARDWARE:
--		ret = perf_evsel__hw_name(evsel, bf, size);
-+		perf_evsel__hw_name(evsel, bf, sizeof(bf));
- 		break;
- 
- 	case PERF_TYPE_HW_CACHE:
--		ret = perf_evsel__hw_cache_name(evsel, bf, size);
-+		perf_evsel__hw_cache_name(evsel, bf, sizeof(bf));
- 		break;
- 
- 	case PERF_TYPE_SOFTWARE:
--		ret = perf_evsel__sw_name(evsel, bf, size);
-+		perf_evsel__sw_name(evsel, bf, sizeof(bf));
- 		break;
- 
- 	case PERF_TYPE_TRACEPOINT:
--		ret = perf_evsel__tracepoint_name(evsel, bf, size);
-+		scnprintf(bf, sizeof(bf), "%s", "unknown tracepoint");
- 		break;
- 
- 	default:
--		ret = scnprintf(bf, size, "%s", "unknown attr type");
-+		scnprintf(bf, sizeof(bf), "%s", "unknown attr type");
- 		break;
+ 		printf("%s: ", evname ? evname : "[unknown]");
  	}
+@@ -412,7 +414,7 @@ static void process_event(union perf_event *event __unused,
+ 	if (output[attr->type].fields == 0)
+ 		return;
  
--	return ret;
-+	evsel->name = strdup(bf);
-+
-+	return evsel->name ?: "unknown";
- }
+-	print_sample_start(sample, thread, attr);
++	print_sample_start(sample, thread, evsel);
  
- void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 9ae64d9..c936feb 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -100,7 +100,7 @@ int __perf_evsel__hw_cache_name(u64 config, char *bf, size_t size);
- const char *__perf_evsel__hw_name(u64 config);
- const char *__perf_evsel__sw_name(u64 config);
- 
--int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size);
-+const char *perf_evsel__name(struct perf_evsel *evsel);
- 
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 2dd5edf..07c8f37 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -641,7 +641,7 @@ static int write_event_desc(int fd, struct perf_header *h __used,
- 		/*
- 		 * write event string as passed on cmdline
- 		 */
--		ret = do_write_string(fd, event_name(attr));
-+		ret = do_write_string(fd, perf_evsel__name(attr));
- 		if (ret < 0)
- 			return ret;
- 		/*
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index d73690b..517e647 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -201,13 +201,6 @@ const char *event_type(int type)
- 	return "unknown";
- }
- 
--const char *event_name(struct perf_evsel *evsel)
--{
--	static char bf[128];
--	perf_evsel__name(evsel, bf, sizeof(bf));
--	return bf;
--}
--
- const char *__event_name(int type, u64 config)
- {
- 	static char buf[32];
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 8cac57a..d7eb070 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -26,7 +26,6 @@ extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
- extern bool have_tracepoints(struct list_head *evlist);
- 
- const char *event_type(int type);
--const char *event_name(struct perf_evsel *event);
- extern const char *__event_name(int type, u64 config);
- 
- extern int parse_events_option(const struct option *opt, const char *str,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 2600916..582ee38 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1439,7 +1439,7 @@ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp)
- 	ret += hists__fprintf_nr_events(&session->hists, fp);
- 
- 	list_for_each_entry(pos, &session->evlist->entries, node) {
--		ret += fprintf(fp, "%s stats:\n", event_name(pos));
-+		ret += fprintf(fp, "%s stats:\n", perf_evsel__name(pos));
- 		ret += hists__fprintf_nr_events(&pos->hists, fp);
- 	}
- 
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index abe0e8e..7eeebce 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -65,7 +65,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 				top->freq ? "Hz" : "");
- 	}
- 
--	ret += SNPRINTF(bf + ret, size - ret, "%s", event_name(top->sym_evsel));
-+	ret += SNPRINTF(bf + ret, size - ret, "%s", perf_evsel__name(top->sym_evsel));
- 
- 	ret += SNPRINTF(bf + ret, size - ret, "], ");
- 
+ 	if (is_bts_event(attr)) {
+ 		print_sample_bts(event, sample, evsel, machine, thread);
