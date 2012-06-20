@@ -1,157 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab2FTGch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:32:37 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:48456 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab2FTGcf (ORCPT
+	id S1753929Ab2FTGcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:32:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55960 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754196Ab2FTGcx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:32:35 -0400
-Message-ID: <4FE16E80.9000306@gmail.com>
-Date: Wed, 20 Jun 2012 02:32:32 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 20 Jun 2012 02:32:53 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Aaditya Kumar <aaditya.kumar.30@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-References: <4FE169B1.7020600@kernel.org>
-In-Reply-To: <4FE169B1.7020600@kernel.org>
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <1340169088-4401-2-git-send-email-gshark.jeong@gmail.com>
+References: <1340169088-4401-1-git-send-email-gshark.jeong@gmail.com> <1340169088-4401-2-git-send-email-gshark.jeong@gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Wed, 20 Jun 2012 14:32:32 +0800
+Message-ID: <CAF+7xWks9G297rCk_q6W3VLdHVNVresTYCHz2GOjNDP9eLa3sw@mail.gmail.com>
+Subject: Re: [PATCH 1/1 v3] leds: Add LED driver for lm3556 chip
+To: "G.Shark Jeong" <gshark.jeong@gmail.com>
+Cc: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Daniel Jeong <daniel.jeong@ti.com>, linux-kernel@vger.kernel.org,
+        milo kim <milo.kim@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/20/12 2:12 AM), Minchan Kim wrote:
-> 
-> Hi Aaditya,
-> 
-> I want to discuss this problem on another thread.
-> 
-> On 06/19/2012 10:18 PM, Aaditya Kumar wrote:
->> On Mon, Jun 18, 2012 at 6:13 AM, Minchan Kim <minchan@kernel.org> wrote:
->>> On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
->>>
->>>> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
->>>>
->>>>>>
->>>>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
->>>>>> if node has multiple zones. Hm ok, I realized my descriptions was
->>>>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
->>>>>> pgdat_balanced()
->>>>>> every priority. Most easy case is, movable zone has a lot of free pages and
->>>>>> normal zone has no reclaimable page.
->>>>>>
->>>>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
->>>>>> sleep only if every zones have much free pages than high water mark
->>>>>> _and_ 25% of present pages in node are free.
->>>>>>
->>>>>
->>>>>
->>>>> Sorry. I can't understand your point.
->>>>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
->>>>> It seems I am missing your point.
->>>>> Please anybody correct me.
->>>>
->>>> Since currently direct reclaim is given up based on
->>>> zone->all_unreclaimable flag,
->>>> so for e.g in one of the scenarios:
->>>>
->>>> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
->>>> hot-remove the all the pages of the MOVABLE zone.
->>>>
->>>> While migrating pages during memory hot-unplugging, the allocation function
->>>> (for new page to which the page in MOVABLE zone would be moved)  can end up
->>>> looping in direct reclaim path for ever.
->>>>
->>>> This is so because when most of the pages in the MOVABLE zone have
->>>> been migrated,
->>>> the zone now contains lots of free memory (basically above low watermark)
->>>> BUT all are in MIGRATE_ISOLATE list of the buddy list.
->>>>
->>>> So kswapd() would not balance this zone as free pages are above low watermark
->>>> (but all are in isolate list). So zone->all_unreclaimable flag would
->>>> never be set for this zone
->>>> and allocation function would end up looping forever. (assuming the
->>>> zone NORMAL is
->>>> left with no reclaimable memory)
->>>>
->>>
->>>
->>> Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
->>> But I don't see it's a problem of kswapd.
->>
->> Hi Kim,
-> 
-> I like called Minchan rather than Kim
-> Never mind. :)
-> 
->>
->> Yes I agree it is not a problem of kswapd.
-> 
-> Yeb.
-> 
->>
->>> a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
->>> but we can't allocate it. :(
->>> It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
->>> Kswapd is just one of them confused.
->>> As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too.
->>>
->>> This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
->>
->>
->> I assume that by the inconsistency you mention above, you mean
->> temporary inconsistency.
->>
->> Sorry, but IMHO as for memory hot plug the main issue with this patch
->> is that the inconsistency you mentioned above would NOT be a temporary
->> inconsistency.
->>
->> Every time say 'x' number of page frames are off lined, they will
->> introduce a difference of 'x' pages between
->> NR_FREE_PAGES and SumOf[free_area[order].nr_free].
->> (So for e.g. if we do a frequent offline/online it will make
->> NR_FREE_PAGES  negative)
->>
->> This is so because, unset_migratetype_isolate() is called from
->> offlining  code (to set the migrate type of off lined pages again back
->> to MIGRATE_MOVABLE)
->> after the pages have been off lined and removed from the buddy list.
->> Since the pages for which unset_migratetype_isolate() is called are
->> not buddy pages so move_freepages_block() does not move any page, and
->> thus introducing a permanent inconsistency.
-> 
-> Good point. Negative NR_FREE_PAGES is caused by double counting by my patch and __offline_isolated_pages.
-> I think at first MIGRATE_ISOLATE type freed page shouldn't account as free page.
-> 
->>
->>> and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
->>> free_area[order].nr_free exactly.
->>>
->>> Any thought?
->>
->> As for fixing move_freepages_block(), At least for memory hot plug,
->> the pages stay in MIGRATE_ISOLATE list only for duration
->> offline_pages() function,
->> I mean only temporarily. Since fixing move_freepages_block() for will
->> introduce some overhead, So I am not very sure whether that overhead
->> is justified
->> for a temporary condition. What do you think?
-> 
-> Yes. I don't like hurt fast path, either.
-> How about this? (Passed just compile test :(  )
-> The patch's goal is to NOT increase nr_free and NR_FREE_PAGES about freed page into MIGRATE_ISOLATED.
-> 
-> This patch hurts high order page free path but I think it's not critical because higher order allocation
-> is rare than order-0 allocation and we already have done same thing on free_hot_cold_page on order-0 free path
-> which is more hot.
+> +config LEDS_LM3556
+> +       tristate "LED support for LM3556 Chip"
+> +       depends on LEDS_CLASS && I2C
 
-Can't we change zone_water_mark_ok_safe() instead of page allocator? memory hotplug is really rare event.
+select REGMAP_I2C
 
+> +       help
+> +         This option enables support for LEDs connected LM3556.
+> +         LM3556 includes Torch, Flash and Indicator functions.
+> +
+
+> +/* chip initialize */
+> +static int lm3556_chip_init(struct lm3556_chip_data *chip)
+
+__devinit
+
+
+
+> +/* torch */
+> +static void lm3556_torch_brightness_set(struct led_classdev *cdev,
+> +                                       enum led_brightness brightness)
+> +{
+> +       struct lm3556_chip_data *chip =
+> +           container_of(cdev, struct lm3556_chip_data, cdev_torch);
+> +
+> +       mutex_lock(&chip->lock);
+> +       lm3556_control(chip, brightness, MODES_TORCH);
+> +       mutex_unlock(&chip->lock);
+> +       return;
+            ^^^^^^ you don't need this return!!
+> +}
+> +
+> +/* flash */
+> +static void lm3556_strobe_brightness_set(struct led_classdev *cdev,
+> +                                        enum led_brightness brightness)
+> +{
+> +       struct lm3556_chip_data *chip =
+> +           container_of(cdev, struct lm3556_chip_data, cdev_flash);
+> +
+> +       mutex_lock(&chip->lock);
+> +       lm3556_control(chip, brightness, MODES_FLASH);
+> +       mutex_unlock(&chip->lock);
+> +       return;
+            ^^^^^^ you don't need this return!!
+> +}
+> +
+> +/* indicator */
+> +static void lm3556_indicator_brightness_set(struct led_classdev *cdev,
+> +                                           enum led_brightness brightness)
+> +{
+> +       struct lm3556_chip_data *chip =
+> +           container_of(cdev, struct lm3556_chip_data, cdev_indicator);
+> +
+> +       mutex_lock(&chip->lock);
+> +       lm3556_control(chip, brightness, MODES_INDIC);
+> +       mutex_unlock(&chip->lock);
+> +       return;
+            ^^^^^^ you don't need this return!!
+> +}
+> +
+
+> +/* module initialize */
+> +static int lm3556_probe(struct i2c_client *client,
+> +                       const struct i2c_device_id *id)
+__devinit
+> +{
+> +       struct lm3556_platform_data *pdata = client->dev.platform_data;
+> +       struct lm3556_chip_data *chip;
+> +
+> +       int err;
+> +
+> +       if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+> +               dev_err(&client->dev, "i2c functionality check fail.\n");
+> +               return -EOPNOTSUPP;
+> +       }
+> +
+> +       if (pdata == NULL) {
+> +               dev_err(&client->dev, "Needs Platform Data.\n");
+> +               return -ENODATA;
+> +       }
+> +
+> +       chip =
+> +           devm_kzalloc(&client->dev, sizeof(struct lm3556_chip_data),
+> +                        GFP_KERNEL);
+> +       if (!chip)
+> +               return -ENOMEM;
+> +
+> +       chip->client = client;
+> +       chip->pdata = pdata;
+> +
+> +       chip->regmap = regmap_init_i2c(client, &lm3556_regmap);
+devm_regmap_init_i2c
+
+> +       if (IS_ERR(chip->regmap)) {
+> +               err = PTR_ERR(chip->regmap);
+> +               dev_err(&client->dev, "Failed to allocate register map: %d\n",
+> +                       err);
+> +               return err;
+> +       }
+> +
+> +       mutex_init(&chip->lock);
+> +       i2c_set_clientdata(client, chip);
+> +
+> +       err = lm3556_chip_init(chip);
+> +       if (err < 0)
+> +               goto err_chip_init;
+> +
+> +       /* flash */
+> +       chip->cdev_flash.name = "flash";
+> +       chip->cdev_flash.max_brightness = 16;
+> +       chip->cdev_flash.brightness_set = lm3556_strobe_brightness_set;
+> +       err = led_classdev_register((struct device *)
+> +                                   &client->dev, &chip->cdev_flash);
+> +       if (err < 0)
+> +               goto err_create_flash_file;
+> +       /* torch */
+> +       chip->cdev_torch.name = "torch";
+> +       chip->cdev_torch.max_brightness = 8;
+> +       chip->cdev_torch.brightness_set = lm3556_torch_brightness_set;
+> +       err = led_classdev_register((struct device *)
+> +                                   &client->dev, &chip->cdev_torch);
+> +       if (err < 0)
+> +               goto err_create_torch_file;
+> +       /* indicator */
+> +       chip->cdev_indicator.name = "indicator";
+> +       chip->cdev_indicator.max_brightness = 8;
+> +       chip->cdev_indicator.brightness_set = lm3556_indicator_brightness_set;
+> +       err = led_classdev_register((struct device *)
+> +                                   &client->dev, &chip->cdev_indicator);
+> +       if (err < 0)
+> +               goto err_create_indicator_file;
+> +
+> +       err = device_create_file(chip->cdev_indicator.dev, &dev_attr_pattern);
+> +       if (err < 0)
+> +               goto err_create_pattern_file;
+> +
+> +       dev_info(&client->dev, "LM3556 is initialized\n");
+> +       return 0;
+> +
+> +err_create_pattern_file:
+> +       led_classdev_unregister(&chip->cdev_indicator);
+> +err_create_indicator_file:
+> +       led_classdev_unregister(&chip->cdev_torch);
+> +err_create_torch_file:
+> +       led_classdev_unregister(&chip->cdev_flash);
+> +err_create_flash_file:
+> +err_chip_init:
+> +       i2c_set_clientdata(client, NULL);
+No need to set this to NULL, it is done by i2c core.
+
+> +       return err;
+> +}
+> +
+> +static int lm3556_remove(struct i2c_client *client)
+__devexit
+
+> +{
+> +       struct lm3556_chip_data *chip = i2c_get_clientdata(client);
+> +
+> +       device_remove_file(chip->cdev_indicator.dev, &dev_attr_pattern);
+> +       led_classdev_unregister(&chip->cdev_indicator);
+> +       led_classdev_unregister(&chip->cdev_torch);
+> +       led_classdev_unregister(&chip->cdev_flash);
+> +       regmap_write(chip->regmap, REG_ENABLE, 0);
+> +       regmap_exit(chip->regmap);
+If you are using devm_regmap_init_i2c, you don't need regmap_exit call here.
+
+> +       return 0;
+> +}
+> +
+> +static const struct i2c_device_id lm3556_id[] = {
+> +       {LM3556_NAME, 0},
+> +       {}
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, lm3556_id);
+> +
+> +static struct i2c_driver lm3556_i2c_driver = {
+> +       .driver = {
+> +                  .name = LM3556_NAME,
+> +                  .owner = THIS_MODULE,
+> +                  .pm = NULL,
+> +                  },
+> +       .probe = lm3556_probe,
+> +       .remove = __devexit_p(lm3556_remove),
+> +       .id_table = lm3556_id,
+> +};
+> +
+> +static int __init lm3556_init(void)
+> +{
+> +       return i2c_add_driver(&lm3556_i2c_driver);
+> +}
+> +
+> +static void __exit lm3556_exit(void)
+> +{
+> +       i2c_del_driver(&lm3556_i2c_driver);
+> +}
+> +
+> +module_init(lm3556_init);
+> +module_exit(lm3556_exit);
+
+module_i2c_driver(lm3556_i2c_driver);
