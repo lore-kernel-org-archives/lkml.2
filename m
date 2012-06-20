@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab2FTNKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:10:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39801 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754115Ab2FTNKC (ORCPT
+	id S1755439Ab2FTNL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:11:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42219 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340Ab2FTNL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 09:10:02 -0400
-Date: Wed, 20 Jun 2012 14:09:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] dmaengine: Add wrapper for device_tx_status
- callback
-Message-ID: <20120620130958.GN3978@opensource.wolfsonmicro.com>
-References: <1339438302-12417-1-git-send-email-lars@metafoo.de>
- <1340189662.1927.1648.camel@vkoul-udesk3>
- <4FE1BE79.5080903@metafoo.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Zl+NncWK+U5aSfTo"
-Content-Disposition: inline
-In-Reply-To: <4FE1BE79.5080903@metafoo.de>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Jun 2012 09:11:56 -0400
+Subject: Re: [net-next:master 257/266]
+ drivers/net/team/team_mode_loadbalance.c:99:30: sparse: incompatible types
+ in comparison expression (different address spaces)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Fengguang Wu <wfg@linux.intel.com>, Jiri Pirko <jpirko@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+In-Reply-To: <20120620124913.GF2432@linux.vnet.ibm.com>
+References: <20120620042743.GA7640@localhost>
+	 <20120620063607.GA1491@minipsycho> <20120620065055.GA5872@localhost>
+	 <20120620124913.GF2432@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Jun 2012 15:11:49 +0200
+Message-ID: <1340197909.4604.956.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-06-20 at 05:49 -0700, Paul E. McKenney wrote:
+> On Wed, Jun 20, 2012 at 02:50:55PM +0800, Fengguang Wu wrote:
+> > [CC Paul, the RCU maintainer]
+> > 
+> > On Wed, Jun 20, 2012 at 08:36:07AM +0200, Jiri Pirko wrote:
+> > > Wed, Jun 20, 2012 at 06:27:43AM CEST, wfg@linux.intel.com wrote:
+> > > >Hi Jiri,
+> > > >
+> > > >There are new sparse warnings show up in
+> > > >
+> > > >tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
+> > > >head:   677a3d60fb3153f786a0d28fcf0287670e7bd3c2
+> > > >commit: ab8250d70063f77929fc404c02390a1f64d66416 [257/266] team: lb: introduce infrastructure for userspace driven tx loadbalancing
+> > > >
+> > > >All sparse warnings:
+> > > >
+> > > >drivers/net/team/team_mode_loadbalance.c:99:30: sparse: incompatible types in comparison expression (different address spaces)
+> > > >
+> > > >drivers/net/team/team_mode_loadbalance.c:99:
+> > > >    96			struct lb_port_mapping *pm;
+> > > >    97	
+> > > >    98			pm = &lb_priv->ex->tx_hash_to_port_mapping[i];
+> > > >  > 99			if (pm->port == port) {
+> > > 
+> > > This looks like your checker does not like
+> > > (struct team_port __rcu *) == (struct team_port *)
+> > > But I wonder why (or how should I fix that)
+> 
+> Because you said that it was an RCU-protected pointer, but then did
+> not use an RCU primitive to access it.  In this case, where you are
+> just using the value but not dereferencing it, you can use
+> rcu_access_pointer().
 
---Zl+NncWK+U5aSfTo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, and please Jiri change the 
 
-On Wed, Jun 20, 2012 at 02:13:45PM +0200, Lars-Peter Clausen wrote:
+rcu_assign_pointer(pm->port, NULL);
 
-> There is a compile time dependency between the patches, so this patch should
-> go through the ASoC tree as well, or we'll have to wait another release
-> before the ASoC patches can be applied.
+by
 
-Yes, I was just going to say that - are you OK with me applying these
-Vinod?
+RCU_INIT_POINTER(pm->port, NULL);
 
---Zl+NncWK+U5aSfTo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP4cufAAoJEBus8iNuMP3dsZUQAIRovAp5ccVPcjy7vsY1PBMn
-JgvIP6oBP1Zl7L+9c5NBBVyoMbOJgWbcxS/xXmA3A8SxFSxIYXOiJXpgtvjG6mZS
-iktv816seJMXDVIRuV7ioUsJNWokkZ4NJdD+Dh4t9x4oZrabGbHVxxoWR+SZjoKR
-ejtGhAq5tPi80fB9q/76SEwm5ru60EI7gQrkKWvfNwiKnBMdRhtlpJxhTN6QNRjb
-Bd0unc1IBQRq2MQpCr6jPRBYbKjhIsbCFGVxPE38znmLYPfGdgMPsQ0A5NYQuFSf
-AdcPIlQufS53QPd0VXL4fJFbGwaCytoEXQNmM+/bPN9qDG+Iv3DogulkyM/5+4JE
-K+1joGc63jTLpkz8gkAodBAmrHuWhCxj/z18i76LUUCtQLqOWGZwE4oeXtw6rp+5
-3AJRmI1t9zYN50soWNVmBtNljoCto6IoKnwU9ENZFBthAVOwiJm5wkkJ7YjhZkID
-itNmB2kp2/hAO6Q3B5JBx3uEJZB1GX16lJ4zeL/x1Onh62TPVd2o0z1OKf3yrCmb
-/IuDCSbriOIUWOtlVIUqWxoCWCXnEWk6WGssl5Ok7dc9sKxPQ8AezK2cu1xlRxwt
-MJ0ApQXB1Eg1Q8mZlxRUg1JZYM0w0ysgKlqgKsRxI5l2GG/A+uHkPKQh7laUfiop
-jQSLJjuq/PwWvoeR6QuF
-=/4RR
------END PGP SIGNATURE-----
-
---Zl+NncWK+U5aSfTo--
