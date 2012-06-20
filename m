@@ -1,162 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab2FTGSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:18:44 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52742 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab2FTGSm (ORCPT
+	id S1753935Ab2FTGTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:19:36 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39603 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab2FTGTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:18:42 -0400
-X-AuditID: 9c930197-b7b87ae000000e4d-aa-4fe16b3f449b
-Message-ID: <4FE16B48.4030704@kernel.org>
-Date: Wed, 20 Jun 2012 15:18:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 20 Jun 2012 02:19:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6747"; a="202775415"
+X-IronPort-AV: E=Sophos;i="4.77,440,1336374000"; 
+   d="scan'208,223";a="159737512"
+Date: Wed, 20 Jun 2012 11:50:49 +0530
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+To: Michael Leun <lkml20120218@newton.leun.net>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>,
+        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
+Message-ID: <20120620062047.GB8738@vmraj-lnx.qca.qualcomm.com>
+References: <20120619085137.337838c0@xenia.leun.net>
+ <CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
+ <20120620003315.2eaf6460@xenia.leun.net>
+ <20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
+ <20120620081553.040171f4@xenia.leun.net>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Aaditya Kumar <aaditya.kumar.30@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, frank.rowand@am.sony.com,
-        tim.bird@am.sony.com, takuzo.ohara@ap.sony.com,
-        kan.iibuchi@jp.sony.com
-Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
-References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com> <20120614145716.GA2097@barrios> <CAHGf_=qcA5OfuNgk0BiwyshcLftNWoPfOO_VW9H6xQTX2tAbuA@mail.gmail.com> <4FDAE3CC.60801@kernel.org> <CAEtiSavv8nRAFk6VZEgeCMYicjBPy4244+2KQhng5Pq9bxcX5A@mail.gmail.com> <4FDE79CF.4050702@kernel.org> <4FE0FA7B.7020407@gmail.com>
-In-Reply-To: <4FE0FA7B.7020407@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/mixed; boundary="d6Gm4EdcadzBjdND"
+Content-Disposition: inline
+In-Reply-To: <20120620081553.040171f4@xenia.leun.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 07:17 AM, KOSAKI Motohiro wrote:
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 
-> (6/17/12 8:43 PM), Minchan Kim wrote:
->> On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
->>
->>> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
->>>
->>>>>
->>>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
->>>>> if node has multiple zones. Hm ok, I realized my descriptions was
->>>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
->>>>> pgdat_balanced()
->>>>> every priority. Most easy case is, movable zone has a lot of free pages and
->>>>> normal zone has no reclaimable page.
->>>>>
->>>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
->>>>> sleep only if every zones have much free pages than high water mark
->>>>> _and_ 25% of present pages in node are free.
->>>>>
->>>>
->>>>
->>>> Sorry. I can't understand your point.
->>>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
->>>> It seems I am missing your point.
->>>> Please anybody correct me.
->>>
->>> Since currently direct reclaim is given up based on
->>> zone->all_unreclaimable flag,
->>> so for e.g in one of the scenarios:
->>>
->>> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
->>> hot-remove the all the pages of the MOVABLE zone.
->>>
->>> While migrating pages during memory hot-unplugging, the allocation function
->>> (for new page to which the page in MOVABLE zone would be moved)  can end up
->>> looping in direct reclaim path for ever.
->>>
->>> This is so because when most of the pages in the MOVABLE zone have
->>> been migrated,
->>> the zone now contains lots of free memory (basically above low watermark)
->>> BUT all are in MIGRATE_ISOLATE list of the buddy list.
->>>
->>> So kswapd() would not balance this zone as free pages are above low watermark
->>> (but all are in isolate list). So zone->all_unreclaimable flag would
->>> never be set for this zone
->>> and allocation function would end up looping forever. (assuming the
->>> zone NORMAL is
->>> left with no reclaimable memory)
->>>
->>
->>
->> Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
->> But I don't see it's a problem of kswapd.
->>
->> a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
->> but we can't allocate it. :(
->> It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
->> Kswapd is just one of them confused.
->> As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too. 
->>
->> This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
->> and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
->> free_area[order].nr_free exactly. 
->>
->> Any thought?
->>
->> Side Note: I still need KOSAKI's patch with fixed description regardless of this problem because set zone->all_unreclaimable of only kswapd is very fragile.
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 4403009..19de56c 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -5593,8 +5593,10 @@ int set_migratetype_isolate(struct page *page)
->>  
->>  out:
->>         if (!ret) {
->> +               int pages_moved;
->>                 set_pageblock_migratetype(page, MIGRATE_ISOLATE);
->> -               move_freepages_block(zone, page, MIGRATE_ISOLATE);
->> +               pages_moved = move_freepages_block(zone, page, MIGRATE_ISOLATE);
->> +               __mod_zone_page_state(zone, NR_FREE_PAGES, -pages_moved);
->>         }   
->>  
->>         spin_unlock_irqrestore(&zone->lock, flags);
->> @@ -5607,12 +5609,14 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
->>  {
->>         struct zone *zone;
->>         unsigned long flags;
->> +       int pages_moved;
->>         zone = page_zone(page);
->>         spin_lock_irqsave(&zone->lock, flags);
->>         if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
->>                 goto out;
->>         set_pageblock_migratetype(page, migratetype);
->> -       move_freepages_block(zone, page, migratetype);
->> +       pages_moved = move_freepages_block(zone, page, migratetype);
->> +       __mod_zone_page_state(zone, NR_FREE_PAGES, pages_moved);
->>  out:
->>         spin_unlock_irqrestore(&zone->lock, flags);
->>  }
+On Wed, Jun 20, 2012 at 08:15:53AM +0200, Michael Leun wrote:
+> On Wed, 20 Jun 2012 11:43:05 +0530
+> Rajkumar Manoharan <rmanohar@qca.qualcomm.com> wrote:
 > 
-> Unfortunately, this doesn't work. there are two reasons. 1) when memory hotplug occue, we have
-> two scenarios. a) free page -> page block change into isolate b) page block change into isolate
-> -> free page. The above patch only care scenario (a). Thus it lead to confusing NR_FREE_PAGES value.
-> _if_ we put a new branch free page hotpath, we can solve scenario (b). but I don't like it. because of,
-> zero hotpath overhead is one of memory hotplug design principle. 2) event if we can solve above issue,
+> 
+> > Thanks for the analysis. Can you please try with the attached patch
+> > without reverting mac80211 change?
+> 
+> Radio Eriwan answers: In principle yes, but you forgot the
+> attachment ;-)
+> 
+Oops. Sorry.  
 
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: attachment;
+	filename="0001-ath9k_htc-configure-bssid-on-ASSOC-IBSS-change.patch"
 
-Yeb. Aaditya already pointed out.
-And I just sent other patch.
-Let's talk about this problem on another thread because it's not a direct/background reclaim problem.
-http://lkml.org/lkml/2012/6/20/30
+>From 025f26a70c1f8bab443a49f0fe3e7c6627e6550c Mon Sep 17 00:00:00 2001
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Date: Wed, 20 Jun 2012 11:33:37 +0530
+Subject: [PATCH] ath9k_htc: configure bssid on ASSOC/IBSS change
 
+After the change "mac80211: remove spurious BSSID change flag",
+BSS_CHANGED_BSSID will not be passed on association or IBSS
+status changes. So it could be better to program bssid on ASSOC
+or IBSS change notification. Not doing so, is affecting the
+packet transmission.
 
-> all_unreclaimable logic still broken. because of, __alloc_pages_slowpath() wake up kswapd only once and
-> don't wake up when "goto rebalance" path. But, wake_all_kswapd() is racy and no guarantee to wake up
-> kswapd. It mean direct reclaim should work fine w/o background reclaim.
+Reported-by: Michael Leun <lkml20120218@newton.leun.net>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+---
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-
-We can fix it easily in direct reclaim path but I think your approach still make sense
-because current scheme of zone_unreclaimable setting is very fragile on livelock.
-So if you send your patch again with rewritten description, I have no objection.
-
-Thanks.
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+index 2b8f61c..abbd6ef 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -1496,6 +1496,7 @@ static void ath9k_htc_bss_info_changed(struct ieee80211_hw *hw,
+ 			priv->num_sta_assoc_vif++ : priv->num_sta_assoc_vif--;
+ 
+ 		if (priv->ah->opmode == NL80211_IFTYPE_STATION) {
++			ath9k_htc_choose_set_bssid(priv);
+ 			if (bss_conf->assoc && (priv->num_sta_assoc_vif == 1))
+ 				ath9k_htc_start_ani(priv);
+ 			else if (priv->num_sta_assoc_vif == 0)
+@@ -1503,13 +1504,11 @@ static void ath9k_htc_bss_info_changed(struct ieee80211_hw *hw,
+ 		}
+ 	}
+ 
+-	if (changed & BSS_CHANGED_BSSID) {
++	if (changed & BSS_CHANGED_IBSS) {
+ 		if (priv->ah->opmode == NL80211_IFTYPE_ADHOC) {
+ 			common->curaid = bss_conf->aid;
+ 			memcpy(common->curbssid, bss_conf->bssid, ETH_ALEN);
+ 			ath9k_htc_set_bssid(priv);
+-		} else if (priv->ah->opmode == NL80211_IFTYPE_STATION) {
+-			ath9k_htc_choose_set_bssid(priv);
+ 		}
+ 	}
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.11
+
+
+--d6Gm4EdcadzBjdND--
