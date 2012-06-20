@@ -1,39 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab2FTIrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 04:47:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58915 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab2FTIrF (ORCPT
+	id S1755496Ab2FTIu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 04:50:58 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48940 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab2FTIu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 04:47:05 -0400
-Date: Wed, 20 Jun 2012 09:45:47 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Gupta, Ramesh" <grgupta@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com
-Subject: Re: [PATCH v2 2/4] ARM: add flush_mem api for ARMv6
-Message-ID: <20120620084547.GB13009@n2100.arm.linux.org.uk>
-References: <CADysL2acF3ttJ-TR2as+GT66MfJiK4YyWYaAiP5j8yQ+YLBGYQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADysL2acF3ttJ-TR2as+GT66MfJiK4YyWYaAiP5j8yQ+YLBGYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 20 Jun 2012 04:50:56 -0400
+X-AuditID: 9c93016f-b7cbdae0000024ac-34-4fe18eed377a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] libtraceevent fixes/improvements
+Date: Wed, 20 Jun 2012 17:47:37 +0900
+Message-Id: <1340182057-27497-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.10.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 04:51:16PM +0530, Gupta, Ramesh wrote:
-> >From 630a3a8f341eb7f58f9a63bf786d732b5bdfd01e Mon Sep 17 00:00:00 2001
-> From: Ramesh Gupta G <grgupta@ti.com>
-> Date: Fri, 15 Jun 2012 16:39:21 +0530
-> Subject: [PATCH v2 2/4] ARM: add flush_mem api for ARMv6
-> 
-> Added flush_mem cache maintenance api for ARMv6.
-> The implementation is based on dma_flush_range.
+Hi, Arnaldo
 
-And what about all the other users of the define_cache_functions macro?
+Please pull libtraceevent fixes and improvements from my tree.
+All patches in the tree got acked or signed-off by Steven and
+contains proper Link tags you mentioned.
 
-This series is incomplete, and therefore entirely unsuitable for
-upstreaming.
+As this is my first pull request, I'm a bit afraid that I might
+mess something up in the middle. Please do double-check. :)
+
+Thanks,
+Namhyung
+
+
+The following changes since commit a78e5b82e99d8d284afc012ef015ef3332153aaf:
+
+  perf hists browser: Implement printing snapshots to files (2012-06-07 19:31:28 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git tags/libtraceevent-core-for-acme
+
+for you to fetch changes up to 16b470a46108d63c095fcfa5a3cf9252b41ae886:
+
+  scripts/tags.sh: Teach [ce]tags about libtraceeevent error codes (2012-06-19 15:45:56 +0900)
+
+----------------------------------------------------------------
+tools lib traceevent: Error handling changes
+
+* Remaining backport of libparseevent.
+* Make pevent_parse_event returns custom error code.
+* Introduce pevent_strerror for error report.
+
+----------------------------------------------------------------
+Namhyung Kim (15):
+      tools lib traceevent: Fix printk_cmp()
+      tools lib traceevent: Introduce extend_token()
+      tools lib traceevent: Handle strdup failure cases
+      tools lib traceevent: Handle realloc() failure path
+      tools lib traceevent: Pass string type argument to args
+      tools lib traceevent: Do not call add_event() again if allocation failed
+      tools lib traceevent: Fix some comments
+      tools lib traceevent: Check result of malloc() during reading token
+      tools lib traceevent: Check return value of arg_to_str()
+      tools lib traceevent: Cleanup realloc use
+      tools lib traceevent: Replace malloc_or_die to plain calloc in alloc_event()
+      tools lib traceevent: Do not link broken field arg for an old ftrace event
+      tools lib traceevent: Introduce pevent_errno
+      tools lib traceevent: Introduce pevent_strerror
+      scripts/tags.sh: Teach [ce]tags about libtraceeevent error codes
+
+Peter Huewe (1):
+      tools lib traceevent: Add missing break in make_bprint_args
+
+Steven Rostedt (4):
+      tools lib traceevent: Let filtering numbers by string use function names
+      tools lib traceevent: Add support for "%.*s" in bprintk events
+      tools lib traceevent: Add support to show migrate disable counter
+      tools lib traceevent: Fix %pM print format arg handling
+
+Wolfgang Mauerer (1):
+      tools lib traceevent: Fix trace_printk for long integers
+
+ scripts/tags.sh                     |    6 +-
+ tools/lib/traceevent/event-parse.c  |  385 ++++++++++++++++++++++++-----------
+ tools/lib/traceevent/event-parse.h  |   34 +++-
+ tools/lib/traceevent/parse-filter.c |   86 +++++---
+ 4 files changed, 360 insertions(+), 151 deletions(-)
