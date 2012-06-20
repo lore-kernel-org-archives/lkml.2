@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2FTCy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 22:54:56 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:53002 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2FTCyz (ORCPT
+	id S1754861Ab2FTCzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 22:55:49 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:34095 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401Ab2FTCzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 22:54:55 -0400
-Message-ID: <4FE13B76.6020703@linux.vnet.ibm.com>
-Date: Wed, 20 Jun 2012 10:54:46 +0800
+	Tue, 19 Jun 2012 22:55:48 -0400
+Message-ID: <4FE13BAD.4030406@linux.vnet.ibm.com>
+Date: Wed, 20 Jun 2012 10:55:41 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
 To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 02/10] zcache: fix refcount leak
-References: <4FE0392E.3090300@linux.vnet.ibm.com> <4FE03949.4080308@linux.vnet.ibm.com> <4FE08C9A.3010701@linux.vnet.ibm.com> <c10bcaf9-aa56-4d6a-bc2c-310096b4198b@default> <4FE0DBDD.2090005@linux.vnet.ibm.com>
-In-Reply-To: <4FE0DBDD.2090005@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 03/10] zcache: fix a compile warning
+References: <4FE0392E.3090300@linux.vnet.ibm.com> <4FE03961.5050001@linux.vnet.ibm.com> <4FE08D1A.5060400@linux.vnet.ibm.com>
+In-Reply-To: <4FE08D1A.5060400@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12062002-8256-0000-0000-000002FB44A0
+Content-Transfer-Encoding: 8bit
+x-cbid: 12062002-2674-0000-0000-000004F4F296
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 04:06 AM, Seth Jennings wrote:
+On 06/19/2012 10:30 PM, Seth Jennings wrote:
 
-> On 06/19/2012 02:49 PM, Dan Magenheimer wrote:
+> On 06/19/2012 03:33 AM, Xiao Guangrong wrote:
 > 
->> My preference would be to fix it the opposite way, by
->> checking and ignoring zcache_host in zcache_put_pool.
->> The ref-counting is to ensure that a client isn't
->> accidentally destroyed while in use (for multiple-client
->> users such as ramster and kvm) and since zcache_host is a static
->> struct, it should never be deleted so need not be ref-counted.
+>> fix:
+>>
+>> drivers/staging/zcache/zcache-main.c: In function ‘zcache_comp_op’:
+>> drivers/staging/zcache/zcache-main.c:112:2: warning: ‘ret’ may be used uninitial
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  drivers/staging/zcache/zcache-main.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+>> index 32fe0ba..74a3ac8 100644
+>> --- a/drivers/staging/zcache/zcache-main.c
+>> +++ b/drivers/staging/zcache/zcache-main.c
+>> @@ -93,7 +93,7 @@ static inline int zcache_comp_op(enum comp_op op,
+>>  				u8 *dst, unsigned int *dlen)
+>>  {
+>>  	struct crypto_comp *tfm;
+>> -	int ret;
+>> +	int ret = -1;
+>>
+>>  	BUG_ON(!zcache_comp_pcpu_tfms);
+>>  	tfm = *per_cpu_ptr(zcache_comp_pcpu_tfms, get_cpu());
 > 
 > 
-> If we do that, we'll need to comment it.  If we don't, it won't be
-> obvious why we are refcounting every zcache client except one.  It'll
-> look like a bug.
+> What about adding a default case in the switch like this?
+> 
+> default:
+> 	ret = -EINVAL;
+> 
+> That way we don't assign ret twice.
 
 
-Okay, i will fix it like Dan's way and comment it.
+Okay, will do it in the next version. Thanks for your review, Seth!
 
