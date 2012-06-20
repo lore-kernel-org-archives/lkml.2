@@ -1,104 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2FTB4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 21:56:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49601 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2FTB4U (ORCPT
+	id S1754350Ab2FTCCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 22:02:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55265 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401Ab2FTCCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 21:56:20 -0400
-From: "NickCheng" <nick.cheng@areca.com.tw>
-To: "'James Bottomley'" <James.Bottomley@HansenPartnership.com>
-Cc: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1340121415.3004.57.camel@dabdike.int.hansenpartnership.com>
-Subject: RE: [Fwd: [patch] [SCSI] arcmsr: fix misuse of | instead of &]
-Date: Wed, 20 Jun 2012 09:53:33 +0800
-Message-ID: <C52A779A1ABF49BA825804EB77570C22@arecaaebe11fae>
+	Tue, 19 Jun 2012 22:02:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac1ONCr7kh2bxkRMQCS2L+D1se/SwwAUOZAQAACWcSA=
-In-Reply-To: 
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+In-Reply-To: <4FE0AE7B.4040502@gmail.com>
+References: <CACVXFVO-Wm1Qwporby1M=+yPz81AWHpZRBZSbr5tgT32b6sSEA@mail.gmail.com>
+	<CANrkHUYd8Ww6De4MiZ8_oPfcnhvtsZXOySLRiWSBU4QUQ6beHw@mail.gmail.com>
+	<CACVXFVP16UmHe-GGydrSMgGHwnkSvYhnY339=zr=BfCehvS8Kw@mail.gmail.com>
+	<CANrkHUaxJGcv2bdUWTCB_oKct-iFCKCdb7OQPTUjS4MuKeCS2w@mail.gmail.com>
+	<4FE0AE7B.4040502@gmail.com>
+Date: Wed, 20 Jun 2012 10:02:35 +0800
+Message-ID: <CACVXFVPgfVaEQGCaCOxLTKov3RcBe8AxSR12GFNMBBN5CTbgaw@mail.gmail.com>
+Subject: Re: MMC: commit dba3c29 ruins mmc card data on beagle-xm revB
+From: Ming Lei <ming.lei@canonical.com>
+To: Paolo Pisati <p.pisati@gmail.com>
+Cc: "T Krishnamoorthy, Balaji" <balajitk@ti.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Venkatraman S <svenkatr@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nick Cheng< nick.cheng@areca.com.tw >
------Original Message-----
-From: NickCheng [mailto:nick.cheng@areca.com.tw] 
-Sent: Wednesday, June 20, 2012 9:38 AM
-To: 'James Bottomley'
-Cc: 'linux-scsi@vger.kernel.org'; 'linux-kernel@vger.kernel.org'
-Subject: RE: [Fwd: [patch] [SCSI] arcmsr: fix misuse of | instead of &]
+On Wed, Jun 20, 2012 at 12:53 AM, Paolo Pisati <p.pisati@gmail.com> wrote:
+> On 06/13/2012 05:28 PM, T Krishnamoorthy, Balaji wrote:
+>> Couldn't reproduce the issue with BeagleXM rev C, Might be a combination
+>> of rev and SD card. How often do you see mis-match in file content?
+>
+> i just want to say that i'm affected by this too, and i can reproduce it
+> 100%.
 
-Hi James,
-Sorry for be late response.
-I am OK with it.
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com] 
-Sent: Tuesday, June 19, 2012 11:57 PM
-To: Nick Cheng
-Subject: [Fwd: [patch] [SCSI] arcmsr: fix misuse of | instead of &]
+So it is not only me affected by the commit.
 
-Is this OK with you?
+Considered it is a serious problem(just several kernel boots may
+destroy the rootfs on my board) and no any progress obtained since
+report, I will send a patch to revert the commit to avoid more victims.
 
-James
 
--------- Forwarded Message --------
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: James E.J. Bottomley <JBottomley@parallels.com>
-Cc: David Howells <dhowells@redhat.com>, Nick Cheng
-<nick.cheng@areca.com.tw>, , kernel-janitors@vger.kernel.org
-Subject: [patch] [SCSI] arcmsr: fix misuse of | instead of &
-Date: Sat, 9 Jun 2012 12:10:19 +0300
-
-ARCMSR_ARC1880_DiagWrite_ENABLE is 0x00000080 so (x | 0x00000080) is
-never zero.  The intent here was to test that loop until
-ARCMSR_ARC1880_DiagWrite_ENABLE was turned on, but because the test was
-wrong, we would do five loops regardless of whether it succeed or not.
-
-Also I simplified the condition a little by removing the unused
-assignement.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-Static checker stuff.  I do not own this hardware.
-
-diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c
-b/drivers/scsi/arcmsr/arcmsr_hba.c
-index cbde1dc..def24a1 100644
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -2821,7 +2821,7 @@ static void arcmsr_hardware_reset(struct
-AdapterControlBlock *acb)
- 	int i, count = 0;
- 	struct MessageUnit_A __iomem *pmuA = acb->pmuA;
- 	struct MessageUnit_C __iomem *pmuC = acb->pmuC;
--	u32 temp = 0;
-+
- 	/* backup pci config data */
- 	printk(KERN_NOTICE "arcmsr%d: executing hw bus reset .....\n",
-acb->host->host_no);
- 	for (i = 0; i < 64; i++) {
-@@ -2839,7 +2839,7 @@ static void arcmsr_hardware_reset(struct
-AdapterControlBlock *acb)
- 			writel(0x2, &pmuC->write_sequence);
- 			writel(0x7, &pmuC->write_sequence);
- 			writel(0xD, &pmuC->write_sequence);
--		} while ((((temp = readl(&pmuC->host_diagnostic)) |
-ARCMSR_ARC1880_DiagWrite_ENABLE) == 0) && (count < 5));
-+		} while (((readl(&pmuC->host_diagnostic) &
-ARCMSR_ARC1880_DiagWrite_ENABLE) == 0) && (count < 5));
- 		writel(ARCMSR_ARC1880_RESET_ADAPTER,
-&pmuC->host_diagnostic);
- 	} else {
- 		pci_write_config_byte(acb->pdev, 0x84, 0x20);
+Thanks,
 --
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+Ming Lei
