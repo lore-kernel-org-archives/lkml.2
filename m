@@ -1,241 +1,753 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab2FTMow (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:44:52 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:43439 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab2FTMou convert rfc822-to-8bit (ORCPT
+	id S1753532Ab2FTMuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:50:22 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:51607 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab2FTMuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:44:50 -0400
+	Wed, 20 Jun 2012 08:50:21 -0400
+Date: Wed, 20 Jun 2012 05:49:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: Jiri Pirko <jpirko@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [net-next:master 257/266]
+ drivers/net/team/team_mode_loadbalance.c:99:30: sparse: incompatible types
+ in comparison expression (different address spaces)
+Message-ID: <20120620124913.GF2432@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120620042743.GA7640@localhost>
+ <20120620063607.GA1491@minipsycho>
+ <20120620065055.GA5872@localhost>
 MIME-Version: 1.0
-In-Reply-To: <4FE18187.3050103@kernel.org>
-References: <4FE169B1.7020600@kernel.org>
-	<4FE16E80.9000306@gmail.com>
-	<4FE18187.3050103@kernel.org>
-Date: Wed, 20 Jun 2012 20:44:48 +0800
-Message-ID: <CAJd=RBC2PdP0ggZ=RvXwXbToFmzRdpxYKWvkX_8qr7-Zw+DB1Q@mail.gmail.com>
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-From: Hillf Danton <dhillf@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120620065055.GA5872@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062012-1780-0000-0000-000006A13A2A
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000282; HX=3.00000190; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00149689; UDB=6.00034039; UTC=2012-06-20
+ 12:50:09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 3:53 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On 06/20/2012 03:32 PM, KOSAKI Motohiro wrote:
->
->> (6/20/12 2:12 AM), Minchan Kim wrote:
->>>
->>> Hi Aaditya,
->>>
->>> I want to discuss this problem on another thread.
->>>
->>> On 06/19/2012 10:18 PM, Aaditya Kumar wrote:
->>>> On Mon, Jun 18, 2012 at 6:13 AM, Minchan Kim <minchan@kernel.org> wrote:
->>>>> On 06/17/2012 02:48 AM, Aaditya Kumar wrote:
->>>>>
->>>>>> On Fri, Jun 15, 2012 at 12:57 PM, Minchan Kim <minchan@kernel.org> wrote:
->>>>>>
->>>>>>>>
->>>>>>>> pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
->>>>>>>> if node has multiple zones. Hm ok, I realized my descriptions was
->>>>>>>> slightly misleading. priority 0 is not needed. bakance_pddat() calls
->>>>>>>> pgdat_balanced()
->>>>>>>> every priority. Most easy case is, movable zone has a lot of free pages and
->>>>>>>> normal zone has no reclaimable page.
->>>>>>>>
->>>>>>>> btw, current pgdat_balanced() logic seems not correct. kswapd should
->>>>>>>> sleep only if every zones have much free pages than high water mark
->>>>>>>> _and_ 25% of present pages in node are free.
->>>>>>>>
->>>>>>>
->>>>>>>
->>>>>>> Sorry. I can't understand your point.
->>>>>>> Current kswapd doesn't sleep if relevant zones don't have free pages above high watermark.
->>>>>>> It seems I am missing your point.
->>>>>>> Please anybody correct me.
->>>>>>
->>>>>> Since currently direct reclaim is given up based on
->>>>>> zone->all_unreclaimable flag,
->>>>>> so for e.g in one of the scenarios:
->>>>>>
->>>>>> Lets say system has one node with two zones (NORMAL and MOVABLE) and we
->>>>>> hot-remove the all the pages of the MOVABLE zone.
->>>>>>
->>>>>> While migrating pages during memory hot-unplugging, the allocation function
->>>>>> (for new page to which the page in MOVABLE zone would be moved)  can end up
->>>>>> looping in direct reclaim path for ever.
->>>>>>
->>>>>> This is so because when most of the pages in the MOVABLE zone have
->>>>>> been migrated,
->>>>>> the zone now contains lots of free memory (basically above low watermark)
->>>>>> BUT all are in MIGRATE_ISOLATE list of the buddy list.
->>>>>>
->>>>>> So kswapd() would not balance this zone as free pages are above low watermark
->>>>>> (but all are in isolate list). So zone->all_unreclaimable flag would
->>>>>> never be set for this zone
->>>>>> and allocation function would end up looping forever. (assuming the
->>>>>> zone NORMAL is
->>>>>> left with no reclaimable memory)
->>>>>>
->>>>>
->>>>>
->>>>> Thanks a lot, Aaditya! Scenario you mentioned makes perfect.
->>>>> But I don't see it's a problem of kswapd.
->>>>
->>>> Hi Kim,
->>>
->>> I like called Minchan rather than Kim
->>> Never mind. :)
->>>
->>>>
->>>> Yes I agree it is not a problem of kswapd.
->>>
->>> Yeb.
->>>
->>>>
->>>>> a5d76b54 made new migration type 'MIGRATE_ISOLATE' which is very irony type because there are many free pages in free list
->>>>> but we can't allocate it. :(
->>>>> It doesn't reflect right NR_FREE_PAGES while many places in the kernel use NR_FREE_PAGES to trigger some operation.
->>>>> Kswapd is just one of them confused.
->>>>> As right fix of this problem, we should fix hot plug code, IMHO which can fix CMA, too.
->>>>>
->>>>> This patch could make inconsistency between NR_FREE_PAGES and SumOf[free_area[order].nr_free]
->>>>
->>>>
->>>> I assume that by the inconsistency you mention above, you mean
->>>> temporary inconsistency.
->>>>
->>>> Sorry, but IMHO as for memory hot plug the main issue with this patch
->>>> is that the inconsistency you mentioned above would NOT be a temporary
->>>> inconsistency.
->>>>
->>>> Every time say 'x' number of page frames are off lined, they will
->>>> introduce a difference of 'x' pages between
->>>> NR_FREE_PAGES and SumOf[free_area[order].nr_free].
->>>> (So for e.g. if we do a frequent offline/online it will make
->>>> NR_FREE_PAGES  negative)
->>>>
->>>> This is so because, unset_migratetype_isolate() is called from
->>>> offlining  code (to set the migrate type of off lined pages again back
->>>> to MIGRATE_MOVABLE)
->>>> after the pages have been off lined and removed from the buddy list.
->>>> Since the pages for which unset_migratetype_isolate() is called are
->>>> not buddy pages so move_freepages_block() does not move any page, and
->>>> thus introducing a permanent inconsistency.
->>>
->>> Good point. Negative NR_FREE_PAGES is caused by double counting by my patch and __offline_isolated_pages.
->>> I think at first MIGRATE_ISOLATE type freed page shouldn't account as free page.
->>>
->>>>
->>>>> and it could make __zone_watermark_ok confuse so we might need to fix move_freepages_block itself to reflect
->>>>> free_area[order].nr_free exactly.
->>>>>
->>>>> Any thought?
->>>>
->>>> As for fixing move_freepages_block(), At least for memory hot plug,
->>>> the pages stay in MIGRATE_ISOLATE list only for duration
->>>> offline_pages() function,
->>>> I mean only temporarily. Since fixing move_freepages_block() for will
->>>> introduce some overhead, So I am not very sure whether that overhead
->>>> is justified
->>>> for a temporary condition. What do you think?
->>>
->>> Yes. I don't like hurt fast path, either.
->>> How about this? (Passed just compile test :(  )
->>> The patch's goal is to NOT increase nr_free and NR_FREE_PAGES about freed page into MIGRATE_ISOLATED.
->>>
->>> This patch hurts high order page free path but I think it's not critical because higher order allocation
->>> is rare than order-0 allocation and we already have done same thing on free_hot_cold_page on order-0 free path
->>> which is more hot.
->>
->> Can't we change zone_water_mark_ok_safe() instead of page allocator? memory hotplug is really rare event.
->
->
-> +1
->
-> Firstly, I want to make zone_page_state(z, NR_FREE_PAGES) itself more accurately because it is used by
-> several places. As I looked over places, I can't find critical places except kswapd forever sleep case.
-> So it's a nice idea!
->
-> In that case, we need zone->lock whenever zone_watermark_ok_safe is called.
->
-Ifdefinery could be utilized for builds with CMA disabled, first.
+On Wed, Jun 20, 2012 at 02:50:55PM +0800, Fengguang Wu wrote:
+> [CC Paul, the RCU maintainer]
+> 
+> On Wed, Jun 20, 2012 at 08:36:07AM +0200, Jiri Pirko wrote:
+> > Wed, Jun 20, 2012 at 06:27:43AM CEST, wfg@linux.intel.com wrote:
+> > >Hi Jiri,
+> > >
+> > >There are new sparse warnings show up in
+> > >
+> > >tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
+> > >head:   677a3d60fb3153f786a0d28fcf0287670e7bd3c2
+> > >commit: ab8250d70063f77929fc404c02390a1f64d66416 [257/266] team: lb: introduce infrastructure for userspace driven tx loadbalancing
+> > >
+> > >All sparse warnings:
+> > >
+> > >drivers/net/team/team_mode_loadbalance.c:99:30: sparse: incompatible types in comparison expression (different address spaces)
+> > >
+> > >drivers/net/team/team_mode_loadbalance.c:99:
+> > >    96			struct lb_port_mapping *pm;
+> > >    97	
+> > >    98			pm = &lb_priv->ex->tx_hash_to_port_mapping[i];
+> > >  > 99			if (pm->port == port) {
+> > 
+> > This looks like your checker does not like
+> > (struct team_port __rcu *) == (struct team_port *)
+> > But I wonder why (or how should I fix that)
 
-> Most of cases, it's unnecessary and it might hurt alloc/free performance when memory pressure is high.
-> But if memory pressure is high, it may be already meaningless alloc/free performance.
-> So it does make sense, IMHO.
->
-> Please raise your hands if anyone has a concern about this.
->
-> barrios@bbox:~/linux-next$ git diff
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index d2a515d..82cc0a2 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1748,16 +1748,38 @@ bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
->                                        zone_page_state(z, NR_FREE_PAGES));
->  }
->
-> -bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
-> +bool zone_watermark_ok_safe(struct zone *z, int alloc_order, unsigned long mark,
->                      int classzone_idx, int alloc_flags)
->  {
-> +       struct free_area *area;
-> +       struct list_head *curr;
-> +       int order;
-> +       unsigned long flags;
->        long free_pages = zone_page_state(z, NR_FREE_PAGES);
->
->        if (z->percpu_drift_mark && free_pages < z->percpu_drift_mark)
->                free_pages = zone_page_state_snapshot(z, NR_FREE_PAGES);
->
-> -       return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
-> -                                                               free_pages);
-> +       /*
-> +        * Memory hotplug/CMA can isolate freed page into MIGRATE_ISOLATE
-> +        * so that buddy can't allocate it although they are in free list.
-> +        */
-> +       spin_lock_irqsave(&z->lock, flags);
-> +       for (order = 0; order < MAX_ORDER; order++) {
-> +               int count = 0;
-> +               area = &(z->free_area[order]);
-> +               if (unlikely(!list_empty(&area->free_list[MIGRATE_ISOLATE]))) {
-> +                       list_for_each(curr, &area->free_list[MIGRATE_ISOLATE])
-> +                               count++;
-> +                       free_pages -= (count << order);
-> +               }
-> +       }
-> +       if (free_pages < 0)
-> +               free_pages = 0;
-> +       spin_unlock_irqrestore(&z->lock, flags);
-> +
-> +       return __zone_watermark_ok(z, alloc_order, mark,
-> +                               classzone_idx, alloc_flags, free_pages);
->  }
->
-Then isolated pages could be scanned in another direction?
+Because you said that it was an RCU-protected pointer, but then did
+not use an RCU primitive to access it.  In this case, where you are
+just using the value but not dereferencing it, you can use
+rcu_access_pointer().
 
-	spin_lock_irqsave(&z->lock, flags);
-	for (order = MAX_ORDER - 1; order >= 0; order--) {
-		struct free_area *area = &z->free_area[order];
-		long count = 0;
-		struct list_head *curr;
+							Thanx, Paul
 
-		list_for_each(curr, &area->free_list[MIGRATE_ISOLATE])
-			count++;
+> > Thanks!
+> > 
+> > Jirka
+> > 
+> > >   100				rcu_assign_pointer(pm->port, NULL);
+> > >   101				team_option_inst_set_change(pm->opt_inst_info);
+> > >   102				changed = true;
+> > >
+> > >---
+> > >0-DAY kernel build testing backend         Open Source Technology Centre
+> > >Fengguang Wu <wfg@linux.intel.com>                     Intel Corporation
+> > 
+> > >>From ab8250d70063f77929fc404c02390a1f64d66416 Mon Sep 17 00:00:00 2001
+> > >From: Jiri Pirko <jpirko@redhat.com>
+> > >Date: Tue, 19 Jun 2012 05:54:17 +0000
+> > >Subject: [PATCH] team: lb: introduce infrastructure for userspace driven tx
+> > > loadbalancing
+> > >
+> > >Signed-off-by: Jiri Pirko <jpirko@redhat.com>
+> > >Signed-off-by: David S. Miller <davem@davemloft.net>
+> > >---
+> > > drivers/net/team/team_mode_loadbalance.c |  517 +++++++++++++++++++++++++++++-
+> > > 1 file changed, 500 insertions(+), 17 deletions(-)
+> > >
+> > >diff --git a/drivers/net/team/team_mode_loadbalance.c b/drivers/net/team/team_mode_loadbalance.c
+> > >index a475b13..33e30ed 100644
+> > >--- a/drivers/net/team/team_mode_loadbalance.c
+> > >+++ b/drivers/net/team/team_mode_loadbalance.c
+> > >@@ -11,72 +11,241 @@
+> > > #include <linux/kernel.h>
+> > > #include <linux/types.h>
+> > > #include <linux/module.h>
+> > > #include <linux/init.h>
+> > > #include <linux/errno.h>
+> > > #include <linux/netdevice.h>
+> > > #include <linux/filter.h>
+> > > #include <linux/if_team.h>
+> > > 
+> > >+struct lb_priv;
+> > >+
+> > >+typedef struct team_port *lb_select_tx_port_func_t(struct team *,
+> > >+						   struct lb_priv *,
+> > >+						   struct sk_buff *,
+> > >+						   unsigned char);
+> > >+
+> > >+#define LB_TX_HASHTABLE_SIZE 256 /* hash is a char */
+> > >+
+> > >+struct lb_stats {
+> > >+	u64 tx_bytes;
+> > >+};
+> > >+
+> > >+struct lb_pcpu_stats {
+> > >+	struct lb_stats hash_stats[LB_TX_HASHTABLE_SIZE];
+> > >+	struct u64_stats_sync syncp;
+> > >+};
+> > >+
+> > >+struct lb_stats_info {
+> > >+	struct lb_stats stats;
+> > >+	struct lb_stats last_stats;
+> > >+	struct team_option_inst_info *opt_inst_info;
+> > >+};
+> > >+
+> > >+struct lb_port_mapping {
+> > >+	struct team_port __rcu *port;
+> > >+	struct team_option_inst_info *opt_inst_info;
+> > >+};
+> > >+
+> > >+struct lb_priv_ex {
+> > >+	struct team *team;
+> > >+	struct lb_port_mapping tx_hash_to_port_mapping[LB_TX_HASHTABLE_SIZE];
+> > >+	struct sock_fprog *orig_fprog;
+> > >+	struct {
+> > >+		unsigned int refresh_interval; /* in tenths of second */
+> > >+		struct delayed_work refresh_dw;
+> > >+		struct lb_stats_info info[LB_TX_HASHTABLE_SIZE];
+> > >+	} stats;
+> > >+};
+> > >+
+> > > struct lb_priv {
+> > > 	struct sk_filter __rcu *fp;
+> > >-	struct sock_fprog *orig_fprog;
+> > >+	lb_select_tx_port_func_t __rcu *select_tx_port_func;
+> > >+	struct lb_pcpu_stats __percpu *pcpu_stats;
+> > >+	struct lb_priv_ex *ex; /* priv extension */
+> > > };
+> > > 
+> > >-static struct lb_priv *lb_priv(struct team *team)
+> > >+static struct lb_priv *get_lb_priv(struct team *team)
+> > > {
+> > > 	return (struct lb_priv *) &team->mode_priv;
+> > > }
+> > > 
+> > >-static unsigned char lb_get_skb_hash(struct lb_priv *lb_priv,
+> > >-				     struct sk_buff *skb)
+> > >+struct lb_port_priv {
+> > >+	struct lb_stats __percpu *pcpu_stats;
+> > >+	struct lb_stats_info stats_info;
+> > >+};
+> > >+
+> > >+static struct lb_port_priv *get_lb_port_priv(struct team_port *port)
+> > >+{
+> > >+	return (struct lb_port_priv *) &port->mode_priv;
+> > >+}
+> > >+
+> > >+#define LB_HTPM_PORT_BY_HASH(lp_priv, hash) \
+> > >+	(lb_priv)->ex->tx_hash_to_port_mapping[hash].port
+> > >+
+> > >+#define LB_HTPM_OPT_INST_INFO_BY_HASH(lp_priv, hash) \
+> > >+	(lb_priv)->ex->tx_hash_to_port_mapping[hash].opt_inst_info
+> > >+
+> > >+static void lb_tx_hash_to_port_mapping_null_port(struct team *team,
+> > >+						 struct team_port *port)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	bool changed = false;
+> > >+	int i;
+> > >+
+> > >+	for (i = 0; i < LB_TX_HASHTABLE_SIZE; i++) {
+> > >+		struct lb_port_mapping *pm;
+> > >+
+> > >+		pm = &lb_priv->ex->tx_hash_to_port_mapping[i];
+> > >+		if (pm->port == port) {
+> > >+			rcu_assign_pointer(pm->port, NULL);
+> > >+			team_option_inst_set_change(pm->opt_inst_info);
+> > >+			changed = true;
+> > >+		}
+> > >+	}
+> > >+	if (changed)
+> > >+		team_options_change_check(team);
+> > >+}
+> > >+
+> > >+/* Basic tx selection based solely by hash */
+> > >+static struct team_port *lb_hash_select_tx_port(struct team *team,
+> > >+						struct lb_priv *lb_priv,
+> > >+						struct sk_buff *skb,
+> > >+						unsigned char hash)
+> > >+{
+> > >+	int port_index;
+> > >+
+> > >+	port_index = hash % team->en_port_count;
+> > >+	return team_get_port_by_index_rcu(team, port_index);
+> > >+}
+> > >+
+> > >+/* Hash to port mapping select tx port */
+> > >+static struct team_port *lb_htpm_select_tx_port(struct team *team,
+> > >+						struct lb_priv *lb_priv,
+> > >+						struct sk_buff *skb,
+> > >+						unsigned char hash)
+> > >+{
+> > >+	return rcu_dereference(LB_HTPM_PORT_BY_HASH(lb_priv, hash));
+> > >+}
+> > >+
+> > >+struct lb_select_tx_port {
+> > >+	char *name;
+> > >+	lb_select_tx_port_func_t *func;
+> > >+};
+> > >+
+> > >+static const struct lb_select_tx_port lb_select_tx_port_list[] = {
+> > >+	{
+> > >+		.name = "hash",
+> > >+		.func = lb_hash_select_tx_port,
+> > >+	},
+> > >+	{
+> > >+		.name = "hash_to_port_mapping",
+> > >+		.func = lb_htpm_select_tx_port,
+> > >+	},
+> > >+};
+> > >+#define LB_SELECT_TX_PORT_LIST_COUNT ARRAY_SIZE(lb_select_tx_port_list)
+> > >+
+> > >+static char *lb_select_tx_port_get_name(lb_select_tx_port_func_t *func)
+> > >+{
+> > >+	int i;
+> > >+
+> > >+	for (i = 0; i < LB_SELECT_TX_PORT_LIST_COUNT; i++) {
+> > >+		const struct lb_select_tx_port *item;
+> > >+
+> > >+		item = &lb_select_tx_port_list[i];
+> > >+		if (item->func == func)
+> > >+			return item->name;
+> > >+	}
+> > >+	return NULL;
+> > >+}
+> > >+
+> > >+static lb_select_tx_port_func_t *lb_select_tx_port_get_func(const char *name)
+> > >+{
+> > >+	int i;
+> > >+
+> > >+	for (i = 0; i < LB_SELECT_TX_PORT_LIST_COUNT; i++) {
+> > >+		const struct lb_select_tx_port *item;
+> > >+
+> > >+		item = &lb_select_tx_port_list[i];
+> > >+		if (!strcmp(item->name, name))
+> > >+			return item->func;
+> > >+	}
+> > >+	return NULL;
+> > >+}
+> > >+
+> > >+static unsigned int lb_get_skb_hash(struct lb_priv *lb_priv,
+> > >+				    struct sk_buff *skb)
+> > > {
+> > > 	struct sk_filter *fp;
+> > > 	uint32_t lhash;
+> > > 	unsigned char *c;
+> > > 
+> > > 	fp = rcu_dereference(lb_priv->fp);
+> > > 	if (unlikely(!fp))
+> > > 		return 0;
+> > > 	lhash = SK_RUN_FILTER(fp, skb);
+> > > 	c = (char *) &lhash;
+> > > 	return c[0] ^ c[1] ^ c[2] ^ c[3];
+> > > }
+> > > 
+> > >+static void lb_update_tx_stats(unsigned int tx_bytes, struct lb_priv *lb_priv,
+> > >+			       struct lb_port_priv *lb_port_priv,
+> > >+			       unsigned char hash)
+> > >+{
+> > >+	struct lb_pcpu_stats *pcpu_stats;
+> > >+	struct lb_stats *port_stats;
+> > >+	struct lb_stats *hash_stats;
+> > >+
+> > >+	pcpu_stats = this_cpu_ptr(lb_priv->pcpu_stats);
+> > >+	port_stats = this_cpu_ptr(lb_port_priv->pcpu_stats);
+> > >+	hash_stats = &pcpu_stats->hash_stats[hash];
+> > >+	u64_stats_update_begin(&pcpu_stats->syncp);
+> > >+	port_stats->tx_bytes += tx_bytes;
+> > >+	hash_stats->tx_bytes += tx_bytes;
+> > >+	u64_stats_update_end(&pcpu_stats->syncp);
+> > >+}
+> > >+
+> > > static bool lb_transmit(struct team *team, struct sk_buff *skb)
+> > > {
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	lb_select_tx_port_func_t *select_tx_port_func;
+> > > 	struct team_port *port;
+> > >-	int port_index;
+> > >+	unsigned char hash;
+> > >+	unsigned int tx_bytes = skb->len;
+> > > 
+> > >-	port_index = lb_get_skb_hash(lb_priv(team), skb) % team->en_port_count;
+> > >-	port = team_get_port_by_index_rcu(team, port_index);
+> > >+	hash = lb_get_skb_hash(lb_priv, skb);
+> > >+	select_tx_port_func = rcu_dereference(lb_priv->select_tx_port_func);
+> > >+	port = select_tx_port_func(team, lb_priv, skb, hash);
+> > > 	if (unlikely(!port))
+> > > 		goto drop;
+> > > 	skb->dev = port->dev;
+> > > 	if (dev_queue_xmit(skb))
+> > > 		return false;
+> > >+	lb_update_tx_stats(tx_bytes, lb_priv, get_lb_port_priv(port), hash);
+> > > 	return true;
+> > > 
+> > > drop:
+> > > 	dev_kfree_skb_any(skb);
+> > > 	return false;
+> > > }
+> > > 
+> > > static int lb_bpf_func_get(struct team *team, struct team_gsetter_ctx *ctx)
+> > > {
+> > >-	if (!lb_priv(team)->orig_fprog) {
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+
+> > >+	if (!lb_priv->ex->orig_fprog) {
+> > > 		ctx->data.bin_val.len = 0;
+> > > 		ctx->data.bin_val.ptr = NULL;
+> > > 		return 0;
+> > > 	}
+> > >-	ctx->data.bin_val.len = lb_priv(team)->orig_fprog->len *
+> > >+	ctx->data.bin_val.len = lb_priv->ex->orig_fprog->len *
+> > > 				sizeof(struct sock_filter);
+> > >-	ctx->data.bin_val.ptr = lb_priv(team)->orig_fprog->filter;
+> > >+	ctx->data.bin_val.ptr = lb_priv->ex->orig_fprog->filter;
+> > > 	return 0;
+> > > }
+> > > 
+> > > static int __fprog_create(struct sock_fprog **pfprog, u32 data_len,
+> > > 			  const void *data)
+> > > {
+> > > 	struct sock_fprog *fprog;
+> > > 	struct sock_filter *filter = (struct sock_filter *) data;
+> > > 
+> > >@@ -97,76 +266,390 @@ static int __fprog_create(struct sock_fprog **pfprog, u32 data_len,
+> > > 
+> > > static void __fprog_destroy(struct sock_fprog *fprog)
+> > > {
+> > > 	kfree(fprog->filter);
+> > > 	kfree(fprog);
+> > > }
+> > > 
+> > > static int lb_bpf_func_set(struct team *team, struct team_gsetter_ctx *ctx)
+> > > {
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > > 	struct sk_filter *fp = NULL;
+> > > 	struct sock_fprog *fprog = NULL;
+> > > 	int err;
+> > > 
+> > > 	if (ctx->data.bin_val.len) {
+> > > 		err = __fprog_create(&fprog, ctx->data.bin_val.len,
+> > > 				     ctx->data.bin_val.ptr);
+> > > 		if (err)
+> > > 			return err;
+> > > 		err = sk_unattached_filter_create(&fp, fprog);
+> > > 		if (err) {
+> > > 			__fprog_destroy(fprog);
+> > > 			return err;
+> > > 		}
+> > > 	}
+> > > 
+> > >-	if (lb_priv(team)->orig_fprog) {
+> > >+	if (lb_priv->ex->orig_fprog) {
+> > > 		/* Clear old filter data */
+> > >-		__fprog_destroy(lb_priv(team)->orig_fprog);
+> > >-		sk_unattached_filter_destroy(lb_priv(team)->fp);
+> > >+		__fprog_destroy(lb_priv->ex->orig_fprog);
+> > >+		sk_unattached_filter_destroy(lb_priv->fp);
+> > > 	}
+> > > 
+> > >-	rcu_assign_pointer(lb_priv(team)->fp, fp);
+> > >-	lb_priv(team)->orig_fprog = fprog;
+> > >+	rcu_assign_pointer(lb_priv->fp, fp);
+> > >+	lb_priv->ex->orig_fprog = fprog;
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_tx_method_get(struct team *team, struct team_gsetter_ctx *ctx)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	char *name;
+> > >+
+> > >+	name = lb_select_tx_port_get_name(lb_priv->select_tx_port_func);
+> > >+	BUG_ON(!name);
+> > >+	ctx->data.str_val = name;
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_tx_method_set(struct team *team, struct team_gsetter_ctx *ctx)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	lb_select_tx_port_func_t *func;
+> > >+
+> > >+	func = lb_select_tx_port_get_func(ctx->data.str_val);
+> > >+	if (!func)
+> > >+		return -EINVAL;
+> > >+	rcu_assign_pointer(lb_priv->select_tx_port_func, func);
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_tx_hash_to_port_mapping_init(struct team *team,
+> > >+					   struct team_option_inst_info *info)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	unsigned char hash = info->array_index;
+> > >+
+> > >+	LB_HTPM_OPT_INST_INFO_BY_HASH(lb_priv, hash) = info;
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_tx_hash_to_port_mapping_get(struct team *team,
+> > >+					  struct team_gsetter_ctx *ctx)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	struct team_port *port;
+> > >+	unsigned char hash = ctx->info->array_index;
+> > >+
+> > >+	port = LB_HTPM_PORT_BY_HASH(lb_priv, hash);
+> > >+	ctx->data.u32_val = port ? port->dev->ifindex : 0;
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_tx_hash_to_port_mapping_set(struct team *team,
+> > >+					  struct team_gsetter_ctx *ctx)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	struct team_port *port;
+> > >+	unsigned char hash = ctx->info->array_index;
+> > >+
+> > >+	list_for_each_entry(port, &team->port_list, list) {
+> > >+		if (ctx->data.u32_val == port->dev->ifindex) {
+> > >+			rcu_assign_pointer(LB_HTPM_PORT_BY_HASH(lb_priv, hash),
+> > >+					   port);
+> > >+			return 0;
+> > >+		}
+> > >+	}
+> > >+	return -ENODEV;
+> > >+}
+> > >+
+> > >+static int lb_hash_stats_init(struct team *team,
+> > >+			      struct team_option_inst_info *info)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	unsigned char hash = info->array_index;
+> > >+
+> > >+	lb_priv->ex->stats.info[hash].opt_inst_info = info;
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_hash_stats_get(struct team *team, struct team_gsetter_ctx *ctx)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	unsigned char hash = ctx->info->array_index;
+> > >+
+> > >+	ctx->data.bin_val.ptr = &lb_priv->ex->stats.info[hash].stats;
+> > >+	ctx->data.bin_val.len = sizeof(struct lb_stats);
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_port_stats_init(struct team *team,
+> > >+			      struct team_option_inst_info *info)
+> > >+{
+> > >+	struct team_port *port = info->port;
+> > >+	struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
+> > >+
+> > >+	lb_port_priv->stats_info.opt_inst_info = info;
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_port_stats_get(struct team *team, struct team_gsetter_ctx *ctx)
+> > >+{
+> > >+	struct team_port *port = ctx->info->port;
+> > >+	struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
+> > >+
+> > >+	ctx->data.bin_val.ptr = &lb_port_priv->stats_info.stats;
+> > >+	ctx->data.bin_val.len = sizeof(struct lb_stats);
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static void __lb_stats_info_refresh_prepare(struct lb_stats_info *s_info)
+> > >+{
+> > >+	memcpy(&s_info->last_stats, &s_info->stats, sizeof(struct lb_stats));
+> > >+	memset(&s_info->stats, 0, sizeof(struct lb_stats));
+> > >+}
+> > >+
+> > >+static bool __lb_stats_info_refresh_check(struct lb_stats_info *s_info,
+> > >+					  struct team *team)
+> > >+{
+> > >+	if (memcmp(&s_info->last_stats, &s_info->stats,
+> > >+	    sizeof(struct lb_stats))) {
+> > >+		team_option_inst_set_change(s_info->opt_inst_info);
+> > >+		return true;
+> > >+	}
+> > >+	return false;
+> > >+}
+> > >+
+> > >+static void __lb_one_cpu_stats_add(struct lb_stats *acc_stats,
+> > >+				   struct lb_stats *cpu_stats,
+> > >+				   struct u64_stats_sync *syncp)
+> > >+{
+> > >+	unsigned int start;
+> > >+	struct lb_stats tmp;
+> > >+
+> > >+	do {
+> > >+		start = u64_stats_fetch_begin_bh(syncp);
+> > >+		tmp.tx_bytes = cpu_stats->tx_bytes;
+> > >+	} while (u64_stats_fetch_retry_bh(syncp, start));
+> > >+	acc_stats->tx_bytes += tmp.tx_bytes;
+> > >+}
+> > >+
+> > >+static void lb_stats_refresh(struct work_struct *work)
+> > >+{
+> > >+	struct team *team;
+> > >+	struct lb_priv *lb_priv;
+> > >+	struct lb_priv_ex *lb_priv_ex;
+> > >+	struct lb_pcpu_stats *pcpu_stats;
+> > >+	struct lb_stats *stats;
+> > >+	struct lb_stats_info *s_info;
+> > >+	struct team_port *port;
+> > >+	bool changed = false;
+> > >+	int i;
+> > >+	int j;
+> > >+
+> > >+	lb_priv_ex = container_of(work, struct lb_priv_ex,
+> > >+				  stats.refresh_dw.work);
+> > >+
+> > >+	team = lb_priv_ex->team;
+> > >+	lb_priv = get_lb_priv(team);
+> > >+
+> > >+	if (!mutex_trylock(&team->lock)) {
+> > >+		schedule_delayed_work(&lb_priv_ex->stats.refresh_dw, 0);
+> > >+		return;
+> > >+	}
+> > >+
+> > >+	for (j = 0; j < LB_TX_HASHTABLE_SIZE; j++) {
+> > >+		s_info = &lb_priv->ex->stats.info[j];
+> > >+		__lb_stats_info_refresh_prepare(s_info);
+> > >+		for_each_possible_cpu(i) {
+> > >+			pcpu_stats = per_cpu_ptr(lb_priv->pcpu_stats, i);
+> > >+			stats = &pcpu_stats->hash_stats[j];
+> > >+			__lb_one_cpu_stats_add(&s_info->stats, stats,
+> > >+					       &pcpu_stats->syncp);
+> > >+		}
+> > >+		changed |= __lb_stats_info_refresh_check(s_info, team);
+> > >+	}
+> > >+
+> > >+	list_for_each_entry(port, &team->port_list, list) {
+> > >+		struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
+> > >+
+> > >+		s_info = &lb_port_priv->stats_info;
+> > >+		__lb_stats_info_refresh_prepare(s_info);
+> > >+		for_each_possible_cpu(i) {
+> > >+			pcpu_stats = per_cpu_ptr(lb_priv->pcpu_stats, i);
+> > >+			stats = per_cpu_ptr(lb_port_priv->pcpu_stats, i);
+> > >+			__lb_one_cpu_stats_add(&s_info->stats, stats,
+> > >+					       &pcpu_stats->syncp);
+> > >+		}
+> > >+		changed |= __lb_stats_info_refresh_check(s_info, team);
+> > >+	}
+> > >+
+> > >+	if (changed)
+> > >+		team_options_change_check(team);
+> > >+
+> > >+	schedule_delayed_work(&lb_priv_ex->stats.refresh_dw,
+> > >+			      (lb_priv_ex->stats.refresh_interval * HZ) / 10);
+> > >+
+> > >+	mutex_unlock(&team->lock);
+> > >+}
+> > >+
+> > >+static int lb_stats_refresh_interval_get(struct team *team,
+> > >+					 struct team_gsetter_ctx *ctx)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+
+> > >+	ctx->data.u32_val = lb_priv->ex->stats.refresh_interval;
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static int lb_stats_refresh_interval_set(struct team *team,
+> > >+					 struct team_gsetter_ctx *ctx)
+> > >+{
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	unsigned int interval;
+> > >+
+> > >+	interval = ctx->data.u32_val;
+> > >+	if (lb_priv->ex->stats.refresh_interval == interval)
+> > >+		return 0;
+> > >+	lb_priv->ex->stats.refresh_interval = interval;
+> > >+	if (interval)
+> > >+		schedule_delayed_work(&lb_priv->ex->stats.refresh_dw, 0);
+> > >+	else
+> > >+		cancel_delayed_work(&lb_priv->ex->stats.refresh_dw);
+> > > 	return 0;
+> > > }
+> > > 
+> > > static const struct team_option lb_options[] = {
+> > > 	{
+> > > 		.name = "bpf_hash_func",
+> > > 		.type = TEAM_OPTION_TYPE_BINARY,
+> > > 		.getter = lb_bpf_func_get,
+> > > 		.setter = lb_bpf_func_set,
+> > > 	},
+> > >+	{
+> > >+		.name = "lb_tx_method",
+> > >+		.type = TEAM_OPTION_TYPE_STRING,
+> > >+		.getter = lb_tx_method_get,
+> > >+		.setter = lb_tx_method_set,
+> > >+	},
+> > >+	{
+> > >+		.name = "lb_tx_hash_to_port_mapping",
+> > >+		.array_size = LB_TX_HASHTABLE_SIZE,
+> > >+		.type = TEAM_OPTION_TYPE_U32,
+> > >+		.init = lb_tx_hash_to_port_mapping_init,
+> > >+		.getter = lb_tx_hash_to_port_mapping_get,
+> > >+		.setter = lb_tx_hash_to_port_mapping_set,
+> > >+	},
+> > >+	{
+> > >+		.name = "lb_hash_stats",
+> > >+		.array_size = LB_TX_HASHTABLE_SIZE,
+> > >+		.type = TEAM_OPTION_TYPE_BINARY,
+> > >+		.init = lb_hash_stats_init,
+> > >+		.getter = lb_hash_stats_get,
+> > >+	},
+> > >+	{
+> > >+		.name = "lb_port_stats",
+> > >+		.per_port = true,
+> > >+		.type = TEAM_OPTION_TYPE_BINARY,
+> > >+		.init = lb_port_stats_init,
+> > >+		.getter = lb_port_stats_get,
+> > >+	},
+> > >+	{
+> > >+		.name = "lb_stats_refresh_interval",
+> > >+		.type = TEAM_OPTION_TYPE_U32,
+> > >+		.getter = lb_stats_refresh_interval_get,
+> > >+		.setter = lb_stats_refresh_interval_set,
+> > >+	},
+> > > };
+> > > 
+> > > static int lb_init(struct team *team)
+> > > {
+> > >-	return team_options_register(team, lb_options,
+> > >-				     ARRAY_SIZE(lb_options));
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+	lb_select_tx_port_func_t *func;
+> > >+	int err;
+> > >+
+> > >+	/* set default tx port selector */
+> > >+	func = lb_select_tx_port_get_func("hash");
+> > >+	BUG_ON(!func);
+> > >+	rcu_assign_pointer(lb_priv->select_tx_port_func, func);
+> > >+
+> > >+	lb_priv->ex = kzalloc(sizeof(*lb_priv->ex), GFP_KERNEL);
+> > >+	if (!lb_priv->ex)
+> > >+		return -ENOMEM;
+> > >+	lb_priv->ex->team = team;
+> > >+
+> > >+	lb_priv->pcpu_stats = alloc_percpu(struct lb_pcpu_stats);
+> > >+	if (!lb_priv->pcpu_stats) {
+> > >+		err = -ENOMEM;
+> > >+		goto err_alloc_pcpu_stats;
+> > >+	}
+> > >+
+> > >+	INIT_DELAYED_WORK(&lb_priv->ex->stats.refresh_dw, lb_stats_refresh);
+> > >+
+> > >+	err = team_options_register(team, lb_options, ARRAY_SIZE(lb_options));
+> > >+	if (err)
+> > >+		goto err_options_register;
+> > >+	return 0;
+> > >+
+> > >+err_options_register:
+> > >+	free_percpu(lb_priv->pcpu_stats);
+> > >+err_alloc_pcpu_stats:
+> > >+	kfree(lb_priv->ex);
+> > >+	return err;
+> > > }
+> > > 
+> > > static void lb_exit(struct team *team)
+> > > {
+> > >+	struct lb_priv *lb_priv = get_lb_priv(team);
+> > >+
+> > > 	team_options_unregister(team, lb_options,
+> > > 				ARRAY_SIZE(lb_options));
+> > >+	cancel_delayed_work_sync(&lb_priv->ex->stats.refresh_dw);
+> > >+	free_percpu(lb_priv->pcpu_stats);
+> > >+	kfree(lb_priv->ex);
+> > >+}
+> > >+
+> > >+static int lb_port_enter(struct team *team, struct team_port *port)
+> > >+{
+> > >+	struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
+> > >+
+> > >+	lb_port_priv->pcpu_stats = alloc_percpu(struct lb_stats);
+> > >+	if (!lb_port_priv->pcpu_stats)
+> > >+		return -ENOMEM;
+> > >+	return 0;
+> > >+}
+> > >+
+> > >+static void lb_port_leave(struct team *team, struct team_port *port)
+> > >+{
+> > >+	struct lb_port_priv *lb_port_priv = get_lb_port_priv(port);
+> > >+
+> > >+	free_percpu(lb_port_priv->pcpu_stats);
+> > >+}
+> > >+
+> > >+static void lb_port_disabled(struct team *team, struct team_port *port)
+> > >+{
+> > >+	lb_tx_hash_to_port_mapping_null_port(team, port);
+> > > }
+> > > 
+> > > static const struct team_mode_ops lb_mode_ops = {
+> > > 	.init			= lb_init,
+> > > 	.exit			= lb_exit,
+> > >+	.port_enter		= lb_port_enter,
+> > >+	.port_leave		= lb_port_leave,
+> > >+	.port_disabled		= lb_port_disabled,
+> > > 	.transmit		= lb_transmit,
+> > > };
+> > > 
+> > > static const struct team_mode lb_mode = {
+> > > 	.kind		= "loadbalance",
+> > > 	.owner		= THIS_MODULE,
+> > > 	.priv_size	= sizeof(struct lb_priv),
+> > >+	.port_priv_size	= sizeof(struct lb_port_priv),
+> > > 	.ops		= &lb_mode_ops,
+> > > };
+> > > 
+> > > static int __init lb_init_module(void)
+> > > {
+> > > 	return team_mode_register(&lb_mode);
+> > > }
+> > > 
+> > > static void __exit lb_cleanup_module(void)
+> > >-- 
+> > >1.7.10
+> > >
+> 
 
-		free_pages -= (count << order);
-		if (free_pages < 0) {
-			free_pages = 0;
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&z->lock, flags);
