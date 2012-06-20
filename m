@@ -1,155 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab2FTQOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:14:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45314 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757035Ab2FTQOl (ORCPT
+	id S1757137Ab2FTQV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:21:56 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58308 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756941Ab2FTQVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:14:41 -0400
-Message-ID: <4FE1F6ED.6060406@wwwdotorg.org>
-Date: Wed, 20 Jun 2012 10:14:37 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 20 Jun 2012 12:21:54 -0400
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, arnd@arndb.de, linus.walleij@linaro.org,
-        lrg@ti.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 3/3] ARM: dts: db8500: add node property "regulator-compatible"
- regulator node
-References: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com> <1340116099-17629-4-git-send-email-ldewangan@nvidia.com> <4FE0A546.1010707@linaro.org> <4FE0B79D.4090201@wwwdotorg.org> <4FE1772A.2010806@linaro.org>
-In-Reply-To: <4FE1772A.2010806@linaro.org>
-X-Enigmail-Version: 1.5pre
+In-Reply-To: <1340207670.21745.108.camel@twins>
+References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
+	<CABPqkBS9hRxKLsecVK+AgRue6oqTtAg4=0Dpd5Z2VwAUja50fw@mail.gmail.com>
+	<20120620092932.GH1478@erda.amd.com>
+	<1340185084.21745.81.camel@twins>
+	<20120620100031.GI1478@erda.amd.com>
+	<1340187373.21745.95.camel@twins>
+	<20120620122941.GH5046@erda.amd.com>
+	<1340207670.21745.108.camel@twins>
+Date: Wed, 20 Jun 2012 18:21:53 +0200
+Message-ID: <CABPqkBRTBSAY4_CoW4zGGPdSff8cqmJd7+bKbrfw8rN3gwHkhQ@mail.gmail.com>
+Subject: Re: [PATCH 00/10] perf, x86: Add northbridge counter support for AMD
+ family 15h
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 01:09 AM, Lee Jones wrote:
-> On 19/06/12 18:32, Stephen Warren wrote:
->> On 06/19/2012 10:13 AM, Lee Jones wrote:
->>> >  On 19/06/12 15:28, Laxman Dewangan wrote:
->>>> >>  Device's regulator matches their hardware counterparts with the
->>>> >>  property "regulator-compatible" of each child regulator node in
->>>> >>  place of the child node.
->>>> >>  Add the property "regulator-compatible" for each regulator with
->>>> >>  their name.
->>>> >>
->>>> >>  Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
->>>> >>  ---
->>>> >>  Changes from V1:
->>>> >>     - This is new change in V2.
->>>> >>
->>>> >>     arch/arm/boot/dts/db8500.dtsi |  128
->>>> >>  +++++++++++++++++++++++++++++++----------
->>>> >>     1 files changed, 97 insertions(+), 31 deletions(-)
->>>> >>
->>>> >>  diff --git a/arch/arm/boot/dts/db8500.dtsi
->>>> >>  b/arch/arm/boot/dts/db8500.dtsi
->>>> >>  index 4ad5160..9548f80 100644
->>>> >>  --- a/arch/arm/boot/dts/db8500.dtsi
->>>> >>  +++ b/arch/arm/boot/dts/db8500.dtsi
->>>> >>  @@ -203,107 +203,149 @@
->>>> >>
->>>> >>                 db8500-prcmu-regulators {
->>>> >>                     compatible =
->>>> "stericsson,db8500-prcmu-regulator";
->>>> >>  +                #address-cells =<1>;
->>>> >>  +                #size-cells =<0>;
->>> >
->>> >  Why are these and the reg properties required?
+On Wed, Jun 20, 2012 at 5:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-06-20 at 14:29 +0200, Robert Richter wrote:
+>> On 20.06.12 12:16:13, Peter Zijlstra wrote:
+>> > Sure it can be done, just not pretty. Combine that with all the other
+>> > special casing like patches 3 and 10 and one really starts to wonder if
+>> > its all worth it.
 >>
->> DT nodes should be named after the type of object they describe (e.g.
->> "regulator") rather than the name of the object they're describing (e.g.
->> "vape").
->>
->> Once you've made that change, you end up with many nodes with the same
->> name in the same parent, so you need to make their names unique. You do
->> this by adding a "unit address" to each of them - "@0", "@1", ... But,
->> in order to be "allowed" to use such a unit address, you need a reg
->> property that matches the unit address, and #address-cells/#size-cells
->> in the parent node.
-> 
-> I don't like it. By doing this you are preventing any regulator from
-> being registered by of_platform_populate().
+>> I actually started writing the code by implementing a different pmu.
+>> It turned out to be the wrong direction. The pmus would be almost
+>> identical, just some different config values and a bit nb related
+>> special code. But you can't really reuse the functions on a 2nd
+>> running pmu, there are hard wired functions in the x86 pmu code and
+>> x86_pmu ops do not fit for such a split. It would mean a complete
+>> rework of x86 perf code. Really, I tried that already. And all this
+>> effort just to implement nb counters? If someone is willing to help
+>> here this would be ok, but I guess I would have to do all this on my
+>> own. And to be fair, this effort was also not make for fixed counters,
+>> pebs, bts, etc. Maybe the uncore implementation is different here, but
+>> today is the first day the uncore patches are in tip.
+>
+> Yeah, the Intel uncore implements an entire new pmu. The code is a
+> little over the top because Intel went there and decided it was a good
+> thing to have numerous uncore pmus instead of 1, some in PCI space some
+> in MSR space.
+>
+> Still their programming is similar to the core ones -- just like for
+> AMD.
+>
+> Yeah, there's a little bit of 'duplicated' code, but that's unavoidable.
+>
+>> I also do not see the advantage of a separate pmu. Just to have a
+>> different msr base to avoid the use of counter masks and some
+>> optimized pmu ops? Masks are wide spread used in the kernel and on x86
+>> the bsf instruction takes not more than an increment. And switches in
+>> the code paths to special nb code are not more expensive than other
+>> switches for other special code.
+>
+> Well, as it stands this thing is almost certainly doing things wrong. An
+> uncore pmu wants to put all events for the same NB on the same cpu, not
+> on whatever cpu they are registered, otherwise event rotation doesn't
+> work right.
+>
+> It also wants to migrate events to another cpu if the designated cpu
+> gets unplugged but there's still active cpus on the NB.
+>
+> Furthermore, if the uncore does PMI, you want PMI steering, if it
+> doesn't do PMIs you want to poll the thing to avoid overflowing the
+> counter.
+>
+> /me rummages on the interwebs to find the BKDG for Fam15h..
+>
+> OK, it looks like it does do PMI and it broadcast interrupts to the
+> entire NB.. ok so that wants special magic too -- you might even want to
+> disallow sampling on the thing until someone has a good use-case for
+> that -- but you still need the PMI to deal with the counter overflow
+> stuff.
+>
+I do have a good use-case for the broadcast interrupt especially
+if the uncore is capable of counting some form of cycles. That
+interrupt can be used to provide a unique vantage point across
+all the CPUs. We could relative easily discover what each CPU
+is doing at any one time almost with very good synchronization.
+Of course, a lot of plumbing would be needed to gather the IPs
+from all the CPUS into the single sampling buffer or maybe one
+per CPU. If a CPU knows it is a possible target of uncore PMI,
+it should not discard the interrupt, it should process it.
 
-That isn't true.
-
-The binding for a regulator chip can choose to either use one of two
-schemes to identify which regulator the child nodes apply to:
-
-1) Use the regulator-compatible property, and the Linux driver would use
-of_regulator_match() to parse the DT.
-
-2) Use the compatible property, and the Linux driver would use
-of_platform_populate().
-
-Now, the binding does need to choose the identification scheme up-front,
-but simply so that there's a single way to write the binding for the
-device; nothing to do with the driver code to parse it.
-
-Note that the way the existing db8500.dtsi regulator binding is defined
-already has chosen option (1) above, since there's no compatible
-property within each regulator node.
-
-> Also, the nodes are already
-> placed under an identifying node "db8500-prcmu-regulators", so we know
-> they are regulators, making the regulator@x, the reg property and the
-> *-cells properties unnecessary cruft.
-
-What we "know" isn't the issue here; DT is defined such that node names
-are supposed to encode the class of device. That's a rule that was
-accidentally overlooked here, and we're hoping to correct that.
-
-> I'd prefer to have the second label removed and just to call the
-> regulators by their correct name. The property names become functionally
-> redundant after the previous patch has been applied in any case.
-> 
-> Something like this:
-> 
->>              db8500-prcmu-regulators {
->>                  compatible = "stericsson,db8500-prcmu-regulator";
->>
->>                  // DB8500_REGULATOR_VAPE
->> -                db8500_vape_reg: db8500_vape {
->> +                db8500_vape {
->> +                    regulator-compatible = "db8500_vape";
->>                      regulator-name = "db8500-vape";
->>                      regulator-always-on;
->>                  };
-
-The node name isn't a label. However, you can in fact remove the label
-if you want. Instead of referencing the label in the client node:
-
-	foo = <&db8500_vape_reg ...>;
-
-you can reference the path to the node:
-
-	foo = <&{/soc-u9500/prcmu@80157000/db8500-prcmu-regulators\
-/db8500_vape}>;
-
-However, that's quite unwieldy, hence why labels are typically used to
-provide a more succinct name. Also, when the nodes are named according
-the to DT rules, the last name component is something like
-"regulator@0", so isn't very readable.
-
-> It's also a shame we can't do anything about the regulator-name, or
-> regulator-compatible property naming conventions. They are almost always
-> going to be either extremely similar or even the same. Seems like a bit
-> of a wasted property to me at this point.
-
-The two properties name different things:
-
-regulator-compatible names the regulator HW unit within the chip. This
-should be invariant across all boards that use this chip; it's something
-defined internally to the chip and/or the chip's
-documentation/specification. An example might be "LDO1".
-
-regulator-name defines what the regulator is used for in a particular
-scenario. This may be the signal name on a particular board's schematic
-or similar function name. Examples might be "SDMMC3_VDDIO" or "SD slot
-power".
+The other thing I don't know about the AMD uncore is whether
+or not it does deliver the PMI in case the core(s) are halted.
+Robert, any info on this in particular?
