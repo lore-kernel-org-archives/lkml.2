@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab2FTJpn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:45:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55461 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146Ab2FTJpk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:45:40 -0400
-Message-ID: <1340185528.21745.86.camel@twins>
-Subject: RE: [PATCH] sched: Folding nohz load accounting more accurate
-From: Peter Zijlstra <peterz@infradead.org>
-To: Doug Smythies <dsmythies@telus.net>
-Cc: "'Yong Zhang'" <yong.zhang0@gmail.com>,
-        "'Charles Wang'" <muming.wq@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Ingo Molnar'" <mingo@redhat.com>, "'Tao Ma'" <tm@tao.ma>,
-        =?UTF-8?Q?=27=E5=90=AB=E9=BB=9B=27?= <handai.szj@taobao.com>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>
-Date: Wed, 20 Jun 2012 11:45:28 +0200
-In-Reply-To: <000001cd4e33$496f6c30$dc4e4490$@net>
-References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
-		 <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>
-		 <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com>
-		 <1340035417.15222.95.camel@twins> <20120619060824.GA31684@zhy>
-	 <1340097532.21745.19.camel@twins> <000001cd4e33$496f6c30$dc4e4490$@net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756165Ab2FTJpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:45:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58633 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755845Ab2FTJfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:35:33 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 10/17] netvm: Propagate page->pfmemalloc to skb
+Date: Wed, 20 Jun 2012 10:35:13 +0100
+Message-Id: <1340184920-22288-11-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340184920-22288-1-git-send-email-mgorman@suse.de>
+References: <1340184920-22288-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-19 at 08:50 -0700, Doug Smythies wrote:
-> My automated 63 hour test has been terminated, the code changed
-> and the test re-started. 
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If the packet is fragmented, it is possible that pages
+will be allocated from the PFMEMALLOC reserve without propagating
+this information to the skb. This patch propagates page->pfmemalloc
+from pages allocated for fragments to the skb.
 
-There's another boo-boo in there:
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David S. Miller <davem@davemloft.net>
+---
+ include/linux/skbuff.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 61c951f..c421ee0 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1250,6 +1250,17 @@ static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
+ {
+ 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+ 
++	/*
++	 * Propagate page->pfmemalloc to the skb if we can. The problem is
++	 * that not all callers have unique ownership of the page. If
++	 * pfmemalloc is set, we check the mapping as a mapping implies
++	 * page->index is set (index and pfmemalloc share space).
++	 * If it's a valid mapping, we cannot use page->pfmemalloc but we
++	 * do not lose pfmemalloc information as the pages would not be
++	 * allocated using __GFP_MEMALLOC.
++	 */
++	if (page->pfmemalloc && !page->mapping)
++		skb->pfmemalloc	= true;
+ 	frag->page.p		  = page;
+ 	frag->page_offset	  = off;
+ 	skb_frag_size_set(frag, size);
+-- 
+1.7.9.2
 
-> @@ -2369,11 +2493,35 @@ void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
->   */
->  void calc_global_load(unsigned long ticks)
->  {
-> -       long active;
-> +       long active, delta;
->  
->         if (time_before(jiffies, calc_load_update + 10))
->                 return;
->  
-> +       /*
-> +        * Fold the 'old' idle-delta to include all NO_HZ cpus.
-> +        *
-> +        *      cpu0    cpu1    cpu2    ..
-> +        *
-> +        * >--- [sample A]
-> +        *
-> +        *                      -> NOHZ
-> +        *              -> NOHZ
-> +        *      ->NOHZ
-> +        *
-> +        * >--- [sample B]
-> +        *
-> +        * >--- [sample C]
-> +        *
-> +        *      NOHZ-> (here)
-> +        *
-> +        * Since all CPUs went into NOHZ state, all 'missed' samples (B, C)
-> +        * should include the folded idle-delta.
-> +        */
-> +       delta += calc_load_fold_idle();
-
-This gives a gcc warning about use without init, which is true, that should be:
-
-	delta = calc_load_fold_idle();
-
-> +       if (delta)
-> +               atomic_long_add(delta, &calc_load_tasks);
