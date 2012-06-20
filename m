@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab2FTSVL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:21:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757216Ab2FTSVG (ORCPT
+	id S1757445Ab2FTSVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:21:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757366Ab2FTSVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:21:06 -0400
-Message-Id: <20120620173021.431989125@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:21:12 -0400
+Message-Id: <20120620173021.595992372@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:25 -0700
+Date: Wed, 20 Jun 2012 10:30:27 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 05/61] drm/radeon: add some additional 6xx/7xx/EG register init
+        alan@lxorguk.ukuu.org.uk, Dave Airlie <airlied@redhat.com>
+Subject: [ 07/61] drm/udl: only bind to the video devices on the hub.
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,108 +24,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit b866d1334ba2d544bc575d75357dea6bdcdc7f46 upstream.
+commit e5a867a51d9b009f90d5dca6a320608e4e8a37ec upstream.
 
-- SMX_SAR_CTL0 needs to be programmed correctly to prevent
-problems with memory exports in certain cases.
-- VC_ENHANCE needs to be initialized on 6xx/7xx.
+This is ported from udlfb.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=832188
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c  |    3 +++
- drivers/gpu/drm/radeon/evergreend.h |    1 +
- drivers/gpu/drm/radeon/r600.c       |    1 +
- drivers/gpu/drm/radeon/r600d.h      |    1 +
- drivers/gpu/drm/radeon/rv770.c      |    5 ++++-
- drivers/gpu/drm/radeon/rv770d.h     |    3 +++
- 6 files changed, 13 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/udl/udl_drv.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2210,6 +2210,9 @@ static void evergreen_gpu_init(struct ra
- 	smx_dc_ctl0 |= NUMBER_OF_SETS(rdev->config.evergreen.sx_num_of_sets);
- 	WREG32(SMX_DC_CTL0, smx_dc_ctl0);
+--- a/drivers/gpu/drm/udl/udl_drv.c
++++ b/drivers/gpu/drm/udl/udl_drv.c
+@@ -13,8 +13,21 @@
  
-+	if (rdev->family <= CHIP_SUMO2)
-+		WREG32(SMX_SAR_CTL0, 0x00010000);
-+
- 	WREG32(SX_EXPORT_BUFFER_SIZES, (COLOR_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_size / 4) - 1) |
- 					POSITION_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_pos_size / 4) - 1) |
- 					SMX_BUFFER_SIZE((rdev->config.evergreen.sx_max_export_smx_size / 4) - 1)));
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -273,6 +273,7 @@
- #define	SCRATCH_UMSK					0x8540
- #define	SCRATCH_ADDR					0x8544
+ static struct drm_driver driver;
  
-+#define	SMX_SAR_CTL0					0xA008
- #define	SMX_DC_CTL0					0xA020
- #define		USE_HASH_FUNCTION				(1 << 0)
- #define		NUMBER_OF_SETS(x)				((x) << 1)
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -1906,6 +1906,7 @@ void r600_gpu_init(struct radeon_device
- 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
- 			       NUM_CLIP_SEQ(3)));
- 	WREG32(PA_SC_ENHANCE, FORCE_EOV_MAX_CLK_CNT(4095));
-+	WREG32(VC_ENHANCE, 0);
- }
- 
- 
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -483,6 +483,7 @@
- #define		TC_L2_SIZE(x)					((x)<<5)
- #define		L2_DISABLE_LATE_HIT				(1<<9)
- 
-+#define	VC_ENHANCE					0x9714
- 
- #define	VGT_CACHE_INVALIDATION				0x88C4
- #define		CACHE_INVALIDATION(x)				((x)<<0)
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -782,6 +782,9 @@ static void rv770_gpu_init(struct radeon
- 				       ACK_FLUSH_CTL(3) |
- 				       SYNC_FLUSH_CTL));
- 
-+	if (rdev->family != CHIP_RV770)
-+		WREG32(SMX_SAR_CTL0, 0x00003f3f);
-+
- 	db_debug3 = RREG32(DB_DEBUG3);
- 	db_debug3 &= ~DB_CLK_OFF_DELAY(0x1f);
- 	switch (rdev->family) {
-@@ -960,7 +963,7 @@ static void rv770_gpu_init(struct radeon
- 
- 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
- 					  NUM_CLIP_SEQ(3)));
--
-+	WREG32(VC_ENHANCE, 0);
- }
- 
- void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
---- a/drivers/gpu/drm/radeon/rv770d.h
-+++ b/drivers/gpu/drm/radeon/rv770d.h
-@@ -208,6 +208,7 @@
- #define	SCRATCH_UMSK					0x8540
- #define	SCRATCH_ADDR					0x8544
- 
-+#define	SMX_SAR_CTL0					0xA008
- #define	SMX_DC_CTL0					0xA020
- #define		USE_HASH_FUNCTION				(1 << 0)
- #define		CACHE_DEPTH(x)					((x) << 1)
-@@ -307,6 +308,8 @@
- #define	TCP_CNTL					0x9610
- #define	TCP_CHAN_STEER					0x9614
- 
-+#define	VC_ENHANCE					0x9714
-+
- #define	VGT_CACHE_INVALIDATION				0x88C4
- #define		CACHE_INVALIDATION(x)				((x)<<0)
- #define			VC_ONLY						0
++/*
++ * There are many DisplayLink-based graphics products, all with unique PIDs.
++ * So we match on DisplayLink's VID + Vendor-Defined Interface Class (0xff)
++ * We also require a match on SubClass (0x00) and Protocol (0x00),
++ * which is compatible with all known USB 2.0 era graphics chips and firmware,
++ * but allows DisplayLink to increment those for any future incompatible chips
++ */
+ static struct usb_device_id id_table[] = {
+-	{.idVendor = 0x17e9, .match_flags = USB_DEVICE_ID_MATCH_VENDOR,},
++	{.idVendor = 0x17e9, .bInterfaceClass = 0xff,
++	 .bInterfaceSubClass = 0x00,
++	 .bInterfaceProtocol = 0x00,
++	 .match_flags = USB_DEVICE_ID_MATCH_VENDOR |
++			USB_DEVICE_ID_MATCH_INT_CLASS |
++			USB_DEVICE_ID_MATCH_INT_SUBCLASS |
++			USB_DEVICE_ID_MATCH_INT_PROTOCOL,},
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
