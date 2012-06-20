@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab2FTGxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:53:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47263 "EHLO mga11.intel.com"
+	id S1753386Ab2FTGzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:55:33 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:55540 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab2FTGxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:53:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="182552078"
-Message-ID: <1340175285.1682.26.camel@rui.sh.intel.com>
-Subject: Re: thermal_zone trip_point_0_temp =?ISO-8859-1?Q?200=B0C?=
-From: Zhang Rui <rui.zhang@intel.com>
-To: Mark <markieb.lists.20090330@gmail.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org
-Date: Wed, 20 Jun 2012 14:54:45 +0800
-In-Reply-To: <4FDB49EC.6030806@gmail.com>
-References: <CABAQT1ChtWVauLisaRk_KpN3JSWsvUXKKWDTAW6yuW-G32vmMw@mail.gmail.com>
-	   <4FC9D021.1030207@ladisch.de>
-	 <1338778611.1472.265.camel@rui.sh.intel.com>  <4FCCC92B.3080809@gmail.com>
-	 <1338947674.1492.33.camel@rui.sh.intel.com> <4FDB49EC.6030806@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 8bit
+	id S1751282Ab2FTGzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 02:55:32 -0400
+Date: Wed, 20 Jun 2012 08:55:15 +0200
+From: Michael Leun <lkml20120218@newton.leun.net>
+To: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Cc: Mohammed Shafi <shafi.wireless@gmail.com>,
+        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
+Message-ID: <20120620085515.421571e1@xenia.leun.net>
+In-Reply-To: <20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
+References: <20120619085137.337838c0@xenia.leun.net>
+	<CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
+	<20120620003315.2eaf6460@xenia.leun.net>
+	<20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 五, 2012-06-15 at 10:42 -0400, Mark wrote:
-> Hi Rui,
-> 
-> thanks for writing; apologies for the delay I've been coping with some bizarre
-> communications from AMD who won't even state thermal specifications for the cpu,
-> while 'passing the buck' to Acer who are slippery customers — various methods of
-> avoiding giving technical support worthy of the name — too :-)
-> 
-> On 06/05/2012 09:54 PM, Zhang Rui wrote:
-> > you can use module parameter thermal.crt= to override the critical trip
-> > point.
-> > But I'm not sure if kernel should set a default upper limit or not.
-> > Maybe we need another entry for this laptop in thermal_dmi_table.
-> thanks, sounds worth a try; at least to prevent a fire :-D
-> >
-> >> there are 2-3 symbols in the ACPI that may be relevant, FANG, FANW, possibly
-> >> FANU; I attach the relevant files
-> > FANG/FANW/FANU can be used for fan control?
-> > I do not know what these mean as they are not ACPI pre-defined control
-> > method.
-> > But if all the Aspires machines follow the same rule, then maybe we need
-> > a kernel Acer platform driver that handles this.
-> I'm simply conjecturing for now, that the letters 'FAN' may be relevant, you're
-> the specialist though :-)
+On Wed, 20 Jun 2012 11:43:05 +0530
+Rajkumar Manoharan <rmanohar@qca.qualcomm.com> wrote:
 
-No, I only cares about the ACPI pre-defined control methods, which means
-their behaviors have been defined in ACPI spec.
-Actually, platforms can write whatever AML code, use whatever names, for
-their own purpose. so I know nothing more than you on this.
+> On Wed, Jun 20, 2012 at 12:33:15AM +0200, Michael Leun wrote:
+> > On Tue, 19 Jun 2012 15:11:38 +0530
+> > Mohammed Shafi <shafi.wireless@gmail.com> wrote:
+> > 
+> > > Hi,
+> > > 
+> > > On Tue, Jun 19, 2012 at 12:21 PM, Michael Leun
+> > > <lkml20120218@newton.leun.net> wrote:
+> > > > Hi,
+> > > >
+> > > > ne-wlan1@elektra:/home/ml4> ping 192.168.2.1
+> > > > PING 192.168.2.1 (192.168.2.1) 56(84) bytes of data.
+> > > > 64 bytes from 192.168.2.1: icmp_seq=1 ttl=64 time=2010 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=2 ttl=64 time=1011 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=3 ttl=64 time=11.5 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=4 ttl=64 time=1.12 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=5 ttl=64 time=1002 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=6 ttl=64 time=3.83 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=7 ttl=64 time=1003 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=8 ttl=64 time=4.10 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=9 ttl=64 time=1003 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=10 ttl=64 time=3.95 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=11 ttl=64 time=1003 ms
+> > > > 64 bytes from 192.168.2.1: icmp_seq=12 ttl=64 time=3.78 ms
+> > > >
+> > > >
+> > > > Please note the additional delay of ~1000ms every 2nd packet.
+> > > > This is Kernel 3.4.3, have seen it in 3.4.2 also. Does NOT
+> > > > happen in 3.3.1.
+> > > >
+> > > > Is this Issue already known? If so, I can save the work
+> > > > bisecting...
+> > > 
+> > > looks like some one reported this bug in kernel bugzilla. would be
+> > > saving us lot of time
+> > > if you can bisect it!
+> > > 
+> > 
+> > 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 is the first bad commit
+> > commit 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45
+> > Author: Johannes Berg <johannes.berg@intel.com>
+> > Date:   Thu Mar 8 15:02:06 2012 +0100
+> > 
+> >     mac80211: remove spurious BSSID change flag
+> > 
+> >     The BSSID has been set a lot earlier already and
+> >     didn't change again in ieee80211_set_associated().
+> > 
+> >     Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+> >     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> > 
+> > :040000 040000 67a19a39e4b04c16921a3758ddd2362e02e81dd3
+> > 4a7cbd327b59345b83fa613f893770fbf44220bb M      net
+> > 
+> > Reverting 0775f9f90cdaf40fbf69b3192b3dddb2b3436f45 from 3.4.3 fixes
+> > the issue.
+> > 
+> Michael,
+> 
+> Thanks for the analysis. Can you please try with the attached patch
+> without reverting mac80211 change?
 
-> > thanks,
-> > rui
-> AMD suggested a channel that would seem designed more for people whose Email
-> address is '@acer.com' / '@kernel.org', possibly '@intel.com' than people such as
-> me '@gmail.com' :-D
-> 
-> http://support.amd.com/us/contacts/Pages/EmbeddedTechnicalSupport.aspx
-> 
-> My question would be, what *is* the thermal range for the Phenom II N970 Mobile
-> CPU, reference HMN970DCR42GM ?
-> conspicuously absent from http://products.amd.com/en-us/NotebookCPUDetail.aspx?id=733
-> 
-Sorry, I do not know. I can not help you on this. :(
+[forgotten attachment was added in later mail]
 
-thanks,
-rui
+Yes, that also solves the issue. I guess, you will look into getting
+that into mainline and stable asap?
 
-> Aside from the question of whether they've got some technical contact at Acer who
-> could verify how — presumably some hardware registers that are somehow accessible
-> to the OS — windows seems to manage to keep the CPU relatively cool / fan
-> management in the Aspire 5552-7260
-> 
-> Best regards
-> 
-> Mark
-> 
+-- 
+MfG,
 
+Michael Leun
 
