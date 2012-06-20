@@ -1,112 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758296Ab2FTXIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:08:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46130 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757832Ab2FTXIn (ORCPT
+	id S1758391Ab2FTXJC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:09:02 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39145 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758298Ab2FTXJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:08:43 -0400
-Date: Wed, 20 Jun 2012 16:08:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/3] staging/rtl8192u: fix coding style problems
-Message-ID: <20120620230839.GA17883@kroah.com>
-References: <1340132742-18849-1-git-send-email-devendra.aaru@gmail.com>
+	Wed, 20 Jun 2012 19:09:00 -0400
+X-Sasl-enc: 8+LoXEiEjAYeofbQwDFqw52XWmKmsyf/x2hHo/wW+OQE 1340233739
+Date: Wed, 20 Jun 2012 20:08:56 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@amd64.org>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+Message-ID: <20120620230856.GA4223@khazad-dum.debian.net>
+References: <1340121811-4477-1-git-send-email-bp@amd64.org>
+ <1340121811-4477-3-git-send-email-bp@amd64.org>
+ <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
+ <20120619232857.GH5996@aftab.osrc.amd.com>
+ <1340182778.21745.75.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340132742-18849-1-git-send-email-devendra.aaru@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1340182778.21745.75.camel@twins>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 12:35:42AM +0530, Devendra Naga wrote:
-> fixed some of the coding style problems reported by checkpatch
+On Wed, 20 Jun 2012, Peter Zijlstra wrote:
+> On Wed, 2012-06-20 at 01:28 +0200, Borislav Petkov wrote:
+> > which makes me wonder whether we still need that OLD INTERFACE.
+> > Henrique, any thoughts here? 
 > 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> ---
->  drivers/staging/rtl8192u/r8180_93cx6.c |   36 +++++++++++++++++---------------
->  1 file changed, 19 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8192u/r8180_93cx6.c b/drivers/staging/rtl8192u/r8180_93cx6.c
-> index 3c515b7..19f5270 100644
-> --- a/drivers/staging/rtl8192u/r8180_93cx6.c
-> +++ b/drivers/staging/rtl8192u/r8180_93cx6.c
-> @@ -22,13 +22,16 @@
->  
->  void eprom_cs(struct net_device *dev, short bit)
->  {
-> -	if(bit)
-> +	if (bit) {
-> +		/* enable EPROM */
->  		write_nic_byte_E(dev, EPROM_CMD,
-> -			       (1<<EPROM_CS_SHIFT) | \
-> -			       read_nic_byte_E(dev, EPROM_CMD)); //enable EPROM
-> -	else
-> -		write_nic_byte_E(dev, EPROM_CMD, read_nic_byte_E(dev, EPROM_CMD)\
-> -			       &~(1<<EPROM_CS_SHIFT)); //disable EPROM
-> +				(1<<EPROM_CS_SHIFT) |
-> +				read_nic_byte_E(dev, EPROM_CMD));
-> +	} else {
-> +		/* disable EPROM */
-> +		write_nic_byte_E(dev, EPROM_CMD, read_nic_byte_E(dev, EPROM_CMD)
-> +			       & ~(1<<EPROM_CS_SHIFT));
-> +	}
->  
->  	force_pci_posting(dev);
->  	udelay(EPROM_DELAY);
-> @@ -38,24 +41,24 @@ void eprom_cs(struct net_device *dev, short bit)
->  void eprom_ck_cycle(struct net_device *dev)
->  {
->  	write_nic_byte_E(dev, EPROM_CMD,
-> -		       (1<<EPROM_CK_SHIFT) | read_nic_byte_E(dev,EPROM_CMD));
-> +		       (1<<EPROM_CK_SHIFT) | read_nic_byte_E(dev, EPROM_CMD));
->  	force_pci_posting(dev);
->  	udelay(EPROM_DELAY);
->  	write_nic_byte_E(dev, EPROM_CMD,
-> -		       read_nic_byte_E(dev, EPROM_CMD) &~ (1<<EPROM_CK_SHIFT));
-> +		       read_nic_byte_E(dev, EPROM_CMD) & ~(1<<EPROM_CK_SHIFT));
->  	force_pci_posting(dev);
->  	udelay(EPROM_DELAY);
->  }
->  
->  
-> -void eprom_w(struct net_device *dev,short bit)
-> +void eprom_w(struct net_device *dev, short bit)
->  {
-> -	if(bit)
-> -		write_nic_byte_E(dev, EPROM_CMD, (1<<EPROM_W_SHIFT) | \
-> -			       read_nic_byte_E(dev,EPROM_CMD));
-> +	if (bit)
-> +		write_nic_byte_E(dev, EPROM_CMD, (1<<EPROM_W_SHIFT) |
-> +			       read_nic_byte_E(dev, EPROM_CMD));
->  	else
-> -		write_nic_byte_E(dev, EPROM_CMD, read_nic_byte_E(dev,EPROM_CMD)\
-> -			       &~(1<<EPROM_W_SHIFT));
-> +		write_nic_byte_E(dev, EPROM_CMD, read_nic_byte_E(dev, EPROM_CMD)
-> +			       & ~(1<<EPROM_W_SHIFT));
->  
->  	force_pci_posting(dev);
->  	udelay(EPROM_DELAY);
-> @@ -66,11 +69,10 @@ short eprom_r(struct net_device *dev)
->  {
->  	short bit;
->  
-> -	bit=(read_nic_byte_E(dev, EPROM_CMD) & (1<<EPROM_R_SHIFT) );
-> +	bit = (read_nic_byte_E(dev, EPROM_CMD) & (1<<EPROM_R_SHIFT));
->  	udelay(EPROM_DELAY);
->  
-> -	if(bit) return 1;
-> -	return 0;
-> +	return !!bit;
+> Yes I need it, I've no f'ing clue where to put the ucode image so that
+> the whole firmware mess can find it :-)
 
-Oh come on, really?  !! is more "clear" here?
+iucode_tool -K <name of intel microcode .dat/.bin file(s)> will do it
+for you :p
 
-No, please be painfully obvious, that's the only way to write kernel
-code.  Not like this.
-
-greg k-h
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
