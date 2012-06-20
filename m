@@ -1,111 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2FTOtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:49:08 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:51696 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515Ab2FTOtG (ORCPT
+	id S1756704Ab2FTOtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:49:15 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51790 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683Ab2FTOtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:49:06 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19ANnd2OwS15cvh5yJ1OLZh
-Date: Wed, 20 Jun 2012 07:48:59 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b-cousson@ti.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        swarren@wwwdotorg.org, robherring2@gmail.com
-Subject: Re: [PATCH RESEND] ARM: omap: Fix dts files w/ status property:
- "disable" -> "disabled"
-Message-ID: <20120620144859.GS12766@atomide.com>
-References: <1340051110-23746-1-git-send-email-stigge@antcom.de>
+	Wed, 20 Jun 2012 10:49:09 -0400
+Date: Wed, 20 Jun 2012 16:49:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Arun Sharma <asharma@fb.com>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, David Ahern <dsahern@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Shan Wei <davidshan@tencent.com>,
+        Stephane Eranian <eranian@google.com>, Sunjin Yang <fan4326@gmail.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/20] perf/core improvements
+Message-ID: <20120620144902.GB2007@gmail.com>
+References: <1340128221-17348-1-git-send-email-acme@infradead.org>
+ <20120620120141.GB1925@gmail.com>
+ <1340201223.1520.5.camel@leonhard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1340051110-23746-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1340201223.1520.5.camel@leonhard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roland Stigge <stigge@antcom.de> [120618 13:29]:
-> This patches fixes some status = "disable" strings to "disabled", the correct
-> way of disabling nodes in the devicetree.
-> 
-> Just the OMAP part here, the rest goes via other patches and trees.
 
-Thanks applying into fixes.
+* Namhyung Kim <namhyung@gmail.com> wrote:
 
-Tony
- 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> Acked-by: Benoit Cousson <b-cousson@ti.com>
+> 2012-06-20 (수), 14:01 +0200, Ingo Molnar:
+> > One Makefile bug I noticed is that lib/tracevents does not clean 
+> > out these files:
+> > 
+> >  .event-parse.d
+> >  .parse-filter.d
+> >  .parse-utils.d
+> >  .trace-seq.d
+> > 
+> > and this can break the build when the libgcc package upgraded:
+> > 
+> >  comet:~/tip/tools/perf> make -j
+> >      SUBDIR ../lib/traceevent/
+> >  make[1]: *** No rule to make target `/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include/stddef.h', 
+> >   needed by `event-parse.o'.  Stop.
+> >  make: *** [../lib/traceevent//libtraceevent.a] Error 2
 > 
-> ---
-> Applies to v3.5-rc3
-> 
->  arch/arm/boot/dts/omap3-beagle.dts |    4 ++--
->  arch/arm/boot/dts/omap4-panda.dts  |    6 +++---
->  arch/arm/boot/dts/omap4-sdp.dts    |    4 ++--
->  3 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> --- linux-2.6.orig/arch/arm/boot/dts/omap3-beagle.dts
-> +++ linux-2.6/arch/arm/boot/dts/omap3-beagle.dts
-> @@ -61,9 +61,9 @@
->  };
->  
->  &mmc2 {
-> -	status = "disable";
-> +	status = "disabled";
->  };
->  
->  &mmc3 {
-> -	status = "disable";
-> +	status = "disabled";
->  };
-> --- linux-2.6.orig/arch/arm/boot/dts/omap4-panda.dts
-> +++ linux-2.6/arch/arm/boot/dts/omap4-panda.dts
-> @@ -74,15 +74,15 @@
->  };
->  
->  &mmc2 {
-> -	status = "disable";
-> +	status = "disabled";
->  };
->  
->  &mmc3 {
-> -	status = "disable";
-> +	status = "disabled";
->  };
->  
->  &mmc4 {
-> -	status = "disable";
-> +	status = "disabled";
->  };
->  
->  &mmc5 {
-> --- linux-2.6.orig/arch/arm/boot/dts/omap4-sdp.dts
-> +++ linux-2.6/arch/arm/boot/dts/omap4-sdp.dts
-> @@ -147,11 +147,11 @@
->  };
->  
->  &mmc3 {
-> -	status = "disable";
-> +	status = "disabled";
->  };
->  
->  &mmc4 {
-> -	status = "disable";
-> +	status = "disabled";
->  };
->  
->  &mmc5 {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> So how should we deal with it? Just plain 'make clean' should 
+> delete *.d files or add something like 'make distclean' to do 
+> that?
+
+Well, 'make' should notice that they are stale or should 
+regenerate them all the time.
+
+Thanks,
+
+	Ingo
