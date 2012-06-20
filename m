@@ -1,100 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab2FTQ5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:57:06 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:38742 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab2FTQ5B (ORCPT
+	id S1757328Ab2FTQ5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:57:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38292 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757054Ab2FTQ5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:57:01 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org, Sam Creasey <sammy@sammy.net>
-Cc: Sarah Nadi <snadi@uwaterloo.ca>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] m68k/sun3: Remove unselectable code in prom_init()
-Date: Wed, 20 Jun 2012 18:56:55 +0200
-Message-Id: <1340211415-24489-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 20 Jun 2012 12:57:39 -0400
+Date: Wed, 20 Jun 2012 09:57:20 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-ml7zbenjmri9bghmrea0jm0d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Don't access evsel->name directly
+Git-Commit-ID: 22c8b84320ecf9ecbb6587d46a259b828e9ece5e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:57:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was copied from SPARC, but isn't relevant for the supported Sun-3
-models.
+Commit-ID:  22c8b84320ecf9ecbb6587d46a259b828e9ece5e
+Gitweb:     http://git.kernel.org/tip/22c8b84320ecf9ecbb6587d46a259b828e9ece5e
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 12 Jun 2012 13:55:13 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 19 Jun 2012 13:06:21 -0300
 
-[Geert] Also remove the related extern declarations, and update the
-	comment about prom_init().
+perf tools: Don't access evsel->name directly
 
-Reported-by: Sarah Nadi <snadi@uwaterloo.ca>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+One needs to use perf_evsel__name() so that if needed the name gets
+synthesized and stored in evsel->name, from where perf_evsel__name()
+will serve from them on.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-ml7zbenjmri9bghmrea0jm0d@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/m68k/sun3/prom/init.c |   48 +------------------------------------------
- 1 files changed, 2 insertions(+), 46 deletions(-)
+ tools/perf/builtin-sched.c          |    2 +-
+ tools/perf/util/parse-events-test.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/m68k/sun3/prom/init.c b/arch/m68k/sun3/prom/init.c
-index d8e6349..eeba067 100644
---- a/arch/m68k/sun3/prom/init.c
-+++ b/arch/m68k/sun3/prom/init.c
-@@ -22,57 +22,13 @@ int prom_root_node;
- struct linux_nodeops *prom_nodeops;
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index b125e07..9fe77b1 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1601,7 +1601,7 @@ static int perf_sched__process_tracepoint_sample(struct perf_tool *tool,
  
- /* You must call prom_init() before you attempt to use any of the
-- * routines in the prom library.  It returns 0 on success, 1 on
-- * failure.  It gets passed the pointer to the PROM vector.
-+ * routines in the prom library.
-+ * It gets passed the pointer to the PROM vector.
-  */
+ 	if (thread == NULL) {
+ 		pr_debug("problem processing %s event, skipping it.\n",
+-			 evsel->name);
++			 perf_evsel__name(evsel));
+ 		return -1;
+ 	}
  
--extern void prom_meminit(void);
--extern void prom_ranges_init(void);
--
- void __init prom_init(struct linux_romvec *rp)
- {
- 	romvec = rp;
--#ifndef CONFIG_SUN3
--	switch(romvec->pv_romvers) {
--	case 0:
--		prom_vers = PROM_V0;
--		break;
--	case 2:
--		prom_vers = PROM_V2;
--		break;
--	case 3:
--		prom_vers = PROM_V3;
--		break;
--	case 4:
--		prom_vers = PROM_P1275;
--		prom_printf("PROMLIB: Sun IEEE Prom not supported yet\n");
--		prom_halt();
--		break;
--	default:
--		prom_printf("PROMLIB: Bad PROM version %d\n",
--			    romvec->pv_romvers);
--		prom_halt();
--		break;
--	};
--
--	prom_rev = romvec->pv_plugin_revision;
--	prom_prev = romvec->pv_printrev;
--	prom_nodeops = romvec->pv_nodeops;
--
--	prom_root_node = prom_getsibling(0);
--	if((prom_root_node == 0) || (prom_root_node == -1))
--		prom_halt();
--
--	if((((unsigned long) prom_nodeops) == 0) ||
--	   (((unsigned long) prom_nodeops) == -1))
--		prom_halt();
--
--	prom_meminit();
--
--	prom_ranges_init();
--#endif
--//	printk("PROMLIB: Sun Boot Prom Version %d Revision %d\n",
--//	       romvec->pv_romvers, prom_rev);
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index 76b98e2..d0cf7c1 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -418,14 +418,14 @@ static int test__checkevent_pmu_name(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
+ 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
+ 	TEST_ASSERT_VAL("wrong config",  1 == evsel->attr.config);
+-	TEST_ASSERT_VAL("wrong name", !strcmp(evsel->name, "krava"));
++	TEST_ASSERT_VAL("wrong name", !strcmp(perf_evsel__name(evsel), "krava"));
  
- 	/* Initialization successful. */
- 	return;
--- 
-1.7.0.4
-
+ 	/* cpu/config=2/" */
+ 	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
+ 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
+ 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
+ 	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
+-	TEST_ASSERT_VAL("wrong name", !strcmp(evsel->name, "raw 0x2"));
++	TEST_ASSERT_VAL("wrong name", !strcmp(perf_evsel__name(evsel), "raw 0x2"));
+ 
+ 	return 0;
+ }
