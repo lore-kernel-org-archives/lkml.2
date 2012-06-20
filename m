@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab2FTRIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 13:08:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49772 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751Ab2FTRIw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 13:08:52 -0400
+	id S1756613Ab2FTRJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 13:09:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753545Ab2FTRJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 13:09:26 -0400
+Message-ID: <4FE20378.70105@redhat.com>
+Date: Wed, 20 Jun 2012 13:08:08 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZAg8A2kms=mWvE6-HpMQcW_GskHze=4_Psn9_6zL7k9g@mail.gmail.com>
-References: <CAHdPZaNF-Tgz_ncnrJp7xsCbGWEgcfmj_yuY0Q8EiWRt-g0rFw@mail.gmail.com>
-	<CACRpkda5nYmAT3-fkxdYQEGpi6U=L-kphQEu3naoxPzO9a-7pQ@mail.gmail.com>
-	<CAHdPZaPFtO1bRC3TdLx8MSgFMznr5FBXV5DdUyasNAcF34s3mQ@mail.gmail.com>
-	<CACRpkdYB9wPuCH=U3V5EJAhj6Ob2HowUFYT7Q0nqtOYyf7asUQ@mail.gmail.com>
-	<CAHdPZaPYbDSkeb__kESpoU46fheNuPHOA2uOhVDnyAyWZriHyQ@mail.gmail.com>
-	<CACRpkdZAg8A2kms=mWvE6-HpMQcW_GskHze=4_Psn9_6zL7k9g@mail.gmail.com>
-Date: Wed, 20 Jun 2012 22:38:51 +0530
-Message-ID: <CAHdPZaP-NCQt2Y1QVgX_Hqa94tScfR--R+w25j8jV08YUmUZZA@mail.gmail.com>
-Subject: Re: Q: return of pinctrl_register and handing at drivers that use
- this function
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 07/12] mm: Add support for direct_IO to highmem pages
+References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-8-git-send-email-mgorman@suse.de>
+In-Reply-To: <1340185081-22525-8-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 06/20/2012 05:37 AM, Mel Gorman wrote:
+> The patch "mm: Add support for a filesystem to activate swap files and
+> use direct_IO for writing swap pages" added support for using direct_IO
+> to write swap pages but it is insufficient for highmem pages.
+>
+> To support highmem pages, this patch kmaps() the page before calling the
+> direct_IO() handler. As direct_IO deals with virtual addresses an
+> additional helper is necessary for get_kernel_pages() to lookup the
+> struct page for a kmap virtual address.
+>
+> Signed-off-by: Mel Gorman<mgorman@suse.de>
 
-On Wed, Jun 20, 2012 at 1:22 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> I mean it shall be tested like this:
->
-> if (!pinmctrl_register(&foo)) {
->    /* error case */
-> }
->
-> No IS_ERR() business.
->
-Yeah, and you already took the changes into your brach :-). Thanks!
-> Linus
+Acked-by: Rik van Riel<riel@redhat.com>
 
-Devendra
