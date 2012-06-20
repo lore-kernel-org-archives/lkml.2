@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566Ab2FTSdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:33:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932355Ab2FTSXW (ORCPT
+	id S932343Ab2FTSXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:23:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44755 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab2FTSXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:23:22 -0400
-Message-Id: <20120620173025.042781669@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:23:13 -0400
+Message-Id: <20120620173024.784905372@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:31:08 -0700
+Date: Wed, 20 Jun 2012 10:31:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Korsgaard <jacmet@sunsite.dk>,
-        George Pontis <GPontis@z9.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 48/61] hwrng: atmel-rng - fix data valid check
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Felipe Balbi <balbi@ti.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [ 45/61] USB: serial: Enforce USB driver and USB serial driver match
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,70 +26,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <jacmet@sunsite.dk>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit c475c06f4bb689d6ad87d7512e036d6dface3160 upstream.
+commit 954c3f8a5f1b7716be9eee978b3bc85bae92d7c8 upstream.
 
-Brown paper bag: Data valid is LSB of the ISR (status register), and NOT
-of ODATA (current random data word)!
+We need to make sure that the USB serial driver we find
+matches the USB driver whose probe we are currently
+executing. Otherwise we will end up with USB serial
+devices bound to the correct serial driver but wrong
+USB driver.
 
-With this, rngtest is a lot happier. Before:
+An example of such cross-probing, where the usbserial_generic
+USB driver has found the sierra serial driver:
 
-rngtest 3
-Copyright (c) 2004 by Henrique de Moraes Holschuh
-This is free software; see the source for copying conditions.  There is NO warr.
+May 29 18:26:15 nemi kernel: [ 4442.559246] usbserial_generic 4-4:1.0: Sierra USB modem converter detected
+May 29 18:26:20 nemi kernel: [ 4447.556747] usbserial_generic 4-4:1.2: Sierra USB modem converter detected
+May 29 18:26:25 nemi kernel: [ 4452.557288] usbserial_generic 4-4:1.3: Sierra USB modem converter detected
 
-rngtest: starting FIPS tests...
-rngtest: bits received from input: 20000032
-rngtest: FIPS 140-2 successes: 3
-rngtest: FIPS 140-2 failures: 997
-rngtest: FIPS 140-2(2001-10-10) Monobit: 604
-rngtest: FIPS 140-2(2001-10-10) Poker: 996
-rngtest: FIPS 140-2(2001-10-10) Runs: 36
-rngtest: FIPS 140-2(2001-10-10) Long run: 0
-rngtest: FIPS 140-2(2001-10-10) Continuous run: 117
-rngtest: input channel speed: (min=622.371; avg=23682.481; max=28224.350)Kibitss
-rngtest: FIPS tests speed: (min=12.361; avg=12.718; max=12.861)Mibits/s
-rngtest: Program run time: 2331696 microsecondsx
+sysfs view of the same problem:
 
-After:
-rngtest 3
-Copyright (c) 2004 by Henrique de Moraes Holschuh
-This is free software; see the source for copying conditions.  There is NO warr.
+bjorn@nemi:~$ ls -l /sys/bus/usb/drivers/sierra/
+total 0
+--w------- 1 root root 4096 May 29 18:23 bind
+lrwxrwxrwx 1 root root    0 May 29 18:23 module -> ../../../../module/usbserial
+--w------- 1 root root 4096 May 29 18:23 uevent
+--w------- 1 root root 4096 May 29 18:23 unbind
+bjorn@nemi:~$ ls -l /sys/bus/usb-serial/drivers/sierra/
+total 0
+--w------- 1 root root 4096 May 29 18:23 bind
+lrwxrwxrwx 1 root root    0 May 29 18:23 module -> ../../../../module/sierra
+-rw-r--r-- 1 root root 4096 May 29 18:23 new_id
+lrwxrwxrwx 1 root root    0 May 29 18:32 ttyUSB0 -> ../../../../devices/pci0000:00/0000:00:1d.7/usb4/4-4/4-4:1.0/ttyUSB0
+lrwxrwxrwx 1 root root    0 May 29 18:32 ttyUSB1 -> ../../../../devices/pci0000:00/0000:00:1d.7/usb4/4-4/4-4:1.2/ttyUSB1
+lrwxrwxrwx 1 root root    0 May 29 18:32 ttyUSB2 -> ../../../../devices/pci0000:00/0000:00:1d.7/usb4/4-4/4-4:1.3/ttyUSB2
+--w------- 1 root root 4096 May 29 18:23 uevent
+--w------- 1 root root 4096 May 29 18:23 unbind
 
-rngtest: starting FIPS tests...
-rngtest: bits received from input: 20000032
-rngtest: FIPS 140-2 successes: 999
-rngtest: FIPS 140-2 failures: 1
-rngtest: FIPS 140-2(2001-10-10) Monobit: 0
-rngtest: FIPS 140-2(2001-10-10) Poker: 0
-rngtest: FIPS 140-2(2001-10-10) Runs: 1
-rngtest: FIPS 140-2(2001-10-10) Long run: 0
-rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
-rngtest: input channel speed: (min=777.363; avg=43588.270; max=47870.711)Kibitss
-rngtest: FIPS tests speed: (min=11.943; avg=12.716; max=12.844)Mibits/s
-rngtest: Program run time: 1955282 microseconds
+bjorn@nemi:~$ ls -l /sys/bus/usb/drivers/usbserial_generic/
+total 0
+lrwxrwxrwx 1 root root    0 May 29 18:33 4-4:1.0 -> ../../../../devices/pci0000:00/0000:00:1d.7/usb4/4-4/4-4:1.0
+lrwxrwxrwx 1 root root    0 May 29 18:33 4-4:1.2 -> ../../../../devices/pci0000:00/0000:00:1d.7/usb4/4-4/4-4:1.2
+lrwxrwxrwx 1 root root    0 May 29 18:33 4-4:1.3 -> ../../../../devices/pci0000:00/0000:00:1d.7/usb4/4-4/4-4:1.3
+--w------- 1 root root 4096 May 29 18:33 bind
+lrwxrwxrwx 1 root root    0 May 29 18:33 module -> ../../../../module/usbserial
+--w------- 1 root root 4096 May 29 18:22 uevent
+--w------- 1 root root 4096 May 29 18:33 unbind
+bjorn@nemi:~$ ls -l /sys/bus/usb-serial/drivers/generic/
+total 0
+--w------- 1 root root 4096 May 29 18:33 bind
+lrwxrwxrwx 1 root root    0 May 29 18:33 module -> ../../../../module/usbserial
+-rw-r--r-- 1 root root 4096 May 29 18:33 new_id
+--w------- 1 root root 4096 May 29 18:22 uevent
+--w------- 1 root root 4096 May 29 18:33 unbind
 
-Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
-Reported-by: George Pontis <GPontis@z9.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+So we end up with a mismatch between the USB driver and the
+USB serial driver.  The reason for the above is simple: The
+USB driver probe will succeed if *any* registered serial
+driver matches, and will use that serial driver for all
+serial driver functions.
+
+This makes ref counting go wrong. We count the USB driver
+as used, but not the USB serial driver.  This may result
+in Oops'es as demonstrated by Johan Hovold <jhovold@gmail.com>:
+
+[11811.646396] drivers/usb/serial/usb-serial.c: get_free_serial 1
+[11811.646443] drivers/usb/serial/usb-serial.c: get_free_serial - minor base = 0
+[11811.646460] drivers/usb/serial/usb-serial.c: usb_serial_probe - registering ttyUSB0
+[11811.646766] usb 6-1: pl2303 converter now attached to ttyUSB0
+[11812.264197] USB Serial deregistering driver FTDI USB Serial Device
+[11812.264865] usbcore: deregistering interface driver ftdi_sio
+[11812.282180] USB Serial deregistering driver pl2303
+[11812.283141] pl2303 ttyUSB0: pl2303 converter now disconnected from ttyUSB0
+[11812.283272] usbcore: deregistering interface driver pl2303
+[11812.301056] USB Serial deregistering driver generic
+[11812.301186] usbcore: deregistering interface driver usbserial_generic
+[11812.301259] drivers/usb/serial/usb-serial.c: usb_serial_disconnect
+[11812.301823] BUG: unable to handle kernel paging request at f8e7438c
+[11812.301845] IP: [<f8e38445>] usb_serial_disconnect+0xb5/0x100 [usbserial]
+[11812.301871] *pde = 357ef067 *pte = 00000000
+[11812.301957] Oops: 0000 [#1] PREEMPT SMP
+[11812.301983] Modules linked in: usbserial(-) [last unloaded: pl2303]
+[11812.302008]
+[11812.302019] Pid: 1323, comm: modprobe Tainted: G        W    3.4.0-rc7+ #101 Dell Inc. Vostro 1520/0T816J
+[11812.302115] EIP: 0060:[<f8e38445>] EFLAGS: 00010246 CPU: 1
+[11812.302130] EIP is at usb_serial_disconnect+0xb5/0x100 [usbserial]
+[11812.302141] EAX: f508a180 EBX: f508a180 ECX: 00000000 EDX: f8e74300
+[11812.302151] ESI: f5050800 EDI: 00000001 EBP: f5141e78 ESP: f5141e58
+[11812.302160]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[11812.302170] CR0: 8005003b CR2: f8e7438c CR3: 34848000 CR4: 000007d0
+[11812.302180] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[11812.302189] DR6: ffff0ff0 DR7: 00000400
+[11812.302199] Process modprobe (pid: 1323, ti=f5140000 task=f61e2bc0 task.ti=f5140000)
+[11812.302209] Stack:
+[11812.302216]  f8e3be0f f8e3b29c f8e3ae00 00000000 f513641c f5136400 f513641c f507a540
+[11812.302325]  f5141e98 c133d2c1 00000000 00000000 f509c400 f513641c f507a590 f5136450
+[11812.302372]  f5141ea8 c12f0344 f513641c f507a590 f5141ebc c12f0c67 00000000 f507a590
+[11812.302419] Call Trace:
+[11812.302439]  [<c133d2c1>] usb_unbind_interface+0x51/0x190
+[11812.302456]  [<c12f0344>] __device_release_driver+0x64/0xb0
+[11812.302469]  [<c12f0c67>] driver_detach+0x97/0xa0
+[11812.302483]  [<c12f001c>] bus_remove_driver+0x6c/0xe0
+[11812.302500]  [<c145938d>] ? __mutex_unlock_slowpath+0xcd/0x140
+[11812.302514]  [<c12f0ff9>] driver_unregister+0x49/0x80
+[11812.302528]  [<c1457df6>] ? printk+0x1d/0x1f
+[11812.302540]  [<c133c50d>] usb_deregister+0x5d/0xb0
+[11812.302557]  [<f8e37c55>] ? usb_serial_deregister+0x45/0x50 [usbserial]
+[11812.302575]  [<f8e37c8d>] usb_serial_deregister_drivers+0x2d/0x40 [usbserial]
+[11812.302593]  [<f8e3a6e2>] usb_serial_generic_deregister+0x12/0x20 [usbserial]
+[11812.302611]  [<f8e3acf0>] usb_serial_exit+0x8/0x32 [usbserial]
+[11812.302716]  [<c1080b48>] sys_delete_module+0x158/0x260
+[11812.302730]  [<c110594e>] ? mntput+0x1e/0x30
+[11812.302746]  [<c145c3c3>] ? sysenter_exit+0xf/0x18
+[11812.302746]  [<c107777c>] ? trace_hardirqs_on_caller+0xec/0x170
+[11812.302746]  [<c145c390>] sysenter_do_call+0x12/0x36
+[11812.302746] Code: 24 02 00 00 e8 dd f3 20 c8 f6 86 74 02 00 00 02 74 b4 8d 86 4c 02 00 00 47 e8 78 55 4b c8 0f b6 43 0e 39 f8 7f a9 8b 53 04 89 d8 <ff> 92 8c 00 00 00 89 d8 e8 0e ff ff ff 8b 45 f0 c7 44 24 04 2f
+[11812.302746] EIP: [<f8e38445>] usb_serial_disconnect+0xb5/0x100 [usbserial] SS:ESP 0068:f5141e58
+[11812.302746] CR2: 00000000f8e7438c
+
+Fix by only evaluating serial drivers pointing back to the
+USB driver we are currently probing.  This still allows two
+or more drivers to match the same device, running their
+serial driver probes to sort out which one to use.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Tested-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/hw_random/atmel-rng.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/usb-serial.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/char/hw_random/atmel-rng.c
-+++ b/drivers/char/hw_random/atmel-rng.c
-@@ -34,7 +34,7 @@ static int atmel_trng_read(struct hwrng
- 	u32 *data = buf;
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -670,12 +670,14 @@ exit:
+ static struct usb_serial_driver *search_serial_device(
+ 					struct usb_interface *iface)
+ {
+-	const struct usb_device_id *id;
++	const struct usb_device_id *id = NULL;
+ 	struct usb_serial_driver *drv;
++	struct usb_driver *driver = to_usb_driver(iface->dev.driver);
  
- 	/* data ready? */
--	if (readl(trng->base + TRNG_ODATA) & 1) {
-+	if (readl(trng->base + TRNG_ISR) & 1) {
- 		*data = readl(trng->base + TRNG_ODATA);
- 		/*
- 		  ensure data ready is only set again AFTER the next data
+ 	/* Check if the usb id matches a known device */
+ 	list_for_each_entry(drv, &usb_serial_driver_list, driver_list) {
+-		id = get_iface_id(drv, iface);
++		if (drv->usb_driver == driver)
++			id = get_iface_id(drv, iface);
+ 		if (id)
+ 			return drv;
+ 	}
 
 
