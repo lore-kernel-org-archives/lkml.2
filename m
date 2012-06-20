@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab2FTMXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:23:39 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2255 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749Ab2FTMXb (ORCPT
+	id S932178Ab2FTMXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:23:41 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12695 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab2FTMXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:23:31 -0400
+	Wed, 20 Jun 2012 08:23:39 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 20 Jun 2012 05:23:24 -0700
+	by hqnvupgp08.nvidia.com on Wed, 20 Jun 2012 05:23:33 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
         <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
@@ -16,9 +16,9 @@ To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
         <swarren@wwwdotorg.org>
 CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 1/3] ARM: dts: db8500: add property "regulator-compatible" regulator node
-Date: Wed, 20 Jun 2012 17:53:05 +0530
-Message-ID: <1340194987-23654-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V3 3/3] regulator: dt: add policy to have property "regulator-compatible"
+Date: Wed, 20 Jun 2012 17:53:07 +0530
+Message-ID: <1340194987-23654-4-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com>
 References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com>
@@ -28,220 +28,304 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device's regulator matches their hardware counterparts with the
-property "regulator-compatible" of each child regulator node in
-place of the child node name.
-Add the property "regulator-compatible" for each regulator with
-their hardware counterpart's name.
+Add the policy for regulator DT such that if device have multiple
+regulator and its binding contains a child node that describes each
+regulator then each regulator child node must have the property
+"regulator-compatible" which matches with regulator name of their
+hardware counterparts.
+Modify the DT documentation of regulator devices to reflect this
+policy.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
+Changes from V1:
+- Add the doc change for the DT binding of tps6586x.
+
 Changes from V2:
-- Adding the regulator-compatible for each regulator child node.
-- Remove the renaming of the child node.
+- Add the details of property "regulator-compatible" in regulator.txt. 
 
- arch/arm/boot/dts/db8500.dtsi |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/db8500.dtsi b/arch/arm/boot/dts/db8500.dtsi
-index 4ad5160..ec2be92 100644
---- a/arch/arm/boot/dts/db8500.dtsi
-+++ b/arch/arm/boot/dts/db8500.dtsi
-@@ -206,62 +206,74 @@
+ Documentation/devicetree/bindings/mfd/tps65910.txt |   54 +++++++++++++----
+ .../devicetree/bindings/regulator/regulator.txt    |    5 ++
+ .../devicetree/bindings/regulator/tps6586x.txt     |   60 +++++++++++++++-----
+ 3 files changed, 91 insertions(+), 28 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mfd/tps65910.txt b/Documentation/devicetree/bindings/mfd/tps65910.txt
+index 645f5ea..b51d206 100644
+--- a/Documentation/devicetree/bindings/mfd/tps65910.txt
++++ b/Documentation/devicetree/bindings/mfd/tps65910.txt
+@@ -17,8 +17,9 @@ Required properties:
+   device need to be present. The definition for each of these nodes is defined
+   using the standard binding for regulators found at
+   Documentation/devicetree/bindings/regulator/regulator.txt.
++  The regulator is matched with the regulator-compatible.
  
- 				// DB8500_REGULATOR_VAPE
- 				db8500_vape_reg: db8500_vape {
-+					regulator-compatible = "db8500_vape";
- 					regulator-name = "db8500-vape";
- 					regulator-always-on;
- 				};
+-  The valid names for regulators are:
++  The valid regulator-compatible values are:
+   tps65910: vrtc, vio, vdd1, vdd2, vdd3, vdig1, vdig2, vpll, vdac, vaux1,
+             vaux2, vaux33, vmmc
+   tps65911: vrtc, vio, vdd1, vdd3, vddctrl, ldo1, ldo2, ldo3, ldo4, ldo5,
+@@ -57,73 +58,100 @@ Example:
+ 		ti,en-gpio-sleep = <0 0 1 0 0 0 0 0 0>;
  
- 				// DB8500_REGULATOR_VARM
- 				db8500_varm_reg: db8500_varm {
-+					regulator-compatible = "db8500_varm";
- 					regulator-name = "db8500-varm";
- 				};
- 
- 				// DB8500_REGULATOR_VMODEM
- 				db8500_vmodem_reg: db8500_vmodem {
-+					regulator-compatible = "db8500_vmodem";
- 					regulator-name = "db8500-vmodem";
- 				};
- 
- 				// DB8500_REGULATOR_VPLL
- 				db8500_vpll_reg: db8500_vpll {
-+					regulator-compatible = "db8500_vpll";
- 					regulator-name = "db8500-vpll";
- 				};
- 
- 				// DB8500_REGULATOR_VSMPS1
- 				db8500_vsmps1_reg: db8500_vsmps1 {
-+					regulator-compatible = "db8500_vsmps1";
- 					regulator-name = "db8500-vsmps1";
- 				};
- 
- 				// DB8500_REGULATOR_VSMPS2
- 				db8500_vsmps2_reg: db8500_vsmps2 {
-+					regulator-compatible = "db8500_vsmps2";
- 					regulator-name = "db8500-vsmps2";
- 				};
- 
- 				// DB8500_REGULATOR_VSMPS3
- 				db8500_vsmps3_reg: db8500_vsmps3 {
-+					regulator-compatible = "db8500_vsmps3";
- 					regulator-name = "db8500-vsmps3";
- 				};
- 
- 				// DB8500_REGULATOR_VRF1
- 				db8500_vrf1_reg: db8500_vrf1 {
-+					regulator-compatible = "db8500_vrf1";
- 					regulator-name = "db8500-vrf1";
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_SVAMMDSP
- 				db8500_sva_mmdsp_reg: db8500_sva_mmdsp {
-+					regulator-compatible = "db8500_sva_mmdsp";
- 					regulator-name = "db8500-sva-mmdsp";
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_SVAMMDSPRET
- 				db8500_sva_mmdsp_ret_reg: db8500_sva_mmdsp_ret {
-+					regulator-compatible = "db8500_sva_mmdsp_ret";
- 					regulator-name = "db8500-sva-mmdsp-ret";
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_SVAPIPE
- 				db8500_sva_pipe_reg: db8500_sva_pipe {
-+					regulator-compatible = "db8500_sva_pipe";
- 					regulator-name = "db8500_sva_pipe";
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_SIAMMDSP
- 				db8500_sia_mmdsp_reg: db8500_sia_mmdsp {
-+					regulator-compatible = "db8500_sia_mmdsp";
- 					regulator-name = "db8500_sia_mmdsp";
- 				};
- 
-@@ -272,38 +284,45 @@
- 
- 				// DB8500_REGULATOR_SWITCH_SIAPIPE
- 				db8500_sia_pipe_reg: db8500_sia_pipe {
-+					regulator-compatible = "db8500_sia_pipe";
- 					regulator-name = "db8500-sia-pipe";
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_SGA
- 				db8500_sga_reg: db8500_sga {
-+					regulator-compatible = "db8500_sga";
- 					regulator-name = "db8500-sga";
- 					vin-supply = <&db8500_vape_reg>;
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_B2R2_MCDE
- 				db8500_b2r2_mcde_reg: db8500_b2r2_mcde {
-+					regulator-compatible = "db8500_b2r2_mcde";
- 					regulator-name = "db8500-b2r2-mcde";
- 					vin-supply = <&db8500_vape_reg>;
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_ESRAM12
- 				db8500_esram12_reg: db8500_esram12 {
-+					regulator-compatible = "db8500_esram12";
- 					regulator-name = "db8500-esram12";
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_ESRAM12RET
- 				db8500_esram12_ret_reg: db8500_esram12_ret {
-+					regulator-compatible = "db8500_esram12_ret";
- 					regulator-name = "db8500-esram12-ret";
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_ESRAM34
- 				db8500_esram34_reg: db8500_esram34 {
-+					regulator-compatible = "db8500_esram34";
- 					regulator-name = "db8500-esram34";
- 				};
- 
- 				// DB8500_REGULATOR_SWITCH_ESRAM34RET
- 				db8500_esram34_ret_reg: db8500_esram34_ret {
-+					regulator-compatible = "db8500_esram34_ret";
- 					regulator-name = "db8500-esram34-ret";
- 				};
+ 		regulators {
+-			vdd1_reg: vdd1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			vdd1_reg: regulator@0 {
++				regulator-compatible = "vdd1";
++				reg = <0>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <0>;
  			};
-@@ -318,6 +337,7 @@
+-			vdd2_reg: vdd2 {
++			vdd2_reg: regulator@1 {
++				regulator-compatible = "vdd2";
++				reg = <1>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <4>;
+ 			};
+-			vddctrl_reg: vddctrl {
++			vddctrl_reg: regulator@2 {
++				regulator-compatible = "vddctrl";
++				reg = <2>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1400000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			vio_reg: vio {
++			vio_reg: regulator@3 {
++				regulator-compatible = "vio";
++				reg = <3>;
+ 				regulator-min-microvolt = <1500000>;
+ 				regulator-max-microvolt = <1800000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <1>;
+ 			};
+-			ldo1_reg: ldo1 {
++			ldo1_reg: regulator@4 {
++				regulator-compatible = "ldo1";
++				reg = <4>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo2_reg: ldo2 {
++			ldo2_reg: regulator@5 {
++				regulator-compatible = "ldo2";
++				reg = <5>;
+ 				regulator-min-microvolt = <1050000>;
+ 				regulator-max-microvolt = <1050000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo3_reg: ldo3 {
++			ldo3_reg: regulator@6 {
++				regulator-compatible = "ldo3";
++				reg = <6>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo4_reg: ldo4 {
++			ldo4_reg: regulator@7 {
++				regulator-compatible = "ldo4";
++				reg = <7>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-always-on;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo5_reg: ldo5 {
++			ldo5_reg: regulator@8 {
++				regulator-compatible = "ldo5";
++				reg = <8>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo6_reg: ldo6 {
++			ldo6_reg: regulator@9 {
++				regulator-compatible = "ldo6";
++				reg = <9>;
+ 				regulator-min-microvolt = <1200000>;
+ 				regulator-max-microvolt = <1200000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo7_reg: ldo7 {
++			ldo7_reg: regulator@10 {
++				regulator-compatible = "ldo7";
++				reg = <10>;
+ 				regulator-min-microvolt = <1200000>;
+ 				regulator-max-microvolt = <1200000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <1>;
+ 			};
+-			ldo8_reg: ldo8 {
++			ldo8_reg: regulator@11 {
++				regulator-compatible = "ldo8";
++				reg = <11>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-always-on;
+diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+index d0a7b12..c196ab8 100644
+--- a/Documentation/devicetree/bindings/regulator/regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+@@ -11,6 +11,11 @@ Optional properties:
+ - regulator-boot-on: bootloader/firmware enabled regulator
+ - <name>-supply: phandle to the parent supply/regulator node
+ - regulator-ramp-delay: ramp delay for regulator(in mV/uS)
++- regulator-compatible: If a regulator chip contains multiple
++  regulators, and if the chip's binding contains a child node that
++  describes each regulator, then this property indicates which regulator
++  this child node is intended to configure.
  
- 					// supplies to the display/camera
- 					ab8500_ldo_aux1_reg: ab8500_ldo_aux1 {
-+						regulator-compatible = "ab8500_ldo_aux1";
- 						regulator-name = "V-DISPLAY";
- 						regulator-min-microvolt = <2500000>;
- 						regulator-max-microvolt = <2900000>;
-@@ -328,6 +348,7 @@
+ Example:
  
- 					// supplies to the on-board eMMC
- 					ab8500_ldo_aux2_reg: ab8500_ldo_aux2 {
-+						regulator-compatible = "ab8500_ldo_aux2";
- 						regulator-name = "V-eMMC1";
- 						regulator-min-microvolt = <1100000>;
- 						regulator-max-microvolt = <3300000>;
-@@ -335,6 +356,7 @@
+diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+index 0fcabaa..ab17ef6 100644
+--- a/Documentation/devicetree/bindings/regulator/tps6586x.txt
++++ b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+@@ -6,8 +6,9 @@ Required properties:
+ - interrupts: the interrupt outputs of the controller
+ - #gpio-cells: number of cells to describe a GPIO
+ - gpio-controller: mark the device as a GPIO controller
+-- regulators: list of regulators provided by this controller, must be named
+-  after their hardware counterparts: sm[0-2], ldo[0-9] and ldo_rtc
++- regulators: list of regulators provided by this controller, must have
++  property "regulator-compatible" to match their hardware counterparts:
++  sm[0-2], ldo[0-9] and ldo_rtc
  
- 					// supply for VAUX3; SDcard slots
- 					ab8500_ldo_aux3_reg: ab8500_ldo_aux3 {
-+						regulator-compatible = "ab8500_ldo_aux3";
- 						regulator-name = "V-MMC-SD";
- 						regulator-min-microvolt = <1100000>;
- 						regulator-max-microvolt = <3300000>;
-@@ -342,41 +364,49 @@
+ Each regulator is defined using the standard binding for regulators.
  
- 					// supply for v-intcore12; VINTCORE12 LDO
- 					ab8500_ldo_initcore_reg: ab8500_ldo_initcore {
-+						regulator-compatible = "ab8500_ldo_initcore";
- 						regulator-name = "V-INTCORE";
- 					};
+@@ -22,74 +23,103 @@ Example:
+ 		gpio-controller;
  
- 					// supply for tvout; gpadc; TVOUT LDO
- 					ab8500_ldo_tvout_reg: ab8500_ldo_tvout {
-+						regulator-compatible = "ab8500_ldo_tvout";
- 						regulator-name = "V-TVOUT";
- 					};
+ 		regulators {
+-			sm0_reg: sm0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			sm0_reg: regulator@0 {
++				reg = <0>;
++				regulator-compatible = "sm0";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-boot-on;
+ 				regulator-always-on;
+ 			};
  
- 					// supply for ab8500-usb; USB LDO
- 					ab8500_ldo_usb_reg: ab8500_ldo_usb {
-+						regulator-compatible = "ab8500_ldo_usb";
- 						regulator-name = "dummy";
- 					};
+-			sm1_reg: sm1 {
++			sm1_reg: regulator@1 {
++				reg = <1>;
++				regulator-compatible = "sm1";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-boot-on;
+ 				regulator-always-on;
+ 			};
  
- 					// supply for ab8500-vaudio; VAUDIO LDO
- 					ab8500_ldo_audio_reg: ab8500_ldo_audio {
-+						regulator-compatible = "ab8500_ldo_audio";
- 						regulator-name = "V-AUD";
- 					};
+-			sm2_reg: sm2 {
++			sm2_reg: regulator@2 {
++				reg = <2>;
++				regulator-compatible = "sm2";
+ 				regulator-min-microvolt = <3000000>;
+ 				regulator-max-microvolt = <4550000>;
+ 				regulator-boot-on;
+ 				regulator-always-on;
+ 			};
  
- 					// supply for v-anamic1 VAMic1-LDO
- 					ab8500_ldo_anamic1_reg: ab8500_ldo_anamic1 {
-+						regulator-compatible = "ab8500_ldo_anamic1";
- 						regulator-name = "V-AMIC1";
- 					};
+-			ldo0_reg: ldo0 {
++			ldo0_reg: regulator@3 {
++				reg = <3>;
++				regulator-compatible = "ldo0";
+ 				regulator-name = "PCIE CLK";
+ 				regulator-min-microvolt = <3300000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
  
- 					// supply for v-amic2; VAMIC2 LDO; reuse constants for AMIC1
- 					ab8500_ldo_amamic2_reg: ab8500_ldo_amamic2 {
-+						regulator-compatible = "ab8500_ldo_amamic2";
- 						regulator-name = "V-AMIC2";
- 					};
+-			ldo1_reg: ldo1 {
++			ldo1_reg: regulator@4 {
++				reg = <4>;
++				regulator-compatible = "ldo1";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 			};
  
- 					// supply for v-dmic; VDMIC LDO
- 					ab8500_ldo_dmic_reg: ab8500_ldo_dmic {
-+						regulator-compatible = "ab8500_ldo_dmic";
- 						regulator-name = "V-DMIC";
- 					};
+-			ldo2_reg: ldo2 {
++			ldo2_reg: regulator@5 {
++				reg = <5>;
++				regulator-compatible = "ldo2";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 			};
  
- 					// supply for U8500 CSI/DSI; VANA LDO
- 					ab8500_ldo_ana_reg: ab8500_ldo_ana {
-+						regulator-compatible = "ab8500_ldo_ana";
- 						regulator-name = "V-CSI/DSI";
- 					};
- 				};
+-			ldo3_reg: ldo3 {
++			ldo3_reg: regulator@6 {
++				reg = <6>;
++				regulator-compatible = "ldo3";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo4_reg: ldo4 {
++			ldo4_reg: regulator@7 {
++				reg = <7>;
++				regulator-compatible = "ldo4";
+ 				regulator-min-microvolt = <1700000>;
+ 				regulator-max-microvolt = <2475000>;
+ 			};
+ 
+-			ldo5_reg: ldo5 {
++			ldo5_reg: regulator@8 {
++				reg = <8>;
++				regulator-compatible = "ldo5";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo6_reg: ldo6 {
++			ldo6_reg: regulator@9 {
++				reg = <9>;
++				regulator-compatible = "ldo6";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo7_reg: ldo7 {
++			ldo7_reg: regulator@10 {
++				reg = <10>;
++				regulator-compatible = "ldo7";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo8_reg: ldo8 {
++			ldo8_reg: regulator@11 {
++				reg = <11>;
++				regulator-compatible = "ldo8";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo9_reg: ldo9 {
++			ldo9_reg: regulator@12 {
++				reg = <12>;
++				regulator-compatible = "ldo9";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
 -- 
 1.7.1.1
 
