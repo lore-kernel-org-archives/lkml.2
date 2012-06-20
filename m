@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab2FTOSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:18:45 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:54564 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756424Ab2FTOSn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:18:43 -0400
-Message-ID: <4FE1DB88.9060405@linux.vnet.ibm.com>
-Date: Wed, 20 Jun 2012 19:47:44 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	id S1756485Ab2FTOUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:20:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54161 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756394Ab2FTOUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 10:20:36 -0400
+Date: Wed, 20 Jun 2012 15:20:33 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: Re: [PATCH 07/17] net: Introduce sk_gfp_atomic() to allow addition
+ of GFP flags depending on the individual socket
+Message-ID: <20120620142033.GJ4011@suse.de>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+ <1340192652-31658-8-git-send-email-mgorman@suse.de>
+ <1340193999.4604.867.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, pjt@google.com,
-        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        nacc@us.ibm.com, rientjes@google.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, tj@kernel.org,
-        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v6 0/4] CPU hotplug, cpusets, suspend/resume: Fixes, cleanups
- and optimizations
-References: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com> <4FE199B6.2050803@linux.vnet.ibm.com> <20120620113917.GA1925@gmail.com>
-In-Reply-To: <20120620113917.GA1925@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12062014-9574-0000-0000-0000033D362C
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1340193999.4604.867.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:09 PM, Ingo Molnar wrote:
-
-> * Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+On Wed, Jun 20, 2012 at 02:06:39PM +0200, Eric Dumazet wrote:
+> On Wed, 2012-06-20 at 12:44 +0100, Mel Gorman wrote:
+> > Introduce sk_gfp_atomic(), this function allows to inject sock specific
+> > flags to each sock related allocation. It is only used on allocation
+> > paths that may be required for writing pages back to network storage.
+> > 
+> > [davem@davemloft.net: Use sk_gfp_atomic only when necessary]
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > Acked-by: David S. Miller <davem@davemloft.net>
+> > ---
+> >  include/net/sock.h    |    5 +++++
+> >  net/ipv4/tcp_output.c |    9 +++++----
+> >  net/ipv6/tcp_ipv6.c   |    8 +++++---
+> >  3 files changed, 15 insertions(+), 7 deletions(-)
+> > 
 > 
->> On 05/24/2012 07:46 PM, Srivatsa S. Bhat wrote:
->>
->>> Currently the kernel doesn't handle cpusets properly during 
->>> suspend/resume. After a resume, all non-root cpusets end up 
->>> having only 1 cpu (the boot cpu), causing massive 
->>> performance degradation of workloads. One major user of 
->>> cpusets is libvirt, which means that after a 
->>> suspend/hibernation cycle, all VMs suddenly end up running 
->>> terribly slow!
->>>
->>> Also, the kernel moves the tasks from one cpuset to another 
->>> during CPU hotplug in the suspend/resume path, leading to a 
->>> task-management nightmare after resume.
->>>
->>> Patch 1 fixes this by keeping cpusets unmodified in the 
->>> suspend/resume path. But to ensure we don't trip over, it 
->>> keeps the sched domains updated during every CPU hotplug in 
->>> the s/r path. This is a long standing issue and we need to 
->>> fix up stable kernels too.
->>>
->>> The rest of the patches in the series are mostly 
->>> cleanups/optimizations.
->>
->> Hi Peter,
->>
->> Would you be taking these patches through -tip for 3.6?
+> > diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+> > index 803cbfe..440b47e 100644
+> > --- a/net/ipv4/tcp_output.c
+> > +++ b/net/ipv4/tcp_output.c
+> > @@ -2461,7 +2461,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
+> >  
+> >  	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
+> >  		s_data_desired = cvp->s_data_desired;
+> > -	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1, GFP_ATOMIC);
+> > +	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
+> > +			   sk_gfp_atomic(sk, GFP_ATOMIC));
+> >  	if (skb == NULL)
+> >  
 > 
-> They are now in tip:sched/core.
-> 
-> Note that I removed the Cc:stable tag - it's not a regression 
-> fix and such it is not eligible for immediate -stable backports.
-> 
-> ( Once they are upstream and have been problem-free upstream for
->   several weeks then *maybe* we could forward the first commit
->   to -stable, as a super special exception. )
+> This bit no longer applies on net-next, sock_wmalloc() was changed to a
+> mere alloc_skb()
 > 
 
+Thanks, I'll rebase and retest.
 
-OK, I get the point of allowing it to cook in the mainline for a
-while before backporting to -stable and I totally agree with that,
-but why so much of uncertainty about whether the first commit should
-(eventually) even land in -stable or not? Distros have been struggling
-to deal with this bug in userspace and have failed, and AFAIK they are
-waiting for a proper kernel fix for this bug. Agreed, this is not a
-regression per se, but isn't this bug critical enough to qualify for
--stable?
-
-Regards,
-Srivatsa S. Bhat
-
+-- 
+Mel Gorman
+SUSE Labs
