@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab2FTPFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 11:05:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36993 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756699Ab2FTPFF (ORCPT
+	id S1756703Ab2FTPHP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 11:07:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63629 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865Ab2FTPHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 11:05:05 -0400
-Date: Wed, 20 Jun 2012 11:05:04 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Vishal Nandanwar <operational.people@gmail.com>
-cc: Linux Docs <linux-doc@vger.kernel.org>,
-        Linux Embedded Group <linux-embedded@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux USB <linux-usb@vger.kernel.org>,
-        Platform driver x86 <platform-driver-x86@vger.kernel.org>
-Subject: Re: Need help regarding the USB mass storage driver
-In-Reply-To: <CAKB833nfHQwdHzCFV6ELrk1-XZT-SN8WxMs=kzO=C8+6foTrDQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1206201100410.1804-100000@iolanthe.rowland.org>
+	Wed, 20 Jun 2012 11:07:13 -0400
+Date: Wed, 20 Jun 2012 08:07:08 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Lockwood <lockwood@android.com>,
+        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "cw00.choi@samsung.com" <cw00.choi@samsung.com>
+Subject: Re: Re: [PATCH 1/2] extcon: Set platform drvdata in
+ gpio_extcon_probe() and fix irq leak
+Message-ID: <20120620150708.GA13770@kroah.com>
+References: <25919571.619021340166725967.JavaMail.weblogic@epml24>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <25919571.619021340166725967.JavaMail.weblogic@epml24>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jun 2012, Vishal Nandanwar wrote:
-
-> Hi,
+On Wed, Jun 20, 2012 at 04:32:06AM +0000, MyungJoo Ham wrote:
+> > On Tue, Jun 19, 2012 at 10:19:07AM +0000, 함명주 wrote:
+> > > > Add missing platform_set_drvdata() in gpio_extcon_probe(), otherwise calling
+> > > > platform_get_drvdata in gpio_extcon_remove() returns NULL.
+> > > > 
+> > > > Also add missing free_irq call in gpio_extcon_remove().
+> > > > 
+> > > > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > > 
+> > > Thanks!
+> > > 
+> > > 
+> > > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> > > 
+> > > I'll apply this patch to the extcon-for-next.
+> > > I would appear in http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next soon after syncing servers.
+> > 
+> > Does this mean you are going to have a separate extcon git tree
+> > somewhere, feeding into linux-next, and sending stuff directly to Linus?
+> > 
+> > I don't see an entry in the MAINTAINERS file saying this, which is why I
+> > was picking up extcon patches, should I not be doing this?
+> > 
+> > confused,
+> > 
+> > greg k-h
+> > 
 > 
-> I am working on a USB mass storage driver for a pen drive. I have done
-> coding as per the USB_skeleton.c file provided in Linux 3.2 source
-> code. I could assign the driver to pen drive when pen driver is
-> inserted in USB connector.
+> You are right. We do not have MAINTAINERS entry for extcon.
 
-Do you understand that the usb_skeleton.c file is totally inappropriate 
-as a model for a mass-storage driver?
+You can easily fix that (hint, hint, hint...)
 
-> I am stuck in data transfer,  could not do the data transfer. During
-> enumeration interface sub class is 06 i.e. SCSI transparent command
-> set. Please find my questions below.
-> 
-> 1. Where are these SCSI transparent command set documented?
+> I can wait until we have MAINTAINERS entry registered for extcon,
+> which we have not request or submit, yet. Until then, I think you may
+> pick up the extcon patches and I will simply follow your repositories
+> (keep rebasing from yours)
 
-Google is your friend.  But see the answer to your next question...
+My trees never need rebasing, why would you need to do that?  What is
+going into your tree that isn't in mine?  Am I missing patches?
 
-> 2. Is there any sample code(apart from Linux source) which describes
-> the SCSI transparent command set and mass storage driver?
+I would be very glad for you to take over this maintainership, if it's
+something you want to do, otherwise I have no problem taking the
+patches.  It's up to you.
 
-There is no such thing as the SCSI transparent command set.  "SCSI 
-transparent" means "use whatever command set the relevant SCSI standard 
-specifies".
+thanks,
 
-There is non-Linux source code for mass-storage drivers in other
-open-source operating systems.
-
-> 3. When I connect the pen drive and associate my driver, pop up
-> doesn't appear on the screen for this device. but when default
-> driver(usb_storage) is used this pop up does appear. What I need to do
-> here?
-
-Fix your driver.  It's not possible to give a more complete answer 
-without further information.
-
-Alan Stern
-
+greg k-h
