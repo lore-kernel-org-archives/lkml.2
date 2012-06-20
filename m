@@ -1,32 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab2FTLOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:14:09 -0400
-Received: from gmmr4.centrum.cz ([46.255.227.253]:49811 "EHLO gmmr1.centrum.cz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752459Ab2FTLOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:14:08 -0400
-Subject: From Mr. Sameh Jawad
-X-PHP-Originating-Script: 0:newmsg.php
-Date: Wed, 20 Jun 2012 13:14:04 +0200
-From: "sameh" <sjawad011@gmail.com>
-References: <20120525201014.1A5B4BC7@centrum.cz>, <20120601130425.6F5EFDF2@centrum.cz>, <20120601130452.C987DAEB@centrum.cz>, <20120601130545.2FB0BCD9@centrum.cz>, <20120601130615.C2DA0A9D@centrum.cz>, <20120606144407.7C4EFB70@centrum.cz>, <20120606144436.54AB55E5@centrum.cz>, <20120606144510.2F4E595F@centrum.cz>, <20120606144538.77623912@centrum.cz>, <20120612112929.12A0BDAF@centrum.cz>, <20120612112955.C0CAB5DA@centrum.cz>, <20120612113022.7E889F4F@centrum.cz>, <20120612113058.AB8436E5@centrum.cz>, <20120614105645.0AC7AAA1@centrum.cz>, <20120614105724.5586317A@centrum.cz>, <20120614105753.0EC102DF@centrum.cz>, <20120614105823.5C25DACD@centrum.cz>, <20120616134641.531054DC@centrum.cz>, <20120616134707.22CC8741@centrum.cz>, <20120616134735.87DCE5E9@centrum.cz> <20120616134805.BA4A953C@centrum.cz>
-In-Reply-To: <20120616134805.BA4A953C@centrum.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
+	id S1753862Ab2FTLZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:25:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44270 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab2FTLZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:25:20 -0400
+Message-ID: <4FE1B31C.6030100@linaro.org>
+Date: Wed, 20 Jun 2012 12:25:16 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Message-Id: <20120620131404.8E468DFF@centrum.cz>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 3/3] ARM: dts: db8500: add node property "regulator-compatible"
+ regulator node
+References: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com> <1340116099-17629-4-git-send-email-ldewangan@nvidia.com> <4FE0A546.1010707@linaro.org> <4FE0B79D.4090201@wwwdotorg.org> <4FE1772A.2010806@linaro.org> <4FE17E24.8050702@nvidia.com> <4FE18371.2020602@linaro.org> <4FE1877C.4090103@nvidia.com> <4FE19036.1060008@linaro.org> <20120620100631.GE3978@opensource.wolfsonmicro.com>
+In-Reply-To: <20120620100631.GE3978@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day,
-Please I am looking for a profitable business where my client can invest some money.
-I will be waiting for your positive investment idea/advice.
-Best Regards,
-Mr. Sameh Jawad.
- 
+On 20/06/12 11:06, Mark Brown wrote:
+> On Wed, Jun 20, 2012 at 09:56:22AM +0100, Lee Jones wrote:
+>
+>>> Are you OK to have the first patch with adding property
+>
+> ...
+>
+>> Yes I'm fine with it.
+>
+> So is that an ack?
+
+Sure why not. Although, Linus Walleij has the final say.
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+>> It's only the unnecessary reg and *-size properties I'm opposed to.
+>
+> My understanding is that they're required by DT policies in the same way
+> that some of the other verbiage is.
+
+Well I haven't put them in the DB8500 Device Tree if they're not useful 
+and nothing untoward has occurred.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
