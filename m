@@ -1,88 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab2FTJmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:42:17 -0400
-Received: from plane.gmane.org ([80.91.229.3]:60554 "EHLO plane.gmane.org"
+	id S1756177Ab2FTJmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:42:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59171 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932140Ab2FTJmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:42:13 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: =?ISO-8859-1?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
-Subject: Re: regression with dynpm [was: [git pull] drm-fixes]
-Date: Wed, 20 Jun 2012 11:41:54 +0200
-Message-ID: <4FE19AE2.5040605@web.de>
-References: <alpine.DEB.2.00.1206170838050.26175@skynet.skynet.ie> <4FE087D1.2000708@web.de> <CAPM=9txSPOtLE=2POGp46MvEZ0AK0_BXLPc83k7us5wrWawSkA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: p5b373e1f.dip.t-dialin.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-In-Reply-To: <CAPM=9txSPOtLE=2POGp46MvEZ0AK0_BXLPc83k7us5wrWawSkA@mail.gmail.com>
-Cc: dri-devel@lists.freedesktop.org
+	id S1756049Ab2FTJiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:38:07 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 03/12] mm: Methods for teaching filesystems about PG_swapcache pages
+Date: Wed, 20 Jun 2012 10:37:52 +0100
+Message-Id: <1340185081-22525-4-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340185081-22525-1-git-send-email-mgorman@suse.de>
+References: <1340185081-22525-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Airlie wrote, on 06/19/12 16:11:
-> On Tue, Jun 19, 2012 at 3:08 PM, Jörg-Volker Peetz <jvpeetz@web.de> wrote:
->> Dave Airlie wrote, on 06/17/12 09:42:
->>>
->>> Hi Linus,
->>>
->>> radeon is most of the work, one regression, one BUG fix in the new prime
->>> code, some fixes to init code to make streamout not lock up the hardware,
->>> and just some code to enable users to test HDMI audio on later hw (its off by
->>> default).
->>>
->>> Intel adds edp edid caching for some strange Dell Vostros that black
->>> screen on startup if keep reading their EDID, and a fix for a DP
->>> regression.
->>>
->>> Otherwise fix for via/sis and one to stop udl binding to multiple
->>> non-video usb.
->>>
->>> Dave.
->>>
->>> The following changes since commit 9b15b817f3d62409290fd56fe3cbb076a931bb0a:
->>>
->>>   swap: fix shmem swapping when more than 8 areas (2012-06-15 21:48:14 -0700)
->>>
->>> are available in the git repository at:
->>>
->>>   git://people.freedesktop.org/~airlied/linux drm-fixes
->>>
->>> for you to fetch changes up to c4af5c4597a7a5d64e058703e1328f315a59794e:
->>>
->>>   Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes (2012-06-16 14:45:17 +0100)
->>>
->>> ----------------------------------------------------------------
->>>
->>> Alex Deucher (3):
->>>       drm/radeon: fix regression in dynpm due to multi-ring rework
->>>       drm/radeon: add some additional 6xx/7xx/EG register init
->>>       drm/radeon: add support for STRMOUT_BASE_UPDATE on 7xx
->>>
->>
->> Hello Dave,
->>
->> on my HP Pavilion dv7 there is still with 3.5-rc3 a severe problem with the
->> dynpm option. After booting, the machine freezes (hard-lock) when trying to
->> switch to dynamic power mangement on the integrated GPU via
->>
-> 
-> These fixes went in after -rc3, so make sure you have them.
-> 
-> Dave.
+In order to teach filesystems to handle swap cache pages, three new
+page functions are introduced:
 
-Hi Dave,
+  pgoff_t page_file_index(struct page *);
+  loff_t page_file_offset(struct page *);
+  struct address_space *page_file_mapping(struct page *);
 
-indeed, with this fix from Alex (drm/radeon: fix regression in dynpm due to
-multi-ring rework) on top of 3.5-rc3, dynpm is working again on the HP Pavilion dv7.
-Thanks for your caring.
+page_file_index() - gives the offset of this page in the file in
+PAGE_CACHE_SIZE blocks. Like page->index is for mapped pages, this
+function also gives the correct index for PG_swapcache pages.
 
+page_file_offset() - uses page_file_index(), so that it will give
+the expected result, even for PG_swapcache pages.
+
+page_file_mapping() - gives the mapping backing the actual page;
+that is for swap cache pages it will give swap_file->f_mapping.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/mm.h      |   25 +++++++++++++++++++++++++
+ include/linux/pagemap.h |    5 +++++
+ mm/swapfile.c           |   19 +++++++++++++++++++
+ 3 files changed, 49 insertions(+)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b36d08c..0c0301c 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -805,6 +805,17 @@ static inline void *page_rmapping(struct page *page)
+ 	return (void *)((unsigned long)page->mapping & ~PAGE_MAPPING_FLAGS);
+ }
+ 
++extern struct address_space *__page_file_mapping(struct page *);
++
++static inline
++struct address_space *page_file_mapping(struct page *page)
++{
++	if (unlikely(PageSwapCache(page)))
++		return __page_file_mapping(page);
++
++	return page->mapping;
++}
++
+ static inline int PageAnon(struct page *page)
+ {
+ 	return ((unsigned long)page->mapping & PAGE_MAPPING_ANON) != 0;
+@@ -821,6 +832,20 @@ static inline pgoff_t page_index(struct page *page)
+ 	return page->index;
+ }
+ 
++extern pgoff_t __page_file_index(struct page *page);
++
++/*
++ * Return the file index of the page. Regular pagecache pages use ->index
++ * whereas swapcache pages use swp_offset(->private)
++ */
++static inline pgoff_t page_file_index(struct page *page)
++{
++	if (unlikely(PageSwapCache(page)))
++		return __page_file_index(page);
++
++	return page->index;
++}
++
+ /*
+  * Return true if this page is mapped into pagetables.
+  */
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 7cfad3b..e42c762 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -286,6 +286,11 @@ static inline loff_t page_offset(struct page *page)
+ 	return ((loff_t)page->index) << PAGE_CACHE_SHIFT;
+ }
+ 
++static inline loff_t page_file_offset(struct page *page)
++{
++	return ((loff_t)page_file_index(page)) << PAGE_CACHE_SHIFT;
++}
++
+ extern pgoff_t linear_hugepage_index(struct vm_area_struct *vma,
+ 				     unsigned long address);
+ 
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 71373d0..6123151 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -33,6 +33,7 @@
+ #include <linux/oom.h>
+ #include <linux/frontswap.h>
+ #include <linux/swapfile.h>
++#include <linux/export.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+@@ -2286,6 +2287,24 @@ int swapcache_prepare(swp_entry_t entry)
+ }
+ 
+ /*
++ * out-of-line __page_file_ methods to avoid include hell.
++ */
++struct address_space *__page_file_mapping(struct page *page)
++{
++	VM_BUG_ON(!PageSwapCache(page));
++	return page_swap_info(page)->swap_file->f_mapping;
++}
++EXPORT_SYMBOL_GPL(__page_file_mapping);
++
++pgoff_t __page_file_index(struct page *page)
++{
++	swp_entry_t swap = { .val = page_private(page) };
++	VM_BUG_ON(!PageSwapCache(page));
++	return swp_offset(swap);
++}
++EXPORT_SYMBOL_GPL(__page_file_index);
++
++/*
+  * add_swap_count_continuation - called when a swap count is duplicated
+  * beyond SWAP_MAP_MAX, it allocates a new page and links that to the entry's
+  * page of the original vmalloc'ed swap_map, to hold the continuation count
 -- 
-Best regards,
-Jörg-Volker.
+1.7.9.2
 
