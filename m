@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346Ab2FTOQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:16:17 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:62921 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab2FTOQQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:16:16 -0400
+	id S1756418Ab2FTOSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:18:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54083 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756254Ab2FTOSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 10:18:39 -0400
+Date: Wed, 20 Jun 2012 15:18:33 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: Re: [PATCH 08/17] net: Do not coalesce skbs belonging to PFMEMALLOC
+ sockets
+Message-ID: <20120620141833.GI4011@suse.de>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+ <1340192652-31658-9-git-send-email-mgorman@suse.de>
+ <1340193892.4604.865.camel@edumazet-glaptop>
+ <20120620133656.GH4011@suse.de>
+ <1340200312.4604.1008.camel@edumazet-glaptop>
 MIME-Version: 1.0
-In-Reply-To: <20120620103004.GA13194@pengutronix.de>
-References: <1337640630-29176-1-git-send-email-rob.lee@linaro.org> <20120620103004.GA13194@pengutronix.de>
-From: Rob Lee <rob.lee@linaro.org>
-Date: Wed, 20 Jun 2012 09:15:35 -0500
-Message-ID: <CAMXH7KGh2RrzTy9+mcYAfbQgcVC0H9=ozXzBb-wCho51pM6CVg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/7] cleanup imx5 idle, add imx5/6 cpuidle
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: kernel@pengutronix.de, shawn.guo@linaro.org,
-        u.kleine-koenig@pengutronix.de, richard.zhao@freescale.com,
-        amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1340200312.4604.1008.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sascha,
+On Wed, Jun 20, 2012 at 03:51:52PM +0200, Eric Dumazet wrote:
+> On Wed, 2012-06-20 at 14:36 +0100, Mel Gorman wrote:
+> > The intention was to avoid any coalescing in the input path due to avoid
+> > packets that "were held back due to TCP_CORK or attempt at coalescing
+> > tiny packet". I recognise that it is clumsy and will take the approach
+> > instead of having __tcp_push_pending_frames() use sk_gfp_atomic() in the
+> > output path.
+> 
+> But coalescing in input path needs no additional memory allocation, it
+> can actually free some memory.
+> 
 
-On Wed, Jun 20, 2012 at 5:30 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> Hi Robert,
->
-> On Mon, May 21, 2012 at 05:50:23PM -0500, Robert Lee wrote:
->> Cleanup up imx5 idle code and enable imx5 low powe idle for imx53.
->>
->> Add common imx cpuidle initialization functionality and add a i.MX5 and i.MX6Q
->> platform cpuidle implementation.
->
-> I rebased this to 3.5-rc1 here:
->
-> git.pengutronix.de/git/imx/linux-2.6.git imx/cpuidle
->
-> Could you check if the result is ok with you?
->
+When I wrote it I thought the timing of the transmission of pending frames
+was the problem rather than the actual memory usage. My intention was that
+any data related to swapping be handled immediately without delay instead of
+deferring until a time when GFP_ATOMIC allocations might fail. I arrived
+at this patch because tcp_input.c does call tcp_push_pending_frames()
+on the receive path and that led me to believe that coalescing was a
+factor.
 
-Certainly.  I will let you know in a day or two.
+> And it avoids most of the time the infamous "tcp collapses" that needed
+> extra memory allocations to group tcp payload on single pages.
+> 
+> If you want tcp output path being safer, you should disable TSO/GSO
+> because some drivers have special handling for skbs that cannot be
+> mapped because of various hardware limitations.
+> 
 
-Rob
+Understood. Thanks for the explanation.
 
-> Sascha
->
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+-- 
+Mel Gorman
+SUSE Labs
