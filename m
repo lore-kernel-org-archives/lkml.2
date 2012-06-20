@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab2FTSrj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:47:39 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:35772
+	id S1757701Ab2FTSse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:48:34 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:57752
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757472Ab2FTSrB (ORCPT
+	by vger.kernel.org with ESMTP id S1756685Ab2FTSq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:47:01 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M5XIU6-01-38Y-02
+	Wed, 20 Jun 2012 14:46:59 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 7
+X-BigFish: VPS7(z1039ozzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M5XIU4-02-4C2-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Peter Zijlstra <peterz@infradead.org>
 CC: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 1/4] perf, x86: Rename Intel specific macros
-Date: Wed, 20 Jun 2012 20:46:33 +0200
-Message-ID: <1340217996-2254-2-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 3/4] perf, amd: Unify AMD's generic and family 15h pmus
+Date: Wed, 20 Jun 2012 20:46:35 +0200
+Message-ID: <1340217996-2254-4-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1340217996-2254-1-git-send-email-robert.richter@amd.com>
 References: <1340217996-2254-1-git-send-email-robert.richter@amd.com>
@@ -30,393 +30,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are macros that are Intel specific and not x86 generic. Rename
-them into INTEL_*.
+There is no need for keeping separate pmu structs. We can enable
+amd_{get,put}_event_constraints() functions also for family 15h event.
 
-This patch removes X86_PMC_IDX_GENERIC and does:
+The advantage is that there is only a single pmu struct for all AMD
+cpus. This patch introduces functions to setup the pmu to enabe core
+performance counters or counter constraints.
 
- $ sed -i -e 's/X86_PMC_MAX_/INTEL_PMC_MAX_/g'           \
-         arch/x86/include/asm/kvm_host.h                 \
-         arch/x86/include/asm/perf_event.h               \
-         arch/x86/kernel/cpu/perf_event.c                \
-         arch/x86/kernel/cpu/perf_event_p4.c             \
-         arch/x86/kvm/pmu.c
- $ sed -i -e 's/X86_PMC_IDX_FIXED/INTEL_PMC_IDX_FIXED/g' \
-         arch/x86/include/asm/perf_event.h               \
-         arch/x86/kernel/cpu/perf_event.c                \
-         arch/x86/kernel/cpu/perf_event_intel.c          \
-         arch/x86/kernel/cpu/perf_event_intel_ds.c       \
-         arch/x86/kvm/pmu.c
- $ sed -i -e 's/X86_PMC_MSK_/INTEL_PMC_MSK_/g'           \
-         arch/x86/include/asm/perf_event.h               \
-         arch/x86/kernel/cpu/perf_event.c
+Also, cpuid checks are used instead of family checks where
+possible. Thus, it enables the code independently of cpu families if
+the feature flag is set.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/x86/include/asm/kvm_host.h           |    4 +-
- arch/x86/include/asm/perf_event.h         |   17 ++++++-------
- arch/x86/kernel/cpu/perf_event.c          |   38 ++++++++++++++--------------
- arch/x86/kernel/cpu/perf_event_intel.c    |   14 +++++-----
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 +-
- arch/x86/kernel/cpu/perf_event_p4.c       |    2 +-
- arch/x86/kvm/pmu.c                        |   22 ++++++++--------
- 7 files changed, 50 insertions(+), 51 deletions(-)
+ arch/x86/include/asm/perf_event.h    |    3 +-
+ arch/x86/kernel/cpu/perf_event_amd.c |  103 +++++++++++++++-------------------
+ arch/x86/oprofile/op_model_amd.c     |    4 +-
+ 3 files changed, 49 insertions(+), 61 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index db7c1f2..2da88c0 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -313,8 +313,8 @@ struct kvm_pmu {
- 	u64 counter_bitmask[2];
- 	u64 global_ctrl_mask;
- 	u8 version;
--	struct kvm_pmc gp_counters[X86_PMC_MAX_GENERIC];
--	struct kvm_pmc fixed_counters[X86_PMC_MAX_FIXED];
-+	struct kvm_pmc gp_counters[INTEL_PMC_MAX_GENERIC];
-+	struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
- 	struct irq_work irq_work;
- 	u64 reprogram_pmi;
- };
 diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 588f52e..3b31248 100644
+index 3b31248..ffdf5e0 100644
 --- a/arch/x86/include/asm/perf_event.h
 +++ b/arch/x86/include/asm/perf_event.h
-@@ -5,11 +5,10 @@
-  * Performance event hw details:
-  */
+@@ -47,8 +47,7 @@
+ 	(X86_RAW_EVENT_MASK          |  \
+ 	 AMD64_EVENTSEL_EVENT)
+ #define AMD64_NUM_COUNTERS				4
+-#define AMD64_NUM_COUNTERS_F15H				6
+-#define AMD64_NUM_COUNTERS_MAX				AMD64_NUM_COUNTERS_F15H
++#define AMD64_NUM_COUNTERS_CORE				6
  
--#define X86_PMC_MAX_GENERIC				       32
--#define X86_PMC_MAX_FIXED					3
-+#define INTEL_PMC_MAX_GENERIC				       32
-+#define INTEL_PMC_MAX_FIXED					3
-+#define INTEL_PMC_IDX_FIXED				       32
+ #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		0x3c
+ #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK		(0x00 << 8)
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 11a4eb9..4528ae7 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -366,7 +366,7 @@ static void amd_pmu_cpu_starting(int cpu)
  
--#define X86_PMC_IDX_GENERIC				        0
--#define X86_PMC_IDX_FIXED				       32
- #define X86_PMC_IDX_MAX					       64
+ 	cpuc->perf_ctr_virt_mask = AMD_PERFMON_EVENTSEL_HOSTONLY;
  
- #define MSR_ARCH_PERFMON_PERFCTR0			      0xc1
-@@ -121,16 +120,16 @@ struct x86_pmu_capability {
- 
- /* Instr_Retired.Any: */
- #define MSR_ARCH_PERFMON_FIXED_CTR0	0x309
--#define X86_PMC_IDX_FIXED_INSTRUCTIONS	(X86_PMC_IDX_FIXED + 0)
-+#define INTEL_PMC_IDX_FIXED_INSTRUCTIONS	(INTEL_PMC_IDX_FIXED + 0)
- 
- /* CPU_CLK_Unhalted.Core: */
- #define MSR_ARCH_PERFMON_FIXED_CTR1	0x30a
--#define X86_PMC_IDX_FIXED_CPU_CYCLES	(X86_PMC_IDX_FIXED + 1)
-+#define INTEL_PMC_IDX_FIXED_CPU_CYCLES	(INTEL_PMC_IDX_FIXED + 1)
- 
- /* CPU_CLK_Unhalted.Ref: */
- #define MSR_ARCH_PERFMON_FIXED_CTR2	0x30b
--#define X86_PMC_IDX_FIXED_REF_CYCLES	(X86_PMC_IDX_FIXED + 2)
--#define X86_PMC_MSK_FIXED_REF_CYCLES	(1ULL << X86_PMC_IDX_FIXED_REF_CYCLES)
-+#define INTEL_PMC_IDX_FIXED_REF_CYCLES	(INTEL_PMC_IDX_FIXED + 2)
-+#define INTEL_PMC_MSK_FIXED_REF_CYCLES	(1ULL << INTEL_PMC_IDX_FIXED_REF_CYCLES)
- 
- /*
-  * We model BTS tracing as another fixed-mode PMC.
-@@ -139,7 +138,7 @@ struct x86_pmu_capability {
-  * values are used by actual fixed events and higher values are used
-  * to indicate other overflow conditions in the PERF_GLOBAL_STATUS msr.
-  */
--#define X86_PMC_IDX_FIXED_BTS				(X86_PMC_IDX_FIXED + 16)
-+#define INTEL_PMC_IDX_FIXED_BTS				(INTEL_PMC_IDX_FIXED + 16)
- 
- /*
-  * IBS cpuid feature detection
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6d32aef..5d0585d 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -63,7 +63,7 @@ u64 x86_perf_event_update(struct perf_event *event)
- 	int idx = hwc->idx;
- 	s64 delta;
- 
--	if (idx == X86_PMC_IDX_FIXED_BTS)
-+	if (idx == INTEL_PMC_IDX_FIXED_BTS)
- 		return 0;
- 
- 	/*
-@@ -626,8 +626,8 @@ static bool __perf_sched_find_counter(struct perf_sched *sched)
- 	c = sched->constraints[sched->state.event];
- 
- 	/* Prefer fixed purpose counters */
--	if (c->idxmsk64 & (~0ULL << X86_PMC_IDX_FIXED)) {
--		idx = X86_PMC_IDX_FIXED;
-+	if (c->idxmsk64 & (~0ULL << INTEL_PMC_IDX_FIXED)) {
-+		idx = INTEL_PMC_IDX_FIXED;
- 		for_each_set_bit_from(idx, c->idxmsk, X86_PMC_IDX_MAX) {
- 			if (!__test_and_set_bit(idx, sched->state.used))
- 				goto done;
-@@ -635,7 +635,7 @@ static bool __perf_sched_find_counter(struct perf_sched *sched)
- 	}
- 	/* Grab the first unused counter starting with idx */
- 	idx = sched->state.counter;
--	for_each_set_bit_from(idx, c->idxmsk, X86_PMC_IDX_FIXED) {
-+	for_each_set_bit_from(idx, c->idxmsk, INTEL_PMC_IDX_FIXED) {
- 		if (!__test_and_set_bit(idx, sched->state.used))
- 			goto done;
- 	}
-@@ -813,13 +813,13 @@ static inline void x86_assign_hw_event(struct perf_event *event,
- 	hwc->last_cpu = smp_processor_id();
- 	hwc->last_tag = ++cpuc->tags[i];
- 
--	if (hwc->idx == X86_PMC_IDX_FIXED_BTS) {
-+	if (hwc->idx == INTEL_PMC_IDX_FIXED_BTS) {
- 		hwc->config_base = 0;
- 		hwc->event_base	= 0;
--	} else if (hwc->idx >= X86_PMC_IDX_FIXED) {
-+	} else if (hwc->idx >= INTEL_PMC_IDX_FIXED) {
- 		hwc->config_base = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
--		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0 + (hwc->idx - X86_PMC_IDX_FIXED);
--		hwc->event_base_rdpmc = (hwc->idx - X86_PMC_IDX_FIXED) | 1<<30;
-+		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0 + (hwc->idx - INTEL_PMC_IDX_FIXED);
-+		hwc->event_base_rdpmc = (hwc->idx - INTEL_PMC_IDX_FIXED) | 1<<30;
- 	} else {
- 		hwc->config_base = x86_pmu_config_addr(hwc->idx);
- 		hwc->event_base  = x86_pmu_event_addr(hwc->idx);
-@@ -921,7 +921,7 @@ int x86_perf_event_set_period(struct perf_event *event)
- 	s64 period = hwc->sample_period;
- 	int ret = 0, idx = hwc->idx;
- 
--	if (idx == X86_PMC_IDX_FIXED_BTS)
-+	if (idx == INTEL_PMC_IDX_FIXED_BTS)
- 		return 0;
- 
- 	/*
-@@ -1338,21 +1338,21 @@ static int __init init_hw_perf_events(void)
- 	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
- 		quirk->func();
- 
--	if (x86_pmu.num_counters > X86_PMC_MAX_GENERIC) {
-+	if (x86_pmu.num_counters > INTEL_PMC_MAX_GENERIC) {
- 		WARN(1, KERN_ERR "hw perf events %d > max(%d), clipping!",
--		     x86_pmu.num_counters, X86_PMC_MAX_GENERIC);
--		x86_pmu.num_counters = X86_PMC_MAX_GENERIC;
-+		     x86_pmu.num_counters, INTEL_PMC_MAX_GENERIC);
-+		x86_pmu.num_counters = INTEL_PMC_MAX_GENERIC;
- 	}
- 	x86_pmu.intel_ctrl = (1 << x86_pmu.num_counters) - 1;
- 
--	if (x86_pmu.num_counters_fixed > X86_PMC_MAX_FIXED) {
-+	if (x86_pmu.num_counters_fixed > INTEL_PMC_MAX_FIXED) {
- 		WARN(1, KERN_ERR "hw perf events fixed %d > max(%d), clipping!",
--		     x86_pmu.num_counters_fixed, X86_PMC_MAX_FIXED);
--		x86_pmu.num_counters_fixed = X86_PMC_MAX_FIXED;
-+		     x86_pmu.num_counters_fixed, INTEL_PMC_MAX_FIXED);
-+		x86_pmu.num_counters_fixed = INTEL_PMC_MAX_FIXED;
- 	}
- 
- 	x86_pmu.intel_ctrl |=
--		((1LL << x86_pmu.num_counters_fixed)-1) << X86_PMC_IDX_FIXED;
-+		((1LL << x86_pmu.num_counters_fixed)-1) << INTEL_PMC_IDX_FIXED;
- 
- 	perf_events_lapic_init();
- 	register_nmi_handler(NMI_LOCAL, perf_event_nmi_handler, 0, "PMI");
-@@ -1368,7 +1368,7 @@ static int __init init_hw_perf_events(void)
- 		 */
- 		for_each_event_constraint(c, x86_pmu.event_constraints) {
- 			if (c->cmask != X86_RAW_EVENT_MASK
--			    || c->idxmsk64 == X86_PMC_MSK_FIXED_REF_CYCLES) {
-+			    || c->idxmsk64 == INTEL_PMC_MSK_FIXED_REF_CYCLES) {
- 				continue;
- 			}
- 
-@@ -1611,8 +1611,8 @@ static int x86_pmu_event_idx(struct perf_event *event)
- 	if (!x86_pmu.attr_rdpmc)
- 		return 0;
- 
--	if (x86_pmu.num_counters_fixed && idx >= X86_PMC_IDX_FIXED) {
--		idx -= X86_PMC_IDX_FIXED;
-+	if (x86_pmu.num_counters_fixed && idx >= INTEL_PMC_IDX_FIXED) {
-+		idx -= INTEL_PMC_IDX_FIXED;
- 		idx |= 1 << 30;
- 	}
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index e23e71f..1e3fafe 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -747,7 +747,7 @@ static void intel_pmu_disable_all(void)
- 
- 	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0);
- 
--	if (test_bit(X86_PMC_IDX_FIXED_BTS, cpuc->active_mask))
-+	if (test_bit(INTEL_PMC_IDX_FIXED_BTS, cpuc->active_mask))
- 		intel_pmu_disable_bts();
- 
- 	intel_pmu_pebs_disable_all();
-@@ -763,9 +763,9 @@ static void intel_pmu_enable_all(int added)
- 	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL,
- 			x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask);
- 
--	if (test_bit(X86_PMC_IDX_FIXED_BTS, cpuc->active_mask)) {
-+	if (test_bit(INTEL_PMC_IDX_FIXED_BTS, cpuc->active_mask)) {
- 		struct perf_event *event =
--			cpuc->events[X86_PMC_IDX_FIXED_BTS];
-+			cpuc->events[INTEL_PMC_IDX_FIXED_BTS];
- 
- 		if (WARN_ON_ONCE(!event))
- 			return;
-@@ -871,7 +871,7 @@ static inline void intel_pmu_ack_status(u64 ack)
- 
- static void intel_pmu_disable_fixed(struct hw_perf_event *hwc)
- {
--	int idx = hwc->idx - X86_PMC_IDX_FIXED;
-+	int idx = hwc->idx - INTEL_PMC_IDX_FIXED;
- 	u64 ctrl_val, mask;
- 
- 	mask = 0xfULL << (idx * 4);
-@@ -886,7 +886,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 
--	if (unlikely(hwc->idx == X86_PMC_IDX_FIXED_BTS)) {
-+	if (unlikely(hwc->idx == INTEL_PMC_IDX_FIXED_BTS)) {
- 		intel_pmu_disable_bts();
- 		intel_pmu_drain_bts_buffer();
- 		return;
-@@ -915,7 +915,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
- 
- static void intel_pmu_enable_fixed(struct hw_perf_event *hwc)
- {
--	int idx = hwc->idx - X86_PMC_IDX_FIXED;
-+	int idx = hwc->idx - INTEL_PMC_IDX_FIXED;
- 	u64 ctrl_val, bits, mask;
- 
- 	/*
-@@ -949,7 +949,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 
--	if (unlikely(hwc->idx == X86_PMC_IDX_FIXED_BTS)) {
-+	if (unlikely(hwc->idx == INTEL_PMC_IDX_FIXED_BTS)) {
- 		if (!__this_cpu_read(cpu_hw_events.enabled))
- 			return;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 026373e..629ae0b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -248,7 +248,7 @@ void reserve_ds_buffers(void)
-  */
- 
- struct event_constraint bts_constraint =
--	EVENT_CONSTRAINT(0, 1ULL << X86_PMC_IDX_FIXED_BTS, 0);
-+	EVENT_CONSTRAINT(0, 1ULL << INTEL_PMC_IDX_FIXED_BTS, 0);
- 
- void intel_pmu_enable_bts(u64 config)
- {
-@@ -295,7 +295,7 @@ int intel_pmu_drain_bts_buffer(void)
- 		u64	to;
- 		u64	flags;
- 	};
--	struct perf_event *event = cpuc->events[X86_PMC_IDX_FIXED_BTS];
-+	struct perf_event *event = cpuc->events[INTEL_PMC_IDX_FIXED_BTS];
- 	struct bts_record *at, *top;
- 	struct perf_output_handle handle;
- 	struct perf_event_header header;
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index 47124a7..5b89bfc 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -1325,7 +1325,7 @@ __init int p4_pmu_init(void)
- 	unsigned int low, high;
- 
- 	/* If we get stripped -- indexing fails */
--	BUILD_BUG_ON(ARCH_P4_MAX_CCCR > X86_PMC_MAX_GENERIC);
-+	BUILD_BUG_ON(ARCH_P4_MAX_CCCR > INTEL_PMC_MAX_GENERIC);
- 
- 	rdmsr(MSR_IA32_MISC_ENABLE, low, high);
- 	if (!(low & (1 << 7))) {
-diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-index 2e88438..9b7ec11 100644
---- a/arch/x86/kvm/pmu.c
-+++ b/arch/x86/kvm/pmu.c
-@@ -80,10 +80,10 @@ static inline struct kvm_pmc *get_fixed_pmc_idx(struct kvm_pmu *pmu, int idx)
- 
- static struct kvm_pmc *global_idx_to_pmc(struct kvm_pmu *pmu, int idx)
- {
--	if (idx < X86_PMC_IDX_FIXED)
-+	if (idx < INTEL_PMC_IDX_FIXED)
- 		return get_gp_pmc(pmu, MSR_P6_EVNTSEL0 + idx, MSR_P6_EVNTSEL0);
- 	else
--		return get_fixed_pmc_idx(pmu, idx - X86_PMC_IDX_FIXED);
-+		return get_fixed_pmc_idx(pmu, idx - INTEL_PMC_IDX_FIXED);
- }
- 
- void kvm_deliver_pmi(struct kvm_vcpu *vcpu)
-@@ -291,7 +291,7 @@ static void reprogram_idx(struct kvm_pmu *pmu, int idx)
- 	if (pmc_is_gp(pmc))
- 		reprogram_gp_counter(pmc, pmc->eventsel);
- 	else {
--		int fidx = idx - X86_PMC_IDX_FIXED;
-+		int fidx = idx - INTEL_PMC_IDX_FIXED;
- 		reprogram_fixed_counter(pmc,
- 				fixed_en_pmi(pmu->fixed_ctr_ctrl, fidx), fidx);
- 	}
-@@ -452,7 +452,7 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
+-	if (boot_cpu_data.x86_max_cores < 2 || boot_cpu_data.x86 == 0x15)
++	if (boot_cpu_data.x86_max_cores < 2)
  		return;
  
- 	pmu->nr_arch_gp_counters = min((int)(entry->eax >> 8) & 0xff,
--			X86_PMC_MAX_GENERIC);
-+			INTEL_PMC_MAX_GENERIC);
- 	pmu->counter_bitmask[KVM_PMC_GP] =
- 		((u64)1 << ((entry->eax >> 16) & 0xff)) - 1;
- 	bitmap_len = (entry->eax >> 24) & 0xff;
-@@ -462,13 +462,13 @@ void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
- 		pmu->nr_arch_fixed_counters = 0;
- 	} else {
- 		pmu->nr_arch_fixed_counters = min((int)(entry->edx & 0x1f),
--				X86_PMC_MAX_FIXED);
-+				INTEL_PMC_MAX_FIXED);
- 		pmu->counter_bitmask[KVM_PMC_FIXED] =
- 			((u64)1 << ((entry->edx >> 5) & 0xff)) - 1;
- 	}
+ 	nb_id = amd_get_nb_id(cpu);
+@@ -422,35 +422,6 @@ static struct attribute *amd_format_attr[] = {
+ 	NULL,
+ };
  
- 	pmu->global_ctrl = ((1 << pmu->nr_arch_gp_counters) - 1) |
--		(((1ull << pmu->nr_arch_fixed_counters) - 1) << X86_PMC_IDX_FIXED);
-+		(((1ull << pmu->nr_arch_fixed_counters) - 1) << INTEL_PMC_IDX_FIXED);
- 	pmu->global_ctrl_mask = ~pmu->global_ctrl;
+-static __initconst const struct x86_pmu amd_pmu = {
+-	.name			= "AMD",
+-	.handle_irq		= x86_pmu_handle_irq,
+-	.disable_all		= x86_pmu_disable_all,
+-	.enable_all		= x86_pmu_enable_all,
+-	.enable			= x86_pmu_enable_event,
+-	.disable		= x86_pmu_disable_event,
+-	.hw_config		= amd_pmu_hw_config,
+-	.schedule_events	= x86_schedule_events,
+-	.eventsel		= MSR_K7_EVNTSEL0,
+-	.perfctr		= MSR_K7_PERFCTR0,
+-	.event_map		= amd_pmu_event_map,
+-	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
+-	.num_counters		= AMD64_NUM_COUNTERS,
+-	.cntval_bits		= 48,
+-	.cntval_mask		= (1ULL << 48) - 1,
+-	.apic			= 1,
+-	/* use highest bit to detect overflow */
+-	.max_period		= (1ULL << 47) - 1,
+-	.get_event_constraints	= amd_get_event_constraints,
+-	.put_event_constraints	= amd_put_event_constraints,
+-
+-	.format_attrs		= amd_format_attr,
+-
+-	.cpu_prepare		= amd_pmu_cpu_prepare,
+-	.cpu_starting		= amd_pmu_cpu_starting,
+-	.cpu_dead		= amd_pmu_cpu_dead,
+-};
+-
+ /* AMD Family 15h */
+ 
+ #define AMD_EVENT_TYPE_MASK	0x000000F0ULL
+@@ -597,8 +568,8 @@ amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *ev
+ 	}
  }
  
-@@ -478,15 +478,15 @@ void kvm_pmu_init(struct kvm_vcpu *vcpu)
- 	struct kvm_pmu *pmu = &vcpu->arch.pmu;
+-static __initconst const struct x86_pmu amd_pmu_f15h = {
+-	.name			= "AMD Family 15h",
++static __initconst const struct x86_pmu amd_pmu = {
++	.name			= "AMD",
+ 	.handle_irq		= x86_pmu_handle_irq,
+ 	.disable_all		= x86_pmu_disable_all,
+ 	.enable_all		= x86_pmu_enable_all,
+@@ -606,50 +577,68 @@ static __initconst const struct x86_pmu amd_pmu_f15h = {
+ 	.disable		= x86_pmu_disable_event,
+ 	.hw_config		= amd_pmu_hw_config,
+ 	.schedule_events	= x86_schedule_events,
+-	.eventsel		= MSR_F15H_PERF_CTL,
+-	.perfctr		= MSR_F15H_PERF_CTR,
++	.eventsel		= MSR_K7_EVNTSEL0,
++	.perfctr		= MSR_K7_PERFCTR0,
+ 	.event_map		= amd_pmu_event_map,
+ 	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
+-	.num_counters		= AMD64_NUM_COUNTERS_F15H,
++	.num_counters		= AMD64_NUM_COUNTERS,
+ 	.cntval_bits		= 48,
+ 	.cntval_mask		= (1ULL << 48) - 1,
+ 	.apic			= 1,
+ 	/* use highest bit to detect overflow */
+ 	.max_period		= (1ULL << 47) - 1,
+-	.get_event_constraints	= amd_get_event_constraints_f15h,
+-	/* nortbridge counters not yet implemented: */
+-#if 0
++	.get_event_constraints	= amd_get_event_constraints,
+ 	.put_event_constraints	= amd_put_event_constraints,
  
- 	memset(pmu, 0, sizeof(*pmu));
--	for (i = 0; i < X86_PMC_MAX_GENERIC; i++) {
-+	for (i = 0; i < INTEL_PMC_MAX_GENERIC; i++) {
- 		pmu->gp_counters[i].type = KVM_PMC_GP;
- 		pmu->gp_counters[i].vcpu = vcpu;
- 		pmu->gp_counters[i].idx = i;
++	.format_attrs		= amd_format_attr,
++
+ 	.cpu_prepare		= amd_pmu_cpu_prepare,
+-	.cpu_dead		= amd_pmu_cpu_dead,
+-#endif
+ 	.cpu_starting		= amd_pmu_cpu_starting,
+-	.format_attrs		= amd_format_attr,
++	.cpu_dead		= amd_pmu_cpu_dead,
+ };
+ 
++static int setup_event_constraints(void)
++{
++	if (boot_cpu_data.x86 >= 0x15)
++		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
++	return 0;
++}
++
++static int setup_perfctr_core(void)
++{
++	if (!cpu_has_perfctr_core) {
++		WARN(x86_pmu.get_event_constraints == amd_get_event_constraints_f15h,
++		     KERN_ERR "Odd, counter constraints enabled but no core perfctrs detected!");
++		return -ENODEV;
++	}
++
++	WARN(x86_pmu.get_event_constraints == amd_get_event_constraints,
++	     KERN_ERR "hw perf events core counters need constraints handler!");
++
++	/*
++	 * If core performance counter extensions exists, we must use
++	 * MSR_F15H_PERF_CTL/MSR_F15H_PERF_CTR msrs. See also
++	 * x86_pmu_addr_offset().
++	 */
++	x86_pmu.eventsel	= MSR_F15H_PERF_CTL;
++	x86_pmu.perfctr		= MSR_F15H_PERF_CTR;
++	x86_pmu.num_counters	= AMD64_NUM_COUNTERS_CORE;
++
++	printk(KERN_INFO "perf: AMD core performance counters detected\n");
++
++	return 0;
++}
++
+ __init int amd_pmu_init(void)
+ {
+ 	/* Performance-monitoring supported from K7 and later: */
+ 	if (boot_cpu_data.x86 < 6)
+ 		return -ENODEV;
+ 
+-	/*
+-	 * If core performance counter extensions exists, it must be
+-	 * family 15h, otherwise fail. See x86_pmu_addr_offset().
+-	 */
+-	switch (boot_cpu_data.x86) {
+-	case 0x15:
+-		if (!cpu_has_perfctr_core)
+-			return -ENODEV;
+-		x86_pmu = amd_pmu_f15h;
+-		break;
+-	default:
+-		if (cpu_has_perfctr_core)
+-			return -ENODEV;
+-		x86_pmu = amd_pmu;
+-		break;
+-	}
++	x86_pmu = amd_pmu;
++
++	setup_event_constraints();
++	setup_perfctr_core();
+ 
+ 	/* Events are common for all AMDs */
+ 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
+diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
+index 303f086..b2b9443 100644
+--- a/arch/x86/oprofile/op_model_amd.c
++++ b/arch/x86/oprofile/op_model_amd.c
+@@ -312,7 +312,7 @@ static int op_amd_fill_in_addresses(struct op_msrs * const msrs)
+ 			goto fail;
+ 		}
+ 		/* both registers must be reserved */
+-		if (num_counters == AMD64_NUM_COUNTERS_F15H) {
++		if (num_counters == AMD64_NUM_COUNTERS_CORE) {
+ 			msrs->counters[i].addr = MSR_F15H_PERF_CTR + (i << 1);
+ 			msrs->controls[i].addr = MSR_F15H_PERF_CTL + (i << 1);
+ 		} else {
+@@ -514,7 +514,7 @@ static int op_amd_init(struct oprofile_operations *ops)
+ 	ops->create_files = setup_ibs_files;
+ 
+ 	if (boot_cpu_data.x86 == 0x15) {
+-		num_counters = AMD64_NUM_COUNTERS_F15H;
++		num_counters = AMD64_NUM_COUNTERS_CORE;
+ 	} else {
+ 		num_counters = AMD64_NUM_COUNTERS;
  	}
--	for (i = 0; i < X86_PMC_MAX_FIXED; i++) {
-+	for (i = 0; i < INTEL_PMC_MAX_FIXED; i++) {
- 		pmu->fixed_counters[i].type = KVM_PMC_FIXED;
- 		pmu->fixed_counters[i].vcpu = vcpu;
--		pmu->fixed_counters[i].idx = i + X86_PMC_IDX_FIXED;
-+		pmu->fixed_counters[i].idx = i + INTEL_PMC_IDX_FIXED;
- 	}
- 	init_irq_work(&pmu->irq_work, trigger_pmi);
- 	kvm_pmu_cpuid_update(vcpu);
-@@ -498,13 +498,13 @@ void kvm_pmu_reset(struct kvm_vcpu *vcpu)
- 	int i;
- 
- 	irq_work_sync(&pmu->irq_work);
--	for (i = 0; i < X86_PMC_MAX_GENERIC; i++) {
-+	for (i = 0; i < INTEL_PMC_MAX_GENERIC; i++) {
- 		struct kvm_pmc *pmc = &pmu->gp_counters[i];
- 		stop_counter(pmc);
- 		pmc->counter = pmc->eventsel = 0;
- 	}
- 
--	for (i = 0; i < X86_PMC_MAX_FIXED; i++)
-+	for (i = 0; i < INTEL_PMC_MAX_FIXED; i++)
- 		stop_counter(&pmu->fixed_counters[i]);
- 
- 	pmu->fixed_ctr_ctrl = pmu->global_ctrl = pmu->global_status =
 -- 
 1.7.8.4
 
