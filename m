@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546Ab2FTSaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:30:10 -0400
+	id S932476Ab2FTSap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:30:45 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab2FTSX7 (ORCPT
+	with ESMTP id S932434Ab2FTSXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:23:59 -0400
-Message-Id: <20120620173026.081990180@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:23:52 -0400
+Message-Id: <20120620173025.925132403@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:31:20 -0700
+Date: Wed, 20 Jun 2012 10:31:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
+        alan@lxorguk.ukuu.org.uk, Antonio Quartulli <ordex@autistici.org>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Wey-Yi W Guy <wey-yi.w.guy@intel.com>,
         Johannes Berg <johannes.berg@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 60/61] iwlwifi: fix TX power antenna access
+Subject: [ 58/61] iwlwifi: fix the Transmit Frame Descriptor rings
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +28,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit a5fdde28b4f5fb756032e7ad2c6fcdcffde20958 upstream.
+commit ebed633c61c023e5d1aa4ed159cd67406e9e37c2 upstream.
 
-Since my commit
-  iwlwifi: use valid TX/RX antenna from hw_params
-the config values are pure overrides, not the
-real values for all hardware. Therefore, the
-EEPROM TX power reading code checks the wrong
-values, it should check the hw_params values.
+The logic that allows to have a short TFD queue was completely wrong.
+We do maintain 256 Transmit Frame Descriptors, but they point to
+recycled buffers. We used to attach and de-attach different TFDs for
+the same buffer and it worked since they pointed to the same buffer.
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Also zero the number of BDs after unmapping a TFD. This seems not
+necessary since we don't reclaim the same TFD twice, but I like
+housekeeping.
+
+This patch solves this warning:
+
+[ 6427.079855] WARNING: at lib/dma-debug.c:866 check_unmap+0x727/0x7a0()
+[ 6427.079859] Hardware name: Latitude E6410
+[ 6427.079865] iwlwifi 0000:02:00.0: DMA-API: device driver tries to free DMA memory it has not allocated [device address=0x00000000296d393c] [size=8 bytes]
+[ 6427.079870] Modules linked in: ...
+[ 6427.079950] Pid: 6613, comm: ifconfig Tainted: G           O 3.3.3 #5
+[ 6427.079954] Call Trace:
+[ 6427.079963]  [<c10337a2>] warn_slowpath_common+0x72/0xa0
+[ 6427.079982]  [<c1033873>] warn_slowpath_fmt+0x33/0x40
+[ 6427.079988]  [<c12dcb77>] check_unmap+0x727/0x7a0
+[ 6427.079995]  [<c12dcdaa>] debug_dma_unmap_page+0x5a/0x80
+[ 6427.080024]  [<fe2312ac>] iwlagn_unmap_tfd+0x12c/0x180 [iwlwifi]
+[ 6427.080048]  [<fe231349>] iwlagn_txq_free_tfd+0x49/0xb0 [iwlwifi]
+[ 6427.080071]  [<fe228e37>] iwl_tx_queue_unmap+0x67/0x90 [iwlwifi]
+[ 6427.080095]  [<fe22d221>] iwl_trans_pcie_stop_device+0x341/0x7b0 [iwlwifi]
+[ 6427.080113]  [<fe204b0e>] iwl_down+0x17e/0x260 [iwlwifi]
+[ 6427.080132]  [<fe20efec>] iwlagn_mac_stop+0x6c/0xf0 [iwlwifi]
+[ 6427.080168]  [<fd8480ce>] ieee80211_stop_device+0x5e/0x190 [mac80211]
+[ 6427.080198]  [<fd833208>] ieee80211_do_stop+0x288/0x620 [mac80211]
+[ 6427.080243]  [<fd8335b7>] ieee80211_stop+0x17/0x20 [mac80211]
+[ 6427.080250]  [<c148dac1>] __dev_close_many+0x81/0xd0
+[ 6427.080270]  [<c148db3d>] __dev_close+0x2d/0x50
+[ 6427.080276]  [<c148d152>] __dev_change_flags+0x82/0x150
+[ 6427.080282]  [<c148e3e3>] dev_change_flags+0x23/0x60
+[ 6427.080289]  [<c14f6320>] devinet_ioctl+0x6a0/0x770
+[ 6427.080296]  [<c14f8705>] inet_ioctl+0x95/0xb0
+[ 6427.080304]  [<c147a0f0>] sock_ioctl+0x70/0x270
+
+Reported-by: Antonio Quartulli <ordex@autistici.org>
+Tested-by: Antonio Quartulli <ordex@autistici.org>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Wey-Yi W Guy <wey-yi.w.guy@intel.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/wireless/iwlwifi/iwl-eeprom.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c  |   20 +++++++++++++-------
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie.c     |    4 +---
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-eeprom.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-eeprom.c
-@@ -513,28 +513,28 @@ static int iwl_find_otp_image(struct iwl
-  * iwl_get_max_txpower_avg - get the highest tx power from all chains.
-  *     find the highest tx power from all chains for the channel
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
+@@ -342,7 +342,7 @@ void iwl_trans_pcie_tx_agg_setup(struct
+ 				 enum iwl_rxon_context_id ctx,
+ 				 int sta_id, int tid, int frame_limit, u16 ssn);
+ void iwlagn_txq_free_tfd(struct iwl_trans *trans, struct iwl_tx_queue *txq,
+-	int index, enum dma_data_direction dma_dir);
++			 enum dma_data_direction dma_dir);
+ int iwl_tx_queue_reclaim(struct iwl_trans *trans, int txq_id, int index,
+ 			 struct sk_buff_head *skbs);
+ int iwl_queue_space(const struct iwl_queue *q);
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
+@@ -237,32 +237,38 @@ static void iwlagn_unmap_tfd(struct iwl_
+ 	for (i = 1; i < num_tbs; i++)
+ 		dma_unmap_single(trans->dev, iwl_tfd_tb_get_addr(tfd, i),
+ 				iwl_tfd_tb_get_len(tfd, i), dma_dir);
++
++	tfd->num_tbs = 0;
+ }
+ 
+ /**
+  * iwlagn_txq_free_tfd - Free all chunks referenced by TFD [txq->q.read_ptr]
+  * @trans - transport private data
+  * @txq - tx queue
+- * @index - the index of the TFD to be freed
+- *@dma_dir - the direction of the DMA mapping
++ * @dma_dir - the direction of the DMA mapping
+  *
+  * Does NOT advance any TFD circular buffer read/write indexes
+  * Does NOT free the TFD itself (which is within circular buffer)
   */
--static s8 iwl_get_max_txpower_avg(const struct iwl_cfg *cfg,
-+static s8 iwl_get_max_txpower_avg(struct iwl_priv *priv,
- 		struct iwl_eeprom_enhanced_txpwr *enhanced_txpower,
- 		int element, s8 *max_txpower_in_half_dbm)
+ void iwlagn_txq_free_tfd(struct iwl_trans *trans, struct iwl_tx_queue *txq,
+-	int index, enum dma_data_direction dma_dir)
++			 enum dma_data_direction dma_dir)
  {
- 	s8 max_txpower_avg = 0; /* (dBm) */
+ 	struct iwl_tfd *tfd_tmp = txq->tfds;
  
- 	/* Take the highest tx power from any valid chains */
--	if ((cfg->valid_tx_ant & ANT_A) &&
-+	if ((hw_params(priv).valid_tx_ant & ANT_A) &&
- 	    (enhanced_txpower[element].chain_a_max > max_txpower_avg))
- 		max_txpower_avg = enhanced_txpower[element].chain_a_max;
--	if ((cfg->valid_tx_ant & ANT_B) &&
-+	if ((hw_params(priv).valid_tx_ant & ANT_B) &&
- 	    (enhanced_txpower[element].chain_b_max > max_txpower_avg))
- 		max_txpower_avg = enhanced_txpower[element].chain_b_max;
--	if ((cfg->valid_tx_ant & ANT_C) &&
-+	if ((hw_params(priv).valid_tx_ant & ANT_C) &&
- 	    (enhanced_txpower[element].chain_c_max > max_txpower_avg))
- 		max_txpower_avg = enhanced_txpower[element].chain_c_max;
--	if (((cfg->valid_tx_ant == ANT_AB) |
--	    (cfg->valid_tx_ant == ANT_BC) |
--	    (cfg->valid_tx_ant == ANT_AC)) &&
-+	if (((hw_params(priv).valid_tx_ant == ANT_AB) |
-+	    (hw_params(priv).valid_tx_ant == ANT_BC) |
-+	    (hw_params(priv).valid_tx_ant == ANT_AC)) &&
- 	    (enhanced_txpower[element].mimo2_max > max_txpower_avg))
- 		max_txpower_avg =  enhanced_txpower[element].mimo2_max;
--	if ((cfg->valid_tx_ant == ANT_ABC) &&
-+	if ((hw_params(priv).valid_tx_ant == ANT_ABC) &&
- 	    (enhanced_txpower[element].mimo3_max > max_txpower_avg))
- 		max_txpower_avg = enhanced_txpower[element].mimo3_max;
++	/* rd_ptr is bounded by n_bd and idx is bounded by n_window */
++	int rd_ptr = txq->q.read_ptr;
++	int idx = get_cmd_index(&txq->q, rd_ptr);
++
+ 	lockdep_assert_held(&txq->lock);
  
-@@ -637,7 +637,7 @@ static void iwl_eeprom_enhanced_txpower(
- 				 ((txp->delta_20_in_40 & 0xf0) >> 4),
- 				 (txp->delta_20_in_40 & 0x0f));
+-	iwlagn_unmap_tfd(trans, &txq->meta[index], &tfd_tmp[index], dma_dir);
++	/* We have only q->n_window txq->entries, but we use q->n_bd tfds */
++	iwlagn_unmap_tfd(trans, &txq->meta[idx], &tfd_tmp[rd_ptr], dma_dir);
  
--		max_txp_avg = iwl_get_max_txpower_avg(cfg(priv), txp_array, idx,
-+		max_txp_avg = iwl_get_max_txpower_avg(priv, txp_array, idx,
- 						      &max_txp_avg_halfdbm);
+ 	/* free SKB */
+ 	if (txq->skbs) {
+ 		struct sk_buff *skb;
  
- 		/*
+-		skb = txq->skbs[index];
++		skb = txq->skbs[idx];
+ 
+ 		/* Can be called from irqs-disabled context
+ 		 * If skb is not NULL, it means that the whole queue is being
+@@ -270,7 +276,7 @@ void iwlagn_txq_free_tfd(struct iwl_tran
+ 		 */
+ 		if (skb) {
+ 			iwl_op_mode_free_skb(trans->op_mode, skb);
+-			txq->skbs[index] = NULL;
++			txq->skbs[idx] = NULL;
+ 		}
+ 	}
+ }
+@@ -1100,7 +1106,7 @@ int iwl_tx_queue_reclaim(struct iwl_tran
+ 
+ 		iwlagn_txq_inval_byte_cnt_tbl(trans, txq);
+ 
+-		iwlagn_txq_free_tfd(trans, txq, txq->q.read_ptr, DMA_TO_DEVICE);
++		iwlagn_txq_free_tfd(trans, txq, DMA_TO_DEVICE);
+ 		freed++;
+ 	}
+ 	return freed;
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
+@@ -430,9 +430,7 @@ static void iwl_tx_queue_unmap(struct iw
+ 
+ 	spin_lock_bh(&txq->lock);
+ 	while (q->write_ptr != q->read_ptr) {
+-		/* The read_ptr needs to bound by q->n_window */
+-		iwlagn_txq_free_tfd(trans, txq, get_cmd_index(q, q->read_ptr),
+-				    dma_dir);
++		iwlagn_txq_free_tfd(trans, txq, dma_dir);
+ 		q->read_ptr = iwl_queue_inc_wrap(q->read_ptr, q->n_bd);
+ 	}
+ 	spin_unlock_bh(&txq->lock);
 
 
