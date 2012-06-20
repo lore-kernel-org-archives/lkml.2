@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2FTJs4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 05:48:56 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:22054
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755832Ab2FTJsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 05:48:55 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -12
-X-BigFish: VPS-12(zz98dI1432Izz1202hzz15d4Rz2dh668h839h944hd25he5bhf0ah)
-X-WSS-ID: 0M5WTX9-01-36S-02
-X-M-MSG: 
-Date: Wed, 20 Jun 2012 11:48:44 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        <e1000-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: IO_PAGE_FAULTS with igb or igbvf on AMD IOMMU system
-Message-ID: <20120620094844.GL2624@amd.com>
-References: <20120619102041.GI2624@amd.com>
- <4FE0C2A8.50602@intel.com>
+	id S1755911Ab2FTJzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 05:55:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59948 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755542Ab2FTJzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 05:55:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="155928998"
+Date: Wed, 20 Jun 2012 17:55:46 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH -mm] memcg: prevent from OOM with too many dirty pages
+Message-ID: <20120620095546.GB8765@localhost>
+References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
+ <20120619150014.1ebc108c.akpm@linux-foundation.org>
+ <20120620092011.GB4011@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FE0C2A8.50602@intel.com>
+In-Reply-To: <20120620092011.GB4011@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
-
-On Tue, Jun 19, 2012 at 11:19:20AM -0700, Alexander Duyck wrote:
-> Based on the faults it would look like accessing the descriptor rings is
-> probably triggering the errors.  We allocate the descriptor rings using
-> dma_alloc_coherent so the rings should be mapped correctly.
-
-Can this happen before the driver actually allocated the descriptors? As
-I said, the faults appear before any DMA-API call was made for that
-device (hence, domain=0x0000, because the domain is assigned on the
-first call to the DMA-API for a device).
-
-Also, I don't see the faults every time. One out of ten times
-(estimated) there are not faults. Is it possible that this is a race
-condition, e.g. that the card trys to access its descriptor rings before
-the driver allocated them (or something like that).
-
-> The PF and VF will end up being locked out since they are hung on an
-> uncompleted DMA transaction.  Normally we recommend that PCIe Advanced
-> Error Reporting be enabled if an IOMMU is enabled so the device can be
-> reset after triggering a page fault event.
+> > Finally, I wonder if there should be some timeout of that wait.  I
+> > don't know why, but I wouldn't be surprised if we hit some glitch which
+> > causes us to add one!
+> > 
 > 
-> The first thing that pops into my head for possible issues would be that
-> maybe the VF pci_dev structure or the device structure isn't being
-> correctly initialized when SR-IOV is enabled on the igb interface.  Do
-> you know if there are any AMD IOMMU specific values on those structures,
-> such as the domain, that are supposed to be initialized prior to calling
-> the DMA API calls?  If so, have you tried adding debug output to verify
-> if those values are initialized on a VF prior to bringing up a VF interface?
+> If we hit such a situation it means that flush is no longer working which
+> is interesting in itself. I guess one possibility where it can occur is
+> if we hit global dirty limits (or memcg dirty limits when they exist)
+> and the page is backed by NFS that is disconnected. That would stall here
+> potentially forever but it's already the case that a system that hits its
+> dirty limits with a disconnected NFS is in trouble and a timeout here will
+> not do much to help.
 
-Well, when the device appears in the system the IOMMU driver gets
-notified about it using the device_change notifiers. It will then
-allocate all necessary data structures. I also verified that this works
-correctly while debugging this issue. So I am pretty sure the problem
-isn't there :)
+Agreed. I've run into such cases and cannot login even locally because
+the shell will be blocked trying to write even 1 byte at startup time. 
+Any opened shells are also stalled on writing to .bash_history etc.
 
-> Also have you tried any other SR-IOV capable devices on this system? 
-> That would be a valuable data point because we could then exclude the
-> SR-IOV code as being a possible cause for the issues if other SR-IOV
-> devices are working without any issues.
-
-I have another SR-IOV device, but that fails to even enable SR-IOV
-because the BIOS did not let enough MMIO resources left. So I couldn't
-try it with that device. With the 82576 card enabling SR-IOV works fine
-but results in the faults from the VF.
-
-Regards,
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Thanks,
+Fengguang
