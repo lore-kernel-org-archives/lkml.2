@@ -1,98 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab2FTGOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:14:32 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:35101 "EHLO e1.ny.us.ibm.com"
+	id S1754559Ab2FTGQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:16:07 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:35450 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754162Ab2FTGOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:14:30 -0400
-Date: Wed, 20 Jun 2012 11:44:23 +0530
-From: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, ryanh@linux.vnet.ibm.com
-Subject: Re: perf kvm segfaults while reporting events
-Message-ID: <20120620061423.GB3488@linux.vnet.ibm.com>
-Reply-To: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
-References: <20120601135627.GA3004@linux.vnet.ibm.com>
- <4FC8E26E.7060309@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4FC8E26E.7060309@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062006-6078-0000-0000-00000C4B6CBD
+	id S1751658Ab2FTGQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 02:16:05 -0400
+Date: Wed, 20 Jun 2012 08:15:53 +0200
+From: Michael Leun <lkml20120218@newton.leun.net>
+To: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Cc: Mohammed Shafi <shafi.wireless@gmail.com>,
+        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k_htc: Every 2nd packet 1000ms delayed in recent kernels
+Message-ID: <20120620081553.040171f4@xenia.leun.net>
+In-Reply-To: <20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
+References: <20120619085137.337838c0@xenia.leun.net>
+	<CAD2nsn1b6in_yA1b+o=SoXD3iJPddoF4PeCQ3qhFNWqfZxq8pQ@mail.gmail.com>
+	<20120620003315.2eaf6460@xenia.leun.net>
+	<20120620061303.GA8738@vmraj-lnx.qca.qualcomm.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Ahern <dsahern@gmail.com> [2012-06-01 09:40:30]:
-
-> On 6/1/12 7:56 AM, Pradeep Kumar Surisetty wrote:
-> >Hello
-> >
-> >perf kvm generats segfaults while reporting events.
-> >
-> >host&  guest:  3.4.0-rc4
-> >
-> >1) Copied kallsyms, modules from guest to host.
-> >
-> >2) recorded  events on host and guest&  report it using below commands.
-> >
-> >
-> >[root@host]# ./perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms --guestmodules=/tmp/guest-modules record -a -o perf.data
-> >^C[ perf record: Woken up 1 times to write data ]
-> >[ perf record: Captured and wrote 0.381 MB perf.data (~16659 samples) ]
-> >
-> >[root@host]# ./perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms --guestmodules=/tmp/guest-modules report -i perf.data --force
-> >perf: Segmentation fault
-> 
-> The short of it is that perf-kvm needs some work.
-> 
-> More specifically, the guest 'machine' is not created on the report
-> path for the above arguments. This will prevent the segfault:
-> 
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 93d355d..c8e1323 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -918,6 +918,8 @@ static int perf_session_deliver_event(struct
-> perf_session *session,
->         }
->         return tool->sample(tool, event, sample, evsel, machine);
->     case PERF_RECORD_MMAP:
-> +       if (machine == NULL)
-> +           return 0;
+On Wed, 20 Jun 2012 11:43:05 +0530
+Rajkumar Manoharan <rmanohar@qca.qualcomm.com> wrote:
 
 
-Ahhh perf kvm works fine if we record guest events for enough time. 
-above patch works better, if some one doesnt record for adequate time. 
+> Thanks for the analysis. Can you please try with the attached patch
+> without reverting mac80211 change?
 
+Radio Eriwan answers: In principle yes, but you forgot the
+attachment ;-)
 
->         return tool->mmap(tool, event, sample, machine);
->     case PERF_RECORD_COMM:
->         return tool->comm(tool, event, sample, machine);
-> 
-> 
-> The --guestmount option (which has its own problems) combined with
-> specific pid is more stable . e.g.,
-> 
-> mkdir /tmp/guestmount/<vm-pid>
-> sshfs root@<vm-ip>:/  /tmp/guestmount/<vm-pid> -o direct_io
-> 
-> perf kvm --host --guest --guestmount=/tmp/guestmount \
->   record -p <vm-pid>  -o /tmp/perf.data -- sleep 1
-> 
-> perf kvm --host --guest --guestmount=/tmp/guestmount  report -i
-> /tmp/perf.data --force --stdio
-> 
-> If you use the -a argument on record with multiple VMs running
-> without an entry in /tmp/guestmount you'll see:
-> 
-> Warning:
-> 7 unprocessable samples recorded.
-> Do you have a KVM guest running and not using 'perf kvm'?
-> 
-> David
-> 
+-- 
+MfG,
+
+Michael Leun
 
