@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab2FTHwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 03:52:09 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:59390 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab2FTHwH (ORCPT
+	id S1755420Ab2FTHwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 03:52:24 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44177
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755013Ab2FTHwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 03:52:07 -0400
+	Wed, 20 Jun 2012 03:52:23 -0400
+Date: Wed, 20 Jun 2012 03:52:16 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: xfs@oss.sgi.com, hch@infradead.org, joe@perches.com, bpm@sgi.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] types.h: implement intptr_t and uintptr_t
+Message-ID: <20120620075216.GA24798@infradead.org>
+References: <1338487534-14575-1-git-send-email-jengelh@inai.de>
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaPYbDSkeb__kESpoU46fheNuPHOA2uOhVDnyAyWZriHyQ@mail.gmail.com>
-References: <CAHdPZaNF-Tgz_ncnrJp7xsCbGWEgcfmj_yuY0Q8EiWRt-g0rFw@mail.gmail.com>
-	<CACRpkda5nYmAT3-fkxdYQEGpi6U=L-kphQEu3naoxPzO9a-7pQ@mail.gmail.com>
-	<CAHdPZaPFtO1bRC3TdLx8MSgFMznr5FBXV5DdUyasNAcF34s3mQ@mail.gmail.com>
-	<CACRpkdYB9wPuCH=U3V5EJAhj6Ob2HowUFYT7Q0nqtOYyf7asUQ@mail.gmail.com>
-	<CAHdPZaPYbDSkeb__kESpoU46fheNuPHOA2uOhVDnyAyWZriHyQ@mail.gmail.com>
-Date: Wed, 20 Jun 2012 09:52:06 +0200
-Message-ID: <CACRpkdZAg8A2kms=mWvE6-HpMQcW_GskHze=4_Psn9_6zL7k9g@mail.gmail.com>
-Subject: Re: Q: return of pinctrl_register and handing at drivers that use
- this function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338487534-14575-1-git-send-email-jengelh@inai.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 4:42 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
-> On Mon, Jun 18, 2012 at 8:08 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Mon, Jun 18, 2012 at 2:04 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
->>
->>> So checking the return value of pinctrl_register with IS_ERR is not required.
->>
->> Nope.
->
-> You mean to say that the check "IS_ERR(ret_ptr)" is not required? or
-> the other way like its also needed.
+I'd really like to get Jans type cleanups in XFS in for the next
+merge window.  Given the lack of feedback on lkml in favor or
+against (u)intptr_t I'm tempted to add them to xfs_linux.h for now,
+and then do another push to propagate them to kernel-wide types later.
 
-I mean it shall be tested like this:
+Is that fine with everybody?
 
-if (!pinmctrl_register(&foo)) {
-    /* error case */
-}
-
-No IS_ERR() business.
-
-Linus
