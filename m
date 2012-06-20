@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2FTRsR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 13:48:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57444 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754214Ab2FTRsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 13:48:15 -0400
-Message-ID: <4FE20C97.2060401@redhat.com>
-Date: Wed, 20 Jun 2012 13:47:03 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754477Ab2FTR7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 13:59:46 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:59332 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab2FTR7o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 13:59:44 -0400
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 12/12] Avoid dereferencing bd_disk during swap_entry_free
- for network storage
-References: <1340185081-22525-1-git-send-email-mgorman@suse.de> <1340185081-22525-13-git-send-email-mgorman@suse.de>
-In-Reply-To: <1340185081-22525-13-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
+References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
+ <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
+ <CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
+ <CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
+ <CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
+ <CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
+ <CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com> <CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Wed, 20 Jun 2012 13:59:23 -0400
+Message-ID: <CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
+Subject: Re: SNB PCI root information
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, jbarnes@virtuousgeek.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:38 AM, Mel Gorman wrote:
-> Commit [b3a27d: swap: Add swap slot free callback to
-> block_device_operations] dereferences p->bdev->bd_disk but this is a
-> NULL dereference if using swap-over-NFS. This patch checks SWP_BLKDEV
-> on the swap_info_struct before dereferencing.
->
-> With reference to this callback, Christoph Hellwig stated "Please
-> just remove the callback entirely.  It has no user outside the staging
-> tree and was added clearly against the rules for that staging tree".
-> This would also be my preference but there was not an obvious way of
-> keeping zram in staging/ happy.
->
-> Signed-off-by: Xiaotian Feng<dfeng@redhat.com>
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+On Wed, Jun 20, 2012 at 1:17 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> I don't understand this.  Is there an *advantage* to silently throwing
+> away the information the user specified on the command line?  If the
+> user goes to the trouble of discovering and using a command line
+> argument, I think that user-supplied information should override
+> anything the kernel can figure out on its own.  Ulrich, do you have an
+> opinion either way?
 
-Acked-by: Rik van Riel<riel@redhat.com>
+If the BIOS information we look for would be something generic then we
+might want to have something to overwrite.  But in this case it's a
+very specific piece of information which only has one correct value
+and I'd hope the BIOS writers get it right.
 
+Assuming this there *might* be value in having it the way the patch
+does now.  If the BIOS changes it could in theory also renumber the
+devices etc.  In this case the kernel command line overwrite values
+might become wrong while a newly-added _PXM entry might be right.
+We've seen all kind of things happening on BIOS updates...
+
+On the other hand it's easy enough to then remove the kernel command
+line parameter.  It's also probably more in line with other parameters
+which overwrite information the kernel determines otherwise
+automatically.
+
+I'd be willing to go with Yinghai's recommendation and give the BIOS
+writers the benefit of a doubt that they get things right.  If they
+prove to be incapable again we can still change the option handling to
+overwrite the kernel setting regardless.
