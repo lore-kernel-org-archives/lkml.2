@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab2FTNnf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 09:43:35 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23615 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab2FTNne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 09:43:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="114207580"
-Subject: Re: [PATCH v2 1/3] dmaengine: Add wrapper for device_tx_status
- callback
-From: Vinod Koul <vinod.koul@linux.intel.com>
+	id S1754298Ab2FTNpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 09:45:34 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:24001
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751290Ab2FTNpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 09:45:33 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1202hzz8275dhz2dh2a8h668h839h944hd25hf0ah)
+Date: Wed, 20 Jun 2012 21:41:32 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
 To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4FE1BE79.5080903@metafoo.de>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Vinod Koul <vinod.koul@intel.com>,
+        Ola Lilja <ola.o.lilja@stericsson.com>, <alsa-devel@alsa-project.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mika Westerberg <mika.westerberg@iki.fi>,
+        <linux-kernel@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [alsa-devel] [PATCH v2 2/3] ASoC: dmaengine-pcm: Rename and
+ deprecate snd_dmaengine_pcm_pointer
+Message-ID: <20120620134131.GK10387@shlinux2.ap.freescale.net>
 References: <1339438302-12417-1-git-send-email-lars@metafoo.de>
-	 <1340189662.1927.1648.camel@vkoul-udesk3>  <4FE1BE79.5080903@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Jun 2012 19:05:46 +0530
-Message-ID: <1340199346.1927.1655.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+ <1339438302-12417-2-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1339438302-12417-2-git-send-email-lars@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 14:13 +0200, Lars-Peter Clausen wrote:
-> On 06/20/2012 12:54 PM, Vinod Koul wrote:
-> > On Mon, 2012-06-11 at 20:11 +0200, Lars-Peter Clausen wrote:
-> >> This patch adds a small inline wrapper for the devivce_tx_status callback of a
-> >> dma device. This makes the source code of users of this function a bit more
-> >> compact and a bit more legible.
-> > Applied, thanks
-> > 
-> > rest of the series should go thru ASoC tree.
-> > 
+On Mon, Jun 11, 2012 at 08:11:41PM +0200, Lars-Peter Clausen wrote:
+> Currently the sound dmaengine pcm helper functions implement the pcm_pointer
+> callback by trying to count the number of elapsed periods. This is done by
+> advancing the stream position in the dmaengine callback by one period.
+> Unfortunately there is no guarantee that the callback will be called for each
+> elapsed period. It may be possible that under high system load it is only called
+> once for multiple elapsed periods. This patch renames the current implementation
+> and documents its shortcomings and that it should not be used anymore in new
+> drivers.
 > 
-> Thanks.
+> The next patch will introduce a new snd_dmaengine_pcm_pointer which will be
+> implemented based on querying the current stream position from the dma device.
 > 
-> There is a compile time dependency between the patches, so this patch should
-> go through the ASoC tree as well, or we'll have to wait another release
-> before the ASoC patches can be applied.
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 > 
-Yes and rest of the two patches depend on components in asoc-next so
-they don't apply for me as well.
-Mark, it would make sense to take all three to your tree. I will retain
-this in my next for others to use.
-So, 
-Acked-by Vinod Koul <vinod.koul@linux.intel.com>
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
--- 
-~Vinod
+> ---
+> If you are maintaining a pcm driver which use the dmaengine pcm helper please
+> check if you platform works with the new snd_dmaengine_pcm_pointer
+> implementation which is added in the next patch (ux500 seems to be good
+> candidate). And if it does send a follow-up patch to convert your platform to
+> the new implementation. If it does not please try to fix or add residue
+> reporting support to your dmaengine driver.
+> 
+Will try it after adding cyclic tx_status support for mxs/imx dma driver.
+
+Regards
+Dong Aisheng
 
