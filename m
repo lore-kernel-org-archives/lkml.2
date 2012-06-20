@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab2FTSkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:40:52 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52480 "EHLO
+	id S932575Ab2FTSlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:41:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757583Ab2FTSVi (ORCPT
+	with ESMTP id S1757561Ab2FTSVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:21:38 -0400
-Message-Id: <20120620173022.272069605@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:21:32 -0400
+Message-Id: <20120620173021.334111012@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:35 -0700
+Date: Wed, 20 Jun 2012 10:30:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Benny Halevy <bhalevy@tonian.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 15/61] nfsd4: BUG_ON(!is_spin_locked()) no good on UP kernels
+        alan@lxorguk.ukuu.org.uk, Adam Jackson <ajax@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 04/61] Revert "drm/i915/dp: Use auxch precharge value of 5 everywhere"
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit bc2df47a408f2d64cf81bcfd0f6e3e14c84cb0ab upstream.
+commit 6b4e0a93ff6e45714c72bdce193f719ed94810e3 upstream.
 
-Most frequent symptom was a BUG triggering in expire_client, with the
-server locking up shortly thereafter.
+This reverts commit 092945e11c5b84f66dd08f0b87fb729715d377bc.
 
-Introduced by 508dc6e110c6dbdc0bbe84298ccfe22de7538486 "nfsd41:
-free_session/free_client must be called under the client_lock".
+This commit prevents a DP screen from properly training the link.
+Oddly enough it works, once the machine has been warm-booted with an
+older kernel.
 
-Cc: Benny Halevy <bhalevy@tonian.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+According to DP docs this _should_ have been the right precharge time.
+Also, the commit that originally introduces this was just general snb
+DP enabling and didn't mention any specific reason for this special
+value. Whatever, trust the reporter that this makes things worse and
+let's just revert it.
+
+v2: Less spelling fail.
+
+Cc: Adam Jackson <ajax@redhat.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>
+Buglink: https://lkml.org/lkml/2012/6/14/301
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_dp.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -862,7 +862,7 @@ static void free_session(struct kref *kr
- 	struct nfsd4_session *ses;
- 	int mem;
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -368,7 +368,7 @@ intel_dp_aux_ch(struct intel_dp *intel_d
+ 	int recv_bytes;
+ 	uint32_t status;
+ 	uint32_t aux_clock_divider;
+-	int try, precharge = 5;
++	int try, precharge;
  
--	BUG_ON(!spin_is_locked(&client_lock));
-+	lockdep_assert_held(&client_lock);
- 	ses = container_of(kref, struct nfsd4_session, se_ref);
- 	nfsd4_del_conns(ses);
- 	spin_lock(&nfsd_drc_lock);
-@@ -1041,7 +1041,7 @@ static struct nfs4_client *alloc_client(
- static inline void
- free_client(struct nfs4_client *clp)
- {
--	BUG_ON(!spin_is_locked(&client_lock));
-+	lockdep_assert_held(&client_lock);
- 	while (!list_empty(&clp->cl_sessions)) {
- 		struct nfsd4_session *ses;
- 		ses = list_entry(clp->cl_sessions.next, struct nfsd4_session,
+ 	intel_dp_check_edp(intel_dp);
+ 	/* The clock divider is based off the hrawclk,
+@@ -388,6 +388,11 @@ intel_dp_aux_ch(struct intel_dp *intel_d
+ 	else
+ 		aux_clock_divider = intel_hrawclk(dev) / 2;
+ 
++	if (IS_GEN6(dev))
++		precharge = 3;
++	else
++		precharge = 5;
++
+ 	/* Try to wait for any previous AUX channel activity */
+ 	for (try = 0; try < 3; try++) {
+ 		status = I915_READ(ch_ctl);
 
 
