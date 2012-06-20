@@ -1,72 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab2FTTY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 15:24:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60553 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757104Ab2FTTY0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 15:24:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Subject: Re: [PATCH V3 2/3] regulator: dt: regulator match by regulator-compatible
-Date: Wed, 20 Jun 2012 19:24:09 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: broonie@opensource.wolfsonmicro.com, lrg@ti.com, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        lee.jones@linaro.org, swarren@wwwdotorg.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com> <1340194987-23654-3-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1340194987-23654-3-git-send-email-ldewangan@nvidia.com>
+	id S1757878Ab2FTT0B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 15:26:01 -0400
+Received: from h9.dl5rb.org.uk ([81.2.74.9]:43719 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757295Ab2FTT0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 15:26:00 -0400
+Date: Wed, 20 Jun 2012 20:25:51 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Kelvin Cheung <keguang.zhang@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        wuzhangjin@gmail.com, zhzhl555@gmail.com
+Subject: Re: [PATCH V7 2/4] MIPS: Add board support for Loongson1B
+Message-ID: <20120620192551.GC29446@linux-mips.org>
+References: <1339757617-2187-1-git-send-email-keguang.zhang@gmail.com>
+ <1339757617-2187-3-git-send-email-keguang.zhang@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206201924.09618.arnd@arndb.de>
-X-Provags-ID: V02:K0:UmMDMGrQaffqpra6awUSoD0MAN39Ox8Ulwes1sVu2v8
- 7SUWAtSjHHV916mE/ijhfOs/PqLPRWUq30Y8uTXt0aLP2dQfL7
- Piq5EYZy4f0g+qiTtjIqroM2WWDB0u+EMAN0MeBWMiLblSbltM
- BpDWDfRAs59WJ97ixVv+qbgkxnycPeF5aHmjHC/ZAG12DeMraP
- MnG5xflVJz1n4WWF0SGijeOuT+MXLfB4lkQSjnhYdH3hfwGFCQ
- Mwm7H6dgTC8Bx1hqv7CfiEk1yT25f/d+KcY5/vkF1xMDx/8lic
- MzxFGLKUzQNoOiFY0+4IhwhEkzEbe1C+h5lucNlM6/5BfuAOS0
- NZ5e+lAuIcFkUUd/NAFI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339757617-2187-3-git-send-email-keguang.zhang@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 June 2012, Laxman Dewangan wrote:
-> Match the device's regulators with the property of
-> "regulator-compatible" of each regulator node.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-> ---
-> Changes from V1:
-> - In place of adding new api, modify the existing api of_regulator_match() to
-> look regulator-compatible for matching.
-> 
-> Changes from V2:
-> - Add break if the regualtor match found.
+On Fri, Jun 15, 2012 at 06:53:35PM +0800, Kelvin Cheung wrote:
 
+> +#include <linux/clk.h>
 
-I've read the entire series a few times and I still can't figure out
-why you're doing it. *Please* describe what the change is good for,
-now what you are doing in it.
+> +static LIST_HEAD(clocks);
+> +static DEFINE_MUTEX(clocks_mutex);
+> +
+> +struct clk *clk_get(struct device *dev, const char *name)
+> +{
+> +	struct clk *c;
+> +	struct clk *ret = NULL;
+> +
+> +	mutex_lock(&clocks_mutex);
+> +	list_for_each_entry(c, &clocks, node) {
+> +		if (!strcmp(c->name, name)) {
+> +			ret = c;
+> +			break;
+> +		}
+> +	}
+> +	mutex_unlock(&clocks_mutex);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(clk_get);
 
-All I can tell from the patch and/or description right now is that
-you are adding a third identifier next the phandle and the
-"regulalator-name", but not why this is a good idea.
+This redefines a function that already is declared in <linux/clk.h> and
+defined in drivers/clk/clkdev.c.  Why?
 
-Specifically, please explain these two things in the changelog:
+> +int clk_register(struct clk *clk)
+> +{
+> +	mutex_lock(&clocks_mutex);
+> +	list_add(&clk->node, &clocks);
+> +	if (clk->ops->init)
+> +		clk->ops->init(clk);
+> +	mutex_unlock(&clocks_mutex);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(clk_register);
 
-1. What is it that the new property can express that cannot already
-be expressed by using the phandle.
+Same here.
 
-2. Why is it called "regulator-compatible"? If it's similar to the
-"compatible" property, don't you have to have a binding for each
-possible string? If it's not related to the "compatible" property,
-why is it named in a similar way?
+> diff --git a/arch/mips/loongson1/common/prom.c b/arch/mips/loongson1/common/prom.c
+> new file mode 100644
+> index 0000000..1f8e49f
+> --- /dev/null
+> +++ b/arch/mips/loongson1/common/prom.c
+> @@ -0,0 +1,87 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * Modified from arch/mips/pnx833x/common/prom.c.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <linux/serial_reg.h>
+> +#include <asm/bootinfo.h>
+> +
+> +#include <loongson1.h>
+> +#include <prom.h>
+> +
+> +int prom_argc;
+> +char **prom_argv, **prom_envp;
+> +unsigned long memsize, highmemsize;
+> +
+> +char *prom_getenv(char *envname)
+> +{
+> +	char **env = prom_envp;
+> +	int i;
+> +
+> +	i = strlen(envname);
+> +
+> +	while (*env) {
+> +		if (strncmp(envname, *env, i) == 0 && *(*env+i) == '=')
+> +			return *env + i + 1;
+> +		env++;
+> +	}
+> +
+> +	return 0;
+> +}
+[...]
 
-	Arnd
+Please take a look at sjhill's firmware cleanup patchset which is going to
+remove a fair chunk of duplication of firmware related code.
+
+This is just a heads up; you need to do nothing because that patchset is not
+applied yet.)
+
+> +const char *get_system_type(void)
+> +{
+> +	unsigned int processor_id = (&current_cpu_data)->processor_id;
+> +
+> +	switch (processor_id & PRID_REV_MASK) {
+> +	case PRID_REV_LOONGSON1B:
+> +		return "LOONGSON LS1B";
+> +	default:
+> +		return "LOONGSON (unknown)";
+> +	}
+> +}
+
+You probably should return a string identifying the system, not the SOC
+being used.  So this function should probably go to board.c.
+
+> diff --git a/arch/mips/loongson1/ls1b/board.c b/arch/mips/loongson1/ls1b/board.c
+> new file mode 100644
+> index 0000000..1ec350d
+> --- /dev/null
+> +++ b/arch/mips/loongson1/ls1b/board.c
+> @@ -0,0 +1,39 @@
+> +/*
+> + * Copyright (c) 2011 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <platform.h>
+> +
+> +#include <linux/serial_8250.h>
+> +#include <loongson1.h>
+> +
+> +static struct platform_device *ls1b_platform_devices[] __initdata = {
+> +	&ls1x_uart_device,
+> +#if IS_ENABLED(CONFIG_STMMAC_ETH)
+> +	&ls1x_eth0_device,
+> +#endif
+> +#if IS_ENABLED(CONFIG_USB_EHCI_HCD)
+> +	&ls1x_ehci_device,
+> +#endif
+> +#if IS_ENABLED(CONFIG_RTC_DRV_LOONGSON1)
+> +	&ls1x_rtc_device,
+> +#endif
+> +};
+
+Don't ifdef the platform devices.  The platform devices should always
+be registered if a system actually has the underlying hardware.  If the
+driver has been compiled or not does not matter.
+
+And the final plug - take a look at FDT for a future revision of this
+code :)
+
+  Ralf
