@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab2FTPEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 11:04:16 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61404 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab2FTPEP (ORCPT
+	id S1756732Ab2FTPFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 11:05:10 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36993 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756699Ab2FTPFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 11:04:15 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Wed, 20 Jun 2012 09:36:29 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <len.brown@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] thermal: Fix potential out-of-bounds memory access
-Date: Wed, 20 Jun 2012 07:36:34 -0700
-Message-Id: <1340202994-12744-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Wed, 20 Jun 2012 11:05:05 -0400
+Date: Wed, 20 Jun 2012 11:05:04 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vishal Nandanwar <operational.people@gmail.com>
+cc: Linux Docs <linux-doc@vger.kernel.org>,
+        Linux Embedded Group <linux-embedded@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux USB <linux-usb@vger.kernel.org>,
+        Platform driver x86 <platform-driver-x86@vger.kernel.org>
+Subject: Re: Need help regarding the USB mass storage driver
+In-Reply-To: <CAKB833nfHQwdHzCFV6ELrk1-XZT-SN8WxMs=kzO=C8+6foTrDQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1206201100410.1804-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-temp_crit.name and temp_input.name have a length of 16 bytes. Using
-THERMAL_NAME_LENGTH (20) as length parameter for snprintf() may result
-in out-of-bounds memory accesses. Replace it with sizeof().
+On Wed, 20 Jun 2012, Vishal Nandanwar wrote:
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-Coverity #115679
+> Hi,
+> 
+> I am working on a USB mass storage driver for a pen drive. I have done
+> coding as per the USB_skeleton.c file provided in Linux 3.2 source
+> code. I could assign the driver to pen drive when pen driver is
+> inserted in USB connector.
 
- drivers/thermal/thermal_sys.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Do you understand that the usb_skeleton.c file is totally inappropriate 
+as a model for a mass-storage driver?
 
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 9f2a35c..d9a682e 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -549,7 +549,7 @@ thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- 	temp->tz = tz;
- 	hwmon->count++;
- 
--	snprintf(temp->temp_input.name, THERMAL_NAME_LENGTH,
-+	snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
- 		 "temp%d_input", hwmon->count);
- 	temp->temp_input.attr.attr.name = temp->temp_input.name;
- 	temp->temp_input.attr.attr.mode = 0444;
-@@ -562,7 +562,8 @@ thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- 	if (tz->ops->get_crit_temp) {
- 		unsigned long temperature;
- 		if (!tz->ops->get_crit_temp(tz, &temperature)) {
--			snprintf(temp->temp_crit.name, THERMAL_NAME_LENGTH,
-+			snprintf(temp->temp_crit.name,
-+				 sizeof(temp->temp_crit.name),
- 				"temp%d_crit", hwmon->count);
- 			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
- 			temp->temp_crit.attr.attr.mode = 0444;
--- 
-1.7.9.7
+> I am stuck in data transfer,  could not do the data transfer. During
+> enumeration interface sub class is 06 i.e. SCSI transparent command
+> set. Please find my questions below.
+> 
+> 1. Where are these SCSI transparent command set documented?
+
+Google is your friend.  But see the answer to your next question...
+
+> 2. Is there any sample code(apart from Linux source) which describes
+> the SCSI transparent command set and mass storage driver?
+
+There is no such thing as the SCSI transparent command set.  "SCSI 
+transparent" means "use whatever command set the relevant SCSI standard 
+specifies".
+
+There is non-Linux source code for mass-storage drivers in other
+open-source operating systems.
+
+> 3. When I connect the pen drive and associate my driver, pop up
+> doesn't appear on the screen for this device. but when default
+> driver(usb_storage) is used this pop up does appear. What I need to do
+> here?
+
+Fix your driver.  It's not possible to give a more complete answer 
+without further information.
+
+Alan Stern
 
