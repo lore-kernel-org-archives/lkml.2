@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab2FTGOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:14:07 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:42291 "EHLO a.mx.secunet.com"
+	id S1754811Ab2FTGOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:14:32 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:35101 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753891Ab2FTGOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:14:05 -0400
-Message-ID: <4FE16A29.9050508@secunet.com>
-Date: Wed, 20 Jun 2012 08:14:01 +0200
-From: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754162Ab2FTGOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 02:14:30 -0400
+Date: Wed, 20 Jun 2012 11:44:23 +0530
+From: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, ryanh@linux.vnet.ibm.com
+Subject: Re: perf kvm segfaults while reporting events
+Message-ID: <20120620061423.GB3488@linux.vnet.ibm.com>
+Reply-To: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
+References: <20120601135627.GA3004@linux.vnet.ibm.com>
+ <4FC8E26E.7060309@gmail.com>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
-References: <4FDEC3C2.4060909@secunet.com> <x49fw9smohy.fsf@segfault.boston.devel.redhat.com> <4FE0155A.6010404@secunet.com> <x49ehpbjiyp.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49ehpbjiyp.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Jun 2012 06:14:02.0377 (UTC) FILETIME=[E351B790:01CD4EAB]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4FC8E26E.7060309@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062006-6078-0000-0000-00000C4B6CBD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 19.06.2012 19:43, schrieb Jeff Moyer:
+* David Ahern <dsahern@gmail.com> [2012-06-01 09:40:30]:
 
-[...]
+> On 6/1/12 7:56 AM, Pradeep Kumar Surisetty wrote:
+> >Hello
+> >
+> >perf kvm generats segfaults while reporting events.
+> >
+> >host&  guest:  3.4.0-rc4
+> >
+> >1) Copied kallsyms, modules from guest to host.
+> >
+> >2) recorded  events on host and guest&  report it using below commands.
+> >
+> >
+> >[root@host]# ./perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms --guestmodules=/tmp/guest-modules record -a -o perf.data
+> >^C[ perf record: Woken up 1 times to write data ]
+> >[ perf record: Captured and wrote 0.381 MB perf.data (~16659 samples) ]
+> >
+> >[root@host]# ./perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms --guestmodules=/tmp/guest-modules report -i perf.data --force
+> >perf: Segmentation fault
+> 
+> The short of it is that perf-kvm needs some work.
+> 
+> More specifically, the guest 'machine' is not created on the report
+> path for the above arguments. This will prevent the segfault:
+> 
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 93d355d..c8e1323 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -918,6 +918,8 @@ static int perf_session_deliver_event(struct
+> perf_session *session,
+>         }
+>         return tool->sample(tool, event, sample, evsel, machine);
+>     case PERF_RECORD_MMAP:
+> +       if (machine == NULL)
+> +           return 0;
 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 838a9cf..769b30b 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -930,7 +930,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
->  			bh->b_blocknr = block;
->  			if (uptodate)
->  				set_buffer_uptodate(bh);
-> -			if (block < end_block)
-> +			if (block <= end_block)
->  				set_buffer_mapped(bh);
->  		}
->  		block++;
 
-I can confirm that this patch fixes the problem for my test case too.
-Here is the kernel output when performing the mount operation:
+Ahhh perf kvm works fine if we record guest events for enough time. 
+above patch works better, if some one doesnt record for adequate time. 
 
-attempt to access beyond end of device
-sda4: rw=0, want=4, limit=2
-EXT3-fs (sda4): error: unable to read superblock
 
-	Torsten
+>         return tool->mmap(tool, event, sample, machine);
+>     case PERF_RECORD_COMM:
+>         return tool->comm(tool, event, sample, machine);
+> 
+> 
+> The --guestmount option (which has its own problems) combined with
+> specific pid is more stable . e.g.,
+> 
+> mkdir /tmp/guestmount/<vm-pid>
+> sshfs root@<vm-ip>:/  /tmp/guestmount/<vm-pid> -o direct_io
+> 
+> perf kvm --host --guest --guestmount=/tmp/guestmount \
+>   record -p <vm-pid>  -o /tmp/perf.data -- sleep 1
+> 
+> perf kvm --host --guest --guestmount=/tmp/guestmount  report -i
+> /tmp/perf.data --force --stdio
+> 
+> If you use the -a argument on record with multiple VMs running
+> without an entry in /tmp/guestmount you'll see:
+> 
+> Warning:
+> 7 unprocessable samples recorded.
+> Do you have a KVM guest running and not using 'perf kvm'?
+> 
+> David
+> 
+
