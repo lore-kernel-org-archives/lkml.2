@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab2FTSWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:22:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43050 "EHLO
+	id S932283Ab2FTSWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:22:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53819 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757684Ab2FTSWl (ORCPT
+	with ESMTP id S932255Ab2FTSWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:22:41 -0400
-Message-Id: <20120620173023.509238685@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:22:48 -0400
+Message-Id: <20120620173024.018090781@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:50 -0700
+Date: Wed, 20 Jun 2012 10:30:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [ 30/61] xhci: Dont free endpoints in xhci_mem_cleanup()
+        alan@lxorguk.ukuu.org.uk, Jon Povey <jon.povey@racelogic.co.uk>,
+        Sekhar Nori <nsekhar@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 36/61] usb: musb: davinci: Fix build breakage
 In-Reply-To: <20120620173033.GA5634@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,92 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jon Povey <jon.povey@racelogic.co.uk>
 
-commit 32f1d2c536d0c26c5814cb0e6a0606c42d02fac1 upstream.
+commit 6594b2d7b1ef8260e6e36ddc96bd37a40e39ba80 upstream.
 
-This patch fixes a few issues introduced in the recent fix
-[f8a9e72d: USB: fix resource leak in xhci power loss path]
+This appears to have been broken by
+commit 5cfb19ac604a68c030b245561f575c2d1bac1d49
+(ARM: davinci: streamline sysmod access)
 
-- The endpoints listed in bw table are just links and each entry is an
- array member of dev->eps[].  But the commit above adds a kfree() call
- to these instances, and thus it results in memory corruption.
+For now, fix by hardcoding USB_PHY_CTRL and DM355_DEEPSLEEP
 
-- It clears only the first entry of rh_bw[], but there can be multiple
-  ports.
+Tested on DM365 with defconfig changes.
 
-- It'd be safer to clear the list_head of ep as well, not only
-  removing from the list, as it's checked in
-  xhci_discover_or_reset_device().
-
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe "xhci: Store
-information about roothubs and TTs."
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reviewed-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
+Acked-by: Sekhar Nori <nsekhar@ti.com>
+CC: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |   35 ++++++++++++++---------------------
- 1 file changed, 14 insertions(+), 21 deletions(-)
+ drivers/usb/musb/davinci.c |    1 +
+ drivers/usb/musb/davinci.h |    4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1772,17 +1772,9 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- {
- 	struct pci_dev	*pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
- 	struct dev_info	*dev_info, *next;
--	struct list_head *tt_list_head;
--	struct list_head *tt;
--	struct list_head *endpoints;
--	struct list_head *ep, *q;
--	struct xhci_tt_bw_info *tt_info;
--	struct xhci_interval_bw_table *bwt;
--	struct xhci_virt_ep *virt_ep;
--
- 	unsigned long	flags;
- 	int size;
--	int i;
-+	int i, j, num_ports;
+--- a/drivers/usb/musb/davinci.c
++++ b/drivers/usb/musb/davinci.c
+@@ -34,6 +34,7 @@
+ #include <linux/dma-mapping.h>
  
- 	/* Free the Event Ring Segment Table and the actual Event Ring */
- 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
-@@ -1839,21 +1831,22 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	}
- 	spin_unlock_irqrestore(&xhci->lock, flags);
+ #include <mach/cputype.h>
++#include <mach/hardware.h>
  
--	bwt = &xhci->rh_bw->bw_table;
--	for (i = 0; i < XHCI_MAX_INTERVAL; i++) {
--		endpoints = &bwt->interval_bw[i].endpoints;
--		list_for_each_safe(ep, q, endpoints) {
--			virt_ep = list_entry(ep, struct xhci_virt_ep, bw_endpoint_list);
--			list_del(&virt_ep->bw_endpoint_list);
--			kfree(virt_ep);
-+	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
-+	for (i = 0; i < num_ports; i++) {
-+		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
-+		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
-+			struct list_head *ep = &bwt->interval_bw[j].endpoints;
-+			while (!list_empty(ep))
-+				list_del_init(ep->next);
- 		}
- 	}
+ #include <asm/mach-types.h>
  
--	tt_list_head = &xhci->rh_bw->tts;
--	list_for_each_safe(tt, q, tt_list_head) {
--		tt_info = list_entry(tt, struct xhci_tt_bw_info, tt_list);
--		list_del(tt);
--		kfree(tt_info);
-+	for (i = 0; i < num_ports; i++) {
-+		struct xhci_tt_bw_info *tt, *n;
-+		list_for_each_entry_safe(tt, n, &xhci->rh_bw[i].tts, tt_list) {
-+			list_del(&tt->tt_list);
-+			kfree(tt);
-+		}
- 	}
+--- a/drivers/usb/musb/davinci.h
++++ b/drivers/usb/musb/davinci.h
+@@ -15,7 +15,7 @@
+  */
  
- 	xhci->num_usb2_ports = 0;
+ /* Integrated highspeed/otg PHY */
+-#define USBPHY_CTL_PADDR	(DAVINCI_SYSTEM_MODULE_BASE + 0x34)
++#define USBPHY_CTL_PADDR	0x01c40034
+ #define USBPHY_DATAPOL		BIT(11)	/* (dm355) switch D+/D- */
+ #define USBPHY_PHYCLKGD		BIT(8)
+ #define USBPHY_SESNDEN		BIT(7)	/* v(sess_end) comparator */
+@@ -27,7 +27,7 @@
+ #define USBPHY_OTGPDWN		BIT(1)
+ #define USBPHY_PHYPDWN		BIT(0)
+ 
+-#define DM355_DEEPSLEEP_PADDR	(DAVINCI_SYSTEM_MODULE_BASE + 0x48)
++#define DM355_DEEPSLEEP_PADDR	0x01c40048
+ #define DRVVBUS_FORCE		BIT(2)
+ #define DRVVBUS_OVERRIDE	BIT(1)
+ 
 
 
