@@ -1,71 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab2FTKqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:46:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35992 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756498Ab2FTKqW (ORCPT
+	id S1756513Ab2FTKqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:46:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34444 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756070Ab2FTKqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:46:22 -0400
+	Wed, 20 Jun 2012 06:46:45 -0400
+Date: Wed, 20 Jun 2012 03:46:27 -0700
+From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Message-ID: <tip-6ac72b5dc395fa8b5f347d82679b9fc9d946deb4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+In-Reply-To: <20120524141650.3692.48637.stgit@srivatsabhat.in.ibm.com>
+References: <20120524141650.3692.48637.stgit@srivatsabhat.in.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] cpusets, hotplug:
+  Restructure functions that are invoked during hotplug
+Git-Commit-ID: 6ac72b5dc395fa8b5f347d82679b9fc9d946deb4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120620100031.GI1478@erda.amd.com>
-References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
-	<CABPqkBS9hRxKLsecVK+AgRue6oqTtAg4=0Dpd5Z2VwAUja50fw@mail.gmail.com>
-	<20120620092932.GH1478@erda.amd.com>
-	<1340185084.21745.81.camel@twins>
-	<20120620100031.GI1478@erda.amd.com>
-Date: Wed, 20 Jun 2012 12:46:21 +0200
-Message-ID: <CABPqkBRzeSB4SHMSnGbu+HfPyVMSwCUHKoeoa68UF4VrjjxKsQ@mail.gmail.com>
-Subject: Re: [PATCH 00/10] perf, x86: Add northbridge counter support for AMD
- family 15h
-From: Stephane Eranian <eranian@google.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:46:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 12:00 PM, Robert Richter <robert.richter@amd.com> wrote:
-> On 20.06.12 11:38:04, Peter Zijlstra wrote:
->> On Wed, 2012-06-20 at 11:29 +0200, Robert Richter wrote:
->> > Second, since nb perfctr are implemented the same way as core
->> > counters, the same code would have been used. Thus multiple (two) x86
->> > pmus (struct x86_pmu) would reside in parallel in the kernel.
->>
->> Well, no. The I take it the uncore counters are nb wide, thus you need
->> special goo to make counter rotation work properly, x86_pmu is unsuited
->> for that.
->
-> The code for nb and core counters is identical. There would be the
-> same nmi handler, same code to setup the event, same code to
-> start/stop cpus. The only difference are per-node msrs, even the msr
-> offset calculation is the same as for core counters on family 15h. It
-> would not make sense to duplicate all this code. And, as said, current
-> design does not fit to use x86_pmus in parallel or to easy reuse x86
-> functions. Separating nb counters would make the same sense as
-> implementing a separate pmu for fixed counters.
->
-Being identical does not necessarily mean you have to copy the code,
-you can also simply call it.
+Commit-ID:  6ac72b5dc395fa8b5f347d82679b9fc9d946deb4
+Gitweb:     http://git.kernel.org/tip/6ac72b5dc395fa8b5f347d82679b9fc9d946deb4
+Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+AuthorDate: Thu, 24 May 2012 19:46:55 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 18 Jun 2012 11:45:04 +0200
 
-I don't see the explanation for the non-contiguous counter indexes.
-What's that about? With a separate PMU, would you have that problem.
-I see uncore CTL base MSRC001_0240, next is 0242, and so on. But
-that's already the case with core counters on Fam15h.
+cpusets, hotplug: Restructure functions that are invoked during hotplug
 
-As Peter said, having your own PMU would alleviate the need for
-Patch 10. Those filters would simply not be visible to tools via
-sysfs.
+Separate out the cpuset related handling for CPU/Memory online/offline.
+This also helps us exploit the most obvious and basic level of optimization
+that any notification mechanism (CPU/Mem online/offline) has to offer us:
+"We *know* why we have been invoked. So stop pretending that we are lost,
+and do only the necessary amount of processing!".
 
-> And wrt counter rotation, this only affects code to assign counters.
-> You don't need a separate pmu for this.
->
-> -Robert
->
-> --
-> Advanced Micro Devices, Inc.
-> Operating System Research Center
->
+And while at it, rename scan_for_empty_cpusets() to
+scan_cpusets_upon_hotplug(), which is more appropriate considering how
+it is restructured.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/20120524141650.3692.48637.stgit@srivatsabhat.in.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/cpuset.h |    4 +-
+ kernel/cpuset.c        |   88 +++++++++++++++++++++++++++++++++---------------
+ kernel/sched/core.c    |    4 +-
+ 3 files changed, 65 insertions(+), 31 deletions(-)
+
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index 4052564..119be3a 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -20,7 +20,7 @@ extern int number_of_cpusets;	/* How many cpusets are defined in system? */
+ 
+ extern int cpuset_init(void);
+ extern void cpuset_init_smp(void);
+-extern void cpuset_update_active_cpus(void);
++extern void cpuset_update_active_cpus(bool cpu_online);
+ extern void cpuset_cpus_allowed(struct task_struct *p, struct cpumask *mask);
+ extern void cpuset_cpus_allowed_fallback(struct task_struct *p);
+ extern nodemask_t cpuset_mems_allowed(struct task_struct *p);
+@@ -125,7 +125,7 @@ static inline void set_mems_allowed(nodemask_t nodemask)
+ static inline int cpuset_init(void) { return 0; }
+ static inline void cpuset_init_smp(void) {}
+ 
+-static inline void cpuset_update_active_cpus(void)
++static inline void cpuset_update_active_cpus(bool cpu_online)
+ {
+ 	partition_sched_domains(1, NULL, NULL);
+ }
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index e0b29bb..3780a9e 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -147,6 +147,12 @@ typedef enum {
+ 	CS_SPREAD_SLAB,
+ } cpuset_flagbits_t;
+ 
++/* the type of hotplug event */
++enum hotplug_event {
++	CPUSET_CPU_OFFLINE,
++	CPUSET_MEM_OFFLINE,
++};
++
+ /* convenient tests for these bits */
+ static inline int is_cpu_exclusive(const struct cpuset *cs)
+ {
+@@ -2016,8 +2022,10 @@ static struct cpuset *cpuset_next(struct list_head *queue)
+ 
+ 
+ /*
+- * Walk the specified cpuset subtree and look for empty cpusets.
+- * The tasks of such cpuset must be moved to a parent cpuset.
++ * Walk the specified cpuset subtree upon a hotplug operation (CPU/Memory
++ * online/offline) and update the cpusets accordingly.
++ * For regular CPU/Mem hotplug, look for empty cpusets; the tasks of such
++ * cpuset must be moved to a parent cpuset.
+  *
+  * Called with cgroup_mutex held.  We take callback_mutex to modify
+  * cpus_allowed and mems_allowed.
+@@ -2030,38 +2038,58 @@ static struct cpuset *cpuset_next(struct list_head *queue)
+  * that has tasks along with an empty 'mems'.  But if we did see such
+  * a cpuset, we'd handle it just like we do if its 'cpus' was empty.
+  */
+-static void scan_for_empty_cpusets(struct cpuset *root)
++static void
++scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
+ {
+ 	LIST_HEAD(queue);
+-	struct cpuset *cp;	/* scans cpusets being updated */
++	struct cpuset *cp;		/* scans cpusets being updated */
+ 	static nodemask_t oldmems;	/* protected by cgroup_mutex */
+ 
+ 	list_add_tail((struct list_head *)&root->stack_list, &queue);
+ 
+-	while ((cp = cpuset_next(&queue)) != NULL) {
++	switch (event) {
++	case CPUSET_CPU_OFFLINE:
++		while ((cp = cpuset_next(&queue)) != NULL) {
++
++			/* Continue past cpusets with all cpus online */
++			if (cpumask_subset(cp->cpus_allowed, cpu_active_mask))
++				continue;
++
++			/* Remove offline cpus from this cpuset. */
++			mutex_lock(&callback_mutex);
++			cpumask_and(cp->cpus_allowed, cp->cpus_allowed,
++							cpu_active_mask);
++			mutex_unlock(&callback_mutex);
++
++			/* Move tasks from the empty cpuset to a parent */
++			if (cpumask_empty(cp->cpus_allowed))
++				remove_tasks_in_empty_cpuset(cp);
++			else
++				update_tasks_cpumask(cp, NULL);
++		}
++		break;
+ 
+-		/* Continue past cpusets with all cpus, mems online */
+-		if (cpumask_subset(cp->cpus_allowed, cpu_active_mask) &&
+-		    nodes_subset(cp->mems_allowed, node_states[N_HIGH_MEMORY]))
+-			continue;
++	case CPUSET_MEM_OFFLINE:
++		while ((cp = cpuset_next(&queue)) != NULL) {
+ 
+-		oldmems = cp->mems_allowed;
++			/* Continue past cpusets with all mems online */
++			if (nodes_subset(cp->mems_allowed,
++					node_states[N_HIGH_MEMORY]))
++				continue;
+ 
+-		/* Remove offline cpus and mems from this cpuset. */
+-		mutex_lock(&callback_mutex);
+-		cpumask_and(cp->cpus_allowed, cp->cpus_allowed,
+-			    cpu_active_mask);
+-		nodes_and(cp->mems_allowed, cp->mems_allowed,
++			oldmems = cp->mems_allowed;
++
++			/* Remove offline mems from this cpuset. */
++			mutex_lock(&callback_mutex);
++			nodes_and(cp->mems_allowed, cp->mems_allowed,
+ 						node_states[N_HIGH_MEMORY]);
+-		mutex_unlock(&callback_mutex);
++			mutex_unlock(&callback_mutex);
+ 
+-		/* Move tasks from the empty cpuset to a parent */
+-		if (cpumask_empty(cp->cpus_allowed) ||
+-		     nodes_empty(cp->mems_allowed))
+-			remove_tasks_in_empty_cpuset(cp);
+-		else {
+-			update_tasks_cpumask(cp, NULL);
+-			update_tasks_nodemask(cp, &oldmems, NULL);
++			/* Move tasks from the empty cpuset to a parent */
++			if (nodes_empty(cp->mems_allowed))
++				remove_tasks_in_empty_cpuset(cp);
++			else
++				update_tasks_nodemask(cp, &oldmems, NULL);
+ 		}
+ 	}
+ }
+@@ -2080,8 +2108,11 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+  *
+  * Called within get_online_cpus().  Needs to call cgroup_lock()
+  * before calling generate_sched_domains().
++ *
++ * @cpu_online: Indicates whether this is a CPU online event (true) or
++ * a CPU offline event (false).
+  */
+-void cpuset_update_active_cpus(void)
++void cpuset_update_active_cpus(bool cpu_online)
+ {
+ 	struct sched_domain_attr *attr;
+ 	cpumask_var_t *doms;
+@@ -2091,7 +2122,10 @@ void cpuset_update_active_cpus(void)
+ 	mutex_lock(&callback_mutex);
+ 	cpumask_copy(top_cpuset.cpus_allowed, cpu_active_mask);
+ 	mutex_unlock(&callback_mutex);
+-	scan_for_empty_cpusets(&top_cpuset);
++
++	if (!cpu_online)
++		scan_cpusets_upon_hotplug(&top_cpuset, CPUSET_CPU_OFFLINE);
++
+ 	ndoms = generate_sched_domains(&doms, &attr);
+ 	cgroup_unlock();
+ 
+@@ -2122,9 +2156,9 @@ static int cpuset_track_online_nodes(struct notifier_block *self,
+ 	case MEM_OFFLINE:
+ 		/*
+ 		 * needn't update top_cpuset.mems_allowed explicitly because
+-		 * scan_for_empty_cpusets() will update it.
++		 * scan_cpusets_upon_hotplug() will update it.
+ 		 */
+-		scan_for_empty_cpusets(&top_cpuset);
++		scan_cpusets_upon_hotplug(&top_cpuset, CPUSET_MEM_OFFLINE);
+ 		break;
+ 	default:
+ 		break;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e368731..eee1908 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7051,7 +7051,7 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+ 
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+-		cpuset_update_active_cpus();
++		cpuset_update_active_cpus(true);
+ 		break;
+ 	default:
+ 		return NOTIFY_DONE;
+@@ -7064,7 +7064,7 @@ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+ {
+ 	switch (action) {
+ 	case CPU_DOWN_PREPARE:
+-		cpuset_update_active_cpus();
++		cpuset_update_active_cpus(false);
+ 		break;
+ 	case CPU_DOWN_PREPARE_FROZEN:
+ 		num_cpus_frozen++;
