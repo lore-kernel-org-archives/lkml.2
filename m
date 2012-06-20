@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758509Ab2FTXMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 19:12:36 -0400
+	id S1758534Ab2FTXMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 19:12:54 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:37403 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758494Ab2FTXMe (ORCPT
+	with ESMTP id S1758423Ab2FTXMw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 19:12:34 -0400
-Date: Wed, 20 Jun 2012 16:12:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        fmhess@users.sourceforge.net, abbotti@mev.co.uk
-Subject: Re: [PATCH] staging: comedi: skel: use module_comedi_{pci_,}driver()
-Message-ID: <20120620231230.GA28411@kroah.com>
-References: <201206201556.51336.hartleys@visionengravers.com>
+	Wed, 20 Jun 2012 19:12:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201206201556.51336.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
+References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
+Date: Wed, 20 Jun 2012 16:12:51 -0700
+Message-ID: <CA+8MBb+Kk=G5GQbSdbjXqFmw+GCON6jLZABCAGuL+bNDC+dLgA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/9] string: introduce memweight
+From: Tony Luck <tony.luck@gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Anders Larsen <al@alarsen.net>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 03:56:50PM -0700, H Hartley Sweeten wrote:
-> If PCI boards are supported, use the module_comedi_pci_driver() macro
-> to register the module as a comedi driver and a PCI driver. Otherwise,
-> only ISA boards are supported to use the module_comedi_driver() macro
-> to register the module as a comedi driver.
-> 
-> Refactor the code a bit due to the use of the module_comedi_* macros.
-> 
-> Rename the comedi_driver and pci_driver variables as well as the pci
-> driver related functions for aesthetic reasons. This makes the skel
-> driver conform to the changes to the other comedi drivers.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+On Fri, Jun 8, 2012 at 5:50 PM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>  lib/string.c           |   36 ++++++++++++++++++++++++++++++++++++
 
-This patch fails to apply:
+Is lib/string.c the right place for this?  I get a build error on the
+ia64 sim_defconfig:
 
-patching file drivers/staging/comedi/drivers/skel.c
-Hunk #4 FAILED at 543.
-1 out of 4 hunks FAILED -- saving rejects to file drivers/staging/comedi/drivers/skel.c.rej
+  LD      arch/ia64/hp/sim/boot/bootloader
 
-Care to rediff it and resend?
+It fails because it pulls in lib/lib.a(string.o) to get some
+innocuous function like strcpy() ... but it also gets
+given memweight() which relies on __bitmap_weight()
+which it doesn't have, because it doesn't include lib/built-in.o
+(which is where bitmap.o, the definer of __bitmap_weight(), has
+been linked).
 
-thanks,
+Moving memweight() to lib/bitmap.c fixes the problem. But it
+isn't really clear that it belongs there either.  Perhaps it should
+be its own file lib/memweight.c that gets included in lib/lib.a?
 
-greg k-h
+-Tony
