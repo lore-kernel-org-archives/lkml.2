@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab2FTKQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:16:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56051 "EHLO
+	id S1756158Ab2FTKRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:17:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56096 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550Ab2FTKQS convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753552Ab2FTKRs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:16:18 -0400
-Message-ID: <1340187373.21745.95.camel@twins>
-Subject: Re: [PATCH 00/10] perf, x86: Add northbridge counter support for
- AMD family 15h
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Jun 2012 12:16:13 +0200
-In-Reply-To: <20120620100031.GI1478@erda.amd.com>
-References: <1340129448-8690-1-git-send-email-robert.richter@amd.com>
-	 <CABPqkBS9hRxKLsecVK+AgRue6oqTtAg4=0Dpd5Z2VwAUja50fw@mail.gmail.com>
-	 <20120620092932.GH1478@erda.amd.com> <1340185084.21745.81.camel@twins>
-	 <20120620100031.GI1478@erda.amd.com>
+	Wed, 20 Jun 2012 06:17:48 -0400
+Message-ID: <1340187450.21745.96.camel@twins>
+Subject: Re: [PATCH] sched/cpu hotplug: Don't traverse sched domain tree of
+ cpus going offline
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: mingo@kernel.org, pjt@google.com, suresh.b.siddha@intel.com,
+        seto.hidetoshi@jp.fujitsu.com, rostedt@goodmis.org, tglx@linutronix.de,
+        dhillf@gmail.com, rjw@sisk.pl, linux-kernel@vger.kernel.org
+Date: Wed, 20 Jun 2012 12:17:30 +0200
+In-Reply-To: <4FE19CF5.3060000@linux.vnet.ibm.com>
+References: <20120602185721.5559.65562.stgit@srivatsabhat>
+	 <4FE19CF5.3060000@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -28,19 +27,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 12:00 +0200, Robert Richter wrote:
+On Wed, 2012-06-20 at 15:20 +0530, Srivatsa S. Bhat wrote:
+> Any thoughts on this patch?
 > 
-> And wrt counter rotation, this only affects code to assign counters.
-> You don't need a separate pmu for this. 
+Yeah, I stared at it for a while and got a head-ache.. the idle-balance
+part if ok, the rt.c part needs a little more-thinking.
 
-It makes it easier though, on unplug you would otherwise need to filter
-what events are uncore and migrate those to another online cpu of the
-same nb instead of all events..
-
-Also, what cpu on the NB receives the PMI?
-
-Sure it can be done, just not pretty. Combine that with all the other
-special casing like patches 3 and 10 and one really starts to wonder if
-its all worth it.
-
-
+Thanks for reminding me.. I'll try and have another look.
