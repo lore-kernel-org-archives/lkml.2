@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2FTOo5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:44:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:65121 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515Ab2FTOoz (ORCPT
+	id S1756692Ab2FTOpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:45:14 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8130 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515Ab2FTOpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:44:55 -0400
+	Wed, 20 Jun 2012 10:45:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 20 Jun 2012 07:45:04 -0700
+Message-ID: <4FE1E1E6.6090303@nvidia.com>
+Date: Wed, 20 Jun 2012 20:14:54 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaP7SekiCYcciYpcf7AGbRgRG7E8q97HvnCf0qRPQOA55A@mail.gmail.com>
-References: <1338704660-30921-1-git-send-email-devendra.aaru@gmail.com>
-	<e9129201-3636-49f6-9e97-156cb9823fd3@googlegroups.com>
-	<CAHdPZaP7SekiCYcciYpcf7AGbRgRG7E8q97HvnCf0qRPQOA55A@mail.gmail.com>
-Date: Wed, 20 Jun 2012 15:44:54 +0100
-Message-ID: <CAOh2x=noV1bOzV7p7F6_iKjt2y1tcd1j5o2Ys0cuwC5+efLCHw@mail.gmail.com>
-Subject: Re: [PATCH] rtc/rtc-spear: free the config right after the rtc_device_unregister
-From: viresh kumar <viresh.linux@gmail.com>
-To: "devendra.aaru" <devendra.aaru@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
-        rajeev <rajeev-dlh.kumar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: tps65910: Convert to regulator_set_voltage_time_sel()
+References: <1340203210.8003.6.camel@phoenix>
+In-Reply-To: <1340203210.8003.6.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 3:39 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
-> On Wed, Jun 20, 2012 at 7:57 PM, Viresh Kumar <viresh.linux@gmail.com> wrote:
->> Reviewed-by: Viresh Kumar <viresh.linux@gmail.com>
->
-> Thanks, at last :-).
->
-> Is there any tree through which it can reach torvalds?
+On Wednesday 20 June 2012 08:10 PM, Axel Lin wrote:
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> ---
 
-The way I would have found this information about any driver is by
-looking at its
-git-log and check via which path patches have been going till date. Maintainers
-normally adds there signed-off's to patches that go through them.
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+Looks good to me.
 
-Andrew Morton, is the one who applied rtc-spear patches till now. Added in cc.
-
---
-viresh
