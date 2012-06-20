@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab2FTLov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 07:44:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40269 "EHLO mx2.suse.de"
+	id S1756244Ab2FTLpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 07:45:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40248 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932129Ab2FTLod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 07:44:33 -0400
+	id S1755823Ab2FTLob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 07:44:31 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Eric B Munson <emunson@mgebm.net>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 17/17] mm: Account for the number of times direct reclaimers get throttled
-Date: Wed, 20 Jun 2012 12:44:12 +0100
-Message-Id: <1340192652-31658-18-git-send-email-mgorman@suse.de>
+Subject: [PATCH 15/17] nbd: Set SOCK_MEMALLOC for access to PFMEMALLOC reserves
+Date: Wed, 20 Jun 2012 12:44:10 +0100
+Message-Id: <1340192652-31658-16-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1340192652-31658-1-git-send-email-mgorman@suse.de>
 References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
@@ -26,58 +26,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under significant pressure when writing back to network-backed storage,
-direct reclaimers may get throttled. This is expected to be a
-short-lived event and the processes get woken up again but processes do
-get stalled. This patch counts how many times such stalling occurs. It's
-up to the administrator whether to reduce these stalls by increasing
+Set SOCK_MEMALLOC on the NBD socket to allow access to PFMEMALLOC
+reserves so pages backed by NBD, particularly if swap related, can
+be cleaned to prevent the machine being deadlocked. It is still
+possible that the PFMEMALLOC reserves get depleted resulting in
+deadlock but this can be resolved by the administrator by increasing
 min_free_kbytes.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/vm_event_item.h |    1 +
- mm/vmscan.c                   |    3 +++
- mm/vmstat.c                   |    1 +
- 3 files changed, 5 insertions(+)
+ drivers/block/nbd.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 06f8e38..57f7b10 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -30,6 +30,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
- 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
- 		FOR_ALL_ZONES(PGSCAN_DIRECT),
-+		PGSCAN_DIRECT_THROTTLE,
- #ifdef CONFIG_NUMA
- 		PGSCAN_ZONE_RECLAIM_FAILED,
- #endif
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index bf8625c..bcc65c5 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2166,6 +2166,9 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	if (pfmemalloc_watermark_ok(pgdat))
- 		return;
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 061427a75d..76bc96f 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -154,6 +154,7 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
+ 	struct msghdr msg;
+ 	struct kvec iov;
+ 	sigset_t blocked, oldset;
++	unsigned long pflags = current->flags;
  
-+	/* Account for the throttling */
-+	count_vm_event(PGSCAN_DIRECT_THROTTLE);
-+
- 	/*
- 	 * If the caller cannot enter the filesystem, it's possible that it
- 	 * is due to the caller holding an FS lock or performing a journal
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 1bbbbd9..df7a674 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -745,6 +745,7 @@ const char * const vmstat_text[] = {
- 	TEXTS_FOR_ZONES("pgsteal_direct")
- 	TEXTS_FOR_ZONES("pgscan_kswapd")
- 	TEXTS_FOR_ZONES("pgscan_direct")
-+	"pgscan_direct_throttle",
+ 	if (unlikely(!sock)) {
+ 		dev_err(disk_to_dev(nbd->disk),
+@@ -167,8 +168,9 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
+ 	siginitsetinv(&blocked, sigmask(SIGKILL));
+ 	sigprocmask(SIG_SETMASK, &blocked, &oldset);
  
- #ifdef CONFIG_NUMA
- 	"zone_reclaim_failed",
++	current->flags |= PF_MEMALLOC;
+ 	do {
+-		sock->sk->sk_allocation = GFP_NOIO;
++		sock->sk->sk_allocation = GFP_NOIO | __GFP_MEMALLOC;
+ 		iov.iov_base = buf;
+ 		iov.iov_len = size;
+ 		msg.msg_name = NULL;
+@@ -214,6 +216,7 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
+ 	} while (size > 0);
+ 
+ 	sigprocmask(SIG_SETMASK, &oldset, NULL);
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
+ 
+ 	return result;
+ }
+@@ -405,6 +408,7 @@ static int nbd_do_it(struct nbd_device *nbd)
+ 
+ 	BUG_ON(nbd->magic != NBD_MAGIC);
+ 
++	sk_set_memalloc(nbd->sock->sk);
+ 	nbd->pid = task_pid_nr(current);
+ 	ret = device_create_file(disk_to_dev(nbd->disk), &pid_attr);
+ 	if (ret) {
 -- 
 1.7.9.2
 
