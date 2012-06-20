@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab2FTMbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 08:31:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab2FTMbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 08:31:06 -0400
-Date: Wed, 20 Jun 2012 14:29:39 +0200
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] uprobes: write_opcode: alloc the new page outside of
- "retry" loop
-Message-ID: <20120620122939.GA4018@bandura.brq.redhat.com>
-References: <20120619194636.GA30137@redhat.com>
- <20120619194759.GE30146@redhat.com>
+	id S1752532Ab2FTMfM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 08:35:12 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:36836 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab2FTMfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 08:35:10 -0400
+Date: Wed, 20 Jun 2012 14:35:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] [GIT PULL][v3.6] tracing: simple updates
+Message-ID: <20120620123502.GD10561@gmail.com>
+References: <20120615010123.722084844@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120619194759.GE30146@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
+In-Reply-To: <20120615010123.722084844@goodmis.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 09:47:59PM +0200, Oleg Nesterov wrote:
-> It is ugly to free and re-alloc new_page if write_opcode() needs to
-> retry. Move alloc_page_vma/page_cache_release outside of "retry" loop.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/events/uprobes.c |   26 +++++++++++---------------
->  1 files changed, 11 insertions(+), 15 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 442064d..3fd7bdf 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -214,19 +214,18 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
->  	struct vm_area_struct *vma;
->  	int ret;
->  
-> -retry:
-> -	/* Read the page with vaddr into memory */
-> -	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &old_page, &vma);
-> -	if (ret <= 0)
-> -		return ret;
-> -
-> -	ret = -ENOMEM;
->  	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
-  Should we want NULL instead of vma in alloc_page_vma()? Or
-initialize vma with NULL...
 
->  	if (!new_page)
-> -		goto put_old;
-> +		return -ENOMEM;
->  
->  	__SetPageUptodate(new_page);
->  
-> + retry:
-> +	/* Read the page with vaddr into memory */
-> +	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &old_page, &vma);
-> +	if (ret <= 0)
-> +		goto out;
-> +
-[cut]
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Anton.
+> Ingo,
+> 
+> I understand that I'm currently on Thomas's "most loved" list, I figured
+> I would send out these simple changes. Nothing that should cause me
+> another brown paper bag fix in this.
+> 
+> Please pull the latest tip/perf/core tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/perf/core
+> 
+> Head SHA1: 7374e82771c6d5a9af2080be46f64a5826c7efb1
+> 
+> 
+> Borislav Petkov (1):
+>       ftrace: Remove a superfluous check
+> 
+> Steven Rostedt (2):
+>       tracing: Add comments for the other bits of ftrace_event_call.flags
+>       tracing: Register the ftrace internal events during early boot
+> 
+> ----
+>  include/linux/ftrace_event.h |    3 +++
+>  kernel/trace/ftrace.c        |    8 ++------
+>  kernel/trace/trace_output.c  |    2 +-
+>  3 files changed, 6 insertions(+), 7 deletions(-)
+
+Pulled, thanks Steve!
+
+	Ingo
