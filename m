@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab2FTQxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 12:53:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38200 "EHLO
+	id S1757297Ab2FTQyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 12:54:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38218 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab2FTQxT (ORCPT
+	with ESMTP id S1754185Ab2FTQyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 12:53:19 -0400
-Date: Wed, 20 Jun 2012 09:52:57 -0700
+	Wed, 20 Jun 2012 12:54:10 -0400
+Date: Wed, 20 Jun 2012 09:53:50 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-7x1b0e6jthkr93lfjzsuakk5@git.kernel.org>
+Message-ID: <tip-97ltkmj7v23kyhflltf6iz5n@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -20,8 +20,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf tools:
-  Reconstruct hw cache event with modifiers from perf_event_attr
-Git-Commit-ID: 0b668bc9a74ce1bd3b8c5fd93e8d85ed955e11fe
+  Reconstruct sw event with modifiers from perf_event_attr
+Git-Commit-ID: 335c2f5d25319b208fb8b444e6f3099a806a33bf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,34 +30,35 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:53:03 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 09:53:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0b668bc9a74ce1bd3b8c5fd93e8d85ed955e11fe
-Gitweb:     http://git.kernel.org/tip/0b668bc9a74ce1bd3b8c5fd93e8d85ed955e11fe
+Commit-ID:  335c2f5d25319b208fb8b444e6f3099a806a33bf
+Gitweb:     http://git.kernel.org/tip/335c2f5d25319b208fb8b444e6f3099a806a33bf
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 11 Jun 2012 14:08:07 -0300
+AuthorDate: Mon, 11 Jun 2012 14:36:20 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Tue, 19 Jun 2012 13:06:20 -0300
 
-perf tools: Reconstruct hw cache event with modifiers from perf_event_attr
+perf tools: Reconstruct sw event with modifiers from perf_event_attr
 
-  [root@sandy ~]# perf record -a -e dTLB-load-misses:u usleep 1
+  [root@sandy ~]# perf record -e task-clock:u -a usleep 1
   [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.486 MB perf.data (~21216 samples) ]
+  [ perf record: Captured and wrote 0.482 MB perf.data (~21073 samples) ]
+  [root@sandy ~]#
 
 Before:
 
   [root@sandy ~]# perf evlist
-  dTLB-load-misses
+  task-clock
   [root@sandy ~]#
 
 After:
 
   [root@sandy ~]# perf evlist
-  dTLB-load-misses:u
+  task-clock:u
   [root@sandy ~]#
 
 Ditto for other tools.
@@ -70,355 +71,115 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-7x1b0e6jthkr93lfjzsuakk5@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-97ltkmj7v23kyhflltf6iz5n@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c        |  104 ++++++++++++++++++++++++++++++++++++
- tools/perf/util/evsel.h        |   16 +++++-
- tools/perf/util/parse-events.c |  115 +++++----------------------------------
- 3 files changed, 134 insertions(+), 101 deletions(-)
+ tools/perf/util/evsel.c        |   29 +++++++++++++++++++++++++++++
+ tools/perf/util/evsel.h        |    2 ++
+ tools/perf/util/parse-events.c |   19 +++----------------
+ 3 files changed, 34 insertions(+), 16 deletions(-)
 
 diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index dab8938..47f1fe2 100644
+index 47f1fe2..2da0473 100644
 --- a/tools/perf/util/evsel.c
 +++ b/tools/perf/util/evsel.c
-@@ -128,6 +128,105 @@ static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
+@@ -128,6 +128,31 @@ static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
  	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
  }
  
-+const char *perf_evsel__hw_cache[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_EVSEL__MAX_ALIASES] = {
-+ { "L1-dcache",	"l1-d",		"l1d",		"L1-data",		},
-+ { "L1-icache",	"l1-i",		"l1i",		"L1-instruction",	},
-+ { "LLC",	"L2",							},
-+ { "dTLB",	"d-tlb",	"Data-TLB",				},
-+ { "iTLB",	"i-tlb",	"Instruction-TLB",			},
-+ { "branch",	"branches",	"bpu",		"btb",		"bpc",	},
-+ { "node",								},
++static const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX] = {
++	"cpu-clock",
++	"task-clock",
++	"page-faults",
++	"context-switches",
++	"CPU-migrations",
++	"minor-faults",
++	"major-faults",
++	"alignment-faults",
++	"emulation-faults",
 +};
 +
-+const char *perf_evsel__hw_cache_op[PERF_COUNT_HW_CACHE_OP_MAX]
-+				   [PERF_EVSEL__MAX_ALIASES] = {
-+ { "load",	"loads",	"read",					},
-+ { "store",	"stores",	"write",				},
-+ { "prefetch",	"prefetches",	"speculative-read", "speculative-load",	},
-+};
-+
-+const char *perf_evsel__hw_cache_result[PERF_COUNT_HW_CACHE_RESULT_MAX]
-+				       [PERF_EVSEL__MAX_ALIASES] = {
-+ { "refs",	"Reference",	"ops",		"access",		},
-+ { "misses",	"miss",							},
-+};
-+
-+#define C(x)		PERF_COUNT_HW_CACHE_##x
-+#define CACHE_READ	(1 << C(OP_READ))
-+#define CACHE_WRITE	(1 << C(OP_WRITE))
-+#define CACHE_PREFETCH	(1 << C(OP_PREFETCH))
-+#define COP(x)		(1 << x)
-+
-+/*
-+ * cache operartion stat
-+ * L1I : Read and prefetch only
-+ * ITLB and BPU : Read-only
-+ */
-+static unsigned long perf_evsel__hw_cache_stat[C(MAX)] = {
-+ [C(L1D)]	= (CACHE_READ | CACHE_WRITE | CACHE_PREFETCH),
-+ [C(L1I)]	= (CACHE_READ | CACHE_PREFETCH),
-+ [C(LL)]	= (CACHE_READ | CACHE_WRITE | CACHE_PREFETCH),
-+ [C(DTLB)]	= (CACHE_READ | CACHE_WRITE | CACHE_PREFETCH),
-+ [C(ITLB)]	= (CACHE_READ),
-+ [C(BPU)]	= (CACHE_READ),
-+ [C(NODE)]	= (CACHE_READ | CACHE_WRITE | CACHE_PREFETCH),
-+};
-+
-+bool perf_evsel__is_cache_op_valid(u8 type, u8 op)
++const char *__perf_evsel__sw_name(u64 config)
 +{
-+	if (perf_evsel__hw_cache_stat[type] & COP(op))
-+		return true;	/* valid */
-+	else
-+		return false;	/* invalid */
++	if (config < PERF_COUNT_SW_MAX && perf_evsel__sw_names[config])
++		return perf_evsel__sw_names[config];
++	return "unknown-software";
 +}
 +
-+int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
-+					    char *bf, size_t size)
++static int perf_evsel__sw_name(struct perf_evsel *evsel, char *bf, size_t size)
 +{
-+	if (result) {
-+		return scnprintf(bf, size, "%s-%s-%s", perf_evsel__hw_cache[type][0],
-+				 perf_evsel__hw_cache_op[op][0],
-+				 perf_evsel__hw_cache_result[result][0]);
-+	}
-+
-+	return scnprintf(bf, size, "%s-%s", perf_evsel__hw_cache[type][0],
-+			 perf_evsel__hw_cache_op[op][1]);
++	int r = scnprintf(bf, size, "%s", __perf_evsel__sw_name(evsel->attr.config));
++	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
 +}
 +
-+int __perf_evsel__hw_cache_name(u64 config, char *bf, size_t size)
-+{
-+	u8 op, result, type = (config >>  0) & 0xff;
-+	const char *err = "unknown-ext-hardware-cache-type";
-+
-+	if (type > PERF_COUNT_HW_CACHE_MAX)
-+		goto out_err;
-+
-+	op = (config >>  8) & 0xff;
-+	err = "unknown-ext-hardware-cache-op";
-+	if (op > PERF_COUNT_HW_CACHE_OP_MAX)
-+		goto out_err;
-+
-+	result = (config >> 16) & 0xff;
-+	err = "unknown-ext-hardware-cache-result";
-+	if (result > PERF_COUNT_HW_CACHE_RESULT_MAX)
-+		goto out_err;
-+
-+	err = "invalid-cache";
-+	if (!perf_evsel__is_cache_op_valid(type, op))
-+		goto out_err;
-+
-+	return __perf_evsel__hw_cache_type_op_res_name(type, op, result, bf, size);
-+out_err:
-+	return scnprintf(bf, size, "%s", err);
-+}
-+
-+static int perf_evsel__hw_cache_name(struct perf_evsel *evsel, char *bf, size_t size)
-+{
-+	int ret = __perf_evsel__hw_cache_name(evsel->attr.config, bf, size);
-+	return ret + perf_evsel__add_modifiers(evsel, bf + ret, size - ret);
-+}
-+
- int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size)
- {
- 	int ret;
-@@ -140,6 +239,11 @@ int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size)
- 	case PERF_TYPE_HARDWARE:
- 		ret = perf_evsel__hw_name(evsel, bf, size);
+ const char *perf_evsel__hw_cache[PERF_COUNT_HW_CACHE_MAX]
+ 				[PERF_EVSEL__MAX_ALIASES] = {
+  { "L1-dcache",	"l1-d",		"l1d",		"L1-data",		},
+@@ -244,6 +269,10 @@ int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size)
+ 		ret = perf_evsel__hw_cache_name(evsel, bf, size);
  		break;
-+
-+	case PERF_TYPE_HW_CACHE:
-+		ret = perf_evsel__hw_cache_name(evsel, bf, size);
+ 
++	case PERF_TYPE_SOFTWARE:
++		ret = perf_evsel__sw_name(evsel, bf, size);
 +		break;
 +
  	default:
  		/*
  		 * FIXME
 diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 4ba8b56..5bf946a 100644
+index 5bf946a..9ae64d9 100644
 --- a/tools/perf/util/evsel.h
 +++ b/tools/perf/util/evsel.h
-@@ -83,7 +83,21 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 			struct perf_record_opts *opts,
- 			struct perf_evsel *first);
+@@ -98,6 +98,8 @@ int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
+ int __perf_evsel__hw_cache_name(u64 config, char *bf, size_t size);
  
--const char* __perf_evsel__hw_name(u64 config);
-+bool perf_evsel__is_cache_op_valid(u8 type, u8 op);
+ const char *__perf_evsel__hw_name(u64 config);
++const char *__perf_evsel__sw_name(u64 config);
 +
-+#define PERF_EVSEL__MAX_ALIASES 8
-+
-+extern const char *perf_evsel__hw_cache[PERF_COUNT_HW_CACHE_MAX]
-+				       [PERF_EVSEL__MAX_ALIASES];
-+extern const char *perf_evsel__hw_cache_op[PERF_COUNT_HW_CACHE_OP_MAX]
-+					  [PERF_EVSEL__MAX_ALIASES];
-+const char *perf_evsel__hw_cache_result[PERF_COUNT_HW_CACHE_RESULT_MAX]
-+				       [PERF_EVSEL__MAX_ALIASES];
-+int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
-+					    char *bf, size_t size);
-+int __perf_evsel__hw_cache_name(u64 config, char *bf, size_t size);
-+
-+const char *__perf_evsel__hw_name(u64 config);
  int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size);
  
  int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 05dbc8b..c8f8cf4 100644
+index c8f8cf4..641c4ac 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -74,51 +74,6 @@ static const char *sw_event_names[PERF_COUNT_SW_MAX] = {
- 	"emulation-faults",
- };
+@@ -62,18 +62,6 @@ static struct event_symbol event_symbols[] = {
+ #define PERF_EVENT_TYPE(config)		__PERF_EVENT_FIELD(config, TYPE)
+ #define PERF_EVENT_ID(config)		__PERF_EVENT_FIELD(config, EVENT)
  
--#define MAX_ALIASES 8
--
--static const char *hw_cache[PERF_COUNT_HW_CACHE_MAX][MAX_ALIASES] = {
-- { "L1-dcache",	"l1-d",		"l1d",		"L1-data",		},
-- { "L1-icache",	"l1-i",		"l1i",		"L1-instruction",	},
-- { "LLC",	"L2",							},
-- { "dTLB",	"d-tlb",	"Data-TLB",				},
-- { "iTLB",	"i-tlb",	"Instruction-TLB",			},
-- { "branch",	"branches",	"bpu",		"btb",		"bpc",	},
-- { "node",								},
--};
--
--static const char *hw_cache_op[PERF_COUNT_HW_CACHE_OP_MAX][MAX_ALIASES] = {
-- { "load",	"loads",	"read",					},
-- { "store",	"stores",	"write",				},
-- { "prefetch",	"prefetches",	"speculative-read", "speculative-load",	},
--};
--
--static const char *hw_cache_result[PERF_COUNT_HW_CACHE_RESULT_MAX]
--				  [MAX_ALIASES] = {
-- { "refs",	"Reference",	"ops",		"access",		},
-- { "misses",	"miss",							},
--};
--
--#define C(x)		PERF_COUNT_HW_CACHE_##x
--#define CACHE_READ	(1 << C(OP_READ))
--#define CACHE_WRITE	(1 << C(OP_WRITE))
--#define CACHE_PREFETCH	(1 << C(OP_PREFETCH))
--#define COP(x)		(1 << x)
--
--/*
-- * cache operartion stat
-- * L1I : Read and prefetch only
-- * ITLB and BPU : Read-only
-- */
--static unsigned long hw_cache_stat[C(MAX)] = {
-- [C(L1D)]	= (CACHE_READ | CACHE_WRITE | CACHE_PREFETCH),
-- [C(L1I)]	= (CACHE_READ | CACHE_PREFETCH),
-- [C(LL)]	= (CACHE_READ | CACHE_WRITE | CACHE_PREFETCH),
-- [C(DTLB)]	= (CACHE_READ | CACHE_WRITE | CACHE_PREFETCH),
-- [C(ITLB)]	= (CACHE_READ),
-- [C(BPU)]	= (CACHE_READ),
-- [C(NODE)]	= (CACHE_READ | CACHE_WRITE | CACHE_PREFETCH),
+-static const char *sw_event_names[PERF_COUNT_SW_MAX] = {
+-	"cpu-clock",
+-	"task-clock",
+-	"page-faults",
+-	"context-switches",
+-	"CPU-migrations",
+-	"minor-faults",
+-	"major-faults",
+-	"alignment-faults",
+-	"emulation-faults",
 -};
 -
  #define for_each_subsystem(sys_dir, sys_dirent, sys_next)	       \
  	while (!readdir_r(sys_dir, &sys_dirent, &sys_next) && sys_next)	       \
  	if (sys_dirent.d_type == DT_DIR &&				       \
-@@ -236,30 +191,6 @@ static const char *tracepoint_id_to_name(u64 config)
- 	return buf;
- }
- 
--static int is_cache_op_valid(u8 cache_type, u8 cache_op)
--{
--	if (hw_cache_stat[cache_type] & COP(cache_op))
--		return 1;	/* valid */
--	else
--		return 0;	/* invalid */
--}
--
--static char *event_cache_name(u8 cache_type, u8 cache_op, u8 cache_result)
--{
--	static char name[50];
--
--	if (cache_result) {
--		sprintf(name, "%s-%s-%s", hw_cache[cache_type][0],
--			hw_cache_op[cache_op][0],
--			hw_cache_result[cache_result][0]);
--	} else {
--		sprintf(name, "%s-%s", hw_cache[cache_type][0],
--			hw_cache_op[cache_op][1]);
--	}
--
--	return name;
--}
--
- const char *event_type(int type)
- {
- 	switch (type) {
-@@ -287,7 +218,7 @@ const char *event_name(struct perf_evsel *evsel)
+@@ -218,7 +206,8 @@ const char *event_name(struct perf_evsel *evsel)
  	u64 config = evsel->attr.config;
  	int type = evsel->attr.type;
  
--	if (type == PERF_TYPE_RAW || type == PERF_TYPE_HARDWARE) {
-+	if (type == PERF_TYPE_RAW || type == PERF_TYPE_HARDWARE || type == PERF_TYPE_HW_CACHE) {
+-	if (type == PERF_TYPE_RAW || type == PERF_TYPE_HARDWARE || type == PERF_TYPE_HW_CACHE) {
++	if (type == PERF_TYPE_RAW || type == PERF_TYPE_HARDWARE ||
++	    type == PERF_TYPE_SOFTWARE || type == PERF_TYPE_HW_CACHE) {
  		/*
   		 * XXX minimal fix, see comment on perf_evsen__name, this static buffer
   		 * will go away together with event_name in the next devel cycle.
-@@ -316,26 +247,9 @@ const char *__event_name(int type, u64 config)
- 	case PERF_TYPE_HARDWARE:
- 		return __perf_evsel__hw_name(config);
- 
--	case PERF_TYPE_HW_CACHE: {
--		u8 cache_type, cache_op, cache_result;
--
--		cache_type   = (config >>  0) & 0xff;
--		if (cache_type > PERF_COUNT_HW_CACHE_MAX)
--			return "unknown-ext-hardware-cache-type";
--
--		cache_op     = (config >>  8) & 0xff;
--		if (cache_op > PERF_COUNT_HW_CACHE_OP_MAX)
--			return "unknown-ext-hardware-cache-op";
--
--		cache_result = (config >> 16) & 0xff;
--		if (cache_result > PERF_COUNT_HW_CACHE_RESULT_MAX)
--			return "unknown-ext-hardware-cache-result";
--
--		if (!is_cache_op_valid(cache_type, cache_op))
--			return "invalid-cache";
--
--		return event_cache_name(cache_type, cache_op, cache_result);
--	}
-+	case PERF_TYPE_HW_CACHE:
-+		__perf_evsel__hw_cache_name(config, buf, sizeof(buf));
-+		return buf;
+@@ -252,9 +241,7 @@ const char *__event_name(int type, u64 config)
+ 		return buf;
  
  	case PERF_TYPE_SOFTWARE:
- 		if (config < PERF_COUNT_SW_MAX && sw_event_names[config])
-@@ -379,13 +293,13 @@ static int add_event(struct list_head **_list, int *idx,
- 	return 0;
- }
+-		if (config < PERF_COUNT_SW_MAX && sw_event_names[config])
+-			return sw_event_names[config];
+-		return "unknown-software";
++		return __perf_evsel__sw_name(config);
  
--static int parse_aliases(char *str, const char *names[][MAX_ALIASES], int size)
-+static int parse_aliases(char *str, const char *names[][PERF_EVSEL__MAX_ALIASES], int size)
- {
- 	int i, j;
- 	int n, longest = -1;
- 
- 	for (i = 0; i < size; i++) {
--		for (j = 0; j < MAX_ALIASES && names[i][j]; j++) {
-+		for (j = 0; j < PERF_EVSEL__MAX_ALIASES && names[i][j]; j++) {
- 			n = strlen(names[i][j]);
- 			if (n > longest && !strncasecmp(str, names[i][j], n))
- 				longest = n;
-@@ -410,7 +324,7 @@ int parse_events_add_cache(struct list_head **list, int *idx,
- 	 * No fallback - if we cannot get a clear cache type
- 	 * then bail out:
- 	 */
--	cache_type = parse_aliases(type, hw_cache,
-+	cache_type = parse_aliases(type, perf_evsel__hw_cache,
- 				   PERF_COUNT_HW_CACHE_MAX);
- 	if (cache_type == -1)
- 		return -EINVAL;
-@@ -423,18 +337,18 @@ int parse_events_add_cache(struct list_head **list, int *idx,
- 		snprintf(name + n, MAX_NAME_LEN - n, "-%s\n", str);
- 
- 		if (cache_op == -1) {
--			cache_op = parse_aliases(str, hw_cache_op,
-+			cache_op = parse_aliases(str, perf_evsel__hw_cache_op,
- 						 PERF_COUNT_HW_CACHE_OP_MAX);
- 			if (cache_op >= 0) {
--				if (!is_cache_op_valid(cache_type, cache_op))
-+				if (!perf_evsel__is_cache_op_valid(cache_type, cache_op))
- 					return -EINVAL;
- 				continue;
- 			}
- 		}
- 
- 		if (cache_result == -1) {
--			cache_result = parse_aliases(str, hw_cache_result,
--						PERF_COUNT_HW_CACHE_RESULT_MAX);
-+			cache_result = parse_aliases(str, perf_evsel__hw_cache_result,
-+						     PERF_COUNT_HW_CACHE_RESULT_MAX);
- 			if (cache_result >= 0)
- 				continue;
- 		}
-@@ -970,16 +884,17 @@ void print_events_type(u8 type)
- int print_hwcache_events(const char *event_glob)
- {
- 	unsigned int type, op, i, printed = 0;
-+	char name[64];
- 
- 	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
- 		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
- 			/* skip invalid cache type */
--			if (!is_cache_op_valid(type, op))
-+			if (!perf_evsel__is_cache_op_valid(type, op))
- 				continue;
- 
- 			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
--				char *name = event_cache_name(type, op, i);
--
-+				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
-+									name, sizeof(name));
- 				if (event_glob != NULL && !strglobmatch(name, event_glob))
- 					continue;
- 
+ 	case PERF_TYPE_TRACEPOINT:
+ 		return tracepoint_id_to_name(config);
