@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab2FTGhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 02:37:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:18152 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322Ab2FTGha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 02:37:30 -0400
-X-IronPort-AV: E=Sophos;i="4.77,441,1336320000"; 
-   d="scan'208";a="5230807"
-Message-ID: <4FE16FB5.1000601@cn.fujitsu.com>
-Date: Wed, 20 Jun 2012 14:37:41 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752681Ab2FTGoN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 02:44:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50694 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab2FTGoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 02:44:11 -0400
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>, Eric Wong <normalperson@yhbt.net>
-Subject: Re: [PATCH] mm, fadvise: don't return -EINVAL when filesystem has
- no optimization way
-References: <1339792575-17637-1-git-send-email-kosaki.motohiro@gmail.com> <4FE16E50.9030304@cn.fujitsu.com> <4FE16ED3.2090403@gmail.com>
-In-Reply-To: <4FE16ED3.2090403@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/20 14:37:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/20 14:37:52,
-	Serialize complete at 2012/06/20 14:37:52
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [85.250.103.112]
+In-Reply-To: <20120620163130.b7bbb33fbed65837bf386f59@canb.auug.org.au>
+References: <20120620163130.b7bbb33fbed65837bf386f59@canb.auug.org.au>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 20 Jun 2012 09:43:50 +0300
+Message-ID: <CAK=WgbbmCeF+oxnR+Hs4JfDBxFc34oqj=dkcOdtrz7O732=oyA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the remoteproc tree with Linus' tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?=22Sjur_Br=E6ndeland=22?= 
+	<sjur.brandeland@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 02:33 PM, KOSAKI Motohiro wrote:
-> (6/20/12 2:31 AM), Wanlong Gao wrote:
->> On 06/16/2012 04:36 AM, kosaki.motohiro@gmail.com wrote:
->>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>
->>> Eric Wong reported his test suite was fail when /tmp is tmpfs.
->>>
->>> https://lkml.org/lkml/2012/2/24/479
->>>
->>> Current,input check of POSIX_FADV_WILLNEED has two problems.
->>>
->>> 1) require a_ops->readpage.
->>>    But in fact, force_page_cache_readahead() only require
->>>    a target filesystem has either ->readpage or ->readpages.
->>> 2) return -EINVAL when filesystem don't have ->readpage.
->>>    But, posix says, it should be retrieved a hint. Thus fadvise()
->>>    should return 0 if filesystem has no optimization way.
->>>    Especially, userland application don't know a filesystem type
->>>    of TMPDIR directory as Eric pointed out. Then, userland can't
->>>    avoid this error. We shouldn't encourage to ignore syscall
->>>    return value.
->>>
->>> Thus, this patch change a return value to 0 when filesytem don't
->>> support readahead.
->>>
->>> Cc: linux-mm@kvack.org
->>> Cc: Hugh Dickins <hughd@google.com>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> Cc: Hillf Danton <dhillf@gmail.com>
->>> Signed-off-by: Eric Wong <normalperson@yhbt.net>
->>> Tested-by: Eric Wong <normalperson@yhbt.net>
->>> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>> ---
->>>  mm/fadvise.c |   18 +++++++-----------
->>>  1 files changed, 7 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/mm/fadvise.c b/mm/fadvise.c
->>> index 469491e..33e6baf 100644
->>> --- a/mm/fadvise.c
->>> +++ b/mm/fadvise.c
->>> @@ -93,11 +93,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->>>  		spin_unlock(&file->f_lock);
->>>  		break;
->>>  	case POSIX_FADV_WILLNEED:
->>> -		if (!mapping->a_ops->readpage) {
->>> -			ret = -EINVAL;
->>> -			break;
->>> -		}
->>
->> Why not check both readpage and readpages, if they are not here,
->> just beak and no following force_page_cache_readahead ?
-> 
-> They are checked in force_page_cache_readahead.
+Hi Stephen,
 
-I see, thank you.
+On Wed, Jun 20, 2012 at 9:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Ohad,
+>
+> Today's linux-next merge of the remoteproc tree got conflicts in
+> drivers/remoteproc/remoteproc_core.c between commits e981f6d41acd
+> ("remoteproc: fix print format warnings") and 30338cf09f82 ("remoteproc:
+> fix missing fault indication in error-path") from Linus' tree and commits
+> 7826bf782364 ("remoteproc: Pass struct fw to load_segments and
+> find_rsc_table"), a933c9f8ef8a ("remoteproc: Add function
+> rproc_get_boot_addr") and 32d46fe7f468 ("remoteproc: Move Elf related
+> functions to separate file") from the remoteproc tree.
+>
+> I fixed them up (see below) and can carry the fixes as necessary.
 
-Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Looks good, thanks!
 
-
-> 
-> 
-
-
+Ohad.
