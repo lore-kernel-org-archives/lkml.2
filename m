@@ -1,214 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab2FTC5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Jun 2012 22:57:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34000 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab2FTC5r (ORCPT
+	id S1755360Ab2FTDTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Jun 2012 23:19:06 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60181 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2FTDTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Jun 2012 22:57:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120619212618.GK32733@google.com>
-References: <1339623535.3321.4.camel@lappy>
-	<20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1339667440.3321.7.camel@lappy>
-	<20120618223203.GE32733@google.com>
-	<1340059850.3416.3.camel@lappy>
-	<20120619041154.GA28651@shangw>
-	<20120619212059.GJ32733@google.com>
-	<20120619212618.GK32733@google.com>
-Date: Tue, 19 Jun 2012 19:57:45 -0700
-X-Google-Sender-Auth: PoBvMRnWilCy2kdcHXjEMQvHLQ0
-Message-ID: <CAE9FiQVECyRBie-kgBETmqxPaMx24kUt1W07qAqoGD4vNus5xQ@mail.gmail.com>
-Subject: Re: Early boot panic on machine with lots of memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b11178d4c3b6a04c2de9098
+	Tue, 19 Jun 2012 23:19:04 -0400
+Date: Wed, 20 Jun 2012 13:18:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Graf <tgraf@suug.ch>
+Subject: linux-next: manual merge of the net-next tree with the  tree
+Message-Id: <20120620131854.583604935bf9fd9f69f7ebe1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Jun_2012_13_18_54_+1000_msYOeJIq6E/zySxt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b11178d4c3b6a04c2de9098
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Wed__20_Jun_2012_13_18_54_+1000_msYOeJIq6E/zySxt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 19, 2012 at 2:26 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Jun 19, 2012 at 02:20:59PM -0700, Tejun Heo wrote:
->> Something like the following should fix it.
->>
->> diff --git a/mm/memblock.c b/mm/memblock.c
->> index 32a0a5e..2770970 100644
->> --- a/mm/memblock.c
->> +++ b/mm/memblock.c
->> @@ -148,11 +148,15 @@ phys_addr_t __init_memblock memblock_find_in_range=
-(phys_addr_t start,
->> =A0 */
->> =A0int __init_memblock memblock_free_reserved_regions(void)
->> =A0{
->> +#ifndef CONFIG_DEBUG_PAGEALLOC
->> =A0 =A0 =A0 if (memblock.reserved.regions =3D=3D memblock_reserved_init_=
-regions)
->> =A0 =A0 =A0 =A0 =A0 =A0 =A0 return 0;
->>
->> =A0 =A0 =A0 return memblock_free(__pa(memblock.reserved.regions),
->> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0sizeof(struct memblock_region) * memblock=
-.reserved.max);
->> +#else
->> + =A0 =A0 return 0;
->> +#endif
->
-> BTW, this is just ugly and I don't think we're saving any noticeable
-> amount by doing this "free - give it to page allocator - reserve
-> again" dancing. =A0We should just allocate regions aligned to page
-> boundaries and free them later when memblock is no longer in use.
+Hi all,
 
-if it is that case, that change could fix other problem problem too.
---- during the one free reserved.regions could double the array.
+Today's linux-next merge of the net-next tree got a conflict in
+net/ipv6/route.c between commit d189634ecab9 ("ipv6: Move ipv6 proc file
+registration to end of init order") from the net tree and commit
+c3426b47190d ("inet: Initialize per-netns inetpeer roots in net/ipv
+{4,6}/route.c") from the net-next tree.
 
-please check attached patch.
+I fixed it up (I think - see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Yinghai
+diff --cc net/ipv6/route.c
+index becb048,e649cd7..0000000
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@@ -3007,11 -2929,31 +2938,36 @@@ static struct pernet_operations ip6_rou
+  	.exit =3D ip6_route_net_exit,
+  };
+ =20
+ +static struct pernet_operations ip6_route_net_late_ops =3D {
+ +	.init =3D ip6_route_net_init_late,
+ +	.exit =3D ip6_route_net_exit_late,
+ +};
+ +
++ static int __net_init ipv6_inetpeer_init(struct net *net)
++ {
++ 	struct inet_peer_base *bp =3D kmalloc(sizeof(*bp), GFP_KERNEL);
++=20
++ 	if (!bp)
++ 		return -ENOMEM;
++ 	inet_peer_base_init(bp);
++ 	net->ipv6.peers =3D bp;
++ 	return 0;
++ }
++=20
++ static void __net_exit ipv6_inetpeer_exit(struct net *net)
++ {
++ 	struct inet_peer_base *bp =3D net->ipv6.peers;
++=20
++ 	net->ipv6.peers =3D NULL;
++ 	inetpeer_invalidate_tree(bp);
++ 	kfree(bp);
++ }
++=20
++ static struct pernet_operations ipv6_inetpeer_ops =3D {
++ 	.init	=3D	ipv6_inetpeer_init,
++ 	.exit	=3D	ipv6_inetpeer_exit,
++ };
++=20
+  static struct notifier_block ip6_route_dev_notifier =3D {
+  	.notifier_call =3D ip6_route_dev_notify,
+  	.priority =3D 0,
 
---047d7b11178d4c3b6a04c2de9098
-Content-Type: application/octet-stream; 
-	name="fix_free_memblock_reserve_v4.patch"
-Content-Disposition: attachment; 
-	filename="fix_free_memblock_reserve_v4.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3nt84b00
+--Signature=_Wed__20_Jun_2012_13_18_54_+1000_msYOeJIq6E/zySxt
+Content-Type: application/pgp-signature
 
-U3ViamVjdDogW1BBVENIXSBtZW1ibG9jazogZnJlZSBhbGxvY2F0ZWQgbWVtYmxvY2tfcmVzZXJ2
-ZWRfcmVnaW9ucyBsYXRlcgoKSW4gbWVtYmxvY2tfZnJlZV9yZXNlcnZlZF9yZWdpb25zLCB3aWxs
-IGNhbGwgbWVtYmxvY2tfZnJlZSgpLApidXQgbWVtYmxvY2tfZnJlZSgpIHdvdWxkIGRvdWJsZSBy
-ZXNlcnZlZC5yZWdpb25zIHRvbywgc28gd2UgY291bGQgZnJlZQpvbGQgcmFuZ2UgZm9yIHJlc2Vy
-dmVkLnJlZ2lvbnMuCgpBbHNvIHRqIHNhaWQgdGhlcmUgaXMgYW5vdGhlciBidWcgY291bGQgYmUg
-cmVsYXRlZCB0byB0aGlzIHRvby4KCnwgSSBkb24ndCB0aGluayB3ZSdyZSBzYXZpbmcgYW55IG5v
-dGljZWFibGUKfCBhbW91bnQgYnkgZG9pbmcgdGhpcyAiZnJlZSAtIGdpdmUgaXQgdG8gcGFnZSBh
-bGxvY2F0b3IgLSByZXNlcnZlCnwgYWdhaW4iIGRhbmNpbmcuICBXZSBzaG91bGQganVzdCBhbGxv
-Y2F0ZSByZWdpb25zIGFsaWduZWQgdG8gcGFnZQp8IGJvdW5kYXJpZXMgYW5kIGZyZWUgdGhlbSBs
-YXRlciB3aGVuIG1lbWJsb2NrIGlzIG5vIGxvbmdlciBpbiB1c2UuCgpTbyB0cnkgdG8gYWxsb2Nh
-dGUgdGhhdCBpbiBQQUdFX1NJWkUgYWxpZ25tZW50IGFuZCBmcmVlIHRoYXQgbGF0ZXIuCgpDYzog
-VGVqdW4gSGVvIDx0akBrZXJuZWwub3JnPgpDYzogQmVuamFtaW4gSGVycmVuc2NobWlkdCA8YmVu
-aEBrZXJuZWwuY3Jhc2hpbmcub3JnPgpDYzogQW5kcmV3IE1vcnRvbiA8YWtwbUBsaW51eC1mb3Vu
-ZGF0aW9uLm9yZz4KU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3Jn
-PgoKLS0tCiBpbmNsdWRlL2xpbnV4L21lbWJsb2NrLmggfCAgICA0IC0tLQogbW0vbWVtYmxvY2su
-YyAgICAgICAgICAgIHwgICA1OSArKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLQogbW0vbm9ib290bWVtLmMgICAgICAgICAgIHwgICAzNiArKysrKysrKysrKysr
-KysrKy0tLS0tLS0tLS0tCiAzIGZpbGVzIGNoYW5nZWQsIDQ4IGluc2VydGlvbnMoKyksIDUxIGRl
-bGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L21lbWJsb2NrLmgKPT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9tZW1ibG9jay5oCisrKyBs
-aW51eC0yLjYvaW5jbHVkZS9saW51eC9tZW1ibG9jay5oCkBAIC01MCw5ICs1MCw3IEBAIHBoeXNf
-YWRkcl90IG1lbWJsb2NrX2ZpbmRfaW5fcmFuZ2Vfbm9kZSgKIAkJCQlwaHlzX2FkZHJfdCBzaXpl
-LCBwaHlzX2FkZHJfdCBhbGlnbiwgaW50IG5pZCk7CiBwaHlzX2FkZHJfdCBtZW1ibG9ja19maW5k
-X2luX3JhbmdlKHBoeXNfYWRkcl90IHN0YXJ0LCBwaHlzX2FkZHJfdCBlbmQsCiAJCQkJICAgcGh5
-c19hZGRyX3Qgc2l6ZSwgcGh5c19hZGRyX3QgYWxpZ24pOwotaW50IG1lbWJsb2NrX2ZyZWVfcmVz
-ZXJ2ZWRfcmVnaW9ucyh2b2lkKTsKLWludCBtZW1ibG9ja19yZXNlcnZlX3Jlc2VydmVkX3JlZ2lv
-bnModm9pZCk7Ci0KK3BoeXNfYWRkcl90IGdldF9hbGxvY2F0ZWRfbWVtYmxvY2tfcmVzZXJ2ZWRf
-cmVnaW9uc19pbmZvKHBoeXNfYWRkcl90ICphZGRyKTsKIHZvaWQgbWVtYmxvY2tfYWxsb3dfcmVz
-aXplKHZvaWQpOwogaW50IG1lbWJsb2NrX2FkZF9ub2RlKHBoeXNfYWRkcl90IGJhc2UsIHBoeXNf
-YWRkcl90IHNpemUsIGludCBuaWQpOwogaW50IG1lbWJsb2NrX2FkZChwaHlzX2FkZHJfdCBiYXNl
-LCBwaHlzX2FkZHJfdCBzaXplKTsKSW5kZXg6IGxpbnV4LTIuNi9tbS9tZW1ibG9jay5jCj09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL21tL21lbWJsb2NrLmMKKysrIGxpbnV4LTIuNi9tbS9t
-ZW1ibG9jay5jCkBAIC0xNDMsMzAgKzE0Myw2IEBAIHBoeXNfYWRkcl90IF9faW5pdF9tZW1ibG9j
-ayBtZW1ibG9ja19maW4KIAkJCQkJICAgTUFYX05VTU5PREVTKTsKIH0KIAotLyoKLSAqIEZyZWUg
-bWVtYmxvY2sucmVzZXJ2ZWQucmVnaW9ucwotICovCi1pbnQgX19pbml0X21lbWJsb2NrIG1lbWJs
-b2NrX2ZyZWVfcmVzZXJ2ZWRfcmVnaW9ucyh2b2lkKQotewotCWlmIChtZW1ibG9jay5yZXNlcnZl
-ZC5yZWdpb25zID09IG1lbWJsb2NrX3Jlc2VydmVkX2luaXRfcmVnaW9ucykKLQkJcmV0dXJuIDA7
-Ci0KLQlyZXR1cm4gbWVtYmxvY2tfZnJlZShfX3BhKG1lbWJsb2NrLnJlc2VydmVkLnJlZ2lvbnMp
-LAotCQkgc2l6ZW9mKHN0cnVjdCBtZW1ibG9ja19yZWdpb24pICogbWVtYmxvY2sucmVzZXJ2ZWQu
-bWF4KTsKLX0KLQotLyoKLSAqIFJlc2VydmUgbWVtYmxvY2sucmVzZXJ2ZWQucmVnaW9ucwotICov
-Ci1pbnQgX19pbml0X21lbWJsb2NrIG1lbWJsb2NrX3Jlc2VydmVfcmVzZXJ2ZWRfcmVnaW9ucyh2
-b2lkKQotewotCWlmIChtZW1ibG9jay5yZXNlcnZlZC5yZWdpb25zID09IG1lbWJsb2NrX3Jlc2Vy
-dmVkX2luaXRfcmVnaW9ucykKLQkJcmV0dXJuIDA7Ci0KLQlyZXR1cm4gbWVtYmxvY2tfcmVzZXJ2
-ZShfX3BhKG1lbWJsb2NrLnJlc2VydmVkLnJlZ2lvbnMpLAotCQkgc2l6ZW9mKHN0cnVjdCBtZW1i
-bG9ja19yZWdpb24pICogbWVtYmxvY2sucmVzZXJ2ZWQubWF4KTsKLX0KLQogc3RhdGljIHZvaWQg
-X19pbml0X21lbWJsb2NrIG1lbWJsb2NrX3JlbW92ZV9yZWdpb24oc3RydWN0IG1lbWJsb2NrX3R5
-cGUgKnR5cGUsIHVuc2lnbmVkIGxvbmcgcikKIHsKIAl0eXBlLT50b3RhbF9zaXplIC09IHR5cGUt
-PnJlZ2lvbnNbcl0uc2l6ZTsKQEAgLTE4NCw2ICsxNjAsMTggQEAgc3RhdGljIHZvaWQgX19pbml0
-X21lbWJsb2NrIG1lbWJsb2NrX3JlbQogCX0KIH0KIAorcGh5c19hZGRyX3QgX19pbml0X21lbWJs
-b2NrIGdldF9hbGxvY2F0ZWRfbWVtYmxvY2tfcmVzZXJ2ZWRfcmVnaW9uc19pbmZvKAorCQkJCQlw
-aHlzX2FkZHJfdCAqYWRkcikKK3sKKwlpZiAobWVtYmxvY2sucmVzZXJ2ZWQucmVnaW9ucyA9PSBt
-ZW1ibG9ja19yZXNlcnZlZF9pbml0X3JlZ2lvbnMpCisJCXJldHVybiAwOworCisJKmFkZHIgPSBf
-X3BhKG1lbWJsb2NrLnJlc2VydmVkLnJlZ2lvbnMpOworCisJcmV0dXJuIFBBR0VfQUxJR04oc2l6
-ZW9mKHN0cnVjdCBtZW1ibG9ja19yZWdpb24pICoKKwkJCSAgbWVtYmxvY2sucmVzZXJ2ZWQubWF4
-KTsKK30KKwogLyoqCiAgKiBtZW1ibG9ja19kb3VibGVfYXJyYXkgLSBkb3VibGUgdGhlIHNpemUg
-b2YgdGhlIG1lbWJsb2NrIHJlZ2lvbnMgYXJyYXkKICAqIEB0eXBlOiBtZW1ibG9jayB0eXBlIG9m
-IHRoZSByZWdpb25zIGFycmF5IGJlaW5nIGRvdWJsZWQKQEAgLTIxNiw3ICsyMDQsNyBAQCBzdGF0
-aWMgaW50IF9faW5pdF9tZW1ibG9jayBtZW1ibG9ja19kb3ViCiAKIAkvKiBDYWxjdWxhdGUgbmV3
-IGRvdWJsZWQgc2l6ZSAqLwogCW9sZF9zaXplID0gdHlwZS0+bWF4ICogc2l6ZW9mKHN0cnVjdCBt
-ZW1ibG9ja19yZWdpb24pOwotCW5ld19zaXplID0gb2xkX3NpemUgPDwgMTsKKwluZXdfc2l6ZSA9
-IFBBR0VfQUxJR04ob2xkX3NpemUgPDwgMSk7CiAKIAkvKiBSZXRyaWV2ZSB0aGUgc2xhYiBmbGFn
-ICovCiAJaWYgKHR5cGUgPT0gJm1lbWJsb2NrLm1lbW9yeSkKQEAgLTI0NSwzMiArMjMzLDM1IEBA
-IHN0YXRpYyBpbnQgX19pbml0X21lbWJsb2NrIG1lbWJsb2NrX2RvdWIKIAogCQlhZGRyID0gbWVt
-YmxvY2tfZmluZF9pbl9yYW5nZShuZXdfYXJlYV9zdGFydCArIG5ld19hcmVhX3NpemUsCiAJCQkJ
-CQltZW1ibG9jay5jdXJyZW50X2xpbWl0LAotCQkJCQkJbmV3X3NpemUsIHNpemVvZihwaHlzX2Fk
-ZHJfdCkpOworCQkJCQkJbmV3X3NpemUsIFBBR0VfU0laRSk7CiAJCWlmICghYWRkciAmJiBuZXdf
-YXJlYV9zaXplKQogCQkJYWRkciA9IG1lbWJsb2NrX2ZpbmRfaW5fcmFuZ2UoMCwKIAkJCQkJbWlu
-KG5ld19hcmVhX3N0YXJ0LCBtZW1ibG9jay5jdXJyZW50X2xpbWl0KSwKLQkJCQkJbmV3X3NpemUs
-IHNpemVvZihwaHlzX2FkZHJfdCkpOworCQkJCQluZXdfc2l6ZSwgUEFHRV9TSVpFKTsKIAogCQlu
-ZXdfYXJyYXkgPSBhZGRyID8gX192YShhZGRyKSA6IDA7CiAJfQogCWlmICghYWRkcikgewotCQlw
-cl9lcnIoIm1lbWJsb2NrOiBGYWlsZWQgdG8gZG91YmxlICVzIGFycmF5IGZyb20gJWxkIHRvICVs
-ZCBlbnRyaWVzICFcbiIsCi0JCSAgICAgICBtZW1ibG9ja190eXBlX25hbWUodHlwZSksIHR5cGUt
-Pm1heCwgdHlwZS0+bWF4ICogMik7CisJCXByX2VycigibWVtYmxvY2s6IEZhaWxlZCB0byBkb3Vi
-bGUgJXMgYXJyYXkgZnJvbSAlbGQgdG8gJWxsZCBlbnRyaWVzICFcbiIsCisJCQltZW1ibG9ja190
-eXBlX25hbWUodHlwZSksIHR5cGUtPm1heCwKKwkJCW5ld19zaXplL3NpemVvZihzdHJ1Y3QgbWVt
-YmxvY2tfcmVnaW9uKSk7CiAJCXJldHVybiAtMTsKIAl9CiAKLQltZW1ibG9ja19kYmcoIm1lbWJs
-b2NrOiAlcyBhcnJheSBpcyBkb3VibGVkIHRvICVsZCBhdCBbJSMwMTBsbHgtJSMwMTBsbHhdIiwK
-LQkJIG1lbWJsb2NrX3R5cGVfbmFtZSh0eXBlKSwgdHlwZS0+bWF4ICogMiwgKHU2NClhZGRyLCAo
-dTY0KWFkZHIgKyBuZXdfc2l6ZSAtIDEpOworCW1lbWJsb2NrX2RiZygibWVtYmxvY2s6ICVzIGFy
-cmF5IGlzIGRvdWJsZWQgdG8gJWxsZCBhdCBbJSMwMTBsbHgtJSMwMTBsbHhdIiwKKwkJCSBtZW1i
-bG9ja190eXBlX25hbWUodHlwZSksCisJCQkgbmV3X3NpemUvc2l6ZW9mKHN0cnVjdCBtZW1ibG9j
-a19yZWdpb24pLAorCQkJICh1NjQpYWRkciwgKHU2NClhZGRyICsgbmV3X3NpemUgLSAxKTsKIAog
-CS8qIEZvdW5kIHNwYWNlLCB3ZSBub3cgbmVlZCB0byBtb3ZlIHRoZSBhcnJheSBvdmVyIGJlZm9y
-ZQogCSAqIHdlIGFkZCB0aGUgcmVzZXJ2ZWQgcmVnaW9uIHNpbmNlIGl0IG1heSBiZSBvdXIgcmVz
-ZXJ2ZWQKIAkgKiBhcnJheSBpdHNlbGYgdGhhdCBpcyBmdWxsLgogCSAqLwogCW1lbWNweShuZXdf
-YXJyYXksIHR5cGUtPnJlZ2lvbnMsIG9sZF9zaXplKTsKLQltZW1zZXQobmV3X2FycmF5ICsgdHlw
-ZS0+bWF4LCAwLCBvbGRfc2l6ZSk7CisJbWVtc2V0KG5ld19hcnJheSArIHR5cGUtPm1heCwgMCwg
-bmV3X3NpemUgLSBvbGRfc2l6ZSk7CiAJb2xkX2FycmF5ID0gdHlwZS0+cmVnaW9uczsKIAl0eXBl
-LT5yZWdpb25zID0gbmV3X2FycmF5OwotCXR5cGUtPm1heCA8PD0gMTsKKwl0eXBlLT5tYXggPSBu
-ZXdfc2l6ZS9zaXplb2Yoc3RydWN0IG1lbWJsb2NrX3JlZ2lvbik7CiAKIAkvKiBGcmVlIG9sZCBh
-cnJheS4gV2UgbmVlZG4ndCBmcmVlIGl0IGlmIHRoZSBhcnJheSBpcyB0aGUKIAkgKiBzdGF0aWMg
-b25lCkBAIC0yNzksNyArMjcwLDcgQEAgc3RhdGljIGludCBfX2luaXRfbWVtYmxvY2sgbWVtYmxv
-Y2tfZG91YgogCQlrZnJlZShvbGRfYXJyYXkpOwogCWVsc2UgaWYgKG9sZF9hcnJheSAhPSBtZW1i
-bG9ja19tZW1vcnlfaW5pdF9yZWdpb25zICYmCiAJCSBvbGRfYXJyYXkgIT0gbWVtYmxvY2tfcmVz
-ZXJ2ZWRfaW5pdF9yZWdpb25zKQotCQltZW1ibG9ja19mcmVlKF9fcGEob2xkX2FycmF5KSwgb2xk
-X3NpemUpOworCQltZW1ibG9ja19mcmVlKF9fcGEob2xkX2FycmF5KSwgUEFHRV9BTElHTihvbGRf
-c2l6ZSkpOwogCiAJLyogUmVzZXJ2ZSB0aGUgbmV3IGFycmF5IGlmIHRoYXQgY29tZXMgZnJvbSB0
-aGUgbWVtYmxvY2suCiAJICogT3RoZXJ3aXNlLCB3ZSBuZWVkbid0IGRvIGl0CkluZGV4OiBsaW51
-eC0yLjYvbW0vbm9ib290bWVtLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbW0vbm9i
-b290bWVtLmMKKysrIGxpbnV4LTIuNi9tbS9ub2Jvb3RtZW0uYwpAQCAtMTA1LDI3ICsxMDUsMzUg
-QEAgc3RhdGljIHZvaWQgX19pbml0IF9fZnJlZV9wYWdlc19tZW1vcnkodQogCQlfX2ZyZWVfcGFn
-ZXNfYm9vdG1lbShwZm5fdG9fcGFnZShpKSwgMCk7CiB9CiAKK3N0YXRpYyB1bnNpZ25lZCBsb25n
-IF9faW5pdCBfX2ZyZWVfbWVtb3J5X2NvcmUocGh5c19hZGRyX3Qgc3RhcnQsCisJCQkJIHBoeXNf
-YWRkcl90IGVuZCkKK3sKKwl1bnNpZ25lZCBsb25nIHN0YXJ0X3BmbiA9IFBGTl9VUChzdGFydCk7
-CisJdW5zaWduZWQgbG9uZyBlbmRfcGZuID0gbWluX3QodW5zaWduZWQgbG9uZywKKwkJCQkgICAg
-ICBQRk5fRE9XTihlbmQpLCBtYXhfbG93X3Bmbik7CisKKwlpZiAoc3RhcnRfcGZuID4gZW5kX3Bm
-bikKKwkJcmV0dXJuIDA7CisKKwlfX2ZyZWVfcGFnZXNfbWVtb3J5KHN0YXJ0X3BmbiwgZW5kX3Bm
-bik7CisKKwlyZXR1cm4gZW5kX3BmbiAtIHN0YXJ0X3BmbjsKK30KKwogdW5zaWduZWQgbG9uZyBf
-X2luaXQgZnJlZV9sb3dfbWVtb3J5X2NvcmVfZWFybHkoaW50IG5vZGVpZCkKIHsKIAl1bnNpZ25l
-ZCBsb25nIGNvdW50ID0gMDsKLQlwaHlzX2FkZHJfdCBzdGFydCwgZW5kOworCXBoeXNfYWRkcl90
-IHN0YXJ0LCBlbmQsIHNpemU7CiAJdTY0IGk7CiAKLQkvKiBmcmVlIHJlc2VydmVkIGFycmF5IHRl
-bXBvcmFyaWx5IHNvIHRoYXQgaXQncyB0cmVhdGVkIGFzIGZyZWUgYXJlYSAqLwotCW1lbWJsb2Nr
-X2ZyZWVfcmVzZXJ2ZWRfcmVnaW9ucygpOworCWZvcl9lYWNoX2ZyZWVfbWVtX3JhbmdlKGksIE1B
-WF9OVU1OT0RFUywgJnN0YXJ0LCAmZW5kLCBOVUxMKQorCQljb3VudCArPSBfX2ZyZWVfbWVtb3J5
-X2NvcmUoc3RhcnQsIGVuZCk7CiAKLQlmb3JfZWFjaF9mcmVlX21lbV9yYW5nZShpLCBNQVhfTlVN
-Tk9ERVMsICZzdGFydCwgJmVuZCwgTlVMTCkgewotCQl1bnNpZ25lZCBsb25nIHN0YXJ0X3BmbiA9
-IFBGTl9VUChzdGFydCk7Ci0JCXVuc2lnbmVkIGxvbmcgZW5kX3BmbiA9IG1pbl90KHVuc2lnbmVk
-IGxvbmcsCi0JCQkJCSAgICAgIFBGTl9ET1dOKGVuZCksIG1heF9sb3dfcGZuKTsKLQkJaWYgKHN0
-YXJ0X3BmbiA8IGVuZF9wZm4pIHsKLQkJCV9fZnJlZV9wYWdlc19tZW1vcnkoc3RhcnRfcGZuLCBl
-bmRfcGZuKTsKLQkJCWNvdW50ICs9IGVuZF9wZm4gLSBzdGFydF9wZm47Ci0JCX0KLQl9CisJLyog
-ZnJlZSByYW5nZSB0aGF0IGlzIHVzZWQgZm9yIHJlc2VydmVkIGFycmF5IGlmIHdlIGFsbG9jYXRl
-IGl0ICovCisJc2l6ZSA9IGdldF9hbGxvY2F0ZWRfbWVtYmxvY2tfcmVzZXJ2ZWRfcmVnaW9uc19p
-bmZvKCZzdGFydCk7CisJaWYgKHNpemUpCisJCWNvdW50ICs9IF9fZnJlZV9tZW1vcnlfY29yZShz
-dGFydCwgc3RhcnQgKyBzaXplKTsKIAotCS8qIHB1dCByZWdpb24gYXJyYXkgYmFjaz8gKi8KLQlt
-ZW1ibG9ja19yZXNlcnZlX3Jlc2VydmVkX3JlZ2lvbnMoKTsKIAlyZXR1cm4gY291bnQ7CiB9CiAK
---047d7b11178d4c3b6a04c2de9098--
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP4UEeAAoJEECxmPOUX5FE2P4P/jq6etcqtes7J8xS3jsk5732
+BYhfN5HqgvoWRlJ+z2B6xHxrbO0XCnw5sueytgxZxcX+t0YjDMvMKQpCJlg/4Emk
+mKDnh0dlayRRiR9f9DCexhuiTMPSiM1sXqcX7Yrx866GJ60WJKsWCOw1th9QWwB4
+Z5mBUdbe6hGsysO+54e3wn/+TSKA5k2ec7+FyJ9Tqnum3h4G0ec8GzH8lh1ybCCQ
+Ba+fTsT8BhLHLO/Z1vUMoAI1o3FiGDZUV6D+Jb+63b1f57ZxSuCF4A1AdyEYEVvs
+OLGcjP8Nqil9gogfv3cVGG7Fu5eTOaD8J2vrhiahTM2ifCsgdlSkzRNS0EurOFbB
+en2BG+QfS7OddXrG9T1SZy72uwlOdWaVYtoCYDaTik1mlWfmRJnkXhGfG49EkatF
+qAYpbKCNrKk+wPzEtp+xRQukbmqpFs0e4IfRd20ssWl2G586bKxol2BNpFCPnUFe
+R2opsVcO9IjV1Y6atP/ju4wBfjcE9s4xyOaGhwhNKNpLd0tL0PugfC7O0i2cXcCh
+LKgJEagXctGnzNqzZbtR/JqlmAP4d6v+C/rOGZfJYvCX9iq0mSrcq0PoTEuFasHj
+M8PV+2PVXLhSZTuZJQ+i8XWO5s1a7uTlD4C7itwurdYkO1lK6HhgkxaDIGe9xBkG
+spY8uOfE/XsFPqN0lS7z
+=f9tL
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Jun_2012_13_18_54_+1000_msYOeJIq6E/zySxt--
