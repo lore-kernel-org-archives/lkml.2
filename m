@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab2FTOVW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:21:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50579 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab2FTOVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:21:21 -0400
-Date: Wed, 20 Jun 2012 16:20:44 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Rob Lee <rob.lee@linaro.org>
-Cc: kernel@pengutronix.de, shawn.guo@linaro.org, linux@arm.linux.org.uk,
-        richard.zhao@freescale.com, dirk.behme@de.bosch.com,
-        amit.kachhap@linaro.org, amit.kucheria@linaro.org, lenb@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH v5] ARM: imx: Add basic imx6q cpu thermal management
-Message-ID: <20120620142044.GU28394@pengutronix.de>
-References: <1340175964-4043-1-git-send-email-rob.lee@linaro.org>
- <1340175964-4043-2-git-send-email-rob.lee@linaro.org>
- <20120620101127.GS28394@pengutronix.de>
- <CAMXH7KE0Ei5cZLCOuO-hxBXW8WX48VhxNs2FxPV8biDNqzRY5A@mail.gmail.com>
+	id S1756557Ab2FTOVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:21:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54204 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756525Ab2FTOVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 10:21:31 -0400
+Date: Wed, 20 Jun 2012 15:21:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 01/12] netvm: Prevent a stream-specific deadlock
+Message-ID: <20120620142127.GK4011@suse.de>
+References: <1340185081-22525-1-git-send-email-mgorman@suse.de>
+ <1340185081-22525-2-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMXH7KE0Ei5cZLCOuO-hxBXW8WX48VhxNs2FxPV8biDNqzRY5A@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:17:52 up 4 days,  1:46, 78 users,  load average: 0.31, 0.50, 2.38
+In-Reply-To: <1340185081-22525-2-git-send-email-mgorman@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 09:12:51AM -0500, Rob Lee wrote:
-> Sascha, thanks for the review.
+On Wed, Jun 20, 2012 at 10:37:50AM +0100, Mel Gorman wrote:
+> It could happen that all !SOCK_MEMALLOC sockets have buffered so
+> much data that we're over the global rmem limit. This will prevent
+> SOCK_MEMALLOC buffers from receiving data, which will prevent userspace
+> from running, which is needed to reduce the buffered data.
 > 
-> >> +
-> >> +static struct imx6q_thermal_zone     *th_zone;
-> >> +static void __iomem                  *ocotp_base;
-> >
-> > This is a driver and drivers should generally be multi instance safe.
-> >
+> Fix this by exempting the SOCK_MEMALLOC sockets from the rmem limit.
+> Once this change it applied, it is important that sockets that set
+> SOCK_MEMALLOC do not clear the flag until the socket is being torn down.
+> If this happens, a warning is generated and the tokens reclaimed to
+> avoid accounting errors until the bug is fixed.
 > 
-> I don't understand what this comment is referring to.  Could you elaborate?
+> [davem@davemloft.net: Warning about clearing SOCK_MEMALLOC]
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Drivers can only be multi instance safe when all variables are inside a
-instance specific struct and you pass a pointer to this struct around.
-What if the i.MX7 has two different ocotp_base and you want to use this
-driver on both ocotp?
-
-Sascha
+This patch introduced a new warning that I had previously missed. I'll
+fix it up when rebasing this series on top of linux-next.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Mel Gorman
+SUSE Labs
