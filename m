@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab2FTPHP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 11:07:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63629 "EHLO
+	id S1756763Ab2FTPOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 11:14:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54964 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab2FTPHN (ORCPT
+	with ESMTP id S1756628Ab2FTPOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 11:07:13 -0400
-Date: Wed, 20 Jun 2012 08:07:08 -0700
+	Wed, 20 Jun 2012 11:14:00 -0400
+Date: Wed, 20 Jun 2012 08:13:55 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Lockwood <lockwood@android.com>,
-        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "cw00.choi@samsung.com" <cw00.choi@samsung.com>
-Subject: Re: Re: [PATCH 1/2] extcon: Set platform drvdata in
- gpio_extcon_probe() and fix irq leak
-Message-ID: <20120620150708.GA13770@kroah.com>
-References: <25919571.619021340166725967.JavaMail.weblogic@epml24>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Mandeep Singh Baines <mandeep.baines@gmail.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mandeep Singh Baines <msb@chromium.org>, linux-pm@vger.kernel.org,
+        stable@kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
+        Colin Cross <ccross@android.com>, Sameer Nanda <snanda@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous suspend
+ after abort
+Message-ID: <20120620151355.GC13770@kroah.com>
+References: <1340158627-7586-1-git-send-email-msb@chromium.org>
+ <Pine.LNX.4.44L0.1206201046020.1804-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <25919571.619021340166725967.JavaMail.weblogic@epml24>
+In-Reply-To: <Pine.LNX.4.44L0.1206201046020.1804-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 04:32:06AM +0000, MyungJoo Ham wrote:
-> > On Tue, Jun 19, 2012 at 10:19:07AM +0000, 함명주 wrote:
-> > > > Add missing platform_set_drvdata() in gpio_extcon_probe(), otherwise calling
-> > > > platform_get_drvdata in gpio_extcon_remove() returns NULL.
-> > > > 
-> > > > Also add missing free_irq call in gpio_extcon_remove().
-> > > > 
-> > > > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> > > 
-> > > Thanks!
-> > > 
-> > > 
-> > > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> > > 
-> > > I'll apply this patch to the extcon-for-next.
-> > > I would appear in http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next soon after syncing servers.
-> > 
-> > Does this mean you are going to have a separate extcon git tree
-> > somewhere, feeding into linux-next, and sending stuff directly to Linus?
-> > 
-> > I don't see an entry in the MAINTAINERS file saying this, which is why I
-> > was picking up extcon patches, should I not be doing this?
-> > 
-> > confused,
-> > 
-> > greg k-h
-> > 
+On Wed, Jun 20, 2012 at 10:58:25AM -0400, Alan Stern wrote:
+> On Tue, 19 Jun 2012, Mandeep Singh Baines wrote:
 > 
-> You are right. We do not have MAINTAINERS entry for extcon.
+> > __device_suspend() must always send a completion. Otherwise, parent
+> > devices will wait forever.
+> > 
+> > Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
+> > system sleep (v2)", introduced a regression by short-circuiting the
+> > complete_all() for certain error cases.
+> > 
+> > This patch fixes the bug by always signalling a completion.
+> > 
+> > Addresses http://crosbug.com/31972
+> > 
+> > Tested by injecting an abort via the following patch:
+> > 
+> > diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+> > index a004db3..e5a6fce 100644
+> > --- a/drivers/usb/core/hcd-pci.c
+> > +++ b/drivers/usb/core/hcd-pci.c
+> > @@ -21,6 +21,7 @@
+> >  #include <linux/pci.h>
+> >  #include <linux/usb.h>
+> >  #include <linux/usb/hcd.h>
+> > +#include <linux/string.h>
+> > 
+> >  #include <asm/io.h>
+> >  #include <asm/irq.h>
+> > @@ -477,6 +478,8 @@ static int resume_common(struct device *dev, int event)
+> > 
+> >  static int hcd_pci_suspend(struct device *dev)
+> >  {
+> > +       if (!strcmp("0000:00:1d.3", dev_name(dev)))
+> > +               return -EBUSY;
+> >         return suspend_common(dev, device_may_wakeup(dev));
+> >  }
+> 
+> When you include one patch in front of another like this, doesn't it 
+> confuse the automatic tools?  You might end up getting both changes 
+> include in the final commit.  :-)
 
-You can easily fix that (hint, hint, hint...)
-
-> I can wait until we have MAINTAINERS entry registered for extcon,
-> which we have not request or submit, yet. Until then, I think you may
-> pick up the extcon patches and I will simply follow your repositories
-> (keep rebasing from yours)
-
-My trees never need rebasing, why would you need to do that?  What is
-going into your tree that isn't in mine?  Am I missing patches?
-
-I would be very glad for you to take over this maintainership, if it's
-something you want to do, otherwise I have no problem taking the
-patches.  It's up to you.
-
-thanks,
+Yeah, that's going to mess with quilt big time, I don't know what git is
+going to do with it, it should be interesting to see...
 
 greg k-h
