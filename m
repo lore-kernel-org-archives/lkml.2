@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124Ab2FTKyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 06:54:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34574 "EHLO
+	id S1756558Ab2FTKzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 06:55:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34596 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756427Ab2FTKyj (ORCPT
+	with ESMTP id S1756523Ab2FTKza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 06:54:39 -0400
-Date: Wed, 20 Jun 2012 03:54:20 -0700
+	Wed, 20 Jun 2012 06:55:30 -0400
+Date: Wed, 20 Jun 2012 03:55:13 -0700
 From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-087bfbb032691262f2f7d52b910652450c5554b8@git.kernel.org>
+Message-ID: <tip-fcde10e916326545e8fec1807357c68ef08dc443@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
         akpm@linux-foundation.org, zheng.z.yan@intel.com, tglx@linutronix.de
@@ -17,11 +17,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
         torvalds@linux-foundation.org, zheng.z.yan@intel.com,
         tglx@linutronix.de
-In-Reply-To: <1339741902-8449-6-git-send-email-zheng.z.yan@intel.com>
-References: <1339741902-8449-6-git-send-email-zheng.z.yan@intel.com>
+In-Reply-To: <1339741902-8449-7-git-send-email-zheng.z.yan@intel.com>
+References: <1339741902-8449-7-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Add generic Intel uncore PMU support
-Git-Commit-ID: 087bfbb032691262f2f7d52b910652450c5554b8
+Subject: [tip:perf/core] perf/x86:
+  Add Intel Nehalem and Sandy Bridge uncore PMU support
+Git-Commit-ID: fcde10e916326545e8fec1807357c68ef08dc443
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,1150 +31,303 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:54:27 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 20 Jun 2012 03:55:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  087bfbb032691262f2f7d52b910652450c5554b8
-Gitweb:     http://git.kernel.org/tip/087bfbb032691262f2f7d52b910652450c5554b8
+Commit-ID:  fcde10e916326545e8fec1807357c68ef08dc443
+Gitweb:     http://git.kernel.org/tip/fcde10e916326545e8fec1807357c68ef08dc443
 Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Fri, 15 Jun 2012 14:31:34 +0800
+AuthorDate: Fri, 15 Jun 2012 14:31:35 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Mon, 18 Jun 2012 12:13:22 +0200
 
-perf/x86: Add generic Intel uncore PMU support
-
-This patch adds the generic Intel uncore PMU support, including helper
-functions that add/delete uncore events, a hrtimer that periodically
-polls the counters to avoid overflow and code that places all events
-for a particular socket onto a single cpu.
-
-The code design is based on the structure of Sandy Bridge-EP's uncore
-subsystem, which consists of a variety of components, each component
-contains one or more "boxes".
-
-(Tooling support follows in the next patches.)
+perf/x86: Add Intel Nehalem and Sandy Bridge uncore PMU support
 
 Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1339741902-8449-6-git-send-email-zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/1339741902-8449-7-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/Makefile                  |    4 +-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |  878 +++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |  204 ++++++
- 3 files changed, 1085 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  195 +++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |   50 +++++++
+ 2 files changed, 245 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6ab6aa2..bac4c38 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -32,7 +32,9 @@ obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
- 
- ifdef CONFIG_PERF_EVENTS
- obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o
--obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_p4.o perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_p4.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
- endif
- 
- obj-$(CONFIG_X86_MCE)			+= mcheck/
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-new file mode 100644
-index 0000000..fe76a07
---- /dev/null
+index fe76a07..3ed941a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -0,0 +1,878 @@
-+#include "perf_event_intel_uncore.h"
+@@ -10,6 +10,192 @@ static cpumask_t uncore_cpu_mask;
+ static struct event_constraint constraint_fixed =
+ 	EVENT_CONSTRAINT(~0ULL, 1 << UNCORE_PMC_IDX_FIXED, ~0ULL);
+ 
++DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
++DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
++DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
++DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
++DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
++DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
 +
-+static struct intel_uncore_type *empty_uncore[] = { NULL, };
-+static struct intel_uncore_type **msr_uncores = empty_uncore;
-+
-+/* mask of cpus that collect uncore events */
-+static cpumask_t uncore_cpu_mask;
-+
-+/* constraint for the fixed counter */
-+static struct event_constraint constraint_fixed =
-+	EVENT_CONSTRAINT(~0ULL, 1 << UNCORE_PMC_IDX_FIXED, ~0ULL);
-+
-+static void uncore_assign_hw_event(struct intel_uncore_box *box,
-+				struct perf_event *event, int idx)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	hwc->idx = idx;
-+	hwc->last_tag = ++box->tags[idx];
-+
-+	if (hwc->idx == UNCORE_PMC_IDX_FIXED) {
-+		hwc->event_base = uncore_msr_fixed_ctr(box);
-+		hwc->config_base = uncore_msr_fixed_ctl(box);
-+		return;
-+	}
-+
-+	hwc->config_base = uncore_msr_event_ctl(box, hwc->idx);
-+	hwc->event_base =  uncore_msr_perf_ctr(box, hwc->idx);
-+}
-+
-+static void uncore_perf_event_update(struct intel_uncore_box *box,
++/* Sandy Bridge uncore support */
++static void snb_uncore_msr_enable_event(struct intel_uncore_box *box,
 +					struct perf_event *event)
 +{
-+	u64 prev_count, new_count, delta;
-+	int shift;
++	struct hw_perf_event *hwc = &event->hw;
 +
-+	if (event->hw.idx >= UNCORE_PMC_IDX_FIXED)
-+		shift = 64 - uncore_fixed_ctr_bits(box);
++	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
++		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
 +	else
-+		shift = 64 - uncore_perf_ctr_bits(box);
-+
-+	/* the hrtimer might modify the previous event value */
-+again:
-+	prev_count = local64_read(&event->hw.prev_count);
-+	new_count = uncore_read_counter(box, event);
-+	if (local64_xchg(&event->hw.prev_count, new_count) != prev_count)
-+		goto again;
-+
-+	delta = (new_count << shift) - (prev_count << shift);
-+	delta >>= shift;
-+
-+	local64_add(delta, &event->count);
++		wrmsrl(hwc->config_base, SNB_UNC_CTL_EN);
 +}
 +
-+/*
-+ * The overflow interrupt is unavailable for SandyBridge-EP, is broken
-+ * for SandyBridge. So we use hrtimer to periodically poll the counter
-+ * to avoid overflow.
-+ */
-+static enum hrtimer_restart uncore_pmu_hrtimer(struct hrtimer *hrtimer)
++static void snb_uncore_msr_disable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
 +{
-+	struct intel_uncore_box *box;
-+	unsigned long flags;
-+	int bit;
-+
-+	box = container_of(hrtimer, struct intel_uncore_box, hrtimer);
-+	if (!box->n_active || box->cpu != smp_processor_id())
-+		return HRTIMER_NORESTART;
-+	/*
-+	 * disable local interrupt to prevent uncore_pmu_event_start/stop
-+	 * to interrupt the update process
-+	 */
-+	local_irq_save(flags);
-+
-+	for_each_set_bit(bit, box->active_mask, UNCORE_PMC_IDX_MAX)
-+		uncore_perf_event_update(box, box->events[bit]);
-+
-+	local_irq_restore(flags);
-+
-+	hrtimer_forward_now(hrtimer, ns_to_ktime(UNCORE_PMU_HRTIMER_INTERVAL));
-+	return HRTIMER_RESTART;
++	wrmsrl(event->hw.config_base, 0);
 +}
 +
-+static void uncore_pmu_start_hrtimer(struct intel_uncore_box *box)
++static u64 snb_uncore_msr_read_counter(struct intel_uncore_box *box,
++					struct perf_event *event)
 +{
-+	__hrtimer_start_range_ns(&box->hrtimer,
-+			ns_to_ktime(UNCORE_PMU_HRTIMER_INTERVAL), 0,
-+			HRTIMER_MODE_REL_PINNED, 0);
++	u64 count;
++	rdmsrl(event->hw.event_base, count);
++	return count;
 +}
 +
-+static void uncore_pmu_cancel_hrtimer(struct intel_uncore_box *box)
++static void snb_uncore_msr_init_box(struct intel_uncore_box *box)
 +{
-+	hrtimer_cancel(&box->hrtimer);
-+}
-+
-+static void uncore_pmu_init_hrtimer(struct intel_uncore_box *box)
-+{
-+	hrtimer_init(&box->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	box->hrtimer.function = uncore_pmu_hrtimer;
-+}
-+
-+struct intel_uncore_box *uncore_alloc_box(int cpu)
-+{
-+	struct intel_uncore_box *box;
-+
-+	box = kmalloc_node(sizeof(*box), GFP_KERNEL | __GFP_ZERO,
-+			   cpu_to_node(cpu));
-+	if (!box)
-+		return NULL;
-+
-+	uncore_pmu_init_hrtimer(box);
-+	atomic_set(&box->refcnt, 1);
-+	box->cpu = -1;
-+	box->phys_id = -1;
-+
-+	return box;
-+}
-+
-+static struct intel_uncore_box *
-+uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
-+{
-+	return *per_cpu_ptr(pmu->box, cpu);
-+}
-+
-+static struct intel_uncore_pmu *uncore_event_to_pmu(struct perf_event *event)
-+{
-+	return container_of(event->pmu, struct intel_uncore_pmu, pmu);
-+}
-+
-+static struct intel_uncore_box *uncore_event_to_box(struct perf_event *event)
-+{
-+	/*
-+	 * perf core schedules event on the basis of cpu, uncore events are
-+	 * collected by one of the cpus inside a physical package.
-+	 */
-+	return uncore_pmu_to_box(uncore_event_to_pmu(event),
-+				 smp_processor_id());
-+}
-+
-+static int uncore_collect_events(struct intel_uncore_box *box,
-+				struct perf_event *leader, bool dogrp)
-+{
-+	struct perf_event *event;
-+	int n, max_count;
-+
-+	max_count = box->pmu->type->num_counters;
-+	if (box->pmu->type->fixed_ctl)
-+		max_count++;
-+
-+	if (box->n_events >= max_count)
-+		return -EINVAL;
-+
-+	n = box->n_events;
-+	box->event_list[n] = leader;
-+	n++;
-+	if (!dogrp)
-+		return n;
-+
-+	list_for_each_entry(event, &leader->sibling_list, group_entry) {
-+		if (event->state <= PERF_EVENT_STATE_OFF)
-+			continue;
-+
-+		if (n >= max_count)
-+			return -EINVAL;
-+
-+		box->event_list[n] = event;
-+		n++;
-+	}
-+	return n;
-+}
-+
-+static struct event_constraint *
-+uncore_event_constraint(struct intel_uncore_type *type,
-+			struct perf_event *event)
-+{
-+	struct event_constraint *c;
-+
-+	if (event->hw.config == ~0ULL)
-+		return &constraint_fixed;
-+
-+	if (type->constraints) {
-+		for_each_event_constraint(c, type->constraints) {
-+			if ((event->hw.config & c->cmask) == c->code)
-+				return c;
-+		}
-+	}
-+
-+	return &type->unconstrainted;
-+}
-+
-+static int uncore_assign_events(struct intel_uncore_box *box,
-+				int assign[], int n)
-+{
-+	unsigned long used_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
-+	struct event_constraint *c, *constraints[UNCORE_PMC_IDX_MAX];
-+	int i, ret, wmin, wmax;
-+	struct hw_perf_event *hwc;
-+
-+	bitmap_zero(used_mask, UNCORE_PMC_IDX_MAX);
-+
-+	for (i = 0, wmin = UNCORE_PMC_IDX_MAX, wmax = 0; i < n; i++) {
-+		c = uncore_event_constraint(box->pmu->type,
-+				box->event_list[i]);
-+		constraints[i] = c;
-+		wmin = min(wmin, c->weight);
-+		wmax = max(wmax, c->weight);
-+	}
-+
-+	/* fastpath, try to reuse previous register */
-+	for (i = 0; i < n; i++) {
-+		hwc = &box->event_list[i]->hw;
-+		c = constraints[i];
-+
-+		/* never assigned */
-+		if (hwc->idx == -1)
-+			break;
-+
-+		/* constraint still honored */
-+		if (!test_bit(hwc->idx, c->idxmsk))
-+			break;
-+
-+		/* not already used */
-+		if (test_bit(hwc->idx, used_mask))
-+			break;
-+
-+		__set_bit(hwc->idx, used_mask);
-+		assign[i] = hwc->idx;
-+	}
-+	if (i == n)
-+		return 0;
-+
-+	/* slow path */
-+	ret = perf_assign_events(constraints, n, wmin, wmax, assign);
-+	return ret ? -EINVAL : 0;
-+}
-+
-+static void uncore_pmu_event_start(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	int idx = event->hw.idx;
-+
-+	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
-+		return;
-+
-+	if (WARN_ON_ONCE(idx == -1 || idx >= UNCORE_PMC_IDX_MAX))
-+		return;
-+
-+	event->hw.state = 0;
-+	box->events[idx] = event;
-+	box->n_active++;
-+	__set_bit(idx, box->active_mask);
-+
-+	local64_set(&event->hw.prev_count, uncore_read_counter(box, event));
-+	uncore_enable_event(box, event);
-+
-+	if (box->n_active == 1) {
-+		uncore_enable_box(box);
-+		uncore_pmu_start_hrtimer(box);
++	if (box->pmu->pmu_idx == 0) {
++		wrmsrl(SNB_UNC_PERF_GLOBAL_CTL,
++			SNB_UNC_GLOBAL_CTL_EN | SNB_UNC_GLOBAL_CTL_CORE_ALL);
 +	}
 +}
 +
-+static void uncore_pmu_event_stop(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (__test_and_clear_bit(hwc->idx, box->active_mask)) {
-+		uncore_disable_event(box, event);
-+		box->n_active--;
-+		box->events[hwc->idx] = NULL;
-+		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
-+		hwc->state |= PERF_HES_STOPPED;
-+
-+		if (box->n_active == 0) {
-+			uncore_disable_box(box);
-+			uncore_pmu_cancel_hrtimer(box);
-+		}
-+	}
-+
-+	if ((flags & PERF_EF_UPDATE) && !(hwc->state & PERF_HES_UPTODATE)) {
-+		/*
-+		 * Drain the remaining delta count out of a event
-+		 * that we are disabling:
-+		 */
-+		uncore_perf_event_update(box, event);
-+		hwc->state |= PERF_HES_UPTODATE;
-+	}
-+}
-+
-+static int uncore_pmu_event_add(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int assign[UNCORE_PMC_IDX_MAX];
-+	int i, n, ret;
-+
-+	if (!box)
-+		return -ENODEV;
-+
-+	ret = n = uncore_collect_events(box, event, false);
-+	if (ret < 0)
-+		return ret;
-+
-+	hwc->state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
-+	if (!(flags & PERF_EF_START))
-+		hwc->state |= PERF_HES_ARCH;
-+
-+	ret = uncore_assign_events(box, assign, n);
-+	if (ret)
-+		return ret;
-+
-+	/* save events moving to new counters */
-+	for (i = 0; i < box->n_events; i++) {
-+		event = box->event_list[i];
-+		hwc = &event->hw;
-+
-+		if (hwc->idx == assign[i] &&
-+			hwc->last_tag == box->tags[assign[i]])
-+			continue;
-+		/*
-+		 * Ensure we don't accidentally enable a stopped
-+		 * counter simply because we rescheduled.
-+		 */
-+		if (hwc->state & PERF_HES_STOPPED)
-+			hwc->state |= PERF_HES_ARCH;
-+
-+		uncore_pmu_event_stop(event, PERF_EF_UPDATE);
-+	}
-+
-+	/* reprogram moved events into new counters */
-+	for (i = 0; i < n; i++) {
-+		event = box->event_list[i];
-+		hwc = &event->hw;
-+
-+		if (hwc->idx != assign[i] ||
-+			hwc->last_tag != box->tags[assign[i]])
-+			uncore_assign_hw_event(box, event, assign[i]);
-+		else if (i < box->n_events)
-+			continue;
-+
-+		if (hwc->state & PERF_HES_ARCH)
-+			continue;
-+
-+		uncore_pmu_event_start(event, 0);
-+	}
-+	box->n_events = n;
-+
-+	return 0;
-+}
-+
-+static void uncore_pmu_event_del(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	int i;
-+
-+	uncore_pmu_event_stop(event, PERF_EF_UPDATE);
-+
-+	for (i = 0; i < box->n_events; i++) {
-+		if (event == box->event_list[i]) {
-+			while (++i < box->n_events)
-+				box->event_list[i - 1] = box->event_list[i];
-+
-+			--box->n_events;
-+			break;
-+		}
-+	}
-+
-+	event->hw.idx = -1;
-+	event->hw.last_tag = ~0ULL;
-+}
-+
-+static void uncore_pmu_event_read(struct perf_event *event)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	uncore_perf_event_update(box, event);
-+}
-+
-+/*
-+ * validation ensures the group can be loaded onto the
-+ * PMU if it was the only group available.
-+ */
-+static int uncore_validate_group(struct intel_uncore_pmu *pmu,
-+				struct perf_event *event)
-+{
-+	struct perf_event *leader = event->group_leader;
-+	struct intel_uncore_box *fake_box;
-+	int assign[UNCORE_PMC_IDX_MAX];
-+	int ret = -EINVAL, n;
-+
-+	fake_box = uncore_alloc_box(smp_processor_id());
-+	if (!fake_box)
-+		return -ENOMEM;
-+
-+	fake_box->pmu = pmu;
-+	/*
-+	 * the event is not yet connected with its
-+	 * siblings therefore we must first collect
-+	 * existing siblings, then add the new event
-+	 * before we can simulate the scheduling
-+	 */
-+	n = uncore_collect_events(fake_box, leader, true);
-+	if (n < 0)
-+		goto out;
-+
-+	fake_box->n_events = n;
-+	n = uncore_collect_events(fake_box, event, false);
-+	if (n < 0)
-+		goto out;
-+
-+	fake_box->n_events = n;
-+
-+	ret = uncore_assign_events(fake_box, assign, n);
-+out:
-+	kfree(fake_box);
-+	return ret;
-+}
-+
-+int uncore_pmu_event_init(struct perf_event *event)
-+{
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	struct hw_perf_event *hwc = &event->hw;
-+	int ret;
-+
-+	if (event->attr.type != event->pmu->type)
-+		return -ENOENT;
-+
-+	pmu = uncore_event_to_pmu(event);
-+	/* no device found for this pmu */
-+	if (pmu->func_id < 0)
-+		return -ENOENT;
-+
-+	/*
-+	 * Uncore PMU does measure at all privilege level all the time.
-+	 * So it doesn't make sense to specify any exclude bits.
-+	 */
-+	if (event->attr.exclude_user || event->attr.exclude_kernel ||
-+			event->attr.exclude_hv || event->attr.exclude_idle)
-+		return -EINVAL;
-+
-+	/* Sampling not supported yet */
-+	if (hwc->sample_period)
-+		return -EINVAL;
-+
-+	/*
-+	 * Place all uncore events for a particular physical package
-+	 * onto a single cpu
-+	 */
-+	if (event->cpu < 0)
-+		return -EINVAL;
-+	box = uncore_pmu_to_box(pmu, event->cpu);
-+	if (!box || box->cpu < 0)
-+		return -EINVAL;
-+	event->cpu = box->cpu;
-+
-+	if (event->attr.config == UNCORE_FIXED_EVENT) {
-+		/* no fixed counter */
-+		if (!pmu->type->fixed_ctl)
-+			return -EINVAL;
-+		/*
-+		 * if there is only one fixed counter, only the first pmu
-+		 * can access the fixed counter
-+		 */
-+		if (pmu->type->single_fixed && pmu->pmu_idx > 0)
-+			return -EINVAL;
-+		hwc->config = ~0ULL;
-+	} else {
-+		hwc->config = event->attr.config & pmu->type->event_mask;
-+	}
-+
-+	event->hw.idx = -1;
-+	event->hw.last_tag = ~0ULL;
-+
-+	if (event->group_leader != event)
-+		ret = uncore_validate_group(pmu, event);
-+	else
-+		ret = 0;
-+
-+	return ret;
-+}
-+
-+static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
-+{
-+	int ret;
-+
-+	pmu->pmu = (struct pmu) {
-+		.attr_groups	= pmu->type->attr_groups,
-+		.task_ctx_nr	= perf_invalid_context,
-+		.event_init	= uncore_pmu_event_init,
-+		.add		= uncore_pmu_event_add,
-+		.del		= uncore_pmu_event_del,
-+		.start		= uncore_pmu_event_start,
-+		.stop		= uncore_pmu_event_stop,
-+		.read		= uncore_pmu_event_read,
-+	};
-+
-+	if (pmu->type->num_boxes == 1) {
-+		if (strlen(pmu->type->name) > 0)
-+			sprintf(pmu->name, "uncore_%s", pmu->type->name);
-+		else
-+			sprintf(pmu->name, "uncore");
-+	} else {
-+		sprintf(pmu->name, "uncore_%s_%d", pmu->type->name,
-+			pmu->pmu_idx);
-+	}
-+
-+	ret = perf_pmu_register(&pmu->pmu, pmu->name, -1);
-+	return ret;
-+}
-+
-+static void __init uncore_type_exit(struct intel_uncore_type *type)
-+{
-+	int i;
-+
-+	for (i = 0; i < type->num_boxes; i++)
-+		free_percpu(type->pmus[i].box);
-+	kfree(type->pmus);
-+	type->pmus = NULL;
-+	kfree(type->attr_groups[1]);
-+	type->attr_groups[1] = NULL;
-+}
-+
-+static int __init uncore_type_init(struct intel_uncore_type *type)
-+{
-+	struct intel_uncore_pmu *pmus;
-+	struct attribute_group *events_group;
-+	struct attribute **attrs;
-+	int i, j;
-+
-+	pmus = kzalloc(sizeof(*pmus) * type->num_boxes, GFP_KERNEL);
-+	if (!pmus)
-+		return -ENOMEM;
-+
-+	type->unconstrainted = (struct event_constraint)
-+		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
-+				0, type->num_counters, 0);
-+
-+	for (i = 0; i < type->num_boxes; i++) {
-+		pmus[i].func_id = -1;
-+		pmus[i].pmu_idx = i;
-+		pmus[i].type = type;
-+		pmus[i].box = alloc_percpu(struct intel_uncore_box *);
-+		if (!pmus[i].box)
-+			goto fail;
-+	}
-+
-+	if (type->event_descs) {
-+		i = 0;
-+		while (type->event_descs[i].attr.attr.name)
-+			i++;
-+
-+		events_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
-+					sizeof(*events_group), GFP_KERNEL);
-+		if (!events_group)
-+			goto fail;
-+
-+		attrs = (struct attribute **)(events_group + 1);
-+		events_group->name = "events";
-+		events_group->attrs = attrs;
-+
-+		for (j = 0; j < i; j++)
-+			attrs[j] = &type->event_descs[j].attr.attr;
-+
-+		type->attr_groups[1] = events_group;
-+	}
-+
-+	type->pmus = pmus;
-+	return 0;
-+fail:
-+	uncore_type_exit(type);
-+	return -ENOMEM;
-+}
-+
-+static int __init uncore_types_init(struct intel_uncore_type **types)
-+{
-+	int i, ret;
-+
-+	for (i = 0; types[i]; i++) {
-+		ret = uncore_type_init(types[i]);
-+		if (ret)
-+			goto fail;
-+	}
-+	return 0;
-+fail:
-+	while (--i >= 0)
-+		uncore_type_exit(types[i]);
-+	return ret;
-+}
-+
-+static void __cpuinit uncore_cpu_dying(int cpu)
-+{
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	int i, j;
-+
-+	for (i = 0; msr_uncores[i]; i++) {
-+		type = msr_uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			box = *per_cpu_ptr(pmu->box, cpu);
-+			*per_cpu_ptr(pmu->box, cpu) = NULL;
-+			if (box && atomic_dec_and_test(&box->refcnt))
-+				kfree(box);
-+		}
-+	}
-+}
-+
-+static int __cpuinit uncore_cpu_starting(int cpu)
-+{
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box, *exist;
-+	int i, j, k, phys_id;
-+
-+	phys_id = topology_physical_package_id(cpu);
-+
-+	for (i = 0; msr_uncores[i]; i++) {
-+		type = msr_uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			box = *per_cpu_ptr(pmu->box, cpu);
-+			/* called by uncore_cpu_init? */
-+			if (box && box->phys_id >= 0) {
-+				uncore_box_init(box);
-+				continue;
-+			}
-+
-+			for_each_online_cpu(k) {
-+				exist = *per_cpu_ptr(pmu->box, k);
-+				if (exist && exist->phys_id == phys_id) {
-+					atomic_inc(&exist->refcnt);
-+					*per_cpu_ptr(pmu->box, cpu) = exist;
-+					kfree(box);
-+					box = NULL;
-+					break;
-+				}
-+			}
-+
-+			if (box) {
-+				box->phys_id = phys_id;
-+				uncore_box_init(box);
-+			}
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int __cpuinit uncore_cpu_prepare(int cpu, int phys_id)
-+{
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	int i, j;
-+
-+	for (i = 0; msr_uncores[i]; i++) {
-+		type = msr_uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			if (pmu->func_id < 0)
-+				pmu->func_id = j;
-+
-+			box = uncore_alloc_box(cpu);
-+			if (!box)
-+				return -ENOMEM;
-+
-+			box->pmu = pmu;
-+			box->phys_id = phys_id;
-+			*per_cpu_ptr(pmu->box, cpu) = box;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static void __cpuinit uncore_change_context(struct intel_uncore_type **uncores,
-+					    int old_cpu, int new_cpu)
-+{
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	int i, j;
-+
-+	for (i = 0; uncores[i]; i++) {
-+		type = uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			if (old_cpu < 0)
-+				box = uncore_pmu_to_box(pmu, new_cpu);
-+			else
-+				box = uncore_pmu_to_box(pmu, old_cpu);
-+			if (!box)
-+				continue;
-+
-+			if (old_cpu < 0) {
-+				WARN_ON_ONCE(box->cpu != -1);
-+				box->cpu = new_cpu;
-+				continue;
-+			}
-+
-+			WARN_ON_ONCE(box->cpu != old_cpu);
-+			if (new_cpu >= 0) {
-+				uncore_pmu_cancel_hrtimer(box);
-+				perf_pmu_migrate_context(&pmu->pmu,
-+						old_cpu, new_cpu);
-+				box->cpu = new_cpu;
-+			} else {
-+				box->cpu = -1;
-+			}
-+		}
-+	}
-+}
-+
-+static void __cpuinit uncore_event_exit_cpu(int cpu)
-+{
-+	int i, phys_id, target;
-+
-+	/* if exiting cpu is used for collecting uncore events */
-+	if (!cpumask_test_and_clear_cpu(cpu, &uncore_cpu_mask))
-+		return;
-+
-+	/* find a new cpu to collect uncore events */
-+	phys_id = topology_physical_package_id(cpu);
-+	target = -1;
-+	for_each_online_cpu(i) {
-+		if (i == cpu)
-+			continue;
-+		if (phys_id == topology_physical_package_id(i)) {
-+			target = i;
-+			break;
-+		}
-+	}
-+
-+	/* migrate uncore events to the new cpu */
-+	if (target >= 0)
-+		cpumask_set_cpu(target, &uncore_cpu_mask);
-+
-+	uncore_change_context(msr_uncores, cpu, target);
-+}
-+
-+static void __cpuinit uncore_event_init_cpu(int cpu)
-+{
-+	int i, phys_id;
-+
-+	phys_id = topology_physical_package_id(cpu);
-+	for_each_cpu(i, &uncore_cpu_mask) {
-+		if (phys_id == topology_physical_package_id(i))
-+			return;
-+	}
-+
-+	cpumask_set_cpu(cpu, &uncore_cpu_mask);
-+
-+	uncore_change_context(msr_uncores, -1, cpu);
-+}
-+
-+static int __cpuinit uncore_cpu_notifier(struct notifier_block *self,
-+					 unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu = (long)hcpu;
-+
-+	/* allocate/free data structure for uncore box */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_UP_PREPARE:
-+		uncore_cpu_prepare(cpu, -1);
-+		break;
-+	case CPU_STARTING:
-+		uncore_cpu_starting(cpu);
-+		break;
-+	case CPU_UP_CANCELED:
-+	case CPU_DYING:
-+		uncore_cpu_dying(cpu);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	/* select the cpu that collects uncore events */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_DOWN_FAILED:
-+	case CPU_STARTING:
-+		uncore_event_init_cpu(cpu);
-+		break;
-+	case CPU_DOWN_PREPARE:
-+		uncore_event_exit_cpu(cpu);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block uncore_cpu_nb __cpuinitdata = {
-+	.notifier_call = uncore_cpu_notifier,
-+	/*
-+	 * to migrate uncore events, our notifier should be executed
-+	 * before perf core's notifier.
-+	 */
-+	.priority = CPU_PRI_PERF + 1,
++static struct attribute *snb_uncore_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask5.attr,
++	NULL,
 +};
 +
-+static void __init uncore_cpu_setup(void *dummy)
++static struct attribute_group snb_uncore_format_group = {
++	.name = "format",
++	.attrs = snb_uncore_formats_attr,
++};
++
++static struct intel_uncore_ops snb_uncore_msr_ops = {
++	.init_box	= snb_uncore_msr_init_box,
++	.disable_event	= snb_uncore_msr_disable_event,
++	.enable_event	= snb_uncore_msr_enable_event,
++	.read_counter	= snb_uncore_msr_read_counter,
++};
++
++static struct event_constraint snb_uncore_cbox_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x80, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x83, 0x1),
++	EVENT_CONSTRAINT_END
++};
++
++static struct intel_uncore_type snb_uncore_cbox = {
++	.name		= "cbox",
++	.num_counters   = 2,
++	.num_boxes	= 4,
++	.perf_ctr_bits	= 44,
++	.fixed_ctr_bits	= 48,
++	.perf_ctr	= SNB_UNC_CBO_0_PER_CTR0,
++	.event_ctl	= SNB_UNC_CBO_0_PERFEVTSEL0,
++	.fixed_ctr	= SNB_UNC_FIXED_CTR,
++	.fixed_ctl	= SNB_UNC_FIXED_CTR_CTRL,
++	.single_fixed	= 1,
++	.event_mask	= SNB_UNC_RAW_EVENT_MASK,
++	.msr_offset	= SNB_UNC_CBO_MSR_OFFSET,
++	.constraints	= snb_uncore_cbox_constraints,
++	.ops		= &snb_uncore_msr_ops,
++	.format_group	= &snb_uncore_format_group,
++};
++
++static struct intel_uncore_type *snb_msr_uncores[] = {
++	&snb_uncore_cbox,
++	NULL,
++};
++/* end of Sandy Bridge uncore support */
++
++/* Nehalem uncore support */
++static void nhm_uncore_msr_disable_box(struct intel_uncore_box *box)
 +{
-+	uncore_cpu_starting(smp_processor_id());
++	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
 +}
 +
-+static int __init uncore_cpu_init(void)
++static void nhm_uncore_msr_enable_box(struct intel_uncore_box *box)
 +{
-+	int ret, cpu;
-+
-+	switch (boot_cpu_data.x86_model) {
-+	default:
-+		return 0;
-+	}
-+
-+	ret = uncore_types_init(msr_uncores);
-+	if (ret)
-+		return ret;
-+
-+	get_online_cpus();
-+
-+	for_each_online_cpu(cpu) {
-+		int i, phys_id = topology_physical_package_id(cpu);
-+
-+		for_each_cpu(i, &uncore_cpu_mask) {
-+			if (phys_id == topology_physical_package_id(i)) {
-+				phys_id = -1;
-+				break;
-+			}
-+		}
-+		if (phys_id < 0)
-+			continue;
-+
-+		uncore_cpu_prepare(cpu, phys_id);
-+		uncore_event_init_cpu(cpu);
-+	}
-+	on_each_cpu(uncore_cpu_setup, NULL, 1);
-+
-+	register_cpu_notifier(&uncore_cpu_nb);
-+
-+	put_online_cpus();
-+
-+	return 0;
++	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL,
++		NHM_UNC_GLOBAL_CTL_EN_PC_ALL | NHM_UNC_GLOBAL_CTL_EN_FC);
 +}
 +
-+static int __init uncore_pmus_register(void)
++static void nhm_uncore_msr_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
 +{
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_type *type;
-+	int i, j;
++	struct hw_perf_event *hwc = &event->hw;
 +
-+	for (i = 0; msr_uncores[i]; i++) {
-+		type = msr_uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			uncore_pmu_register(pmu);
-+		}
-+	}
-+
-+	return 0;
++	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
++		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
++	else
++		wrmsrl(hwc->config_base, NHM_UNC_FIXED_CTR_CTL_EN);
 +}
 +
-+static int __init intel_uncore_init(void)
-+{
-+	int ret;
++static struct attribute *nhm_uncore_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask8.attr,
++	NULL,
++};
 +
-+	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
-+		return -ENODEV;
++static struct attribute_group nhm_uncore_format_group = {
++	.name = "format",
++	.attrs = nhm_uncore_formats_attr,
++};
 +
-+	ret = uncore_cpu_init();
-+	if (ret)
-+		goto fail;
++static struct uncore_event_desc nhm_uncore_events[] = {
++	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
++	/* full cache line writes to DRAM */
++	INTEL_UNCORE_EVENT_DESC(QMC_WRITES_FULL_ANY, "event=0x2f,umask=0xf"),
++	/* Quickpath Memory Controller normal priority read requests */
++	INTEL_UNCORE_EVENT_DESC(QMC_NORMAL_READS_ANY, "event=0x2c,umask=0xf"),
++	/* Quickpath Home Logic read requests from the IOH */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_READS,
++				"event=0x20,umask=0x1"),
++	/* Quickpath Home Logic write requests from the IOH */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_WRITES,
++				"event=0x20,umask=0x2"),
++	/* Quickpath Home Logic read requests from a remote socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_READS,
++				"event=0x20,umask=0x4"),
++	/* Quickpath Home Logic write requests from a remote socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_WRITES,
++				"event=0x20,umask=0x8"),
++	/* Quickpath Home Logic read requests from the local socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_READS,
++				"event=0x20,umask=0x10"),
++	/* Quickpath Home Logic write requests from the local socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_WRITES,
++				"event=0x20,umask=0x20"),
++	{ /* end: all zeroes */ },
++};
 +
-+	uncore_pmus_register();
-+	return 0;
-+fail:
-+	return ret;
-+}
-+device_initcall(intel_uncore_init);
++static struct intel_uncore_ops nhm_uncore_msr_ops = {
++	.disable_box	= nhm_uncore_msr_disable_box,
++	.enable_box	= nhm_uncore_msr_enable_box,
++	.disable_event	= snb_uncore_msr_disable_event,
++	.enable_event	= nhm_uncore_msr_enable_event,
++	.read_counter	= snb_uncore_msr_read_counter,
++};
++
++static struct intel_uncore_type nhm_uncore = {
++	.name		= "",
++	.num_counters   = 8,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 48,
++	.fixed_ctr_bits	= 48,
++	.event_ctl	= NHM_UNC_PERFEVTSEL0,
++	.perf_ctr	= NHM_UNC_UNCORE_PMC0,
++	.fixed_ctr	= NHM_UNC_FIXED_CTR,
++	.fixed_ctl	= NHM_UNC_FIXED_CTR_CTRL,
++	.event_mask	= NHM_UNC_RAW_EVENT_MASK,
++	.event_descs	= nhm_uncore_events,
++	.ops		= &nhm_uncore_msr_ops,
++	.format_group	= &nhm_uncore_format_group,
++};
++
++static struct intel_uncore_type *nhm_msr_uncores[] = {
++	&nhm_uncore,
++	NULL,
++};
++/* end of Nehalem uncore support */
++
+ static void uncore_assign_hw_event(struct intel_uncore_box *box,
+ 				struct perf_event *event, int idx)
+ {
+@@ -808,6 +994,15 @@ static int __init uncore_cpu_init(void)
+ 	int ret, cpu;
+ 
+ 	switch (boot_cpu_data.x86_model) {
++	case 26: /* Nehalem */
++	case 30:
++	case 37: /* Westmere */
++	case 44:
++		msr_uncores = nhm_msr_uncores;
++		break;
++	case 42: /* Sandy Bridge */
++		msr_uncores = snb_msr_uncores;
++		break;
+ 	default:
+ 		return 0;
+ 	}
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-new file mode 100644
-index 0000000..49a6bfb
---- /dev/null
+index 49a6bfb..eeb5ca5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
 +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -0,0 +1,204 @@
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/perf_event.h>
-+#include "perf_event.h"
+@@ -15,6 +15,56 @@
+ 
+ #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
+ 
++/* SNB event control */
++#define SNB_UNC_CTL_EV_SEL_MASK			0x000000ff
++#define SNB_UNC_CTL_UMASK_MASK			0x0000ff00
++#define SNB_UNC_CTL_EDGE_DET			(1 << 18)
++#define SNB_UNC_CTL_EN				(1 << 22)
++#define SNB_UNC_CTL_INVERT			(1 << 23)
++#define SNB_UNC_CTL_CMASK_MASK			0x1f000000
++#define NHM_UNC_CTL_CMASK_MASK			0xff000000
++#define NHM_UNC_FIXED_CTR_CTL_EN		(1 << 0)
 +
-+#define UNCORE_PMU_NAME_LEN		32
-+#define UNCORE_BOX_HASH_SIZE		8
++#define SNB_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
++						 SNB_UNC_CTL_UMASK_MASK | \
++						 SNB_UNC_CTL_EDGE_DET | \
++						 SNB_UNC_CTL_INVERT | \
++						 SNB_UNC_CTL_CMASK_MASK)
 +
-+#define UNCORE_PMU_HRTIMER_INTERVAL	(60 * NSEC_PER_SEC)
++#define NHM_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
++						 SNB_UNC_CTL_UMASK_MASK | \
++						 SNB_UNC_CTL_EDGE_DET | \
++						 SNB_UNC_CTL_INVERT | \
++						 NHM_UNC_CTL_CMASK_MASK)
 +
-+#define UNCORE_FIXED_EVENT		0xffff
-+#define UNCORE_PMC_IDX_MAX_GENERIC	8
-+#define UNCORE_PMC_IDX_FIXED		UNCORE_PMC_IDX_MAX_GENERIC
-+#define UNCORE_PMC_IDX_MAX		(UNCORE_PMC_IDX_FIXED + 1)
++/* SNB global control register */
++#define SNB_UNC_PERF_GLOBAL_CTL                 0x391
++#define SNB_UNC_FIXED_CTR_CTRL                  0x394
++#define SNB_UNC_FIXED_CTR                       0x395
 +
-+#define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
++/* SNB uncore global control */
++#define SNB_UNC_GLOBAL_CTL_CORE_ALL             ((1 << 4) - 1)
++#define SNB_UNC_GLOBAL_CTL_EN                   (1 << 29)
 +
-+struct intel_uncore_ops;
-+struct intel_uncore_pmu;
-+struct intel_uncore_box;
-+struct uncore_event_desc;
++/* SNB Cbo register */
++#define SNB_UNC_CBO_0_PERFEVTSEL0               0x700
++#define SNB_UNC_CBO_0_PER_CTR0                  0x706
++#define SNB_UNC_CBO_MSR_OFFSET                  0x10
 +
-+struct intel_uncore_type {
-+	const char *name;
-+	int num_counters;
-+	int num_boxes;
-+	int perf_ctr_bits;
-+	int fixed_ctr_bits;
-+	int single_fixed;
-+	unsigned perf_ctr;
-+	unsigned event_ctl;
-+	unsigned event_mask;
-+	unsigned fixed_ctr;
-+	unsigned fixed_ctl;
-+	unsigned box_ctl;
-+	unsigned msr_offset;
-+	struct event_constraint unconstrainted;
-+	struct event_constraint *constraints;
-+	struct intel_uncore_pmu *pmus;
-+	struct intel_uncore_ops *ops;
-+	struct uncore_event_desc *event_descs;
-+	const struct attribute_group *attr_groups[3];
-+};
++/* NHM global control register */
++#define NHM_UNC_PERF_GLOBAL_CTL                 0x391
++#define NHM_UNC_FIXED_CTR                       0x394
++#define NHM_UNC_FIXED_CTR_CTRL                  0x395
 +
-+#define format_group attr_groups[0]
++/* NHM uncore global control */
++#define NHM_UNC_GLOBAL_CTL_EN_PC_ALL            ((1ULL << 8) - 1)
++#define NHM_UNC_GLOBAL_CTL_EN_FC                (1ULL << 32)
 +
-+struct intel_uncore_ops {
-+	void (*init_box)(struct intel_uncore_box *);
-+	void (*disable_box)(struct intel_uncore_box *);
-+	void (*enable_box)(struct intel_uncore_box *);
-+	void (*disable_event)(struct intel_uncore_box *, struct perf_event *);
-+	void (*enable_event)(struct intel_uncore_box *, struct perf_event *);
-+	u64 (*read_counter)(struct intel_uncore_box *, struct perf_event *);
-+};
-+
-+struct intel_uncore_pmu {
-+	struct pmu pmu;
-+	char name[UNCORE_PMU_NAME_LEN];
-+	int pmu_idx;
-+	int func_id;
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_box ** __percpu box;
-+};
-+
-+struct intel_uncore_box {
-+	int phys_id;
-+	int n_active;	/* number of active events */
-+	int n_events;
-+	int cpu;	/* cpu to collect events */
-+	unsigned long flags;
-+	atomic_t refcnt;
-+	struct perf_event *events[UNCORE_PMC_IDX_MAX];
-+	struct perf_event *event_list[UNCORE_PMC_IDX_MAX];
-+	unsigned long active_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
-+	u64 tags[UNCORE_PMC_IDX_MAX];
-+	struct intel_uncore_pmu *pmu;
-+	struct hrtimer hrtimer;
-+	struct list_head list;
-+};
-+
-+#define UNCORE_BOX_FLAG_INITIATED	0
-+
-+struct uncore_event_desc {
-+	struct kobj_attribute attr;
-+	const char *config;
-+};
-+
-+#define INTEL_UNCORE_EVENT_DESC(_name, _config)			\
-+{								\
-+	.attr	= __ATTR(_name, 0444, uncore_event_show, NULL),	\
-+	.config	= _config,					\
-+}
-+
-+#define DEFINE_UNCORE_FORMAT_ATTR(_var, _name, _format)			\
-+static ssize_t __uncore_##_var##_show(struct kobject *kobj,		\
-+				struct kobj_attribute *attr,		\
-+				char *page)				\
-+{									\
-+	BUILD_BUG_ON(sizeof(_format) >= PAGE_SIZE);			\
-+	return sprintf(page, _format "\n");				\
-+}									\
-+static struct kobj_attribute format_attr_##_var =			\
-+	__ATTR(_name, 0444, __uncore_##_var##_show, NULL)
++/* NHM uncore register */
++#define NHM_UNC_PERFEVTSEL0                     0x3c0
++#define NHM_UNC_UNCORE_PMC0                     0x3b0
 +
 +
-+static ssize_t uncore_event_show(struct kobject *kobj,
-+				struct kobj_attribute *attr, char *buf)
-+{
-+	struct uncore_event_desc *event =
-+		container_of(attr, struct uncore_event_desc, attr);
-+	return sprintf(buf, "%s", event->config);
-+}
-+
-+static inline
-+unsigned uncore_msr_box_ctl(struct intel_uncore_box *box)
-+{
-+	if (!box->pmu->type->box_ctl)
-+		return 0;
-+	return box->pmu->type->box_ctl +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline
-+unsigned uncore_msr_fixed_ctl(struct intel_uncore_box *box)
-+{
-+	if (!box->pmu->type->fixed_ctl)
-+		return 0;
-+	return box->pmu->type->fixed_ctl +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline
-+unsigned uncore_msr_fixed_ctr(struct intel_uncore_box *box)
-+{
-+	return box->pmu->type->fixed_ctr +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline
-+unsigned uncore_msr_event_ctl(struct intel_uncore_box *box, int idx)
-+{
-+	return idx + box->pmu->type->event_ctl +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline
-+unsigned uncore_msr_perf_ctr(struct intel_uncore_box *box, int idx)
-+{
-+	return idx + box->pmu->type->perf_ctr +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline int uncore_perf_ctr_bits(struct intel_uncore_box *box)
-+{
-+	return box->pmu->type->perf_ctr_bits;
-+}
-+
-+static inline int uncore_fixed_ctr_bits(struct intel_uncore_box *box)
-+{
-+	return box->pmu->type->fixed_ctr_bits;
-+}
-+
-+static inline int uncore_num_counters(struct intel_uncore_box *box)
-+{
-+	return box->pmu->type->num_counters;
-+}
-+
-+static inline void uncore_disable_box(struct intel_uncore_box *box)
-+{
-+	if (box->pmu->type->ops->disable_box)
-+		box->pmu->type->ops->disable_box(box);
-+}
-+
-+static inline void uncore_enable_box(struct intel_uncore_box *box)
-+{
-+	if (box->pmu->type->ops->enable_box)
-+		box->pmu->type->ops->enable_box(box);
-+}
-+
-+static inline void uncore_disable_event(struct intel_uncore_box *box,
-+				struct perf_event *event)
-+{
-+	box->pmu->type->ops->disable_event(box, event);
-+}
-+
-+static inline void uncore_enable_event(struct intel_uncore_box *box,
-+				struct perf_event *event)
-+{
-+	box->pmu->type->ops->enable_event(box, event);
-+}
-+
-+static inline u64 uncore_read_counter(struct intel_uncore_box *box,
-+				struct perf_event *event)
-+{
-+	return box->pmu->type->ops->read_counter(box, event);
-+}
-+
-+static inline void uncore_box_init(struct intel_uncore_box *box)
-+{
-+	if (!test_and_set_bit(UNCORE_BOX_FLAG_INITIATED, &box->flags)) {
-+		if (box->pmu->type->ops->init_box)
-+			box->pmu->type->ops->init_box(box);
-+	}
-+}
+ struct intel_uncore_ops;
+ struct intel_uncore_pmu;
+ struct intel_uncore_box;
