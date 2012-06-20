@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab2FTO1B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 10:27:01 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:29984
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754576Ab2FTO1A (ORCPT
+	id S1756581Ab2FTO1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 10:27:42 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:34966 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428Ab2FTO1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 10:27:00 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1202hzz8275bhz2dh87h2a8h668h839h944hd25he96hf0ah)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 20 Jun 2012 22:26:45 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Fabio Estevam <festevam@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <marex@denx.de>, <kernel@pengutronix.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] clk: mxs: Fix the GPMI clock name
-Message-ID: <20120620142643.GD2253@S2101-09.ap.freescale.net>
-References: <1340137652-2227-1-git-send-email-festevam@gmail.com>
+	Wed, 20 Jun 2012 10:27:41 -0400
+Message-ID: <4FE1DDA0.8030004@linux.vnet.ibm.com>
+Date: Wed, 20 Jun 2012 19:56:40 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1340137652-2227-1-git-send-email-festevam@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, pjt@google.com,
+        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        nacc@us.ibm.com, rientjes@google.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, tj@kernel.org,
+        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v6 0/4] CPU hotplug, cpusets, suspend/resume: Fixes, cleanups
+ and optimizations
+References: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com> <4FE199B6.2050803@linux.vnet.ibm.com> <20120620113917.GA1925@gmail.com> <4FE1DB88.9060405@linux.vnet.ibm.com>
+In-Reply-To: <4FE1DB88.9060405@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062014-3864-0000-0000-0000036AB181
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 05:27:32PM -0300, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-> The correct name for the GPMI clock is 'gpmi-nand'.
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+On 06/20/2012 07:47 PM, Srivatsa S. Bhat wrote:
 
-Applied, thanks.
+> On 06/20/2012 05:09 PM, Ingo Molnar wrote:
+> 
+>> * Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>
+>>> On 05/24/2012 07:46 PM, Srivatsa S. Bhat wrote:
+>>>
+>>>> Currently the kernel doesn't handle cpusets properly during 
+>>>> suspend/resume. After a resume, all non-root cpusets end up 
+>>>> having only 1 cpu (the boot cpu), causing massive 
+>>>> performance degradation of workloads. One major user of 
+>>>> cpusets is libvirt, which means that after a 
+>>>> suspend/hibernation cycle, all VMs suddenly end up running 
+>>>> terribly slow!
+>>>>
+>>>> Also, the kernel moves the tasks from one cpuset to another 
+>>>> during CPU hotplug in the suspend/resume path, leading to a 
+>>>> task-management nightmare after resume.
+>>>>
+>>>> Patch 1 fixes this by keeping cpusets unmodified in the 
+>>>> suspend/resume path. But to ensure we don't trip over, it 
+>>>> keeps the sched domains updated during every CPU hotplug in 
+>>>> the s/r path. This is a long standing issue and we need to 
+>>>> fix up stable kernels too.
+>>>>
+>>>> The rest of the patches in the series are mostly 
+>>>> cleanups/optimizations.
+>>>
+>>> Hi Peter,
+>>>
+>>> Would you be taking these patches through -tip for 3.6?
+>>
+>> They are now in tip:sched/core.
+>>
+>> Note that I removed the Cc:stable tag - it's not a regression 
+>> fix and such it is not eligible for immediate -stable backports.
+>>
+>> ( Once they are upstream and have been problem-free upstream for
+>>   several weeks then *maybe* we could forward the first commit
+>>   to -stable, as a super special exception. )
+>>
+> 
+> 
+> OK, I get the point of allowing it to cook in the mainline for a
+> while before backporting to -stable and I totally agree with that,
+> but why so much of uncertainty about whether the first commit should
+> (eventually) even land in -stable or not? Distros have been struggling
+> to deal with this bug in userspace and have failed, and AFAIK they are
+> waiting for a proper kernel fix for this bug. Agreed, this is not a
+> regression per se, but isn't this bug critical enough to qualify for
+> -stable?
+> 
 
+
+IOW, I was just wondering what that "super special exception" was
+all about ;-)
+ 
 Regards,
-Shawn
-
-> ---
->  drivers/clk/mxs/clk-imx23.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/clk/mxs/clk-imx23.c b/drivers/clk/mxs/clk-imx23.c
-> index f7be225..40ad638 100644
-> --- a/drivers/clk/mxs/clk-imx23.c
-> +++ b/drivers/clk/mxs/clk-imx23.c
-> @@ -106,7 +106,7 @@ static struct clk_lookup lcdif_lookups[] __initdata = {
->  
->  static struct clk_lookup gpmi_lookups[] __initdata = {
->  	{ .dev_id = "imx23-gpmi-nand", },
-> -	{ .dev_id = "8000c000.gpmi", },
-> +	{ .dev_id = "8000c000.gpmi-nand", },
->  };
->  
->  static const char *sel_pll[]  __initconst = { "pll", "ref_xtal", };
-> -- 
-> 1.7.1
-> 
+Srivatsa S. Bhat
 
