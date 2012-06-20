@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab2FTSBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:01:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13778 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756284Ab2FTSBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:01:39 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, torsten.hilbrich@secunet.com,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: [patch] block: fix off-by-one in init_page_buffers
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 20 Jun 2012 14:01:28 -0400
-Message-ID: <x49txy5yi9z.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755707Ab2FTSH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:07:28 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:61000 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab2FTSH0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 14:07:26 -0400
+Message-ID: <1340215644.6961.12.camel@cwalton-XPS-8300>
+Subject: Re: [PATCH] Allow cross subvolume reflinks (2nd attempt)
+From: Calvin Walton <calvin.walton@kepstin.ca>
+To: Alexander Block <ablock84@googlemail.com>
+Cc: kreijack@inwind.it, linux-btrfs@vger.kernel.org, dave@jikos.cz,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        chris.mason@fusionio.com, linux-kernel@vger.kernel.org
+Date: Wed, 20 Jun 2012 14:07:24 -0400
+In-Reply-To: <CAB9VWqB8z_faPNRJo8+9JWsQFDe507iTxwQK4sctUYGF9zCL4Q@mail.gmail.com>
+References: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
+	 <4FE205CF.9020509@libero.it>
+	 <CAB9VWqB8z_faPNRJo8+9JWsQFDe507iTxwQK4sctUYGF9zCL4Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2012-06-20 at 19:27 +0200, Alexander Block wrote:
+> On Wed, Jun 20, 2012 at 7:18 PM, Goffredo Baroncelli <kreijack@libero.it> wrote:
+> > Hi Alexander,
+> >
+> > On 06/20/2012 12:35 PM, Alexander Block wrote:
+> >> The patch also does proper vfs mount checks, so cross mount
+> >> point reflinks are not possible with this patch. It only allows cross
+> >> reflinks between two subvolumes which are in the same mount point.
+> >
+> > Thanks for working on that. What happens if two subvolumes of the same
+> > filesystem are mounted on two different places ?
+> >
+> > I usually do:
+> >  mount -o subvol=__active /dev/sdX /
+> >  mount -o subvol=.        /dev/sdX /var/btrfs
+> >
+> > So two different subvolumes of the same filesystem (the one on /dev/sdX)
+> > are mounted on two different places.
+> >
+> > Is it possible to do
+> >  cp --reflink /tmp/foo /var/btrfs/tmp/foo2
+> This will fail with -EXDEV. The patch explicitly forbids reflinks crossing vfs
+> mount boundaries.
 
-This commit:
+Which means that if I want to do a reflink copy between two separately
+mounted subvolumes, I will have to go and do a third mount with a common
+subvolume above those two, then do the reflink operation within this
+extra mount? This seems slightly impractical.
 
-commit 080399aaaf3531f5b8761ec0ac30ff98891e8686
-Author: Jeff Moyer <jmoyer@redhat.com>
-Date:   Fri May 11 16:34:10 2012 +0200
+Is it any extra code to enable doing cross-mount reflinks? Why was the
+decision made not to allow them?
 
-    block: don't mark buffers beyond end of disk as mapped
+Is there some particular opposition to supporting cross-mount operations
+on multiple mounts of the same filesystem in general? (I'd love to have
+rename() work across bind mounts, for example...)
 
-introduced a bug whereby the last block on the device was treated as
-beyond the end of the device.  This causes the mount program to hang
-when trying to (erroneously) mount an extended partition, as reported by
-Torsten Hilbrich here: https://lkml.org/lkml/2012/6/18/54, and also
-reported independently here:
-http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511.
+-- 
+Calvin Walton <calvin.walton@kepstin.ca>
 
-The attached patch was tested by myself and Torsten and found to resolve
-the problem.  I also instrumented the init_page_buffers routine to
-ensure that the end_block is indeed the last block of the device.
-
-Comments, as always, are appreciated.
-
---
-
-This needs backporting to the stable trees where the offending commit
-was backported.  I'm sure that includes 3.0 and 3.3, but not sure where
-else it was committed.  Is there an easy way to tell what trees got the
-commit?
-
-CC: stable@vger.kernel.org, npiggin@kernel.dk
-Reported-and-Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 838a9cf..769b30b 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -930,7 +930,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
- 			bh->b_blocknr = block;
- 			if (uptodate)
- 				set_buffer_uptodate(bh);
--			if (block < end_block)
-+			if (block <= end_block)
- 				set_buffer_mapped(bh);
- 		}
- 		block++;
