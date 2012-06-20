@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab2FTS0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 14:26:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53819 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab2FTSY7 (ORCPT
+	id S932669Ab2FTS0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 14:26:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45916 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932589Ab2FTSYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 14:24:59 -0400
-Message-Id: <20120620173041.116611988@linuxfoundation.org>
+	Wed, 20 Jun 2012 14:24:53 -0400
+Message-Id: <20120620173040.182588665@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-Date: Wed, 20 Jun 2012 10:30:57 -0700
+Date: Wed, 20 Jun 2012 10:30:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomas Cassidy <tomas.cassidy@gmail.com>
-Subject: [ 18/20] USB: serial: sierra: Add support for Sierra Wireless AirCard 320U modem
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
+Subject: [ 07/20] USB: option: fix memory leak
 In-Reply-To: <20120620173044.GA6910@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +24,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Cassidy <tomas.cassidy@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 19a3dd1575e954e8c004413bee3e12d3962f2525 upstream.
+commit b9c3aab315b51f81649a0d737c4c73783fbd8de0 upstream.
 
-Add support for Sierra Wireless AirCard 320U modem
+Fix memory leak introduced by commit 383cedc3bb435de7a2 ("USB: serial:
+full autosuspend support for the option driver") which allocates
+usb-serial data but never frees it.
 
-Signed-off-by: Tomas Cassidy <tomas.cassidy@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/option.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -304,6 +304,10 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
-+	/* AT&T Direct IP LTE modems */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68AA, 0xFF, 0xFF, 0xFF),
-+	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
-+	},
- 	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -47,6 +47,7 @@
+ /* Function prototypes */
+ static int  option_probe(struct usb_serial *serial,
+ 			const struct usb_device_id *id);
++static void option_release(struct usb_serial *serial);
+ static int option_send_setup(struct usb_serial_port *port);
+ static void option_instat_callback(struct urb *urb);
+ 
+@@ -1273,7 +1274,7 @@ static struct usb_serial_driver option_1
+ 	.ioctl             = usb_wwan_ioctl,
+ 	.attach            = usb_wwan_startup,
+ 	.disconnect        = usb_wwan_disconnect,
+-	.release           = usb_wwan_release,
++	.release           = option_release,
+ 	.read_int_callback = option_instat_callback,
+ #ifdef CONFIG_PM
+ 	.suspend           = usb_wwan_suspend,
+@@ -1409,6 +1410,15 @@ static int option_probe(struct usb_seria
+ 	return 0;
+ }
+ 
++static void option_release(struct usb_serial *serial)
++{
++	struct usb_wwan_intf_private *priv = usb_get_serial_data(serial);
++
++	usb_wwan_release(serial);
++
++	kfree(priv);
++}
++
+ static void option_instat_callback(struct urb *urb)
+ {
+ 	int err;
 
 
