@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760036Ab2FUTVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 15:21:10 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:1469 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759830Ab2FUTVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 15:21:08 -0400
-Message-ID: <1340306466.1773.60.camel@x61.thuisdomein>
-Subject: [PATCH 2/3] Remove useless wrappers of asm-generic/ipc.h
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, Richard Kuo <rkuo@codeaurora.org>,
-        linux-hexagon@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        linux-am33-list@redhat.com, Chris Metcalf <cmetcalf@tilera.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Jun 2012 21:21:06 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 21 Jun 2012 19:21:06.0909 (UTC) FILETIME=[01BF30D0:01CD4FE3]
-X-RcptDomain: vger.kernel.org
+	id S1760048Ab2FUTW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 15:22:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44574 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755266Ab2FUTW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 15:22:57 -0400
+Date: Thu, 21 Jun 2012 21:22:53 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        aarcange@redhat.com, peterz@infradead.org, minchan@gmail.com,
+        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH -mm 4/7] mm: make page colouring code generic
+Message-ID: <20120621192253.GD15472@liondog.tnic>
+Reply-To: Borislav Petkov <borislav.petkov@amd.com>
+Mail-Followup-To: Borislav Petkov <borislav.petkov@amd.com>,
+	Rik van Riel <riel@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	aarcange@redhat.com, peterz@infradead.org, minchan@gmail.com,
+	kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
+	mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+	Rik van Riel <riel@surriel.com>
+References: <1340057126-31143-1-git-send-email-riel@redhat.com>
+ <1340057126-31143-5-git-send-email-riel@redhat.com>
+ <20120619162747.fa31c86a.akpm@linux-foundation.org>
+ <4FE35F4E.3080002@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FE35F4E.3080002@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mn10300 has a header (in its include/asm directory) that is a thin
-wrapper around asm-generic/ipc.h. This wrapper is useless, since that
-header doesn't exist. It is also unused (no file includes asm/ipc.h).
+On Thu, Jun 21, 2012 at 01:52:14PM -0400, Rik van Riel wrote:
+> >Some performance tests on the result would be interesting.  iirc, we've
+> >often had trouble demonstrating much or any benefit from coloring.
+> 
+> On AMD Bulldozer, I do not know what the benefits are.
 
-hexagon and tile generate similar headers at build time (using a
-generic-y entry in include/asm/Kbuild). These generated headers are
-useless and unused too.
+I have arranged for running a bunch of benchmarks with and without your
+patchset on Bulldozer, basically everything you can get in autotest.
 
-Remove this header and these generic-y entries.
+Also, if you have any other microbenchmarks or tests your want run, ping
+me.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- arch/hexagon/include/asm/Kbuild |    1 -
- arch/mn10300/include/asm/ipc.h  |    1 -
- arch/tile/include/asm/Kbuild    |    1 -
- 3 files changed, 0 insertions(+), 3 deletions(-)
- delete mode 100644 arch/mn10300/include/asm/ipc.h
+Thanks.
 
-diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
-index 8ecd202..0690642 100644
---- a/arch/hexagon/include/asm/Kbuild
-+++ b/arch/hexagon/include/asm/Kbuild
-@@ -22,7 +22,6 @@ generic-y += ioctl.h
- generic-y += ioctls.h
- generic-y += iomap.h
- generic-y += ipcbuf.h
--generic-y += ipc.h
- generic-y += irq_regs.h
- generic-y += kdebug.h
- generic-y += kmap_types.h
-diff --git a/arch/mn10300/include/asm/ipc.h b/arch/mn10300/include/asm/ipc.h
-deleted file mode 100644
-index a46e3d9..0000000
---- a/arch/mn10300/include/asm/ipc.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/ipc.h>
-diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
-index 143473e..ab7640a 100644
---- a/arch/tile/include/asm/Kbuild
-+++ b/arch/tile/include/asm/Kbuild
-@@ -17,7 +17,6 @@ generic-y += fb.h
- generic-y += fcntl.h
- generic-y += ioctl.h
- generic-y += ioctls.h
--generic-y += ipc.h
- generic-y += ipcbuf.h
- generic-y += irq_regs.h
- generic-y += kdebug.h
 -- 
-1.7.7.6
-
+Regards/Gruss,
+    Boris.
