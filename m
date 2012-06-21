@@ -1,35 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759576Ab2FUM7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 08:59:30 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:61276 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759562Ab2FUM73 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 08:59:29 -0400
+	id S932142Ab2FUNEh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 09:04:37 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:43177 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759554Ab2FUNEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 09:04:36 -0400
+Date: Thu, 21 Jun 2012 14:04:32 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, stable@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        gregkh@linuxfoundation.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        tim.bird@am.sony.com, frank.rowand@am.sony.com,
+        takuzo.ohara@ap.sony.com, kan.iibuchi@jp.sony.com,
+        aaditya.kumar@ap.sony.com
+Subject: Re: [PATCH] mm: offlining memory may block forever
+Message-ID: <20120621130432.GB3953@csn.ul.ie>
+References: <CAEtiSau6dRYVOSD4-QUWkYZ8p7z1ATLHZY9v871VS=o0LduU_Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGxyxNCwESN4jsYYDRv6sFax4K4hBP5bOY12LEm_WsqKeGJHsA@mail.gmail.com>
-References: <1340193105-10734-1-git-send-email-aletes.xgr@gmail.com>
-	<1340209526.29885.14.camel@joe2Laptop>
-	<20120620143959.394b9930.akpm@linux-foundation.org>
-	<CAGxyxNCwESN4jsYYDRv6sFax4K4hBP5bOY12LEm_WsqKeGJHsA@mail.gmail.com>
-Date: Thu, 21 Jun 2012 09:59:28 -0300
-Message-ID: <CAAAP30HE09_RVs5_uH_bkzYJhPkS8-KVBwzbZPqAi0CNPxLA1Q@mail.gmail.com>
-Subject: Re: [PATCH] scripts/get_maintainer.pl: Add tested-by signature
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAEtiSau6dRYVOSD4-QUWkYZ8p7z1ATLHZY9v871VS=o0LduU_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 2:34 AM, Florian Mickler <florian@mickler.org> wrote:
-> Hi,
-> IMHO, If necessary the maintainers can manually cc additional people.
-> Testedby normally doesn't mean code responsibility or code knowledge. (as
-> Andrew pointed already out)
+On Wed, Jun 20, 2012 at 09:53:31PM +0530, Aaditya Kumar wrote:
+> Offlining memory may block forever, waiting for kswapd() to wake up because
+> kswapd() does not check the event kthread->should_stop before sleeping.
+> 
 
-Thank you for your remarks.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+-- 
+Mel Gorman
+SUSE Labs
