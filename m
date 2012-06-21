@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab2FUPXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 11:23:20 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52097 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759329Ab2FUPXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 11:23:19 -0400
-Message-ID: <1340292198.29885.69.camel@joe2Laptop>
-Subject: [PATCH] checkpatch: Check usleep_range arguments
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Yuval Mintz <yuvalmin@broadcom.com>, linux-kernel@vger.kernel.org
-Date: Thu, 21 Jun 2012 08:23:18 -0700
-In-Reply-To: <1340204019.29885.9.camel@joe2Laptop>
-References: <1340182175-916-1-git-send-email-yuvalmin@broadcom.com>
-	 <1340182175-916-3-git-send-email-yuvalmin@broadcom.com>
-	 <1340204019.29885.9.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759570Ab2FUPkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 11:40:42 -0400
+Received: from mga06.intel.com ([134.134.136.21]:61267 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759500Ab2FUPkk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 11:40:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <1340260626.24067.4.camel@minggr>
+References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
+	<1340000766-129148-3-git-send-email-ming.m.lin@intel.com>
+	<CAA9_cmcX2pajewz1v864Ni2Z3XAy8UrCRg+mg3Y2qFEd2j=nDg@mail.gmail.com>
+	<1340242002.20081.84.camel@minggr>
+	<CAA9_cmfCVTWtqfDY4PAzK_yaVWXLV+oMO1qt_AtQKp2upPUX=Q@mail.gmail.com>
+	<1340260626.24067.4.camel@minggr>
+Date: Thu, 21 Jun 2012 08:40:15 -0700
+Message-ID: <CABE8wwtDDip2ZY63JPz9J3iJUk6goL6eAHskNAWkLaBp+QcyCg@mail.gmail.com>
+Subject: Re: [PATCH v5 02/12] libata: bind the Linux device tree to the ACPI
+ device tree
+From: Dan Williams <dan.j.williams@intel.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
+        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usleep_range shouldn't use the same args for min and max.
+On Wed, Jun 20, 2012 at 11:37 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> Good idea.
+>
+> Below is the incremental patch on top of this series.
+>
 
-Report it when it happens and when both args are decimal
-and min > max.
+Looks good, I like your additional change to pass a sdev to
+ata_acpi_bind_device.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 630319a..d0c1a63 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3309,6 +3309,22 @@ sub process {
- 			}
- 		}
- 
-+# check usleep_range arguments
-+		if ($^V && $^V ge 5.10.0 &&
-+		    defined $stat &&
-+		    $stat =~ /^\+(?:.*?)\busleep_range\s*\(\s*($FuncArg)\s*,\s*($FuncArg)\s*\)/) {
-+		 	my $min = $1;
-+			my $max = $7;
-+			if ($min eq $max) {
-+				WARN("USLEEP_RANGE",
-+				     "usleep_range should not use min == max args; see Documentation/timers/timers-howto.txt\n" . "$here\n$stat\n");
-+			} elsif ($min =~ /^\d+$/ && $max =~ /^\d+$/ &&
-+				 $min > $max) {
-+				WARN("USLEEP_RANGE",
-+				     "usleep_range args reversed, use min then max; see Documentation/timers/timers-howto.txt\n" . "$here\n$stat\n");
-+			}
-+		}
-+
- # check for new externs in .c files.
- 		if ($realfile =~ /\.c$/ && defined $stat &&
- 		    $stat =~ /^.\s*(?:extern\s+)?$Type\s+($Ident)(\s*)\(/s)
-
-
+--
+Dan
