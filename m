@@ -1,62 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab2FUInM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:43:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57783 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758850Ab2FUInJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:43:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="183117772"
-Message-ID: <4FE2DE9A.70202@intel.com>
-Date: Thu, 21 Jun 2012 16:43:06 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH V6 0/13] perf: Intel uncore pmu counting support
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com> <1340208092.21745.114.camel@twins> <4FE28823.80704@intel.com> <CABPqkBTi8-yKg_kzFTwLe1_m2Zprt5vGk9WPQW14yHQpy=PiWw@mail.gmail.com>
-In-Reply-To: <CABPqkBTi8-yKg_kzFTwLe1_m2Zprt5vGk9WPQW14yHQpy=PiWw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758905Ab2FUIsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:48:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45895 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab2FUIsi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 04:48:38 -0400
+Message-ID: <1340268506.21745.160.camel@twins>
+Subject: RE: [PATCH] sched: Folding nohz load accounting more accurate
+From: Peter Zijlstra <peterz@infradead.org>
+To: Doug Smythies <dsmythies@telus.net>
+Cc: "'Yong Zhang'" <yong.zhang0@gmail.com>,
+        "'Charles Wang'" <muming.wq@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Ingo Molnar'" <mingo@redhat.com>, "'Tao Ma'" <tm@tao.ma>,
+        =?UTF-8?Q?=27=E5=90=AB=E9=BB=9B=27?= <handai.szj@taobao.com>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>
+Date: Thu, 21 Jun 2012 10:48:26 +0200
+In-Reply-To: <002301cd4f64$17a055c0$46e10140$@net>
+References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
+			 <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>
+			 <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com>
+			 <1340035417.15222.95.camel@twins> <20120619060824.GA31684@zhy>
+		 <1340097532.21745.19.camel@twins> <000001cd4e33$496f6c30$dc4e4490$@net>
+	 <1340185528.21745.86.camel@twins> <002301cd4f64$17a055c0$46e10140$@net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 04:10 PM, Stephane Eranian wrote:
-> On Thu, Jun 21, 2012 at 4:34 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->> On 06/21/2012 12:01 AM, Peter Zijlstra wrote:
->>>
->>> ok, so with this stuff something like:
->>>
->>>   perf stat -ae uncore/event=clockticks/ foo
->>>
->>> will register a counter per cpu, which is somewhat silly since we only
->>> need one per node. What would be the best way to 'fix' this?
->>>
->>> We could of course create another variant of -a which iterates nodes
->>> instead of cpus, -N or so.
->>>
->>> Alternatively we could try and describe this in sysfs in some way, one
->>> possibility would be to include a link to /sys/devices/system/{cpu,node}
->>> or somesuch and use that link to iterate the correct space.
->>>
->>> Any other suggestions?
->>>
->> How about treat the 'cpu' parameter for uncore event as socket id instead
->> of cpu id?
->>
-> But that does not address the use case of Peter, i.e., no cpu parameter passed.
-> Looks like sysfs might be the only way to do this in a portable manner.
-> 
-It does. For example, on a dual socket system, perf can only register uncore
-counter with 'cpu' parameter is equal to 0 or 1. This method is hacky, but it
-requires minimal change for the kernel and perf tool.
+On Wed, 2012-06-20 at 21:12 -0700, Doug Smythies wrote:
+> Summary: Extremely good.
 
-Regards
-Yan, Zheng
-
+Finally... I was starting to question my sanity on this ;-)
