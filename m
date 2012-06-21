@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab2FUIEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:04:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34214 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab2FUID4 convert rfc822-to-8bit (ORCPT
+	id S1755512Ab2FUIE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:04:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39901 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753554Ab2FUIEF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:03:56 -0400
+	Thu, 21 Jun 2012 04:04:05 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: "Girdwood, Liam" <lrg@ti.com>,
@@ -14,13 +14,12 @@ CC: "Girdwood, Liam" <lrg@ti.com>,
         "axel.lin@gmail.com" <axel.lin@gmail.com>,
         "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
         "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>
-Subject: [PATCH 2/3] regulator: replace devm_gpio_request_one() for loaded
- module
-Thread-Topic: [PATCH 2/3] regulator: replace devm_gpio_request_one() for
- loaded module
-Thread-Index: Ac1PhGMjyZ3CPb4zRn6jJ06Ift3+vQ==
-Date: Thu, 21 Jun 2012 08:03:48 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FC052@DQHE02.ent.ti.com>
+Subject: [PATCH 3/3] regulator: change message level on probing lp872x driver
+Thread-Topic: [PATCH 3/3] regulator: change message level on probing lp872x
+ driver
+Thread-Index: Ac1PhGeSPzZoFKRLQp63JgNKPMRTng==
+Date: Thu, 21 Jun 2012 08:03:56 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FC05A@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -33,67 +32,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At this moment, devm_gpio_request_one() has not been exported yet.
-But lp872x driver can be used as a module, so related functions should be changed.
-
-devm_gpio_request_one() -> gpio_request_one() and gpio_free()
+Use err log rather than warning message when the platform data is NULL
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/regulator/lp872x.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
+ drivers/regulator/lp872x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/regulator/lp872x.c b/drivers/regulator/lp872x.c
-index e8f54ef..daaa0ed 100644
+index daaa0ed..0c0e62f 100644
 --- a/drivers/regulator/lp872x.c
 +++ b/drivers/regulator/lp872x.c
-@@ -768,7 +768,7 @@ static int lp872x_init_dvs(struct lp872x *lp)
+@@ -891,7 +891,7 @@ static int lp872x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 	};
+ 
+ 	if (!pdata) {
+-		dev_warn(&cl->dev, "no platform data\n");
++		dev_err(&cl->dev, "no platform data\n");
+ 		return -EINVAL;
  	}
- 
- 	pinstate = dvs->init_state;
--	ret = devm_gpio_request_one(lp->dev, gpio, pinstate, "LP872X DVS");
-+	ret = gpio_request_one(gpio, pinstate, "LP872X DVS");
- 	if (ret) {
- 		dev_err(lp->dev, "gpio request err: %d\n", ret);
- 		return ret;
-@@ -780,6 +780,12 @@ static int lp872x_init_dvs(struct lp872x *lp)
- 	return 0;
- }
- 
-+static void lp872x_deinit_dvs(struct lp872x *lp)
-+{
-+	if (lp->dvs_gpio)
-+		gpio_free(lp->dvs_gpio);
-+}
-+
- static int lp872x_config(struct lp872x *lp)
- {
- 	struct lp872x_platform_data *pdata = lp->pdata;
-@@ -917,10 +923,16 @@ static int lp872x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
- 	if (ret)
- 		goto err_dev;
- 
--	return lp872x_regulator_register(lp);
-+	ret = lp872x_regulator_register(lp);
-+	if (ret)
-+		goto err_reg;
-+
-+	return 0;
- 
- err_mem:
- 	return -ENOMEM;
-+err_reg:
-+	lp872x_deinit_dvs(lp);
- err_dev:
- 	return ret;
- }
-@@ -930,6 +942,7 @@ static int __devexit lp872x_remove(struct i2c_client *cl)
- 	struct lp872x *lp = i2c_get_clientdata(cl);
- 
- 	lp872x_regulator_unregister(lp);
-+	lp872x_deinit_dvs(lp);
- 	return 0;
- }
  
 -- 
 1.7.2.5
@@ -101,5 +58,6 @@ index e8f54ef..daaa0ed 100644
 
 Best Regards,
 Milo (Woogyom) Kim
+
 
 
