@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759205Ab2FUJq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:46:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37656 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753835Ab2FUJqY (ORCPT
+	id S1759220Ab2FUJs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:48:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51545 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab2FUJsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:46:24 -0400
-Date: Thu, 21 Jun 2012 10:46:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Axel Lin <axel.lin@gmail.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        "Girdwood, Liam" <lrg@ti.com>
-Subject: Re: linux-next: build failure after merge of the regulator tree
-Message-ID: <20120621094621.GM4037@opensource.wolfsonmicro.com>
-References: <20120621132738.6e797593acc58b3e30902f69@canb.auug.org.au>
- <A874F61F95741C4A9BA573A70FE3998FC074@DQHE02.ent.ti.com>
+	Thu, 21 Jun 2012 05:48:24 -0400
+Date: Thu, 21 Jun 2012 17:47:55 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Cong Meng <mc@linux.vnet.ibm.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH] VFS: Go through the LRU list of inode from head
+Message-ID: <20120621094755.GD2439@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1340269227-20310-1-git-send-email-mc@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zHDeOHGDnzKksZSU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FC074@DQHE02.ent.ti.com>
-X-Cookie: You are always busy.
+In-Reply-To: <1340269227-20310-1-git-send-email-mc@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 21, 2012 at 05:00:27PM +0800, Cong Meng wrote:
+>Go through the LRU list of inode from head.
 
---zHDeOHGDnzKksZSU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Jun 21, 2012 at 08:13:15AM +0000, Kim, Milo wrote:
-> > Caused by commit 809d310c7e69 ("regulator: lp872x: Don't allow modular
-> > build") but that was done to fix a different build problem.
->=20
-> Sorry for this conflict.
->=20
-> Build config of lp872x driver has been changed as tristate.
-> And related undefined symbol error has been fixed.
-> (don't use devm_gpio_request_one() at this moment because it can not be e=
-xported.)
-
-I'm not going to apply those patches, they're a step back in terms of
-driver quality.  We just need to bodge the Kconfig dependencies until
-the fix for gpiolib gets merged.
-
---zHDeOHGDnzKksZSU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP4u1XAAoJEBus8iNuMP3duQMP/jHitsD5/Sn1trjquNNmMDMP
-cWHzp5HawaREK650PZ9STE35k9CYtC/op9oE1S5hKfCjY31BspGKqJ6F+CuliRvT
-DMZmtZq0uuxlvLDFZ5UfN26SqDEJ280ZBxiNSWWwElUD55VQP6jlLa2iPHd/ggFH
-V07POT4mlRCeKJQ+y+5bhT+jtTGMvXr+RUOUFMz4Kb/9KoQbD0XfudOl5m87fe7f
-9ufypjWYUP/eE7vdfczIIAYH6skuhh5ucsMdrqCyVnYh3k6xf7mPeLGAe3qhnGT+
-jNLO+JGkMNGf4n/lFPMB4Do1KEj/hn8x7PvtmNkRhU/TjcPEcXy0RYv3oM0OnMDY
-b1qUx+RdK9XsntTEPVGHnpELrjJlqZbqTWqwAIWkVAKpx1wM7rSGOUp7SXZhv2IG
-ZFQrpizTVRs6US48FrAwCIyvqSpTijPGHSsXWUgZOiBtMDuP9Q/wxsP7osT8JrMv
-24PqhUUfcmzYZfmSK5m/VXvbSvwmovV8wbWkyiU/wDk7DioRp34hNiQHuWtoTMf8
-Cbf0tgut8cS/630vLUWBsNc6OmlLWhHPpfagjzGYlUAVw8syVywvp8U413vjY76n
-RhU7vX4QxG34eq6OrlB5p3Px2eTeMbZ2kYcK7V77Con2/zVOxe4TJLMvkALFmGqK
-cdrR/HAN4EnO4rqnAUgB
-=pDvW
------END PGP SIGNATURE-----
-
---zHDeOHGDnzKksZSU--
+IIRC, prune_icache_sb is called(as a shrinker in shrink_slab) in page reclaim 
+path, it is used to free icache. Tail entry in LRU(Least Recently Used) list 
+is the least recently used inode object. When the inode cache has to shrink, 
+the kernel removes entries from the tail.
+>
+>(I'm not sure whether there is any trick here I doesn't get.  If yes, 
+>any one could explain it)
+>
+>Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+>---
+> fs/inode.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>diff --git a/fs/inode.c b/fs/inode.c
+>index 775cbab..aac8449 100644
+>--- a/fs/inode.c
+>+++ b/fs/inode.c
+>@@ -704,7 +704,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+> 		if (list_empty(&sb->s_inode_lru))
+> 			break;
+> 
+>-		inode = list_entry(sb->s_inode_lru.prev, struct inode, i_lru);
+>+		inode = list_entry(sb->s_inode_lru.next, struct inode, i_lru);
+> 
+> 		/*
+> 		 * we are inverting the sb->s_inode_lru_lock/inode->i_lock here,
+>-- 
+>1.7.5.4
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
