@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab2FUOaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 10:30:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754369Ab2FUOaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 10:30:20 -0400
-Date: Thu, 21 Jun 2012 10:29:38 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Uros Vampl <mobile.leecher@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Chubb <peter.chubb@nicta.com.au>, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [PATCH] x86: Aspire One Happy2 reboots only with the kbd method
-Message-ID: <20120621142938.GZ32472@redhat.com>
-References: <20120621133203.GA26316@zverina>
+	id S1758353Ab2FUObm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 10:31:42 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:39138 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab2FUObk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 10:31:40 -0400
+X-Greylist: delayed 16947 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jun 2012 10:31:40 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120621133203.GA26316@zverina>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAAP30F1gWgvPwO2VT8fcP7X8veJuMfFjg34LkRaz-q7mwGfWg@mail.gmail.com>
+References: <1339678763-14509-1-git-send-email-aletes.xgr@gmail.com>
+	<CAMSQXEHOtgk7wRRqOdpMaTvpxFd1Cpom=BG65GheY6Z4p2Jc3A@mail.gmail.com>
+	<CAAAP30G6zE5UmVMPPDGpwzHXG5zN3ZZfJ9u4W2TM1B5ccF50Lw@mail.gmail.com>
+	<CAAAP30F1gWgvPwO2VT8fcP7X8veJuMfFjg34LkRaz-q7mwGfWg@mail.gmail.com>
+Date: Thu, 21 Jun 2012 16:31:39 +0200
+Message-ID: <CAMSQXEGe8NivG39Q96qdpszYZicfC8kF7bW1oFPFeoUd5BNZyw@mail.gmail.com>
+Subject: Re: [PATCH] SPI: at25: Parse dt settings
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Chris Wright <chrisw@sous-sol.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Roland Stigge <stigge@antcom.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 03:32:03PM +0200, Uros Vampl wrote:
-> Add a quirk to make the Acer Aspire One Happy2 reboot properly. For 
-> reference, discussion at the Arch forums: 
-> https://bbs.archlinux.org/viewtopic.php?id=143716
-> 
-> Signed-off-by: Uroš Vampl <mobile.leecher@gmail.com>
+Hi,
 
-Seems fine by me based on the thread above.  Not sure if there is another
-callback that should be tried first before using BOOT_KBD.  Probably
-doesn't matter.
+2012/6/21 Alexandre Pereira da Silva <aletes.xgr@gmail.com>:
+>
+> Please ignore my last email. Not enough coffee.
+>
+> I'm sorry. The code looks right to me.
+>
 
-Acked-by: Don Zickus <dzickus@redhat.com>
+Yup, sorry... you're right
+not enough coffee for me also.
 
-> 
-> --- linux-3.4.3.orig/arch/x86/kernel/reboot.c	2012-06-17 20:21:44.000000000 +0200
-> +++ linux-3.4.3/arch/x86/kernel/reboot.c	2012-06-21 15:16:15.003430778 +0200
-> @@ -317,6 +317,14 @@
->  			DMI_MATCH(DMI_PRODUCT_NAME, "AOA110"),
->  		},
->  	},
-> +	{ /* Handle reboot issue on Acer Aspire One Happy2 */
-> +		.callback = set_kbd_reboot,
-> +		.ident = "Acer Aspire One Happy2",
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "AOHAPPY2"),
-> +		},
-> +	},
->  	{ }
->  };
->  
+Regards,
+Ivo
