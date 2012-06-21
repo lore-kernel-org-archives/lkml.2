@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760554Ab2FUV5v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:57:51 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:33249 "EHLO
+	id S932808Ab2FUV54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:57:56 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:33269 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760517Ab2FUV5u (ORCPT
+	with ESMTP id S1760559Ab2FUV5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:57:50 -0400
+	Thu, 21 Jun 2012 17:57:53 -0400
 From: Rik van Riel <riel@surriel.com>
 To: linux-mm@kvack.org
 Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
         minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
         hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
         Rik van Riel <riel@surriel.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH -mm v2 06/11] mm: arbitrary address ranges for arch_get_unmapped_area
-Date: Thu, 21 Jun 2012 17:57:10 -0400
-Message-Id: <1340315835-28571-7-git-send-email-riel@surriel.com>
+Subject: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA rbtree
+Date: Thu, 21 Jun 2012 17:57:05 -0400
+Message-Id: <1340315835-28571-2-git-send-email-riel@surriel.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340315835-28571-1-git-send-email-riel@surriel.com>
 References: <1340315835-28571-1-git-send-email-riel@surriel.com>
@@ -23,217 +23,230 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow each architecture to specify the address range that can be used
-for this allocation.
+Track the size of free areas between VMAs in the VMA rbtree.
 
-On x86-64, this is used to implement MMAP_32BIT semantics.
+This will allow get_unmapped_area_* to find a free area of the
+right size in O(log(N)) time, instead of potentially having to
+do a linear walk across all the VMAs.
 
-On PPC and IA64, allocations using certain page sizes need to be
-restricted to certain virtual address ranges. This callback could
-be used to implement such address restrictions with minimal hassle.
+This does have the potential to make unmapping VMAs more expensive,
+especially for processes with very large numbers of VMAs, where the
+VMA rbtree can grow quite deep.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- arch/mips/mm/mmap.c               |    8 ++----
- arch/x86/include/asm/pgtable_64.h |    1 +
- arch/x86/kernel/sys_x86_64.c      |   11 ++++++---
- include/linux/sched.h             |    7 ++++++
- mm/mmap.c                         |   38 ++++++++++++++++++++++++++++++++++--
- 5 files changed, 53 insertions(+), 12 deletions(-)
+ include/linux/mm_types.h |    8 ++++
+ include/linux/rbtree.h   |    8 ++++
+ mm/internal.h            |    5 +++
+ mm/mmap.c                |   84 ++++++++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 102 insertions(+), 3 deletions(-)
 
-diff --git a/arch/mips/mm/mmap.c b/arch/mips/mm/mmap.c
-index 302d779..3f8af17 100644
---- a/arch/mips/mm/mmap.c
-+++ b/arch/mips/mm/mmap.c
-@@ -61,8 +61,6 @@ static inline unsigned long COLOUR_ALIGN_DOWN(unsigned long addr,
- 	((((addr) + shm_align_mask) & ~shm_align_mask) +	\
- 	 (((pgoff) << PAGE_SHIFT) & shm_align_mask))
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index dad95bd..9fc0291 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -213,6 +213,14 @@ struct vm_area_struct {
+ 	struct rb_node vm_rb;
  
--enum mmap_allocation_direction {UP, DOWN};
--
- static unsigned long arch_get_unmapped_area_common(struct file *filp,
- 	unsigned long addr0, unsigned long len, unsigned long pgoff,
- 	unsigned long flags, enum mmap_allocation_direction dir)
-@@ -107,7 +105,7 @@ static unsigned long arch_get_unmapped_area_common(struct file *filp,
- 			return addr;
- 	}
+ 	/*
++	 * Largest free memory gap in bytes to the left of this VMA.
++	 * Either between this VMA and vma->vm_prev, or between one of the
++	 * VMAs below us in the VMA rbtree and its ->vm_prev. This helps
++	 * get_unmapped_area find a free area of the right size.
++	 */
++	unsigned long free_gap;
++
++	/*
+ 	 * For areas with an address space and backing store,
+ 	 * linkage into the address_space->i_mmap prio tree, or
+ 	 * linkage to the list of like vmas hanging off its node, or
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index 033b507..661288d 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -155,6 +155,14 @@ extern struct rb_node *rb_augment_erase_begin(struct rb_node *node);
+ extern void rb_augment_erase_end(struct rb_node *node,
+ 				 rb_augment_f func, void *data);
  
--	if (dir == UP) {
-+	if (dir == ALLOC_UP) {
- 		addr = mm->mmap_base;
- 		if (do_color_align)
- 			addr = COLOUR_ALIGN(addr, pgoff);
-@@ -204,7 +202,7 @@ unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr0,
- 	unsigned long len, unsigned long pgoff, unsigned long flags)
- {
- 	return arch_get_unmapped_area_common(filp,
--			addr0, len, pgoff, flags, UP);
-+			addr0, len, pgoff, flags, ALLOC_UP);
++static inline void rb_augment_erase(struct rb_node *node, struct rb_root *root,
++				    rb_augment_f func, void *data)
++{
++	struct rb_node *deepest = rb_augment_erase_begin(node);
++	rb_erase(node, root);
++	rb_augment_erase_end(deepest, func, data);
++}
++
+ /* Find logical next and previous nodes in a tree */
+ extern struct rb_node *rb_next(const struct rb_node *);
+ extern struct rb_node *rb_prev(const struct rb_node *);
+diff --git a/mm/internal.h b/mm/internal.h
+index 2ba87fb..f59f97a 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -159,6 +159,11 @@ static inline void munlock_vma_pages_all(struct vm_area_struct *vma)
+ 	munlock_vma_pages_range(vma, vma->vm_start, vma->vm_end);
+ }
+ 
++static inline struct vm_area_struct *rb_to_vma(struct rb_node *node)
++{
++	return container_of(node, struct vm_area_struct, vm_rb);
++}
++
+ /*
+  * Called only in fault path via page_evictable() for a new page
+  * to determine if it's being mapped into a LOCKED vma.
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3edfcdf..dd6edcd 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -206,6 +206,60 @@ static void __remove_shared_vm_struct(struct vm_area_struct *vma,
  }
  
  /*
-@@ -216,7 +214,7 @@ unsigned long arch_get_unmapped_area_topdown(struct file *filp,
- 	unsigned long flags)
- {
- 	return arch_get_unmapped_area_common(filp,
--			addr0, len, pgoff, flags, DOWN);
-+			addr0, len, pgoff, flags, ALLOC_DOWN);
- }
- 
- void arch_pick_mmap_layout(struct mm_struct *mm)
-diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
-index 975f709..8af36f6 100644
---- a/arch/x86/include/asm/pgtable_64.h
-+++ b/arch/x86/include/asm/pgtable_64.h
-@@ -169,6 +169,7 @@ extern void cleanup_highmap(void);
- 
- #define HAVE_ARCH_UNMAPPED_AREA
- #define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
-+#define HAVE_ARCH_GET_ADDRESS_RANGE
- 
- #define pgtable_cache_init()   do { } while (0)
- #define check_pgt_cache()      do { } while (0)
-diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
-index b4d3c39..2595a5e 100644
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -95,8 +95,8 @@ SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
- 	return error;
- }
- 
--static void find_start_end(unsigned long flags, unsigned long *begin,
--			   unsigned long *end)
-+void arch_get_address_range(unsigned long flags, unsigned long *begin,
-+		unsigned long *end, enum mmap_allocation_direction direction)
- {
- 	if (!test_thread_flag(TIF_ADDR32) && (flags & MAP_32BIT)) {
- 		unsigned long new_begin;
-@@ -114,9 +114,12 @@ static void find_start_end(unsigned long flags, unsigned long *begin,
- 			if (new_begin)
- 				*begin = new_begin;
- 		}
--	} else {
-+	} else if (direction == ALLOC_UP) {
- 		*begin = TASK_UNMAPPED_BASE;
- 		*end = TASK_SIZE;
-+	} else /* direction == ALLOC_DOWN */ {
-+		*begin = 0;
-+		*end = current->mm->mmap_base;
- 	}
- }
- 
-@@ -132,7 +135,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	if (flags & MAP_FIXED)
- 		return addr;
- 
--	find_start_end(flags, &begin, &end);
-+	arch_get_address_range(flags, &begin, &end, ALLOC_UP);
- 
- 	if (len > end)
- 		return -ENOMEM;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4059c0f..fc76318 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -388,7 +388,14 @@ extern int sysctl_max_map_count;
- #include <linux/aio.h>
- 
- #ifdef CONFIG_MMU
-+enum mmap_allocation_direction {
-+	ALLOC_UP,
-+	ALLOC_DOWN
-+};
- extern void arch_pick_mmap_layout(struct mm_struct *mm);
-+extern void
-+arch_get_address_range(unsigned long flags, unsigned long *begin,
-+		unsigned long *end, enum mmap_allocation_direction direction);
- extern unsigned long
- arch_get_unmapped_area(struct file *, unsigned long, unsigned long,
- 		       unsigned long, unsigned long);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index e501b4f..2420951 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1482,6 +1482,20 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
- 	return error;
- }
- 
-+#ifndef HAVE_ARCH_GET_ADDRESS_RANGE
-+void arch_get_address_range(unsigned long flags, unsigned long *begin,
-+		unsigned long *end, enum mmap_allocation_direction direction)
++ * largest_free_gap - returns the largest free gap "nearby"
++ *
++ * This function is called when propagating information on the
++ * free spaces between VMAs "up" the VMA rbtree. It returns the
++ * largest of:
++ *
++ * 1. The gap between this VMA and vma->vm_prev.
++ * 2. The largest gap below us and to our left in the rbtree.
++ * 3. The largest gap below us and to our right in the rbtree.
++ */
++static unsigned long largest_free_gap(struct rb_node *node)
 +{
-+	if (direction == ALLOC_UP) {
-+		*begin = TASK_UNMAPPED_BASE;
-+		*end = TASK_SIZE;
-+	} else /* direction == ALLOC_DOWN */ {
-+		*begin = 0;
-+		*end = current->mm->mmap_base;
-+	}
++	struct vm_area_struct *vma, *prev, *left = NULL, *right = NULL;
++	unsigned long largest = 0;
++
++	if (node->rb_left)
++		left = rb_to_vma(node->rb_left);
++	if (node->rb_right)
++		right = rb_to_vma(node->rb_right);
++
++	/* Calculate the free gap size between us and the VMA to our left. */
++	vma = rb_to_vma(node);
++	prev = vma->vm_prev;
++
++	if (prev)
++		largest = vma->vm_start - prev->vm_end;
++	else
++		largest = vma->vm_start;
++
++	/* We propagate the largest of our own, or our children's free gaps. */
++	if (left)
++		largest = max(largest, left->free_gap);
++	if (right)
++		largest = max(largest, right->free_gap);
++
++	return largest;
 +}
-+#endif
 +
- /* Get an address range which is currently unmapped.
-  * For shmat() with addr=0.
-  *
-@@ -1501,7 +1515,9 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma = NULL;
- 	struct rb_node *rb_node;
--	unsigned long lower_limit = TASK_UNMAPPED_BASE;
-+	unsigned long lower_limit, upper_limit;
++static void vma_rb_augment_cb(struct rb_node *node, void *__unused)
++{
++	struct vm_area_struct *vma = rb_to_vma(node);
++	vma->free_gap = largest_free_gap(node);
++}
 +
-+	arch_get_address_range(flags, &lower_limit, &upper_limit, ALLOC_UP);
- 
- 	if (len > TASK_SIZE)
- 		return -ENOMEM;
-@@ -1546,6 +1562,13 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 				rb_node = rb_node->rb_left;
- 				continue;
- 			}
++/*
++ * Use the augmented rbtree code to propagate info on the largest
++ * free gap between VMAs up the VMA rbtree.
++ */
++static void adjust_free_gap(struct vm_area_struct *vma)
++{
++	rb_augment_erase_end(&vma->vm_rb, vma_rb_augment_cb, NULL);
++}
 +
-+			/* We have gone too far right, and can not go left. */
-+			if (vma->vm_end + len > upper_limit) {
-+				if (!addr)
-+					return -ENOMEM;
-+				goto found_addr;
-+			}
- 		}
- 
- 		if (!found_here && node_free_gap(rb_node->rb_right) >= len) {
-@@ -1612,7 +1635,9 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	struct mm_struct *mm = current->mm;
- 	unsigned long addr = addr0;
- 	struct rb_node *rb_node = NULL;
--	unsigned long upper_limit = mm->mmap_base;
-+	unsigned long lower_limit, upper_limit;
-+
-+	arch_get_address_range(flags, &lower_limit, &upper_limit, ALLOC_DOWN);
- 
- 	/* requested length too big for entire address space */
- 	if (len > TASK_SIZE)
-@@ -1631,7 +1656,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
++/*
+  * Unlink a file-based vm structure from its prio_tree, to hide
+  * vma from rmap and vmtruncate before freeing its page tables.
+  */
+@@ -342,6 +396,8 @@ void validate_mm(struct mm_struct *mm)
+ 	int i = 0;
+ 	struct vm_area_struct *tmp = mm->mmap;
+ 	while (tmp) {
++		if (tmp->free_gap != largest_free_gap(&tmp->vm_rb))
++			printk("free space %lx, correct %lx\n", tmp->free_gap, largest_free_gap(&tmp->vm_rb)), bug = 1;
+ 		tmp = tmp->vm_next;
+ 		i++;
  	}
+@@ -398,6 +454,10 @@ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+ {
+ 	rb_link_node(&vma->vm_rb, rb_parent, rb_link);
+ 	rb_insert_color(&vma->vm_rb, &mm->mm_rb);
++	adjust_free_gap(vma);
++	/* Propagate the new free gap between next and us up the tree. */
++	if (vma->vm_next)
++		adjust_free_gap(vma->vm_next);
+ }
  
- 	/* requested length too big; prevent integer underflow below */
--	if (len > upper_limit)
-+	if (len > upper_limit - lower_limit)
- 		return -ENOMEM;
+ static void __vma_link_file(struct vm_area_struct *vma)
+@@ -475,9 +535,12 @@ __vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct vm_area_struct *next = vma->vm_next;
  
- 	/*
-@@ -1668,6 +1693,13 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	prev->vm_next = next;
+-	if (next)
++	if (next) {
+ 		next->vm_prev = prev;
+-	rb_erase(&vma->vm_rb, &mm->mm_rb);
++		adjust_free_gap(next);
++	}
++	rb_augment_erase(&vma->vm_rb, &mm->mm_rb, vma_rb_augment_cb, NULL);
++
+ 	if (mm->mmap_cache == vma)
+ 		mm->mmap_cache = prev;
+ }
+@@ -657,6 +720,15 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 	if (insert && file)
+ 		uprobe_mmap(insert);
+ 
++	/* Adjust the rb tree for changes in the free gaps between VMAs. */
++	adjust_free_gap(vma);
++	if (insert)
++		adjust_free_gap(insert);
++	if (vma->vm_next && vma->vm_next != insert)
++		adjust_free_gap(vma->vm_next);
++	if (insert && insert->vm_next && insert->vm_next != vma)
++		adjust_free_gap(insert->vm_next);
++
+ 	validate_mm(mm);
+ 
+ 	return 0;
+@@ -1760,6 +1832,8 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 			error = acct_stack_growth(vma, size, grow);
+ 			if (!error) {
+ 				vma->vm_end = address;
++				if (vma->vm_next)
++					adjust_free_gap(vma->vm_next);
+ 				perf_event_mmap(vma);
  			}
  		}
- 
-+		/* We have gone too far left, and can not go right. */
-+		if (vma->vm_start < lower_limit + len) {
-+			if (!addr)
-+				return -ENOMEM;
-+			goto found_addr;
-+		}
-+
- 		if (!found_here && node_free_gap(rb_node->rb_left) >= len) {
- 			/* Last known gap is to the right of this subtree. */
- 			rb_node = rb_node->rb_left;
+@@ -1811,6 +1885,7 @@ int expand_downwards(struct vm_area_struct *vma,
+ 			if (!error) {
+ 				vma->vm_start = address;
+ 				vma->vm_pgoff -= grow;
++				adjust_free_gap(vma);
+ 				perf_event_mmap(vma);
+ 			}
+ 		}
+@@ -1933,7 +2008,8 @@ detach_vmas_to_be_unmapped(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	insertion_point = (prev ? &prev->vm_next : &mm->mmap);
+ 	vma->vm_prev = NULL;
+ 	do {
+-		rb_erase(&vma->vm_rb, &mm->mm_rb);
++		rb_augment_erase(&vma->vm_rb, &mm->mm_rb,
++				 vma_rb_augment_cb, NULL);
+ 		mm->map_count--;
+ 		tail_vma = vma;
+ 		vma = vma->vm_next;
+@@ -1941,6 +2017,8 @@ detach_vmas_to_be_unmapped(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	*insertion_point = vma;
+ 	if (vma)
+ 		vma->vm_prev = prev;
++	if (vma)
++		rb_augment_erase_end(&vma->vm_rb, vma_rb_augment_cb, NULL);
+ 	tail_vma->vm_next = NULL;
+ 	if (mm->unmap_area == arch_unmap_area)
+ 		addr = prev ? prev->vm_end : mm->mmap_base;
 -- 
 1.7.7.6
 
