@@ -1,189 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab2FUJgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:36:45 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39297 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932431Ab2FUJgn (ORCPT
+	id S932587Ab2FUJil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:38:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38221 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932514Ab2FUJik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:36:43 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: zImage: Allow DTB command line concatenation with ATAG_CMDLINE
-Date: Thu, 21 Jun 2012 11:34:10 +0200
-Message-ID: <7510940.OaXg6CbgK9@flexo>
-Organization: OpenWrt
-User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <1340269017-11701-1-git-send-email-richard.genoud@gmail.com>
-References: <1340269017-11701-1-git-send-email-richard.genoud@gmail.com>
+	Thu, 21 Jun 2012 05:38:40 -0400
+Date: Thu, 21 Jun 2012 10:38:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: tps65910: Convert to
+ regulator_set_voltage_time_sel()
+Message-ID: <20120621093838.GL4037@opensource.wolfsonmicro.com>
+References: <1340203210.8003.6.camel@phoenix>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kaF1vgn83Aa7CiXN"
+Content-Disposition: inline
+In-Reply-To: <1340203210.8003.6.camel@phoenix>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Thursday 21 June 2012 10:56:57 Richard Genoud wrote:
-> This patch allows the ATAG_CMDLINE provided by the bootloader to be
-> concatenated to the bootargs property of the device tree.
-> 
-> This is useful to merge static values defined in the device tree with the
-> boot loader's (possibly) more dynamic values, such as startup reasons and 
-more.
-> 
-> The bootloader should use the device tree to pass those values to the 
-kernel,
-> but that's not always simple (old bootloader or very small one).
-> 
-> The behaviour is the same as the one introduced by Victor Boivie in
-> 4394c1244249198c6b85093d46935b761b36ae05 by extending the CONFIG_CMDLINE.
+--kaF1vgn83Aa7CiXN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I had a similar need recently, and I was pointed at this more generic 
-solution: http://www.mail-archive.com/devicetree-
-discuss@lists.ozlabs.org/msg10448.html
+On Wed, Jun 20, 2012 at 10:40:10PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-The only thing which is ARM-specific and not yet resolved is the following: if 
-you have ARM_ATAG_DTB_COMPAT enabled, the kernel command-line contains only 
-the bootloader supplied command-line and not bootloader + bootargs from DT. I 
-have not yet had a chance to get this sorted.
+Applied, thanks.
 
-> 
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-> ---
->  arch/arm/Kconfig                        |   19 +++++++++
->  arch/arm/boot/compressed/atags_to_fdt.c |   62 
-++++++++++++++++++++++++++++++-
->  2 files changed, 79 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 84449dd..ff4b6e6 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1959,6 +1959,25 @@ config ARM_ATAG_DTB_COMPAT
->  	  bootloaders, this option allows zImage to extract the information
->  	  from the ATAG list and store it at run time into the appended DTB.
->  
-> +choice
-> +	prompt "Kernel command line type" if ARM_ATAG_DTB_COMPAT
-> +	default ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER
-> +
-> +config ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER
-> +	bool "Use bootloader kernel arguments if available"
-> +	help
-> +	  Uses the command-line options passed by the boot loader instead of
-> +	  the device tree bootargs property. If the boot loader doesn't provide
-> +	  any, the device tree bootargs property will be used.
-> +
-> +config ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND
-> +	bool "Extend with bootloader kernel arguments"
-> +	help
-> +	  The command-line arguments provided by the boot loader will be
-> +	  appended to the the device tree bootargs property.
-> +
-> +endchoice
-> +
->  config CMDLINE
->  	string "Default kernel command string"
->  	default ""
-> diff --git a/arch/arm/boot/compressed/atags_to_fdt.c 
-b/arch/arm/boot/compressed/atags_to_fdt.c
-> index 797f04b..aabc02a 100644
-> --- a/arch/arm/boot/compressed/atags_to_fdt.c
-> +++ b/arch/arm/boot/compressed/atags_to_fdt.c
-> @@ -1,6 +1,12 @@
->  #include <asm/setup.h>
->  #include <libfdt.h>
->  
-> +#if defined(CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND)
-> +#define do_extend_cmdline 1
-> +#else
-> +#define do_extend_cmdline 0
-> +#endif
-> +
->  static int node_offset(void *fdt, const char *node_path)
->  {
->  	int offset = fdt_path_offset(fdt, node_path);
-> @@ -36,6 +42,48 @@ static int setprop_cell(void *fdt, const char *node_path,
->  	return fdt_setprop_cell(fdt, offset, property, val);
->  }
->  
-> +static const void *getprop(const void *fdt, const char *node_path,
-> +			   const char *property, int *len)
-> +{
-> +	int offset = fdt_path_offset(fdt, node_path);
-> +
-> +	if (offset == -FDT_ERR_NOTFOUND)
-> +		return NULL;
-> +
-> +	return fdt_getprop(fdt, offset, property, len);
-> +}
-> +
-> +static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
-> +{
-> +	char cmdline[COMMAND_LINE_SIZE];
-> +	const char *fdt_bootargs;
-> +	char *ptr = cmdline;
-> +	int len = 0;
-> +
-> +	/* copy the fdt command line into the buffer */
-> +	fdt_bootargs = getprop(fdt, "/chosen", "bootargs", &len);
-> +	if (fdt_bootargs)
-> +		if (len < COMMAND_LINE_SIZE) {
-> +			memcpy(ptr, fdt_bootargs, len);
-> +			/* len is the length of the string
-> +			 * including the NULL terminator */
-> +			ptr += len - 1;
-> +		}
-> +
-> +	/* and append the ATAG_CMDLINE */
-> +	if (fdt_cmdline) {
-> +		len = strlen(fdt_cmdline);
-> +		if (ptr - cmdline + len + 2 < COMMAND_LINE_SIZE) {
-> +			*ptr++ = ' ';
-> +			memcpy(ptr, fdt_cmdline, len);
-> +			ptr += len;
-> +		}
-> +	}
-> +	*ptr = '\0';
-> +
-> +	setprop_string(fdt, "/chosen", "bootargs", cmdline);
-> +}
-> +
->  /*
->   * Convert and fold provided ATAGs into the provided FDT.
->   *
-> @@ -72,8 +120,18 @@ int atags_to_fdt(void *atag_list, void *fdt, int 
-total_space)
->  
->  	for_each_tag(atag, atag_list) {
->  		if (atag->hdr.tag == ATAG_CMDLINE) {
-> -			setprop_string(fdt, "/chosen", "bootargs",
-> -					atag->u.cmdline.cmdline);
-> +			/* Append the ATAGS command line to the device tree
-> +			 * command line.
-> +			 * NB: This means that if the same parameter is set in
-> +			 * the device tree and in the tags, the one from the
-> +			 * tags will be chosen.
-> +			 */
-> +			if (do_extend_cmdline)
-> +				merge_fdt_bootargs(fdt,
-> +						   atag->u.cmdline.cmdline);
-> +			else
-> +				setprop_string(fdt, "/chosen", "bootargs",
-> +					       atag->u.cmdline.cmdline);
->  		} else if (atag->hdr.tag == ATAG_MEM) {
->  			if (memcount >= sizeof(mem_reg_property)/4)
->  				continue;
-> -- 
-> 1.7.2.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--kaF1vgn83Aa7CiXN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP4uroAAoJEBus8iNuMP3dCL0QAJ1ZuKlNfvZ49sKFa8yVg5ZI
+E1v/wxE+2nuQ0HFIFm3H3ZQC26gHvNk6Ou30ovRq0CzKqYsc0EeXqf55sDHegUby
+LeBNxTCHoFtyY2PJvFbXK9dTNX4jmfEuwJtB6QEdY30iJLDIEOo+LCjTsHBFM7p5
+1DmyWkWueyeaLdJWU9yifIWbfiKB0jMamMAVCE7rY83/dkCjfc2ZiG4sYU1uYdaW
+kzlfh7TfLkFcHXQrDAkWPJimSOkGhIhTU65w659ASHj83/Fl4gOX9zPuvb4KC4Rs
+25r7czkrGUDm53a/udEaAnwBzmzw1Ln6Jm8XoLoGZbGZ143iaNlB/R6uHe0g1JPk
+pLnA5Z6CDSN7hPoBlDZuPhSSKaCvHTbWlhDHwp9xYl9v8NGPQeM+YTfN4WCfRjRK
+I/CfjuOLOxkkjlh7UC5mW8AWYTX3GGcCwe+MoTKxYBahWFKtO3icIrVu4AGDIrXX
+M81haczp0adpG5rYzcfNA+KNFo8+YN6S/3Ql9w30wo3zbMC3mp6zL/N1l9Zg15zG
+bDrR93fPvhv/ykqqiETzbTiACDLFpcQyHNC+TB45VPZNDdhXpRUDfPVRN62TTKM0
+/rg1H31gCz7B+2uF9sUROvpg6P3pfhWtq+uTl1zJBpbpPgaC5l6D256rDX8nqvFV
+t1VNd+12tbm+tDcS97S7
+=Mx7T
+-----END PGP SIGNATURE-----
+
+--kaF1vgn83Aa7CiXN--
