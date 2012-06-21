@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab2FUICc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:02:32 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60918 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754957Ab2FUIC2 (ORCPT
+	id S1752996Ab2FUIDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:03:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34201 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab2FUIDt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:02:28 -0400
+	Thu, 21 Jun 2012 04:03:49 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "axel.lin@gmail.com" <axel.lin@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>
+Subject: [PATCH 1/3] regulator: enable module build config for lp872x
+Thread-Topic: [PATCH 1/3] regulator: enable module build config for lp872x
+Thread-Index: Ac1PhFvA0/m3a5lnTy66b9wsZ8BKMw==
+Date: Thu, 21 Jun 2012 08:03:36 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FC04A@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <4FE1F918.1040909@wwwdotorg.org>
-References: <1340116099-17629-1-git-send-email-ldewangan@nvidia.com>
-	<CACRpkdYSLiLZwVwY1tU9PWGTx2EGP6OykeXE5rtwRKAHror-Yg@mail.gmail.com>
-	<20120620100058.GD3978@opensource.wolfsonmicro.com>
-	<4FE1F918.1040909@wwwdotorg.org>
-Date: Thu, 21 Jun 2012 10:02:26 +0200
-Message-ID: <CACRpkdZbGJ0fiNuYvU-07DuwJrCugTNOyE_ppVWfk4Asf3nCiA@mail.gmail.com>
-Subject: Re: [PATCH V2 0/3] regulator: dt: add policy to match regulator with
- prop "regulator-compatible"
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>, grant.likely@secretlab.ca
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        arnd@arndb.de, lrg@ti.com, lee.jones@linaro.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 6:23 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-> Related to this, I wonder if we need some scheme to tag individual
-> bindings as under-development vs. final, and some way to promote
-> bindings between those states (a bindings review board?!).
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/regulator/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Hm, we just have Documentation/devicetree/bindings and that's it.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 26a4440..870f730 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -225,7 +225,7 @@ config REGULATOR_LP3972
+ 	 on National Semiconductors LP3972 PMIC
+ 
+ config REGULATOR_LP872X
+-	bool "TI/National Semiconductor LP8720/LP8725 voltage regulators"
++	tristate "TI/National Semiconductor LP8720/LP8725 voltage regulators"
+ 	depends on I2C
+ 	select REGMAP_I2C
+ 	help
+-- 
+1.7.2.5
 
-But compare to the Documentation/ABI:
-$ ls
-obsolete  README  removed  stable  testing
 
-I think we might want to mirror this structure for the
-bindings, putting all current bindings into testing.
+Best Regards,
+Milo (Woogyom) Kim
 
-That said, this scheme has not always been very strictly
-enforced on sysfs etc. But the ambition is there.
 
-Yours,
-Linus Walleij
