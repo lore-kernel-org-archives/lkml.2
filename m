@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760032Ab2FURly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 13:41:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5324 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760011Ab2FURlx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 13:41:53 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=FlAZEPfbBygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=2nk-Tcjw72y3_uGIgsIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340300509.27036.185.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 21 Jun 2012 13:41:49 -0400
-In-Reply-To: <20120621171338.GF3270@kroah.com>
-References: <20120614154153.GD17140@kroah.com>
-	 <1339693625.13377.242.camel@gandalf.stny.rr.com>
-	 <20120615042233.GA10973@localhost> <20120615043017.GA9587@kroah.com>
-	 <20120615120430.GB23681@gmail.com> <20120615231318.GD8205@kroah.com>
-	 <1339804415.25903.63.camel@gandalf.stny.rr.com>
-	 <20120618230337.GB23627@kroah.com>
-	 <1340069326.25903.177.camel@gandalf.stny.rr.com>
-	 <20120620122549.GA10561@gmail.com> <20120621171338.GF3270@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S1760049Ab2FURrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 13:47:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61893 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760028Ab2FURrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 13:47:23 -0400
+Message-ID: <4FE35DB9.10704@redhat.com>
+Date: Thu, 21 Jun 2012 13:45:29 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        aarcange@redhat.com, minchan@gmail.com, kosaki.motohiro@gmail.com,
+        andi@firstfloor.org, hannes@cmpxchg.org, mel@csn.ul.ie,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH -mm 4/7] mm: make page colouring code generic
+References: <1340057126-31143-1-git-send-email-riel@redhat.com> <1340057126-31143-5-git-send-email-riel@redhat.com> <1340277624.21745.173.camel@twins> <4FE33002.6040703@redhat.com> <20120621104005.604fa9cc.akpm@linux-foundation.org>
+In-Reply-To: <20120621104005.604fa9cc.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-21 at 10:13 -0700, Greg Kroah-Hartman wrote:
+On 06/21/2012 01:40 PM, Andrew Morton wrote:
+> On Thu, 21 Jun 2012 10:30:26 -0400 Rik van Riel<riel@redhat.com>  wrote:
+>
+>> On 06/21/2012 07:20 AM, Peter Zijlstra wrote:
+>>> On Mon, 2012-06-18 at 18:05 -0400, Rik van Riel wrote:
+>>>> Fix the x86-64 page colouring code to take pgoff into account.
+>>>
+>>> Shouldn't that be a separate patch?
+>>
+>> My idea was that it would be easier to review
+>> these two nearly identical functions together.
+>>
+>> Andrew, do you have any strong opinions?
+>
+> It depends on the significance of the change.  I suspect it's one of
+> things which speeds up many workloads by 1.5% and slows down a few
+> weird/important ones by 11%.  Which makes it a thing to be put under
+> the microscope and poked at.  Some people might end up reverting it,
+> making it tunable/configurable etc etc.
+>
+> If any of that is true then yes, I guess it should be a standalone thing.
 
-> > So mind re-sending the latest version of your printk flushing 
-> > fix? I'll apply it for v3.5-rc if other trees won't pick it up.
-> 
-> I'll be glad to pick it up, just make it work properly :)
-
-I'm playing around with making a KERN_FLUSH "<f>". Think that's a better
-approach?
-
--- Steve
-
-
+Behaviour is not changed by this patch, except
+for taking pgoff into account - which should not
+matter a whole lot in practice, because mmap of
+files is generally done starting at offset 0.
