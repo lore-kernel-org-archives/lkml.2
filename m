@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760959Ab2FVBxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 21:53:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43657 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760940Ab2FVBxq (ORCPT
+	id S1760972Ab2FVB5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 21:57:15 -0400
+Received: from mtaext1.cujae.edu.cu ([200.55.139.24]:57274 "EHLO
+	mtaext1.cujae.edu.cu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760953Ab2FVB5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 21:53:46 -0400
-Date: Thu, 21 Jun 2012 18:53:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: David Howells <dhowells@redhat.com>, kyle@mcmartin.ca,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org
-Subject: Re: [PATCH 00/23] Crypto keys and module signing
-Message-ID: <20120622015341.GA3414@kroah.com>
-References: <8762blyedn.fsf@rustcorp.com.au>
- <87obpfxdpr.fsf@rustcorp.com.au>
- <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
- <7474.1337782847@redhat.com>
- <5107.1337868051@redhat.com>
- <87r4u6w58c.fsf@rustcorp.com.au>
+	Thu, 21 Jun 2012 21:57:14 -0400
+X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jun 2012 21:57:13 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -2.9
+X-Spam-Processed: udio.cujae.edu.cu, Thu, 21 Jun 2012 13:59:41 -0400
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: acabrera@udio.cujae.edu.cu
+X-MDRemoteIP: 10.9.3.110
+X-Return-Path: acabrera@udio.cujae.edu.cu
+X-Envelope-From: acabrera@udio.cujae.edu.cu
+Message-ID: <4FE37029.50007@udio.cujae.edu.cu>
+Date: Thu, 21 Jun 2012 14:04:09 -0500
+From: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64;
+	rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4u6w58c.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Simek <monstr@monstr.eu>
+CC: linux-watchdog@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: xilinx: Read clock frequency directly from
+	DT node
+References: <1340261140-10166-1-git-send-email-monstr@monstr.eu>
+In-Reply-To: <1340261140-10166-1-git-send-email-monstr@monstr.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 27, 2012 at 03:11:23PM +0930, Rusty Russell wrote:
-> > > > Why would you want multiple signatures?  That just complicates things.
-> > > 
-> > > The code above stays pretty simple; if the signature fails, you set size
-> > > to i, and loop again.  As I said, if you know exactly how you're going
-> > > to strip the modules, you can avoid storing the stripped module and
-> > > simply append both signatures.
-> > 
-> > You still haven't justified it.  One of your arguments about rejecting the ELF
-> > parsing version was that it was too big for no useful extra value that I could
-> > justify.  Supporting multiple signatures adds extra size and complexity for no
-> > obvious value.
-> 
-> One loop is a lot easier to justify that the ELF-parsing mess.  And it
-> can be done in a backwards compatible way tomorrow: old kernels will
-> only check the last signature.
-> 
-> I had assumed you'd rather maintain a stable strip util which you can
-> use on kernel modules than rework your module builds.  I guess not.
 
-To dig an old thread up, but what really is wrong with the original ELF
-section stuff?  Why encode "magic" values on the end of the kernel
-module that then require all userspace tools to be modified in order to
-properly handle this?
+> Do not use clock-frequency property from parent node.
+> Use it from watchdog node.
+>
+> Signed-off-by: Michal Simek<monstr@monstr.eu>
 
-When I first did this so many many years ago an elf section made it so
-easy to handle.  Userspace didn't need to be modified, and everyone
-knows how to handle elf sections, even the kernel does :)
+Acked-By: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
 
-And I think we really want the ability to have multiple signatures, the
-whole "chain of trust" thing that is needed will work out much better if
-multiple signatures are allowed.  Putting it in an elf section allows
-this to work out easier, right?
+> ---
+>   drivers/watchdog/of_xilinx_wdt.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+> index 55d2f66..294fb4e 100644
+> --- a/drivers/watchdog/of_xilinx_wdt.c
+> +++ b/drivers/watchdog/of_xilinx_wdt.c
+> @@ -297,7 +297,7 @@ static int __devinit xwdt_probe(struct platform_device *pdev)
+>
+>   	no_timeout = 0;
+>
+> -	pfreq = (u32 *)of_get_property(pdev->dev.of_node->parent,
+> +	pfreq = (u32 *)of_get_property(pdev->dev.of_node,
+>   					"clock-frequency", NULL);
+>
+>   	if (pfreq == NULL) {
 
-confused,
+Participe en la XVI Convencion Cientifica de Ingenieria y Arquitectura del 26 al 30 de noviembre de 2012. La Habana, Cuba: http://ccia.cujae.edu.cu
 
-greg k-h
+Consulte la enciclopedia colaborativa cubana. http://www.ecured.cu
