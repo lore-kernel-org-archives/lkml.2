@@ -1,68 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760584Ab2FUWDs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 18:03:48 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55909 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760494Ab2FUWDn (ORCPT
+	id S1756854Ab2FUWNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 18:13:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50495 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab2FUWNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 18:03:43 -0400
+	Thu, 21 Jun 2012 18:13:31 -0400
+Message-ID: <4FE39C86.5070901@wwwdotorg.org>
+Date: Thu, 21 Jun 2012 16:13:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120621221858.25b8be67@pyramind.ukuu.org.uk>
-References: <20120621194319.GA5961@www.outflux.net>
-	<20120621221858.25b8be67@pyramind.ukuu.org.uk>
-Date: Thu, 21 Jun 2012 15:03:42 -0700
-X-Google-Sender-Auth: peNBs3JKjtbzkEpJNcHlZDJXhDo
-Message-ID: <CAGXu5jJhOQWBxasT+QbQnMPsZmG1OoU=q+N2zRywzK9fCd39WA@mail.gmail.com>
-Subject: Re: [PATCH] fs: make dumpable=2 only write to a pipe
-From: Kees Cook <keescook@chromium.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Alan Cox <alan@linux.intel.com>, Marcel Holtmann <marcel@holtmann.org>,
-        Doug Ledford <dledford@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Joe Korty <joe.korty@ccur.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
+To: Tony Lindgren <tony@atomide.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] pinctrl: Add one-register-per-pin type device tree based
+ pinctrl driver
+References: <20120611135826.GB12766@atomide.com> <4FDA6FCD.1020605@wwwdotorg.org> <20120615094938.GQ12766@atomide.com> <4FDB6000.5080703@wwwdotorg.org> <20120618055036.GU12766@atomide.com> <20120619135600.GX12766@atomide.com>
+In-Reply-To: <20120619135600.GX12766@atomide.com>
+X-Enigmail-Version: 1.5pre
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 2:18 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Thu, 21 Jun 2012 12:43:19 -0700
-> Kees Cook <keescook@chromium.org> wrote:
->
->> When the suid_dumpable sysctl is set to "2", and there is no
->> core dump pipe defined in the core_pattern sysctl, a local user
->> can cause core files to be written to root-writable directories,
->> potentially with user-controlled content. This means an admin
->> can unknowningly reintroduce a variation of CVE-2006-2451 (see
->> abf75a5033d4da7b8a7e92321d74021d1fcfb502).
->
-> Its intended to work the way it does. It's also ABI. I think pipe-only is
-> a really good idea. Likewise I accept with the pipe feature nowdays there
-> is a good case to kill off case 2.
->
-> However I don't think magically turning one into the other is sensible,
-> in fact its *stupid* IMHO because it's asking systems to get unexpected
-> behaviour.
->
-> I would much rather see case 2 either left as is, or set to return
-> -EINVAL (or similar) and a new case 3 for pipe only.
+On 06/19/2012 07:56 AM, Tony Lindgren wrote:
+> Hi,
+> 
+> Below is the pinctrl-single patch updated with hopefully all the Stephen's
+> comments addressed. The binding still needs to be looked at, see relevant
+> parts of the discussion below.
+...
+> From: Tony Lindgren <tony@atomide.com>
+> Date: Wed, 6 Jun 2012 04:18:18 -0700
+> Subject: [PATCH] pinctrl: Add one-register-per-pin type device tree based pinctrl driver
+> 
+> Add one-register-per-pin type device tree based pinctrl driver.
+> 
+> Currently this driver only works on omap2+ series of processors,
+> where there is either an 8 or 16-bit padconf register for each pin.
+> Support for other similar pinmux controllers can be added.
+> 
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
+> 
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
+> new file mode 100644
+> index 0000000..929254c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
+> @@ -0,0 +1,106 @@
+> +One-register-per-pin type device tree based pinctrl driver
+> +
+> +Required properties:
+> +- compatible : "pinctrl-single"
+> +
+> +- reg : offset and length of the register set for the mux registers
+> +
+> +- pinctrl-single,register-width : pinmux register access width in bits
+> +
+> +- pinctrl-single,function-mask : mask of allowed pinmux function bits
+> +  in the pinmux register
+> +
+> +- pinctrl-single,pinconf-mask : mask of allowed pinconf bits in the
+> +  pinmux register; this gets combined with pinconf mask but is a separate
+> +  mask to allow the option of setting pinconf separatately from the
+> +  function
 
-If mode 2 switches to -EINVAL, setuid dumps won't be written to disk,
-and won't go to pipes. If mode 2 switches to pipe-only, only disk
-dumps go missing. Either change seems like a break from the prior
-behavior, but the latter seems the least disruptive to me.
+Given that this binding doesn't allow describing pin configuration at
+present, I would simply remove all mention of that property in the
+binding documentation. It can be added back if/when that feature is
+added. Any future driver using this binding can refuse to allow pin
+configuration if that property is missing.
 
-I'm happy to go the -EINVAL route and add mode 3 (which will just be
-mode 2 renamed) if that really is more acceptable.
+> +- pinctrl-single,function-off : function off mode for disabled state if
+> +  available and same for all registers; if not, use a value larger than
+> +  function-mask to ignore disabling of registers
 
--Kees
+Rather than requiring an invalid value in this property, shouldn't the
+lack of a valid function-off value be represented by the property not
+being present in the DT?
 
--- 
-Kees Cook
-Chrome OS Security
+> +This driver assumes that there is only one register for each pin,
+> +and uses the common pinctrl bindings as specified in the pinctrl-bindings.txt
+> +document in this directory.
+
+At this point in the file, I think you need to mention that you're
+switching from describing the top-level device node to describing pin
+configuration nodes.
+
+> +The pinctrl register offsets and default values are specified as pairs
+
+I thought we were going to remove "default" here?
+
+> +using pinctrl-single,pins. For example, setting a pin for a device
+> +could be done with:
+> +
+> +	pinctrl-single,pins = <0xdc 0x118>;
+> +
+> +Where 0xdc is the offset from the pinctrl register base address for the
+> +device pinctrl register, and 0x118 contains the desired value of the
+> +pinctrl register. See the device example and static board pins example
+> +below for more information.
+
+There should be some explanation only the portion of this value covered
+by the pinctrl-single,function-mask value is updated in the register.
+
+> +This driver tries to avoid understanding pin and function names because of
+> +the extra bloat they would cause especially in the case of a large number
+> +of pins. This driver just sets what is specified for the board in the .dts file.
+> +Further user space debugging tools can be developed to decipher the pin and
+> +function names using debugfs.
+
+There shouldn't be any discussion of a driver here; the binding is a HW
+description.
+
+> +Example:
+
+I only reviewed the binding document, not the code.
