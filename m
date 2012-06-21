@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759332Ab2FUKZa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 06:25:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759308Ab2FUKZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 06:25:27 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@ghostprotocols.net, a.p.zijlstra@chello.nl, mingo@redhat.com,
-        paulus@samba.org
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf test: Fix parse events test to follow proper raw event name
-Date: Thu, 21 Jun 2012 12:25:16 +0200
-Message-Id: <1340274316-5161-1-git-send-email-jolsa@redhat.com>
+	id S932691Ab2FUK0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 06:26:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57273 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754914Ab2FUK0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 06:26:55 -0400
+Date: Thu, 21 Jun 2012 11:26:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: wfg@linux.intel.com
+Cc: Jingoo Han <jg1.han@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Kim, Milo" <Milo.Kim@ti.com>,
+        Axel Lin <axel.lin@gmail.com>
+Subject: Re: [mm:akpm 117/143] ERROR: "devm_gpio_request_one"
+ [drivers/video/backlight/l4f00242t03.ko] undefined!
+Message-ID: <20120621102651.GS4037@opensource.wolfsonmicro.com>
+References: <20120621101721.GA12365@localhost>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zu8lIfFVzXMVnfzp"
+Content-Disposition: inline
+In-Reply-To: <20120621101721.GA12365@localhost>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following commit changed raw event names to carry event modificator.
 
-  perf evsel: Reconstruct raw event with modifiers from perf_event_attr
-  commit 6eef3d9c2bcf52b7a3c18e609f5838c007b989a4
-  Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+--zu8lIfFVzXMVnfzp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The perf_evsel__name function now returns ':mod' suffix for raw
-events, so we need to follow that in current tests.
+On Thu, Jun 21, 2012 at 06:17:21PM +0800, wfg@linux.intel.com wrote:
 
-All tests pass now for 'perf test parse' suite.
+> Yet another error on devm_gpio_request_one()... Interestingly the
+> patch title says "export" but does not really export the symbol...
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/parse-events-test.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Yes, this patch subject is at best misleading.  We really need to get
+the EXPORT_SYMBOL patch merged.
 
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index 229af6d..a0f61a2 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -413,19 +413,20 @@ static int test__checkevent_pmu_name(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel;
- 
--	/* cpu/config=1,name=krava1/u */
-+	/* cpu/config=1,name=krava/u */
- 	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
- 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong config",  1 == evsel->attr.config);
- 	TEST_ASSERT_VAL("wrong name", !strcmp(perf_evsel__name(evsel), "krava"));
- 
--	/* cpu/config=2/" */
-+	/* cpu/config=2/u" */
- 	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
- 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
--	TEST_ASSERT_VAL("wrong name", !strcmp(perf_evsel__name(evsel), "raw 0x2"));
-+	TEST_ASSERT_VAL("wrong name",
-+			!strcmp(perf_evsel__name(evsel), "raw 0x2:u"));
- 
- 	return 0;
- }
--- 
-1.7.7.6
+--zu8lIfFVzXMVnfzp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP4vbiAAoJEBus8iNuMP3dz6IP/3O+hlOeKSvY7ZMjZmyVSlVO
+gi7wWS8+TqCHmarq0EVd6liB0fbHmVmseSrt1GRyDDMjjQdWbqRoINZpM4DFmeG2
+gFdPOKhN8h3SWO56B4q/T7Kxf320xJYC/9vRj+Vjmsv9q+r1d9FlifWNHauMuVCb
+NFqE93X6lOQjpjS2RIxiCfnjhrKeMjZC10m9xkdAc+UzfLlua2vqj72cFgorAH6r
+rmrIWGIIsdbI5plu5nkOcZG3I5AglSg9E+7oD1NK7uh/E2saG/UfdrDvGVKhMWtK
+ayK/1HfgBhWUVt39WqdHDh3IS3QFrmlLRWFVgHdPrbLb2SdWSdlqKuv8Z1gkpYPl
+a48dpuyPmj8xfZlzMqCby2mnERz/vPQ9D/uaLJyTuos5oFozyinfE7R8TOYfiQIJ
+UOGJ+pwHqMAjdLKIlqtbWYVYE4T2uCKm1lrpzvMTUp8pvU7Kr087ayXk6Yx6OkNs
+hBd3h5wEufpuatuKIGMfYFr7hwKesfx5H26lix1+7cl0WitXeGNmXQPhLCvTY+dk
+oMuBRlQ1qm2T3+/hzw/1QuFIPrOPeS6Ib/ONfzkaM9ypF5mGmZ8qrm1XnpvDkGBd
+ysOWYdbvS488BLvBAVUhcwiunpjAvT1hrNHOyDsZsFSAYyAZmiXWU7SDVzF7Jka3
+ku5/QGfyQoTFuJIHgxX0
+=Fh0O
+-----END PGP SIGNATURE-----
+
+--zu8lIfFVzXMVnfzp--
