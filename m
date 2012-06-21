@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab2FUDcM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 23:32:12 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:41442 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758322Ab2FUDcK (ORCPT
+	id S1758475Ab2FUDfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 23:35:07 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:62635 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758387Ab2FUDfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 23:32:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120621114546.1e5df51bd231ee481d63705c@canb.auug.org.au>
-References: <20120620173536.b856bbd97497cf02ddf8d6d2@canb.auug.org.au>
-	<4FE27471.8050505@xenotime.net>
-	<20120621114546.1e5df51bd231ee481d63705c@canb.auug.org.au>
-Date: Thu, 21 Jun 2012 12:32:09 +0900
-Message-ID: <CAKYAXd_2uj+f=WN5fqqmGwsjW59wy_pV7xwPA8xLmH5d1aVf+A@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 20 (hweight return type)
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Jun 2012 23:35:06 -0400
+From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm-cc@laptop.org, ngupta@vflare.org,
+        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+Subject: [PATCH 1/2] staging: zram: Remove some dead code
+Date: Thu, 21 Jun 2012 00:32:44 -0300
+Message-Id: <1340249565-29404-2-git-send-email-marcos.souza.org@gmail.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1340249565-29404-1-git-send-email-marcos.souza.org@gmail.com>
+References: <1340249565-29404-1-git-send-email-marcos.souza.org@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/21, Stephen Rothwell <sfr@canb.auug.org.au>:
-> On Wed, 20 Jun 2012 18:10:09 -0700 Randy Dunlap <rdunlap@xenotime.net>
-> wrote:
->>
->> Someone changes the return type of __const_hweight8() to
->> (unsigned long).  That causes printk format warnings when
->> hweight8/16() etc. is passed a constant:
->
-> That would be "include/linux/bitops.h: fix warning" from the akpm tree
-> (adding cc's).
-This patch is made for fix warning message. but it looks affect other side.
-Sorry for noise, I will look for other mehod. Once would you plz
-revert this patch in linux-next and akpm tree ?
-Thanks.
->
->>
->> drivers/input/joystick/analog.c:412:4: warning: format '%d' expects type
->> 'int', but argument 4 has type 'long unsigned int'
->> drivers/input/joystick/analog.c:412:4: warning: format '%d' expects type
->> 'int', but argument 5 has type 'long unsigned int'
->> drivers/input/joystick/analog.c:416:5: warning: format '%d' expects type
->> 'int', but argument 5 has type 'long unsigned int'
->>
->>
->> Note that in
->>
->> #define hweight8(w)  (__builtin_constant_p(w) ? __const_hweight8(w)  :
->> __arch_hweight8(w))
->>
->> __arch_hweight*() still returns unsigned int while __const_hweight*()
->> returns unsigned long.  This can't be good, can it?
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->
+This patch removes code that is never executed by zram.
+
+Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+---
+ drivers/staging/zram/zram_drv.c |    9 ---------
+ drivers/staging/zram/zram_drv.h |    3 ---
+ 2 files changed, 12 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 685d612..5216ee1 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -415,15 +415,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	cmem = zs_map_object(zram->mem_pool, handle);
+ 
+ memstore:
+-#if 0
+-	/* Back-reference needed for memory defragmentation */
+-	if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
+-		zheader = (struct zobj_header *)cmem;
+-		zheader->table_idx = index;
+-		cmem += sizeof(*zheader);
+-	}
+-#endif
+-
+ 	memcpy(cmem, src, clen);
+ 
+ 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index fbe8ac9..fe3f8fe 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -33,9 +33,6 @@ static const unsigned max_num_devices = 32;
+  * object. This is required to support memory defragmentation.
+  */
+ struct zobj_header {
+-#if 0
+-	u32 table_idx;
+-#endif
+ };
+ 
+ /*-- Configurable parameters */
+-- 
+1.7.10.2
+
