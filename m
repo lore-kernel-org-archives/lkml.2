@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932838Ab2FUVvQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:51:16 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44863 "EHLO mga14.intel.com"
+	id S932771Ab2FUVu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:50:29 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47841 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356Ab2FUVvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:51:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="114823541"
-Subject: Re: [PATCH 2/2] x86, x2apic: limit the vector reservation to the
- user specified mask
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, gorcunov@openvz.org
-Date: Thu, 21 Jun 2012 14:51:35 -0700
-In-Reply-To: <20120621090451.GD2223@dhcp-26-207.brq.redhat.com>
-References: <1340067097.3696.6.camel@sbsiddha-desk.sc.intel.com>
-	 <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
-	 <1340149411-2972-2-git-send-email-suresh.b.siddha@intel.com>
-	 <20120621090451.GD2223@dhcp-26-207.brq.redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1340315496.3696.87.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1760359Ab2FUVu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 17:50:26 -0400
+From: Richard Weinberger <richard@nod.at>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
+        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
+        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
+        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 07/15] UBI: Fastmap: Add a workqueue to allow delayed fastmap update
+Date: Thu, 21 Jun 2012 23:50:00 +0200
+Message-Id: <1340315408-27375-8-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1340315408-27375-1-git-send-email-richard@nod.at>
+References: <UBI fastmap updates>
+ <1340315408-27375-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-21 at 11:04 +0200, Alexander Gordeev wrote:
-> >  static int
-> >  __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
-> >  {
-> > @@ -1126,10 +1142,9 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
-> >  	old_vector = cfg->vector;
-> >  	if (old_vector) {
-> >  		cpumask_and(tmp_mask, mask, cpu_online_mask);
-> > -		if (cpumask_subset(tmp_mask, cfg->domain)) {
-> > -			free_cpumask_var(tmp_mask);
-> > -			return 0;
-> > -		}
-> > +		apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
-> > +		if (cpumask_subset(tmp_mask, cfg->domain))
-> > +			return cleanup_unused_subset(tmp_mask, cfg);
-> 
-> ...but if you decide to leave cleanup_unused_subset() then cpumask_subset()
-> check is better to move inside the function while free_cpumask_var() move
-> out.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/ubi/ubi.h |    2 ++
+ drivers/mtd/ubi/wl.c  |   16 ++++++++++++++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
 
-Removed the function and the above hunk completely in the next version.
-
-> 
-> >  	}
-> >  
-> >  	/* Only try and allocate irqs on cpus that are present */
-> > @@ -1137,15 +1152,12 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
-> >  	cpumask_clear(cfg->old_domain);
-> >  	cpu = cpumask_first_and(mask, cpu_online_mask);
-> >  	while (cpu < nr_cpu_ids) {
-> > -		int new_cpu;
-> > -		int vector, offset;
-> > +		int new_cpu, vector, offset;
-> >  
-> > -		apic->vector_allocation_domain(cpu, tmp_mask);
-> > -
-> > -		if (cpumask_subset(tmp_mask, cfg->domain)) {
-> > -			free_cpumask_var(tmp_mask);
-> > -			return 0;
-> > -		}
-> > +		cpumask_copy(tmp_mask, cpumask_of(cpu));
-> > +		apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
-> 
-> I might be missing the point.. in the two lines above you copy a cpumask to
-> tmp_mask, then scan it in vector_allocation_domain() just to find the cpu
-> which you already know. Why not just pass cpu rather then cpumask_of(cpu)?
-
-One of my earlier experiments was using cfg->domain internally in the
-vector_allocation_domain() and didn't want to use to many arguments.
-Also 'cpu' argument for the first hunk above was not making sense.
-
-Anyhow, this is all cleaned up now in the next version of the patchset.
-
-thanks,
-suresh
-
+diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+index a0c2103..7e0dfda 100644
+--- a/drivers/mtd/ubi/ubi.h
++++ b/drivers/mtd/ubi/ubi.h
+@@ -385,6 +385,7 @@ struct ubi_wl_entry;
+  * @fm_pool_mutex: serializes ubi_wl_get_peb()
+  * @fm_mutex: serializes ubi_update_fastmap()
+  * @fm_sem: allows ubi_update_fastmap() to block EBA table changes
++ * @fm_work: fastmap work queue
+  * @attached_by_scanning: this UBI device was attached by the old scanning
+  *			  methold. All fastmap volumes have to be deleted.
+  *
+@@ -486,6 +487,7 @@ struct ubi_device {
+ 	struct rw_semaphore fm_sem;
+ 	struct mutex fm_mutex;
+ 	struct mutex fm_pool_mutex;
++	struct work_struct fm_work;
+ 	int attached_by_scanning;
+ 
+ 	/* Wear-leveling sub-system's stuff */
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index 7520319..6f346f5 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -140,6 +140,17 @@ static int self_check_in_wl_tree(const struct ubi_device *ubi,
+ 				 struct ubi_wl_entry *e, struct rb_root *root);
+ static int self_check_in_pq(const struct ubi_device *ubi,
+ 			    struct ubi_wl_entry *e);
++
++/**
++ * update_fastmap_work_fn - calls ubi_update_fastmap from a work queue
++ * @wrk: the work description object
++ */
++static void update_fastmap_work_fn(struct work_struct *wrk)
++{
++	struct ubi_device *ubi = container_of(wrk, struct ubi_device, fm_work);
++	ubi_update_fastmap(ubi);
++}
++
+ /**
+  *  ubi_ubi_is_fm_block - returns 1 if a PEB is currently used in a fastmap.
+  *  @ubi: UBI device description object
+@@ -604,6 +615,10 @@ static struct ubi_wl_entry *get_peb_for_wl(struct ubi_device *ubi)
+ 	int pnum;
+ 
+ 	if (pool->used == pool->size || !pool->size) {
++		/* We cannot update the fastmap here because this
++		 * function is called in atomic context.
++		 * Let's fail an refill/update it as soon as possible. */
++		schedule_work(&ubi->fm_work);
+ 		return NULL;
+ 	} else {
+ 		pnum = pool->pebs[pool->used++];
+@@ -1671,6 +1686,7 @@ int ubi_wl_init(struct ubi_device *ubi, struct ubi_attach_info *ai)
+ 	init_rwsem(&ubi->work_sem);
+ 	ubi->max_ec = ai->max_ec;
+ 	INIT_LIST_HEAD(&ubi->works);
++	INIT_WORK(&ubi->fm_work, update_fastmap_work_fn);
+ 
+ 	sprintf(ubi->bgt_name, UBI_BGT_NAME_PATTERN, ubi->ubi_num);
+ 
+-- 
+1.7.6.5
 
