@@ -1,39 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab2FUDAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 23:00:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34731 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757995Ab2FUDAi convert rfc822-to-8bit (ORCPT
+	id S1758199Ab2FUDNC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 23:13:02 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:41276 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758158Ab2FUDNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 23:00:38 -0400
+	Wed, 20 Jun 2012 23:13:00 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6748"; a="203144053"
+Message-ID: <4FE2913B.1040102@codeaurora.org>
+Date: Wed, 20 Jun 2012 20:12:59 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120615001635.GA2694@Pilar>
-References: <20120610163813.GA5721@Pilar.maths.private.cam.ac.uk>
- <20120615022641.1556677f@garik> <20120615001635.GA2694@Pilar>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 20 Jun 2012 20:00:17 -0700
-X-Google-Sender-Auth: NrIC_bRMqDBCnJS0DHpeuLrbW0I
-Message-ID: <CA+55aFwr1KNwVs3nxD_FuzQFVKG2cMXVxA=sgzwZdYX7kcT=7Q@mail.gmail.com>
-Subject: Re: 3.5.0-rc2 bisected regression: Can't change brightness on Vaio laptop
-To: "Carlos R. Mafra" <crmafra@gmail.com>, Len Brown <len.brown@intel.com>
-Cc: Igor Murzov <intergalactic.anonymous@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: jonghwa3.lee@samsung.com
+CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, Jamie Iles <jamie@jamieiles.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] Exynos : Add support for Exynos random number generator
+References: <1340180526-24542-1-git-send-email-jonghwa3.lee@samsung.com> <4FE26F27.4010106@codeaurora.org> <4FE2897C.6050002@samsung.com>
+In-Reply-To: <4FE2897C.6050002@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Len,
- I assume this regression fix is in some ACPI tree pending?
-
-            Linus
-
-On Thu, Jun 14, 2012 at 5:16 PM, Carlos R. Mafra <crmafra@gmail.com> wrote:
-> On Fri, 15 Jun 2012 at  2:26:41 +0400, Igor Murzov wrote:
->> Please follow the discussion here:
->> https://bugzilla.kernel.org/show_bug.cgi?id=43168
+On 06/20/12 19:39, jonghwa3.lee@samsung.com wrote:
 >
-> I tested the patch from Zhang Rui on comment #15 and it fixes
-> the issue in the latest mainline.
+>>> +static int exynos_init(struct hwrng *rng)
+>>> +{
+>>> +	struct exynos_rng *exynos_rng = container_of(rng,
+>>> +						struct exynos_rng, rng);
+>>> +	int i;
+>>> +	int ret = 0;
+>>> +	u32 PRND_SEED[5];
+>>> +
+>>> +	pm_runtime_put_noidle(exynos_rng->dev);
+>>> +	pm_runtime_get_sync(exynos_rng->dev);
+>> This looks very odd. Why are you calling pm_runtime_put_noidle()?
+>>
+>
+> When this callback function is called, the status of power state is
+> 'suspended' and use_count is 1. To perform pm_runtime_get_sync()
+> correctly, it requires to have 'suspended' status and use_count is 0.
+> Thus i force to decrease use_count only with using
+> pm_runtime_put_noidle. I know it looks odd, but i couldn't find better
+> way. Otherwise it can use clk_enable() directly, but i think that it
+> isn't good neither.
+
+Is the device suspended initially at probe? If so can you set the state
+of the device to suspended?
+
+>
+>>> +{
+>>> +	int ret;
+>>> +	struct exynos_rng *exynos_rng;
+>>> +	struct resource *res;
+>>> +
+>>> +	exynos_rng = devm_kzalloc(&pdev->dev, sizeof(struct exynos_rng),
+>>> +					GFP_KERNEL);
+>>> +	if (!exynos_rng)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	exynos_rng->dev = &pdev->dev;
+>>> +	exynos_rng->rng.name = "exynos";
+>>> +	exynos_rng->rng.init =	exynos_init;
+>>> +	exynos_rng->rng.read = exynos_read;
+>>> +	exynos_rng->clk = clk_get(NULL, "secss");
+>> Can you please pass &pdev->dev to clk_get()?
+>>
+>
+> But, this clock is not only used in PRNG. Should i put it in?
+
+Why would that matter? I'm not familiar with the samsung clock
+implementation but I would assume that something like clkdev is being
+used. Ideally you would have one lookup entry per struct device that
+uses this clock and then tie each lookup entry to the same clock. This
+allows you to support multiple instances of the same device in a generic
+way (e.g. two rng devices that use different clocks but from the driver
+perspective they have the same name 'secss').
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
