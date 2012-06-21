@@ -1,212 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760227Ab2FUUh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 16:37:29 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:34155 "EHLO ogre.sisk.pl"
+	id S1760260Ab2FUUiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 16:38:09 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:34163 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759932Ab2FUUh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 16:37:27 -0400
+	id S1760160Ab2FUUiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 16:38:06 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bojan Smojver <bojan@rexursive.com>
-Subject: Re: [PATCH]: PM: Print hibernation/thaw progress indicator one line at a time
-Date: Thu, 21 Jun 2012 22:42:49 +0200
+To: mandeep.baines@gmail.com
+Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous suspend after abort
+Date: Thu, 21 Jun 2012 22:43:28 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
-References: <1340144178.29338.6.camel@shrek.rexursive.com>
-In-Reply-To: <1340144178.29338.6.camel@shrek.rexursive.com>
+Cc: linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
+        linux-pm@vger.kernel.org, stable@kernel.org,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Colin Cross <ccross@android.com>, Sameer Nanda <snanda@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+References: <1340158627-7586-1-git-send-email-msb@chromium.org> <1340208795-8049-1-git-send-email-msb@chromium.org>
+In-Reply-To: <1340208795-8049-1-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206212242.49614.rjw@sisk.pl>
+Message-Id: <201206212243.28984.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 20, 2012, Bojan Smojver wrote:
-> Hi Rafael,
+On Wednesday, June 20, 2012, mandeep.baines@gmail.com wrote:
+> From: Mandeep Singh Baines <msb@chromium.org>
 > 
-> Here is the final version of the patch, with your latest suggestion
-> implemented.
+> __device_suspend() must always send a completion. Otherwise, parent
+> devices will wait forever.
 > 
-> ------------------------------
-> PM: Print hibernation/thaw progress indicator one line at a time.
+> Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
+> system sleep (v2)", introduced a regression by short-circuiting the
+> complete_all() for certain error cases.
 > 
-> With the introduction of suspend to both into in-kernel hibernation
-> code, dmesg was getting polluted with backspace characters printed as
-> part of image saving progress indicator. This patch introduces printing
-> of progress indicator on image save/load every 10% and one line at a
-> time. As an additional benefit, all other messages emitted by the kernel
-> during hibernation/thaw should now print cleanly as well.
+> This patch fixes the bug by always signalling a completion.
 > 
-> Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+> Addresses http://crosbug.com/31972
+> 
+> Tested by injecting an abort.
+> 
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: linux-pm@vger.kernel.org
+> Cc: stable@kernel.org
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Sameer Nanda <snanda@chromium.org>
+> Cc: Olof Johansson <olofj@chromium.org>
 
-Thanks, queued up for 3.6 in linux-pm/linux-next.
+Applied to linux-pm/linux-next, will be pushed to Linus in a couple of days.
 
+Thanks,
 Rafael
 
 
 > ---
->  kernel/power/swap.c |   54 +++++++++++++++++++++++++--------------------------
->  1 file changed, 27 insertions(+), 27 deletions(-)
+>  drivers/base/power/main.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-> index 11e22c0..948f0d2 100644
-> --- a/kernel/power/swap.c
-> +++ b/kernel/power/swap.c
-> @@ -448,9 +448,9 @@ static int save_image(struct swap_map_handle *handle,
->  	struct timeval start;
->  	struct timeval stop;
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index e0fb5b0..9cb845e 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	dpm_wait_for_children(dev, async);
 >  
-> -	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
-> +	printk(KERN_INFO "PM: Saving image data pages (%u pages)...\n",
->  		nr_to_write);
-> -	m = nr_to_write / 100;
-> +	m = nr_to_write / 10;
->  	if (!m)
->  		m = 1;
->  	nr_pages = 0;
-> @@ -464,7 +464,8 @@ static int save_image(struct swap_map_handle *handle,
->  		if (ret)
->  			break;
->  		if (!(nr_pages % m))
-> -			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
-> +			printk(KERN_INFO "PM: Image saving progress: %3d%%\n",
-> +			       nr_pages / m * 10);
->  		nr_pages++;
+>  	if (async_error)
+> -		return 0;
+> +		goto Complete;
+>  
+>  	pm_runtime_get_noresume(dev);
+>  	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
+> @@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+>  	if (pm_wakeup_pending()) {
+>  		pm_runtime_put_sync(dev);
+>  		async_error = -EBUSY;
+> -		return 0;
+> +		goto Complete;
 >  	}
->  	err2 = hib_wait_on_bio_chain(&bio);
-> @@ -472,9 +473,7 @@ static int save_image(struct swap_map_handle *handle,
->  	if (!ret)
->  		ret = err2;
->  	if (!ret)
-> -		printk(KERN_CONT "\b\b\b\bdone\n");
-> -	else
-> -		printk(KERN_CONT "\n");
-> +		printk(KERN_INFO "PM: Image saving done.\n");
->  	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
->  	return ret;
->  }
-> @@ -668,9 +667,9 @@ static int save_image_lzo(struct swap_map_handle *handle,
 >  
->  	printk(KERN_INFO
->  		"PM: Using %u thread(s) for compression.\n"
-> -		"PM: Compressing and saving image data (%u pages) ...     ",
-> +		"PM: Compressing and saving image data (%u pages)...\n",
->  		nr_threads, nr_to_write);
-> -	m = nr_to_write / 100;
-> +	m = nr_to_write / 10;
->  	if (!m)
->  		m = 1;
->  	nr_pages = 0;
-> @@ -690,8 +689,10 @@ static int save_image_lzo(struct swap_map_handle *handle,
->  				       data_of(*snapshot), PAGE_SIZE);
->  
->  				if (!(nr_pages % m))
-> -					printk(KERN_CONT "\b\b\b\b%3d%%",
-> -				               nr_pages / m);
-> +					printk(KERN_INFO
-> +					       "PM: Image saving progress: "
-> +					       "%3d%%\n",
-> +				               nr_pages / m * 10);
->  				nr_pages++;
->  			}
->  			if (!off)
-> @@ -761,11 +762,8 @@ out_finish:
->  	do_gettimeofday(&stop);
->  	if (!ret)
->  		ret = err2;
-> -	if (!ret) {
-> -		printk(KERN_CONT "\b\b\b\bdone\n");
-> -	} else {
-> -		printk(KERN_CONT "\n");
-> -	}
-> +	if (!ret)
-> +		printk(KERN_INFO "PM: Image saving done.\n");
->  	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
->  out_clean:
->  	if (crc) {
-> @@ -973,9 +971,9 @@ static int load_image(struct swap_map_handle *handle,
->  	int err2;
->  	unsigned nr_pages;
->  
-> -	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
-> +	printk(KERN_INFO "PM: Loading image data pages (%u pages)...\n",
->  		nr_to_read);
-> -	m = nr_to_read / 100;
-> +	m = nr_to_read / 10;
->  	if (!m)
->  		m = 1;
->  	nr_pages = 0;
-> @@ -993,7 +991,8 @@ static int load_image(struct swap_map_handle *handle,
->  		if (ret)
->  			break;
->  		if (!(nr_pages % m))
-> -			printk("\b\b\b\b%3d%%", nr_pages / m);
-> +			printk(KERN_INFO "PM: Image loading progress: %3d%%\n",
-> +			       nr_pages / m * 10);
->  		nr_pages++;
+>  	device_lock(dev);
+> @@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 >  	}
->  	err2 = hib_wait_on_bio_chain(&bio);
-> @@ -1001,12 +1000,11 @@ static int load_image(struct swap_map_handle *handle,
->  	if (!ret)
->  		ret = err2;
->  	if (!ret) {
-> -		printk("\b\b\b\bdone\n");
-> +		printk(KERN_INFO "PM: Image loading done.\n");
->  		snapshot_write_finalize(snapshot);
->  		if (!snapshot_image_loaded(snapshot))
->  			ret = -ENODATA;
-> -	} else
-> -		printk("\n");
-> +	}
->  	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
->  	return ret;
->  }
-> @@ -1185,9 +1183,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
 >  
->  	printk(KERN_INFO
->  		"PM: Using %u thread(s) for decompression.\n"
-> -		"PM: Loading and decompressing image data (%u pages) ...     ",
-> +		"PM: Loading and decompressing image data (%u pages)...\n",
->  		nr_threads, nr_to_read);
-> -	m = nr_to_read / 100;
-> +	m = nr_to_read / 10;
->  	if (!m)
->  		m = 1;
->  	nr_pages = 0;
-> @@ -1319,7 +1317,10 @@ static int load_image_lzo(struct swap_map_handle *handle,
->  				       data[thr].unc + off, PAGE_SIZE);
+>  	device_unlock(dev);
+> +
+> + Complete:
+>  	complete_all(&dev->power.completion);
 >  
->  				if (!(nr_pages % m))
-> -					printk("\b\b\b\b%3d%%", nr_pages / m);
-> +					printk(KERN_INFO
-> +					       "PM: Image loading progress: "
-> +					       "%3d%%\n",
-> +					       nr_pages / m * 10);
->  				nr_pages++;
->  
->  				ret = snapshot_write_next(snapshot);
-> @@ -1344,7 +1345,7 @@ out_finish:
->  	}
->  	do_gettimeofday(&stop);
->  	if (!ret) {
-> -		printk("\b\b\b\bdone\n");
-> +		printk(KERN_INFO "PM: Image loading done.\n");
->  		snapshot_write_finalize(snapshot);
->  		if (!snapshot_image_loaded(snapshot))
->  			ret = -ENODATA;
-> @@ -1357,8 +1358,7 @@ out_finish:
->  				}
->  			}
->  		}
-> -	} else
-> -		printk("\n");
-> +	}
->  	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
->  out_clean:
->  	for (i = 0; i < ring_size; i++)
-> ------------------------------
-> 
+>  	if (error) {
 > 
 
