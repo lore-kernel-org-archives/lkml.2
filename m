@@ -1,113 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758721Ab2FUIOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:14:14 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52517 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab2FUIOK (ORCPT
+	id S1758734Ab2FUISw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:18:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60951 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758714Ab2FUISs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:14:10 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE2D747.20506@jp.fujitsu.com>
-Date: Thu, 21 Jun 2012 17:11:51 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 2/2] memcg: clean up force_empty_list() return value check
-References: <4FDF17A3.9060202@jp.fujitsu.com> <4FDF1830.1000504@jp.fujitsu.com> <20120619165815.5ce24be7.akpm@linux-foundation.org>
-In-Reply-To: <20120619165815.5ce24be7.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jun 2012 04:18:48 -0400
+From: Keng-Yu Lin <kengyu@canonical.com>
+To: stable@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        wwang <wei_wang@realsil.com.cn>,
+        Hitoshi NAKAMORI <hitoshi.nakamori@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Keng-Yu Lin <kengyu@canonical.com>
+Subject: [PATCH 3.2.y 3.3.y] staging:rts_pstor:Fix possible panic by NULL pointer dereference
+Date: Thu, 21 Jun 2012 16:18:39 +0800
+Message-Id: <1340266719-31983-1-git-send-email-kengyu@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/20 8:58), Andrew Morton wrote:
-> On Mon, 18 Jun 2012 20:59:44 +0900
-> Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>  wrote:
->
->>
->> By commit "memcg: move charges to root cgroup if use_hierarchy=0"
->> mem_cgroup_move_parent() only returns -EBUSY, -EINVAL.
->> So, we can remove -ENOMEM and -EINTR checks.
->>
->> Signed-off-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->> ---
->>   mm/memcontrol.c |    5 -----
->>   1 files changed, 0 insertions(+), 5 deletions(-)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index cf8a0f6..726b7c6 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -3847,8 +3847,6 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->>   		pc = lookup_page_cgroup(page);
->>
->>   		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
->> -		if (ret == -ENOMEM || ret == -EINTR)
->> -			break;
->>
->>   		if (ret == -EBUSY || ret == -EINVAL) {
->
-> This looks a bit fragile - if mem_cgroup_move_parent() is later changed
-> (intentionally or otherwise!) to return -Esomethingelse then
-> mem_cgroup_force_empty_list() will subtly break.  Why not just do
->
-> 		if (ret<  0)
->
+From: wwang <wei_wang@realsil.com.cn>
 
-You're right. I'm sorry I haven't done enough clean-ups.
-I made 2 more patches...I'll repost/remake all paches if it's better.
-one more patch will follow this email.
-==
- From eee5f31fc6378da19705de7187bb3f219ef6d7f6 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 21 Jun 2012 17:25:04 +0900
-Subject: [PATCH 1/2] mem_cgroup_move_parent() doesn't need gfp_mask.
+commit 0d05568ac79bfc595f1eadc3e0fd7a20a45f7b69 upstream.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+rtsx_transport.c (rtsx_transfer_sglist_adma_partial):
+pointer struct scatterlist *sg, which is mapped in dma_map_sg,
+is used as an iterator in later transfer operation. It is corrupted and
+passed to dma_unmap_sg, thus causing fatal unmap of some erroneous address.
+Fix it by duplicating *sg_ptr for iterating.
+
+Signed-off-by: wwang <wei_wang@realsil.com.cn>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
 ---
-  mm/memcontrol.c |    5 ++---
-  1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/staging/rts_pstor/rtsx_transport.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 76d83a5..90a2ad4 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2662,8 +2662,7 @@ out:
-  
-  static int mem_cgroup_move_parent(struct page *page,
-  				  struct page_cgroup *pc,
--				  struct mem_cgroup *child,
--				  gfp_t gfp_mask)
-+				  struct mem_cgroup *child)
-  {
-  	struct mem_cgroup *parent;
-  	unsigned int nr_pages;
-@@ -3837,7 +3836,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
-  
-  		pc = lookup_page_cgroup(page);
-  
--		ret = mem_cgroup_move_parent(page, pc, memcg, GFP_KERNEL);
-+		ret = mem_cgroup_move_parent(page, pc, memcg);
-  
-  		if (ret == -EBUSY || ret == -EINVAL) {
-  			/* found lock contention or "pc" is obsolete. */
+diff --git a/drivers/staging/rts_pstor/rtsx_transport.c b/drivers/staging/rts_pstor/rtsx_transport.c
+index 4e3d2c1..9b2e5c9 100644
+--- a/drivers/staging/rts_pstor/rtsx_transport.c
++++ b/drivers/staging/rts_pstor/rtsx_transport.c
+@@ -335,6 +335,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+ 	int sg_cnt, i, resid;
+ 	int err = 0;
+ 	long timeleft;
++	struct scatterlist *sg_ptr;
+ 	u32 val = TRIG_DMA;
+ 
+ 	if ((sg == NULL) || (num_sg <= 0) || !offset || !index)
+@@ -371,7 +372,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+ 	sg_cnt = dma_map_sg(&(rtsx->pci->dev), sg, num_sg, dma_dir);
+ 
+ 	resid = size;
+-
++	sg_ptr = sg;
+ 	chip->sgi = 0;
+ 	/* Usually the next entry will be @sg@ + 1, but if this sg element
+ 	 * is part of a chained scatterlist, it could jump to the start of
+@@ -379,14 +380,14 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+ 	 * the proper sg
+ 	 */
+ 	for (i = 0; i < *index; i++)
+-		sg = sg_next(sg);
++		sg_ptr = sg_next(sg_ptr);
+ 	for (i = *index; i < sg_cnt; i++) {
+ 		dma_addr_t addr;
+ 		unsigned int len;
+ 		u8 option;
+ 
+-		addr = sg_dma_address(sg);
+-		len = sg_dma_len(sg);
++		addr = sg_dma_address(sg_ptr);
++		len = sg_dma_len(sg_ptr);
+ 
+ 		RTSX_DEBUGP("DMA addr: 0x%x, Len: 0x%x\n",
+ 			     (unsigned int)addr, len);
+@@ -415,7 +416,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+ 		if (!resid)
+ 			break;
+ 
+-		sg = sg_next(sg);
++		sg_ptr = sg_next(sg_ptr);
+ 	}
+ 
+ 	RTSX_DEBUGP("SG table count = %d\n", chip->sgi);
 -- 
-1.7.4.1
-
-
-
-
-
-
-
-
-
-
+1.7.9.5
 
