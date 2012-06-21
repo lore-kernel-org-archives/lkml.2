@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab2FUV56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:57:58 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:33268 "EHLO
+	id S1760573Ab2FUV6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:58:05 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:33296 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760557Ab2FUV5w (ORCPT
+	with ESMTP id S932847Ab2FUV6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:57:52 -0400
+	Thu, 21 Jun 2012 17:58:03 -0400
 From: Rik van Riel <riel@surriel.com>
 To: linux-mm@kvack.org
 Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
         minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
         hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@surriel.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH -mm v2 03/11] mm: vma_adjust: only call adjust_free_gap when needed
-Date: Thu, 21 Jun 2012 17:57:07 -0400
-Message-Id: <1340315835-28571-4-git-send-email-riel@surriel.com>
+        Rik van Riel <riel@surriel.com>, Rik van Riel <riel@redhat.com>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org
+Subject: [PATCH -mm v2 11/11] mm: remove SH arch_get_unmapped_area functions
+Date: Thu, 21 Jun 2012 17:57:15 -0400
+Message-Id: <1340315835-28571-12-git-send-email-riel@surriel.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340315835-28571-1-git-send-email-riel@surriel.com>
 References: <1340315835-28571-1-git-send-email-riel@surriel.com>
@@ -23,73 +25,269 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When inserting or removing VMAs in adjust_vma, __insert_vm_struct
-and __vma_unlink already take care of keeping the free gap information
-in the VMA rbtree up to date.
+Remove the SH special variants of arch_get_unmapped_area since
+the generic functions should now be able to handle everything.
 
-Only if VMA boundaries shift without VMA insertion or removal on that side
-of vma, vma_adjust needs to call adjust_free_gap.
+Paul, does anything in NOMMU SH need shm_align_mask?
+
+Untested because I have no SH hardware.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-sh@vger.kernel.org
 ---
- mm/mmap.c |   29 ++++++++++++++++++++---------
- 1 files changed, 20 insertions(+), 9 deletions(-)
+ arch/sh/include/asm/pgtable.h |    4 -
+ arch/sh/mm/mmap.c             |  219 +----------------------------------------
+ 2 files changed, 2 insertions(+), 221 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index dd6edcd..95f66c5 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -562,6 +562,7 @@ int vma_adjust(struct vm_area_struct *vma, unsigned long start,
- 	struct prio_tree_root *root = NULL;
- 	struct anon_vma *anon_vma = NULL;
- 	struct file *file = vma->vm_file;
-+	bool start_changed = false, end_changed = false;
- 	long adjust_next = 0;
- 	int remove_next = 0;
+diff --git a/arch/sh/include/asm/pgtable.h b/arch/sh/include/asm/pgtable.h
+index 9210e93..03f5312 100644
+--- a/arch/sh/include/asm/pgtable.h
++++ b/arch/sh/include/asm/pgtable.h
+@@ -155,10 +155,6 @@ extern void paging_init(void);
+ extern void page_table_range_init(unsigned long start, unsigned long end,
+ 				  pgd_t *pgd);
  
-@@ -651,8 +652,14 @@ again:			remove_next = 1 + (end > next->vm_end);
- 			vma_prio_tree_remove(next, root);
- 	}
+-/* arch/sh/mm/mmap.c */
+-#define HAVE_ARCH_UNMAPPED_AREA
+-#define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
+-
+ #define __HAVE_ARCH_PTE_SPECIAL
  
--	vma->vm_start = start;
--	vma->vm_end = end;
-+	if (start != vma->vm_start) {
-+		vma->vm_start = start;
-+		start_changed = true;
-+	}
-+	if (end != vma->vm_end) {
-+		vma->vm_end = end;
-+		end_changed = true;
-+	}
- 	vma->vm_pgoff = pgoff;
- 	if (adjust_next) {
- 		next->vm_start += adjust_next << PAGE_SHIFT;
-@@ -720,14 +727,18 @@ again:			remove_next = 1 + (end > next->vm_end);
- 	if (insert && file)
- 		uprobe_mmap(insert);
+ #include <asm-generic/pgtable.h>
+diff --git a/arch/sh/mm/mmap.c b/arch/sh/mm/mmap.c
+index afeb710..12f5edd 100644
+--- a/arch/sh/mm/mmap.c
++++ b/arch/sh/mm/mmap.c
+@@ -14,225 +14,10 @@
+ #include <asm/page.h>
+ #include <asm/processor.h>
  
--	/* Adjust the rb tree for changes in the free gaps between VMAs. */
--	adjust_free_gap(vma);
--	if (insert)
--		adjust_free_gap(insert);
--	if (vma->vm_next && vma->vm_next != insert)
-+	/*
-+	 * When inserting or removing VMAs, __insert_vm_struct or __vma_unlink
-+	 * have already taken care of updating the free gap information on
-+	 * that side of vma.
-+	 * Only call adjust_free_gap if VMA boundaries changed without
-+	 * insertion or removal on that side of vma.
-+	 */
-+	if (start_changed && (!vma->vm_prev || vma->vm_prev != insert))
-+		adjust_free_gap(vma);
-+	if (end_changed && !remove_next && vma->vm_next &&
-+						vma->vm_next != insert)
- 		adjust_free_gap(vma->vm_next);
--	if (insert && insert->vm_next && insert->vm_next != vma)
--		adjust_free_gap(insert->vm_next);
++#ifndef CONFIG_MMU
+ unsigned long shm_align_mask = PAGE_SIZE - 1;	/* Sane caches */
+ EXPORT_SYMBOL(shm_align_mask);
+-
+-#ifdef CONFIG_MMU
+-/*
+- * To avoid cache aliases, we map the shared page with same color.
+- */
+-static inline unsigned long COLOUR_ALIGN(unsigned long addr,
+-					 unsigned long pgoff)
+-{
+-	unsigned long base = (addr + shm_align_mask) & ~shm_align_mask;
+-	unsigned long off = (pgoff << PAGE_SHIFT) & shm_align_mask;
+-
+-	return base + off;
+-}
+-
+-static inline unsigned long COLOUR_ALIGN_DOWN(unsigned long addr,
+-					      unsigned long pgoff)
+-{
+-	unsigned long base = addr & ~shm_align_mask;
+-	unsigned long off = (pgoff << PAGE_SHIFT) & shm_align_mask;
+-
+-	if (base + off <= addr)
+-		return base + off;
+-
+-	return base - off;
+-}
+-
+-unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr,
+-	unsigned long len, unsigned long pgoff, unsigned long flags)
+-{
+-	struct mm_struct *mm = current->mm;
+-	struct vm_area_struct *vma;
+-	unsigned long start_addr;
+-	int do_colour_align;
+-
+-	if (flags & MAP_FIXED) {
+-		/* We do not accept a shared mapping if it would violate
+-		 * cache aliasing constraints.
+-		 */
+-		if ((flags & MAP_SHARED) &&
+-		    ((addr - (pgoff << PAGE_SHIFT)) & shm_align_mask))
+-			return -EINVAL;
+-		return addr;
+-	}
+-
+-	if (unlikely(len > TASK_SIZE))
+-		return -ENOMEM;
+-
+-	do_colour_align = 0;
+-	if (filp || (flags & MAP_SHARED))
+-		do_colour_align = 1;
+-
+-	if (addr) {
+-		if (do_colour_align)
+-			addr = COLOUR_ALIGN(addr, pgoff);
+-		else
+-			addr = PAGE_ALIGN(addr);
+-
+-		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
+-		    (!vma || addr + len <= vma->vm_start))
+-			return addr;
+-	}
+-
+-	if (len > mm->cached_hole_size) {
+-		start_addr = addr = mm->free_area_cache;
+-	} else {
+-	        mm->cached_hole_size = 0;
+-		start_addr = addr = TASK_UNMAPPED_BASE;
+-	}
+-
+-full_search:
+-	if (do_colour_align)
+-		addr = COLOUR_ALIGN(addr, pgoff);
+-	else
+-		addr = PAGE_ALIGN(mm->free_area_cache);
+-
+-	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
+-		/* At this point:  (!vma || addr < vma->vm_end). */
+-		if (unlikely(TASK_SIZE - len < addr)) {
+-			/*
+-			 * Start a new search - just in case we missed
+-			 * some holes.
+-			 */
+-			if (start_addr != TASK_UNMAPPED_BASE) {
+-				start_addr = addr = TASK_UNMAPPED_BASE;
+-				mm->cached_hole_size = 0;
+-				goto full_search;
+-			}
+-			return -ENOMEM;
+-		}
+-		if (likely(!vma || addr + len <= vma->vm_start)) {
+-			/*
+-			 * Remember the place where we stopped the search:
+-			 */
+-			mm->free_area_cache = addr + len;
+-			return addr;
+-		}
+-		if (addr + mm->cached_hole_size < vma->vm_start)
+-		        mm->cached_hole_size = vma->vm_start - addr;
+-
+-		addr = vma->vm_end;
+-		if (do_colour_align)
+-			addr = COLOUR_ALIGN(addr, pgoff);
+-	}
+-}
+-
+-unsigned long
+-arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+-			  const unsigned long len, const unsigned long pgoff,
+-			  const unsigned long flags)
+-{
+-	struct vm_area_struct *vma;
+-	struct mm_struct *mm = current->mm;
+-	unsigned long addr = addr0;
+-	int do_colour_align;
+-
+-	if (flags & MAP_FIXED) {
+-		/* We do not accept a shared mapping if it would violate
+-		 * cache aliasing constraints.
+-		 */
+-		if ((flags & MAP_SHARED) &&
+-		    ((addr - (pgoff << PAGE_SHIFT)) & shm_align_mask))
+-			return -EINVAL;
+-		return addr;
+-	}
+-
+-	if (unlikely(len > TASK_SIZE))
+-		return -ENOMEM;
+-
+-	do_colour_align = 0;
+-	if (filp || (flags & MAP_SHARED))
+-		do_colour_align = 1;
+-
+-	/* requesting a specific address */
+-	if (addr) {
+-		if (do_colour_align)
+-			addr = COLOUR_ALIGN(addr, pgoff);
+-		else
+-			addr = PAGE_ALIGN(addr);
+-
+-		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
+-		    (!vma || addr + len <= vma->vm_start))
+-			return addr;
+-	}
+-
+-	/* check if free_area_cache is useful for us */
+-	if (len <= mm->cached_hole_size) {
+-	        mm->cached_hole_size = 0;
+-		mm->free_area_cache = mm->mmap_base;
+-	}
+-
+-	/* either no address requested or can't fit in requested address hole */
+-	addr = mm->free_area_cache;
+-	if (do_colour_align) {
+-		unsigned long base = COLOUR_ALIGN_DOWN(addr-len, pgoff);
+-
+-		addr = base + len;
+-	}
+-
+-	/* make sure it can fit in the remaining address space */
+-	if (likely(addr > len)) {
+-		vma = find_vma(mm, addr-len);
+-		if (!vma || addr <= vma->vm_start) {
+-			/* remember the address as a hint for next time */
+-			return (mm->free_area_cache = addr-len);
+-		}
+-	}
+-
+-	if (unlikely(mm->mmap_base < len))
+-		goto bottomup;
+-
+-	addr = mm->mmap_base-len;
+-	if (do_colour_align)
+-		addr = COLOUR_ALIGN_DOWN(addr, pgoff);
+-
+-	do {
+-		/*
+-		 * Lookup failure means no vma is above this address,
+-		 * else if new region fits below vma->vm_start,
+-		 * return with success:
+-		 */
+-		vma = find_vma(mm, addr);
+-		if (likely(!vma || addr+len <= vma->vm_start)) {
+-			/* remember the address as a hint for next time */
+-			return (mm->free_area_cache = addr);
+-		}
+-
+-		/* remember the largest hole we saw so far */
+-		if (addr + mm->cached_hole_size < vma->vm_start)
+-		        mm->cached_hole_size = vma->vm_start - addr;
+-
+-		/* try just below the current vma->vm_start */
+-		addr = vma->vm_start-len;
+-		if (do_colour_align)
+-			addr = COLOUR_ALIGN_DOWN(addr, pgoff);
+-	} while (likely(len < vma->vm_start));
+-
+-bottomup:
+-	/*
+-	 * A failed mmap() very likely causes application failure,
+-	 * so fall back to the bottom-up function here. This scenario
+-	 * can happen with large stack limits and large mmap()
+-	 * allocations.
+-	 */
+-	mm->cached_hole_size = ~0UL;
+-	mm->free_area_cache = TASK_UNMAPPED_BASE;
+-	addr = arch_get_unmapped_area(filp, addr0, len, pgoff, flags);
+-	/*
+-	 * Restore the topdown base:
+-	 */
+-	mm->free_area_cache = mm->mmap_base;
+-	mm->cached_hole_size = ~0UL;
+-
+-	return addr;
+-}
+-#endif /* CONFIG_MMU */
++#endif
  
- 	validate_mm(mm);
- 
+ /*
+  * You really shouldn't be using read() or write() on /dev/mem.  This
 -- 
 1.7.7.6
 
