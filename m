@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759936Ab2FURH7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 13:07:59 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:39632 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759913Ab2FURH6 (ORCPT
+	id S932679Ab2FURNs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 13:13:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37000 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759923Ab2FURNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 13:07:58 -0400
-Date: Thu, 21 Jun 2012 19:07:43 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>,
-        hpa@zytor.com
-Subject: Re: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
-Message-ID: <20120621190743.2e6601f6@endymion.delvare>
-In-Reply-To: <4FE34BCB.5050305@linux.intel.com>
-References: <20120621162807.3c621d46@endymion.delvare>
-	<4FE34BCB.5050305@linux.intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jun 2012 13:13:47 -0400
+Date: Thu, 21 Jun 2012 10:13:38 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
+ console
+Message-ID: <20120621171338.GF3270@kroah.com>
+References: <20120614154153.GD17140@kroah.com>
+ <1339693625.13377.242.camel@gandalf.stny.rr.com>
+ <20120615042233.GA10973@localhost>
+ <20120615043017.GA9587@kroah.com>
+ <20120615120430.GB23681@gmail.com>
+ <20120615231318.GD8205@kroah.com>
+ <1339804415.25903.63.camel@gandalf.stny.rr.com>
+ <20120618230337.GB23627@kroah.com>
+ <1340069326.25903.177.camel@gandalf.stny.rr.com>
+ <20120620122549.GA10561@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120620122549.GA10561@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012 09:28:59 -0700, H. Peter Anvin wrote:
-> Good spotting, but I'm worried this is the wrong fix.
+On Wed, Jun 20, 2012 at 02:25:49PM +0200, Ingo Molnar wrote:
 > 
-> This is a userspace ABI change, and the and we have used "dts" for debug
-> store (debug trace store?) for a very long tie, whereas digital thermal
-> sensor only has been used since 2010; another *major* question is which
-> of these is more likely to be of interest to userspace.
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > On Mon, 2012-06-18 at 16:03 -0700, Greg Kroah-Hartman wrote:
+> > 
+> > > > Actually, I think that patch really should go mainline, and give others
+> > > > some of the luxury that us -rt folks enjoy.
+> > > 
+> > > That would be good.
+> > 
+> > Maybe I'll package that up if Ingo has no objections.
+> 
+> No objection, but I see it as an independent improvement.
+> 
+> Please also make printk() more useful out of box and fix the 
+> flushing bug ...
+> 
+> So mind re-sending the latest version of your printk flushing 
+> fix? I'll apply it for v3.5-rc if other trees won't pick it up.
 
-I am aware of this problem. I found the bug because I was looking for
-the Digital Thermal Sensor feature, and /proc/cpuinfo said "dts" but
-the driver wouldn't work, this confused me. So at least the Digital
-Thermal Sensor is of interest. That being said I believe interest is
-more from humans than software, which is why I do not feel bad changing
-it. The current situation could already lead to false positives anyway,
-both for humans and software.
+I'll be glad to pick it up, just make it work properly :)
 
-If your "right fix" is to find something else for the Digital Thermal
-Sensor, I doubt you can find something that won't confuse people even
-more. Especially when there is also the Package Thermal Sensor feature
-which is properly labeled "pts" already. "DTS" is widely used in the
-technical documentation to refer to this feature.
+thanks,
 
-And FWIW, X86_FEATURE_DS has no user in the kernel. Doesn't look like a
-key feature to me, but maybe my view is biased...
-
--- 
-Jean Delvare
+greg k-h
