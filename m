@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab2FUCeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 22:34:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23902 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab2FUCeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 22:34:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="168292781"
-Message-ID: <4FE28823.80704@intel.com>
-Date: Thu, 21 Jun 2012 10:34:11 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755375Ab2FUCiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 22:38:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39751 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab2FUCh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 22:37:58 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: mingo@elte.hu, jolsa@redhat.com, eranian@google.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH V6 0/13] perf: Intel uncore pmu counting support
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com> <1340208092.21745.114.camel@twins>
-In-Reply-To: <1340208092.21745.114.camel@twins>
+In-Reply-To: <20120620193438.GB2248@gmail.com>
+References: <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
+	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
+	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
+	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
+	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
+	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
+	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
+	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
+	<CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
+	<CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
+	<20120620193438.GB2248@gmail.com>
+Date: Wed, 20 Jun 2012 19:37:57 -0700
+X-Google-Sender-Auth: ASRjb2tJWJR4OPrrOdbrySQdang
+Message-ID: <CAE9FiQWUo3uffM4NCUORJXR1pdPaf0E1Sws1hwVNAibHg5_yjQ@mail.gmail.com>
+Subject: Re: SNB PCI root information
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Ulrich Drepper <drepper@gmail.com>,
+        jbarnes@virtuousgeek.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 12:01 AM, Peter Zijlstra wrote:
-> 
-> ok, so with this stuff something like:
-> 
->   perf stat -ae uncore/event=clockticks/ foo
-> 
-> will register a counter per cpu, which is somewhat silly since we only
-> need one per node. What would be the best way to 'fix' this?
-> 
-> We could of course create another variant of -a which iterates nodes
-> instead of cpus, -N or so.
-> 
-> Alternatively we could try and describe this in sysfs in some way, one
-> possibility would be to include a link to /sys/devices/system/{cpu,node}
-> or somesuch and use that link to iterate the correct space.
-> 
-> Any other suggestions?
-> 
-How about treat the 'cpu' parameter for uncore event as socket id instead
-of cpu id?
+On Wed, Jun 20, 2012 at 12:34 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> if the vendor provide _PXM, that _PXM should be right and be
+>> trusted.
+>>
+>> if the vendor does not provide _PXM, we can have command line
+>> to input it before user can get one updated BIOS from vendor.
+>
+> So how about an incorrect _PXM, or a slightly inefficient one?
+> Why shouldn't it be possible for the user to override it?
 
-Regards
-Yan, Zheng
+Try to keep the code simple.
 
+>
+> I mean, if we create a parameter space that tweaks data then why
+> not make it complete and allow *all* firmware data to be
+> (optionally) modified, from the kernel boot line?
 
+that pxm/node for pci device should be consistent with srat table etc,
+so better solution is that BIOS keep them consistent.
+
+If BIOS provide _PXM for pci device, the _PXM should have more chance
+to be right.
+
+Anyway if you insist that it should cover that wrong case, let me
+check if it could be done simply.
+
+Thanks
+
+Yinghai
