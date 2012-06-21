@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab2FUBr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 21:47:29 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59844 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab2FUBr2 (ORCPT
+	id S1757239Ab2FUBsQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 21:48:16 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:55818 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756943Ab2FUBsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 21:47:28 -0400
+	Wed, 20 Jun 2012 21:48:14 -0400
+Message-ID: <4FE27D55.4040805@linux.vnet.ibm.com>
+Date: Thu, 21 Jun 2012 09:48:05 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FE26470.90401@kernel.org>
-References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com>
- <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com> <4FE26470.90401@kernel.org>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Wed, 20 Jun 2012 21:39:07 -0400
-Message-ID: <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com>
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-To: Minchan Kim <minchan@kernel.org>
-Cc: Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v7 02/10] KVM: MMU: abstract spte write-protect
+References: <4FE1822D.8010002@linux.vnet.ibm.com> <4FE1825B.1030402@linux.vnet.ibm.com> <20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp> <4FE193AA.8010801@linux.vnet.ibm.com> <20120620215653.15930f3467bc13748d548b0d@gmail.com> <4FE1CE43.9080203@linux.vnet.ibm.com> <20120620231112.440df9ae19c1aca36100b746@gmail.com>
+In-Reply-To: <20120620231112.440df9ae19c1aca36100b746@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062101-9574-0000-0000-0000033E8220
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> number of isolate page block is almost always 0. then if we have such counter,
->> we almost always can avoid zone->lock. Just idea.
->
-> Yeb. I thought about it but unfortunately we can't have a counter for MIGRATE_ISOLATE.
-> Because we have to tweak in page free path for pages which are going to free later after we
-> mark pageblock type to MIGRATE_ISOLATE.
-
-I mean,
-
-if (nr_isolate_pageblock != 0)
-   free_pages -= nr_isolated_free_pages(); // your counting logic
-
-return __zone_watermark_ok(z, alloc_order, mark,
-                              classzone_idx, alloc_flags, free_pages);
+On 06/20/2012 10:11 PM, Takuya Yoshikawa wrote:
 
 
-I don't think this logic affect your race. zone_watermark_ok() is already
-racy. then new little race is no big matter.
+> We can change the debug message later if needed.
+
+
+Actually, i am going to use tracepoint instead of
+these debug code.
+
