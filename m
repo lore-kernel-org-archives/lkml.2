@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731Ab2FUV20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:28:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47329 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124Ab2FUV2Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:28:24 -0400
+	id S932681Ab2FUVcP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:32:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54677 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760347Ab2FUVcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 17:32:14 -0400
+Message-ID: <4FE39290.8020609@redhat.com>
+Date: Thu, 21 Jun 2012 17:30:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120621203615.GE4642@google.com>
-References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
-	<CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
-	<20120307162851.GC13430@redhat.com>
-	<4F57AF4A.6080703@kernel.dk>
-	<CAKA=qzak6N-6oHVjDozJ6KLMSWXEgzZf1xaC_1cgnoaUCyw8Ag@mail.gmail.com>
-	<CAKA=qzaHJ0OcbvtT-mwKBUBvzPkxE4r-bW6gDvicKhoQeyFWEg@mail.gmail.com>
-	<20120308234016.GA925@redhat.com>
-	<CAKA=qzbsL9UVYLZ3=hoT-1jfp=v=_Sr=h+YeHu0qAA=Ko_7P6w@mail.gmail.com>
-	<CAKA=qzbqoK5_3GXM8DZhbQ5cTU=DTg5DFFJ+46OrD7y=XrMLTg@mail.gmail.com>
-	<20120621203217.GC14095@redhat.com>
-	<20120621203615.GE4642@google.com>
-Date: Thu, 21 Jun 2012 16:28:24 -0500
-Message-ID: <CAKA=qzaFRubzvyjJQzgThRLsxLDc8NMdZy6WVZMFrF7ohsyjHw@mail.gmail.com>
-Subject: Re: multi-second application stall in open()
-From: Josh Hunt <joshhunt00@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: Re: [PATCH 01/17] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de> <1340192652-31658-2-git-send-email-mgorman@suse.de>
+In-Reply-To: <1340192652-31658-2-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 3:36 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hey, Vivek.
->
-> On Thu, Jun 21, 2012 at 04:32:17PM -0400, Vivek Goyal wrote:
->> Here we deleted queue 20720 and did nothing for .6 seconds and from
->> previous logs it is visible that writes are pending and queued.
->>
->> For some reason cfq_schedule_dispatch() did not lead to kicking queue
->> or queue was kicked but somehow write queue was not selected for
->> dispatch (A case of corrupt data structures?).
->>
->> Are you able to reproduce this issue on latest kernels (3.5-rc2?). I would
->> say put some logs in select_queue() and see where did it bail out. That
->> will confirm that select queue was called and can also give some details
->> why we did not select async queue for dispatch. (Note: select_queue is called
->> multiple times so putting trace point there makes logs very verbose).
->
-> Some people are putting in watchdog timers in block layer to kick cfq
-> when it stalls with pending requests.  The cfq code there has diverged
-> quite a bit from upstream so I have no idea whether it's caused by the
-> same issue.  The symptom sounds exactly the same tho.  So, yeah, I
-> think it isn't too unlikely that we have a cfq logic bug leading to
-> stalls.  :(
->
-> --
-> tejun
-Tejun
+On 06/20/2012 07:43 AM, Mel Gorman wrote:
 
-When you say the code has diverged from upstream, do you mean from 3.0
-to 3.5? Or maybe I'm misunderstanding what you're getting at. Also, if
-you have any links to the watchdog timer code you're referring to I
-would appreciate it.
+> +/* Clears ac->pfmemalloc if no slabs have pfmalloc set */
+> +static void check_ac_pfmemalloc(struct kmem_cache *cachep,
+> +						struct array_cache *ac)
+> +{
 
-Thanks
---
-Josh
+> +	pfmemalloc_active = false;
+> +out:
+> +	spin_unlock_irqrestore(&l3->list_lock, flags);
+> +}
+
+The comment and the function do not seem to match.
+
+Otherwise, the patch looks reasonable.
