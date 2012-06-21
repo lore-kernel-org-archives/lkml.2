@@ -1,63 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759232Ab2FUJu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:50:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42020 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759198Ab2FUJu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:50:26 -0400
-Date: Thu, 21 Jun 2012 11:50:24 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: BUG: Bad rss-counter state
-Message-ID: <20120621095024.GA10745@tiehlicka.suse.cz>
-References: <20120620194908.GA16353@elliptictech.com>
+	id S932627Ab2FUJvL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:51:11 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:41558 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759216Ab2FUJvJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 05:51:09 -0400
+X-Greylist: delayed 650 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jun 2012 05:51:09 EDT
+Message-ID: <4FE2EBF7.90601@free-electrons.com>
+Date: Thu, 21 Jun 2012 11:40:07 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120620194908.GA16353@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: zImage: Allow DTB command line concatenation with
+ ATAG_CMDLINE
+References: <1340269017-11701-1-git-send-email-richard.genoud@gmail.com>
+In-Reply-To: <1340269017-11701-1-git-send-email-richard.genoud@gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 20-06-12 15:49:08, Nick Bowler wrote:
-> Hi folks,
+On 06/21/2012 10:56 AM, Richard Genoud wrote:
+> This patch allows the ATAG_CMDLINE provided by the bootloader to be
+> concatenated to the bootargs property of the device tree.
 > 
-> I just noticed the following couple lines in my kernel log for Linux
-> 3.4.2:
+> This is useful to merge static values defined in the device tree with the
+> boot loader's (possibly) more dynamic values, such as startup reasons and more.
 > 
->   Jun 20 14:57:54 emergent kernel: BUG: Bad rss-counter state mm:ffff88000ff1f400 idx:1 val:-2
->   Jun 20 14:57:54 emergent kernel: BUG: Bad rss-counter state mm:ffff88000ff1f400 idx:2 val:2
+> The bootloader should use the device tree to pass those values to the kernel,
+> but that's not always simple (old bootloader or very small one).
 > 
-> I have no idea what these messages mean, nor what I was doing exactly
-> at 14:57:54 today, nor whether they've been fixed in newer kernels.
-> Regardless, they appear to be telling me that there's a kernel problem
-> since they contain the word "BUG", so I figured I had better report them
-> nonetheless.  Other than the fact that these messages were printed, the
-> system is operating normally.
+> The behaviour is the same as the one introduced by Victor Boivie in
+> 4394c1244249198c6b85093d46935b761b36ae05 by extending the CONFIG_CMDLINE.
+> 
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 
-The issue is known and the fix can be found at
-https://lkml.org/lkml/2012/6/9/47
- 
-> This happened about a week after bootup, so it's probably not easy to
-> reproduce.
+Hi Richard,
+
+I have tested both option on a Armada XP dev board. It worked as expected.
+
+You can add:
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+
+> ---
+>  arch/arm/Kconfig                        |   19 +++++++++
+>  arch/arm/boot/compressed/atags_to_fdt.c |   62 ++++++++++++++++++++++++++++++-
+>  2 files changed, 79 insertions(+), 2 deletions(-)
 > 
-> Let me know if you need any more info,
-> -- 
-> Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 84449dd..ff4b6e6 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1959,6 +1959,25 @@ config ARM_ATAG_DTB_COMPAT
+>  	  bootloaders, this option allows zImage to extract the information
+>  	  from the ATAG list and store it at run time into the appended DTB.
+>  
+> +choice
+> +	prompt "Kernel command line type" if ARM_ATAG_DTB_COMPAT
+> +	default ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER
+> +
+> +config ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER
+> +	bool "Use bootloader kernel arguments if available"
+> +	help
+> +	  Uses the command-line options passed by the boot loader instead of
+> +	  the device tree bootargs property. If the boot loader doesn't provide
+> +	  any, the device tree bootargs property will be used.
+> +
+> +config ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND
+> +	bool "Extend with bootloader kernel arguments"
+> +	help
+> +	  The command-line arguments provided by the boot loader will be
+> +	  appended to the the device tree bootargs property.
+> +
+> +endchoice
+> +
+>  config CMDLINE
+>  	string "Default kernel command string"
+>  	default ""
+> diff --git a/arch/arm/boot/compressed/atags_to_fdt.c b/arch/arm/boot/compressed/atags_to_fdt.c
+> index 797f04b..aabc02a 100644
+> --- a/arch/arm/boot/compressed/atags_to_fdt.c
+> +++ b/arch/arm/boot/compressed/atags_to_fdt.c
+> @@ -1,6 +1,12 @@
+>  #include <asm/setup.h>
+>  #include <libfdt.h>
+>  
+> +#if defined(CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND)
+> +#define do_extend_cmdline 1
+> +#else
+> +#define do_extend_cmdline 0
+> +#endif
+> +
+>  static int node_offset(void *fdt, const char *node_path)
+>  {
+>  	int offset = fdt_path_offset(fdt, node_path);
+> @@ -36,6 +42,48 @@ static int setprop_cell(void *fdt, const char *node_path,
+>  	return fdt_setprop_cell(fdt, offset, property, val);
+>  }
+>  
+> +static const void *getprop(const void *fdt, const char *node_path,
+> +			   const char *property, int *len)
+> +{
+> +	int offset = fdt_path_offset(fdt, node_path);
+> +
+> +	if (offset == -FDT_ERR_NOTFOUND)
+> +		return NULL;
+> +
+> +	return fdt_getprop(fdt, offset, property, len);
+> +}
+> +
+> +static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
+> +{
+> +	char cmdline[COMMAND_LINE_SIZE];
+> +	const char *fdt_bootargs;
+> +	char *ptr = cmdline;
+> +	int len = 0;
+> +
+> +	/* copy the fdt command line into the buffer */
+> +	fdt_bootargs = getprop(fdt, "/chosen", "bootargs", &len);
+> +	if (fdt_bootargs)
+> +		if (len < COMMAND_LINE_SIZE) {
+> +			memcpy(ptr, fdt_bootargs, len);
+> +			/* len is the length of the string
+> +			 * including the NULL terminator */
+> +			ptr += len - 1;
+> +		}
+> +
+> +	/* and append the ATAG_CMDLINE */
+> +	if (fdt_cmdline) {
+> +		len = strlen(fdt_cmdline);
+> +		if (ptr - cmdline + len + 2 < COMMAND_LINE_SIZE) {
+> +			*ptr++ = ' ';
+> +			memcpy(ptr, fdt_cmdline, len);
+> +			ptr += len;
+> +		}
+> +	}
+> +	*ptr = '\0';
+> +
+> +	setprop_string(fdt, "/chosen", "bootargs", cmdline);
+> +}
+> +
+>  /*
+>   * Convert and fold provided ATAGs into the provided FDT.
+>   *
+> @@ -72,8 +120,18 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
+>  
+>  	for_each_tag(atag, atag_list) {
+>  		if (atag->hdr.tag == ATAG_CMDLINE) {
+> -			setprop_string(fdt, "/chosen", "bootargs",
+> -					atag->u.cmdline.cmdline);
+> +			/* Append the ATAGS command line to the device tree
+> +			 * command line.
+> +			 * NB: This means that if the same parameter is set in
+> +			 * the device tree and in the tags, the one from the
+> +			 * tags will be chosen.
+> +			 */
+> +			if (do_extend_cmdline)
+> +				merge_fdt_bootargs(fdt,
+> +						   atag->u.cmdline.cmdline);
+> +			else
+> +				setprop_string(fdt, "/chosen", "bootargs",
+> +					       atag->u.cmdline.cmdline);
+>  		} else if (atag->hdr.tag == ATAG_MEM) {
+>  			if (memcount >= sizeof(mem_reg_property)/4)
+>  				continue;
+
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
++33 602 196 044
