@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571Ab2FUDlo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 23:41:44 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46394 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758332Ab2FUDlm (ORCPT
+	id S1758560Ab2FUDmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 23:42:37 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:38298 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758505Ab2FUDmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 23:41:42 -0400
-Date: Thu, 21 Jun 2012 09:10:59 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org, efault@gmx.de,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v3] sched: balance_cpu to consider other cpus in its
- group as target of (pinned) task
-Message-ID: <20120621034059.GA9748@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <4FE06CDB.2060605@linux.vnet.ibm.com>
- <1340213901.21745.122.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1340213901.21745.122.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12062103-4790-0000-0000-00000354B368
+	Wed, 20 Jun 2012 23:42:35 -0400
+X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Jun 2012 23:42:35 EDT
+From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm-cc@laptop.org, ngupta@vflare.org,
+        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+Subject: [PATCH 2/2] staging: zram: Remove useless struct zobj_header
+Date: Thu, 21 Jun 2012 00:32:45 -0300
+Message-Id: <1340249565-29404-3-git-send-email-marcos.souza.org@gmail.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1340249565-29404-1-git-send-email-marcos.souza.org@gmail.com>
+References: <1340249565-29404-1-git-send-email-marcos.souza.org@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2012-06-20 19:38:21]:
+The struct zobj_header has no members, so the sizeof(struct zobj_header *)
+always returns zero. For this reason we are removing this useless struct.
 
-> On Tue, 2012-06-19 at 17:43 +0530, Prashanth Nageshappa wrote:
-> > T2 will starve eternally in this case. The same
-> > scenario can arise in presence of non-rt tasks as well (say we replace F1 with
-> > high irq load or with a very high priority SCHED_OTHER task that can't move out
-> > of C2). 
-> 
-> Uhm, no. In the case where both F1 and T2 are SCHED_OTHER starvation is
-> impossible.
-> 
-> What can happen with pure SCHED_OTHER affinities is being less fair than
-> desired.
+Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+---
+ drivers/staging/zram/zram_drv.c |    9 +++------
+ drivers/staging/zram/zram_drv.h |    9 ---------
+ 2 files changed, 3 insertions(+), 15 deletions(-)
 
-Right ..sorry should have made that more explicit in the description.
-
-> Anyway, I took the patch with a few minor edits
-
-Thanks!
-
-> -- ie. we don't need to
-> reset loop_break, its never changed (same for the ALL_PINNED patch you
-> sent).
-
-Hmm ..I can see loop_break being incremented here:
-
-                /* take a breather every nr_migrate tasks */
-                if (env->loop > env->loop_break) {
-                        env->loop_break += sched_nr_migrate_break;
-                        env->flags |= LBF_NEED_BREAK;
-                        goto out;
-                }
-
-As a result, when we redo with a different src_cpu, both loop and
-loop_break could be at non-default values.  Am I missing something here?
-
-- vatsa
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 5216ee1..a79a20d 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -209,7 +209,6 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 	int ret;
+ 	size_t clen;
+ 	struct page *page;
+-	struct zobj_header *zheader;
+ 	unsigned char *user_mem, *cmem, *uncmem = NULL;
+ 
+ 	page = bvec->bv_page;
+@@ -249,7 +248,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 
+ 	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle);
+ 
+-	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
++	ret = lzo1x_decompress_safe(cmem,
+ 				    zram->table[index].size,
+ 				    uncmem, &clen);
+ 
+@@ -278,7 +277,6 @@ static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
+ {
+ 	int ret;
+ 	size_t clen = PAGE_SIZE;
+-	struct zobj_header *zheader;
+ 	unsigned char *cmem;
+ 
+ 	if (zram_test_flag(zram, index, ZRAM_ZERO) ||
+@@ -296,7 +294,7 @@ static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
+ 		return 0;
+ 	}
+ 
+-	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
++	ret = lzo1x_decompress_safe(cmem,
+ 				    zram->table[index].size,
+ 				    mem, &clen);
+ 	zs_unmap_object(zram->mem_pool, zram->table[index].handle);
+@@ -318,7 +316,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	u32 store_offset;
+ 	size_t clen;
+ 	void *handle;
+-	struct zobj_header *zheader;
+ 	struct page *page, *page_store;
+ 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
+ 
+@@ -405,7 +402,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		goto memstore;
+ 	}
+ 
+-	handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
++	handle = zs_malloc(zram->mem_pool, clen);
+ 	if (!handle) {
+ 		pr_info("Error allocating memory for compressed "
+ 			"page: %u, size=%zu\n", index, clen);
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index fe3f8fe..883f313 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -26,15 +26,6 @@
+  */
+ static const unsigned max_num_devices = 32;
+ 
+-/*
+- * Stored at beginning of each compressed object.
+- *
+- * It stores back-reference to table entry which points to this
+- * object. This is required to support memory defragmentation.
+- */
+-struct zobj_header {
+-};
+-
+ /*-- Configurable parameters */
+ 
+ /* Default zram disk size: 25% of total RAM */
+-- 
+1.7.10.2
 
