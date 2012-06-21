@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab2FUHhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 03:37:48 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50006 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab2FUHhq convert rfc822-to-8bit (ORCPT
+	id S1757390Ab2FUHid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 03:38:33 -0400
+Received: from ozlabs.org ([203.10.76.45]:47979 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756326Ab2FUHib convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 03:37:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FE1C952.5000306@linaro.org>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
-	<1339428307-3850-9-git-send-email-lee.jones@linaro.org>
-	<20120614183231.GA30185@sirena.org.uk>
-	<4FDEEEBD.5070108@linaro.org>
-	<20120618102003.GB12029@n2100.arm.linux.org.uk>
-	<20120618185638.GY3974@opensource.wolfsonmicro.com>
-	<4FE1C952.5000306@linaro.org>
-Date: Thu, 21 Jun 2012 09:37:44 +0200
-Message-ID: <CACRpkdYszGAixL_2CiPLRJ2Pasq_GwxnR1np+y83miOXhanNQg@mail.gmail.com>
-Subject: Re: [PATCH 08/14] mfd: Add IRQ domain support for the AB8500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 21 Jun 2012 03:38:31 -0400
+Message-ID: <1340264307.1998.20.camel@concordia>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (powerpc related)
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org,
+        amodra@gmail.com
+Date: Thu, 21 Jun 2012 17:38:27 +1000
+In-Reply-To: <1340262473.1998.19.camel@concordia>
+References: <20120620175014.a822a766e0f91f7b44f48fa0@canb.auug.org.au>
+	 <1340256961.1998.11.camel@concordia> <1340259896.3942.2.camel@pasglop>
+	 <1340262473.1998.19.camel@concordia>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 3:00 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On 18/06/12 19:56, Mark Brown wrote:
->>
->> Yes, that's correct.  I'm surprised the code runs without crashing...
->
-> Oddly the code ran perfectly.
+On Thu, 2012-06-21 at 17:07 +1000, Michael Ellerman wrote:
+> On Thu, 2012-06-21 at 16:24 +1000, Benjamin Herrenschmidt wrote:
+> > On Thu, 2012-06-21 at 15:36 +1000, Michael Ellerman wrote:
+> > > 
+> > > powerpc64-linux-ld: /src/next/net/openvswitch/vport-netdev.c:189:(.text+0x89b990): 
+> > >         sibling call optimization to `_restgpr0_28' does not allow automatic multiple TOCs;
+> > >         recompile with -mminimal-toc or -fno-optimize-sibling-calls, or make `_restgpr0_28' extern
+> > > 
+> > Can you show the full build command that triggers the above ?
+> 
+> Well that would be a few MBs of log, but here's an excerpt:
+> 
+> make -f scripts/Makefile.build obj=net/openvswitch
+>   /opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-gcc -m64 -Wp,-MD,net/openvswitch/.vport-netdev.o.d  -nostdinc -isystem /opt/cross/gcc-4.6.3-nolibc/powerpc64-linux/lib/gcc/powerpc64-linux/4.6.3/include -I/home/michael/src/kmk/next/arch/powerpc/include -Iarch/powerpc/include/generated -Iinclude  -include /home/michael/src/kmk/next/include/linux/kconfig.h -D__KERNEL__ -Iarch/powerpc -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -msoft-float -pipe -Iarch/powerpc -mminimal-toc -mtraceback=no -mcall-aixdesc -mtune=power7 -mtune=cell -mno-altivec -mno-vsx -mno-spe -mspe=no -funit-at-a-time -fno-dwarf2-cfi-asm -mno-string -mno-sched-epilog -Wa,-maltivec -fno-reorder-blocks -fno-ipa-cp-clone -fno-partial-inlining -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -g -femit-struct-debug-baseonly -pg -fno-inline-functions-called-once -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO  -fprofile-arcs -ftest-coverage    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(vport_netdev)"  -D"KBUILD_MODNAME=KBUILD_STR(openvswitch)" -c -o net/openvswitch/.tmp_vport-netdev.o net/openvswitch/vport-netdev.c
+>   if [ "-pg" = "-pg" ]; then set -e ; perl /home/michael/src/kmk/next/scripts/recordmcount.pl "powerpc" "little" "64" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-objdump" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-objcopy" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-gcc -m64 -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -msoft-float -pipe -Iarch/powerpc -mminimal-toc -mtraceback=no -mcall-aixdesc -mtune=power7 -mtune=cell -mno-altivec -mno-vsx -mno-spe -mspe=no -funit-at-a-time -fno-dwarf2-cfi-asm -mno-string -mno-sched-epilog -Wa,-maltivec -fno-reorder-blocks -fno-ipa-cp-clone -fno-partial-inlining -Wframe-larger-than=2048  -fno-stack-protector -Wno-unused-but-set-variable -g  -femit-struct-debug-baseonly -pg  -fno-inline-functions-called-once -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-ld -m elf64ppc" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-nm --synthetic" "" "" "0" "net/openvswitch/vport-netdev.o"; fi;
 
-So how did you test it?
+Just for the record it's not the FTRACE stuff (-pg):
 
-The only way to generate an IRQ on the AB8500 with the mainline code is
-to push the power button, that should generate an event from the
-driver in drivers/input/misc/ab8500-ponkey.c that you can listen to
-by doing cat on the proper /dev/input/eventN file.
+  /opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-gcc -m64 -Wp,-MD,net/openvswitch/.vport-netdev.o.d  -nostdinc -isystem /opt/cross/gcc-4.6.3-nolibc/powerpc64-linux/lib/gcc/powerpc64-linux/4.6.3/include -I/home/michael/src/kmk/next/arch/powerpc/include -Iarch/powerpc/include/generated -Iinclude  -include /home/michael/src/kmk/next/include/linux/kconfig.h -D__KERNEL__ -Iarch/powerpc -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -msoft-float -pipe -Iarch/powerpc -mminimal-toc -mtraceback=no -mcall-aixdesc -mtune=power7 -mtune=cell -mno-altivec -mno-vsx -mno-spe -mspe=no -funit-at-a-time -fno-dwarf2-cfi-asm -mno-string -Wa,-maltivec -fno-reorder-blocks -fno-ipa-cp-clone -fno-partial-inlining -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -g -femit-struct-debug-baseonly -fno-inline-functions-called-once -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO  -fprofile-arcs -ftest-coverage    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(vport_netdev)"  -D"KBUILD_MODNAME=KBUILD_STR(openvswitch)" -c -o net/openvswitch/.tmp_vport-netdev.o net/openvswitch/vport-netdev.c
 
-Please test this scenario before and after the patch and you have some
-indication that the IRQdomain is working.
 
-Yours,
-Linus Walleij
+And same error.
+
+cheers
+
