@@ -1,101 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759869Ab2FUWnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 18:43:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37375 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758297Ab2FUWng (ORCPT
+	id S1760382Ab2FUWoj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 18:44:39 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49495 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759106Ab2FUWoh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 18:43:36 -0400
-Date: Thu, 21 Jun 2012 15:43:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, zheng.z.yan@intel.com,
-        tglx@linutronix.de
-Cc: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>,
-        linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-Subject: Re: [tip:perf/core] perf/x86: Add generic Intel uncore PMU support
-Message-Id: <20120621154334.05a74517.akpm@linux-foundation.org>
-In-Reply-To: <tip-087bfbb032691262f2f7d52b910652450c5554b8@git.kernel.org>
-References: <1339741902-8449-6-git-send-email-zheng.z.yan@intel.com>
-	<tip-087bfbb032691262f2f7d52b910652450c5554b8@git.kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jun 2012 18:44:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKYAXd-kdSgH2LuGk=_cGZaYpOZRUaAthTCPi-Y7JYETPJLd2g@mail.gmail.com>
+References: <CAOiN93=S4jEBJGwDfrTCsQQ2Yzm_BOGHT_pOivcdAkx5gTLxjA@mail.gmail.com>
+	<alpine.LFD.2.00.1206181300470.2394@dhcp-1-248.brq.redhat.com>
+	<CAKYAXd-GEVwdCmZTsToBN04B3Kxjrjp39C9j7it7cT4vX639nA@mail.gmail.com>
+	<CAKYAXd-kdSgH2LuGk=_cGZaYpOZRUaAthTCPi-Y7JYETPJLd2g@mail.gmail.com>
+Date: Fri, 22 Jun 2012 07:44:35 +0900
+Message-ID: <CAKYAXd94Zs7Hi2-E+Z=z7U1ficn7Cks71wofWDU4pUewsWb+4w@mail.gmail.com>
+Subject: Re: Punching hole using fallocate is not removing the uninit extent
+ from extent tree
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: =?UTF-8?B?THVrw6HFoSBDemVybmVy?= <lczerner@redhat.com>
+Cc: Ashish Sangwan <ashishsangwan2@gmail.com>, linux-ext4@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ted Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jun 2012 03:54:20 -0700
-"tip-bot for Yan, Zheng" <zheng.z.yan@intel.com> wrote:
+Hi Lukas.
 
-> This patch adds the generic Intel uncore PMU support, including helper
-> functions that add/delete uncore events, a hrtimer that periodically
-> polls the counters to avoid overflow and code that places all events
-> for a particular socket onto a single cpu.
-> 
-> The code design is based on the structure of Sandy Bridge-EP's uncore
-> subsystem, which consists of a variety of components, each component
-> contains one or more "boxes".
-> 
-> (Tooling support follows in the next patches.)
+Have you reproduced this problem ?
+Plz reivew our patch.
+
+Thanks.
+
+2012/6/18, Namjae Jeon <linkinjeon@gmail.com>:
+> Add in mail loop.
 >
-> ...
+> 2012/6/18, Namjae Jeon <linkinjeon@gmail.com>:
+>> 2012/6/18, Lukáš Czerner <lczerner@redhat.com>:
+>>> On Mon, 28 May 2012, Ashish Sangwan wrote:
+>>>
+>>>> Date: Mon, 28 May 2012 19:38:05 +0530
+>>>> From: Ashish Sangwan <ashishsangwan2@gmail.com>
+>>>> To: linux-ext4@vger.kernel.org
+>>>> Subject: Punching hole using fallocate is not removing the uninit
+>>>> extent
+>>>> from
+>>>>     extent tree
+>>>
+>>> Hi Ashish,
+>>>
+>>> I am looking at you patch, however I am not able to reproduce this.
+>>> Can you please send more information (script preferably) on how to
+>>> reproduce this problem ?
+>>>
+>> Hi. Lukas.
+>> If you use the below script, you can easily reproduce this problem.
+>> And I can not attach script file, so I write script code in this mail.
+>> you can paste it to file.
+>>
+>> fragmentation.sh
+>> -----------------------------------------------------------------------
+>> dd if=/dev/zero of=12kb bs=4096 count=6
+>> index=0
+>> while [ $? == 0 ]
+>> do
+>> index=$(($index + 1))
+>> cp 12kb $1/file1.$index
+>> done
+>> echo "Partition filled"
+>> sync
+>> df -h
+>> index=0
+>> while [ $? == 0 ]
+>> do
+>> index=$(($index + 2))
+>> sync
+>> rm  $1/file1.$index
+>> done
+>> sync
+>> echo "fragmented partition $1 with 4KB files"
+>> -------------------------------------------------------------------------
+>>
+>> 1. create smaill partition(500MB) to reproduce rapidly.
+>> 2. plz run this script to make fragmentation partition after making
+>> dummy directory like this.
+>> mkdir test_dir
+>> ./fragmentation.sh test_dir
+>>
+>> 3. dd if=/dev/zero of=d_file bs=1024 count=10240
+>> 4. you can see file depth is not zero.(dump_extents d_file
+>> 5. and try to fallocate offset : 4096 lengh 4096.
+>>
+>>> Also what kernel version did try this on ?
+>> We are using 3.0.20 kernel patched your punch hole patches.
+>>
+>> Please let us know in case of any queries.
+>>
+>> Thanks.
+>>
+>>>
+>>> Thanks!
+>>> -Lukas
+>>>
+>>>>
+>>>> I have created a formatted EXT4 partition such that every single
+>>>> extent is exactly 6blocks (24KB) of length.
+>>>> I used hole punch on 2 different files.
+>>>>
+>>>> CASE 1: In first situation, file size is 72KB. There are total 3
+>>>> extents each 24KB length. Using fallocate to punch hole starting at
+>>>> offset 4096 and length 4096,
+>>>> dump_extents gives the following expected output :
+>>>>
+>>>> Before punching hole :
+>>>> Level Entries       Logical      Physical Length Flags
+>>>> 0/ 0   1/  2     0 -     5  1856 -  1861      6
+>>>> 0/ 0   2/  2     6 -    11  1868 -  1873      6
+>>>>
+>>>> After punching hole :
+>>>> Level Entries       Logical      Physical Length Flags
+>>>> 0/ 0   1/  3     0 -     0  1856 -  1856      1
+>>>> 0/ 0   2/  3     2 -     5  1858 -  1861      4
+>>>> 0/ 0   3/  3     6 -    11  1868 -  1873      6
+>>>>
+>>>> The 1st extent: 0-5, is splitted into 3 extents, "0-0", "1-1", "2-5"
+>>>> Extent 1-1 is first marked as uninitialized in function
+>>>> ext4_ext_map_blocks() and later removed from the extent tree by
+>>>> ext4_ext_remove_space().
+>>>>
+>>>> CASE 2: File size is 9.4MB. There are total 400 extents each 24KB
+>>>> length, depth of extent tree at root header is 1 and there are 2 index
+>>>> entries.
+>>>>
+>>>> dump_extents output before punching hole:
+>>>> Level Entries       Logical      Physical Length Flags
+>>>> 0/ 1   1/  2     0 -  2039  1922           2040
+>>>> 1/ 1   1/340     0 -     5  1856 -  1861      6
+>>>> 1/ 1   2/340     6 -    11  1868 -  1873      6
+>>>> < Continued likewise till 340/340 >
+>>>> 1/ 1 340/340  2034 -  2039  5942 -  5947      6
+>>>> 0/ 1   2/  2  2040 -  2399  1923            360
+>>>> 1/ 1   1/ 60  2040 -  2045  5954 -  5959      6
+>>>> 1/ 1   2/ 60  2046 -  2051  5966 -  5971      6
+>>>> < Continued likewise till 60/60 >
+>>>> 1/ 1  60/ 60  2394 -  2399  6662 -  6667      6
+>>>>
+>>>> dump_extents output after punching hole :
+>>>> 0/ 1   1/  3     0 -     5  1922              6
+>>>> 1/ 1   1/  3     0 -     0  1856 -  1856      1
+>>>> 1/ 1   2/  3     1 -     1  1857 -  1857      1 Uninit
+>>>> 1/ 1   3/  3     2 -     5  1858 -  1861      4
+>>>> 0/ 1   2/  3     6 -  2039  6674           2034
+>>>> 1/ 1   1/339     6 -    11  1868 -  1873      6
+>>>> 1/ 1   2/339    12 -    17  1880 -  1885      6
+>>>> < Continued like wise...>
+>>>>
+>>>> Comparing CASE2 with CASE1, still uninit extent "1-1" is present
+>>>> within the extent tree.
+>>>>
+>>>> In function ext4_ext_remove_space(), there is call to function
+>>>> ext4_ext_rm_leaf which is responsible for removal of this extent.
+>>>> But this function is not getting called in CASE 2 :
+>>>> if (i == depth) {
+>>>>                        /* this is leaf block */
+>>>>                        err = ext4_ext_rm_leaf(handle, inode, path,
+>>>>                                        start, end);
+>>>> /* root level has p_bh == NULL, brelse() eats this */
+>>>>                        brelse(path[i].p_bh);
+>>>>                        path[i].p_bh = NULL;
+>>>>                        i--;
+>>>>                        continue;
+>>>>                }
+>>>>
+>>>> Varibale "i" does not become equals to "depth" because
+>>>> ext4_ext_more_to_rm is returning "0" hence the following if condition
+>>>> is turning out to be false for 1st extent index:
+>>>> if (ext4_ext_more_to_rm(path + i)) {
+>>>>
+>>>> Looking at the defination of ext4_ext_more_to_rm :
+>>>> /*
+>>>> * ext4_ext_more_to_rm:
+>>>> * returns 1 if current index has to be freed (even partial)
+>>>> */
+>>>> static int
+>>>> ext4_ext_more_to_rm(struct ext4_ext_path *path)
+>>>> {
+>>>>        BUG_ON(path->p_idx == NULL);
+>>>>        if (path->p_idx < EXT_FIRST_INDEX(path->p_hdr))
+>>>>                return 0;
+>>>>
+>>>>        /*
+>>>>         * if truncate on deeper level happened, it wasn't partial,
+>>>>         * so we have to consider current index for truncation
+>>>>         */
+>>>>        if (le16_to_cpu(path->p_hdr->eh_entries) == path->p_block) <=
+>>>> This condition is turning out to be true
+>>>>                return 0;       <= The function is returning zero from
+>>>> here.
+>>>>        return 1;
+>>>> }
+>>>>
+>>>> I could not understand the significance of the above mentioned if
+>>>> condition check, if anyone could explain a little, it will be help.
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4"
+>>>> in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>
 >
-> +static enum hrtimer_restart uncore_pmu_hrtimer(struct hrtimer *hrtimer)
-> +{
-> +	struct intel_uncore_box *box;
-> +	unsigned long flags;
-> +	int bit;
-> +
-> +	box = container_of(hrtimer, struct intel_uncore_box, hrtimer);
-> +	if (!box->n_active || box->cpu != smp_processor_id())
-> +		return HRTIMER_NORESTART;
-> +	/*
-> +	 * disable local interrupt to prevent uncore_pmu_event_start/stop
-> +	 * to interrupt the update process
-> +	 */
-> +	local_irq_save(flags);
-> +
-> +	for_each_set_bit(bit, box->active_mask, UNCORE_PMC_IDX_MAX)
-> +		uncore_perf_event_update(box, box->events[bit]);
-> +
-> +	local_irq_restore(flags);
-> +
-> +	hrtimer_forward_now(hrtimer, ns_to_ktime(UNCORE_PMU_HRTIMER_INTERVAL));
-> +	return HRTIMER_RESTART;
-> +}
-
-i386 allmodconfig:
-
-arch/x86/kernel/cpu/perf_event_intel_uncore.c: In function 'uncore_pmu_hrtimer':
-arch/x86/kernel/cpu/perf_event_intel_uncore.c:728: warning: integer overflow in expression
-arch/x86/kernel/cpu/perf_event_intel_uncore.c: In function 'uncore_pmu_start_hrtimer':
-arch/x86/kernel/cpu/perf_event_intel_uncore.c:735: warning: integer overflow in expression
-
-
-Should we even be compiling this code in an i386 build?
-
-
-Regardless of that, we have some head-scratching to do:
-
-
-#define UNCORE_PMU_HRTIMER_INTERVAL       (60 * NSEC_PER_SEC)
-
-and
-
-#define NSEC_PER_SEC    1000000000L
-
-and 60 billion doesn't fit in 32 bits.  So do we fix the
-perf_event_intel_uncore.c callsites?  Or do we fix the
-UNCORE_PMU_HRTIMER_INTERVAL definition?  Or do we fix the NSEC_PER_SEC
-definition?
-
-I'm thinking perhaps the latter.  What *is* the type of a nanosecond in
-Linux?  include/linux/ktime.h is pretty insistent that it is u64.  If
-so, NSEC_PER_SEC should logically have type ULL.  But changing both its
-size and signedness is a pretty big change.
