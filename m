@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2FUEoy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 00:44:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64592 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab2FUEox convert rfc822-to-8bit (ORCPT
+	id S1753678Ab2FUEux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 00:50:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52730 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab2FUEuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 00:44:53 -0400
+	Thu, 21 Jun 2012 00:50:51 -0400
+Message-ID: <4FE2A825.1060103@landley.net>
+Date: Wed, 20 Jun 2012 23:50:45 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120620235503.GA31520@kroah.com>
-References: <1339949879-26085-1-git-send-email-devendra.aaru@gmail.com>
-	<20120620235503.GA31520@kroah.com>
-Date: Thu, 21 Jun 2012 10:14:53 +0530
-Message-ID: <CAHdPZaMfVz82_Rk1ywtX+Y95a3JsvjHGxUA1YJovQmmAQxn-OA@mail.gmail.com>
-Subject: Re: [PATCH] drivers/w1: free the w1_master at w1_free_dev and return
- a correct return value
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
+To: Sami Kerola <kerolasa@gmail.com>, Sami Kerola <kerolasa@iki.fi>,
+        Jens Axboe <axboe@kernel.dk>,
+        Bernhard Voelker <mail@bernhard-voelker.de>,
+        Zheng Liu <wenqing.lz@taobao.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, util-linux@vger.kernel.org
+Subject: Re: [PATCH] docs: block: update ioprio.txt
+References: <1340095897-9014-1-git-send-email-wenqing.lz@taobao.com> <CAG27Bk2tXprRfMfYOVdWtwSbjw5Rw9Kxs6Wns+Gm65m3hoJawg@mail.gmail.com> <20120619102706.GA9273@gmail.com>
+In-Reply-To: <20120619102706.GA9273@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Thu, Jun 21, 2012 at 5:25 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sun, Jun 17, 2012 at 09:47:59PM +0530, Devendra Naga wrote:
->> the w1_master pointer is allced at the w1_alloc_master and is not freed when called with
->> w1_remove_master.
+On 06/19/2012 05:27 AM, Zheng Liu wrote:
+> Hi Sami,
+> 
+> [You forgot to CC'd other developers and mailing list]
+> 
+> On Tue, Jun 19, 2012 at 10:54:41AM +0200, Sami Kerola wrote:
+>> Hi Zheng,
 >>
->> when w1_alloc_dev fails the return should be -ENODEV as it does
->> device_register, and that is the last case where that function
->> will fail.
->>
->> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
->> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
->> ---
->>  drivers/w1/w1_int.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
->> index 6828835..a3cf27d 100644
->> --- a/drivers/w1/w1_int.c
->> +++ b/drivers/w1/w1_int.c
->> @@ -100,6 +100,7 @@ static struct w1_master * w1_alloc_dev(u32 id, int slave_count, int slave_ttl,
->>  static void w1_free_dev(struct w1_master *dev)
->>  {
->>       device_unregister(&dev->dev);
->> +     kfree(dev);
->
-> No, this is wrong, the memory will be freed in w1_master_release(),
-> right?  It is not freed here, sorry, this patch is incorrect.
->
-Yeah, correct but the following change is correct no?
+>> Wouldn't a patch such as below be better?
+> 
+> Looks good to me.  But, IMHO, if reader cannot access Internet, my patch
+> maybe is better for them.  The original writer is not me.  So I don't
+> understand the original idea that puts ionice source code in here.  I
+> think that Jens can do the final decision.
+> 
+> Hi Jens,
+> 
+> What's your opintion about Sami's and my patch?
 
- int w1_add_master_device(struct w1_bus_master *master)
-@@ -148,7 +149,7 @@ int w1_add_master_device(struct w1_bus_master *master)
-               &w1_master_driver, &w1_master_device);
-       if (!dev) {
-               mutex_unlock(&w1_mlock);
--               return -ENOMEM;
-+               return -ENODEV;
-       }
+I note that it's nice to have a reference implementation for nontrivial
+things. Also, util-linux isn't the end-all and be-all of linux
+userspace: busybox has an ionice, and I plan to add an ionice
+implementation to toybox as well.
 
+So fixing reference code is good. That said, this isn't a "fix", this is
+a rewrite adding all sorts of unnecessary complexity
+(internationalization? strtos32_or_error() instead of strtol()?) that
+makes it much _less_ effective as reference code.
 
-> greg k-h
-
-Thanks,
-Devendra.
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
