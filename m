@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479Ab2FUMWy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 08:22:54 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54494 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759450Ab2FUMWx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 08:22:53 -0400
-MIME-Version: 1.0
-Date: Thu, 21 Jun 2012 07:22:50 -0500
-Message-ID: <CAL3m8eA=46wdwVosiE54eNx3FOuLyxfE5axKs_HjyMTGxDHRDw@mail.gmail.com>
-Subject: [PATCH] fbdev: Add ioctls FBIO_COPYRECT, FBIO_FILLRECT, lest these
- operations be done in software.
-From: Strake <strake888@gmail.com>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1759484Ab2FUMZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 08:25:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48125 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759225Ab2FUMZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 08:25:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="160663157"
+Message-ID: <1340281745.13910.211.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] exofs: stop using s_dirt
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Boaz Harrosh <bharrosh@panasas.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Benny Halevy <bhalevy@tonian.com>, osd-dev@open-osd.org
+Date: Thu, 21 Jun 2012 15:29:05 +0300
+In-Reply-To: <1338810507-26539-1-git-send-email-dedekind1@gmail.com>
+References: <1338810507-26539-1-git-send-email-dedekind1@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-9Lk6sav+TbYG/sneFGSB"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Farkas-Dyck <strake888@gmail.com>
 
-Add ioctls FBIO_COPYRECT, FBIO_FILLRECT, lest these operations be done
-in software.
+--=-9Lk6sav+TbYG/sneFGSB
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Matthew Farkas-Dyck <strake888@gmail.com>
----
+On Mon, 2012-06-04 at 14:48 +0300, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+>=20
+> Exofs has the '->write_super()' handler and makes some use of the '->s_di=
+rt'
+> superblock flag, but it really needs neither of them because it never set=
+s
+> 's_dirt' to one which means the VFS never calls its '->write_super()' han=
+dler.
+> Thus, remove both.
+>=20
+> Note, I am trying to remove both 's_dirt' and 'write_super()' from VFS
+> altogether once all users are gone.
+>=20
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Reason: If it can be done in hardware, it ought to be. This will
-enable user-mode software to do so.
+Al or Boaz, would you please consider picking this patch?
 
-commit 2c002c58b6c5d5b211423da8eaa242ca443fdd72
-Author: strake <strake888@gmail.com>
-Date:   Wed Jan 1 19:10:24 2003 -0500
+--=20
+Best Regards,
+Artem Bityutskiy
 
-    Add ioctls FBIO_COPYRECT, FBIO_FILLRECT
+--=-9Lk6sav+TbYG/sneFGSB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index 4ac1201..f525e91 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1019,6 +1019,8 @@ static long do_fb_ioctl(struct fb_info *info,
-unsigned int cmd,
- 	struct fb_cmap cmap_from;
- 	struct fb_cmap_user cmap;
- 	struct fb_event event;
-+	struct fb_copyarea copy;
-+	struct fb_fillrect fill;
- 	void __user *argp = (void __user *)arg;
- 	long ret = 0;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-@@ -1126,6 +1128,26 @@ static long do_fb_ioctl(struct fb_info *info,
-unsigned int cmd,
- 		console_unlock();
- 		unlock_fb_info(info);
- 		break;
-+	case FBIO_FILLRECT:
-+		if (copy_from_user(&fill, argp, sizeof(fill)))
-+			return -EFAULT;
-+		if (!lock_fb_info(info))
-+			return -ENODEV;
-+		console_lock();
-+		(*(info->fbops->fb_fillrect))(info, &fill);
-+		console_unlock();
-+		unlock_fb_info(info);
-+		break;
-+	case FBIO_COPYRECT:
-+		if (copy_from_user(&copy, argp, sizeof(copy)))
-+			return -EFAULT;
-+		if (!lock_fb_info(info))
-+			return -ENODEV;
-+		console_lock();
-+		(*(info->fbops->fb_copyarea))(info, &copy);
-+		console_unlock();
-+		unlock_fb_info(info);
-+		break;
- 	default:
- 		if (!lock_fb_info(info))
- 			return -ENODEV;
-diff --git a/include/linux/fb.h b/include/linux/fb.h
-index d1631d3..fc18459 100644
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -39,6 +39,8 @@
- #define FBIOPUT_MODEINFO        0x4617
- #define FBIOGET_DISPINFO        0x4618
- #define FBIO_WAITFORVSYNC	_IOW('F', 0x20, __u32)
-+#define FBIO_COPYRECT		_IOW('F', 0x22, struct fb_copyarea)
-+#define FBIO_FILLRECT		_IOW('F', 0x23, struct fb_fillrect)
+iQIcBAABAgAGBQJP4xORAAoJECmIfjd9wqK05hIP/0jPbhmm0w4vGKT1jiBQp20D
+s0iyaKvbZh+FUJLzvpJX2c37I5BSYdYEHlWwpCui6oS2/bp8QwEPqH6w8dhlfn+y
+HaVJWY005Wnhfg506arW0fH5Evyu95re0MoLxXWbe0/vmAXI8StQ3YE7PEzU4EVh
+oVant2AdpWKOqJGWvZzQ3Cctd95GEhTR6KUhwSwSrqDV18h9/8DHVENIgPnlBbj8
+R1Yaw25t1dP2oXmqCZhRafDDduas/PJciVRqt4bvZ6q7xbRpbnz9dtHMzs0LOzOx
+PRrX+on0utFMZ22m5HTmahiJ5HbJaBEwdWTGJ8jTfn8MgUM7ZYzJC7bTVssHm8ov
+2DHqbDc8t3ykFfxgMCusPRQK0Z0GNRBKrYJf75nayKSOCyPALiNmNPQAeSZ1sZLQ
+4kAmYQjDXuPmIdHoHedb5BmmnjCbg9TsCz5PwityiZ2y13lUc8OuHvJzb2a45prU
+kVInU0XOWj1FaIPv2vuULGvlZHbtczyLBn/7F1x+DsloR6MVeG3/KI2U7UfIdo/H
+n/6KH9usRh48UBfUfHCIDbfkuMXxDJSM6uGCHiS2QqUkJQzTWQ9+ok9/aPFC6Ldo
+D/KDJWKLJYRIYsi16Ke2QY3KdXkbctuq5nnJMnILicZ00HSxO0kF44KlXr8PS2ft
+p55K6k9zatv5ccwKE9at
+=X+k9
+-----END PGP SIGNATURE-----
 
- #define FB_TYPE_PACKED_PIXELS		0	/* Packed Pixels	*/
- #define FB_TYPE_PLANES			1	/* Non interleaved planes */
+--=-9Lk6sav+TbYG/sneFGSB--
+
