@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab2FUPId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 11:08:33 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:26325
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757807Ab2FUPIc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 11:08:32 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz936eI4015Izz1202hzz8275dhz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M5Z3E0-01-7BK-02
-X-M-MSG: 
-Date: Thu, 21 Jun 2012 17:08:20 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [GIT PULL] oprofile: fixes for tip/perf/urgent
-Message-ID: <20120621150820.GB24632@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Mailer: git-send-email 1.6.6
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S932223Ab2FUPXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 11:23:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52097 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759329Ab2FUPXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 11:23:19 -0400
+Message-ID: <1340292198.29885.69.camel@joe2Laptop>
+Subject: [PATCH] checkpatch: Check usleep_range arguments
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Yuval Mintz <yuvalmin@broadcom.com>, linux-kernel@vger.kernel.org
+Date: Thu, 21 Jun 2012 08:23:18 -0700
+In-Reply-To: <1340204019.29885.9.camel@joe2Laptop>
+References: <1340182175-916-1-git-send-email-yuvalmin@broadcom.com>
+	 <1340182175-916-3-git-send-email-yuvalmin@broadcom.com>
+	 <1340204019.29885.9.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+usleep_range shouldn't use the same args for min and max.
 
-it's only one patch, please pull from:
+Report it when it happens and when both args are decimal
+and min > max.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-Thanks,
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 630319a..d0c1a63 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3309,6 +3309,22 @@ sub process {
+ 			}
+ 		}
+ 
++# check usleep_range arguments
++		if ($^V && $^V ge 5.10.0 &&
++		    defined $stat &&
++		    $stat =~ /^\+(?:.*?)\busleep_range\s*\(\s*($FuncArg)\s*,\s*($FuncArg)\s*\)/) {
++		 	my $min = $1;
++			my $max = $7;
++			if ($min eq $max) {
++				WARN("USLEEP_RANGE",
++				     "usleep_range should not use min == max args; see Documentation/timers/timers-howto.txt\n" . "$here\n$stat\n");
++			} elsif ($min =~ /^\d+$/ && $max =~ /^\d+$/ &&
++				 $min > $max) {
++				WARN("USLEEP_RANGE",
++				     "usleep_range args reversed, use min then max; see Documentation/timers/timers-howto.txt\n" . "$here\n$stat\n");
++			}
++		}
++
+ # check for new externs in .c files.
+ 		if ($realfile =~ /\.c$/ && defined $stat &&
+ 		    $stat =~ /^.\s*(?:extern\s+)?$Type\s+($Ident)(\s*)\(/s)
 
--Robert
-
-
-The following changes since commit 6921a575c9f26f7ea274aaea3b78967810ce5513:
-
-  Merge branch 'tip/perf/urgent-2' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace into perf/urgent (2012-06-20 14:26:58 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-
-Will Deacon (1):
-      oprofile: perf: use NR_CPUS instead or nr_cpumask_bits for static array
-
- drivers/oprofile/oprofile_perf.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
