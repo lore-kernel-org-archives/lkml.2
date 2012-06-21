@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760627Ab2FUW6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 18:58:36 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:54347 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760593Ab2FUW6f (ORCPT
+	id S1760622Ab2FUXAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 19:00:44 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12085 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760566Ab2FUXAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 18:58:35 -0400
-Message-ID: <1340319512.2658.8.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: PM: Print hibernation/thaw progress indicator one line
- at a time
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
-Date: Fri, 22 Jun 2012 08:58:32 +1000
-In-Reply-To: <201206212242.49614.rjw@sisk.pl>
-References: <1340144178.29338.6.camel@shrek.rexursive.com>
-	 <201206212242.49614.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.2 (3.4.2-1.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jun 2012 19:00:43 -0400
+Date: Fri, 22 Jun 2012 01:00:41 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Oleksij Rempel <bug-track@fisher-privat.net>,
+        Edwin Rong <edwin_rong@realsil.com.cn>,
+        wwang <wei_wang@realsil.com.cn>, trivial@kernel.org
+Subject: [PATCH][Trivial] staging: rts5139: Remove duplicate include of
+ rts51x.h
+Message-ID: <alpine.LNX.2.00.1206220058050.7671@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-21 at 22:42 +0200, Rafael J. Wysocki wrote:
-> Thanks, queued up for 3.6 in linux-pm/linux-next.
+The header "rts51x.h" is included unconditionally at the start of the
+file and then again once more under "#ifdef SUPPORT_FILE_OP".  Once is
+enough, so remove the conditional include and just keep the
+unconditional one.
 
-Excellent, thanks.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/rts5139/rts51x_fop.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/staging/rts5139/rts51x_fop.c b/drivers/staging/rts5139/rts51x_fop.c
+index ef893c8..e1200fe 100644
+--- a/drivers/staging/rts5139/rts51x_fop.c
++++ b/drivers/staging/rts5139/rts51x_fop.c
+@@ -36,7 +36,6 @@
+ #include "rts51x_card.h"
+ #include "rts51x_fop.h"
+ #include "sd_cprm.h"
+-#include "rts51x.h"
+ 
+ #define RTS5139_IOC_MAGIC		0x39
+ 
+-- 
+1.7.11
+
 
 -- 
-Bojan
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
