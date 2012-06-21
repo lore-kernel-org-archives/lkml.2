@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760622Ab2FUXAo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 19:00:44 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12085 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760566Ab2FUXAn (ORCPT
+	id S1760643Ab2FUXBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 19:01:06 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52807 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760566Ab2FUXBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 19:00:43 -0400
-Date: Fri, 22 Jun 2012 01:00:41 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Oleksij Rempel <bug-track@fisher-privat.net>,
-        Edwin Rong <edwin_rong@realsil.com.cn>,
-        wwang <wei_wang@realsil.com.cn>, trivial@kernel.org
-Subject: [PATCH][Trivial] staging: rts5139: Remove duplicate include of
- rts51x.h
-Message-ID: <alpine.LNX.2.00.1206220058050.7671@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 21 Jun 2012 19:01:04 -0400
+X-Sasl-enc: vKQU54A8umBp3HGiIeFYzySEMkEr3GgSxP+8FCxeaerV 1340319663
+Date: Thu, 21 Jun 2012 20:00:59 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@amd64.org>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+Message-ID: <20120621230059.GA27178@khazad-dum.debian.net>
+References: <1340121811-4477-1-git-send-email-bp@amd64.org>
+ <1340121811-4477-3-git-send-email-bp@amd64.org>
+ <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
+ <20120619232857.GH5996@aftab.osrc.amd.com>
+ <1340182778.21745.75.camel@twins>
+ <20120620230856.GA4223@khazad-dum.debian.net>
+ <1340267075.21745.155.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340267075.21745.155.camel@twins>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The header "rts51x.h" is included unconditionally at the start of the
-file and then again once more under "#ifdef SUPPORT_FILE_OP".  Once is
-enough, so remove the conditional include and just keep the
-unconditional one.
+On Thu, 21 Jun 2012, Peter Zijlstra wrote:
+> On Wed, 2012-06-20 at 20:08 -0300, Henrique de Moraes Holschuh wrote:
+> > On Wed, 20 Jun 2012, Peter Zijlstra wrote:
+> > > On Wed, 2012-06-20 at 01:28 +0200, Borislav Petkov wrote:
+> > > > which makes me wonder whether we still need that OLD INTERFACE.
+> > > > Henrique, any thoughts here? 
+> > > 
+> > > Yes I need it, I've no f'ing clue where to put the ucode image so that
+> > > the whole firmware mess can find it :-)
+> > 
+> > iucode_tool -K <name of intel microcode .dat/.bin file(s)> will do it
+> > for you :p
+> 
+> This thing is not installed on my machine, nor would I have know to look
+> for it. Nor does apt-cache search iucode_tool suggest any package.
+> 
+> IOW fail.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/rts5139/rts51x_fop.c | 1 -
- 1 file changed, 1 deletion(-)
+Meh.  I uploaded the first public version of the thing a whole two weeks
+ago!  It should have been all over the Internet by now ;-)
 
-diff --git a/drivers/staging/rts5139/rts51x_fop.c b/drivers/staging/rts5139/rts51x_fop.c
-index ef893c8..e1200fe 100644
---- a/drivers/staging/rts5139/rts51x_fop.c
-+++ b/drivers/staging/rts5139/rts51x_fop.c
-@@ -36,7 +36,6 @@
- #include "rts51x_card.h"
- #include "rts51x_fop.h"
- #include "sd_cprm.h"
--#include "rts51x.h"
- 
- #define RTS5139_IOC_MAGIC		0x39
- 
+It is in Debian Wheezy (soon-to-be-stable) as of yesterday, I think.  It
+will eventually end up in Ubuntu.  And if you guys think it is worthwhile to
+maintain it upstream either in git.k.o, or as part of tools/, I have nothing
+against it.
+
+I posted the URL earlier, I think, but here it is:
+http://cdn.debian.net/debian/pool/contrib/i/iucode-tool/iucode-tool_0.8.orig.tar.bz2
+
+But it really exists to help distros do Intel microcode management and
+release install-and-forget packages for end users.  End-users should get to
+either ignore its existence entirely and get automated updates of microcode
+as distro binary packages, or run an "update-intel-microcode" script (not
+written yet, but there is one on Debian and Ubuntu's microcode.ctl package)
+that downloads the blob from Intel, and does whatever is needed to install
+it to /lib/firmware and apply it to the running system (and kernel image,
+initramfs, whatever).
+
 -- 
-1.7.11
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
