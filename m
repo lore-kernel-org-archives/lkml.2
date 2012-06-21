@@ -1,59 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab2FUB0Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 21:26:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58186 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672Ab2FUB0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 21:26:15 -0400
-Message-ID: <4FE27835.5070705@wwwdotorg.org>
-Date: Wed, 20 Jun 2012 19:26:13 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: boot_on regulator constraint vs. regulator-boot-on DT property
-References: <4FE238C9.3010408@wwwdotorg.org> <20120620234648.GE4037@opensource.wolfsonmicro.com>
-In-Reply-To: <20120620234648.GE4037@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756628Ab2FUB0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 21:26:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1920 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756399Ab2FUB0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 21:26:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114455697"
+Subject: Re: [PATCH v5 02/12] libata: bind the Linux device tree to the
+ ACPI device tree
+From: Lin Ming <ming.m.lin@intel.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
+        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+In-Reply-To: <CAA9_cmcX2pajewz1v864Ni2Z3XAy8UrCRg+mg3Y2qFEd2j=nDg@mail.gmail.com>
+References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
+	 <1340000766-129148-3-git-send-email-ming.m.lin@intel.com>
+	 <CAA9_cmcX2pajewz1v864Ni2Z3XAy8UrCRg+mg3Y2qFEd2j=nDg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Jun 2012 09:26:42 +0800
+Message-ID: <1340242002.20081.84.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:46 PM, Mark Brown wrote:
-> On Wed, Jun 20, 2012 at 02:55:37PM -0600, Stephen Warren wrote:
+On Wed, 2012-06-20 at 16:50 -0700, Dan Williams wrote:
+> On Sun, Jun 17, 2012 at 11:25 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > From: Matthew Garrett <mjg@redhat.com>
+> >
+> > Associate the ACPI device tree and libata devices.
+> > This patch uses the generic ACPI glue framework to do so.
+> >
+> > Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> > Signed-off-by: Holger Macht <holger@homac.de>
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > ---
+> >
+> > Changelog:
+> >
+> > - fixed crash reported at https://lkml.org/lkml/2012/2/24/2 (Aaron Lu)
+> > - rename is_pci_ata to compat_pci_ata (Alan Cox)
+> >
+> >  drivers/acpi/glue.c       |    4 +-
+> >  drivers/ata/libata-acpi.c |  125 +++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/ata/libata-core.c |    3 ++
+> >  drivers/ata/libata.h      |    4 ++
+> >  4 files changed, 134 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
+> > index 1564e09..18d6812 100644
+> > --- a/drivers/acpi/glue.c
+> > +++ b/drivers/acpi/glue.c
+> [..]
+> > +static int ata_acpi_bind_host(struct device *dev, int host, acpi_handle *handle)
+> > +{
+> > +       struct Scsi_Host *shost = dev_to_shost(dev);
+> > +       struct ata_port *ap = ata_shost_to_port(shost);
+> > +
+> > +       if (ap->flags & ATA_FLAG_ACPI_SATA)
+> > +               return -ENODEV;
+> > +
+> > +       *handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent), ap->port_no);
+> > +
+> > +       if (!*handle)
+> > +               return -ENODEV;
+> > +
+> > +       return 0;
+> > +}
 > 
->> include/linux/regulator/machine.h says:
-> 
->>> * @boot_on: Set if the regulator is enabled when the system is
->>> initially *           started.  If the regulator is not enabled
->>> by the hardware or *           bootloader then it will be
->>> enabled when the constraints are *           applied.
-> 
->> Documentation/devicetree/bindings/regulator/regulator.txt says:
-> 
->>> - regulator-boot-on: bootloader/firmware enabled regulator
-> 
->> ... and of_regulator.c sets the boot_on constraint based on this
->> property.
-> 
->> The former quote implies that this is a flag to tell Linux to
->> turn on the regulator when it's first registered, whereas the
->> latter quote implies that it's guaranteeing the state that
->> previous SW placed the regulator into already.
-> 
->> I assume the documentation from machine.h is correct, and I
->> should send a patch to make regulator.txt match it?
-> 
-> There's no great inconsistency between the two, this is only
-> supposed to be used for supplies which are already enabled on boot
+> I think this patch should be squashed with patch 4, right?  That is if
+> we keep the hard-coded ->parent chasing...
 
-Hmm. Perhaps I was misreading machine.h, and "when the system is
-initially started" refers to the first firmware start, rather than
-when /Linux/ starts. If so, then yes I can see it isn't really
-inconsistent.
+Right. Will merge patch 4.
+
+> 
+> > +static int ata_acpi_find_device(struct device *dev, acpi_handle *handle)
+> > +{
+> > +       unsigned int host, channel, id, lun;
+> > +
+> > +       if (sscanf(dev_name(dev), "host%u", &host) == 1) {
+> > +               if (!compat_pci_ata(dev->parent))
+> > +                       return -ENODEV;
+> > +
+> > +               return ata_acpi_bind_host(dev, host, handle);
+> > +       } else if (sscanf(dev_name(dev), "%d:%d:%d:%d",
+> > +                       &host, &channel, &id, &lun) == 4) {
+> > +               if (!compat_pci_ata(dev->parent->parent->parent))
+> > +                       return -ENODEV;
+> 
+> ...this looks like it should be using a dev_to_ata_port() helper which
+> like dev_to_shost() skips the need to remember just how many parents
+> until we get back to our ata_port, scsi_host, etc.
+
+Oh, no.
+
+compat_pci_ata checks whether the controller(rather than shost or ata
+port) is pci SATA/IDE controller.
+
+As in patch 4:
+compat_pci_ata(dev->parent->parent->parent->parent)
+
+The "dev" is ata port, and dev->parent->parent->parent->parent points to
+the controller dev.
+
+This looks ugly. How about add two helpers?
+shost_to_controller(dev) and ata_port_to_controller(dev)
+
+Thanks,
+Lin Ming
+
+> 
+> --
+> Dan
+
+
