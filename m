@@ -1,257 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760601Ab2FUV6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:58:17 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:33312 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760585Ab2FUV6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:58:14 -0400
-From: Rik van Riel <riel@surriel.com>
-To: linux-mm@kvack.org
-Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
-        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
-        hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@surriel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        sjhill@mips.com, linux-mips@linux-mips.org,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH -mm v2 09/11] mm: remove MIPS arch_get_unmapped_area code
-Date: Thu, 21 Jun 2012 17:57:13 -0400
-Message-Id: <1340315835-28571-10-git-send-email-riel@surriel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1340315835-28571-1-git-send-email-riel@surriel.com>
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>
+	id S1760585Ab2FUV6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:58:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3944 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760452Ab2FUV6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 17:58:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="160939643"
+Subject: Re: [PATCH 1/2] x86, irq: update irq_cfg domain unless the new
+ affinity is a subset of the current domain
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        gorcunov@openvz.org, Ingo Molnar <mingo@kernel.org>
+Date: Thu, 21 Jun 2012 14:58:59 -0700
+In-Reply-To: <20120621110055.GE2223@dhcp-26-207.brq.redhat.com>
+References: <1337643880.1997.166.camel@sbsiddha-desk.sc.intel.com>
+	 <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
+	 <20120606172017.GA4777@dhcp-26-207.brq.redhat.com>
+	 <1339806320.3475.68.camel@sbsiddha-desk.sc.intel.com>
+	 <20120618091740.GK3383@dhcp-26-207.brq.redhat.com>
+	 <1340151523.3696.27.camel@sbsiddha-desk.sc.intel.com>
+	 <20120621110055.GE2223@dhcp-26-207.brq.redhat.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1340315939.3696.95.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all the MIPS specific arch_get_unmapped_area(_topdown) and
-page colouring code, now that the generic code should be able to
-handle things.
+On Thu, 2012-06-21 at 13:00 +0200, Alexander Gordeev wrote:
+> On Tue, Jun 19, 2012 at 05:18:42PM -0700, Suresh Siddha wrote:
+> > On Mon, 2012-06-18 at 17:51 -0700, Suresh Siddha wrote:
+> > BTW, there is still one open that I would like to address. How to handle
+> > the vector pressure during boot etc (as the default vector assignment
+> > specifies all online cpus) when there are lot interrupt sources but
+> > fewer x2apic clusters (like one or two socket server case).
+> > 
+> > We should be able to do something like the appended. Any better
+> > suggestions? I don't want to add boot parameters to limit the x2apic
+> > cluster membership etc (to fewer than 16 logical cpu's) if possible.
+> 
+> This cpu_online_mask approach should work IMO. Although it looks little bit
+> hacky for me. May be we could start with default_vector_allocation_domain()
+> and explicitly switch to cluster_vector_allocation_domain() once booted?
 
-Untested, because I do not have any MIPS systems.
+It is not just during boot. Module load/unload will also go through
+these paths.
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: sjhill@mips.com
-Cc: linux-mips@linux-mips.org
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- arch/mips/include/asm/pgtable.h |    8 --
- arch/mips/mm/mmap.c             |  175 ---------------------------------------
- 2 files changed, 0 insertions(+), 183 deletions(-)
+> As of boot parameters, I can think of multi-pass walk thru a cpumask to find a
+> free cluster => core => sibling. In worst case I can imagine a vector space
+> defragmentator. But nothing really small to avoid current code reshake.
 
-diff --git a/arch/mips/include/asm/pgtable.h b/arch/mips/include/asm/pgtable.h
-index f133a4c..5f9c49a 100644
---- a/arch/mips/include/asm/pgtable.h
-+++ b/arch/mips/include/asm/pgtable.h
-@@ -410,14 +410,6 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
- #endif
- 
- /*
-- * We provide our own get_unmapped area to cope with the virtual aliasing
-- * constraints placed on us by the cache architecture.
-- */
--#define HAVE_ARCH_UNMAPPED_AREA
--#define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
--#define HAVE_ARCH_ALIGN_ADDR
--
--/*
-  * No page table caches to initialise
-  */
- #define pgtable_cache_init()	do { } while (0)
-diff --git a/arch/mips/mm/mmap.c b/arch/mips/mm/mmap.c
-index 3f8af17..ac342bd 100644
---- a/arch/mips/mm/mmap.c
-+++ b/arch/mips/mm/mmap.c
-@@ -15,9 +15,6 @@
- #include <linux/random.h>
- #include <linux/sched.h>
- 
--unsigned long shm_align_mask = PAGE_SIZE - 1;	/* Sane caches */
--EXPORT_SYMBOL(shm_align_mask);
--
- /* gap between mmap and stack */
- #define MIN_GAP (128*1024*1024UL)
- #define MAX_GAP ((TASK_SIZE)/6*5)
-@@ -45,178 +42,6 @@ static unsigned long mmap_base(unsigned long rnd)
- 	return PAGE_ALIGN(TASK_SIZE - gap - rnd);
- }
- 
--static inline unsigned long COLOUR_ALIGN_DOWN(unsigned long addr,
--					      unsigned long pgoff)
--{
--	unsigned long base = addr & ~shm_align_mask;
--	unsigned long off = (pgoff << PAGE_SHIFT) & shm_align_mask;
--
--	if (base + off <= addr)
--		return base + off;
--
--	return base - off;
--}
--
--#define COLOUR_ALIGN(addr, pgoff)				\
--	((((addr) + shm_align_mask) & ~shm_align_mask) +	\
--	 (((pgoff) << PAGE_SHIFT) & shm_align_mask))
--
--static unsigned long arch_get_unmapped_area_common(struct file *filp,
--	unsigned long addr0, unsigned long len, unsigned long pgoff,
--	unsigned long flags, enum mmap_allocation_direction dir)
--{
--	struct mm_struct *mm = current->mm;
--	struct vm_area_struct *vma;
--	unsigned long addr = addr0;
--	int do_color_align;
--
--	if (unlikely(len > TASK_SIZE))
--		return -ENOMEM;
--
--	if (flags & MAP_FIXED) {
--		/* Even MAP_FIXED mappings must reside within TASK_SIZE */
--		if (TASK_SIZE - len < addr)
--			return -EINVAL;
--
--		/*
--		 * We do not accept a shared mapping if it would violate
--		 * cache aliasing constraints.
--		 */
--		if ((flags & MAP_SHARED) &&
--		    ((addr - (pgoff << PAGE_SHIFT)) & shm_align_mask))
--			return -EINVAL;
--		return addr;
--	}
--
--	do_color_align = 0;
--	if (filp || (flags & MAP_SHARED))
--		do_color_align = 1;
--
--	/* requesting a specific address */
--	if (addr) {
--		if (do_color_align)
--			addr = COLOUR_ALIGN(addr, pgoff);
--		else
--			addr = PAGE_ALIGN(addr);
--
--		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
--		    (!vma || addr + len <= vma->vm_start))
--			return addr;
--	}
--
--	if (dir == ALLOC_UP) {
--		addr = mm->mmap_base;
--		if (do_color_align)
--			addr = COLOUR_ALIGN(addr, pgoff);
--		else
--			addr = PAGE_ALIGN(addr);
--
--		for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
--			/* At this point:  (!vma || addr < vma->vm_end). */
--			if (TASK_SIZE - len < addr)
--				return -ENOMEM;
--			if (!vma || addr + len <= vma->vm_start)
--				return addr;
--			addr = vma->vm_end;
--			if (do_color_align)
--				addr = COLOUR_ALIGN(addr, pgoff);
--		 }
--	 } else {
--		/* check if free_area_cache is useful for us */
--		if (len <= mm->cached_hole_size) {
--			mm->cached_hole_size = 0;
--			mm->free_area_cache = mm->mmap_base;
--		}
--
--		/*
--		 * either no address requested, or the mapping can't fit into
--		 * the requested address hole
--		 */
--		addr = mm->free_area_cache;
--		if (do_color_align) {
--			unsigned long base =
--				COLOUR_ALIGN_DOWN(addr - len, pgoff);
--			addr = base + len;
--		}
--
--		/* make sure it can fit in the remaining address space */
--		if (likely(addr > len)) {
--			vma = find_vma(mm, addr - len);
--			if (!vma || addr <= vma->vm_start) {
--				/* cache the address as a hint for next time */
--				return mm->free_area_cache = addr - len;
--			}
--		}
--
--		if (unlikely(mm->mmap_base < len))
--			goto bottomup;
--
--		addr = mm->mmap_base - len;
--		if (do_color_align)
--			addr = COLOUR_ALIGN_DOWN(addr, pgoff);
--
--		do {
--			/*
--			 * Lookup failure means no vma is above this address,
--			 * else if new region fits below vma->vm_start,
--			 * return with success:
--			 */
--			vma = find_vma(mm, addr);
--			if (likely(!vma || addr + len <= vma->vm_start)) {
--				/* cache the address as a hint for next time */
--				return mm->free_area_cache = addr;
--			}
--
--			/* remember the largest hole we saw so far */
--			if (addr + mm->cached_hole_size < vma->vm_start)
--				mm->cached_hole_size = vma->vm_start - addr;
--
--			/* try just below the current vma->vm_start */
--			addr = vma->vm_start - len;
--			if (do_color_align)
--				addr = COLOUR_ALIGN_DOWN(addr, pgoff);
--		} while (likely(len < vma->vm_start));
--
--bottomup:
--		/*
--		 * A failed mmap() very likely causes application failure,
--		 * so fall back to the bottom-up function here. This scenario
--		 * can happen with large stack limits and large mmap()
--		 * allocations.
--		 */
--		mm->cached_hole_size = ~0UL;
--		mm->free_area_cache = TASK_UNMAPPED_BASE;
--		addr = arch_get_unmapped_area(filp, addr0, len, pgoff, flags);
--		/*
--		 * Restore the topdown base:
--		 */
--		mm->free_area_cache = mm->mmap_base;
--		mm->cached_hole_size = ~0UL;
--
--		return addr;
--	}
--}
--
--unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr0,
--	unsigned long len, unsigned long pgoff, unsigned long flags)
--{
--	return arch_get_unmapped_area_common(filp,
--			addr0, len, pgoff, flags, ALLOC_UP);
--}
--
--/*
-- * There is no need to export this but sched.h declares the function as
-- * extern so making it static here results in an error.
-- */
--unsigned long arch_get_unmapped_area_topdown(struct file *filp,
--	unsigned long addr0, unsigned long len, unsigned long pgoff,
--	unsigned long flags)
--{
--	return arch_get_unmapped_area_common(filp,
--			addr0, len, pgoff, flags, ALLOC_DOWN);
--}
--
- void arch_pick_mmap_layout(struct mm_struct *mm)
- {
- 	unsigned long random_factor = 0UL;
--- 
-1.7.7.6
+We can probably go with something simple as I sent earlier (third patch
+in the new version does this). Depending on the need/future use-cases,
+we can further enhance this later.
+
+> Also, how heavy the vector pressure actually is?
+
+I don't know. but I suspect one socket server where they can be one
+x2apic cluster (for example 8-core with HT), will see some pressure on
+some platforms.
+
+thanks,
+suresh
 
