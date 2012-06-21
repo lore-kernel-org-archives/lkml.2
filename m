@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab2FUO1t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 10:27:49 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42132 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753939Ab2FUO1r (ORCPT
+	id S1755127Ab2FUO2j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 10:28:39 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:36877 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397Ab2FUO2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 10:27:47 -0400
-Date: Thu, 21 Jun 2012 10:27:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: chao xie <xiechao.linux@gmail.com>
-cc: linux-pm@vger.kernel.org, <linux-kernel@vger.kernel.org>, <rjw@sisk.pl>,
-        <pavel@ucw.cz>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: pm runtime and system suspend resume
-In-Reply-To: <CAK9wHMS_P+y+NmvVVrH+nNOb=KPi3rEgJOWEcRcKf3mTkxjDPA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1206211025060.1164-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 21 Jun 2012 10:28:37 -0400
+Date: Thu, 21 Jun 2012 16:28:07 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: x86@kernel.org
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
+Message-ID: <20120621162807.3c621d46@endymion.delvare>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012, chao xie wrote:
+From: Jean Delvare <khali@linux-fr.org>
+Subject: x86, cpufeature: Fix duplicate feature name "dts"
 
-> I check the code, __device_suspend will invoke dev->pm_domain->ops
-> first if dev->pm_domain is not NULL.
-> Taking "suspend" as esample, i can do the following things in the
-> dev->pm_domain->ops->suspend
-> 1. invoke dev->driver->pm->suspend for suspending the device
-> 2. do what we do in dev->pm_domain->ops->runtime_suspend for
-> suspending the surrounded logic, for example, shutdown the phy or
-> clocks.
-> So is above implementation fine?
+We currently have two different x86 CPU features reported as "dts"
+in /proc/cpuinfo: Debug Store and Digital Thermal Sensor. Change the
+former to "ds" which makes more sense anyway, to clear up the
+confusion.
 
-Yes, that sounds like it will work.  Watch out for the case where your 
-device is already runtime-suspended when a system suspend occurs.
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/cpufeature.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Have you read section 6 in Documentation/power/runtime_pm.txt?  It is 
-related to your question.
+--- linux-3.5-rc3.orig/arch/x86/include/asm/cpufeature.h	2012-06-21 15:57:17.061585016 +0200
++++ linux-3.5-rc3/arch/x86/include/asm/cpufeature.h	2012-06-21 15:57:42.087585387 +0200
+@@ -35,7 +35,7 @@
+ #define X86_FEATURE_PSE36	(0*32+17) /* 36-bit PSEs */
+ #define X86_FEATURE_PN		(0*32+18) /* Processor serial number */
+ #define X86_FEATURE_CLFLSH	(0*32+19) /* "clflush" CLFLUSH instruction */
+-#define X86_FEATURE_DS		(0*32+21) /* "dts" Debug Store */
++#define X86_FEATURE_DS		(0*32+21) /* Debug Store */
+ #define X86_FEATURE_ACPI	(0*32+22) /* ACPI via MSR */
+ #define X86_FEATURE_MMX		(0*32+23) /* Multimedia Extensions */
+ #define X86_FEATURE_FXSR	(0*32+24) /* FXSAVE/FXRSTOR, CR4.OSFXSR */
 
-Alan Stern
 
+-- 
+Jean Delvare
