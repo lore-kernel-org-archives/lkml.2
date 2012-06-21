@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab2FUASj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 20:18:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43198 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932417Ab2FUASh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 20:18:37 -0400
-Message-ID: <4FE2683E.4060707@zytor.com>
-Date: Wed, 20 Jun 2012 17:18:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753386Ab2FUAVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 20:21:08 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:52861 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab2FUAVH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 20:21:07 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-131.messagelabs.com!1340238065!19854832!1
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Jun 2012 19:21:04 -0500
+Subject: RE: [PATCH] staging: comedi: skel: use module_comedi_{pci_,}driver()
+Thread-Topic: [PATCH] staging: comedi: skel: use
+ module_comedi_{pci_,}driver()
+Thread-Index: Ac1PO7hFL/hjfnVaRGu5Ag7IB+kUkwAB6Kcw
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698E7708B@AUSP01VMBX24.collaborationhost.net>
+References: <201206201556.51336.hartleys@visionengravers.com>
+ <20120620231230.GA28411@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698E77071@AUSP01VMBX24.collaborationhost.net>
+ <20120620232331.GA25587@kroah.com>
+In-Reply-To: <20120620232331.GA25587@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@amd64.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-References: <20120619024639.GB6186@khazad-dum.debian.net> <4FDFF27C.5000205@zytor.com> <20120619051116.GB31591@aftab.osrc.amd.com> <1340093864.21745.6.camel@twins> <20120619102250.GA787@aftab.osrc.amd.com> <1340101568.21745.37.camel@twins> <20120619182228.GA18816@khazad-dum.debian.net> <4FE0DF9F.10401@zytor.com> <20120620234651.GD4223@khazad-dum.debian.net> <4FE26182.5070107@zytor.com> <20120621000631.GH4223@khazad-dum.debian.net>
-In-Reply-To: <20120621000631.GH4223@khazad-dum.debian.net>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 05:06 PM, Henrique de Moraes Holschuh wrote:
-> 
-> No, because dd if=<whatever> of=/dev/cpu/microcode bs=1M means I have to
-> add dd to the initramfs or to busybox, AND it will break the day the
-> microcode data file gets bigger than 1M.  And it will be at best very
-> annoying to have to special case each vendor to locate the correct
-> microcode, etc.
+On Wednesday, June 20, 2012 4:24 PM, Greg KH wrote:
+> On Wed, Jun 20, 2012 at 06:16:52PM -0500, H Hartley Sweeten wrote:
+>> Hmm. It was based on next-20120620 and created with git format-patch.
+>> 
+>> Do you have any other patches to that file in your staging tree that
+>> have not reached the next tree yet?
 >
+> Possibly, depending on when -next was created, I did just apply a bunch
+> of other patches a few hours ago.
+>
+>> Regardless, I have some other cleanup patches for that file. I'll
+>> put them together as a series and repost it later.
+>
+> That would be great, thanks.
 
-No.
+Not a problem.
 
-The whole point is you won't have to put ANYTHING in your initramfs,
-period.  The early microcode blob will be all you need there.
+Question.
 
-So the only issue left is what to do when you want to update the
-microcode in an already running system.
+Is there a way to do a 'git commit' with the diff generated using the
+"patience diff" algorithm?
 
-	-hpa
+I have a patch that is really ugly when I do the git commit but looks
+ok if I do a 'git diff --patience'.
 
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Regards,
+Hartley
 
