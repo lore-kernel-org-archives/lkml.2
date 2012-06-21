@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759522Ab2FUQGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 12:06:16 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:57560 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756302Ab2FUQGP convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Thu, 21 Jun 2012 12:06:15 -0400
-Message-Id: <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 21 Jun 2012 17:06:56 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Jinsong Liu" <jinsong.liu@intel.com>
-Cc: "Ashok Raj" <ashok.raj@intel.com>,
-        "Donald D Dugger" <donald.d.dugger@intel.com>,
-        "Haitao Shan" <haitao.shan@intel.com>,
-        "Jun Nakajima" <jun.nakajima@intel.com>,
-        "Tony Luck" <tony.luck@intel.com>, "Will Auld" <will.auld@intel.com>,
-        "Xiantao Zhang" <xiantao.zhang@intel.com>,
-        "Yunhong Jiang" <yunhong.jiang@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Keir Fraser" <keir@xen.org>
-Subject: Re: [vMCE design RFC] Xen vMCE design
-References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1759631Ab2FUQJa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 12:09:30 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:53428 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759442Ab2FUQJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 12:09:29 -0400
+Date: Thu, 21 Jun 2012 18:09:02 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 10/17] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20120621160902.GA6045@breakpoint.cc>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+ <1340192652-31658-11-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1340192652-31658-11-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 20.06.12 at 18:13, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
-> Recently we design xen vMCE as attached.
-> Please kindly help me to review it, any comments/suggestions are 
-> appreciated.
+On Wed, Jun 20, 2012 at 12:44:05PM +0100, Mel Gorman wrote:
+> index b534a1b..61c951f 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -505,6 +506,15 @@ struct sk_buff {
+>  #include <linux/slab.h>
+>  
+>  
+> +#define SKB_ALLOC_FCLONE	0x01
+> +#define SKB_ALLOC_RX		0x02
+> +
+> +/* Returns true if the skb was allocated from PFMEMALLOC reserves */
+> +static inline bool skb_pfmemalloc(struct sk_buff *skb)
+> +{
+> +	return unlikely(skb->pfmemalloc);
+> +}
+> +
+>  /*
+>   * skb might have a dst pointer attached, refcounted or not.
+>   * _skb_refdst low order bit is set if refcount was _not_ taken
+> @@ -568,7 +578,7 @@ extern bool skb_try_coalesce(struct sk_buff *to, struct sk_buff *from,
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 1d6ecc8..9a58dcc 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -839,6 +900,13 @@ static void copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
+>  	skb_shinfo(new)->gso_type = skb_shinfo(old)->gso_type;
+>  }
+>  
+> +static inline int skb_alloc_rx_flag(const struct sk_buff *skb)
+> +{
+> +	if (skb_pfmemalloc((struct sk_buff *)skb))
+> +		return SKB_ALLOC_RX;
+> +	return 0;
+> +}
+> +
+>  /**
+>   *	skb_copy	-	create private copy of an sk_buff
+>   *	@skb: buffer to copy
 
-The concept looks quite okay, provided no OS has a problem with
-the limitations imposed (most notably the restriction to a single
-reporting bank, particularly in the context of e.g. Linux partly
-ignoring the first bank under some conditions iirc).
+If merge this chunk
 
-As to not needing any migration specific adjustments - what if
-a migration is in progress when an event needs to be delivered?
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 6510a5d..2acfec9 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -510,7 +510,7 @@ struct sk_buff {
+ #define SKB_ALLOC_RX		0x02
+ 
+ /* Returns true if the skb was allocated from PFMEMALLOC reserves */
+-static inline bool skb_pfmemalloc(struct sk_buff *skb)
++static inline bool skb_pfmemalloc(const struct sk_buff *skb)
+ {
+ 	return unlikely(skb->pfmemalloc);
+ }
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index c44ab68..6ce94b5 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -852,7 +852,7 @@ static void copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
+ 
+ static inline int skb_alloc_rx_flag(const struct sk_buff *skb)
+ {
+-	if (skb_pfmemalloc((struct sk_buff *)skb))
++	if (skb_pfmemalloc(skb))
+ 		return SKB_ALLOC_RX;
+ 	return 0;
+ }
 
-Jan
 
+Then you should be able to drop the case in skb_alloc_rx_flag() without adding
+a warning.
+
+Sebastian
