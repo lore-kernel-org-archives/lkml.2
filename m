@@ -1,207 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759105Ab2FUJG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:06:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759076Ab2FUJG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:06:26 -0400
-Date: Thu, 21 Jun 2012 11:04:51 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, gorcunov@openvz.org
-Subject: Re: [PATCH 2/2] x86, x2apic: limit the vector reservation to the
- user specified mask
-Message-ID: <20120621090451.GD2223@dhcp-26-207.brq.redhat.com>
-References: <1340067097.3696.6.camel@sbsiddha-desk.sc.intel.com>
- <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
- <1340149411-2972-2-git-send-email-suresh.b.siddha@intel.com>
+	id S932217Ab2FUJHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:07:20 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:43112 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759090Ab2FUJHP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 05:07:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340149411-2972-2-git-send-email-suresh.b.siddha@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+8MBb+Kk=G5GQbSdbjXqFmw+GCON6jLZABCAGuL+bNDC+dLgA@mail.gmail.com>
+References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
+	<CA+8MBb+Kk=G5GQbSdbjXqFmw+GCON6jLZABCAGuL+bNDC+dLgA@mail.gmail.com>
+Date: Thu, 21 Jun 2012 18:07:14 +0900
+Message-ID: <CAC5umyj1RGHh_0miku_R+ZCtfTOBK6XeY62Aun2MifgFTn_MKg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/9] string: introduce memweight
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Anders Larsen <al@alarsen.net>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 04:43:31PM -0700, Suresh Siddha wrote:
-> For the x2apic cluster mode, vector for an interrupt is currently reserved on
-> all the cpu's that are part of the x2apic cluster. But the interrupts will
-> be routed only to the cluster (derived from the first cpu in the mask) members
-> specified in the mask. So there is no need to reserve the vector in the unused
-> cluster members.
-> 
-> Modify __assign_irq_vector() to reserve the vectors based on the user
-> specified irq destination mask and the corresponding vector domain specified
-> by the apic driver.
-> 
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
->  arch/x86/include/asm/apic.h           |   14 +++++++++---
->  arch/x86/kernel/apic/apic_noop.c      |    5 +++-
->  arch/x86/kernel/apic/io_apic.c        |   36 ++++++++++++++++++++++-----------
->  arch/x86/kernel/apic/x2apic_cluster.c |    8 ++++--
->  4 files changed, 43 insertions(+), 20 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-> index b37fa12..7746acb 100644
-> --- a/arch/x86/include/asm/apic.h
-> +++ b/arch/x86/include/asm/apic.h
-> @@ -306,7 +306,9 @@ struct apic {
->  	unsigned long (*check_apicid_used)(physid_mask_t *map, int apicid);
->  	unsigned long (*check_apicid_present)(int apicid);
->  
-> -	void (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
-> +	void (*vector_allocation_domain)(const struct cpumask *mask,
-> +					 struct cpumask *retmask,
-> +					 const struct cpumask *prevmask);
->  	void (*init_apic_ldr)(void);
->  
->  	void (*ioapic_phys_id_map)(physid_mask_t *phys_map, physid_mask_t *retmap);
-> @@ -615,7 +617,9 @@ default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
->  			       unsigned int *apicid);
->  
->  static inline void
-> -flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +flat_vector_allocation_domain(const struct cpumask *mask,
-> +			      struct cpumask *retmask,
-> +			      const struct cpumask *prevmask)
->  {
->  	/* Careful. Some cpus do not strictly honor the set of cpus
->  	 * specified in the interrupt destination when using lowest
-> @@ -630,9 +634,11 @@ flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
->  }
->  
->  static inline void
-> -default_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +default_vector_allocation_domain(const struct cpumask *mask,
-> +				 struct cpumask *retmask,
-> +				 const struct cpumask *prevmask)
->  {
-> -	cpumask_copy(retmask, cpumask_of(cpu));
-> +	cpumask_copy(retmask, cpumask_of(cpumask_first(retmask)));
->  }
->  
->  static inline unsigned long default_check_apicid_used(physid_mask_t *map, int apicid)
-> diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-> index 08c337b..847ece1 100644
-> --- a/arch/x86/kernel/apic/apic_noop.c
-> +++ b/arch/x86/kernel/apic/apic_noop.c
-> @@ -100,8 +100,11 @@ static unsigned long noop_check_apicid_present(int bit)
->  	return physid_isset(bit, phys_cpu_present_map);
->  }
->  
-> -static void noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +static void noop_vector_allocation_domain(const struct cpumask *mask,
-> +					  struct cpumask *retmask,
-> +					  const struct cpumask *prevmask)
->  {
-> +	int cpu = cpumask_first(retmask);
->  	if (cpu != 0)
->  		pr_warning("APIC: Vector allocated for non-BSP cpu\n");
->  	cpumask_copy(retmask, cpumask_of(cpu));
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 7a945f8..0a55eb8 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -1097,6 +1097,22 @@ void unlock_vector_lock(void)
->  	raw_spin_unlock(&vector_lock);
->  }
->  
-> +/*
-> + * New cpu mask using the vector is a subset of the current in use mask.
-> + * So cleanup the vector allocation for the members that are not used anymore.
-> + */
-> +static inline int
-> +cleanup_unused_subset(struct cpumask *mask, struct irq_cfg *cfg)
-> +{
-> +	if (!cpumask_equal(mask, cfg->domain)) {
-> +		cpumask_andnot(cfg->old_domain, cfg->domain, mask);
-> +		cfg->move_in_progress = 1;
-> +		cpumask_and(cfg->domain, cfg->domain, mask);
-> +	}
-> +	free_cpumask_var(mask);
-> +	return 0;
-> +}
-> +
+2012/6/21 Tony Luck <tony.luck@gmail.com>:
+> On Fri, Jun 8, 2012 at 5:50 PM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>>  lib/string.c           |   36 ++++++++++++++++++++++++++++++++++++
+>
+> Is lib/string.c the right place for this?  I get a build error on the
+> ia64 sim_defconfig:
+>
+>  LD      arch/ia64/hp/sim/boot/bootloader
+>
+> It fails because it pulls in lib/lib.a(string.o) to get some
+> innocuous function like strcpy() ... but it also gets
+> given memweight() which relies on __bitmap_weight()
+> which it doesn't have, because it doesn't include lib/built-in.o
+> (which is where bitmap.o, the definer of __bitmap_weight(), has
+> been linked).
+>
+> Moving memweight() to lib/bitmap.c fixes the problem. But it
+> isn't really clear that it belongs there either.  Perhaps it should
+> be its own file lib/memweight.c that gets included in lib/lib.a?
 
-Adding to 1st Yinghai's comment, this function does not appear needed at all...
-
->  static int
->  __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
->  {
-> @@ -1126,10 +1142,9 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
->  	old_vector = cfg->vector;
->  	if (old_vector) {
->  		cpumask_and(tmp_mask, mask, cpu_online_mask);
-> -		if (cpumask_subset(tmp_mask, cfg->domain)) {
-> -			free_cpumask_var(tmp_mask);
-> -			return 0;
-> -		}
-> +		apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
-> +		if (cpumask_subset(tmp_mask, cfg->domain))
-> +			return cleanup_unused_subset(tmp_mask, cfg);
-
-...but if you decide to leave cleanup_unused_subset() then cpumask_subset()
-check is better to move inside the function while free_cpumask_var() move
-out.
-
->  	}
->  
->  	/* Only try and allocate irqs on cpus that are present */
-> @@ -1137,15 +1152,12 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
->  	cpumask_clear(cfg->old_domain);
->  	cpu = cpumask_first_and(mask, cpu_online_mask);
->  	while (cpu < nr_cpu_ids) {
-> -		int new_cpu;
-> -		int vector, offset;
-> +		int new_cpu, vector, offset;
->  
-> -		apic->vector_allocation_domain(cpu, tmp_mask);
-> -
-> -		if (cpumask_subset(tmp_mask, cfg->domain)) {
-> -			free_cpumask_var(tmp_mask);
-> -			return 0;
-> -		}
-> +		cpumask_copy(tmp_mask, cpumask_of(cpu));
-> +		apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
-
-I might be missing the point.. in the two lines above you copy a cpumask to
-tmp_mask, then scan it in vector_allocation_domain() just to find the cpu
-which you already know. Why not just pass cpu rather then cpumask_of(cpu)?
-
-> +		if (cpumask_subset(tmp_mask, cfg->domain))
-> +			return cleanup_unused_subset(tmp_mask, cfg);
->  
->  		vector = current_vector;
->  		offset = current_offset;
-> diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-> index b5d889b..4d49512 100644
-> --- a/arch/x86/kernel/apic/x2apic_cluster.c
-> +++ b/arch/x86/kernel/apic/x2apic_cluster.c
-> @@ -212,10 +212,12 @@ static int x2apic_cluster_probe(void)
->  /*
->   * Each x2apic cluster is an allocation domain.
->   */
-> -static void cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> +static void cluster_vector_allocation_domain(const struct cpumask *mask,
-> +					     struct cpumask *retmask,
-> +					     const struct cpumask *prevmask)
->  {
-> -	cpumask_clear(retmask);
-> -	cpumask_copy(retmask, per_cpu(cpus_in_cluster, cpu));
-> +	int cpu = cpumask_first(retmask);
-> +	cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
->  }
->  
->  static struct apic apic_x2apic_cluster = {
-> -- 
-> 1.7.6.5
-> 
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+I'll fix it by making lib/memweight.c as you suggested.
+Thanks for your report and suggestion.
