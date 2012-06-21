@@ -1,121 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab2FUTmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 15:42:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34882 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291Ab2FUTl7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 15:41:59 -0400
-Date: Thu, 21 Jun 2012 12:41:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] hfsplus: get rid of write_super
-Message-Id: <20120621124158.a7559ee3.akpm@linux-foundation.org>
-In-Reply-To: <1339587471-2713-5-git-send-email-dedekind1@gmail.com>
-References: <1339587471-2713-1-git-send-email-dedekind1@gmail.com>
-	<1339587471-2713-5-git-send-email-dedekind1@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756408Ab2FUTnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 15:43:46 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:41521 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755488Ab2FUTno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 15:43:44 -0400
+Date: Thu, 21 Jun 2012 12:43:19 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Rob Landley <rob@landley.net>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alan Cox <alan@linux.intel.com>, Marcel Holtmann <marcel@holtmann.org>,
+        Doug Ledford <dledford@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Joe Korty <joe.korty@ccur.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] fs: make dumpable=2 only write to a pipe
+Message-ID: <20120621194319.GA5961@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jun 2012 14:37:51 +0300
-Artem Bityutskiy <dedekind1@gmail.com> wrote:
+When the suid_dumpable sysctl is set to "2", and there is no
+core dump pipe defined in the core_pattern sysctl, a local user
+can cause core files to be written to root-writable directories,
+potentially with user-controlled content. This means an admin
+can unknowningly reintroduce a variation of CVE-2006-2451 (see
+abf75a5033d4da7b8a7e92321d74021d1fcfb502).
 
-> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> 
-> This patch makes hfsplus stop using the VFS '->write_super()' method along with
-> the 's_dirt' superblock flag, because they are on their way out.
-> 
-> The whole "superblock write-out" VFS infrastructure is served by the
-> 'sync_supers()' kernel thread, which wakes up every 5 (by default) seconds and
-> writes out all dirty superblocks using the '->write_super()' call-back.  But the
-> problem with this thread is that it wastes power by waking up the system every
-> 5 seconds, even if there are no diry superblocks, or there are no client
-> file-systems which would need this (e.g., btrfs does not use
-> '->write_super()'). So we want to kill it completely and thus, we need to make
-> file-systems to stop using the '->write_super()' VFS service, and then remove
-> it together with the kernel thread.
-> 
-> Tested using fsstress from the LTP project.
-> 
->
-> ...
->
-> --- a/fs/hfsplus/hfsplus_fs.h
-> +++ b/fs/hfsplus/hfsplus_fs.h
-> @@ -153,8 +153,11 @@ struct hfsplus_sb_info {
->  	gid_t gid;
->  
->  	int part, session;
-> -
->  	unsigned long flags;
-> +
-> +	int work_queued;               /* non-zero delayed work is queued */
+$ cat /proc/sys/fs/suid_dumpable
+2
+$ cat /proc/sys/kernel/core_pattern
+core
+$ ulimit -c unlimited
+$ cd /
+$ ls -l core
+ls: cannot access core: No such file or directory
+$ touch core
+touch: cannot touch `core': Permission denied
+$ OHAI="evil-string-here" ping localhost >/dev/null 2>&1 &
+$ pid=$1
+$ sleep 1
+$ kill -SEGV $pid
+$ ls -l core
+-rw------- 1 root kees 458752 Jun 21 11:35 core
+$ sudo strings core | grep evil
+OHAI=evil-string-here
 
-This would be a little nicer if it had the bool type.
+While cron has been fixed to abort reading a file when there is any
+parse error, there are still other sensitive directories that will read
+any file present and skip unparsable lines.
 
-> +	struct delayed_work sync_work; /* FS sync delayed work */
-> +	spinlock_t work_lock;          /* protects sync_work and work_queued */
+This patch changes dumpable=2 to not allow writing to disk at all. Crashes
+in this mode may only be collected through the core_pattern pipe handler.
 
-I'm not sure that this lock really needs to exist.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ Documentation/sysctl/fs.txt |   11 +++++------
+ fs/exec.c                   |   31 ++++++++++---------------------
+ 2 files changed, 15 insertions(+), 27 deletions(-)
 
-> -static void hfsplus_write_super(struct super_block *sb)
-> +static void delayed_sync_fs(struct work_struct *work)
->  {
-> -	if (!(sb->s_flags & MS_RDONLY))
-> -		hfsplus_sync_fs(sb, 1);
-> -	else
-> -		sb->s_dirt = 0;
-> +	struct hfsplus_sb_info *sbi;
-> +
-> +	sbi = container_of(work, struct hfsplus_sb_info, sync_work.work);
-> +
-> +	spin_lock(&sbi->work_lock);
-> +	sbi->work_queued = 0;
-> +	spin_unlock(&sbi->work_lock);
+diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
+index 13d6166..70650d0 100644
+--- a/Documentation/sysctl/fs.txt
++++ b/Documentation/sysctl/fs.txt
+@@ -167,12 +167,11 @@ or otherwise protected/tainted binaries. The modes are
+ 1 - (debug) - all processes dump core when possible. The core dump is
+ 	owned by the current user and no security is applied. This is
+ 	intended for system debugging situations only. Ptrace is unchecked.
+-2 - (suidsafe) - any binary which normally would not be dumped is dumped
+-	readable by root only. This allows the end user to remove
+-	such a dump but not access it directly. For security reasons
+-	core dumps in this mode will not overwrite one another or
+-	other files. This mode is appropriate when administrators are
+-	attempting to debug problems in a normal environment.
++2 - (pipeonly) - any binary which normally would not be dumped is dumped
++	anyway, but only if a core dump pipe handler is defined (see the
++	"core_pattern" kernel sysctl). This mode is appropriate when
++	administrators are attempting to debug problems in a normal
++	environment.
+ 
+ ==============================================================
+ 
+diff --git a/fs/exec.c b/fs/exec.c
+index a79786a..0cd2eb9 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2106,10 +2106,8 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 	struct core_name cn;
+ 	struct mm_struct *mm = current->mm;
+ 	struct linux_binfmt * binfmt;
+-	const struct cred *old_cred;
+-	struct cred *cred;
++	bool pipeonly = false;
+ 	int retval = 0;
+-	int flag = 0;
+ 	int ispipe;
+ 	static atomic_t core_dump_count = ATOMIC_INIT(0);
+ 	struct coredump_params cprm = {
+@@ -2132,25 +2130,16 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 	if (!__get_dumpable(cprm.mm_flags))
+ 		goto fail;
+ 
+-	cred = prepare_creds();
+-	if (!cred)
+-		goto fail;
+ 	/*
+-	 *	We cannot trust fsuid as being the "true" uid of the
+-	 *	process nor do we know its entire history. We only know it
+-	 *	was tainted so we dump it as root in mode 2.
++	 * We cannot trust the environment when dumping in mode 2, so only
++	 * write the dump to a pipe.
+ 	 */
+-	if (__get_dumpable(cprm.mm_flags) == 2) {
+-		/* Setuid core dump mode */
+-		flag = O_EXCL;		/* Stop rewrite attacks */
+-		cred->fsuid = GLOBAL_ROOT_UID;	/* Dump root private */
+-	}
++	if (__get_dumpable(cprm.mm_flags) == 2)
++		pipeonly = true;
+ 
+ 	retval = coredump_wait(exit_code, &core_state);
+ 	if (retval < 0)
+-		goto fail_creds;
+-
+-	old_cred = override_creds(cred);
++		goto fail;
+ 
+ 	/*
+ 	 * Clear any false indication of pending signals that might
+@@ -2220,11 +2209,14 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 	} else {
+ 		struct inode *inode;
+ 
++		if (pipeonly)
++			goto fail_unlock;
++
+ 		if (cprm.limit < binfmt->min_coredump)
+ 			goto fail_unlock;
+ 
+ 		cprm.file = filp_open(cn.corename,
+-				 O_CREAT | 2 | O_NOFOLLOW | O_LARGEFILE | flag,
++				 O_CREAT | 2 | O_NOFOLLOW | O_LARGEFILE,
+ 				 0600);
+ 		if (IS_ERR(cprm.file))
+ 			goto fail_unlock;
+@@ -2268,9 +2260,6 @@ fail_unlock:
+ 	kfree(cn.corename);
+ fail_corename:
+ 	coredump_finish(mm);
+-	revert_creds(old_cred);
+-fail_creds:
+-	put_cred(cred);
+ fail:
+ 	return;
+ }
+-- 
+1.7.0.4
 
-Here it is "protecting" a single write.
-
-> +	hfsplus_sync_fs(sbi->alloc_file->i_sb, 1);
-> +}
-> +
-> +void hfsplus_mark_mdb_dirty(struct super_block *sb)
-> +{
-> +	struct hfsplus_sb_info *sbi = HFSPLUS_SB(sb);
-> +	unsigned long delay;
-> +
-> +	if (sb->s_flags & MS_RDONLY)
-> +	       return;
-> +
-> +	spin_lock(&sbi->work_lock);
-> +	if (!sbi->work_queued) {
-> +	       delay = msecs_to_jiffies(dirty_writeback_interval * 10);
-> +	       queue_delayed_work(system_long_wq, &sbi->sync_work, delay);
-> +	       sbi->work_queued = 1;
-> +	}
-> +	spin_unlock(&sbi->work_lock);
->  }
-
-And I think it could be made to go away here, perhaps by switching to
-test_and_set_bit or similar.
-
-
-And I wonder about the queue_delayed_work().  iirc this does nothing to
-align timer expiries, so someone who has a lot of filesystems could end
-up with *more* timer wakeups.  Shouldn't we do something here to make
-the system do larger amounts of work per timer expiry?  Such as the
-timer-slack infrastructure?
-
-
-It strikes me that this whole approach improves the small system with
-little write activity, but makes things worse for the larger system
-with a lot of filesystems?
-
+-- 
+Kees Cook
+Chrome OS Security
