@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab2FUVcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:32:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54677 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760347Ab2FUVcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:32:14 -0400
-Message-ID: <4FE39290.8020609@redhat.com>
-Date: Thu, 21 Jun 2012 17:30:56 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932766Ab2FUVck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:32:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52141 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932532Ab2FUVcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 17:32:39 -0400
+Date: Thu, 21 Jun 2012 14:32:35 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Josh Hunt <joshhunt00@gmail.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, rni@google.com
+Subject: Re: multi-second application stall in open()
+Message-ID: <20120621213235.GF4642@google.com>
+References: <20120307162851.GC13430@redhat.com>
+ <4F57AF4A.6080703@kernel.dk>
+ <CAKA=qzak6N-6oHVjDozJ6KLMSWXEgzZf1xaC_1cgnoaUCyw8Ag@mail.gmail.com>
+ <CAKA=qzaHJ0OcbvtT-mwKBUBvzPkxE4r-bW6gDvicKhoQeyFWEg@mail.gmail.com>
+ <20120308234016.GA925@redhat.com>
+ <CAKA=qzbsL9UVYLZ3=hoT-1jfp=v=_Sr=h+YeHu0qAA=Ko_7P6w@mail.gmail.com>
+ <CAKA=qzbqoK5_3GXM8DZhbQ5cTU=DTg5DFFJ+46OrD7y=XrMLTg@mail.gmail.com>
+ <20120621203217.GC14095@redhat.com>
+ <20120621203615.GE4642@google.com>
+ <CAKA=qzaFRubzvyjJQzgThRLsxLDc8NMdZy6WVZMFrF7ohsyjHw@mail.gmail.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: Re: [PATCH 01/17] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-References: <1340192652-31658-1-git-send-email-mgorman@suse.de> <1340192652-31658-2-git-send-email-mgorman@suse.de>
-In-Reply-To: <1340192652-31658-2-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKA=qzaFRubzvyjJQzgThRLsxLDc8NMdZy6WVZMFrF7ohsyjHw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 07:43 AM, Mel Gorman wrote:
+Hello,
 
-> +/* Clears ac->pfmemalloc if no slabs have pfmalloc set */
-> +static void check_ac_pfmemalloc(struct kmem_cache *cachep,
-> +						struct array_cache *ac)
-> +{
+On Thu, Jun 21, 2012 at 04:28:24PM -0500, Josh Hunt wrote:
+> When you say the code has diverged from upstream, do you mean from 3.0
+> to 3.5?
 
-> +	pfmemalloc_active = false;
-> +out:
-> +	spin_unlock_irqrestore(&l3->list_lock, flags);
-> +}
+It's based on something diverged from 2.6.X, so an ancient thing.
 
-The comment and the function do not seem to match.
+> Or maybe I'm misunderstanding what you're getting at. Also, if
+> you have any links to the watchdog timer code you're referring to I
+> would appreciate it.
 
-Otherwise, the patch looks reasonable.
+Rakesh is the one who observed the bug and wrote the watchdog code.
+Rakesh, I think Josh is seeing similar cfqq hang issue.  Did the
+watchdog code reveal why that happened?  Or was it mainly to just kick
+the queue and keep it going?
+
+Thanks.
+
+-- 
+tejun
