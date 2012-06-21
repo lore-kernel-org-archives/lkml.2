@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab2FUO6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 10:58:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42477 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758705Ab2FUO6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 10:58:41 -0400
-Date: Thu, 21 Jun 2012 16:55:52 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Alex Shi <lkml.alex@gmail.com>
-Cc: Petr Holasek <pholasek@redhat.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: AutoNUMA15
-Message-ID: <20120621145552.GG4954@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <20120529133627.GA7637@shutemov.name>
- <20120529154308.GA10790@dhcp-27-244.brq.redhat.com>
- <20120531180834.GP21339@redhat.com>
- <CAGjg+kHNe4RkhHKt5JYKDnE2oqs0ZBNUkL_XYOwfDK1S5cxjvw@mail.gmail.com>
+	id S1758960Ab2FUPA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 11:00:56 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62057 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab2FUPAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 11:00:55 -0400
+Message-ID: <4FE33723.3040403@gmail.com>
+Date: Thu, 21 Jun 2012 10:00:51 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGjg+kHNe4RkhHKt5JYKDnE2oqs0ZBNUkL_XYOwfDK1S5cxjvw@mail.gmail.com>
+To: Chris Ball <cjb@laptop.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, mturquette@linaro.org,
+        s.hauer@pengutronix.de, sboyd@codeaurora.org,
+        Grant Likely <grant.likely@secretlab.ca>, skannan@codeaurora.org,
+        shawn.guo@linaro.org, Mitch Bradley <wmb@laptop.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v3 0/4] DT clock bindings
+References: <1339512111-11172-1-git-send-email-robherring2@gmail.com> <87bokd15x7.fsf@octavius.laptop.org>
+In-Reply-To: <87bokd15x7.fsf@octavius.laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 03:29:52PM +0800, Alex Shi wrote:
-> > I released an AutoNUMA15 branch that includes all pending fixes:
-> >
-> > git clone --reference linux -b autonuma15 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-> >
+Chris,
+
+On 06/21/2012 02:27 AM, Chris Ball wrote:
+> Hi Rob,
 > 
-> I did a quick testing on our
-> specjbb2005/oltp/hackbench/tbench/netperf-loop/fio/ffsb on NHM EP/EX,
-> Core2 EP, Romely EP machine, In generally no clear performance change
-> found. Is this results expected for this patch set?
+> On Tue, Jun 12 2012, Rob Herring wrote:
+>> This series defines clock bindings for Device-Tree and adds kernel
+>> support using the common clock infrastructure. The last patch enables
+>> DT clock support for the Calxeda Highbank platform.
+>>
+>> I'm posting this again to solicit further review. There has been some
+>> discussion[1], but no definite path forward. This series is not changed
+>> from the last post other than rebasing to v3.5-rc2.
+> 
+> This is a very useful patchset, thanks!  Mitch Bradley and I have been
+> hooking up the mach-mmp ARM subarchitecture to it and we needed to
+> make a few changes, mainly because mach-mmp doesn't use COMMON_CLK.
+> The changes are:
+> 
+> 1) Remove the COMMON_CLK dependency that the of_clk_* functions have by
+>    moving them into a new file, drivers/clk/clk-of.c.  The OF functions
+>    in drivers/clk/clk.c aren't dependent on anything else in clk.c
+>    (since you pass them a struct clk) so they can be moved out easily.
+>    The of_clk_* entries in clk-provider.h move to clk.h.
 
-hackbench and network benchs won't get benefit (the former
-overschedule like crazy so there's no way any autonuma balancing can
-have effect with such an overscheduling and zillion of threads, the
-latter is I/O dominated usually taking so little RAM it doesn't
-matter, the memory accesses on the kernel side and DMA issue should
-dominate it in CPU utilization). Similar issue for filesystem
-benchmarks like fio.
+Well, if you look at prior versions, it was separate being in
+drivers/of/. I'm not sure we want to encourage/allow not converting to
+COMMON_CLK. I would consider not using COMMON_CLK is deprecated. Having
+a single definition of struct clk is the primary reason for COMMON_CLK.
+What is the reason for not converting mmp to COMMON_CLK? It appears to
+be a pretty trivial clock implementation, and will be required for
+multi-platform kernels.
 
-On all _system_ time dominated kernel benchmarks it is expected not to
-measure a performance optimization and if you don't measure a
-regression it's more than enough.
+> 
+> 2) Use alloc_bootmem() instead of kzalloc() in of_clk_add_provider(),
+>    because we need to set up clocks during .init_early on ARM (which
+>    happens pre-slab) so that they are available for platform init.
 
-The only benchmarks that gets benefit are userland where the user/nice
-time in top dominates. AutoNUMA cannot optimize or move kernel memory
-around, it only optimizes userland computations.
+This depends on 1 as the common clock code would have the same issue.
+Generally, the first place clocks are needed is the timer init. At that
+point, you can call kzalloc. This is where all the clock init used to be
+done until init_early was added and some platforms have moved their
+clock init. I don't think there was really ever much reason to move it
+other than to make the timer init function only deal with timer setup.
 
-So you should run HPC jobs. The only strange thing here is that
-specjbb2005 gets a measurable significant boost with AutoNUMA so if
-you didn't even get a boost with that you may want to verify:
+Is alloc_bootmem available on all arches? There's 3 occurrences in
+drivers/* which tells me that is the wrong thing to do.
 
-cat /sys/kernel/mm/autonuma/enabled == 1
+Rob
 
-Also verify:
-
-CONFIG_AUTONUMA_DEFAULT_ENABLED=y
-
-If that's 1 well maybe the memory interconnect is so fast that there's
-no benefit?
-
-My numa01/02 benchmarks measures the best worst case of the hardware
-(not software), with -DINVERSE_BIND -DHARD_BIND parameters, you can
-consider running that to verify.
-
-Probably there should be a little boot time kernel benchmark to
-measure the inverse bind vs hard bind performance across the first two
-nodes, if the difference is nil AutoNUMA should disengage and not even
-allocate the page_autonuma (now only 12 bytes per page but anyway).
-
-If you can retest with autonuma17 it would help too as there was some
-performance issue fixed and it'd stress the new autonuma migration lru
-code:
-
-git clone --reference linux -b autonuma17 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git autonuma17
-
-And the very latest is always at the autonuma branch:
-
-git clone --reference linux -b autonuma git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git autonuma
-
-Thanks,
-Andrea
+> I'll send our patches in a reply to this mail.  Are you okay with these
+> changes, and would you like to include them in your patchset?
+> 
+> Thanks very much,
+> 
+> - Chris.
