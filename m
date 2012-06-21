@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759874Ab2FUXa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 19:30:59 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12676 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759600Ab2FUXa6 (ORCPT
+	id S1760463Ab2FUXfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 19:35:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38065 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759600Ab2FUXe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 19:30:58 -0400
-Date: Fri, 22 Jun 2012 01:30:57 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        ohering@suse.com, apw@canonical.com
-Subject: Re: [PATCH 00/13] drivers: hv: kvp
-In-Reply-To: <1340314200-27078-1-git-send-email-kys@microsoft.com>
-Message-ID: <alpine.LNX.2.00.1206220125410.7671@swampdragon.chaosbits.net>
-References: <1340314200-27078-1-git-send-email-kys@microsoft.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 21 Jun 2012 19:34:59 -0400
+Date: Thu, 21 Jun 2012 16:34:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2012-06-21-16-20 uploaded
+Message-Id: <20120621163458.89459d7a.akpm@linux-foundation.org>
+In-Reply-To: <20120621232149.F0286A026A@akpm.mtv.corp.google.com>
+References: <20120621232149.F0286A026A@akpm.mtv.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012, K. Y. Srinivasan wrote:
+On Thu, 21 Jun 2012 16:21:49 -0700
+akpm@linux-foundation.org wrote:
 
-> This patchset expands the KVP (Key Value Pair) functionality to
-> implement the mechanism to get/set IP addresses in the guest. This
-> functionality is used in Windows Server 2012 to implement VM
-> replication functionality. The way IP configuration information
-> is managed is distro specific. The current implementation supports
-> RedHat way of doing things. We will expand support to other distros
-> incrementally. 
+> The mm-of-the-moment snapshot 2012-06-21-16-20 has been uploaded to
 > 
-So there is going to be a continuous flow of patches to add support for 
-new distros (Arch Linux, Slackware, Linux Mint, SuSE, Debian, etc etc) and 
-if different versions of a distro handles things differently then you are 
-also going to deal with that? Might be fine, but it just sounds a bit 
-scary to me to try to support m different distros, each in n different 
-versions from the kernel... Couldn't this somehow be done once and for all 
-in a distro neutral way?
-Just asking :-)
+>    http://www.ozlabs.org/~akpm/mmotm/
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Exciting updates to http://www.ozlabs.org/~akpm/mmotm/mmotm-readme.txt:
 
+: The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+: contains daily snapshots of the -mm tree.  It is updated more frequently
+: than mmotm, and is untested.
+
+It takes me 1.5 hours to 1.5 days to do a -mm release, depending on how
+many screwups people have been merging and sending.  This makes the
+releases less frequent than I'd like.
+
+So I will do daily dumps of the -mm patches into
+http://www.ozlabs.org/~akpm/mmots/.  They are the same as the mmotm
+patches (use the same script), except they will be unannounced and
+untested.
