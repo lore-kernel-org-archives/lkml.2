@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab2FUPrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 11:47:33 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:51755 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753935Ab2FUPrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 11:47:31 -0400
-X-ASG-Debug-ID: 1340293650-0421b53abf112b0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Thu, 21 Jun 2012 11:47:28 -0400
-From: Chris Mason <chris.mason@fusionio.com>
-To: <torvalds@linux-foundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <linux-btrfs@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates
-Message-ID: <20120621154728.GF19507@shiny>
-X-ASG-Orig-Subj: [GIT PULL] Btrfs updates
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	torvalds@linux-foundation.org,
-	Kernel development list <linux-kernel@vger.kernel.org>,
-	linux-btrfs@vger.kernel.org
+	id S1755954Ab2FUPxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 11:53:33 -0400
+Received: from anubis.se.axis.com ([195.60.68.12]:55578 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab2FUPxc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 11:53:32 -0400
+Date: Thu, 21 Jun 2012 17:53:27 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jan Beulich <JBeulich@suse.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH] x86/PCI: adjust section annotations
+Message-ID: <20120621155327.GZ25226@axis.com>
+References: <4FDF2044020000780008A66F@nat28.tlf.novell.com> <CAErSpo4yf66A-MoBLyUynMaha3Oa8_M2rNpwgK+2D1LgTaLhUw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1340293650
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.100508
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <CAErSpo4yf66A-MoBLyUynMaha3Oa8_M2rNpwgK+2D1LgTaLhUw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Jun 21, 2012 at 02:06:55AM +0200, Bjorn Helgaas wrote:
+> On Mon, Jun 18, 2012 at 4:34 AM, Jan Beulich <JBeulich@suse.com> wrote:
+> > DMI tables referenced from __init code only can be __initconst, and as
+> > a result the functions referenced from there can become __init.
+> >
+> > pcibios_setup() can be __init as being a command line parsing function
+> > only.
+> >
+> > A few other variables can then also have their attributes adjusted.
+> 
+> This seems OK as far as it goes.
+> 
+> However, if you're going to make pcibios_setup() __init for x86, I'd
+> really encourage you to make it consistent across all the other
+> architectures.  And if you do *that*, I think it would be cool if you
+> supplied a generic do-nothing "weak" version in the PCI core.  That
+> would allow you to remove it altogether from alpha, ia64, microblaze,
+> mips pmc-sierra, parisc, powerpc, sh, sparc, tile, and xtensa.
+> 
+> CRIS-folk: It would also fix what looks like a bug in cris, which
+> implements pcibios_setup() such that pci_setup() doesn't even look for
+> all the supposedly generic options.
 
-Please grab my for-linus branch:
+Ok, thanks for the heads-up!
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+I'm going to take a look at the PCI code in the CRIS-port.
 
-This is a small pull with btrfs fixes.  The biggest of the bunch is
-another fix for the new backref walking code.
+My current feeling is that the PCI support for CRIS probably
+should be dropped, both due to rotted code, but also that the
+hardware is hard to come by. I need to do some more digging around...
 
-We're still hammering out one btrfs dio vs buffered reads problem, but
-that one will have to wait for the next rc.
-
-Josef Bacik (2) commits (+3/-2):
-    Btrfs: delay iput with async extents (+2/-2)
-    Btrfs: add a missing spin_lock (+1/-0)
-
-Alexander Block (2) commits (+59/-44):
-    Btrfs: don't assume to be on the correct extent in add_all_parents (+52/-42)
-    Btrfs: introduce btrfs_next_old_item (+7/-2)
-
-Total: (4) commits (+62/-46)
-
- fs/btrfs/backref.c |   94 +++++++++++++++++++++++++++++-----------------------
- fs/btrfs/ctree.h   |    9 +++--
- fs/btrfs/disk-io.c |    1 +
- fs/btrfs/inode.c   |    4 +--
- 4 files changed, 62 insertions(+), 46 deletions(-)
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
