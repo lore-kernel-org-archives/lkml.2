@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718Ab2FUKkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 06:40:16 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47689 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932701Ab2FUKkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 06:40:14 -0400
+	id S1754726Ab2FUKnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 06:43:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29630 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414Ab2FUKno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 06:43:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="168453176"
+Date: Thu, 21 Jun 2012 18:43:40 +0800
+From: Fengguang Wu <wfg@linux.intel.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Liam Girdwood'" <lrg@ti.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "'Kim, Milo'" <Milo.Kim@ti.com>,
+        "'Axel Lin'" <axel.lin@gmail.com>
+Subject: Re: akpm 117/143] ERROR: "devm_gpio_request_one"
+ [drivers/video/backlight/l4f00242t03.ko] undefined!
+Message-ID: <20120621104340.GA12679@localhost>
+References: <20120621101721.GA12365@localhost>
+ <000e01cd4f98$d1366a40$73a33ec0$%han@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <CANQmPXiva_U2R5M+e8LbuM+juHAYaRR5m7ma5H+Nw6+6mqx-Qw@mail.gmail.com>
-References: <CANQmPXip+fKaSYsKaY5TF3Rax=XFFgyh=+BY61snVsgpReL7RA@mail.gmail.com>
-	<1339914285.7349.75.camel@marge.simpson.net>
-	<CANQmPXiU_Pz2qZkisF34TBepbRW4iJ4ytLLfiEmuJpCHxUwWvA@mail.gmail.com>
-	<CANQmPXi=p0WvJ0GofWFSG8Um6trHw3ejwR-TazZyoXm9g-trJQ@mail.gmail.com>
-	<4d5440bc-73bb-4c30-8571-bb7004fc5c4a@skytron.local>
-	<CANQmPXiva_U2R5M+e8LbuM+juHAYaRR5m7ma5H+Nw6+6mqx-Qw@mail.gmail.com>
-Date: Thu, 21 Jun 2012 18:40:13 +0800
-Message-ID: <CANQmPXiGeUv1N7=OJ2Cm=s1X+UMExDPwAFtctCbN64yeEzkz+Q@mail.gmail.com>
-Subject: Re: Unzustellbar: Re: [PATCH][ANNOUNCE]RIFS-ES Scheduling V1 release.
-From: Chen <hi3766691@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        mou Chen <hi3766691@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000e01cd4f98$d1366a40$73a33ec0$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a newer benchmark around latt -c255 sleep 10 between these 3
-cpu scheduler.
-http://rifs-scheduler.googlecode.com/files/Result-003.PNG
+> > ERROR: "devm_gpio_request_one" [drivers/video/backlight/l4f00242t03.ko] undefined!
+> 
+> Hi Fengguang,
+> 
+> The patch a291ede7be8359a8986740b11b93f9c80e40210b ' backlight-l4f00242t03-use-devm_gpio_request_one-fix'
+> is necessary to fix the export problem.
+> 
+> In my opinion, Andrew Morton will fold these patches as usual.
 
-RIFS-ES-Low-Spec has been posted, if you want a link please click the
-follow site.(The testing data in test form and PNG statistic form)
-http://code.google.com/p/rifs-scheduler/downloads/detail?name=Result-003.PNG
+Err.. Sorry for the noise! This is a bit awkward situation. It seems
+that I'll need to teach my scripts to detect the follow-up commits
+with title "XXX-fix" and double check such commits before sending out
+error reports.
 
-During the test I will move the mouse(I just move the mouse and I
-don't click anything).
-With BFS the mouse stalls.
-With CFS or RIFS-ES-Low-Spec the mouse is very smooth.
-
-With average latency RIFS wins, with maximum latency BFS wins.
-
-After using it if you think it is useful please invite the others to use it.
-Thanks
+Thanks,
+Fengguang
