@@ -1,165 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649Ab2FUH4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 03:56:30 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48725 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab2FUH42 (ORCPT
+	id S1758123Ab2FUH6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 03:58:36 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:54930 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285Ab2FUH6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 03:56:28 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE2D2F4.2020202@jp.fujitsu.com>
-Date: Thu, 21 Jun 2012 16:53:24 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Sha Zhengju <handai.szj@gmail.com>
-CC: Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, yinghan@google.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH 2/2] memcg: add per cgroup dirty pages accounting
-References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com> <1339761717-29070-1-git-send-email-handai.szj@taobao.com> <xr93k3z8twtg.fsf@gthelen.mtv.corp.google.com> <4FDC28F0.8050805@jp.fujitsu.com> <CAFj3OHXuX7tpDe4famK3fFMZBcj2w-9mDs9mD9P_-SwaRKx8tg@mail.gmail.com>
-In-Reply-To: <CAFj3OHXuX7tpDe4famK3fFMZBcj2w-9mDs9mD9P_-SwaRKx8tg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 21 Jun 2012 03:58:34 -0400
+Date: Thu, 21 Jun 2012 09:58:06 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
+ and consolidation
+Message-ID: <20120621095806.36df58f2@de.ibm.com>
+In-Reply-To: <CAFTL4hz9UZr0Xfd4m3WTBma8vSvbm0Lg8o=oXsjFbpPfG9RxjQ@mail.gmail.com>
+References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
+	<1340231192.21745.154.camel@twins>
+	<CAFTL4hz9UZr0Xfd4m3WTBma8vSvbm0Lg8o=oXsjFbpPfG9RxjQ@mail.gmail.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062107-1948-0000-0000-0000022909E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/19 23:31), Sha Zhengju wrote:
-> On Sat, Jun 16, 2012 at 2:34 PM, Kamezawa Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com>  wrote:
->> (2012/06/16 0:32), Greg Thelen wrote:
->>>
->>> On Fri, Jun 15 2012, Sha Zhengju wrote:
->>>
->>>> This patch adds memcg routines to count dirty pages. I notice that
->>>> the list has talked about per-cgroup dirty page limiting
->>>> (http://lwn.net/Articles/455341/) before, but it did not get merged.
->>>
->>>
->>> Good timing, I was just about to make another effort to get some of
->>> these patches upstream.  Like you, I was going to start with some basic
->>> counters.
->>>
->>> Your approach is similar to what I have in mind.  While it is good to
->>> use the existing PageDirty flag, rather than introducing a new
->>> page_cgroup flag, there are locking complications (see below) to handle
->>> races between moving pages between memcg and the pages being {un}marked
->>> dirty.
->>>
->>>> I've no idea how is this going now, but maybe we can add per cgroup
->>>> dirty pages accounting first. This allows the memory controller to
->>>> maintain an accurate view of the amount of its memory that is dirty
->>>> and can provide some infomation while group's direct reclaim is working.
->>>>
->>>> After commit 89c06bd5 (memcg: use new logic for page stat accounting),
->>>> we do not need per page_cgroup flag anymore and can directly use
->>>> struct page flag.
->>>>
->>>>
->>>> Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
->>>> ---
->>>>   include/linux/memcontrol.h |    1 +
->>>>   mm/filemap.c               |    1 +
->>>>   mm/memcontrol.c            |   32 +++++++++++++++++++++++++-------
->>>>   mm/page-writeback.c        |    2 ++
->>>>   mm/truncate.c              |    1 +
->>>>   5 files changed, 30 insertions(+), 7 deletions(-)
->>>>
->>>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->>>> index a337c2e..8154ade 100644
->>>> --- a/include/linux/memcontrol.h
->>>> +++ b/include/linux/memcontrol.h
->>>> @@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
->>>>         MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->>>>         MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
->>>>         MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
->>>> +       MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
->>>>         MEM_CGROUP_STAT_NSTATS,
->>>>   };
->>>>
->>>> diff --git a/mm/filemap.c b/mm/filemap.c
->>>> index 79c4b2b..5b5c121 100644
->>>> --- a/mm/filemap.c
->>>> +++ b/mm/filemap.c
->>>> @@ -141,6 +141,7 @@ void __delete_from_page_cache(struct page *page)
->>>>          * having removed the page entirely.
->>>>          */
->>>>         if (PageDirty(page)&&    mapping_cap_account_dirty(mapping)) {
->>>> +               mem_cgroup_dec_page_stat(page,
->>>> MEM_CGROUP_STAT_FILE_DIRTY);
->>>
->>>
->>> You need to use mem_cgroup_{begin,end}_update_page_stat around critical
->>> sections that:
->>> 1) check PageDirty
->>> 2) update MEM_CGROUP_STAT_FILE_DIRTY counter
->>>
->>> This protects against the page from being moved between memcg while
->>> accounting.  Same comment applies to all of your new calls to
->>> mem_cgroup_{dec,inc}_page_stat.  For usage pattern, see
->>> page_add_file_rmap.
->>>
->>
->> If you feel some difficulty with mem_cgroup_{begin,end}_update_page_stat(),
->> please let me know...I hope they should work enough....
->>
->
-> Hi, Kame
->
-> While digging into the bigger lock of mem_cgroup_{begin,end}_update_page_stat(),
-> I find the reality is more complex than I thought. Simply stated,
-> modifying page info
-> and update page stat may be wide apart and in different level (eg.
-> mm&fs), so if we
-> use the big lock it may lead to scalability and maintainability issues.
->
-> For example:
->       mem_cgroup_begin_update_page_stat()
->       modify page information                 =>  TestSetPageDirty in　ceph_set_page_dirty() (fs/ceph/addr.c)
->       XXXXXX                                  =>  other fs operations
->       mem_cgroup_update_page_stat()   =>  account_page_dirtied() in　mm/page-writeback.c
->       mem_cgroup_end_update_page_stat().
->
-> We can choose to get lock in higher level meaning vfs set_page_dirty()
-> but this may span
-> too much and can also have some missing cases.
-> What's your opinion of this problem?
->
+On Thu, 21 Jun 2012 02:46:29 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-yes, that's sad....If set_page_dirty() is always called under lock_page(), the
-story will be easier (we'll take lock_page() in move side.)
-but the comment on set_page_dirty() says it's not true.....Now, I haven't found a magical
-way for avoiding the race.
-(*) If holding lock_page() in move_account() can be a generic solution, it will be good.
-     
-A proposal from me is a small-start. You can start from adding hooks to a generic
-functions as set_page_dirty() and __set_page_dirty_nobuffers(), clear_page_dirty_for_io().
+> 2012/6/21 Peter Zijlstra <peterz@infradead.org>:
+> > On Tue, 2012-06-19 at 15:43 +0200, Frederic Weisbecker wrote:
+> >>
+> >> I wish we could do more vtime cputime accounting consolidation
+> >> but archs do the things pretty differently although I bet the
+> >> behaviour could be more unified.
+> >>
+> > Yes.. so s390,ia64 use thread_info, ppc uses their paca (arch private
+> > precursor to per-cpu data).
 
-And see what happens. I guess we can add WARN_ONCE() against callers of update_page_stat()
-who don't take mem_cgroup_begin/end_update_page_stat()
-(by some new check, for example, checking !rcu_read_lock_held() in update_stat())
+s390 uses the prefix page / lowcore to accumulate some accounting information.
+Which basically is per-cpu data with the advantage that it is accessible with
+at address 0-8191 for each cpu. The entry code does not have to load a pointer
+to get to that page, I would prefer NOT to use per-cpu data here.
 
-I think we can make TODO list and catch up remaining things one by one.
+> > So I understand why s390,ia64 want the sched hook, but I don't see why
+> > ppc would need it, their account_process_tick() can fold whatever they
+> > need on the tick.
+> 
+> I think in any case you need to flush the time on a descheduling task otherwise
+> its pending time will be accounted later to the next task when it
+> receives an irq.
+> 
+> So I fear we still need that sched switch hook even with per cpu data. This
+> may be a simple account_system_vtime() call.
 
-Thanks,
--Kame
+Indeed, the scheduler hook is needed to add the accumulated values to the
+correct task. 
+ 
+> > So I think reworking s390,ia64 to use per-cpu storage should get rid of
+> > this switch hook altogether.
 
+If we get rid of the switch hook then the quality of the accounting numbers
+will get significantly worse. Think of the scenario of a long running
+background process and a task that repeatedly wakes up for a very short
+time. Without the scheduler hook chances are good that the background task
+is accounted all the accumulated user time.
 
+-- 
+blue skies,
+   Martin.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+"Reality continues to ruin my life." - Calvin.
 
