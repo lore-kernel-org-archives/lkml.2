@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab2FUH1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 03:27:21 -0400
-Received: from void.printf.net ([89.145.121.20]:54596 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755083Ab2FUH1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 03:27:19 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, mturquette@linaro.org,
-        s.hauer@pengutronix.de, sboyd@codeaurora.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, skannan@codeaurora.org,
-        shawn.guo@linaro.org, Mitch Bradley <wmb@laptop.org>
-Subject: Re: [PATCH v3 0/4] DT clock bindings
-References: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
-Date: Thu, 21 Jun 2012 03:27:00 -0400
-In-Reply-To: <1339512111-11172-1-git-send-email-robherring2@gmail.com> (Rob
-	Herring's message of "Tue, 12 Jun 2012 09:41:47 -0500")
-Message-ID: <87bokd15x7.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	id S1758678Ab2FUH3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 03:29:55 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36570 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757585Ab2FUH3x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 03:29:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20120531180834.GP21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+	<20120529133627.GA7637@shutemov.name>
+	<20120529154308.GA10790@dhcp-27-244.brq.redhat.com>
+	<20120531180834.GP21339@redhat.com>
+Date: Thu, 21 Jun 2012 15:29:52 +0800
+Message-ID: <CAGjg+kHNe4RkhHKt5JYKDnE2oqs0ZBNUkL_XYOwfDK1S5cxjvw@mail.gmail.com>
+Subject: Re: AutoNUMA15
+From: Alex Shi <lkml.alex@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Petr Holasek <pholasek@redhat.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-On Tue, Jun 12 2012, Rob Herring wrote:
-> This series defines clock bindings for Device-Tree and adds kernel
-> support using the common clock infrastructure. The last patch enables
-> DT clock support for the Calxeda Highbank platform.
+> I released an AutoNUMA15 branch that includes all pending fixes:
 >
-> I'm posting this again to solicit further review. There has been some
-> discussion[1], but no definite path forward. This series is not changed
-> from the last post other than rebasing to v3.5-rc2.
+> git clone --reference linux -b autonuma15 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+>
 
-This is a very useful patchset, thanks!  Mitch Bradley and I have been
-hooking up the mach-mmp ARM subarchitecture to it and we needed to
-make a few changes, mainly because mach-mmp doesn't use COMMON_CLK.
-The changes are:
+I did a quick testing on our
+specjbb2005/oltp/hackbench/tbench/netperf-loop/fio/ffsb on NHM EP/EX,
+Core2 EP, Romely EP machine, In generally no clear performance change
+found. Is this results expected for this patch set?
 
-1) Remove the COMMON_CLK dependency that the of_clk_* functions have by
-   moving them into a new file, drivers/clk/clk-of.c.  The OF functions
-   in drivers/clk/clk.c aren't dependent on anything else in clk.c
-   (since you pass them a struct clk) so they can be moved out easily.
-   The of_clk_* entries in clk-provider.h move to clk.h.
-
-2) Use alloc_bootmem() instead of kzalloc() in of_clk_add_provider(),
-   because we need to set up clocks during .init_early on ARM (which
-   happens pre-slab) so that they are available for platform init.
-
-I'll send our patches in a reply to this mail.  Are you okay with these
-changes, and would you like to include them in your patchset?
-
-Thanks very much,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Regards!
+Alex
