@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2FUB4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 21:56:36 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:53532 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756943Ab2FUB4e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 21:56:34 -0400
-Date: Thu, 21 Jun 2012 10:56:24 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v7 02/10] KVM: MMU: abstract spte write-protect
-Message-Id: <20120621105624.4b43d6f4.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <4FE27D55.4040805@linux.vnet.ibm.com>
-References: <4FE1822D.8010002@linux.vnet.ibm.com>
-	<4FE1825B.1030402@linux.vnet.ibm.com>
-	<20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp>
-	<4FE193AA.8010801@linux.vnet.ibm.com>
-	<20120620215653.15930f3467bc13748d548b0d@gmail.com>
-	<4FE1CE43.9080203@linux.vnet.ibm.com>
-	<20120620231112.440df9ae19c1aca36100b746@gmail.com>
-	<4FE27D55.4040805@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757542Ab2FUCLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 22:11:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41258 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757436Ab2FUCLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 22:11:16 -0400
+Message-ID: <4FE282B5.3010606@redhat.com>
+Date: Wed, 20 Jun 2012 22:11:01 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kvm: handle last_boosted_vcpu = 0 case
+References: <20120619202047.26191.40429.sendpatchset@codeblue> <20120619165104.2a4574f8@annuminas.surriel.com> <4FE22E9E.7070206@linux.vnet.ibm.com>
+In-Reply-To: <4FE22E9E.7070206@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012 09:48:05 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+On 06/20/2012 04:12 PM, Raghavendra K T wrote:
+> On 06/20/2012 02:21 AM, Rik van Riel wrote:
 
-> > We can change the debug message later if needed.
+>> Please let me know how it goes.
+>
+> Yes, have got result today, too tired to summarize. got better
+> performance result too. will come back again tomorrow morning.
+> have to post, randomized start point patch also, which I discussed to
+> know the opinion.
 
-> Actually, i am going to use tracepoint instead of
-> these debug code.
+The other person's problem has also gone away with this
+patch.
 
-That's very nice!
+Avi, could I convince you to apply this obvious bugfix
+to kvm.git? :)
 
-Then, please change the trace log to correspond to the
-new spte_write_protect name at that time.
+>> ====8<====
+>>
+>> If last_boosted_vcpu == 0, then we fall through all test cases and
+>> may end up with all VCPUs pouncing on vcpu 0. With a large enough
+>> guest, this can result in enormous runqueue lock contention, which
+>> can prevent vcpu0 from running, leading to a livelock.
+>>
+>> Changing< to<= makes sure we properly handle that case.
 
-Thank you, Xiao.
+>>
+>> Signed-off-by: Rik van Riel<riel@redhat.com>
+>> ---
+>> virt/kvm/kvm_main.c | 2 +-
+>> 1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+>> index 7e14068..1da542b 100644
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -1586,7 +1586,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>> */
+>> for (pass = 0; pass< 2&& !yielded; pass++) {
+>> kvm_for_each_vcpu(i, vcpu, kvm) {
+>> - if (!pass&& i< last_boosted_vcpu) {
+>> + if (!pass&& i<= last_boosted_vcpu) {
+>> i = last_boosted_vcpu;
+>> continue;
+>> } else if (pass&& i> last_boosted_vcpu)
+>>
+>>
+>
 
-	Takuya
+
+-- 
+All rights reversed
