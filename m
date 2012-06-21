@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828Ab2FUIbE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:31:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45633 "EHLO
+	id S1758817Ab2FUIek (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:34:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45680 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758736Ab2FUIa7 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1758798Ab2FUIei convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:30:59 -0400
-Message-ID: <1340267442.21745.156.camel@twins>
-Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
- and consolidation
+	Thu, 21 Jun 2012 04:34:38 -0400
+Message-ID: <1340267659.21745.157.camel@twins>
+Subject: Re: [PATCH v3] sched: balance_cpu to consider other cpus in its
+ group as target of (pinned) task
 From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Date: Thu, 21 Jun 2012 10:30:42 +0200
-In-Reply-To: <CAFTL4hz9UZr0Xfd4m3WTBma8vSvbm0Lg8o=oXsjFbpPfG9RxjQ@mail.gmail.com>
-References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
-	 <1340231192.21745.154.camel@twins>
-	 <CAFTL4hz9UZr0Xfd4m3WTBma8vSvbm0Lg8o=oXsjFbpPfG9RxjQ@mail.gmail.com>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org, efault@gmx.de,
+        Ingo Molnar <mingo@elte.hu>
+Date: Thu, 21 Jun 2012 10:34:19 +0200
+In-Reply-To: <20120621034059.GA9748@linux.vnet.ibm.com>
+References: <4FE06CDB.2060605@linux.vnet.ibm.com>
+	 <1340213901.21745.122.camel@twins>
+	 <20120621034059.GA9748@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -33,16 +28,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-21 at 02:46 +0200, Frederic Weisbecker wrote:
-> > So I understand why s390,ia64 want the sched hook, but I don't see why
-> > ppc would need it, their account_process_tick() can fold whatever they
-> > need on the tick.
-> 
-> I think in any case you need to flush the time on a descheduling task otherwise
-> its pending time will be accounted later to the next task when it
-> receives an irq.
-> 
-> So I fear we still need that sched switch hook even with per cpu data. This
-> may be a simple account_system_vtime() call. 
+On Thu, 2012-06-21 at 09:10 +0530, Srivatsa Vaddagiri wrote:
 
-Did I miss a per-task something in there?
+> Hmm ..I can see loop_break being incremented here:
+> 
+>                 /* take a breather every nr_migrate tasks */
+>                 if (env->loop > env->loop_break) {
+>                         env->loop_break += sched_nr_migrate_break;
+>                         env->flags |= LBF_NEED_BREAK;
+>                         goto out;
+>                 }
+> 
+> As a result, when we redo with a different src_cpu, both loop and
+> loop_break could be at non-default values.  Am I missing something here?
+
+D'0h right you are.. /me quickly edits patch again.
+
+I thought I removed all that, guess I didn't.
