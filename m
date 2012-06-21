@@ -1,124 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab2FUC2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 22:28:10 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:29693 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab2FUC2I (ORCPT
+	id S1754382Ab2FUCdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 22:33:32 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47610 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753814Ab2FUCdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 22:28:08 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-131.messagelabs.com!1340245687!22817991!2
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 12/12] staging: comedi: s626: factor out the find PCI device code
-Date: Wed, 20 Jun 2012 19:28:01 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Wed, 20 Jun 2012 22:33:31 -0400
+X-Sasl-enc: VNcwvKCIts+Jrpq6m841C21KBe4fOfVn7XczSUoStO// 1340246010
+Date: Wed, 20 Jun 2012 23:33:27 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@amd64.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH] x86, microcode: Make reload interface per system
+Message-ID: <20120621023327.GA16269@khazad-dum.debian.net>
+References: <20120619051116.GB31591@aftab.osrc.amd.com>
+ <1340093864.21745.6.camel@twins>
+ <20120619102250.GA787@aftab.osrc.amd.com>
+ <1340101568.21745.37.camel@twins>
+ <20120619182228.GA18816@khazad-dum.debian.net>
+ <4FE0DF9F.10401@zytor.com>
+ <20120620234651.GD4223@khazad-dum.debian.net>
+ <4FE26182.5070107@zytor.com>
+ <20120621000631.GH4223@khazad-dum.debian.net>
+ <4FE2683E.4060707@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201206201928.02217.hartleys@visionengravers.com>
+In-Reply-To: <4FE2683E.4060707@zytor.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out the code that finds a matching PCI device from attach
-function.
+On Wed, 20 Jun 2012, H. Peter Anvin wrote:
+> On 06/20/2012 05:06 PM, Henrique de Moraes Holschuh wrote:
+> > No, because dd if=<whatever> of=/dev/cpu/microcode bs=1M means I have to
+> > add dd to the initramfs or to busybox, AND it will break the day the
+> > microcode data file gets bigger than 1M.  And it will be at best very
+> > annoying to have to special case each vendor to locate the correct
+> > microcode, etc.
+> 
+> No.
+> 
+> The whole point is you won't have to put ANYTHING in your initramfs,
+> period.  The early microcode blob will be all you need there.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/s626.c | 54 +++++++++++++++++++++--------------
- 1 file changed, 32 insertions(+), 22 deletions(-)
+Yes.  And the sooner it gets done that way, the better.  But until then, IMO
+the firmware_request + sysfs trigger interface is easier and friendler to
+use than /dev/cpu/microcode.
 
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index 779ae7a..bef9649 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -2476,6 +2476,35 @@ static void CountersInit(struct comedi_device *dev)
- 	}
- }
- 
-+static struct pci_dev *s626_find_pci(struct comedi_device *dev,
-+				     struct comedi_devconfig *it)
-+{
-+	struct pci_dev *pcidev = NULL;
-+	int bus = it->options[0];
-+	int slot = it->options[1];
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(s626_boards) && !pcidev; i++) {
-+		do {
-+			pcidev = pci_get_subsys(s626_boards[i].vendor_id,
-+						s626_boards[i].device_id,
-+						s626_boards[i].subvendor_id,
-+						s626_boards[i].subdevice_id,
-+						pcidev);
-+
-+			if ((bus || slot) && pcidev) {
-+				/* matches requested bus/slot */
-+				if (pcidev->bus->number == bus &&
-+				    PCI_SLOT(pcidev->devfn) == slot)
-+					break;
-+			} else {
-+				break;
-+			}
-+		} while (1);
-+	}
-+	return pcidev;
-+}
-+
- static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
- /*   uint8_t	PollList; */
-@@ -2489,36 +2518,17 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	resource_size_t resourceStart;
- 	dma_addr_t appdma;
- 	struct comedi_subdevice *s;
--	struct pci_dev *pdev = NULL;
- 
- 	if (alloc_private(dev, sizeof(struct s626_private)) < 0)
- 		return -ENOMEM;
- 
--	for (i = 0; i < ARRAY_SIZE(s626_boards) && !pdev; i++) {
--		do {
--			pdev = pci_get_subsys(s626_boards[i].vendor_id,
--					      s626_boards[i].device_id,
--					      s626_boards[i].subvendor_id,
--					      s626_boards[i].subdevice_id,
--					      pdev);
--
--			if ((it->options[0] || it->options[1]) && pdev) {
--				/* matches requested bus/slot */
--				if (pdev->bus->number == it->options[0] &&
--				    PCI_SLOT(pdev->devfn) == it->options[1])
--					break;
--			} else
--				break;
--		} while (1);
--	}
--	devpriv->pdev = pdev;
--
--	if (pdev == NULL) {
-+	devpriv->pdev = s626_find_pci(dev, it);
-+	if (!devpriv->pdev) {
- 		printk(KERN_ERR "s626_attach: Board not present!!!\n");
- 		return -ENODEV;
- 	}
- 
--	result = comedi_pci_enable(pdev, "s626");
-+	result = comedi_pci_enable(devpriv->pdev, "s626");
- 	if (result < 0) {
- 		printk(KERN_ERR "s626_attach: comedi_pci_enable fails\n");
- 		return -ENODEV;
+> So the only issue left is what to do when you want to update the
+> microcode in an already running system.
+
+Well, IMO the firmware interface makes that somewhat easier on the userland
+side, as it is more userfriendly from a generic support for processor
+microcode updates point-of-view.  And the sysfs trigger isn't that horrible,
+it is certainly easier to script than an ioctl or syscall.
+
+I guess it's better if we just agree to disagree on this...
+
 -- 
-1.7.11
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
