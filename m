@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737Ab2FUCYD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 22:24:03 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:44575 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2FUCYA (ORCPT
+	id S1754534Ab2FUCYk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 22:24:40 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:44224 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab2FUCYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 22:24:00 -0400
+	Wed, 20 Jun 2012 22:24:38 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-131.messagelabs.com!1340245439!22817744!1
-X-Originating-IP: [216.166.12.178]
+X-Msg-Ref: server-4.tower-160.messagelabs.com!1340245464!6425747!2
+X-Originating-IP: [216.166.12.180]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 01/12] staging: comedi: s626: local functions should not be exposed globally
-Date: Wed, 20 Jun 2012 19:23:54 -0700
+Subject: [PATCH 02/12] staging: comedi: s626: pointers should be cleared with NULL not 0
+Date: Wed, 20 Jun 2012 19:24:19 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,18 +23,16 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201206201923.54435.hartleys@visionengravers.com>
+Message-ID: <201206201924.20348.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'ResetADC' function is prototyped as a static but is missing
-the static tag in it's definition. The function is only referenced
-in this file so add the static tag to the definition.
+pdma->LogicalBase is a void *, NULL should be used to clear it not 0.
 
 This quiets a sparse warning about:
 
-warning: symbol 'ResetADC' was not declared. Should it be static?
+warning: Using plain integer as NULL pointer
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
@@ -45,18 +43,18 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index d5edd9c..440060b 100644
+index 440060b..58c9e40 100644
 --- a/drivers/staging/comedi/drivers/s626.c
 +++ b/drivers/staging/comedi/drivers/s626.c
-@@ -1348,7 +1348,7 @@ static void s626_detach(struct comedi_device *dev)
- /*
-  * this functions build the RPS program for hardware driven acquistion
-  */
--void ResetADC(struct comedi_device *dev, uint8_t * ppl)
-+static void ResetADC(struct comedi_device *dev, uint8_t *ppl)
- {
- 	register uint32_t *pRPS;
- 	uint32_t JmpAdrs;
+@@ -2779,7 +2779,7 @@ static void CloseDMAB(struct comedi_device *dev, struct bufferDMA *pdma,
+ 	vpptr = pdma->PhysicalBase;
+ 	if (vbptr) {
+ 		pci_free_consistent(devpriv->pdev, bsize, vbptr, vpptr);
+-		pdma->LogicalBase = 0;
++		pdma->LogicalBase = NULL;
+ 		pdma->PhysicalBase = 0;
+ 
+ 		DEBUG("CloseDMAB(): Logical=%p, bsize=%d, Physical=0x%x\n",
 -- 
 1.7.11
 
