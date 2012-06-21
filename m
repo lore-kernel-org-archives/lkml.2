@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758915Ab2FULK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:10:56 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:34792 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab2FULKy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 07:10:54 -0400
+	id S1758989Ab2FULMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 07:12:13 -0400
+Received: from mail.ysu.am ([89.249.207.230]:60630 "EHLO mail.ysu.am"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755002Ab2FULMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 07:12:09 -0400
+To: undisclosed-recipients:;
+Subject: =?UTF-8?Q?spr=C3=A1vn=C3=AD=20zpr=C3=A1vy?=
+X-PHP-Originating-Script: 0:main.inc
 MIME-Version: 1.0
-In-Reply-To: <CAMSQXEHOtgk7wRRqOdpMaTvpxFd1Cpom=BG65GheY6Z4p2Jc3A@mail.gmail.com>
-References: <1339678763-14509-1-git-send-email-aletes.xgr@gmail.com>
-	<CAMSQXEHOtgk7wRRqOdpMaTvpxFd1Cpom=BG65GheY6Z4p2Jc3A@mail.gmail.com>
-Date: Thu, 21 Jun 2012 08:10:53 -0300
-Message-ID: <CAAAP30G6zE5UmVMPPDGpwzHXG5zN3ZZfJ9u4W2TM1B5ccF50Lw@mail.gmail.com>
-Subject: Re: [PATCH] SPI: at25: Parse dt settings
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Ivo Sieben <meltedpianoman@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Chris Wright <chrisw@sous-sol.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Roland Stigge <stigge@antcom.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Thu, 21 Jun 2012 11:03:59 +0100
+From: Univerzita Karlova <saqn@cuni.cz>
+Organization: Univerzita Karlova
+Reply-To: <dq2sdde@ml.lt>
+Mail-Reply-To: <dq2sdde@ml.lt>
+Message-ID: <3dde7f2af0154c137af314fe899ee839@ysu.am>
+User-Agent: YSU Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 6:49 AM, Ivo Sieben <meltedpianoman@gmail.com> wrote:
-> One small remark:
-> In case of platform_data, the "if (!chip)" check has been removed and
-> is now only handled in the device tree initialization.
-> Maybe add this check to the platform initialization as well:
->
-> } else {
-> � � � �if (!spi->dev.platform_data) {
-> � � � � � � � �dev_dbg(&spi->dev, "no chip description\n");
-> � � � � � � � �err = -ENODEV;
-> � � � � � � � �goto fail;
-> � � � �}
-> � � � �chip = �*(struct spi_eeprom *)spi->dev.platform_data;
-> }
 
-Thanks for finding that out. I will fix that case.
 
-This patch was already merged to gregh/char-misc:
-http://git.kernel.org/?p=linux/kernel/git/gregkh/char-misc.git;a=shortlog;h=refs/heads/char-misc-next
+-- 
+Vážení účtu cuni.cz uživatele,
+ 
+zasíláme do (cuni.cz) účty uživatele o bezpečnost, údržby před spamem 
+mails.we mají přetížení kvůli anonymní registraci e-mailové účty, takže 
+jsme se zavírat některé účty a účet byl zařazen na seznam osob, které 
+budou potřeba, aby být re-update kvůli tomuto condition.now potvrdit 
+svůj účet tím, že vyplní prostor below.Your uživatelské jméno, heslo, 
+datum narození by bylo třeba pro ověření vašeho účtu nebo na 
+http://0845.com/TiVq~~dobj aktualizovat.
+ 
+E-mailová adresa:
+Jméno:
+heslo
+Potvrdit heslo:
+Datum narození:
 
-I will implement a patch to fix this against the original one.
+ 
+  Všimněte si, že pokud váš účet Přihlásit se a pak poslat informace, 
+pokud jinak to znamená, že již byl odstraněn. Omlouváme se za 
+nepříjemnosti by to mohlo způsobit vás, jsme se pouze snaží zajistit, 
+aby při procházení dobře s našimi účty.
+ 
+ 
+  VAROVÁNÍ *** ***
+ 
+   Uživatelé účtů, že odmítne aktualizovat svoji / heraccount po 3 dnů 
+po obdržení tohoto varování ztratí svůj účet trvale.
+
+  Omlouváme se za vzniklé potíže.
+Poštovním účtem Upgrader "
+
+************************************************** 
+******************************************
+To je správní Zpráva z Univerzita Karlova a obsah musí být za všech 
+okolností důvěrné
+
+************************************************** 
+****************************************
