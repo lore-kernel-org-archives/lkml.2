@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab2FUBUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 21:20:55 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:59306 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752215Ab2FUBUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 21:20:53 -0400
-From: Davide Ciminaghi <dciminaghi@mail.gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: giancarlo.asnaghi@st.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, rubini@gnudd.com,
-        Davide Ciminaghi <ciminaghi@gnudd.com>
-Subject: [PATCH] sta2x11-fixup : add clk related fields to struct sta2x11_instance
-Date: Thu, 21 Jun 2012 03:04:27 +0200
-Message-Id: <1340240667-3237-1-git-send-email-dciminaghi@mail.gnudd.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1756508Ab2FUBVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 21:21:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59965 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755644Ab2FUBVL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 21:21:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120620223754.GA5864@kroah.com>
+References: <1339391600-17815-1-git-send-email-ming.lei@canonical.com>
+	<20120615220343.GA8928@kroah.com>
+	<CACVXFVO6h6wiHdTwVcjQLNtncO+ezVX3RJZPVenHEmhHjErRhg@mail.gmail.com>
+	<20120618222550.GB11737@kroah.com>
+	<CACVXFVOr1mnjaEoGpc3O_MDuvi_KHTXtsEBQ7LLoaeWxWRa0aQ@mail.gmail.com>
+	<20120620223754.GA5864@kroah.com>
+Date: Thu, 21 Jun 2012 09:21:08 +0800
+Message-ID: <CACVXFVNP4HJwtjgAD=D7Fv7NW2j1aHj55X8j-4qhpBZTcw2+7w@mail.gmail.com>
+Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v2)
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
+On Thu, Jun 21, 2012 at 6:37 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Tue, Jun 19, 2012 at 10:00:36AM +0800, Ming Lei wrote:
 
-sta2x11_instance is still opaque, so we also add functions to
-access some of its fields.
+>> so I marked it as -stable because I have explained how the race can be
+>> exploited in reality.
+>
+> Ok, but as this has been there since when, 2.5, I'll refrain from
+> marking it this way, as no one has reported a real problem like this
+> before.
 
-Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
----
+So have you agreed on keeping Cc: stable in v3?
 
-Hi,
+>> I still have more many examples in kernel about timeout value...
+>
+> Yes, I know this, but now you are putting a limit on the amount of time
 
-I'm implementing the common clock framework for the STA2X11.
-Since more than one connext chip could be present on a single board, I could
-also have multiple instances of the clocks tree. As a consequence, I need
-to modify the structure representing a sta2x11 chip by adding a pointer to the
-relevant clock tree. Being struct sta2x11_instance opaque, some functions are
-also needed to access its fields from outside sta2x11-fixup.
+No, I don't put a limit on it, see my below explanation.
 
-Davide
+> a probe function can take, when before, we have never had one.  That's
+> not something to be taken lightly, and is one I know is not true.
+>
+>> > Why not just do a real lock and try for forever?
+>>
+>> IMO, there are two advantages not just doing a real lock for forever:
+>>
+>> - avoiding buggy device/driver to hang the system
+>> - with trylock, we can log the buggy device so that it is a bit
+>> easier to troubleshoot the buggy drivers, suppose the bug is
+>> only triggered 1 time in one year or more
+>
+> No, just fix the driver, I don't want to put a time limit on how long
 
- arch/x86/include/asm/sta2x11.h |   16 ++++++++++++++++
- arch/x86/pci/sta2x11-fixup.c   |   20 ++++++++++++++++++++
- 2 files changed, 36 insertions(+), 0 deletions(-)
+Surely we need to fix the driver, but the problem is that it may be very
+difficult to fix the driver without the log introduced in the patch, so why
+not take it without obvious side effect?
 
-diff --git a/arch/x86/include/asm/sta2x11.h b/arch/x86/include/asm/sta2x11.h
-index e9d32df..2b5d8bc 100644
---- a/arch/x86/include/asm/sta2x11.h
-+++ b/arch/x86/include/asm/sta2x11.h
-@@ -5,8 +5,24 @@
- #define __ASM_STA2X11_H
- 
- #include <linux/pci.h>
-+#include <linux/clk.h>
- 
- /* This needs to be called from the MFD to configure its sub-devices */
- struct sta2x11_instance *sta2x11_get_instance(struct pci_dev *pdev);
- 
-+/*
-+ * Return instance id
-+ */
-+int sta2x11_get_instance_id(struct sta2x11_instance *instance);
-+
-+/*
-+ * Add clks array to instance. This is called by clock common API
-+ */
-+void sta2x11_instance_add_clks(struct sta2x11_instance *, struct clk **);
-+
-+/*
-+ * Returns clks array of instance. This is called by clock common API
-+ */
-+struct clk **sta2x11_instance_get_clks(struct sta2x11_instance *);
-+
- #endif /* __ASM_STA2X11_H */
-diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-index 9d8a509..6450853 100644
---- a/arch/x86/pci/sta2x11-fixup.c
-+++ b/arch/x86/pci/sta2x11-fixup.c
-@@ -27,6 +27,8 @@
- #include <linux/export.h>
- #include <linux/list.h>
- 
-+#include <asm/sta2x11.h>
-+
- #define STA2X11_SWIOTLB_SIZE (4*1024*1024)
- extern int swiotlb_late_init_with_default_size(size_t default_size);
- 
-@@ -52,6 +54,7 @@ struct sta2x11_instance {
- 	struct list_head list;
- 	int bus0;
- 	struct sta2x11_mapping map[STA2X11_NR_EP];
-+	struct clk **clks;
- };
- 
- static LIST_HEAD(sta2x11_instance_list);
-@@ -78,6 +81,17 @@ static void sta2x11_new_instance(struct pci_dev *pdev)
- }
- DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO, 0xcc17, sta2x11_new_instance);
- 
-+void sta2x11_instance_add_clks(struct sta2x11_instance *instance,
-+			       struct clk **clks)
-+{
-+	instance->clks = clks;
-+}
-+
-+struct clk **sta2x11_instance_get_clks(struct sta2x11_instance *instance)
-+{
-+	return instance->clks;
-+}
-+
- /*
-  * Utility functions used in this file from below
-  */
-@@ -124,6 +138,12 @@ struct sta2x11_instance *sta2x11_get_instance(struct pci_dev *pdev)
- }
- EXPORT_SYMBOL(sta2x11_get_instance);
- 
-+int sta2x11_get_instance_id(struct sta2x11_instance *instance)
-+{
-+	return instance->bus0;
-+}
-+EXPORT_SYMBOL(sta2x11_get_instance_id);
-+
- 
- /**
-  * p2a - Translate physical address to STA2x11 AMBA address,
--- 
-1.7.9.1
+> probe can take, as we never have in the past and I'm sure that whatever
+> we pick, will be wrong for someone.
+>
+> I have seen devices that take many seconds, and minutes for some if bad
+> things happen (i.e. the firmware doesn't download properly).  Don't
+> break people's working systems.
 
+Suppose some weird devices may take so much time on its probe callback,
+the patch does not break anything, just like before applying the patch:
+call its .shutdown callback directly without holding the device lock.
+
+So could we just change the timeout value to a larger one? such as 10
+seconds or more?
+
+Thanks,
+--
+Ming Lei
