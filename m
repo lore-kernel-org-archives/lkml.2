@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab2FUO2j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 10:28:39 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:36877 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab2FUO2h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 10:28:37 -0400
-Date: Thu, 21 Jun 2012 16:28:07 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: x86@kernel.org
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
-Message-ID: <20120621162807.3c621d46@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757178Ab2FUOaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 10:30:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754369Ab2FUOaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 10:30:20 -0400
+Date: Thu, 21 Jun 2012 10:29:38 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Uros Vampl <mobile.leecher@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Chubb <peter.chubb@nicta.com.au>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH] x86: Aspire One Happy2 reboots only with the kbd method
+Message-ID: <20120621142938.GZ32472@redhat.com>
+References: <20120621133203.GA26316@zverina>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120621133203.GA26316@zverina>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Delvare <khali@linux-fr.org>
-Subject: x86, cpufeature: Fix duplicate feature name "dts"
+On Thu, Jun 21, 2012 at 03:32:03PM +0200, Uros Vampl wrote:
+> Add a quirk to make the Acer Aspire One Happy2 reboot properly. For 
+> reference, discussion at the Arch forums: 
+> https://bbs.archlinux.org/viewtopic.php?id=143716
+> 
+> Signed-off-by: Uroš Vampl <mobile.leecher@gmail.com>
 
-We currently have two different x86 CPU features reported as "dts"
-in /proc/cpuinfo: Debug Store and Digital Thermal Sensor. Change the
-former to "ds" which makes more sense anyway, to clear up the
-confusion.
+Seems fine by me based on the thread above.  Not sure if there is another
+callback that should be tried first before using BOOT_KBD.  Probably
+doesn't matter.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/cpufeature.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Acked-by: Don Zickus <dzickus@redhat.com>
 
---- linux-3.5-rc3.orig/arch/x86/include/asm/cpufeature.h	2012-06-21 15:57:17.061585016 +0200
-+++ linux-3.5-rc3/arch/x86/include/asm/cpufeature.h	2012-06-21 15:57:42.087585387 +0200
-@@ -35,7 +35,7 @@
- #define X86_FEATURE_PSE36	(0*32+17) /* 36-bit PSEs */
- #define X86_FEATURE_PN		(0*32+18) /* Processor serial number */
- #define X86_FEATURE_CLFLSH	(0*32+19) /* "clflush" CLFLUSH instruction */
--#define X86_FEATURE_DS		(0*32+21) /* "dts" Debug Store */
-+#define X86_FEATURE_DS		(0*32+21) /* Debug Store */
- #define X86_FEATURE_ACPI	(0*32+22) /* ACPI via MSR */
- #define X86_FEATURE_MMX		(0*32+23) /* Multimedia Extensions */
- #define X86_FEATURE_FXSR	(0*32+24) /* FXSAVE/FXRSTOR, CR4.OSFXSR */
-
-
--- 
-Jean Delvare
+> 
+> --- linux-3.4.3.orig/arch/x86/kernel/reboot.c	2012-06-17 20:21:44.000000000 +0200
+> +++ linux-3.4.3/arch/x86/kernel/reboot.c	2012-06-21 15:16:15.003430778 +0200
+> @@ -317,6 +317,14 @@
+>  			DMI_MATCH(DMI_PRODUCT_NAME, "AOA110"),
+>  		},
+>  	},
+> +	{ /* Handle reboot issue on Acer Aspire One Happy2 */
+> +		.callback = set_kbd_reboot,
+> +		.ident = "Acer Aspire One Happy2",
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "AOHAPPY2"),
+> +		},
+> +	},
+>  	{ }
+>  };
+>  
