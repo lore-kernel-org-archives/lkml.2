@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759984Ab2FUR3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 13:29:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38462 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab2FUR3G (ORCPT
+	id S1759996Ab2FURbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 13:31:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40174 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759977Ab2FURbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 13:29:06 -0400
-Date: Thu, 21 Jun 2012 14:28:59 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: "Pierre-Loup A. Griffais" <pgriffais@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, torvalds@linux-foundation.org,
-        Mike Sartain <mikesart@valvesoftware.com>
-Subject: Re: [PATCH] perf symbols: Follow .gnu_debuglink section to find
- separate symbols
-Message-ID: <20120621172859.GA17747@infradead.org>
-References: <4FE24D31.3070608@nvidia.com>
+	Thu, 21 Jun 2012 13:31:41 -0400
+Message-ID: <4FE35A78.60003@wwwdotorg.org>
+Date: Thu, 21 Jun 2012 11:31:36 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FE24D31.3070608@nvidia.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, lee.jones@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 2/3] regulator: dt: regulator match by regulator-compatible
+References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com> <201206211450.35713.arnd@arndb.de> <20120621161459.GY4037@opensource.wolfsonmicro.com> <201206211717.46142.arnd@arndb.de>
+In-Reply-To: <201206211717.46142.arnd@arndb.de>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jun 20, 2012 at 03:22:41PM -0700, Pierre-Loup A. Griffais escreveu:
-> The .gnu_debuglink section is specified to contain the filename of the
-> debug info file, as well as a CRC that can be used to validate it.
-
-> This provides more context:
-> http://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+On 06/21/2012 11:17 AM, Arnd Bergmann wrote:
+> On Thursday 21 June 2012, Mark Brown wrote:
+...
+>> I'm also not sure if the tooling works well for allowing people to
+>> include standard DTs for chips and add new properties to nodes for the
+>> board specific configuration, though I think I've seen a few things
+>> which suggested that was dealt with reasonably well.
 > 
-> +++ b/tools/perf/util/symbol.c
-> +static int filename__read_debuglink(const char *filename,
-> +				    char *path, size_t size)
-> +{
+> It should never be necessary to add board-specific properties in the
+> nodes that describe the SoC specific bits. What I was referring to
+> is just moving the data that currently resides in the regulator
+> driver into DT.
 
-Isn't there any other function that opens an ELF file, looks for an
-specific session to then read its contents?
-
-Couldn't it be reused here?
-
-> +		case SYMTAB__DEBUGLINK: {
-> +			char *last_slash;
-> +			strncpy(name, dso->long_name, size);
-> +			last_slash = name + dso->long_name_len;
-> +			while (last_slash && *last_slash != '/')
-> +				last_slash--;
-
-Why the test for last_slash to be != NULL? How could it ever be? This is
-an optimization since we have the dso->long_name_len so that we avoid
-using strrchr that in turn would do an strlen?
-
-So the test should be:
-
-			while (last_slash != name && *last_slash != '/')
-
-To avoid underflowing, right?
-
-> +			if (last_slash)
-> +				last_slash++;
-> +			filename__read_debuglink(dso->long_name, last_slash,
-
-How last_slash can point to the path? It looks like it points to the
-basename, no?
-
-Yeah, it is, and then your algorithm will work because last_slash
-doesn't point to the _path_, but to a string _preceded_ by the path, so
-for /bin/ls, the debuglink content would be ls.debug and that is what
-will be stashed there, ending up with:
-
-name = "/bin/\0"
-last_slash---^
-name = "/bin/ls.debug\0"
-
-I.e. its not really the last slash, but where the debuglink content has
-to be stashed, concatenating with the same dirname as the associated
-binary.
-
-Can you please rename "last_slash" to "debuglink"? And "path" to
-"debuglink" as well in the routine that reads the debuglink.
-
-> +						 size - (last_slash - name));
-> +			}
-
-Other than that, thanks a lot for working on this, surely we have to
-support this feature!
-
-- ARnaldo
+I guess I must be misunderstanding that comment - there are many many
+examples of boards adding properties to nodes that describe the SoC. For
+example, the GPIOs used by SDHCI controllers, board-specific max clock
+rates for SDHCI or I2C controllers, pinmux configuration properties, to
+name just a few.
