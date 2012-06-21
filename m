@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab2FUNuA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 09:50:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38531 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759686Ab2FUNtr (ORCPT
+	id S1759685Ab2FUODP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 10:03:15 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:64496 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389Ab2FUODO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 09:49:47 -0400
-Date: Thu, 21 Jun 2012 06:49:42 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, stable@vger.kernel.org
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v2)
-Message-ID: <20120621134942.GA8401@kroah.com>
-References: <1339391600-17815-1-git-send-email-ming.lei@canonical.com>
- <20120615220343.GA8928@kroah.com>
- <CACVXFVO6h6wiHdTwVcjQLNtncO+ezVX3RJZPVenHEmhHjErRhg@mail.gmail.com>
- <20120618222550.GB11737@kroah.com>
- <CACVXFVOr1mnjaEoGpc3O_MDuvi_KHTXtsEBQ7LLoaeWxWRa0aQ@mail.gmail.com>
- <20120620223754.GA5864@kroah.com>
- <CACVXFVNP4HJwtjgAD=D7Fv7NW2j1aHj55X8j-4qhpBZTcw2+7w@mail.gmail.com>
+	Thu, 21 Jun 2012 10:03:14 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 21 Jun 2012 07:03:20 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.5-rc4
+Message-ID: <20120621140320.GA14213@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVNP4HJwtjgAD=D7Fv7NW2j1aHj55X8j-4qhpBZTcw2+7w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 09:21:08AM +0800, Ming Lei wrote:
-> On Thu, Jun 21, 2012 at 6:37 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Jun 19, 2012 at 10:00:36AM +0800, Ming Lei wrote:
-> 
-> >> so I marked it as -stable because I have explained how the race can be
-> >> exploited in reality.
-> >
-> > Ok, but as this has been there since when, 2.5, I'll refrain from
-> > marking it this way, as no one has reported a real problem like this
-> > before.
-> 
-> So have you agreed on keeping Cc: stable in v3?
 
-No.
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> >> I still have more many examples in kernel about timeout value...
-> >
-> > Yes, I know this, but now you are putting a limit on the amount of time
-> 
-> No, I don't put a limit on it, see my below explanation.
-> 
-> > a probe function can take, when before, we have never had one.  That's
-> > not something to be taken lightly, and is one I know is not true.
-> >
-> >> > Why not just do a real lock and try for forever?
-> >>
-> >> IMO, there are two advantages not just doing a real lock for forever:
-> >>
-> >> - avoiding buggy device/driver to hang the system
-> >> - with trylock, we can log the buggy device so that it is a bit
-> >> easier to troubleshoot the buggy drivers, suppose the bug is
-> >> only triggered 1 time in one year or more
-> >
-> > No, just fix the driver, I don't want to put a time limit on how long
-> 
-> Surely we need to fix the driver, but the problem is that it may be very
-> difficult to fix the driver without the log introduced in the patch, so why
-> not take it without obvious side effect?
+Hi Linus,
 
-Because nothing is wrong with the driver if it takes that long, it's not
-"broken" at all, because we have never made the rule that a probe
-function has to complete in a specific amount of time.
+Please pull hwmon fixes for Linux 3.5-rc4 from signed tag:
 
-We also have not made the rule that a shutdown will complete in a
-specific amount of time either, so there is no problem if that takes a
-long time as well.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-greg k-h
+Thanks,
+Guenter
+
+------
+
+The following changes since commit 485802a6c524e62b5924849dd727ddbb1497cc71:
+
+  Linux 3.5-rc3 (2012-06-16 17:25:17 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to 2355375efdf10f43680d420023baa97796bfcdff:
+
+  hwmon: (emc2103) Fix use of an uninitilized variable in error case (2012-06-18 08:48:00 -0700)
+
+----------------------------------------------------------------
+hwmon fixes for 3.5-rc4
+
+Two minor fixes in emc2103 and applesmc drivers.
+
+----------------------------------------------------------------
+Guenter Roeck (1):
+      hwmon: (emc2103) Fix use of an uninitilized variable in error case
+
+Henrik Rydberg (1):
+      hwmon: (applesmc) Limit key length in warning messages
+
+ drivers/hwmon/applesmc.c |    4 ++--
+ drivers/hwmon/emc2103.c  |   12 ++++++++----
+ 2 files changed, 10 insertions(+), 6 deletions(-)
+
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP4ymoAAoJEMsfJm/On5mBzOcP/25F+NtDkgUMwSKZ7Ov2bypE
+HVdISkBzjtg7f13mP4dYv4K3oPwvIEo0T8yLiv4Giez3/uqBIgDTquJl2MJKQkVL
+MHW05aBGS9ohOy/g6C/Zu/kX02mQc8j1ZAJsL8kl4GBT5AlsvNDaEeb0WDcoX+3A
+fxwPgnMRCQHDzmp7EAGr1cTGUo0PMhLHIzNK+ezJzGJhUi9MKLsadEvHwdn9W8YO
+Dw7hW5vcXH1dmIE/2tnVUsS/T7ddyQ/zNQzcK8vXTvgwjsazdad8oBuDSSpjuoxX
+hmM2ekvFEDrShhTqxmlp5EFLheoHecxzG2E867Y3gywUDVy21M2D9ZGOg5TZ6xTP
++amWcFcwDifI+Vr0CBKE6oGnJ3RrvD5fjFwN+M3tg2cJs1RoC4kY60kdvhBUFH9d
+gGRT9Oy5ffZSrwuWfrNqOM3yYsNFXvJSFjkeiQYGfPXNqT4AJyOdXQK0rfRuINny
+g981UFC8vXexKYnjKT/ODEFcEpyKgJPBKtPqW03k/ONH0JRaDLLtE3L5AzjAIm2h
+qZ9ioMJ6Ntf6kXWiqDW+RhCpuJTLfh4obh9kgjaDPAQkxCXsDz0AtvpKsFJ2ERLb
+4mOXb8L7tD3tCa5oyP7ABEWz+iE//v6LTaRekBCbdMQwHTymTeN0KLFL/lWH/vKI
+dt6aklGGc3O0Fc2h5bTi
+=BOFw
+-----END PGP SIGNATURE-----
+
+--XsQoSWH+UP9D9v3l--
