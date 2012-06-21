@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759035Ab2FUOZF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 10:25:05 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42125 "HELO
+	id S1756392Ab2FUO1t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 10:27:49 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42132 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756981Ab2FUOZD (ORCPT
+	with SMTP id S1753939Ab2FUO1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 10:25:03 -0400
-Date: Thu, 21 Jun 2012 10:25:02 -0400 (EDT)
+	Thu, 21 Jun 2012 10:27:47 -0400
+Date: Thu, 21 Jun 2012 10:27:46 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
-To: Dave Chinner <david@fromorbit.com>
-cc: Dima Tisnek <dimaqq@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jens Axboe <axboe@kernel.dk>, USB list <linux-usb@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: mount stuck, khubd blocked
-In-Reply-To: <20120621013457.GQ30705@dastard>
-Message-ID: <Pine.LNX.4.44L0.1206211020450.1164-100000@iolanthe.rowland.org>
+To: chao xie <xiechao.linux@gmail.com>
+cc: linux-pm@vger.kernel.org, <linux-kernel@vger.kernel.org>, <rjw@sisk.pl>,
+        <pavel@ucw.cz>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: pm runtime and system suspend resume
+In-Reply-To: <CAK9wHMS_P+y+NmvVVrH+nNOb=KPi3rEgJOWEcRcKf3mTkxjDPA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1206211025060.1164-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012, Dave Chinner wrote:
+On Thu, 21 Jun 2012, chao xie wrote:
 
-> > > As it is, I think that invalidate_partition() is doing something
-> > > somewhat insane for a block device that has been removed - you can't
-> > > write to it so fsync_bdev() is useless.
-> > 
-> > That depends.  If by "removed" you mean physically disconnected from
-> > the computer, then yes.  But if "removed" means merely unregistered
-> > from the device core then writes can still succeed.  
-> > invalidate_partition() doesn't know which has happened.
-> 
-> Which means the lower layers probably need to pass that distinction
-> up to the invalidation function.
+> I check the code, __device_suspend will invoke dev->pm_domain->ops
+> first if dev->pm_domain is not NULL.
+> Taking "suspend" as esample, i can do the following things in the
+> dev->pm_domain->ops->suspend
+> 1. invoke dev->driver->pm->suspend for suspending the device
+> 2. do what we do in dev->pm_domain->ops->runtime_suspend for
+> suspending the surrounded logic, for example, shutdown the phy or
+> clocks.
+> So is above implementation fine?
 
-I don't think that information is passed anywhere in the kernel.  And 
-in any case, it's not really important.  When a device is unregistered, 
-the upper layers shouldn't care about the reason why.
+Yes, that sounds like it will work.  Watch out for the case where your 
+device is already runtime-suspended when a system suspend occurs.
 
-> > > And another question - why doesn't having an active filesystem on a
-> > > block device (i.e. an active reference to the gendisk) prevent the
-> > > block device from being removed from underneath it?
-> > 
-> > References prevent data structures from being deallocated, not from 
-> > being unregistered (or as James Bottomley likes to call it, "removed 
-> > from visibility").
-> 
-> Except the unregister path appears to assume that a valid block
-> device available when it is unregistered.
-
-It may very well be available during the unregistration procedure.  
-There's nothing wrong with assuming it is -- if it isn't, I/O attempts 
-will simply fail.
-
-> That seems to me like
-> there is a bad assumption being made in this error handling path...
-
-No; a bad assumption would be if the code assumed the device was 
-available _after_ the unregistration call had completed.
+Have you read section 6 in Documentation/power/runtime_pm.txt?  It is 
+related to your question.
 
 Alan Stern
 
