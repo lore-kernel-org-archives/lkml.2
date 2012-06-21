@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759758Ab2FUQVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 12:21:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34970 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759740Ab2FUQVh convert rfc822-to-8bit (ORCPT
+	id S1759773Ab2FUQWk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 12:22:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36150 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab2FUQWj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 12:21:37 -0400
+	Thu, 21 Jun 2012 12:22:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1206211210510.1164-100000@iolanthe.rowland.org>
-References: <CACVXFVM=p3_rqsRF0BWdZ30GW5zgDgy6jbfqNP6xwHJoOQx1Wg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1206211210510.1164-100000@iolanthe.rowland.org>
-Date: Fri, 22 Jun 2012 00:21:34 +0800
-Message-ID: <CACVXFVPYx1mJzdViaNopwi0amvrgqTSqkHRtpgTk7o0txfEw=g@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v2)
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAOPLpQeOEPECiq_D7WxYMoWk0AbS8vXLJqhm1EPijGdH52TVvQ@mail.gmail.com>
+References: <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
+ <CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
+ <CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
+ <CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
+ <CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
+ <CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
+ <CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
+ <CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
+ <CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
+ <CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
+ <20120620193438.GB2248@gmail.com> <CAE9FiQWUo3uffM4NCUORJXR1pdPaf0E1Sws1hwVNAibHg5_yjQ@mail.gmail.com>
+ <CAE9FiQWKxe9VYvrQy5h4RP2dS7YHHXu4icjC+KPipkRKbsZN1g@mail.gmail.com> <CAOPLpQeOEPECiq_D7WxYMoWk0AbS8vXLJqhm1EPijGdH52TVvQ@mail.gmail.com>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Thu, 21 Jun 2012 12:22:17 -0400
+Message-ID: <CAOPLpQdLSfHn4=zHVYpZMcw1cHPwtV3He-Sxng_yjGKwdpBK8A@mail.gmail.com>
+Subject: Re: SNB PCI root information
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        jbarnes@virtuousgeek.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 12:12 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Fri, 22 Jun 2012, Ming Lei wrote:
+On Thu, Jun 21, 2012 at 8:17 AM, Ulrich Drepper <drepper@gmail.com> wrote:
+> On Wed, Jun 20, 2012 at 11:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> please check -v3, and it will add 40 lines.
 >
->> On Thu, Jun 21, 2012 at 9:49 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->>
->> > We also have not made the rule that a shutdown will complete in a
->> > specific amount of time either, so there is no problem if that takes a
->> > long time as well.
->>
->> OK, I will submit a new patch which just holds device lock.
->>
->> Alan, do you have objections on the new one?
+> Won't this version print out something like
 >
-> No objections.  It should end up being pretty much like one of the
-> patches you posted earlier.
+> Â PCI: unknown option `busnum_node=xx:yy'
 
-Holding parent reference count is missed in earlier version.
+It does.
 
->
-> Should there be an option for a debug log of each device name just
-> before its shutdown routine is called?
+If you apply the following patch on top of your version 3 patch it
+seems to work and is slightly more efficient.
 
-We have had the below before calling shutdown callback.
 
-          dev_dbg(dev, "shutdown\n");
+Signed-off-by: Ulrich Drepper <drepper@gmail.com>
 
-Thanks,
---
-Ming Lei
+diff -u b/arch/x86/pci/common.c b/arch/x86/pci/common.c
+--- b/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -494,16 +494,22 @@
+ 	return 0;
+ }
+
++static const char *busnum_node_param;
++
++static void remember_busnum_node(const char *str)
++{
++	busnum_node_param = str;
++}
++
+ int get_user_busnum_node(int busnum)
+ {
+ 	int bus, node, count;
+-	char *p;
++	const char *p;
+
+-	p = strstr(boot_command_line, "busnum_node=");
++	p = busnum_node_param;
+ 	if (!p)
+ 		return -1;
+
+-	p += 12; /* strlen("busnum_node=") */
+ 	while (*p) {
+ 		count = 0;
+ 		if (sscanf(p, "%x:%x%n", &bus, &node, &count) != 2) {
+@@ -607,6 +613,9 @@
+ 	} else if (!strcmp(str, "nocrs")) {
+ 		pci_probe |= PCI_ROOT_NO_CRS;
+ 		return NULL;
++	} else if (!strncmp(str, "busnum_node=", 12)) {
++		remember_busnum_node(str + 12);
++		return NULL;
+ 	} else if (!strcmp(str, "earlydump")) {
+ 		pci_early_dump_regs = 1;
+ 		return NULL;
