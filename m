@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab2FUCot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 22:44:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15167 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120Ab2FUCos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 22:44:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="183001280"
-Message-ID: <4FE28A4D.7060302@linux.intel.com>
-Date: Wed, 20 Jun 2012 19:43:25 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1757874Ab2FUCpk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 22:45:40 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62741 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755615Ab2FUCpi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 22:45:38 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Eric Miao <eric.miao@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: RFC: pca953 new platform specific changes
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4FE27F15.8050102@kernel.org>
+References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com>
+ <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com>
+ <4FE26470.90401@kernel.org> <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com>
+ <4FE27F15.8050102@kernel.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 20 Jun 2012 22:45:17 -0400
+Message-ID: <CAHGf_=pDw4axwG2tQ+B5hPks-sz2S5+G1Kk-=HSDmo=DSXOkEw@mail.gmail.com>
+Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
+To: Minchan Kim <minchan@kernel.org>
+Cc: Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm working on support for a device which combines a pair of PCA9555
-gpio chips with an LIS331DLH accelerometer on an I2C bus.
+On Wed, Jun 20, 2012 at 9:55 PM, Minchan Kim <minchan@kernel.org> wrote:
+> On 06/21/2012 10:39 AM, KOSAKI Motohiro wrote:
+>
+>>>> number of isolate page block is almost always 0. then if we have such counter,
+>>>> we almost always can avoid zone->lock. Just idea.
+>>>
+>>> Yeb. I thought about it but unfortunately we can't have a counter for MIGRATE_ISOLATE.
+>>> Because we have to tweak in page free path for pages which are going to free later after we
+>>> mark pageblock type to MIGRATE_ISOLATE.
+>>
+>> I mean,
+>>
+>> if (nr_isolate_pageblock != 0)
+>>    free_pages -= nr_isolated_free_pages(); // your counting logic
+>>
+>> return __zone_watermark_ok(z, alloc_order, mark,
+>>                               classzone_idx, alloc_flags, free_pages);
+>>
+>>
+>> I don't think this logic affect your race. zone_watermark_ok() is already
+>> racy. then new little race is no big matter.
+>
+>
+> It seems my explanation wasn't enough. :(
+> I already understand your intention but we can't make nr_isolate_pageblock.
+> Because we should count two type of free pages.
 
-I'm awaiting some documentation to confirm, but as I understand it the
-accelerometer connects one of its interrupt lines to one of the pins on
-the first PCA9555, which is then connected to SMB ALERT, which if I
-understand is somehow tied to an ACPI GPE (0x0B)).
+I mean, move_freepages_block increment number of page *block*, not pages.
+number of free *pages* are counted by zone_watermark_ok_safe().
 
-I have a hacked together set of patches to support this device which do
-some horrible things to the pca953x driver. I'm trying to clean these up
-and handle the platform changes properly in order to get them
-upstreamed. I'd like to let you know what I'm attempting up front in
-case you have any preference regarding the implementation as I'm new to
-the GPIO subsystem and driver writing.
 
-Key:
-o Platform specific properties
-  [ ] My approach to support them
+> 1. Already freed page so they are already in buddy list.
+>   Of course, we can count it with return value of move_freepages_block(zone, page, MIGRATE_ISOLATE) easily.
+>
+> 2. Will be FREEed page by do_migrate_range.
+>   It's a _PROBLEM_. For it, we should tweak free path. No?
 
-For this platform:
-o Only IO 0,1,3,4,6, and 15 can be written to on the first PCA555 (0x20)
-  [ ] Add output bitbmask to platform data
-  [ ] Don't allow the output_direction function to vary from this if
-      provided
-o All pins have a specified function
-  [ ] Add Pin names to platform data
-o Pin assignments vary slightly based on board revision, read from 2nd
-  PCA555
-  [ ] ? Provide a function to perform the test to the platform data ?
-o The accelerometer needs to have its interrupt line set to open-drain
-  The current hack does this in a new pca53x detect function
-  [ ] ? Move this to a platform data function for the accelerometer ?
-o This device needs a GPE handler rather than a traditional irq thread
-  [ ] Provide GPE or IRQ data in the platform data, choose which to
-      setup based on that (rather large blocks of ifdefs per platform
-      in the driver).
-o Only the fist PCA555 has accessory input lines on this device, so the
-  second should not get an interrupt handler setup.
-  [ ] Setup different platform data based on I2C device address with
-      appropriate GPE/IRQ data in the platform data setup
+No.
 
-Does this approach seem appropriate?
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+> If All of pages are PageLRU when hot-plug happens(ie, 2), nr_isolate_pagblock is zero and
+> zone_watermk_ok_safe can't do his role.
 
+number of isolate pageblock don't depend on number of free pages. It's
+a concept of
+an attribute of PFN range.
