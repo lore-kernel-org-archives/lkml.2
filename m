@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726Ab2FUNoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 09:44:10 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:33189 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759673Ab2FUNoI (ORCPT
+	id S932736Ab2FUNuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 09:50:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38531 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759686Ab2FUNtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 09:44:08 -0400
-X-Greylist: delayed 752 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jun 2012 09:44:08 EDT
-Date: Thu, 21 Jun 2012 09:31:11 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: BUG: Bad rss-counter state
-Message-ID: <20120621133111.GA13820@elliptictech.com>
-References: <20120620194908.GA16353@elliptictech.com>
- <20120621095024.GA10745@tiehlicka.suse.cz>
+	Thu, 21 Jun 2012 09:49:47 -0400
+Date: Thu, 21 Jun 2012 06:49:42 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, stable@vger.kernel.org
+Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v2)
+Message-ID: <20120621134942.GA8401@kroah.com>
+References: <1339391600-17815-1-git-send-email-ming.lei@canonical.com>
+ <20120615220343.GA8928@kroah.com>
+ <CACVXFVO6h6wiHdTwVcjQLNtncO+ezVX3RJZPVenHEmhHjErRhg@mail.gmail.com>
+ <20120618222550.GB11737@kroah.com>
+ <CACVXFVOr1mnjaEoGpc3O_MDuvi_KHTXtsEBQ7LLoaeWxWRa0aQ@mail.gmail.com>
+ <20120620223754.GA5864@kroah.com>
+ <CACVXFVNP4HJwtjgAD=D7Fv7NW2j1aHj55X8j-4qhpBZTcw2+7w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120621095024.GA10745@tiehlicka.suse.cz>
-Organization: Elliptic Technologies Inc.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACVXFVNP4HJwtjgAD=D7Fv7NW2j1aHj55X8j-4qhpBZTcw2+7w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-21 11:50 +0200, Michal Hocko wrote:
-> On Wed 20-06-12 15:49:08, Nick Bowler wrote:
-> > Hi folks,
-> > 
-> > I just noticed the following couple lines in my kernel log for Linux
-> > 3.4.2:
-> > 
-> >   Jun 20 14:57:54 emergent kernel: BUG: Bad rss-counter state mm:ffff88000ff1f400 idx:1 val:-2
-> >   Jun 20 14:57:54 emergent kernel: BUG: Bad rss-counter state mm:ffff88000ff1f400 idx:2 val:2
-> > 
-> > I have no idea what these messages mean, nor what I was doing exactly
-> > at 14:57:54 today, nor whether they've been fixed in newer kernels.
-> > Regardless, they appear to be telling me that there's a kernel problem
-> > since they contain the word "BUG", so I figured I had better report them
-> > nonetheless.  Other than the fact that these messages were printed, the
-> > system is operating normally.
+On Thu, Jun 21, 2012 at 09:21:08AM +0800, Ming Lei wrote:
+> On Thu, Jun 21, 2012 at 6:37 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Jun 19, 2012 at 10:00:36AM +0800, Ming Lei wrote:
 > 
-> The issue is known and the fix can be found at
-> https://lkml.org/lkml/2012/6/9/47
+> >> so I marked it as -stable because I have explained how the race can be
+> >> exploited in reality.
+> >
+> > Ok, but as this has been there since when, 2.5, I'll refrain from
+> > marking it this way, as no one has reported a real problem like this
+> > before.
+> 
+> So have you agreed on keeping Cc: stable in v3?
 
-Ah, and it appears to have been merged by Linus yesterday.
+No.
 
-Thanks,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+> >> I still have more many examples in kernel about timeout value...
+> >
+> > Yes, I know this, but now you are putting a limit on the amount of time
+> 
+> No, I don't put a limit on it, see my below explanation.
+> 
+> > a probe function can take, when before, we have never had one.  That's
+> > not something to be taken lightly, and is one I know is not true.
+> >
+> >> > Why not just do a real lock and try for forever?
+> >>
+> >> IMO, there are two advantages not just doing a real lock for forever:
+> >>
+> >> - avoiding buggy device/driver to hang the system
+> >> - with trylock, we can log the buggy device so that it is a bit
+> >> easier to troubleshoot the buggy drivers, suppose the bug is
+> >> only triggered 1 time in one year or more
+> >
+> > No, just fix the driver, I don't want to put a time limit on how long
+> 
+> Surely we need to fix the driver, but the problem is that it may be very
+> difficult to fix the driver without the log introduced in the patch, so why
+> not take it without obvious side effect?
 
+Because nothing is wrong with the driver if it takes that long, it's not
+"broken" at all, because we have never made the rule that a probe
+function has to complete in a specific amount of time.
+
+We also have not made the rule that a shutdown will complete in a
+specific amount of time either, so there is no problem if that takes a
+long time as well.
+
+greg k-h
