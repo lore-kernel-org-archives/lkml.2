@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab2FUL5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:57:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44235 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756637Ab2FUL5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 07:57:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="168477933"
-Date: Thu, 21 Jun 2012 19:57:45 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Liam Girdwood'" <lrg@ti.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Kim, Milo'" <Milo.Kim@ti.com>,
-        "'Axel Lin'" <axel.lin@gmail.com>
-Subject: Re: akpm 117/143] ERROR: "devm_gpio_request_one"
- [drivers/video/backlight/l4f00242t03.ko] undefined!
-Message-ID: <20120621115745.GA13316@localhost>
-References: <20120621101721.GA12365@localhost>
- <000e01cd4f98$d1366a40$73a33ec0$%han@samsung.com>
- <20120621104340.GA12679@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120621104340.GA12679@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757159Ab2FUMEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 08:04:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48771 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757085Ab2FUMEe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 08:04:34 -0400
+Message-ID: <1340280264.18025.4.camel@twins>
+Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
+ and consolidation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Date: Thu, 21 Jun 2012 14:04:24 +0200
+In-Reply-To: <20120621095806.36df58f2@de.ibm.com>
+References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
+	 <1340231192.21745.154.camel@twins>
+	 <CAFTL4hz9UZr0Xfd4m3WTBma8vSvbm0Lg8o=oXsjFbpPfG9RxjQ@mail.gmail.com>
+	 <20120621095806.36df58f2@de.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 06:43:40PM +0800, Fengguang Wu wrote:
-> > > ERROR: "devm_gpio_request_one" [drivers/video/backlight/l4f00242t03.ko] undefined!
-> > 
-> > Hi Fengguang,
-> > 
-> > The patch a291ede7be8359a8986740b11b93f9c80e40210b ' backlight-l4f00242t03-use-devm_gpio_request_one-fix'
-> > is necessary to fix the export problem.
-> > 
-> > In my opinion, Andrew Morton will fold these patches as usual.
+On Thu, 2012-06-21 at 09:58 +0200, Martin Schwidefsky wrote:
+> On Thu, 21 Jun 2012 02:46:29 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> Err.. Sorry for the noise! This is a bit awkward situation. It seems
-> that I'll need to teach my scripts to detect the follow-up commits
-> with title "XXX-fix" and double check such commits before sending out
-> error reports.
+> > 2012/6/21 Peter Zijlstra <peterz@infradead.org>:
+> > > On Tue, 2012-06-19 at 15:43 +0200, Frederic Weisbecker wrote:
+> > >>
+> > >> I wish we could do more vtime cputime accounting consolidation
+> > >> but archs do the things pretty differently although I bet the
+> > >> behaviour could be more unified.
+> > >>
+> > > Yes.. so s390,ia64 use thread_info, ppc uses their paca (arch private
+> > > precursor to per-cpu data).
+> 
+> s390 uses the prefix page / lowcore to accumulate some accounting information.
+> Which basically is per-cpu data with the advantage that it is accessible with
+> at address 0-8191 for each cpu. The entry code does not have to load a pointer
+> to get to that page, I would prefer NOT to use per-cpu data here.
 
-I end up with a simple workaround: since Andrew already caught and fix
-the problem, why should I bother again? Just skip it :-)
+Yeah, same for ppc and their paca, I just meant to put the data in
+per-cpu (your lowcore and ppc's paca qualify) storage instead of
+per-task.
 
-And it worked:
+But seeing as I completely overlooked the per-task accounting this
+doesn't matter anyway.
 
-930736bb0afef0452ee82b6d7b401b3fb937d5cd commit compiled.. skip
-75f874d6fe0ad7fdfe3b205f59b21462cf1e62b3 commit compiled.. skip
-779e06e1ecb540bcd1b1b8ea66f9fd96febbc898 has akpm fix..... skip  backlight: l4f00242t03: export and use devm_gpio_request_one()
-a291ede7be8359a8986740b11b93f9c80e40210b has akpm fix..... skip  backlight-l4f00242t03-use-devm_gpio_request_one-fix
-602610fbfdffedba02554ba1adeb4540822cd00c commit compiled.. skip
+There being the per-task accounting also completely wrecks the proposal
+I outlined. That only works if its only per-cpu accounting.
 
-Thanks,
-Fengguang
+The alternative is going full 64bit ns and having the tick fallback do
+TICK_NSEC increments. 32bit args that don't do VIRT_TIME or IRQ_TIME
+won't like that though :/
+
+So yeah, I did miss something obvious.. no cookies for me.
