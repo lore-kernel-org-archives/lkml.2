@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab2FUEgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 00:36:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54596 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab2FUEgc (ORCPT
+	id S1753137Ab2FUEjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 00:39:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46443 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab2FUEji convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 00:36:32 -0400
-Message-ID: <4FE2A4CB.8060305@landley.net>
-Date: Wed, 20 Jun 2012 23:36:27 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 21 Jun 2012 00:39:38 -0400
 MIME-Version: 1.0
-To: "Christopher L. Simons" <christopherleesimons@gmail.com>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: ManagementStyle: fixed typo
-References: <1340078887-6961-1-git-send-email-christopherleesimons@gmail.com>
-In-Reply-To: <1340078887-6961-1-git-send-email-christopherleesimons@gmail.com>
+In-Reply-To: <1340231684-1667-1-git-send-email-luis.henriques@canonical.com>
+References: <20120620145659.a5fff5f6.akpm@linux-foundation.org>
+	<1340231684-1667-1-git-send-email-luis.henriques@canonical.com>
+Date: Wed, 20 Jun 2012 21:39:38 -0700
+Message-ID: <CALjC5hbVph_XvRPNFdz-7DNGwMBnSnbh1eznMAUcYOCbXjNrNw@mail.gmail.com>
+Subject: Re: [PATCH] ocfs2: Fix NULL pointer dereferrence in __ocfs2_change_file_space
+From: Bret Towe <magnade@gmail.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com, mfasheh@suse.com, jlbec@evilplan.org,
+        sunil.mushran@oracle.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 11:08 PM, Christopher L. Simons wrote:
-> From: "Christopher L. Simons" <christopherleesimons@gmail.com>
-> 
-> Fixed a spelling error (less that you -> less than you)
+On Wed, Jun 20, 2012 at 3:34 PM, Luis Henriques
+<luis.henriques@canonical.com> wrote:
+> As ocfs2_fallocate() will invoke __ocfs2_change_file_space() with a NULL
+> as the first parameter (file), it may trigger a NULL pointer dereferrence
+> due to a missing check.  See http://bugs.launchpad.net/bugs/1006012.
+>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 
-Acked-by: Rob Landley <rob@landley.net>
+ran the patch for a while no crashes I see if the other patch isn't used
+i did notice the following in dmesg  not sure exactly what i was up to
+at that point tho
+never seen the message before
 
-If trivial doesn't grab it I'll forward it next merge window.
-
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+[ 4704.352332] (pool,1731,0):ocfs2_unlink:951 ERROR: status = -39
