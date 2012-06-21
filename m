@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760269Ab2FUUvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 16:51:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36192 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760246Ab2FUUvi (ORCPT
+	id S1760280Ab2FUUxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 16:53:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59892 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760249Ab2FUUxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 16:51:38 -0400
-Date: Thu, 21 Jun 2012 13:51:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Anatolij Gustschin <agust@denx.de>,
-        Andreas Dumberger <andreas.dumberger@tqs.de>,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtc/r9701: avoid second call to the rtc_valid_tm
-Message-Id: <20120621135136.1e2ff338.akpm@linux-foundation.org>
-In-Reply-To: <1340262280-15096-1-git-send-email-devendra.aaru@gmail.com>
-References: <1340262280-15096-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Thu, 21 Jun 2012 16:53:44 -0400
+Message-ID: <1340312020.2536.18.camel@koala>
+Subject: Re: [PATCH 4/4] hfsplus: get rid of write_super
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Jun 2012 23:53:40 +0300
+In-Reply-To: <1340310656.2536.12.camel@koala>
+References: <1339587471-2713-1-git-send-email-dedekind1@gmail.com>
+	 <1339587471-2713-5-git-send-email-dedekind1@gmail.com>
+	 <20120621124158.a7559ee3.akpm@linux-foundation.org>
+	 <1340310656.2536.12.camel@koala>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-5aNclLthawikZbeWfZoc"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012 12:34:40 +0530
-Devendra Naga <devendra.aaru@gmail.com> wrote:
 
-> r9701_get_datetime will call the rtc_valid_tm and it returns the
-> value returned by rtc_valid_tm, which anyway can be used in the if
-> 
-> so calling rtc_valid_tm is not required.
-> 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> ---
-> 
-> 
-> This change is compiled tested only using gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3 on x86_64 (intel core i3).
-> 
->  drivers/rtc/rtc-r9701.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-r9701.c b/drivers/rtc/rtc-r9701.c
-> index 33b6ba0..e6c34c0 100644
-> --- a/drivers/rtc/rtc-r9701.c
-> +++ b/drivers/rtc/rtc-r9701.c
-> @@ -138,8 +138,7 @@ static int __devinit r9701_probe(struct spi_device *spi)
->  	 * contain invalid values. If so, try to write a default date:
->  	 * 2000/1/1 00:00:00
->  	 */
-> -	r9701_get_datetime(&spi->dev, &dt);
-> -	if (rtc_valid_tm(&dt)) {
-> +	if (r9701_get_datetime(&spi->dev, &dt)) {
->  		dev_info(&spi->dev, "trying to repair invalid date/time\n");
->  		dt.tm_sec  = 0;
->  		dt.tm_min  = 0;
+--=-5aNclLthawikZbeWfZoc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Looks OK.
+On Thu, 2012-06-21 at 23:30 +0300, Artem Bityutskiy wrote:
+> Well, I also thought about this. But I again did not want to invent
+> anything complex because main file systems - ext4, btrfs, xfs - do not
+> use 'write_super()' at all.
 
+Sorry, ext4 does use it in the non-journal mode but I have patches which
+kill it, although not looked at by Ted so far.
 
-I think the driver would be better if we were to do this:
+>  And then only these dying / rare
+> file-systems like btrfs / hfs - I did not feel like over-engineering
+> is
+> needed.
 
+Sorry, of course I meant reiserfs, not btrfs.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: drivers/rtc/rtc-r9701.c: check that r9701_set_datetime() succeeded
+So what's left is hfs/hfsplus, affs, ufs, udf, reiserfs, jffs2. I could
+optimize them if needed, but is this worth the effort?
 
-When the driver detects that the clock time is invalid, it attempts to
-write a sane time into the hardware.  We curently assume that everything
-is OK is those writes succeeded.  But it is better to re-read the time
-from the hardware to ensure that the new settings got there OK.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Anatolij Gustschin <agust@denx.de>
-Cc: Andreas Dumberger <andreas.dumberger@tqs.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+--=-5aNclLthawikZbeWfZoc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
- drivers/rtc/rtc-r9701.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff -puN drivers/rtc/rtc-r9701.c~a drivers/rtc/rtc-r9701.c
---- a/drivers/rtc/rtc-r9701.c~a
-+++ a/drivers/rtc/rtc-r9701.c
-@@ -147,7 +147,8 @@ static int __devinit r9701_probe(struct 
- 		dt.tm_mon  = 0;
- 		dt.tm_year = 100;
- 
--		if (r9701_set_datetime(&spi->dev, &dt)) {
-+		if (r9701_set_datetime(&spi->dev, &dt) ||
-+				r9701_get_datetime(&spi->dev, &dt)) {
- 			dev_err(&spi->dev, "cannot repair RTC register\n");
- 			return -ENODEV;
- 		}
-_
+iQIcBAABAgAGBQJP44nUAAoJECmIfjd9wqK0ZBMQAIqu5e+KVLkwRgSSAMxrCAXa
+wUpsRC0dHlJf81ht4FGuOe6PjzHefJ14/Ur7QwkfEoeXV2+DFjm+/+cwjjIgEVb+
+XcmRSzyHG15dabiEVwDWGXJqowBaTKGqG3tbl7jOo5o+NLLiuBLeF0tWQ3jk/Zt0
+2hA/a7PrzskTvMWYHO1R3Bm64UMdpJDtKCraDsMgjTdkayGOSpjkzyjH+XmHhQco
+1oInR6vpl5948SuozrNOhF0QQzpT7EqaOQtoKT4EC+Vh//0aAp4/0MtM74VsgmQO
+s2I9Q4qGeqQNb5vCoVU9sVoGfY40f3tBrzCnJYQmiFAE7Yfynl6BiNPo0hkEGszl
+I8H7ua6DtIWdueTJT6IQ7N+FNUQgJybrkNwJAAcUfLz8EJBaf8a9ar3uJ61bVm5/
+cr2bLQAZOX0Q30GwoTrRmaxJ3jH4MHY09KePFixeQAButD6MUE0Q1hMkBzDDOlz6
+TK3ABc8sh//KG4/tM+ndmlJtPrcRZG+KesoMI+6a+8CksFLjCEOIt4XPxIj9q8Yy
+CGWOQ3YyKyQ298eyLwgssKwqcXCVo4lWufROwmLjVm5c/PAhGTQX4N7vlZcbiHjl
+htpu1GjdgOPYiNDcXtuHofASiGvP96J38TGyJemTwG8858hmhPmRIYtt1gVx1Taj
+7h3H0+DINYwliPFUabaY
+=SGML
+-----END PGP SIGNATURE-----
 
+--=-5aNclLthawikZbeWfZoc--
 
-But I can't test this :(
