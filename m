@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab2FUHY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 03:24:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55110 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635Ab2FUHY0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 03:24:26 -0400
-Date: Thu, 21 Jun 2012 00:24:23 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Mackey <tdmackey@twitter.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: linux-next: manual merge of the tip tree with the slab tree
-In-Reply-To: <20120621134844.36eacc287e76a38b960f2ef2@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.00.1206210024030.31077@chino.kir.corp.google.com>
-References: <20120621134844.36eacc287e76a38b960f2ef2@canb.auug.org.au>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758609Ab2FUH1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 03:27:21 -0400
+Received: from void.printf.net ([89.145.121.20]:54596 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755083Ab2FUH1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 03:27:19 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, mturquette@linaro.org,
+        s.hauer@pengutronix.de, sboyd@codeaurora.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, skannan@codeaurora.org,
+        shawn.guo@linaro.org, Mitch Bradley <wmb@laptop.org>
+Subject: Re: [PATCH v3 0/4] DT clock bindings
+References: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
+Date: Thu, 21 Jun 2012 03:27:00 -0400
+In-Reply-To: <1339512111-11172-1-git-send-email-robherring2@gmail.com> (Rob
+	Herring's message of "Tue, 12 Jun 2012 09:41:47 -0500")
+Message-ID: <87bokd15x7.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012, Stephen Rothwell wrote:
+Hi Rob,
 
-> diff --cc mm/slab.c
-> index dd607a8,5070f96..0000000
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@@ -3341,8 -3367,8 +3341,8 @@@ static void *fallback_alloc(struct kmem
->   	local_flags = flags & (GFP_CONSTRAINT_MASK|GFP_RECLAIM_MASK);
->   
->   retry_cpuset:
-> - 	cpuset_mems_cookie = get_mems_allowed();
-> + 	cpuset_mems_cookie = read_mems_allowed_begin();
->  -	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
->  +	zonelist = node_zonelist(slab_node(), flags);
->   
->   retry:
->   	/*
-> diff --cc mm/slub.c
-> index f96d8bc,fb2ef09..0000000
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@@ -1616,8 -1616,8 +1616,8 @@@ static void *get_any_partial(struct kme
->   		return NULL;
->   
->   	do {
-> - 		cpuset_mems_cookie = get_mems_allowed();
-> + 		cpuset_mems_cookie = read_mems_allowed_begin();
->  -		zonelist = node_zonelist(slab_node(current->mempolicy), flags);
->  +		zonelist = node_zonelist(slab_node(), flags);
->   		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
->   			struct kmem_cache_node *n;
->   
+On Tue, Jun 12 2012, Rob Herring wrote:
+> This series defines clock bindings for Device-Tree and adds kernel
+> support using the common clock infrastructure. The last patch enables
+> DT clock support for the Calxeda Highbank platform.
+>
+> I'm posting this again to solicit further review. There has been some
+> discussion[1], but no definite path forward. This series is not changed
+> from the last post other than rebasing to v3.5-rc2.
 
-Looks good.
+This is a very useful patchset, thanks!  Mitch Bradley and I have been
+hooking up the mach-mmp ARM subarchitecture to it and we needed to
+make a few changes, mainly because mach-mmp doesn't use COMMON_CLK.
+The changes are:
+
+1) Remove the COMMON_CLK dependency that the of_clk_* functions have by
+   moving them into a new file, drivers/clk/clk-of.c.  The OF functions
+   in drivers/clk/clk.c aren't dependent on anything else in clk.c
+   (since you pass them a struct clk) so they can be moved out easily.
+   The of_clk_* entries in clk-provider.h move to clk.h.
+
+2) Use alloc_bootmem() instead of kzalloc() in of_clk_add_provider(),
+   because we need to set up clocks during .init_early on ARM (which
+   happens pre-slab) so that they are available for platform init.
+
+I'll send our patches in a reply to this mail.  Are you okay with these
+changes, and would you like to include them in your patchset?
+
+Thanks very much,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
