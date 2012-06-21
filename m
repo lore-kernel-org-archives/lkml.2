@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab2FUIia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:38:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52974 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758813Ab2FUIi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:38:27 -0400
-Date: Thu, 21 Jun 2012 10:31:47 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, gorcunov@openvz.org
-Subject: Re: [PATCH 1/2] x86, apic: optimize cpu traversal in
- __assign_irq_vector() using domain membership
-Message-ID: <20120621083146.GC2223@dhcp-26-207.brq.redhat.com>
-References: <1340067097.3696.6.camel@sbsiddha-desk.sc.intel.com>
- <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
+	id S1758860Ab2FUIlS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:41:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56370 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758838Ab2FUIlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 04:41:12 -0400
+Date: Thu, 21 Jun 2012 01:41:07 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/22 v4] Input: atmel_mxt_ts - set phys to i2c client
+ adapter name
+Message-ID: <20120621084107.GB2193@core.coreip.homeip.net>
+References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
+ <1339992522-22073-2-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
+In-Reply-To: <1339992522-22073-2-git-send-email-djkurtz@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 04:43:30PM -0700, Suresh Siddha wrote:
-> Use the irq_cfg's old_domain to track the visited domains and optimize
-> the cpu traversal while finding a free vector in the given cpumask.
+On Mon, Jun 18, 2012 at 12:08:21PM +0800, Daniel Kurtz wrote:
+> This allows userspace to more easily distinguish which bus a particular
+> atmel_mxt_ts device is attached to.
 > 
-> NOTE: We can also optimize the search by using for_each_cpu and skip the
-> current cpu, if it is not the first cpu in the mask returned by the
-> vector_allocation_domain(). But re-using the cfg->old_domain to track
-> the visited domains will be slightly faster.
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+>  drivers/input/touchscreen/atmel_mxt_ts.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index 42e6450..eda9eed 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -1106,6 +1106,7 @@ static int __devinit mxt_probe(struct i2c_client *client,
+>  	}
+>  
+>  	input_dev->name = "Atmel maXTouch Touchscreen";
+> +	input_dev->phys = client->adapter->name;
 
-Sorry for the dealy, Suresh.
+Normally we set phys to 'xxx/input0' nstead of just the adaptor name.
 
-You also need to kick out vector_allocation_domain's return value in all other
-apic drivers.
+Thanks.
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Dmitry
