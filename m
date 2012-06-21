@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759685Ab2FUODP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 10:03:15 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64496 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389Ab2FUODO (ORCPT
+	id S1758283Ab2FUOUH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 10:20:07 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48035 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab2FUOUF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 10:03:14 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 21 Jun 2012 07:03:20 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.5-rc4
-Message-ID: <20120621140320.GA14213@roeck-us.net>
+	Thu, 21 Jun 2012 10:20:05 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FE3040B020000780008B030@nat28.tlf.novell.com>
+References: <4FDF2044020000780008A66F@nat28.tlf.novell.com>
+ <CAErSpo4yf66A-MoBLyUynMaha3Oa8_M2rNpwgK+2D1LgTaLhUw@mail.gmail.com> <4FE3040B020000780008B030@nat28.tlf.novell.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 21 Jun 2012 08:19:43 -0600
+Message-ID: <CAErSpo4Nc0RjwDEhwt=BLaKez2KRxVoVBc5EENG53VBMzgg67Q@mail.gmail.com>
+Subject: Re: [PATCH] x86/PCI: adjust section annotations
+To: Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-cris-kernel@axis.com, mingo@elte.hu, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 21, 2012 at 3:22 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>>>> On 21.06.12 at 02:06, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Mon, Jun 18, 2012 at 4:34 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>>> DMI tables referenced from __init code only can be __initconst, and as
+>>> a result the functions referenced from there can become __init.
+>>>
+>>> pcibios_setup() can be __init as being a command line parsing function
+>>> only.
+>>>
+>>> A few other variables can then also have their attributes adjusted.
+>>
+>> This seems OK as far as it goes.
+>>
+>> However, if you're going to make pcibios_setup() __init for x86, I'd
+>> really encourage you to make it consistent across all the other
+>> architectures.  And if you do *that*, I think it would be cool if you
+>> supplied a generic do-nothing "weak" version in the PCI core.  That
+>> would allow you to remove it altogether from alpha, ia64, microblaze,
+>> mips pmc-sierra, parisc, powerpc, sh, sparc, tile, and xtensa.
+>
+> I'd prefer to leave this to the respective arch maintainers, the
+> patch here really was meant to be x86 specific (as its title says).
 
---XsQoSWH+UP9D9v3l
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+OK.  Ingo, do you want to take this after all?
 
-Hi Linus,
+If I push stuff through my PCI tree, I try really hard to make PCI
+overall more consistent, not less consistent, so I'm not very
+interested in taking minor improvements to just one arch.
 
-Please pull hwmon fixes for Linux 3.5-rc4 from signed tag:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Thanks,
-Guenter
-
-------
-
-The following changes since commit 485802a6c524e62b5924849dd727ddbb1497cc71:
-
-  Linux 3.5-rc3 (2012-06-16 17:25:17 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 2355375efdf10f43680d420023baa97796bfcdff:
-
-  hwmon: (emc2103) Fix use of an uninitilized variable in error case (2012-06-18 08:48:00 -0700)
-
-----------------------------------------------------------------
-hwmon fixes for 3.5-rc4
-
-Two minor fixes in emc2103 and applesmc drivers.
-
-----------------------------------------------------------------
-Guenter Roeck (1):
-      hwmon: (emc2103) Fix use of an uninitilized variable in error case
-
-Henrik Rydberg (1):
-      hwmon: (applesmc) Limit key length in warning messages
-
- drivers/hwmon/applesmc.c |    4 ++--
- drivers/hwmon/emc2103.c  |   12 ++++++++----
- 2 files changed, 10 insertions(+), 6 deletions(-)
-
---XsQoSWH+UP9D9v3l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP4ymoAAoJEMsfJm/On5mBzOcP/25F+NtDkgUMwSKZ7Ov2bypE
-HVdISkBzjtg7f13mP4dYv4K3oPwvIEo0T8yLiv4Giez3/uqBIgDTquJl2MJKQkVL
-MHW05aBGS9ohOy/g6C/Zu/kX02mQc8j1ZAJsL8kl4GBT5AlsvNDaEeb0WDcoX+3A
-fxwPgnMRCQHDzmp7EAGr1cTGUo0PMhLHIzNK+ezJzGJhUi9MKLsadEvHwdn9W8YO
-Dw7hW5vcXH1dmIE/2tnVUsS/T7ddyQ/zNQzcK8vXTvgwjsazdad8oBuDSSpjuoxX
-hmM2ekvFEDrShhTqxmlp5EFLheoHecxzG2E867Y3gywUDVy21M2D9ZGOg5TZ6xTP
-+amWcFcwDifI+Vr0CBKE6oGnJ3RrvD5fjFwN+M3tg2cJs1RoC4kY60kdvhBUFH9d
-gGRT9Oy5ffZSrwuWfrNqOM3yYsNFXvJSFjkeiQYGfPXNqT4AJyOdXQK0rfRuINny
-g981UFC8vXexKYnjKT/ODEFcEpyKgJPBKtPqW03k/ONH0JRaDLLtE3L5AzjAIm2h
-qZ9ioMJ6Ntf6kXWiqDW+RhCpuJTLfh4obh9kgjaDPAQkxCXsDz0AtvpKsFJ2ERLb
-4mOXb8L7tD3tCa5oyP7ABEWz+iE//v6LTaRekBCbdMQwHTymTeN0KLFL/lWH/vKI
-dt6aklGGc3O0Fc2h5bTi
-=BOFw
------END PGP SIGNATURE-----
-
---XsQoSWH+UP9D9v3l--
+Bjorn
