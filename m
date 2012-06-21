@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570Ab2FUPkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 11:40:42 -0400
-Received: from mga06.intel.com ([134.134.136.21]:61267 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759500Ab2FUPkk (ORCPT
+	id S932622Ab2FUPp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 11:45:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60531 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932478Ab2FUPp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 11:40:40 -0400
+	Thu, 21 Jun 2012 11:45:26 -0400
+Date: Thu, 21 Jun 2012 16:45:18 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torsten.hilbrich@secunet.com,
+        Nick Piggin <npiggin@kernel.dk>
+Message-ID: <20120621154518.GR2753@decadent.org.uk>
+References: <x49txy5yi9z.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1340260626.24067.4.camel@minggr>
-References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
-	<1340000766-129148-3-git-send-email-ming.m.lin@intel.com>
-	<CAA9_cmcX2pajewz1v864Ni2Z3XAy8UrCRg+mg3Y2qFEd2j=nDg@mail.gmail.com>
-	<1340242002.20081.84.camel@minggr>
-	<CAA9_cmfCVTWtqfDY4PAzK_yaVWXLV+oMO1qt_AtQKp2upPUX=Q@mail.gmail.com>
-	<1340260626.24067.4.camel@minggr>
-Date: Thu, 21 Jun 2012 08:40:15 -0700
-Message-ID: <CABE8wwtDDip2ZY63JPz9J3iJUk6goL6eAHskNAWkLaBp+QcyCg@mail.gmail.com>
-Subject: Re: [PATCH v5 02/12] libata: bind the Linux device tree to the ACPI
- device tree
-From: Dan Williams <dan.j.williams@intel.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
-        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49txy5yi9z.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [patch] block: fix off-by-one in init_page_buffers
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 11:37 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> Good idea.
->
-> Below is the incremental patch on top of this series.
->
+On Wed, Jun 20, 2012 at 02:01:28PM -0400, Jeff Moyer wrote:
+[...]
+> This needs backporting to the stable trees where the offending commit
+> was backported.  I'm sure that includes 3.0 and 3.3, but not sure where
+> else it was committed.
 
-Looks good, I like your additional change to pass a sdev to
-ata_acpi_bind_device.
+3.2 as well.
 
---
-Dan
+> Is there an easy way to tell what trees got the commit?
+[...]
+
+I don't know about easy, but if you have 'stable' as a remote then
+this works:
+
+$ git branch -r | sed 's/^ *stable\/linux-\([0-9.]*\)\.y/\1/; t; d' | while read version; do git rev-list --grep=080399aaaf3531f5b8761ec0ac30ff98891e8686 v$version..stable/linux-$version.y | grep -q . && echo $version; done
+3.0
+3.2
+3.3
+
+(Maybe I'll wrap that up in a script.)
+ 
+Ben.
+
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
