@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760573Ab2FUV6F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:58:05 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:33296 "EHLO
+	id S1760587Ab2FUV6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:58:10 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:33304 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932847Ab2FUV6D (ORCPT
+	with ESMTP id S1760564Ab2FUV6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:58:03 -0400
+	Thu, 21 Jun 2012 17:58:05 -0400
 From: Rik van Riel <riel@surriel.com>
 To: linux-mm@kvack.org
 Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
         minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
         hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@surriel.com>, Rik van Riel <riel@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org
-Subject: [PATCH -mm v2 11/11] mm: remove SH arch_get_unmapped_area functions
-Date: Thu, 21 Jun 2012 17:57:15 -0400
-Message-Id: <1340315835-28571-12-git-send-email-riel@surriel.com>
+        Rik van Riel <riel@surriel.com>, Russell King <linux@arm.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>
+Subject: [PATCH -mm v2 10/11] mm: remove ARM arch_get_unmapped_area functions
+Date: Thu, 21 Jun 2012 17:57:14 -0400
+Message-Id: <1340315835-28571-11-git-send-email-riel@surriel.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340315835-28571-1-git-send-email-riel@surriel.com>
 References: <1340315835-28571-1-git-send-email-riel@surriel.com>
@@ -25,67 +24,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the SH special variants of arch_get_unmapped_area since
-the generic functions should now be able to handle everything.
+Remove the ARM special variants of arch_get_unmapped_area since the
+generic functions should now be able to handle everything.
 
-Paul, does anything in NOMMU SH need shm_align_mask?
+ARM only needs page colouring if cache_is_vipt_aliasing; leave
+shm_align_mask at PAGE_SIZE-1 unless we need colouring.
 
-Untested because I have no SH hardware.
+Untested because I have no ARM hardware.
 
+Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-sh@vger.kernel.org
 ---
- arch/sh/include/asm/pgtable.h |    4 -
- arch/sh/mm/mmap.c             |  219 +----------------------------------------
- 2 files changed, 2 insertions(+), 221 deletions(-)
+ arch/arm/include/asm/pgtable.h |    6 -
+ arch/arm/mm/init.c             |    4 +
+ arch/arm/mm/mmap.c             |  217 ----------------------------------------
+ 3 files changed, 4 insertions(+), 223 deletions(-)
 
-diff --git a/arch/sh/include/asm/pgtable.h b/arch/sh/include/asm/pgtable.h
-index 9210e93..03f5312 100644
---- a/arch/sh/include/asm/pgtable.h
-+++ b/arch/sh/include/asm/pgtable.h
-@@ -155,10 +155,6 @@ extern void paging_init(void);
- extern void page_table_range_init(unsigned long start, unsigned long end,
- 				  pgd_t *pgd);
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index f66626d..6754183 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -296,12 +296,6 @@ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
+ #include <asm-generic/pgtable.h>
  
--/* arch/sh/mm/mmap.c */
+ /*
+- * We provide our own arch_get_unmapped_area to cope with VIPT caches.
+- */
 -#define HAVE_ARCH_UNMAPPED_AREA
 -#define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
 -
- #define __HAVE_ARCH_PTE_SPECIAL
- 
- #include <asm-generic/pgtable.h>
-diff --git a/arch/sh/mm/mmap.c b/arch/sh/mm/mmap.c
-index afeb710..12f5edd 100644
---- a/arch/sh/mm/mmap.c
-+++ b/arch/sh/mm/mmap.c
-@@ -14,225 +14,10 @@
- #include <asm/page.h>
- #include <asm/processor.h>
- 
-+#ifndef CONFIG_MMU
- unsigned long shm_align_mask = PAGE_SIZE - 1;	/* Sane caches */
- EXPORT_SYMBOL(shm_align_mask);
--
--#ifdef CONFIG_MMU
 -/*
-- * To avoid cache aliases, we map the shared page with same color.
-- */
--static inline unsigned long COLOUR_ALIGN(unsigned long addr,
--					 unsigned long pgoff)
--{
--	unsigned long base = (addr + shm_align_mask) & ~shm_align_mask;
--	unsigned long off = (pgoff << PAGE_SHIFT) & shm_align_mask;
--
--	return base + off;
--}
--
+  * remap a physical page `pfn' of size `size' with page protection `prot'
+  * into virtual address `from'
+  */
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index f54d592..abaf862 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -600,6 +600,10 @@ void __init mem_init(void)
+ 	extern u32 itcm_end;
+ #endif
+ 
++	/* Tell the page colouring code what we need. */
++	if (cache_is_vipt_aliasing())
++		shm_align_mask = SHMLBA - 1;
++
+ 	max_mapnr   = pfn_to_page(max_pfn + PHYS_PFN_OFFSET) - mem_map;
+ 
+ 	/* this will put all unused low memory onto the freelists */
+diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
+index ce8cb19..d90969b 100644
+--- a/arch/arm/mm/mmap.c
++++ b/arch/arm/mm/mmap.c
+@@ -11,22 +11,6 @@
+ #include <linux/random.h>
+ #include <asm/cachetype.h>
+ 
 -static inline unsigned long COLOUR_ALIGN_DOWN(unsigned long addr,
 -					      unsigned long pgoff)
 -{
--	unsigned long base = addr & ~shm_align_mask;
--	unsigned long off = (pgoff << PAGE_SHIFT) & shm_align_mask;
+-	unsigned long base = addr & ~(SHMLBA-1);
+-	unsigned long off = (pgoff << PAGE_SHIFT) & (SHMLBA-1);
 -
 -	if (base + off <= addr)
 -		return base + off;
@@ -93,33 +92,58 @@ index afeb710..12f5edd 100644
 -	return base - off;
 -}
 -
--unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr,
--	unsigned long len, unsigned long pgoff, unsigned long flags)
+-#define COLOUR_ALIGN(addr,pgoff)		\
+-	((((addr)+SHMLBA-1)&~(SHMLBA-1)) +	\
+-	 (((pgoff)<<PAGE_SHIFT) & (SHMLBA-1)))
+-
+ /* gap between mmap and stack */
+ #define MIN_GAP (128*1024*1024UL)
+ #define MAX_GAP ((TASK_SIZE)/6*5)
+@@ -54,207 +38,6 @@ static unsigned long mmap_base(unsigned long rnd)
+ 	return PAGE_ALIGN(TASK_SIZE - gap - rnd);
+ }
+ 
+-/*
+- * We need to ensure that shared mappings are correctly aligned to
+- * avoid aliasing issues with VIPT caches.  We need to ensure that
+- * a specific page of an object is always mapped at a multiple of
+- * SHMLBA bytes.
+- *
+- * We unconditionally provide this function for all cases, however
+- * in the VIVT case, we optimise out the alignment rules.
+- */
+-unsigned long
+-arch_get_unmapped_area(struct file *filp, unsigned long addr,
+-		unsigned long len, unsigned long pgoff, unsigned long flags)
 -{
 -	struct mm_struct *mm = current->mm;
 -	struct vm_area_struct *vma;
 -	unsigned long start_addr;
--	int do_colour_align;
+-	int do_align = 0;
+-	int aliasing = cache_is_vipt_aliasing();
 -
+-	/*
+-	 * We only need to do colour alignment if either the I or D
+-	 * caches alias.
+-	 */
+-	if (aliasing)
+-		do_align = filp || (flags & MAP_SHARED);
+-
+-	/*
+-	 * We enforce the MAP_FIXED case.
+-	 */
 -	if (flags & MAP_FIXED) {
--		/* We do not accept a shared mapping if it would violate
--		 * cache aliasing constraints.
--		 */
--		if ((flags & MAP_SHARED) &&
--		    ((addr - (pgoff << PAGE_SHIFT)) & shm_align_mask))
+-		if (aliasing && flags & MAP_SHARED &&
+-		    (addr - (pgoff << PAGE_SHIFT)) & (SHMLBA - 1))
 -			return -EINVAL;
 -		return addr;
 -	}
 -
--	if (unlikely(len > TASK_SIZE))
+-	if (len > TASK_SIZE)
 -		return -ENOMEM;
 -
--	do_colour_align = 0;
--	if (filp || (flags & MAP_SHARED))
--		do_colour_align = 1;
--
 -	if (addr) {
--		if (do_colour_align)
+-		if (do_align)
 -			addr = COLOUR_ALIGN(addr, pgoff);
 -		else
 -			addr = PAGE_ALIGN(addr);
@@ -129,23 +153,22 @@ index afeb710..12f5edd 100644
 -		    (!vma || addr + len <= vma->vm_start))
 -			return addr;
 -	}
--
 -	if (len > mm->cached_hole_size) {
--		start_addr = addr = mm->free_area_cache;
+-	        start_addr = addr = mm->free_area_cache;
 -	} else {
+-	        start_addr = addr = mm->mmap_base;
 -	        mm->cached_hole_size = 0;
--		start_addr = addr = TASK_UNMAPPED_BASE;
 -	}
 -
 -full_search:
--	if (do_colour_align)
+-	if (do_align)
 -		addr = COLOUR_ALIGN(addr, pgoff);
 -	else
--		addr = PAGE_ALIGN(mm->free_area_cache);
+-		addr = PAGE_ALIGN(addr);
 -
 -	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
 -		/* At this point:  (!vma || addr < vma->vm_end). */
--		if (unlikely(TASK_SIZE - len < addr)) {
+-		if (TASK_SIZE - len < addr) {
 -			/*
 -			 * Start a new search - just in case we missed
 -			 * some holes.
@@ -157,7 +180,7 @@ index afeb710..12f5edd 100644
 -			}
 -			return -ENOMEM;
 -		}
--		if (likely(!vma || addr + len <= vma->vm_start)) {
+-		if (!vma || addr + len <= vma->vm_start) {
 -			/*
 -			 * Remember the place where we stopped the search:
 -			 */
@@ -166,81 +189,79 @@ index afeb710..12f5edd 100644
 -		}
 -		if (addr + mm->cached_hole_size < vma->vm_start)
 -		        mm->cached_hole_size = vma->vm_start - addr;
--
 -		addr = vma->vm_end;
--		if (do_colour_align)
+-		if (do_align)
 -			addr = COLOUR_ALIGN(addr, pgoff);
 -	}
 -}
 -
 -unsigned long
 -arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
--			  const unsigned long len, const unsigned long pgoff,
--			  const unsigned long flags)
+-			const unsigned long len, const unsigned long pgoff,
+-			const unsigned long flags)
 -{
 -	struct vm_area_struct *vma;
 -	struct mm_struct *mm = current->mm;
 -	unsigned long addr = addr0;
--	int do_colour_align;
+-	int do_align = 0;
+-	int aliasing = cache_is_vipt_aliasing();
+-
+-	/*
+-	 * We only need to do colour alignment if either the I or D
+-	 * caches alias.
+-	 */
+-	if (aliasing)
+-		do_align = filp || (flags & MAP_SHARED);
+-
+-	/* requested length too big for entire address space */
+-	if (len > TASK_SIZE)
+-		return -ENOMEM;
 -
 -	if (flags & MAP_FIXED) {
--		/* We do not accept a shared mapping if it would violate
--		 * cache aliasing constraints.
--		 */
--		if ((flags & MAP_SHARED) &&
--		    ((addr - (pgoff << PAGE_SHIFT)) & shm_align_mask))
+-		if (aliasing && flags & MAP_SHARED &&
+-		    (addr - (pgoff << PAGE_SHIFT)) & (SHMLBA - 1))
 -			return -EINVAL;
 -		return addr;
 -	}
 -
--	if (unlikely(len > TASK_SIZE))
--		return -ENOMEM;
--
--	do_colour_align = 0;
--	if (filp || (flags & MAP_SHARED))
--		do_colour_align = 1;
--
 -	/* requesting a specific address */
 -	if (addr) {
--		if (do_colour_align)
+-		if (do_align)
 -			addr = COLOUR_ALIGN(addr, pgoff);
 -		else
 -			addr = PAGE_ALIGN(addr);
--
 -		vma = find_vma(mm, addr);
 -		if (TASK_SIZE - len >= addr &&
--		    (!vma || addr + len <= vma->vm_start))
+-				(!vma || addr + len <= vma->vm_start))
 -			return addr;
 -	}
 -
 -	/* check if free_area_cache is useful for us */
 -	if (len <= mm->cached_hole_size) {
--	        mm->cached_hole_size = 0;
+-		mm->cached_hole_size = 0;
 -		mm->free_area_cache = mm->mmap_base;
 -	}
 -
 -	/* either no address requested or can't fit in requested address hole */
 -	addr = mm->free_area_cache;
--	if (do_colour_align) {
--		unsigned long base = COLOUR_ALIGN_DOWN(addr-len, pgoff);
--
+-	if (do_align) {
+-		unsigned long base = COLOUR_ALIGN_DOWN(addr - len, pgoff);
 -		addr = base + len;
 -	}
 -
 -	/* make sure it can fit in the remaining address space */
--	if (likely(addr > len)) {
+-	if (addr > len) {
 -		vma = find_vma(mm, addr-len);
--		if (!vma || addr <= vma->vm_start) {
+-		if (!vma || addr <= vma->vm_start)
 -			/* remember the address as a hint for next time */
 -			return (mm->free_area_cache = addr-len);
--		}
 -	}
 -
--	if (unlikely(mm->mmap_base < len))
+-	if (mm->mmap_base < len)
 -		goto bottomup;
 -
--	addr = mm->mmap_base-len;
--	if (do_colour_align)
+-	addr = mm->mmap_base - len;
+-	if (do_align)
 -		addr = COLOUR_ALIGN_DOWN(addr, pgoff);
 -
 -	do {
@@ -250,20 +271,19 @@ index afeb710..12f5edd 100644
 -		 * return with success:
 -		 */
 -		vma = find_vma(mm, addr);
--		if (likely(!vma || addr+len <= vma->vm_start)) {
+-		if (!vma || addr+len <= vma->vm_start)
 -			/* remember the address as a hint for next time */
 -			return (mm->free_area_cache = addr);
--		}
 -
 -		/* remember the largest hole we saw so far */
 -		if (addr + mm->cached_hole_size < vma->vm_start)
--		        mm->cached_hole_size = vma->vm_start - addr;
+-			mm->cached_hole_size = vma->vm_start - addr;
 -
 -		/* try just below the current vma->vm_start */
--		addr = vma->vm_start-len;
--		if (do_colour_align)
+-		addr = vma->vm_start - len;
+-		if (do_align)
 -			addr = COLOUR_ALIGN_DOWN(addr, pgoff);
--	} while (likely(len < vma->vm_start));
+-	} while (len < vma->vm_start);
 -
 -bottomup:
 -	/*
@@ -283,11 +303,10 @@ index afeb710..12f5edd 100644
 -
 -	return addr;
 -}
--#endif /* CONFIG_MMU */
-+#endif
- 
- /*
-  * You really shouldn't be using read() or write() on /dev/mem.  This
+-
+ void arch_pick_mmap_layout(struct mm_struct *mm)
+ {
+ 	unsigned long random_factor = 0UL;
 -- 
 1.7.7.6
 
