@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab2FUPHZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 11:07:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50268 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759044Ab2FUPHW (ORCPT
+	id S932070Ab2FUPId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 11:08:33 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:26325
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757807Ab2FUPIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 11:07:22 -0400
-Date: Thu, 21 Jun 2012 08:07:06 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-3i0pfh44c1e3jv5lab0cf7sc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/reboot] x86, reboot: Drop redundant write of reboot_mode
-Git-Commit-ID: 2b1b712f050eaf0ac576591281446dc960c0afc5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 21 Jun 2012 11:08:32 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz936eI4015Izz1202hzz8275dhz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M5Z3E0-01-7BK-02
+X-M-MSG: 
+Date: Thu, 21 Jun 2012 17:08:20 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [GIT PULL] oprofile: fixes for tip/perf/urgent
+Message-ID: <20120621150820.GB24632@erda.amd.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 21 Jun 2012 08:07:12 -0700 (PDT)
+X-Mailer: git-send-email 1.6.6
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2b1b712f050eaf0ac576591281446dc960c0afc5
-Gitweb:     http://git.kernel.org/tip/2b1b712f050eaf0ac576591281446dc960c0afc5
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Wed, 20 Jun 2012 21:18:14 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 20 Jun 2012 21:18:14 -0700
+Ingo,
 
-x86, reboot: Drop redundant write of reboot_mode
+it's only one patch, please pull from:
 
-We write reboot_mode to BIOS location 0x472 in
-native_machine_emergency_restart() (reboot.c:542) already, there is no
-need to then write it again in machine_real_restart().
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
 
-This means nothing gets written there for MRR_APM, but the APM call is
-a poweroff call and doesn't use this memory location.
+Thanks,
 
-Link: http://lkml.kernel.org/n/tip-3i0pfh44c1e3jv5lab0cf7sc@git.kernel.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/reboot.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+-Robert
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 6ddb9cd..6ef559f 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -179,14 +179,6 @@ void __noreturn machine_real_restart(unsigned int type)
- 	write_cr3(real_mode_header->trampoline_pgd);
- #endif
- 
--	/*
--	 * Write 0x1234 to absolute memory location 0x472.  The BIOS reads
--	 * this on booting to tell it to "Bypass memory test (also warm
--	 * boot)".  This seems like a fairly standard thing that gets set by
--	 * REBOOT.COM programs, and the previous reset routine did this
--	 * too. */
--	*((unsigned short *)0x472) = reboot_mode;
--
- 	/* Jump to the identity-mapped low memory code */
- #ifdef CONFIG_X86_32
- 	asm volatile("jmpl *%0" : :
+
+The following changes since commit 6921a575c9f26f7ea274aaea3b78967810ce5513:
+
+  Merge branch 'tip/perf/urgent-2' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace into perf/urgent (2012-06-20 14:26:58 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+
+Will Deacon (1):
+      oprofile: perf: use NR_CPUS instead or nr_cpumask_bits for static array
+
+ drivers/oprofile/oprofile_perf.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
