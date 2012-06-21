@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760539Ab2FUVub (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:50:31 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47844 "EHLO radon.swed.at"
+	id S932802Ab2FUVug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:50:36 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932765Ab2FUVu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:50:29 -0400
+	id S932786Ab2FUVue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 17:50:34 -0400
 From: Richard Weinberger <richard@nod.at>
 To: linux-mtd@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
         shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
         Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
         Richard Weinberger <richard@nod.at>
-Subject: [PATCH 10/15] UBI: Fastmap: Remove unused variable Signed-off-by: Richard Weinberger <richard@nod.at>
-Date: Thu, 21 Jun 2012 23:50:03 +0200
-Message-Id: <1340315408-27375-11-git-send-email-richard@nod.at>
+Subject: [PATCH 15/15] UBI: Fastmap: Write a fastmap also while detaching.
+Date: Thu, 21 Jun 2012 23:50:08 +0200
+Message-Id: <1340315408-27375-16-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1340315408-27375-1-git-send-email-richard@nod.at>
 References: <UBI fastmap updates>
@@ -24,25 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+To ensure that fastmap knows all EC values we have to do this.
+Otherwise fastmap my miss EC updates.
+E.g: If the WL sub-system moves data from PEB A to PEB B.
+It picks B from the WL pool, moves the data to it an eraes A.
+If we detach now (or a power cut happens) the new EC value is lost.
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/ubi/attach.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mtd/ubi/build.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mtd/ubi/attach.c b/drivers/mtd/ubi/attach.c
-index 7f65166..7cf4711 100644
---- a/drivers/mtd/ubi/attach.c
-+++ b/drivers/mtd/ubi/attach.c
-@@ -1214,7 +1214,7 @@ out_ai:
-  */
- int ubi_attach(struct ubi_device *ubi, int force_scan)
- {
--	int err, i;
-+	int err;
- 	struct ubi_attach_info *ai;
+diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+index 186bc19..611d0c4 100644
+--- a/drivers/mtd/ubi/build.c
++++ b/drivers/mtd/ubi/build.c
+@@ -1051,6 +1051,8 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
+ 	ubi_notify_all(ubi, UBI_VOLUME_REMOVED, NULL);
+ 	dbg_msg("detaching mtd%d from ubi%d", ubi->mtd->index, ubi_num);
  
- 	ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
++	ubi_update_fastmap(ubi);
++
+ 	/*
+ 	 * Before freeing anything, we have to stop the background thread to
+ 	 * prevent it from doing anything on this device while we are freeing.
+@@ -1058,10 +1060,6 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
+ 	if (ubi->bgt_thread)
+ 		kthread_stop(ubi->bgt_thread);
+ 
+-	/* If no fastmap is present on the FLASH write one. */
+-	if (!ubi->fm)
+-		ubi_update_fastmap(ubi);
+-
+ 	/*
+ 	 * Get a reference to the device in order to prevent 'dev_release()'
+ 	 * from freeing the @ubi object.
 -- 
 1.7.6.5
 
