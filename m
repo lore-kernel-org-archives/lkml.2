@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043Ab2FUBpL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 21:45:11 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:43630 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756820Ab2FUBpJ (ORCPT
+	id S1757168Ab2FUBp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 21:45:56 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52032 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756907Ab2FUBpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 21:45:09 -0400
-Message-ID: <4FE27C9B.2070500@linux.vnet.ibm.com>
-Date: Thu, 21 Jun 2012 09:44:59 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+	Wed, 20 Jun 2012 21:45:55 -0400
+Date: Thu, 21 Jun 2012 11:45:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 02/10] zcache: fix refcount leak
-References: <4FE0392E.3090300@linux.vnet.ibm.com> <4FE03949.4080308@linux.vnet.ibm.com> <4FE08C9A.3010701@linux.vnet.ibm.com> <c10bcaf9-aa56-4d6a-bc2c-310096b4198b@default> <4FE0DBDD.2090005@linux.vnet.ibm.com> <4FE13B76.6020703@linux.vnet.ibm.com> <4FE14149.7030807@linux.vnet.ibm.com> <db70ea46-7e43-4795-a399-c3220cda0a46@default>
-In-Reply-To: <db70ea46-7e43-4795-a399-c3220cda0a46@default>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12062101-3864-0000-0000-0000036C6687
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: Re: linux-next: Tree for Jun 20 (hweight return type)
+Message-Id: <20120621114546.1e5df51bd231ee481d63705c@canb.auug.org.au>
+In-Reply-To: <4FE27471.8050505@xenotime.net>
+References: <20120620173536.b856bbd97497cf02ddf8d6d2@canb.auug.org.au>
+	<4FE27471.8050505@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__21_Jun_2012_11_45_46_+1000_3CaoF_LSqfkKBwPq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 06:25 AM, Dan Magenheimer wrote:
+--Signature=_Thu__21_Jun_2012_11_45_46_+1000_3CaoF_LSqfkKBwPq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> From: Xiao Guangrong [mailto:xiaoguangrong@linux.vnet.ibm.com]
->> Subject: Re: [PATCH 02/10] zcache: fix refcount leak
->>
->> On 06/20/2012 10:54 AM, Xiao Guangrong wrote:
->>
->>> On 06/20/2012 04:06 AM, Seth Jennings wrote:
->>>
->>>> On 06/19/2012 02:49 PM, Dan Magenheimer wrote:
->>>>
->>>>> My preference would be to fix it the opposite way, by
->>>>> checking and ignoring zcache_host in zcache_put_pool.
->>>>> The ref-counting is to ensure that a client isn't
->>>>> accidentally destroyed while in use (for multiple-client
->>>>> users such as ramster and kvm) and since zcache_host is a static
->>>>> struct, it should never be deleted so need not be ref-counted.
->>>>
->>>>
->>>> If we do that, we'll need to comment it.  If we don't, it won't be
->>>> obvious why we are refcounting every zcache client except one.  It'll
->>>> look like a bug.
->>>
->>>
->>> Okay, i will fix it like Dan's way and comment it.
->>
->> Hmm...But i notice that zcache_host is the same as other clients, all
->> of them are static struct:
->>
->> | static struct zcache_client zcache_host;
->> | static struct zcache_client zcache_clients[MAX_CLIENTS];
->>
->> And all of them are not destroyed.
-> 
-> Yes, the code currently in zcache was a first step towards
-> supporting multiple clients.  Ramster goes one step further
-> and kvm will require even a tiny bit more work.
-> 
+On Wed, 20 Jun 2012 18:10:09 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
+e:
+>
+> Someone changes the return type of __const_hweight8() to
+> (unsigned long).  That causes printk format warnings when
+> hweight8/16() etc. is passed a constant:
 
+That would be "include/linux/bitops.h: fix warning" from the akpm tree
+(adding cc's).
 
-So, do you mind we increase the refcount for all clients (zcache host and
-other clients) first? Like my origin patch?
+>=20
+> drivers/input/joystick/analog.c:412:4: warning: format '%d' expects type =
+'int', but argument 4 has type 'long unsigned int'
+> drivers/input/joystick/analog.c:412:4: warning: format '%d' expects type =
+'int', but argument 5 has type 'long unsigned int'
+> drivers/input/joystick/analog.c:416:5: warning: format '%d' expects type =
+'int', but argument 5 has type 'long unsigned int'
+>=20
+>=20
+> Note that in
+>=20
+> #define hweight8(w)  (__builtin_constant_p(w) ? __const_hweight8(w)  : __=
+arch_hweight8(w))
+>=20
+> __arch_hweight*() still returns unsigned int while __const_hweight*()
+> returns unsigned long.  This can't be good, can it?
 
-> FYI, I'm working on a unification version of zcache that can support
-> all of these cleanly as well as better support for eviction
-> that will make standalone zcache more suitable for promotion from
-> staging and enterprise-ready.  Due to various summer commitments,
-> it will probably be a few weeks before it is ready for posting.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Thu__21_Jun_2012_11_45_46_+1000_3CaoF_LSqfkKBwPq
+Content-Type: application/pgp-signature
 
-Great work, look forward to the progress! :)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJP4nzKAAoJEECxmPOUX5FE9joP/0Rrm1hA6MFNtbA7PK9Pw09E
+RoZsBpoQuzgJltDa+tzYIy3JoId6VykPhyQXysBCJ0hH/BYtSkQ0Z/N7gSa/AT3J
+i0N359FcTpluLCOjbrxE3E56Cka5sn7B55EmYIrtBxBtzsK9dNYJapvFCVAbOiJC
+z7JrJh5FF4cKpKOiqHZaPRB+ZzR1LwhWyMyBjjyfM6bVR+it2OBfb35grgD6Op/7
+yUJhEOq/DqF4w54oQ/Flq+ChnzNpfvTivLVYvHFKC/qB7eJdNwiO7Wel8uclRb9m
+zvWOJTXq/xpYVPHdAwjwER1cr+44LuQbVBM2gw2djZ4r7mpahOORcH3PdJyhojLU
+gGzu+k25fqrqqnT9H8DjYXUShRmBVhMwp15dlfKndzGTfy3pPBdjtkIdwyf5Fxqj
+eT7Xg64uYWUXWMoTQQfD0RWpoFmTVkZzSyRh/F+h2I0qeAErZlbfWAvwAm5l7puk
+/hcTIAAfBk1KJpZLYjQy8KUNnekeZ1qd5Do1KlnddfU09DVEGGv+tMBgo5N7FaHb
+e0fKU6we6nHJ4svs6b1oQYqKY8eeTIpI+ZeGPTN0kgcaXsUB1mGB3IlkRpNgdKW6
+40J6indQwBKfSZPDWK/e1HhmTmtL+IeXTAXlLj99q1uIt22s2F/krYXA6BOTK/rj
+X51sDSzjWCxR+Klgba5V
+=/Kw7
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__21_Jun_2012_11_45_46_+1000_3CaoF_LSqfkKBwPq--
