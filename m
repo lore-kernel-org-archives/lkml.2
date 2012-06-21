@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab2FUJNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:13:33 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35408 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932321Ab2FUJNc convert rfc822-to-8bit (ORCPT
+	id S1759135Ab2FUJOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:14:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44403 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754769Ab2FUJOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:13:32 -0400
+	Thu, 21 Jun 2012 05:14:35 -0400
+Date: Thu, 21 Jun 2012 10:14:33 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: "Kim, Milo" <Milo.Kim@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, "Girdwood, Liam" <lrg@ti.com>
+Subject: Re: linux-next: build failure after merge of the regulator tree
+Message-ID: <20120621091433.GH4037@opensource.wolfsonmicro.com>
+References: <20120621132738.6e797593acc58b3e30902f69@canb.auug.org.au>
+ <A874F61F95741C4A9BA573A70FE3998FC074@DQHE02.ent.ti.com>
+ <CAF+7xWkzKkwfBFQS1vr-Tk2Auu+5HQmX7bZCGJhsmXRi0V5OZw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4FE2DE9A.70202@intel.com>
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
-	<1340208092.21745.114.camel@twins>
-	<4FE28823.80704@intel.com>
-	<CABPqkBTi8-yKg_kzFTwLe1_m2Zprt5vGk9WPQW14yHQpy=PiWw@mail.gmail.com>
-	<4FE2DE9A.70202@intel.com>
-Date: Thu, 21 Jun 2012 11:13:30 +0200
-Message-ID: <CABPqkBTESKqVG6shXsLi85w=ZJ=1hXxu8+_7tNp23euds8JPbg@mail.gmail.com>
-Subject: Re: [PATCH V6 0/13] perf: Intel uncore pmu counting support
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jRdC2OsRnuV8iIl8"
+Content-Disposition: inline
+In-Reply-To: <CAF+7xWkzKkwfBFQS1vr-Tk2Auu+5HQmX7bZCGJhsmXRi0V5OZw@mail.gmail.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 10:43 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> On 06/21/2012 04:10 PM, Stephane Eranian wrote:
->> On Thu, Jun 21, 2012 at 4:34 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->>> On 06/21/2012 12:01 AM, Peter Zijlstra wrote:
->>>>
->>>> ok, so with this stuff something like:
->>>>
->>>>   perf stat -ae uncore/event=clockticks/ foo
->>>>
->>>> will register a counter per cpu, which is somewhat silly since we only
->>>> need one per node. What would be the best way to 'fix' this?
->>>>
->>>> We could of course create another variant of -a which iterates nodes
->>>> instead of cpus, -N or so.
->>>>
->>>> Alternatively we could try and describe this in sysfs in some way, one
->>>> possibility would be to include a link to /sys/devices/system/{cpu,node}
->>>> or somesuch and use that link to iterate the correct space.
->>>>
->>>> Any other suggestions?
->>>>
->>> How about treat the 'cpu' parameter for uncore event as socket id instead
->>> of cpu id?
->>>
->> But that does not address the use case of Peter, i.e., no cpu parameter passed.
->> Looks like sysfs might be the only way to do this in a portable manner.
->>
-> It does. For example, on a dual socket system, perf can only register uncore
-> counter with 'cpu' parameter is equal to 0 or 1. This method is hacky, but it
-> requires minimal change for the kernel and perf tool.
->
-I was saying, I don't want to have to pass -C x with -a and yet have perf stat
-only instantiate the event once per socket. I think that's what PeterZ was
-asking about.
 
-> Regards
-> Yan, Zheng
->
+--jRdC2OsRnuV8iIl8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Jun 21, 2012 at 04:20:46PM +0800, Axel Lin wrote:
+
+> I don't think this is the good way, other drivers may have this build problem.
+> I think we can fix it by having the patch exporting
+> devm_gpio_request_one upstrem ASAP.
+
+This isn't any use until someone actually merges the patch which given
+that it's for gpiolib could take a very long time.
+
+--jRdC2OsRnuV8iIl8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP4uXxAAoJEBus8iNuMP3dh/IQAI04nXbUpsvz7eeN2ysqtFjl
+YnAGayfLcUOuKlwvrB1izwfN6i97Am8makdOQIujbpqSnA5AdCXZJooPXFUdJac0
+RWx1+ciA4Mk8WGrssO++QARXRuFceq9+TcNgLAc7qaVb1Lb+Zys6GKKRBMw3nb3D
+7kPZXlXW0bZ51RJaveZb1WppQIPF+y5n9d8cwGiOkEJ5vmhNh0d4ONu6dIp8C2BL
+jpT+o5zniOSO3J3OXriJ77tUcmdV4M0L0vukqMQTnMN676InqKoAx1bSeb3cpYR0
+WtVHK8rSWIgZzBnuvZa0hnFLwB6wA9x++i9zS1VGfdJ52q16qtKNRNqkikPkvwo6
+VkJPjgGBGi1hbr412TrErB5Kn/2iNFFjoPJP2kOeILjCOFWjFvhmp4T5hUNnv125
+7AdeS/QP3LxzFTMpzTgowXXXKbu3VbtfertfR+uwmbzE9Td3J70jIwe83UjVfra4
+0ZeMZaIYLyQSXpYaPlCZ8sUs+e0peEm3qZqxhkJW6uENxTz/OTcy3y9VMlw9s4Dh
+X7ocI6wKJzS8oZ62RgYv5XHSHUfsQ42UqA9duDOwc6k83map+zLh8qw6Nus9L3sn
+2VSiSTnuEmYmo0GvslSuDkA+0Po3cylj4sSxcwJHCqYoWONXZPiyicSCJwhJw+5h
+TMy8J8Z8SRA4EeUL1l/l
+=Noc5
+-----END PGP SIGNATURE-----
+
+--jRdC2OsRnuV8iIl8--
