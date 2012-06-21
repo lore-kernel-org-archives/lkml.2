@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab2FUNHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 09:07:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61958 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759567Ab2FUNHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 09:07:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="183217469"
-Message-ID: <1340284305.13910.216.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2 1/4] ext4: Remove useless marking of superblock dirty
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>
-Date: Thu, 21 Jun 2012 16:11:45 +0300
-In-Reply-To: <20120601151601.GA13826@thunk.org>
-References: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
-	 <1333367140-28370-2-git-send-email-artem.bityutskiy@linux.intel.com>
-	 <1334215249.13842.36.camel@sauron.fi.intel.com>
-	 <1335775045.2584.3.camel@sauron.fi.intel.com>
-	 <1338558820.2536.151.camel@sauron.fi.intel.com>
-	 <20120601151601.GA13826@thunk.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-4FgDzXIlXlZP/7SKdO47"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S932569Ab2FUNIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 09:08:24 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39716 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759583Ab2FUNIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 09:08:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABPqkBSV7MwALrv1Sah6L9C2FP=AGXC2+yeN=jsJk=HrO1bNzA@mail.gmail.com>
+References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
+	<1340208092.21745.114.camel@twins>
+	<4FE28823.80704@intel.com>
+	<CABPqkBTi8-yKg_kzFTwLe1_m2Zprt5vGk9WPQW14yHQpy=PiWw@mail.gmail.com>
+	<4FE2DE9A.70202@intel.com>
+	<CABPqkBTESKqVG6shXsLi85w=ZJ=1hXxu8+_7tNp23euds8JPbg@mail.gmail.com>
+	<1340278853.21745.178.camel@twins>
+	<CABPqkBSV7MwALrv1Sah6L9C2FP=AGXC2+yeN=jsJk=HrO1bNzA@mail.gmail.com>
+Date: Thu, 21 Jun 2012 21:08:22 +0800
+X-Google-Sender-Auth: j793Zm5H1U4r2A3oqFqbC-czqVE
+Message-ID: <CAAM7YAkyZb6p0Nhsft4NvyTH0WFeekwG74MozkToUj2kuEqPDw@mail.gmail.com>
+Subject: Re: [PATCH V6 0/13] perf: Intel uncore pmu counting support
+From: "Yan, Zheng" <zheng.z.yan@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, jolsa@redhat.com,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 21, 2012 at 7:48 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Thu, Jun 21, 2012 at 1:40 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> On Thu, 2012-06-21 at 11:13 +0200, Stephane Eranian wrote:
+>>
+>>> >>> How about treat the 'cpu' parameter for uncore event as socket id instead
+>>> >>> of cpu id?
+>>> >>>
+>>> >> But that does not address the use case of Peter, i.e., no cpu parameter passed.
+>>> >> Looks like sysfs might be the only way to do this in a portable manner.
+>>> >>
+>>> > It does. For example, on a dual socket system, perf can only register uncore
+>>> > counter with 'cpu' parameter is equal to 0 or 1. This method is hacky, but it
+>>> > requires minimal change for the kernel and perf tool.
+>>> >
+>>> I was saying, I don't want to have to pass -C x with -a and yet have perf stat
+>>> only instantiate the event once per socket. I think that's what PeterZ was
+>>> asking about.
+>>
+>> What Zheng is saying is that -a will iterate [0..nr_cpus), but since
+>> we're interpreting the sys_perf_event_open(.cpu) argument as node, we'll
+>> fail the syscall with -EINVAL or so for .cpu >= nr_node_ids.
+>>
+> Ok, but how do you distinguish EINVAL is this case from an error with a non
+> uncore event? Unless you return a unique error code, I don't see how you'd solve
+> that. In general, I don't like it when perf switches events or CPUs under the
+> cover.
+>
+> When happens with -a -A?
+>
+>
+>> This way, we'll only create one counter per node.
+>>
+>> I would work, but its not pretty since we still don't know what we're
+>> iterating.
+>
+> Not pretty.
 
---=-4FgDzXIlXlZP/7SKdO47
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Ok, I will try implementing the sysfs link approach that Peter suggested.
 
-On Fri, 2012-06-01 at 11:16 -0400, Ted Ts'o wrote:
-> I will make sure this patchset
-> gets reviewed and queued for 3.5.
-
-Hi Ted,
-
-just a reminder. The patch does not apply cleanly but the conflicts are
-simple and they are around the SB checksum stuff. Do you want me to
-re-send?
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-4FgDzXIlXlZP/7SKdO47
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP4x2RAAoJECmIfjd9wqK0cgEP/Rwcp7wz0lHRb6Cg3esQXNX2
-MIhTPgQx3F9y9HTxnMbv8TidVnUY5WEsuq+eLWlH+6+9DMfkSxgsHEwSbeSTrLx1
-/8+vcZbKX2z3Guw5dAtfnIzL9YkDhhOuXCPgXsv7yWpAjY1BukcFKyo/yQ++6Nic
-/i62ORo33yW/Re6snFJrwaipPqSnSUldI2VAjIUnvPmc7O3vvhiaLcnx/OYaW82s
-7LypUF0a2ytGz36W5Z67q4+e1i/rGNDsk5n2W55yuYuHJTQhB8nQ7pyEfTU9eT0h
-Ho2sd1fc98AHY9uQBPZviIU+2lAWbvtNUfyHowaEFZmLbNFFoIWLPdURjGqlBXOZ
-Aa0PXwLD21tgPS4HSgImgSKn28k7Ale6khCYk7Kp0O6KS293GizhNvWoRq4v/ItY
-sRzGo8TULakwT8sLwtec0m12RpUKcyKAF5llQUrlOiyP5laZa0ayn1ehxlpWio3/
-6yonH9WwWc8QRvjiKDz1bIZwgklqDh4D6ae2oMXgHGgW6RHGHk7/g/Hk+s8slW99
-gJy5l2PPHSLTSpG4uzCv3WI/o43q1Ln8Ka1Pewz+keT1ziWV1nEAxF9Ip07gDL32
-WMIw3Pk34+VclfEKn+5ugL+cRIk4YLsrC2csFx4dIDTaAJ1iE3BD1C5SVUPVUQAb
-NhyhTqhRfDxBSXjJsWZh
-=s/ol
------END PGP SIGNATURE-----
-
---=-4FgDzXIlXlZP/7SKdO47--
-
+Thanks
+Yan, Zheng
