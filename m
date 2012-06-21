@@ -1,51 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931Ab2FUOwF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 10:52:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3464 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758698Ab2FUOwD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 10:52:03 -0400
-X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XOt6boVe9ZQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=pvJ5EdTAJN3b61SmneoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340290321.27036.166.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] ring-buffer: fix uninitialized read_stamp
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com
-Date: Thu, 21 Jun 2012 10:52:01 -0400
-In-Reply-To: <1340060577-9112-1-git-send-email-dhsharp@google.com>
-References: <CAJL_eku9byV+Uk-5boR52HLEO0D-++2h_y=PeaaQG_PrCuALhQ@mail.gmail.com>
-	 <1340060577-9112-1-git-send-email-dhsharp@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758939Ab2FUO6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 10:58:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42477 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758705Ab2FUO6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 10:58:41 -0400
+Date: Thu, 21 Jun 2012 16:55:52 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Alex Shi <lkml.alex@gmail.com>
+Cc: Petr Holasek <pholasek@redhat.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: AutoNUMA15
+Message-ID: <20120621145552.GG4954@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <20120529133627.GA7637@shutemov.name>
+ <20120529154308.GA10790@dhcp-27-244.brq.redhat.com>
+ <20120531180834.GP21339@redhat.com>
+ <CAGjg+kHNe4RkhHKt5JYKDnE2oqs0ZBNUkL_XYOwfDK1S5cxjvw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGjg+kHNe4RkhHKt5JYKDnE2oqs0ZBNUkL_XYOwfDK1S5cxjvw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-18 at 16:02 -0700, David Sharp wrote:
-> This fixes a scenario in which trace_pipe_raw will return events with invalid
-> timestamps when events are copied out one at a time (instead of swapping out
-> the reader page with a spare page). In this scenario, ring_buffer_read_page()
-> uses cpu_buffer->read_stamp to keep track of the time of the earliest event.
-> However, cpu_buffer->read_stamp was not always updated. The only function that
-> sets read_stamp to a new valid value is rb_reset_reader_page(), which is called
-> only by rb_get_reader_page(). rb_reset_reader_page() was not called when there
-> is data immediately available on the page to read (read < rb_page_size()). This
-> is the bug.
+On Thu, Jun 21, 2012 at 03:29:52PM +0800, Alex Shi wrote:
+> > I released an AutoNUMA15 branch that includes all pending fixes:
+> >
+> > git clone --reference linux -b autonuma15 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+> >
+> 
+> I did a quick testing on our
+> specjbb2005/oltp/hackbench/tbench/netperf-loop/fio/ffsb on NHM EP/EX,
+> Core2 EP, Romely EP machine, In generally no clear performance change
+> found. Is this results expected for this patch set?
 
-Hi David,
+hackbench and network benchs won't get benefit (the former
+overschedule like crazy so there's no way any autonuma balancing can
+have effect with such an overscheduling and zillion of threads, the
+latter is I/O dominated usually taking so little RAM it doesn't
+matter, the memory accesses on the kernel side and DMA issue should
+dominate it in CPU utilization). Similar issue for filesystem
+benchmarks like fio.
 
-Thanks for the reminder, I'll be looking at it today.
+On all _system_ time dominated kernel benchmarks it is expected not to
+measure a performance optimization and if you don't measure a
+regression it's more than enough.
 
-Do you believe that this is an urgent fix and should be marked for
-stable, or do you think it can wait till 3.6? If you think it should be
-marked for stable, then it should be pushed for 3.5.
+The only benchmarks that gets benefit are userland where the user/nice
+time in top dominates. AutoNUMA cannot optimize or move kernel memory
+around, it only optimizes userland computations.
 
--- Steve
+So you should run HPC jobs. The only strange thing here is that
+specjbb2005 gets a measurable significant boost with AutoNUMA so if
+you didn't even get a boost with that you may want to verify:
 
+cat /sys/kernel/mm/autonuma/enabled == 1
 
+Also verify:
+
+CONFIG_AUTONUMA_DEFAULT_ENABLED=y
+
+If that's 1 well maybe the memory interconnect is so fast that there's
+no benefit?
+
+My numa01/02 benchmarks measures the best worst case of the hardware
+(not software), with -DINVERSE_BIND -DHARD_BIND parameters, you can
+consider running that to verify.
+
+Probably there should be a little boot time kernel benchmark to
+measure the inverse bind vs hard bind performance across the first two
+nodes, if the difference is nil AutoNUMA should disengage and not even
+allocate the page_autonuma (now only 12 bytes per page but anyway).
+
+If you can retest with autonuma17 it would help too as there was some
+performance issue fixed and it'd stress the new autonuma migration lru
+code:
+
+git clone --reference linux -b autonuma17 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git autonuma17
+
+And the very latest is always at the autonuma branch:
+
+git clone --reference linux -b autonuma git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git autonuma
+
+Thanks,
+Andrea
