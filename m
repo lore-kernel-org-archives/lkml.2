@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932787Ab2FUU0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 16:26:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932224Ab2FUUYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 16:24:47 -0400
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 2/9] PCI: release temporary reference in
-	__nv_msi_ht_cap_quirk()
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux@arm.linux.org.uk, ralf@linux-mips.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Jun 2012 14:24:29 -0600
-Message-ID: <20120621202429.16865.86563.stgit@amt.stowe>
-In-Reply-To: <20120621202415.16865.6226.stgit@amt.stowe>
-References: <20120621202415.16865.6226.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1760223Ab2FUU14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 16:27:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34345 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab2FUU1z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 16:27:55 -0400
+Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Josh Hunt <johunt@akamai.com>
+Cc: "davem@davemloft.net" <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        Debabrata Banerjee <dbavatar@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "yoshfuji@linux-ipv6.org" <yoshfuji@linux-ipv6.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "pekkas@netcore.fi" <pekkas@netcore.fi>,
+        "kuznet@ms2.inr.ac.ru" <kuznet@ms2.inr.ac.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4FE37783.9000409@akamai.com>
+References: <CAATkVEzTxT6d5nzt_qwCuFWM-WcN8hdhjGxFRPXJ4=L35wKbGw@mail.gmail.com>
+	 <4FE37783.9000409@akamai.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Jun 2012 22:27:49 +0200
+Message-ID: <1340310469.4604.6702.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__nv_msi_ht_cap_quirk() acquires a temporary reference via
-'pci_get_bus_and_slot()' that is never released.
+On Thu, 2012-06-21 at 14:35 -0500, Josh Hunt wrote:
 
-This patch releases the temporary reference.
+> Can anyone provide details of the crash which was intended to be fixed
+> by 2bec5a369ee79576a3eea2c23863325089785a2c? With this patch in and
+> doing concurrent adds/deletes and dumping the table via netlink causes
+> duplicate entries to be reported. Reverting this patch causes those
+> problems to go away. We can provide a more detailed test if that is
+> needed, but so far our testing has been unable to reproduce the crash
+> mentioned in the above commit with it reverted.
 
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
----
+A mere revert wont be enough.
 
- drivers/pci/quirks.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+Looking at this code, it lacks proper synchronization
+between tree updaters and tree walkers.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 9c93558..1a7effa 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2541,15 +2541,18 @@ static void __devinit __nv_msi_ht_cap_quirk(struct pci_dev *dev, int all)
- 			else
- 				nv_ht_enable_msi_mapping(dev);
- 		}
--		return;
-+		goto out;
- 	}
- 
- 	/* HT MSI is not enabled */
- 	if (found == 1)
--		return;
-+		goto out;
- 
- 	/* Host bridge is not to HT, disable HT MSI mapping on this device */
- 	ht_disable_msi_mapping(dev);
-+
-+out:
-+	pci_dev_put(host_bridge);
- }
- 
- static void __devinit nv_msi_ht_cap_quirk_all(struct pci_dev *dev)
+fib6_walker_lock rwlock is not enough to prevent races.
+
+Are you willing to fix this yourself ?
+
+
 
