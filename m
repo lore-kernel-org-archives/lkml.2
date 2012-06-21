@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759366Ab2FULe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:34:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58592 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759273Ab2FULe2 (ORCPT
+	id S1759377Ab2FULhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 07:37:21 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:35427 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759351Ab2FULhT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 07:34:28 -0400
-Message-ID: <4FE306BF.2080309@linutronix.de>
-Date: Thu, 21 Jun 2012 13:34:23 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Thu, 21 Jun 2012 07:37:19 -0400
 MIME-Version: 1.0
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC 0/2] USB gadget - configfs
-References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
-In-Reply-To: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20120621091833.GH2193@core.coreip.homeip.net>
+References: <1340192062-10565-1-git-send-email-aletes.xgr@gmail.com>
+	<20120621091833.GH2193@core.coreip.homeip.net>
+Date: Thu, 21 Jun 2012 08:37:18 -0300
+Message-ID: <CAAAP30GsU1wy87QJjcctpu-=uYH6O0XEikMs5GeGDsz-gvwsZQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND] input: gpio_keys_polled: convert to dt
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, JJ Ding <dgdunix@gmail.com>,
+        Roland Stigge <stigge@antcom.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 12:55 PM, Andrzej Pietrasiewicz wrote:
-> Dear All,
+On Thu, Jun 21, 2012 at 6:18 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+>> @@ -38,7 +40,7 @@ struct gpio_keys_button_data {
+>>  struct gpio_keys_polled_dev {
+>>       struct input_polled_dev *poll_dev;
+>>       struct device *dev;
+>> -     struct gpio_keys_platform_data *pdata;
+>> +     struct gpio_keys_platform_data pdata;
 >
-> This patch series is a follow-up to this thread:
+> I am not sure why this change is needed. Also it seems that the driver
+> leaks DT-created pdata on unload.
+
+Pdata is now a member of gpio_keys_polled_dev now and that one is
+kzalloc'ed at probe and kfree'd at the removal and errors. I see no
+leaks there.
+
+I could kzalloc and kfree gpio_keys_polled_dev independently instead,
+to avoid all those pointer changes if you think it's better.
+
+This is mostly a clone from the dt handling in gpio_keys, and
+comparing both now,
+I see that it will leak on pdata->buttons, so I will fix that.
+
+>> +
+>> +#define gpio_keys_polled_of_match NULL
 >
-> http://marc.info/?l=linux-usb&m=132430533824884&w=2
+> Please use of_match_ptr() instead.
 
-Ah, good :) The changes to composite are way smaller than I expected
-them to be. I will take a deeper look, later tonight.
-
-Sebastian
+Thanks for the suggestion, I will implement that.
