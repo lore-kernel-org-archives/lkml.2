@@ -1,158 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759420Ab2FULl7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:41:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45288 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759390Ab2FULl5 (ORCPT
+	id S1759410Ab2FULoF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 07:44:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60256 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759371Ab2FULoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 07:41:57 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Tony Luck <tony.luck@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH -mm] string: fix build error caused by memweight() introduction
-Date: Thu, 21 Jun 2012 20:41:37 +0900
-Message-Id: <1340278897-2055-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.10.2
+	Thu, 21 Jun 2012 07:44:01 -0400
+Date: Thu, 21 Jun 2012 21:13:54 +0930
+From: Alan Modra <amodra@gmail.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (powerpc
+ related)
+Message-ID: <20120621114354.GG20973@bubble.grove.modra.org>
+References: <20120620175014.a822a766e0f91f7b44f48fa0@canb.auug.org.au>
+ <1340256961.1998.11.camel@concordia>
+ <1340259896.3942.2.camel@pasglop>
+ <1340262473.1998.19.camel@concordia>
+ <1340264307.1998.20.camel@concordia>
+ <20120621104839.GE20973@bubble.grove.modra.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120621104839.GE20973@bubble.grove.modra.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Luck reports a build error on the ia64 sim_defconfig:
+On Thu, Jun 21, 2012 at 08:18:39PM +0930, Alan Modra wrote:
+> Linker bug.  That's not a sibling call, but a normal function return
+> via an out-of-line register restore function.
 
- LD      arch/ia64/hp/sim/boot/bootloader
-lib/lib.a(string.o): In function `bitmap_weight':
-.../linux-next/include/linux/bitmap.h:280: undefined reference to `__bitmap_weight'
+I couldn't see how this might be occurring, then I remembered the
+kernel has this horrible practise of using ld -r to package object
+files.  So linker generated functions might be munged together with
+other functions.  Does this help?  (It won't if the kernel is
+providing its own save/restore functions.)
 
-It fails because it pulls in lib/lib.a(string.o) to get some
-innocuous function like strcpy() ... but it also gets
-given memweight() which relies on __bitmap_weight()
-which it doesn't have, because it doesn't include lib/built-in.o
-(which is where bitmap.o, the definer of __bitmap_weight(), has
-been linked).
-
-This build error is introduced by the patch string-introduce-memweight.patch
-in -mm tree.  Fix it by creating own file lib/memweight.c.
-
-Reported-by: Tony Luck <tony.luck@gmail.com>
-Suggested-by: Tony Luck <tony.luck@gmail.com>
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
----
- lib/Makefile    |    2 +-
- lib/memweight.c |   38 ++++++++++++++++++++++++++++++++++++++
- lib/string.c    |   36 ------------------------------------
- 3 files changed, 39 insertions(+), 37 deletions(-)
- create mode 100644 lib/memweight.c
-
-diff --git a/lib/Makefile b/lib/Makefile
-index 8c31a0c..df663cc 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -22,7 +22,7 @@ lib-y	+= kobject.o klist.o
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
- 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
- 	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o \
--	 bsearch.o find_last_bit.o find_next_bit.o llist.o
-+	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o
- obj-y += kstrtox.o
- obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
+Index: bfd/elf64-ppc.c
+===================================================================
+RCS file: /cvs/src/src/bfd/elf64-ppc.c,v
+retrieving revision 1.387
+diff -u -p -r1.387 elf64-ppc.c
+@@ -6494,9 +6494,10 @@ ppc64_elf_func_desc_adjust (bfd *obfd AT
  
-diff --git a/lib/memweight.c b/lib/memweight.c
-new file mode 100644
-index 0000000..e35fc87
---- /dev/null
-+++ b/lib/memweight.c
-@@ -0,0 +1,38 @@
-+#include <linux/export.h>
-+#include <linux/bug.h>
-+#include <linux/bitmap.h>
-+
-+/**
-+ * memweight - count the total number of bits set in memory area
-+ * @ptr: pointer to the start of the area
-+ * @bytes: the size of the area
-+ */
-+size_t memweight(const void *ptr, size_t bytes)
-+{
-+	size_t ret = 0;
-+	size_t longs;
-+	const unsigned char *bitmap = ptr;
-+
-+	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
-+			bytes--, bitmap++)
-+		ret += hweight8(*bitmap);
-+
-+	longs = bytes / sizeof(long);
-+	if (longs) {
-+		BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
-+		ret += bitmap_weight((unsigned long *)bitmap,
-+				longs * BITS_PER_LONG);
-+		bytes -= longs * sizeof(long);
-+		bitmap += longs * sizeof(long);
-+	}
-+	/*
-+	 * The reason that this last loop is distinct from the preceding
-+	 * bitmap_weight() call is to compute 1-bits in the last region smaller
-+	 * than sizeof(long) properly on big-endian systems.
-+	 */
-+	for (; bytes > 0; bytes--, bitmap++)
-+		ret += hweight8(*bitmap);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(memweight);
-diff --git a/lib/string.c b/lib/string.c
-index e948176..e5878de 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -26,7 +26,6 @@
- #include <linux/export.h>
- #include <linux/bug.h>
- #include <linux/errno.h>
--#include <linux/bitmap.h>
+   /* Provide any missing _save* and _rest* functions.  */
+   htab->sfpr->size = 0;
+-  for (i = 0; i < sizeof (funcs) / sizeof (funcs[0]); i++)
+-    if (!sfpr_define (info, &funcs[i]))
+-      return FALSE;
++  if (!info->relocatable)
++    for (i = 0; i < sizeof (funcs) / sizeof (funcs[0]); i++)
++      if (!sfpr_define (info, &funcs[i]))
++	return FALSE;
  
- #ifndef __HAVE_ARCH_STRNICMP
- /**
-@@ -825,38 +824,3 @@ void *memchr_inv(const void *start, int c, size_t bytes)
- 	return check_bytes8(start, value, bytes % 8);
- }
- EXPORT_SYMBOL(memchr_inv);
--
--/**
-- * memweight - count the total number of bits set in memory area
-- * @ptr: pointer to the start of the area
-- * @bytes: the size of the area
-- */
--size_t memweight(const void *ptr, size_t bytes)
--{
--	size_t ret = 0;
--	size_t longs;
--	const unsigned char *bitmap = ptr;
--
--	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
--			bytes--, bitmap++)
--		ret += hweight8(*bitmap);
--
--	longs = bytes / sizeof(long);
--	if (longs) {
--		BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
--		ret += bitmap_weight((unsigned long *)bitmap,
--				longs * BITS_PER_LONG);
--		bytes -= longs * sizeof(long);
--		bitmap += longs * sizeof(long);
--	}
--	/*
--	 * The reason that this last loop is distinct from the preceding
--	 * bitmap_weight() call is to compute 1-bits in the last region smaller
--	 * than sizeof(long) properly on big-endian systems.
--	 */
--	for (; bytes > 0; bytes--, bitmap++)
--		ret += hweight8(*bitmap);
--
--	return ret;
--}
--EXPORT_SYMBOL(memweight);
+   elf_link_hash_traverse (&htab->elf, func_desc_adjust, info);
+ 
+
+
 -- 
-1.7.10.2
-
+Alan Modra
+Australia Development Lab, IBM
