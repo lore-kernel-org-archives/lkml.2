@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab2FUAnm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 20:43:42 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:56106 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753870Ab2FUAnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 20:43:41 -0400
-From: Davide Ciminaghi <dciminaghi@mail.gnudd.com>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, rubini@gnudd.com,
-        Davide Ciminaghi <ciminaghi@gnudd.com>
-Subject: [PATCH] sta2x11-mfd : add defines for sctl registers
-Date: Thu, 21 Jun 2012 02:43:15 +0200
-Message-Id: <1340239395-2759-1-git-send-email-dciminaghi@mail.gnudd.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1754225Ab2FUAqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 20:46:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56261 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab2FUAqa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 20:46:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1340231192.21745.154.camel@twins>
+References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
+	<1340231192.21745.154.camel@twins>
+Date: Thu, 21 Jun 2012 02:46:29 +0200
+Message-ID: <CAFTL4hz9UZr0Xfd4m3WTBma8vSvbm0Lg8o=oXsjFbpPfG9RxjQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
+ and consolidation
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
+2012/6/21 Peter Zijlstra <peterz@infradead.org>:
+> On Tue, 2012-06-19 at 15:43 +0200, Frederic Weisbecker wrote:
+>>
+>> I wish we could do more vtime cputime accounting consolidation
+>> but archs do the things pretty differently although I bet the
+>> behaviour could be more unified.
+>>
+> Yes.. so s390,ia64 use thread_info, ppc uses their paca (arch private
+> precursor to per-cpu data).
+>
+> So I understand why s390,ia64 want the sched hook, but I don't see why
+> ppc would need it, their account_process_tick() can fold whatever they
+> need on the tick.
 
+I think in any case you need to flush the time on a descheduling task otherwise
+its pending time will be accounted later to the next task when it
+receives an irq.
 
-Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
----
+So I fear we still need that sched switch hook even with per cpu data. This
+may be a simple account_system_vtime() call.
 
-Hi,
+> So I think reworking s390,ia64 to use per-cpu storage should get rid of
+> this switch hook altogether.
+>
+>
+> Now everybody using VIRT_CPU_ACCOUNTING has the
+> syscall/__irq_{enter,exit} hooks and uses 64bit cputime_t.
+>
+> IRQ_TIME_ACCOUNTING only has the __irq_{enter,exit} hook and uses
+> unsigned long cputime_t, it adds cputime_one_jiffy every tick when the
+> per-cpu counter is ahead of the cputime.
+>
+>
+> We could merge both and do away with the 64bit cputime thing by keeping
+> a (2nd) per-cpu kernel_cpustat which we fill with optional syscall/irq
+> hooks and have account_process_tick() first check if any of the
+> fine-grained fields overflow and if not, fall back to the regular tick
+> accounting (much like an extended irqtime_account_process_tick).
+>
+>
+> This would merge the fine-grain and tick based code-paths and do away
+> with the whole cputime_t mess, it would also merge the VIRT and IRQ
+> paths and make Frederic's optional syscall accounting trivial.
+>
+> Or am I missing something obvious here? -- its late after all.
 
-this is needed to add some defines used by the common clock framework
-implementation.
+No that looks pretty sensible.
 
-Davide
+> I'll try and write some code tomorrow.
 
- include/linux/mfd/sta2x11-mfd.h |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/mfd/sta2x11-mfd.h b/include/linux/mfd/sta2x11-mfd.h
-index 9de20fd..2c29924 100644
---- a/include/linux/mfd/sta2x11-mfd.h
-+++ b/include/linux/mfd/sta2x11-mfd.h
-@@ -246,8 +246,29 @@ u32 sta2x11_sctl_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val)
- #define SCTL_SCCTL		0x00	/* System controller control register */
- #define SCTL_ARMCFG		0x04	/* ARM configuration register */
- #define SCTL_SCPLLCTL		0x08	/* PLL control status register */
-+
-+#define SCTL_SCPLLCTL_AUDIO_PLL_PD	     BIT(1)
-+#define SCTL_SCPLLCTL_FRAC_CONTROL	     BIT(3)
-+#define SCTL_SCPLLCTL_STRB_BYPASS	     BIT(6)
-+#define SCTL_SCPLLCTL_STRB_INPUT	     BIT(8)
-+
- #define SCTL_SCPLLFCTRL		0x0c	/* PLL frequency control register */
-+
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_NDIV_MASK	0xff
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_NDIV_SHIFT	  10
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_IDF_MASK	   7
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_IDF_SHIFT	  21
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_ODF_MASK	   7
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_ODF_SHIFT	  18
-+#define SCTL_SCPLLFCTRL_DITHER_DISABLE_MASK     0x03
-+#define SCTL_SCPLLFCTRL_DITHER_DISABLE_SHIFT       4
-+
-+
- #define SCTL_SCRESFRACT		0x10	/* PLL fractional input register */
-+
-+#define SCTL_SCRESFRACT_MASK	0x0000ffff
-+
-+
- #define SCTL_SCRESCTRL1		0x14	/* Peripheral reset control 1 */
- #define SCTL_SCRESXTRL2		0x18	/* Peripheral reset control 2 */
- #define SCTL_SCPEREN0		0x1c	/* Peripheral clock enable register 0 */
--- 
-1.7.9.1
-
+Thanks!
