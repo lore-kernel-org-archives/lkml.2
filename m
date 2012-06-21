@@ -1,127 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab2FUJc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:32:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41294 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759160Ab2FUJc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:32:26 -0400
-Date: Thu, 21 Jun 2012 10:32:20 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, thp: abort compaction if migration page cannot be
- charged to memcg
-Message-ID: <20120621093220.GL4011@suse.de>
-References: <alpine.DEB.2.00.1206202351030.28770@chino.kir.corp.google.com>
+	id S932545Ab2FUJgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:36:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39297 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932431Ab2FUJgn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 05:36:43 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: zImage: Allow DTB command line concatenation with ATAG_CMDLINE
+Date: Thu, 21 Jun 2012 11:34:10 +0200
+Message-ID: <7510940.OaXg6CbgK9@flexo>
+Organization: OpenWrt
+User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <1340269017-11701-1-git-send-email-richard.genoud@gmail.com>
+References: <1340269017-11701-1-git-send-email-richard.genoud@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1206202351030.28770@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 11:52:35PM -0700, David Rientjes wrote:
-> If page migration cannot charge the new page to the memcg,
-> migrate_pages() will return -ENOMEM. 
+Hello,
 
-I take it this happens in a memcg that is full and the temporary page
-is enough to push it over the edge. Is that correct? If so, it should
-be included in the changelog because that would make this a -stable
-candidate on the grounds that it is a corner case where compaction can
-consume excessive CPU when using memcgs leading to apparant stalls.
-
-> This isn't considered in memory
-> compaction however, and the loop continues to iterate over all pageblocks
-> trying in a futile attempt to continue migrations which are only bound to
-> fail.
+On Thursday 21 June 2012 10:56:57 Richard Genoud wrote:
+> This patch allows the ATAG_CMDLINE provided by the bootloader to be
+> concatenated to the bootargs property of the device tree.
 > 
-
-This is not necessarily true if it was just one small memcg that was
-occupying that pageblock for example. 
-
-> This will short circuit and fail memory compaction if migrate_pages()
-> returns -ENOMEM.  COMPACT_PARTIAL is returned in case some migrations
-> were successful so that the page allocator will retry.
+> This is useful to merge static values defined in the device tree with the
+> boot loader's (possibly) more dynamic values, such as startup reasons and 
+more.
 > 
+> The bootloader should use the device tree to pass those values to the 
+kernel,
+> but that's not always simple (old bootloader or very small one).
+> 
+> The behaviour is the same as the one introduced by Victor Boivie in
+> 4394c1244249198c6b85093d46935b761b36ae05 by extending the CONFIG_CMDLINE.
 
-the "some migration" could have been in other unrelated zones so
-COMPACT_PARTIAL makes sense from that perspective.
+I had a similar need recently, and I was pointed at this more generic 
+solution: http://www.mail-archive.com/devicetree-
+discuss@lists.ozlabs.org/msg10448.html
 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+The only thing which is ARM-specific and not yet resolved is the following: if 
+you have ARM_ATAG_DTB_COMPAT enabled, the kernel command-line contains only 
+the bootloader supplied command-line and not bootloader + bootargs from DT. I 
+have not yet had a chance to get this sorted.
 
-There is a side-effect that a small memcg that is full will cause
-compaction to abort when it could have succeeded. This will impact THP
-allocation success rates in other memcgs or in the root domain.
-
-The ideal would be to backout iff the memcg occupied a large percentage of
-the zone that was poorly fragmented. There is no way of finding this out
-easily and a good value for a "large percentage" is unknowable. Besides it
-would depend on the distribution as if the memcg had one page per pageblock
-it would still fail so you'd need a full scan anyway. That all feels
-like a bust and a path to fail. I'd like to see a more detailed
-changelog but otherwise;
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
-However, here is a possible extention to your patch that should work while
-preserving THP success rates but needs a more messing.  At the place of
-your patch do something like this in compact_zone
-
-arbitrary_mem_group = NULL
-
-...
-
-/*
- * Break out if memcg has "unmovable" pages that disable compaction in
- * this zone
- */
-if err == -ENOMEM
-  foreach page in cc->migratepages
-    cgroup = page_cgroup(page)
-    if cgroup
-      mem_group = cgroup->mem_cgroup
-      if mem_cgroup->disabled_compaction == true
-         goto out
-      else
-         arbitrary_cgroup = mem_cgroup
-      
-i.e. add a new boolean to mem_cgroup that is set to true if this memcg
-has impaired compaction. If a cgroup is not disabled_compaction then
-remember that.
-
-Next is when to set disabled_compaction. At the end of compact_zones,
-do
-
-if ret == COMPACT_COMPLETE && cc->order != -1 && arbitrary_cgroup
-   arbitrary_cgroup->disabled_compaction = true
-
-i.e. if we are in direct compaction and there was a full compaction
-cycle that failed due to a cgroup getting in the way then tag that
-cgroup is "disabled_compaction". On subsequent compaction attempts if
-that cgroup is encountered again then abort compaction faster.
-
-This will mitigate a small full memcg disabling compaction for the entire
-zone at least until such time as the memcg has polluted every movable
-pageblock.
-
->  			putback_lru_pages(&cc->migratepages);
->  			cc->nr_migratepages = 0;
-> +			if (err == -ENOMEM) {
-> +				ret = COMPACT_PARTIAL;
-> +				goto out;
-> +			}
->  		}
-> -
->  	}
+> 
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> ---
+>  arch/arm/Kconfig                        |   19 +++++++++
+>  arch/arm/boot/compressed/atags_to_fdt.c |   62 
+++++++++++++++++++++++++++++++-
+>  2 files changed, 79 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 84449dd..ff4b6e6 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1959,6 +1959,25 @@ config ARM_ATAG_DTB_COMPAT
+>  	  bootloaders, this option allows zImage to extract the information
+>  	  from the ATAG list and store it at run time into the appended DTB.
 >  
->  out:
-
--- 
-Mel Gorman
-SUSE Labs
+> +choice
+> +	prompt "Kernel command line type" if ARM_ATAG_DTB_COMPAT
+> +	default ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER
+> +
+> +config ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER
+> +	bool "Use bootloader kernel arguments if available"
+> +	help
+> +	  Uses the command-line options passed by the boot loader instead of
+> +	  the device tree bootargs property. If the boot loader doesn't provide
+> +	  any, the device tree bootargs property will be used.
+> +
+> +config ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND
+> +	bool "Extend with bootloader kernel arguments"
+> +	help
+> +	  The command-line arguments provided by the boot loader will be
+> +	  appended to the the device tree bootargs property.
+> +
+> +endchoice
+> +
+>  config CMDLINE
+>  	string "Default kernel command string"
+>  	default ""
+> diff --git a/arch/arm/boot/compressed/atags_to_fdt.c 
+b/arch/arm/boot/compressed/atags_to_fdt.c
+> index 797f04b..aabc02a 100644
+> --- a/arch/arm/boot/compressed/atags_to_fdt.c
+> +++ b/arch/arm/boot/compressed/atags_to_fdt.c
+> @@ -1,6 +1,12 @@
+>  #include <asm/setup.h>
+>  #include <libfdt.h>
+>  
+> +#if defined(CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND)
+> +#define do_extend_cmdline 1
+> +#else
+> +#define do_extend_cmdline 0
+> +#endif
+> +
+>  static int node_offset(void *fdt, const char *node_path)
+>  {
+>  	int offset = fdt_path_offset(fdt, node_path);
+> @@ -36,6 +42,48 @@ static int setprop_cell(void *fdt, const char *node_path,
+>  	return fdt_setprop_cell(fdt, offset, property, val);
+>  }
+>  
+> +static const void *getprop(const void *fdt, const char *node_path,
+> +			   const char *property, int *len)
+> +{
+> +	int offset = fdt_path_offset(fdt, node_path);
+> +
+> +	if (offset == -FDT_ERR_NOTFOUND)
+> +		return NULL;
+> +
+> +	return fdt_getprop(fdt, offset, property, len);
+> +}
+> +
+> +static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
+> +{
+> +	char cmdline[COMMAND_LINE_SIZE];
+> +	const char *fdt_bootargs;
+> +	char *ptr = cmdline;
+> +	int len = 0;
+> +
+> +	/* copy the fdt command line into the buffer */
+> +	fdt_bootargs = getprop(fdt, "/chosen", "bootargs", &len);
+> +	if (fdt_bootargs)
+> +		if (len < COMMAND_LINE_SIZE) {
+> +			memcpy(ptr, fdt_bootargs, len);
+> +			/* len is the length of the string
+> +			 * including the NULL terminator */
+> +			ptr += len - 1;
+> +		}
+> +
+> +	/* and append the ATAG_CMDLINE */
+> +	if (fdt_cmdline) {
+> +		len = strlen(fdt_cmdline);
+> +		if (ptr - cmdline + len + 2 < COMMAND_LINE_SIZE) {
+> +			*ptr++ = ' ';
+> +			memcpy(ptr, fdt_cmdline, len);
+> +			ptr += len;
+> +		}
+> +	}
+> +	*ptr = '\0';
+> +
+> +	setprop_string(fdt, "/chosen", "bootargs", cmdline);
+> +}
+> +
+>  /*
+>   * Convert and fold provided ATAGs into the provided FDT.
+>   *
+> @@ -72,8 +120,18 @@ int atags_to_fdt(void *atag_list, void *fdt, int 
+total_space)
+>  
+>  	for_each_tag(atag, atag_list) {
+>  		if (atag->hdr.tag == ATAG_CMDLINE) {
+> -			setprop_string(fdt, "/chosen", "bootargs",
+> -					atag->u.cmdline.cmdline);
+> +			/* Append the ATAGS command line to the device tree
+> +			 * command line.
+> +			 * NB: This means that if the same parameter is set in
+> +			 * the device tree and in the tags, the one from the
+> +			 * tags will be chosen.
+> +			 */
+> +			if (do_extend_cmdline)
+> +				merge_fdt_bootargs(fdt,
+> +						   atag->u.cmdline.cmdline);
+> +			else
+> +				setprop_string(fdt, "/chosen", "bootargs",
+> +					       atag->u.cmdline.cmdline);
+>  		} else if (atag->hdr.tag == ATAG_MEM) {
+>  			if (memcount >= sizeof(mem_reg_property)/4)
+>  				continue;
+> -- 
+> 1.7.2.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
