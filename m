@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab2FUCnY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 22:43:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51004 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755000Ab2FUCnW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 22:43:22 -0400
+	id S1757759Ab2FUCot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 22:44:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15167 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753120Ab2FUCos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 22:44:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="183001280"
+Message-ID: <4FE28A4D.7060302@linux.intel.com>
+Date: Wed, 20 Jun 2012 19:43:25 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <4FE22B28.9020402@gmail.com>
-References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
-	<CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
-	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
-	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
-	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
-	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
-	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
-	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
-	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
-	<CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
-	<CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
-	<4FE22B28.9020402@gmail.com>
-Date: Wed, 20 Jun 2012 19:43:22 -0700
-X-Google-Sender-Auth: -IN6A5cI19rsDw1JGTNs_x_g5u8
-Message-ID: <CAE9FiQUkGCQ0Y=n3i=bq388T8N-vrHP2LtMTFGwry2nA+uppwA@mail.gmail.com>
-Subject: Re: SNB PCI root information
-From: Yinghai Lu <yinghai@kernel.org>
-To: Brice Goglin <brice.goglin@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Ulrich Drepper <drepper@gmail.com>,
-        jbarnes@virtuousgeek.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: LKML <linux-kernel@vger.kernel.org>, Eric Miao <eric.miao@marvell.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: RFC: pca953 new platform specific changes
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 12:57 PM, Brice Goglin <brice.goglin@gmail.com> wrote:
-> Le 20/06/2012 21:28, Yinghai Lu a écrit :
->> On Wed, Jun 20, 2012 at 11:46 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->
-> I agree that the most common problem is that _PXM is missing. But I've
-> seen at least some HP Westmere-EP platforms where _PXM exists but it is
-> wrong. Last time we checked, there was no BIOS update, even if we
-> reported the bug a while ago.
->
-Do you have boot log or acpi dump?
+I'm working on support for a device which combines a pair of PCA9555
+gpio chips with an LIS331DLH accelerometer on an I2C bus.
 
-I suspected that could be other problem. intel system before
-sandbridge does not have IIO.
-they will have ioh instead, and one ioh would connect to two cpu sockets.
-but _PXM for root bus in dsdt only can return one value. Aka it is
-acpi spec limitation.
+I'm awaiting some documentation to confirm, but as I understand it the
+accelerometer connects one of its interrupt lines to one of the pins on
+the first PCA9555, which is then connected to SMB ALERT, which if I
+understand is somehow tied to an ACPI GPE (0x0B)).
 
-for example, Sun x4800 8 sockets server would have bus 00, 40, 80, c0.
-but _PXM will only return 0, 2, 3, 6.
+I have a hacked together set of patches to support this device which do
+some horrible things to the pca953x driver. I'm trying to clean these up
+and handle the platform changes properly in order to get them
+upstreamed. I'd like to let you know what I'm attempting up front in
+case you have any preference regarding the implementation as I'm new to
+the GPIO subsystem and driver writing.
 
-Thanks
+Key:
+o Platform specific properties
+  [ ] My approach to support them
 
-Yinghai
+For this platform:
+o Only IO 0,1,3,4,6, and 15 can be written to on the first PCA555 (0x20)
+  [ ] Add output bitbmask to platform data
+  [ ] Don't allow the output_direction function to vary from this if
+      provided
+o All pins have a specified function
+  [ ] Add Pin names to platform data
+o Pin assignments vary slightly based on board revision, read from 2nd
+  PCA555
+  [ ] ? Provide a function to perform the test to the platform data ?
+o The accelerometer needs to have its interrupt line set to open-drain
+  The current hack does this in a new pca53x detect function
+  [ ] ? Move this to a platform data function for the accelerometer ?
+o This device needs a GPE handler rather than a traditional irq thread
+  [ ] Provide GPE or IRQ data in the platform data, choose which to
+      setup based on that (rather large blocks of ifdefs per platform
+      in the driver).
+o Only the fist PCA555 has accessory input lines on this device, so the
+  second should not get an interrupt handler setup.
+  [ ] Setup different platform data based on I2C device address with
+      appropriate GPE/IRQ data in the platform data setup
+
+Does this approach seem appropriate?
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
