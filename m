@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2FULsn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:48:43 -0400
-Received: from hera.cwi.nl ([192.16.191.8]:44097 "EHLO hera.cwi.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759416Ab2FULsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 07:48:42 -0400
-Message-ID: <4FE30A03.4020907@cwi.nl>
-Date: Thu, 21 Jun 2012 12:48:19 +0100
-From: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1756680Ab2FULzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 07:55:46 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:49595 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754219Ab2FULzo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 07:55:44 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Adam Jackson <ajax@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [ 04/61] Revert "drm/i915/dp: Use auxch precharge value of 5
- everywhere"
-References: <20120620173021.334111012@linuxfoundation.org> <1340218313.14667.0.camel@atropine> <20120620190121.GA14895@kroah.com>
-In-Reply-To: <20120620190121.GA14895@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAAAP30G6zE5UmVMPPDGpwzHXG5zN3ZZfJ9u4W2TM1B5ccF50Lw@mail.gmail.com>
+References: <1339678763-14509-1-git-send-email-aletes.xgr@gmail.com>
+	<CAMSQXEHOtgk7wRRqOdpMaTvpxFd1Cpom=BG65GheY6Z4p2Jc3A@mail.gmail.com>
+	<CAAAP30G6zE5UmVMPPDGpwzHXG5zN3ZZfJ9u4W2TM1B5ccF50Lw@mail.gmail.com>
+Date: Thu, 21 Jun 2012 08:55:43 -0300
+Message-ID: <CAAAP30F1gWgvPwO2VT8fcP7X8veJuMfFjg34LkRaz-q7mwGfWg@mail.gmail.com>
+Subject: Re: [PATCH] SPI: at25: Parse dt settings
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Ivo Sieben <meltedpianoman@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Chris Wright <chrisw@sous-sol.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Roland Stigge <stigge@antcom.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 21, 2012 at 8:10 AM, Alexandre Pereira da Silva
+<aletes.xgr@gmail.com> wrote:
+> On Thu, Jun 21, 2012 at 6:49 AM, Ivo Sieben <meltedpianoman@gmail.com> wrote:
+>> One small remark:
+>> In case of platform_data, the "if (!chip)" check has been removed and
+>> is now only handled in the device tree initialization.
+>> Maybe add this check to the platform initialization as well:
+>>
+>> } else {
+>>        if (!spi->dev.platform_data) {
+>>                dev_dbg(&spi->dev, "no chip description\n");
+>>                err = -ENODEV;
+>>                goto fail;
+>>        }
+>>        chip =  *(struct spi_eeprom *)spi->dev.platform_data;
+>> }
 
-On 06/20/2012 08:01 PM, Greg KH wrote:
-> Thanks, I've added this to the patch.
-Hi Greg,
+Please ignore my last email. Not enough coffee.
 
-If you think it is important enough, you can add my
-Tested-by: Wouter M. Koolen <wmkoolen@cwi.nl>
+I'm sorry. The code looks right to me.
 
-At any rate, thank you!
-
-Thanks
+-       chip = spi->dev.platform_data;
+-       if (!chip) {
+-               dev_dbg(&spi->dev, "no chip description\n");
+-               err = -ENODEV;
+-               goto fail;
+-       }
++       if (!spi->dev.platform_data) {
++               if (np) {
+                             /* No platform data and DT node present,
+DT handling */
++               } else {
+                            /* No DT and No platform description,
+handle error */
++                       dev_dbg(&spi->dev, "no chip description\n");
++                       err = -ENODEV;
++                       goto fail;
++               }
++       } else
+                 /* At this point chip is guaranteed to have valid data */
++               chip = *(struct spi_eeprom *)spi->dev.platform_data;
