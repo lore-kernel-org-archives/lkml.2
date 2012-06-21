@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab2FUIVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:21:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43603 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758753Ab2FUIVH (ORCPT
+	id S1758760Ab2FUIXJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:23:09 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:36816 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753540Ab2FUIXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:21:07 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FC074@DQHE02.ent.ti.com>
-References: <20120621132738.6e797593acc58b3e30902f69@canb.auug.org.au> <A874F61F95741C4A9BA573A70FE3998FC074@DQHE02.ent.ti.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 21 Jun 2012 16:20:46 +0800
-Message-ID: <CAF+7xWkzKkwfBFQS1vr-Tk2Auu+5HQmX7bZCGJhsmXRi0V5OZw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the regulator tree
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, "Girdwood, Liam" <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 21 Jun 2012 04:23:06 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+2NL8255i2IIMGDw4ogagfzi5URwGEbdP00hpUXA
+	2SBZQgeGIieHIO
+Message-ID: <1340266982.29752.37.camel@marge.simpson.net>
+Subject: Re: Attaching a process to cgroups
+From: Mike Galbraith <efault@gmx.de>
+To: Alexey Vlasov <renton@renton.name>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 21 Jun 2012 10:23:02 +0200
+In-Reply-To: <20120621075428.GE31797@beaver>
+References: <20120619185856.GC31797@beaver>
+	 <1340195298.15707.3.camel@marge.simpson.net>
+	 <20120621075428.GE31797@beaver>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/21 Kim, Milo <Milo.Kim@ti.com>:
->> Caused by commit 809d310c7e69 ("regulator: lp872x: Don't allow modular
->> build") but that was done to fix a different build problem.
->
-> Sorry for this conflict.
->
-> Build config of lp872x driver has been changed as tristate.
-> And related undefined symbol error has been fixed.
-> (don't use devm_gpio_request_one() at this moment because it can not be exported.)
+On Thu, 2012-06-21 at 11:54 +0400, Alexey Vlasov wrote: 
+> On Wed, Jun 20, 2012 at 02:28:18PM +0200, Mike Galbraith wrote:
+> > 
+> > kernel/cgroup.c::cgroup_attach_task()
+> > {
+> > ...
+> > 	synchronize_rcu();
+> > ...
+> > }
+> 
+> So nothing can be done here? (I mean if only I knew how to fix it I
+> wouldn't ask about it ;)
 
-I don't think this is the good way, other drivers may have this build problem.
-I think we can fix it by having the patch exporting
-devm_gpio_request_one upstrem ASAP.
+Sure, kill the obnoxious thing, it's sitting right in the middle of the
+userspace interface.
 
-BTW, In yesterday's linux-next tree, Andrew has below commit.
+I banged on it a while back (wrt explosive android patches), extracted
+RCU from the userspace interface.  It seemed to work great, much faster,
+couldn't make it explode.  I wouldn't bet anything I wasn't willing to
+immediately part with that the result was really really safe though ;-)
 
-commit a291ede7be8359a8986740b11b93f9c80e40210b
-Author: Andrew Morton <akpm@linux-foundation.org>
-Date:   Wed Jun 20 09:55:47 2012 +1000
+-Mike
 
-    backlight-l4f00242t03-use-devm_gpio_request_one-fix
-
-    export devm_gpio_request_one() to modules
-
-    Cc: Alberto Panizzo <alberto@amarulasolutions.com>
-    Cc: Jingoo Han <jg1.han@samsung.com>
-    Cc: Richard Purdie <rpurdie@rpsys.net>
-    Cc: Grant Likely <grant.likely@secretlab.ca>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-Regards,
-Axel
