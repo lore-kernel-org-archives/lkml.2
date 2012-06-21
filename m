@@ -1,43 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760571Ab2FUVyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:54:25 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44205 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760463Ab2FUVyX convert rfc822-to-8bit (ORCPT
+	id S1760477Ab2FUV5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:57:34 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:33222 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760399Ab2FUV5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:54:23 -0400
-MIME-Version: 1.0
-Date: Thu, 21 Jun 2012 23:54:21 +0200
-Message-ID: <CAFLxGvyvbr1pTP9Qy+bJhLXnm3OkutqW0QGf8fRi6Dj4-_qUnw@mail.gmail.com>
-Subject: UBI fastmap updates (was: no subject)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
-        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
-        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
-        artem.bityutskiy@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Jun 2012 17:57:33 -0400
+From: Rik van Riel <riel@surriel.com>
+To: linux-mm@kvack.org
+Cc: akpm@linux-foundation.org, aarcange@redhat.com, peterz@infradead.org,
+        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
+        hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org
+Subject: [PATCH -mm v2 00/11] mm: scalable and unified arch_get_unmapped_area
+Date: Thu, 21 Jun 2012 17:57:04 -0400
+Message-Id: <1340315835-28571-1-git-send-email-riel@surriel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 11:49 PM, Richard Weinberger <richard@nod.at> wrote:
-> This is the next round of UBI fastmap updates.
->
-> The highlights are:
->        - New self checks and a better fall back to scanning mechanism
->        - The attaching by fastmap code got simplified
->        - invalidate_fastmap() now really invalidates the fastmap B-)
->        - Minor fixes
->
-> If you want to test fastmap you can use my git repo:
-> git://git.kernel.org/pub/scm/linux/kernel/git/rw/ubi2.git ubi2/v12
+A long time ago, we decided to limit the number of VMAs per
+process to 64k. As it turns out, there actually are programs
+using tens of thousands of VMAs.
 
-Sorry, I've killed the subject line. :-\
+The linear search in arch_get_unmapped_area and
+arch_get_unmapped_area_topdown can be a real issue for
+those programs. 
 
--- 
-Thanks,
-//richard
+This patch series aims to fix the scalability issue by
+tracking the size of each free hole in the VMA rbtree,
+propagating the free hole info up the tree. 
+
+Another major goal is to put the bulk of the necessary
+arch_get_unmapped_area(_topdown) functionality into one
+set of functions, so we can eliminate the custom large
+functions per architecture, sticking to a few much smaller
+architecture specific functions instead.
+
+In this version I have only gotten rid of the x86, ARM, SH
+and MIPS arch-specific code, and am already showing a
+fairly promising diffstat:
+
+ arch/arm/include/asm/pgtable.h    |    6 
+ arch/arm/mm/init.c                |    4 
+ arch/arm/mm/mmap.c                |  217 ------------------
+ arch/mips/include/asm/page.h      |    2 
+ arch/mips/include/asm/pgtable.h   |    7 
+ arch/mips/mm/mmap.c               |  177 --------------
+ arch/sh/include/asm/pgtable.h     |    4 
+ arch/sh/mm/mmap.c                 |  219 ------------------
+ arch/x86/include/asm/elf.h        |    3 
+ arch/x86/include/asm/pgtable_64.h |    4 
+ arch/x86/kernel/sys_x86_64.c      |  200 ++--------------
+ arch/x86/vdso/vma.c               |    2 
+ include/linux/mm_types.h          |   19 +
+ include/linux/rbtree.h            |   12 +
+ include/linux/sched.h             |   13 +
+ lib/rbtree.c                      |   46 +++
+ mm/internal.h                     |    5 
+ mm/mmap.c                         |  449 +++++++++++++++++++++++++++++---------
+ 18 files changed, 478 insertions(+), 911 deletions(-)
+
+v2: address reviewers' comments
+    optimize propagating info up the VMA tree (30% faster at frag test)
+    add SH architecture
+
+TODO:
+- eliminate arch-specific functions for more architectures
+- integrate hugetlbfs alignment (with Andi Kleen's patch?)
+
+Performance
+
+Testing performance with a benchmark that allocates tens
+of thousands of VMAs, unmaps them and mmaps them some more
+in a loop, shows promising results.
+
+Vanilla 3.4 kernel:
+$ ./agua_frag_test_64
+..........
+
+Min Time (ms): 6
+Avg. Time (ms): 294.0000
+Max Time (ms): 609
+Std Dev (ms): 113.1664
+Standard deviation exceeds 10
+
+With -v2 patches:
+$ ./agua_frag_test_64
+..........
+
+Min Time (ms): 12
+Avg. Time (ms): 31.0000
+Max Time (ms): 42
+Std Dev (ms): 3.3648
+All checks pass
+
+The total run time of the test goes down by about a
+factor 5.  More importantly, the worst case performance
+of the loop (which is what really hurt some applications)
+has gone down by about a factor 14.
+
