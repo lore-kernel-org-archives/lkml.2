@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860Ab2FUIlS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:41:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56370 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758838Ab2FUIlM (ORCPT
+	id S1758872Ab2FUIl5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:41:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45766 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758838Ab2FUIly convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:41:12 -0400
-Date: Thu, 21 Jun 2012 01:41:07 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/22 v4] Input: atmel_mxt_ts - set phys to i2c client
- adapter name
-Message-ID: <20120621084107.GB2193@core.coreip.homeip.net>
-References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
- <1339992522-22073-2-git-send-email-djkurtz@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339992522-22073-2-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Jun 2012 04:41:54 -0400
+Message-ID: <1340268104.21745.159.camel@twins>
+Subject: Re: [RFC][PATCH 2/4] sched: Push put_prev_task() into
+ pick_next_task()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: mingo@kernel.org, pjt@google.com, venki@google.com, efault@gmx.de,
+        rostedt@goodmis.org, glommer@parallels.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 21 Jun 2012 10:41:44 +0200
+In-Reply-To: <4FE2CEB0.7080200@linux.vnet.ibm.com>
+References: <20120614132902.800827488@chello.nl>
+	 <20120614133212.690691207@chello.nl> <4FE2CEB0.7080200@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 12:08:21PM +0800, Daniel Kurtz wrote:
-> This allows userspace to more easily distinguish which bus a particular
-> atmel_mxt_ts device is attached to.
+On Thu, 2012-06-21 at 15:35 +0800, Michael Wang wrote:
+> > +pick_next_task_fair(struct rq *rq, struct task_struct *prev)
+> >  {
+> >  	struct task_struct *p;
+> >  	struct cfs_rq *cfs_rq = &rq->cfs;
+> > @@ -2999,6 +3000,9 @@ static struct task_struct *pick_next_tas
+> >  	if (!cfs_rq->nr_running)
+> >  		return NULL;
+> > 
+> > +	if (prev)
+> > +		prev->sched_class->put_prev_task(rq, prev);
+> > +
+> >  	do {
+> >  		se = pick_next_entity(cfs_rq);
+> >  		set_next_entity(cfs_rq, se);
+> > --- a/kernel/sched/idle_task.c
+> > +++ b/kernel/sched/idle_task.c
+> > @@ -22,8 +22,12 @@ static void check_preempt_curr_idle(stru
+> >  	resched_task(rq->idle);
+> >  }
 > 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/input/touchscreen/atmel_mxt_ts.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> Will it cause trouble when the last task on cfs_rq was dequeued before
+> been putted?
 > 
-> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index 42e6450..eda9eed 100644
-> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -1106,6 +1106,7 @@ static int __devinit mxt_probe(struct i2c_client *client,
->  	}
->  
->  	input_dev->name = "Atmel maXTouch Touchscreen";
-> +	input_dev->phys = client->adapter->name;
+> The cfs_rq->nr_running will be 0 and we will miss the chance to put
+> prev, will we?
 
-Normally we set phys to 'xxx/input0' nstead of just the adaptor name.
-
-Thanks.
-
--- 
-Dmitry
+pick_next_task_idle() will then do the put, no?
