@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759874Ab2FUQns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 12:43:48 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:53505 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759837Ab2FUQnr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 12:43:47 -0400
-Date: Thu, 21 Jun 2012 18:43:29 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 10/17] netvm: Allow skb allocation to use PFMEMALLOC
- reserves
-Message-ID: <20120621164329.GA6195@breakpoint.cc>
-References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
- <1340192652-31658-11-git-send-email-mgorman@suse.de>
- <20120621163029.GB6045@breakpoint.cc>
- <1340296719.4604.5984.camel@edumazet-glaptop>
+	id S1759892Ab2FUQwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 12:52:23 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:51302 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759870Ab2FUQwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 12:52:21 -0400
+Date: Thu, 21 Jun 2012 11:52:20 -0500
+From: Robin Holt <holt@sgi.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Robin Holt <holt@sgi.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-kernel@vger.kernel.org,
+        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] phys_efi_set_virtual_address_map needs va, no pa.
+Message-ID: <20120621165220.GQ3464@sgi.com>
+References: <20120620082457.GE3464@sgi.com>
+ <20120620120702.GA3983@srcf.ucam.org>
+ <4FE23592.60201@linux.intel.com>
+ <20120621002742.GL3464@sgi.com>
+ <4FE26EF9.5060004@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340296719.4604.5984.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FE26EF9.5060004@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This is mostly used by nic to refil their RX skb pool. You add the
-> > __GFP_MEMALLOC to the allocation to rise the change of a successfull refill
-> > for the swap case.
-> > A few drivers use build_skb() to create the skb. __netdev_alloc_skb()
-> > shouldn't be affected since the allocation happens with GFP_ATOMIC. Looking at
-> > TG3 it uses build_skb() and get_pages() / kmalloc(). Shouldn't this be some
-> > considered?
+On Wed, Jun 20, 2012 at 05:46:49PM -0700, H. Peter Anvin wrote:
+> On 06/20/2012 05:27 PM, Robin Holt wrote:
+> > 
+> > What do you need from me?  If you want me to help with this, I have a
+> > _WHOLE_ lot of learning to do.  Can you give me any pointers?
+> > 
+> > We are trying to get this finally fixed.  We have had work-around code
+> > in SLES11 SP1, SLES11 SP2, and RHEL 6.x.  I would love to get this fixed
+> > for future distro snaps.
+> > 
 > 
-> Please look at net-next, this was changed recently.
+> If you want to tackle it, the task is basically that when we modify the
+> pgds in 32-bit legacy (non-PAE) mode, we should make the corresponding
+> modifications to initial_page_table, and in 64-bit mode to
+> real_mode_header->trampoline_pgd.  It might be worthwhile to introduce a
+> common pointer for both, obviously.
+
+I am completely lost as to what should be done.  How do we know
+which identity maps need to be created?  Do we just add them as we are
+scanning the e820/EFI memory maps and include the reserved, etc ranges?
+Do we look at the table handed to us by EFI at the beginning of boot and
+use that as the basis?  Or do we simply wait until the kernel's memory
+initialization is complete and cover all of physical memory from zero
+up to the highest physical address?
+
+> This is currently handled via something called the pgd_list (when we
+> update the top level kernel address space we walk pgd_list and update
+> them all), but there are two issues:
 > 
-> In fact most RX allocations are done using netdev_alloc_frag(), because
-> its called from __netdev_alloc_skb()
-
-Argh, this is what I meant more or less. I got the flag magic wrong so I assumed
-that this is only called without GFP_ATOMIC but it is not. Thanks for the
-hint.
-
-> So tg3 is not anymore the exception, but the norm.
-
-Sebastian
+> 1. Obviously, in the case of the 1:1 map, we don't just need to maintain
+> the kernel area, but the "user space" part of the address space should
+> contain a copy, as well.
+> 
+> 2. To complicate things, there is code in there to grab an mm lock for
+> the benefit of Xen.  The 1:1 map doesn't have an mm associated with it,
+> so I'm not quite sure how that is to be handled.  Perhaps Xen just plain
+> won't need it and we can just bypass it, but I have no bloody idea.
+> 
+> It is also a bit "cute" how we seem to make a function call to indirect
+> through a pointer (why on Earth is pgd_page_get_mm() not an inline?!),
+> and then grab a lock unconditionally, regardless of if we are affected
+> by Xen or not.
+> 
+> 	-hpa
