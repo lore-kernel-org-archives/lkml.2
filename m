@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab2FUBzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 21:55:25 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58647 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757225Ab2FUBzY (ORCPT
+	id S1757376Ab2FUB4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 21:56:36 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:53532 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756943Ab2FUB4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 21:55:24 -0400
-X-AuditID: 9c93016f-b7cbdae0000024ac-d8-4fe27f08ffc6
-Message-ID: <4FE27F15.8050102@kernel.org>
-Date: Thu, 21 Jun 2012 10:55:33 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com> <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com> <4FE26470.90401@kernel.org> <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com>
-In-Reply-To: <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Jun 2012 21:56:34 -0400
+Date: Thu, 21 Jun 2012 10:56:24 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v7 02/10] KVM: MMU: abstract spte write-protect
+Message-Id: <20120621105624.4b43d6f4.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <4FE27D55.4040805@linux.vnet.ibm.com>
+References: <4FE1822D.8010002@linux.vnet.ibm.com>
+	<4FE1825B.1030402@linux.vnet.ibm.com>
+	<20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp>
+	<4FE193AA.8010801@linux.vnet.ibm.com>
+	<20120620215653.15930f3467bc13748d548b0d@gmail.com>
+	<4FE1CE43.9080203@linux.vnet.ibm.com>
+	<20120620231112.440df9ae19c1aca36100b746@gmail.com>
+	<4FE27D55.4040805@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 10:39 AM, KOSAKI Motohiro wrote:
+On Thu, 21 Jun 2012 09:48:05 +0800
+Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 
->>> number of isolate page block is almost always 0. then if we have such counter,
->>> we almost always can avoid zone->lock. Just idea.
->>
->> Yeb. I thought about it but unfortunately we can't have a counter for MIGRATE_ISOLATE.
->> Because we have to tweak in page free path for pages which are going to free later after we
->> mark pageblock type to MIGRATE_ISOLATE.
-> 
-> I mean,
-> 
-> if (nr_isolate_pageblock != 0)
->    free_pages -= nr_isolated_free_pages(); // your counting logic
-> 
-> return __zone_watermark_ok(z, alloc_order, mark,
->                               classzone_idx, alloc_flags, free_pages);
-> 
-> 
-> I don't think this logic affect your race. zone_watermark_ok() is already
-> racy. then new little race is no big matter.
+> > We can change the debug message later if needed.
 
+> Actually, i am going to use tracepoint instead of
+> these debug code.
 
-It seems my explanation wasn't enough. :(
-I already understand your intention but we can't make nr_isolate_pageblock.
-Because we should count two type of free pages.
+That's very nice!
 
-1. Already freed page so they are already in buddy list.
-   Of course, we can count it with return value of move_freepages_block(zone, page, MIGRATE_ISOLATE) easily.
+Then, please change the trace log to correspond to the
+new spte_write_protect name at that time.
 
-2. Will be FREEed page by do_migrate_range.
-   It's a _PROBLEM_. For it, we should tweak free path. No?
+Thank you, Xiao.
 
-If All of pages are PageLRU when hot-plug happens(ie, 2), nr_isolate_pagblock is zero and 
-zone_watermk_ok_safe can't do his role.
-
-
--- 
-Kind regards,
-Minchan Kim
+	Takuya
