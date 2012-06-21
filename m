@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883Ab2FUOuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 10:50:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49701 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192Ab2FUOut (ORCPT
+	id S1758931Ab2FUOwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 10:52:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3464 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758698Ab2FUOwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 10:50:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH V3 2/3] regulator: dt: regulator match by regulator-compatible
-Date: Thu, 21 Jun 2012 14:50:35 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, lee.jones@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com> <4FE23A1B.2000809@wwwdotorg.org> <20120620233507.GC4037@opensource.wolfsonmicro.com>
-In-Reply-To: <20120620233507.GC4037@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Message-Id: <201206211450.35713.arnd@arndb.de>
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Thu, 21 Jun 2012 10:52:03 -0400
+X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XOt6boVe9ZQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=pvJ5EdTAJN3b61SmneoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340290321.27036.166.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] ring-buffer: fix uninitialized read_stamp
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com
+Date: Thu, 21 Jun 2012 10:52:01 -0400
+In-Reply-To: <1340060577-9112-1-git-send-email-dhsharp@google.com>
+References: <CAJL_eku9byV+Uk-5boR52HLEO0D-++2h_y=PeaaQG_PrCuALhQ@mail.gmail.com>
+	 <1340060577-9112-1-git-send-email-dhsharp@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:xafuBZry9o0Od0UZxac07uermq+iMZGoefOVh19PFxa
- AQ4b1Ob0KA0yDncCZg7LYFsG4/xT5J0RyPrC/j/6Ho947eMpZE
- iKacKLrdn5XcWKUcx8s+yWuYXzFXNZX7uuSqfuyCRjLlIL2oqp
- B0R0Xy5fJnH4LCbiyABNZMnLvEu3KO6AU0+3wafOdB5BJVVRFn
- VA2IlZ9q9Uuv4NGH9z9Si248imurY/ifrN2NIj/xhkQ78mYB5O
- GAPv0xq26xmGCYGymfPyAhIFTPt0EfyS95n//0GNswvBcHFM+1
- Lsj57ZEC9sZIFxcQUFs1Pp3xAqDT2Xd7KFboAH6iWV3iKC254e
- ISxJmvecPA+VcRrvvzvA=
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 June 2012, Mark Brown wrote:
-> On Wed, Jun 20, 2012 at 03:01:15PM -0600, Stephen Warren wrote:
-> > The problem is that dtc has no named constants. Using raw integers
-> > instead of names would make the .dts file rather unreadable. The issue
-> > is much more accute for regulators than say GPIOs or IRQs because
-> > there's likely no relative order to the set of regulators defined by the
-> > documentation, unlike for GPIOs/IRQs where the integer (often) is the
-> > object's primary ID.
-> 
-> Well, there are actually a lot of chips which do provide useful indexes
-> - for example the wm831x devices just have a bunch of DCDCs and a bunch
-> of LDOs which can usefully be referred to as DCDCn or LDOn.  They will
-> hopefully not need to use this interface.  It's just that there's also a
-> large class of devices we need to cater for which don't have any such
-> regularity in their register map, this biding
-> mechanism is for them.
+On Mon, 2012-06-18 at 16:02 -0700, David Sharp wrote:
+> This fixes a scenario in which trace_pipe_raw will return events with invalid
+> timestamps when events are copied out one at a time (instead of swapping out
+> the reader page with a spare page). In this scenario, ring_buffer_read_page()
+> uses cpu_buffer->read_stamp to keep track of the time of the earliest event.
+> However, cpu_buffer->read_stamp was not always updated. The only function that
+> sets read_stamp to a new valid value is rb_reset_reader_page(), which is called
+> only by rb_get_reader_page(). rb_reset_reader_page() was not called when there
+> is data immediately available on the page to read (read < rb_page_size()). This
+> is the bug.
 
-Ok, now it all makes sense. Thanks for bearing with me being a little
-slow on this topic.
+Hi David,
 
-It seems that the drivers that are changed to use this could also try to
-describe the individual regulators completely, by moving the contents
-of e.g. ab8500_regulator_info into the device tree, but having the string
-identifier with an in-kernel table makes sense when there is only one
-such table.
+Thanks for the reminder, I'll be looking at it today.
 
-	Arnd
+Do you believe that this is an urgent fix and should be marked for
+stable, or do you think it can wait till 3.6? If you think it should be
+marked for stable, then it should be pushed for 3.5.
+
+-- Steve
+
 
