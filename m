@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759798Ab2FUQ3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 12:29:02 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45949 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759741Ab2FUQ3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 12:29:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="114722731"
-Message-ID: <4FE34BCB.5050305@linux.intel.com>
-Date: Thu, 21 Jun 2012 09:28:59 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1759809Ab2FUQau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 12:30:50 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:53469 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756177Ab2FUQat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 12:30:49 -0400
+Date: Thu, 21 Jun 2012 18:30:29 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 10/17] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20120621163029.GB6045@breakpoint.cc>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+ <1340192652-31658-11-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>,
-        hpa@zytor.com
-Subject: Re: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
-References: <20120621162807.3c621d46@endymion.delvare>
-In-Reply-To: <20120621162807.3c621d46@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340192652-31658-11-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good spotting, but I'm worried this is the wrong fix.
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 1d6ecc8..9a58dcc 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -167,14 +206,19 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
+>   *	%GFP_ATOMIC.
+>   */
+>  struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+> -			    int fclone, int node)
+> +			    int flags, int node)
+>  {
+>  	struct kmem_cache *cache;
+>  	struct skb_shared_info *shinfo;
+>  	struct sk_buff *skb;
+>  	u8 *data;
+> +	bool pfmemalloc;
+>  
+> -	cache = fclone ? skbuff_fclone_cache : skbuff_head_cache;
+> +	cache = (flags & SKB_ALLOC_FCLONE)
+> +		? skbuff_fclone_cache : skbuff_head_cache;
+> +
+> +	if (sk_memalloc_socks() && (flags & SKB_ALLOC_RX))
+> +		gfp_mask |= __GFP_MEMALLOC;
+>  
+>  	/* Get the HEAD */
+>  	skb = kmem_cache_alloc_node(cache, gfp_mask & ~__GFP_DMA, node);
 
-This is a userspace ABI change, and the and we have used "dts" for debug
-store (debug trace store?) for a very long tie, whereas digital thermal
-sensor only has been used since 2010; another *major* question is which
-of these is more likely to be of interest to userspace.
+This is mostly used by nic to refil their RX skb pool. You add the
+__GFP_MEMALLOC to the allocation to rise the change of a successfull refill
+for the swap case.
+A few drivers use build_skb() to create the skb. __netdev_alloc_skb()
+shouldn't be affected since the allocation happens with GFP_ATOMIC. Looking at
+TG3 it uses build_skb() and get_pages() / kmalloc(). Shouldn't this be some
+considered?
 
-Jan, do you have any feeling on this?
-
-	-hpa
-
-
-On 06/21/2012 07:28 AM, Jean Delvare wrote:
-> From: Jean Delvare <khali@linux-fr.org>
-> Subject: x86, cpufeature: Fix duplicate feature name "dts"
-> 
-> We currently have two different x86 CPU features reported as "dts"
-> in /proc/cpuinfo: Debug Store and Digital Thermal Sensor. Change the
-> former to "ds" which makes more sense anyway, to clear up the
-> confusion.
-> 
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> ---
->  arch/x86/include/asm/cpufeature.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux-3.5-rc3.orig/arch/x86/include/asm/cpufeature.h	2012-06-21 15:57:17.061585016 +0200
-> +++ linux-3.5-rc3/arch/x86/include/asm/cpufeature.h	2012-06-21 15:57:42.087585387 +0200
-> @@ -35,7 +35,7 @@
->  #define X86_FEATURE_PSE36	(0*32+17) /* 36-bit PSEs */
->  #define X86_FEATURE_PN		(0*32+18) /* Processor serial number */
->  #define X86_FEATURE_CLFLSH	(0*32+19) /* "clflush" CLFLUSH instruction */
-> -#define X86_FEATURE_DS		(0*32+21) /* "dts" Debug Store */
-> +#define X86_FEATURE_DS		(0*32+21) /* Debug Store */
->  #define X86_FEATURE_ACPI	(0*32+22) /* ACPI via MSR */
->  #define X86_FEATURE_MMX		(0*32+23) /* Multimedia Extensions */
->  #define X86_FEATURE_FXSR	(0*32+24) /* FXSAVE/FXRSTOR, CR4.OSFXSR */
-> 
-> 
-
+Sebastian
