@@ -1,213 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab2FUIah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:30:37 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4957 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758736Ab2FUIad convert rfc822-to-8bit (ORCPT
+	id S1758820Ab2FUIay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:30:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49168 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758736Ab2FUIau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:30:33 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 21 Jun 2012 01:30:31 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Date: Thu, 21 Jun 2012 10:30:23 +0200
-Subject: [v2 1/5] iommu: Add DMA window parser, of_get_dma_window()
-Thread-Topic: [v2 1/5] iommu: Add DMA window parser, of_get_dma_window()
-Thread-Index: Ac1PiB3EgfQvPVkPTdiUpXZQexAISA==
-Message-ID: <20120621.113023.1324461719984328307.hdoyu@nvidia.com>
-References: <4FE20457.8090307@wwwdotorg.org><20120621.094611.2108645748323641310.hdoyu@nvidia.com><4FE2C5F3.1010007@wwwdotorg.org>
-In-Reply-To: <4FE2C5F3.1010007@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 21 Jun 2012 04:30:50 -0400
+Date: Thu, 21 Jun 2012 01:30:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <minchan@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, thp: abort compaction if migration page cannot be
+ charged to memcg
+In-Reply-To: <4FE2D73C.3060001@kernel.org>
+Message-ID: <alpine.DEB.2.00.1206210124380.6635@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1206202351030.28770@chino.kir.corp.google.com> <4FE2D73C.3060001@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hiroshi DOYU <hdoyu@nvidia.com>
+On Thu, 21 Jun 2012, Minchan Kim wrote:
 
-This code was based on:
-    "arch/microblaze/kernel/prom_parse.c"
-    "arch/powerpc/kernel/prom_parse.c"
+> > If page migration cannot charge the new page to the memcg,
+> > migrate_pages() will return -ENOMEM.  This isn't considered in memory
+> > compaction however, and the loop continues to iterate over all pageblocks
+> > trying in a futile attempt to continue migrations which are only bound to
+> > fail.
+> 
+> 
+> Hmm, it might be dumb question.
+> I imagine that pages in next pageblock could be in another memcg so it could be successful.
+> Why should we stop compaction once it fails to migrate pages in current pageblock/memcg?
+> 
 
-Can replace "of_parse_dma_window()" in the above. This supports
-different formats flexibly. "prefix" can be configured if any. "busno"
-and "index" are optionally specified. Set NULL and 0 if not used.
+ [ You included the gmane.linux.kernel and gmane.linux.kernel.mm
+   newsgroups in your reply, not sure why, so I removed them. ]
 
-Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
----
-Update:
-Move of_get_dma_window() in drivers/iommu/of_iommu.c
+This was inspired by a system running with a single oom memcg running with 
+thp that continuously tried migrating pages resulting in vmstats such as 
+this:
 
-Based on the discussion:
-http://marc.info/?l=linux-tegra&m=133732046606458&w=2
----
- drivers/iommu/Kconfig    |    4 ++
- drivers/iommu/Makefile   |    1 +
- drivers/iommu/of_iommu.c |   90 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of_iommu.h |   21 +++++++++++
- 4 files changed, 116 insertions(+), 0 deletions(-)
+compact_blocks_moved 59473599
+compact_pages_moved 50041548
+compact_pagemigrate_failed 1494277831
+compact_stall 1013
+compact_fail 573
 
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 3408937..4826af6 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -13,6 +13,10 @@ menuconfig IOMMU_SUPPORT
- 
- if IOMMU_SUPPORT
- 
-+config OF_IOMMU
-+       def_bool y
-+       depends on OF
-+
- # MSM IOMMU support
- config MSM_IOMMU
- 	bool "MSM IOMMU Support"
-diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-index 76e54ef..14a4d5f 100644
---- a/drivers/iommu/Makefile
-+++ b/drivers/iommu/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_IOMMU_API) += iommu.o
-+obj-$(CONFIG_OF_IOMMU)	+= of_iommu.o
- obj-$(CONFIG_MSM_IOMMU) += msm_iommu.o msm_iommu_dev.o
- obj-$(CONFIG_AMD_IOMMU) += amd_iommu.o amd_iommu_init.o
- obj-$(CONFIG_AMD_IOMMU_V2) += amd_iommu_v2.o
-diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
-new file mode 100644
-index 0000000..ee249bc
---- /dev/null
-+++ b/drivers/iommu/of_iommu.c
-@@ -0,0 +1,90 @@
-+/*
-+ * OF helpers for IOMMU
-+ *
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/limits.h>
-+#include <linux/of.h>
-+
-+/**
-+ * of_get_dma_window - Parse *dma-window property and returns 0 if found.
-+ *
-+ * @dn: device node
-+ * @prefix: prefix for property name if any
-+ * @index: index to start to parse
-+ * @busno: Returns busno if supported. Otherwise pass NULL
-+ * @addr: Returns address that DMA starts
-+ * @size: Returns the range that DMA can handle
-+ *
-+ * This supports different formats flexibly. "prefix" can be
-+ * configured if any. "busno" and "index" are optionally
-+ * specified. Set 0(or NULL) if not used.
-+ */
-+int of_get_dma_window(struct device_node *dn, const char *prefix, int index,
-+		      unsigned long *busno, dma_addr_t *addr, size_t *size)
-+{
-+	const __be32 *dma_window, *end;
-+	int bytes, cur_index = 0;
-+	char propname[NAME_MAX], addrname[NAME_MAX], sizename[NAME_MAX];
-+
-+	if (!dn || !addr || !size)
-+		return -EINVAL;
-+
-+	if (!prefix)
-+		prefix = "";
-+
-+	snprintf(propname, sizeof(propname), "%sdma-window", prefix);
-+	snprintf(addrname, sizeof(addrname), "%s#dma-address-cells", prefix);
-+	snprintf(sizename, sizeof(sizename), "%s#dma-size-cells", prefix);
-+
-+	dma_window = of_get_property(dn, propname, &bytes);
-+	if (!dma_window)
-+		return -ENODEV;
-+	end = dma_window + bytes / sizeof(*dma_window);
-+
-+	while (dma_window < end) {
-+		u32 cells;
-+		const void *prop;
-+
-+		/* busno is one cell if supported */
-+		if (busno)
-+			*busno = be32_to_cpup(dma_window++);
-+
-+		prop = of_get_property(dn, addrname, NULL);
-+		if (!prop)
-+			prop = of_get_property(dn, "#address-cells", NULL);
-+
-+		cells = prop ? be32_to_cpup(prop) : of_n_addr_cells(dn);
-+		if (!cells)
-+			return -EINVAL;
-+		*addr = of_read_number(dma_window, cells);
-+		dma_window += cells;
-+
-+		prop = of_get_property(dn, sizename, NULL);
-+		cells = prop ? be32_to_cpup(prop) : of_n_size_cells(dn);
-+		if (!cells)
-+			return -EINVAL;
-+		*size = of_read_number(dma_window, cells);
-+		dma_window += cells;
-+
-+		if (cur_index++ == index)
-+			break;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(of_get_dma_window);
-diff --git a/include/linux/of_iommu.h b/include/linux/of_iommu.h
-new file mode 100644
-index 0000000..51a560f
---- /dev/null
-+++ b/include/linux/of_iommu.h
-@@ -0,0 +1,21 @@
-+#ifndef __OF_IOMMU_H
-+#define __OF_IOMMU_H
-+
-+#ifdef CONFIG_OF_IOMMU
-+
-+extern int of_get_dma_window(struct device_node *dn, const char *prefix,
-+			     int index, unsigned long *busno, dma_addr_t *addr,
-+			     size_t *size);
-+
-+#else
-+
-+static inline int of_get_dma_window(struct device_node *dn, const char *prefix,
-+			    int index, unsigned long *busno, dma_addr_t *addr,
-+			    size_t *size)
-+{
-+	return -EINVAL;
-+}
-+
-+#endif	/* CONFIG_OF_IOMMU */
-+
-+#endif /* __OF_IOMMU_H */
--- 
-1.7.5.4
+Obviously not a good result.
+
+We could certainly continue the iteration in cases like this, but I 
+thought it would be better to fail and rely on direct reclaim to actually 
+try to free some memory, especially if that oom memcg happens to include 
+current.
+
+It's possible that subsequent pageblocks would contain memory allocated 
+from solely non-oom memcgs, but it's certainly not a guarantee and results 
+in terrible performance as exhibited above.  Is there another good 
+criteria to use when deciding when to stop isolating and attempting to 
+migrate all of these pageblocks?
+
+Other ideas?
