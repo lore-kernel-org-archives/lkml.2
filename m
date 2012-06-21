@@ -1,138 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab2FUMHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 08:07:43 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51749 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757134Ab2FUMHW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 08:07:22 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: X86-ML <x86@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH -v2 2/2] x86, microcode: Make reload interface per system
-Date: Thu, 21 Jun 2012 14:07:17 +0200
-Message-Id: <1340280437-7718-3-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.11.rc1
-In-Reply-To: <1340280437-7718-1-git-send-email-bp@amd64.org>
-References: <1340280437-7718-1-git-send-email-bp@amd64.org>
+	id S1757253Ab2FUMM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 08:12:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14178 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756842Ab2FUMM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 08:12:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="156613423"
+Message-ID: <1340280986.13910.207.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 0/4] hfsplus: stop using write_supers and s_dirt
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Jun 2012 15:16:26 +0300
+In-Reply-To: <1339587471-2713-1-git-send-email-dedekind1@gmail.com>
+References: <1339587471-2713-1-git-send-email-dedekind1@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-zjJjlPYIzBeBZqTfGQd9"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
 
-The reload interface should be per-system so that a full system ucode
-reload happens (on each core) when doing
+--=-zjJjlPYIzBeBZqTfGQd9
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-echo 1 > /sys/devices/system/cpu/microcode/reload
+On Wed, 2012-06-13 at 14:37 +0300, Artem Bityutskiy wrote:
+> This patch-set makes HFSPLUS file-system stop using the VFS '->write_supe=
+rs()'
+> call-back and the '->s_dirt' superblock field because I plan to remove th=
+em
+> once all users are gone.
 
-Move it to the cpu subsys directory instead of it being per-cpu.
+Hi, Al or Andrew, would you please consider picking this patch-set?
 
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/microcode_core.c | 36 ++++++++++++++++++++++++++++--------
- 1 file changed, 28 insertions(+), 8 deletions(-)
+--=20
+Best Regards,
+Artem Bityutskiy
 
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index 24b852b61be3..947e4c64b1d8 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -301,10 +301,6 @@ static ssize_t reload_store(struct device *dev,
- 	int cpu;
- 	ssize_t ret = 0, tmp_ret;
- 
--	/* allow reload only from the BSP */
--	if (boot_cpu_data.cpu_index != dev->id)
--		return -EINVAL;
--
- 	ret = kstrtoul(buf, 0, &val);
- 	if (ret)
- 		return ret;
-@@ -351,7 +347,6 @@ static DEVICE_ATTR(version, 0400, version_show, NULL);
- static DEVICE_ATTR(processor_flags, 0400, pf_show, NULL);
- 
- static struct attribute *mc_default_attrs[] = {
--	&dev_attr_reload.attr,
- 	&dev_attr_version.attr,
- 	&dev_attr_processor_flags.attr,
- 	NULL
-@@ -528,6 +523,16 @@ static const struct x86_cpu_id microcode_id[] = {
- MODULE_DEVICE_TABLE(x86cpu, microcode_id);
- #endif
- 
-+static struct attribute *cpu_root_microcode_attrs[] = {
-+	&dev_attr_reload.attr,
-+	NULL
-+};
-+
-+static struct attribute_group cpu_root_microcode_group = {
-+	.name  = "microcode",
-+	.attrs = cpu_root_microcode_attrs,
-+};
-+
- static int __init microcode_init(void)
- {
- 	struct cpuinfo_x86 *c = &cpu_data(0);
-@@ -559,9 +564,17 @@ static int __init microcode_init(void)
- 	if (error)
- 		goto out_pdev;
- 
-+	error = sysfs_create_group(&cpu_subsys.dev_root->kobj,
-+				   &cpu_root_microcode_group);
-+
-+	if (error) {
-+		pr_err("Error creating microcode group!\n");
-+		goto out_driver;
-+	}
-+
- 	error = microcode_dev_init();
- 	if (error)
--		goto out_driver;
-+		goto out_ucode_group;
- 
- 	register_syscore_ops(&mc_syscore_ops);
- 	register_hotcpu_notifier(&mc_cpu_notifier);
-@@ -571,7 +584,11 @@ static int __init microcode_init(void)
- 
- 	return 0;
- 
--out_driver:
-+ out_ucode_group:
-+	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
-+			   &cpu_root_microcode_group);
-+
-+ out_driver:
- 	get_online_cpus();
- 	mutex_lock(&microcode_mutex);
- 
-@@ -580,7 +597,7 @@ out_driver:
- 	mutex_unlock(&microcode_mutex);
- 	put_online_cpus();
- 
--out_pdev:
-+ out_pdev:
- 	platform_device_unregister(microcode_pdev);
- 	return error;
- 
-@@ -596,6 +613,9 @@ static void __exit microcode_exit(void)
- 	unregister_hotcpu_notifier(&mc_cpu_notifier);
- 	unregister_syscore_ops(&mc_syscore_ops);
- 
-+	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
-+			   &cpu_root_microcode_group);
-+
- 	get_online_cpus();
- 	mutex_lock(&microcode_mutex);
- 
--- 
-1.7.11.rc1
+--=-zjJjlPYIzBeBZqTfGQd9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP4xCaAAoJECmIfjd9wqK0KyoQAK81qzhv2WgRUQPqjMmCSpwa
+B7oxT5jfb13qeoeH9tkU7edu2s7kTLMaC7Bwd0w1tel1aMJ3oId9kOzw15xC2qjr
+Cw18DceVLLPIe6LR3GITFWdKXLyh3KMbXW/92/mcJlZfszAdQK1GETO1A63x3iAw
+HiYK0g9lofarCDkaAsFBH06w/rbyKqHamz6jcW9XzN9B76zfvqSKwTLr7XBEwR27
+H4E+xa2fnOKbkJa0UewC73et2tDruEmbZiDeXQ/NeuiJUMl79QAUJb0Mn5r1Y58B
+Ree5+jCTj+cJEXb6KNhlanK88GgapFAeQ7zr+MVwWGONTgssaC5uJHy0PtgpJmZ6
+X87ingpPYgzxuAAM7J9FUNcIxSxeNuZpEDcFeZ/GOZDhkBpc0B9RLdYGXnRYMqZB
+jce4hPeGr2khobC8oAWiUN1ysOs3jCoAZx/ATVvs8OkaWd19PmvFAxWg3E2BiKFC
+48Jhjv3goTozqdwzlpS0X91tMDqo2kyCxZh0TYbSzPn+NeoyfgA7vwEMsIwsFxuk
+M+n+d+uZKWjEKT1MR/dUlHMD/xeGgqQdVRUzAC0noW5f3DVGTGsAtVa3k53WYP4S
++S7eRRMs8kf1TSddacbQuByOXtqVfUQXqvMk3VCrXkUcD/j3aVmqs4PUSd1cl8eT
+p7NEgvpCjlF35VrF2tVG
+=xquD
+-----END PGP SIGNATURE-----
+
+--=-zjJjlPYIzBeBZqTfGQd9--
 
