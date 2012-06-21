@@ -1,293 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab2FUGhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 02:37:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21904 "EHLO mga01.intel.com"
+	id S1757802Ab2FUGoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 02:44:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40493 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754373Ab2FUGhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 02:37:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="183066483"
-Subject: Re: [PATCH v5 02/12] libata: bind the Linux device tree to the
- ACPI device tree
-From: Lin Ming <ming.m.lin@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
-        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-In-Reply-To: <CAA9_cmfCVTWtqfDY4PAzK_yaVWXLV+oMO1qt_AtQKp2upPUX=Q@mail.gmail.com>
-References: <1340000766-129148-1-git-send-email-ming.m.lin@intel.com>
-	 <1340000766-129148-3-git-send-email-ming.m.lin@intel.com>
-	 <CAA9_cmcX2pajewz1v864Ni2Z3XAy8UrCRg+mg3Y2qFEd2j=nDg@mail.gmail.com>
-	 <1340242002.20081.84.camel@minggr>
-	 <CAA9_cmfCVTWtqfDY4PAzK_yaVWXLV+oMO1qt_AtQKp2upPUX=Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Jun 2012 14:37:06 +0800
-Message-ID: <1340260626.24067.4.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754643Ab2FUGoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 02:44:06 -0400
+Date: Thu, 21 Jun 2012 09:43:58 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kvm: handle last_boosted_vcpu = 0 case
+Message-ID: <20120621064358.GS6533@redhat.com>
+References: <20120619202047.26191.40429.sendpatchset@codeblue>
+ <20120619165104.2a4574f8@annuminas.surriel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120619165104.2a4574f8@annuminas.surriel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 20:59 -0700, Dan Williams wrote:
-> On Wed, Jun 20, 2012 at 6:26 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > On Wed, 2012-06-20 at 16:50 -0700, Dan Williams wrote:
-> >> On Sun, Jun 17, 2012 at 11:25 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> >> > From: Matthew Garrett <mjg@redhat.com>
-> >> >
-> >> > Associate the ACPI device tree and libata devices.
-> >> > This patch uses the generic ACPI glue framework to do so.
-> >> >
-> >> > Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> >> > Signed-off-by: Holger Macht <holger@homac.de>
-> >> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> >> > ---
-> >> >
-> >> > Changelog:
-> >> >
-> >> > - fixed crash reported at https://lkml.org/lkml/2012/2/24/2 (Aaron Lu)
-> >> > - rename is_pci_ata to compat_pci_ata (Alan Cox)
-> >> >
-> >> >  drivers/acpi/glue.c       |    4 +-
-> >> >  drivers/ata/libata-acpi.c |  125 +++++++++++++++++++++++++++++++++++++++++++++
-> >> >  drivers/ata/libata-core.c |    3 ++
-> >> >  drivers/ata/libata.h      |    4 ++
-> >> >  4 files changed, 134 insertions(+), 2 deletions(-)
-> >> >
-> >> > diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
-> >> > index 1564e09..18d6812 100644
-> >> > --- a/drivers/acpi/glue.c
-> >> > +++ b/drivers/acpi/glue.c
-> >> [..]
-> >> > +static int ata_acpi_bind_host(struct device *dev, int host, acpi_handle *handle)
-> >> > +{
-> >> > +       struct Scsi_Host *shost = dev_to_shost(dev);
-> >> > +       struct ata_port *ap = ata_shost_to_port(shost);
-> >> > +
-> >> > +       if (ap->flags & ATA_FLAG_ACPI_SATA)
-> >> > +               return -ENODEV;
-> >> > +
-> >> > +       *handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent), ap->port_no);
-> >> > +
-> >> > +       if (!*handle)
-> >> > +               return -ENODEV;
-> >> > +
-> >> > +       return 0;
-> >> > +}
-> >>
-> >> I think this patch should be squashed with patch 4, right?  That is if
-> >> we keep the hard-coded ->parent chasing...
-> >
-> > Right. Will merge patch 4.
-> >
-> >>
-> >> > +static int ata_acpi_find_device(struct device *dev, acpi_handle *handle)
-> >> > +{
-> >> > +       unsigned int host, channel, id, lun;
-> >> > +
-> >> > +       if (sscanf(dev_name(dev), "host%u", &host) == 1) {
-> >> > +               if (!compat_pci_ata(dev->parent))
-> >> > +                       return -ENODEV;
-> >> > +
-> >> > +               return ata_acpi_bind_host(dev, host, handle);
-> >> > +       } else if (sscanf(dev_name(dev), "%d:%d:%d:%d",
-> >> > +                       &host, &channel, &id, &lun) == 4) {
-> >> > +               if (!compat_pci_ata(dev->parent->parent->parent))
-> >> > +                       return -ENODEV;
-> >>
-> >> ...this looks like it should be using a dev_to_ata_port() helper which
-> >> like dev_to_shost() skips the need to remember just how many parents
-> >> until we get back to our ata_port, scsi_host, etc.
-> >
-> > Oh, no.
-> >
-> > compat_pci_ata checks whether the controller(rather than shost or ata
-> > port) is pci SATA/IDE controller.
-> >
-> > As in patch 4:
-> > compat_pci_ata(dev->parent->parent->parent->parent)
-> >
-> > The "dev" is ata port, and dev->parent->parent->parent->parent points to
-> > the controller dev.
-> >
-> > This looks ugly. How about add two helpers?
-> > shost_to_controller(dev) and ata_port_to_controller(dev)
-> >
+On Tue, Jun 19, 2012 at 04:51:04PM -0400, Rik van Riel wrote:
+> On Wed, 20 Jun 2012 01:50:50 +0530
+> Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
 > 
-> What about something like the following (untested)?  Makes it mostly
-> independent of the topology, gives some type safety, and drops some
-> redundant work finding the ata_port.
+> > 
+> > In ple handler code, last_boosted_vcpu (lbv) variable is
+> > serving as reference point to start when we enter.
 > 
-> static int ata_acpi_find_device(struct device *dev, acpi_handle *handle)
-> {
->         struct ata_port *ap = dev_to_ata_port(dev);
+> > Also statistical analysis (below) is showing lbv is not very well
+> > distributed with current approach.
 > 
->         if (!ap)
->                 return -ENODEV;
+> You are the second person to spot this bug today (yes, today).
 > 
->         if (!compat_pci_ata(ap))
->                 return -ENODEV;
+> Due to time zones, the first person has not had a chance yet to
+> test the patch below, which might fix the issue...
 > 
->         if (scsi_is_host_device(dev))
->                 return ata_acpi_bind_host(ap, handle);
->         else if (scsi_is_sdev_device(dev)) {
->                 struct scsi_device *sdev = to_scsi_device(dev);
+> Please let me know how it goes.
 > 
->                 return ata_acpi_bind_device(ap, sdev->channel,
-> sdev->id, handle);
->         } else
->                 return -ENODEV;
-> }
+> ====8<====
+> 
+> If last_boosted_vcpu == 0, then we fall through all test cases and
+> may end up with all VCPUs pouncing on vcpu 0.  With a large enough
+> guest, this can result in enormous runqueue lock contention, which
+> can prevent vcpu0 from running, leading to a livelock.
+> 
+> Changing < to <= makes sure we properly handle that case.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+>  virt/kvm/kvm_main.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 7e14068..1da542b 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1586,7 +1586,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>  	 */
+>  	for (pass = 0; pass < 2 && !yielded; pass++) {
+>  		kvm_for_each_vcpu(i, vcpu, kvm) {
+> -			if (!pass && i < last_boosted_vcpu) {
+> +			if (!pass && i <= last_boosted_vcpu) {
+>  				i = last_boosted_vcpu;
+>  				continue;
+>  			} else if (pass && i > last_boosted_vcpu)
+> 
+Looks correct. We can simplify this by introducing something like:
 
-Good idea.
+#define kvm_for_each_vcpu_from(idx, n, vcpup, kvm) \
+        for (n = atomic_read(&kvm->online_vcpus); \
+             n && (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
+             n--, idx = (idx+1) % atomic_read(&kvm->online_vcpus))
 
-Below is the incremental patch on top of this series.
-
- drivers/ata/libata-acpi.c |   56 +++++++++++++++++++++++++++------------------
- drivers/ata/libata-core.c |    2 --
- drivers/ata/libata.h      |    2 ++
- 3 files changed, 36 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index 08edebf..4112eaa 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -1075,8 +1075,9 @@ void ata_acpi_unbind(struct ata_device *dev)
- 	ata_acpi_unregister_power_resource(dev);
- }
- 
--static int compat_pci_ata(struct device *dev)
-+static int compat_pci_ata(struct ata_port *ap)
- {
-+	struct device *dev = ap->tdev.parent;
- 	struct pci_dev *pdev;
- 
- 	if (!is_pci_dev(dev))
-@@ -1091,15 +1092,13 @@ static int compat_pci_ata(struct device *dev)
- 	return 1;
- }
- 
--static int ata_acpi_bind_host(struct device *dev, int host, acpi_handle *handle)
-+static int ata_acpi_bind_host(struct ata_port *ap, acpi_handle *handle)
- {
--	struct Scsi_Host *shost = dev_to_shost(dev);
--	struct ata_port *ap = ata_shost_to_port(shost);
--
- 	if (ap->flags & ATA_FLAG_ACPI_SATA)
- 		return -ENODEV;
- 
--	*handle = acpi_get_child(DEVICE_ACPI_HANDLE(dev->parent->parent), ap->port_no);
-+	*handle = acpi_get_child(DEVICE_ACPI_HANDLE(ap->tdev.parent),
-+			ap->port_no);
- 
- 	if (!*handle)
- 		return -ENODEV;
-@@ -1107,21 +1106,18 @@ static int ata_acpi_bind_host(struct device *dev, int host, acpi_handle *handle)
- 	return 0;
- }
- 
--static int ata_acpi_bind_device(struct device *dev, int channel, int id,
-+static int ata_acpi_bind_device(struct ata_port *ap, struct scsi_device *sdev,
- 				acpi_handle *handle)
- {
--	struct scsi_device *sdev = to_scsi_device(dev);
--	struct Scsi_Host *shost = sdev->host;
--	struct ata_port *ap = ata_shost_to_port(shost);
- 	struct ata_device *ata_dev;
- 	acpi_status status;
- 	struct acpi_device *acpi_dev;
- 	struct acpi_device_power_state *states;
- 
- 	if (ap->flags & ATA_FLAG_ACPI_SATA)
--		ata_dev = &ap->link.device[channel];
-+		ata_dev = &ap->link.device[sdev->channel];
- 	else
--		ata_dev = &ap->link.device[id];
-+		ata_dev = &ap->link.device[sdev->id];
- 
- 	*handle = ata_dev_acpi_handle(ata_dev);
- 
-@@ -1146,21 +1142,37 @@ static int ata_acpi_bind_device(struct device *dev, int channel, int id,
- 	return 0;
- }
- 
-+static int is_ata_port(const struct device *dev)
-+{
-+	return dev->type == &ata_port_type;
-+}
-+
-+static struct ata_port *dev_to_ata_port(struct device *dev)
-+{
-+	while (!is_ata_port(dev)) {
-+		if (!dev->parent)
-+			return NULL;
-+		dev = dev->parent;
-+	}
-+	return to_ata_port(dev);
-+}
-+
- static int ata_acpi_find_device(struct device *dev, acpi_handle *handle)
- {
--	unsigned int host, channel, id, lun;
-+	struct ata_port *ap = dev_to_ata_port(dev);
- 
--	if (sscanf(dev_name(dev), "host%u", &host) == 1) {
--		if (!compat_pci_ata(dev->parent->parent))
--			return -ENODEV;
-+	if (!ap)
-+		return -ENODEV;
-+
-+	if (!compat_pci_ata(ap))
-+		return -ENODEV;
- 
--		return ata_acpi_bind_host(dev, host, handle);
--	} else if (sscanf(dev_name(dev), "%d:%d:%d:%d",
--			&host, &channel, &id, &lun) == 4) {
--		if (!compat_pci_ata(dev->parent->parent->parent->parent))
--			return -ENODEV;
-+	if (scsi_is_host_device(dev))
-+		return ata_acpi_bind_host(ap, handle);
-+	else if (scsi_is_sdev_device(dev)) {
-+		struct scsi_device *sdev = to_scsi_device(dev);
- 
--		return ata_acpi_bind_device(dev, channel, id, handle);
-+		return ata_acpi_bind_device(ap, sdev, handle);
- 	} else
- 		return -ENODEV;
- }
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index ba169c4..c14f88c 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5291,8 +5291,6 @@ static int ata_port_request_pm(struct ata_port *ap, pm_message_t mesg,
- 	return rc;
- }
- 
--#define to_ata_port(d) container_of(d, struct ata_port, tdev)
--
- static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
- {
- 	struct ata_port *ap = to_ata_port(dev);
-diff --git a/drivers/ata/libata.h b/drivers/ata/libata.h
-index b0ba924..44a7939 100644
---- a/drivers/ata/libata.h
-+++ b/drivers/ata/libata.h
-@@ -107,6 +107,8 @@ extern const char *sata_spd_string(unsigned int spd);
- extern int ata_port_probe(struct ata_port *ap);
- extern void __ata_port_probe(struct ata_port *ap);
- 
-+#define to_ata_port(d) container_of(d, struct ata_port, tdev)
-+
- /* libata-acpi.c */
- #ifdef CONFIG_ATA_ACPI
- extern unsigned int ata_acpi_gtf_filter;
-
-
-
+--
+			Gleb.
