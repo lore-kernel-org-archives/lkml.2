@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760168Ab2FUULX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 16:11:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7931 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760152Ab2FUULW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 16:11:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="183402243"
-Message-ID: <4FE37FE9.6000107@linux.intel.com>
-Date: Thu, 21 Jun 2012 13:11:21 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jean Delvare <khali@linux-fr.org>,
-        x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>
-Subject: Re: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
-References: <20120621162807.3c621d46@endymion.delvare> <4FE34BCB.5050305@linux.intel.com> <20120621190743.2e6601f6@endymion.delvare> <4FE3628C.6000604@zytor.com> <20120621184403.GC15472@liondog.tnic>
-In-Reply-To: <20120621184403.GC15472@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8
+	id S1760163Ab2FUUNb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 16:13:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35649 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375Ab2FUUN3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 16:13:29 -0400
+Date: Thu, 21 Jun 2012 13:13:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        cgroups@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 2/2] memcg: clean up force_empty_list() return value
+ check
+Message-Id: <20120621131328.1e906266.akpm@linux-foundation.org>
+In-Reply-To: <4FE2D87D.2090500@jp.fujitsu.com>
+References: <4FDF17A3.9060202@jp.fujitsu.com>
+	<4FDF1830.1000504@jp.fujitsu.com>
+	<20120619165815.5ce24be7.akpm@linux-foundation.org>
+	<4FE2D747.20506@jp.fujitsu.com>
+	<4FE2D87D.2090500@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 11:44 AM, Borislav Petkov wrote:
-> On Thu, Jun 21, 2012 at 11:06:04AM -0700, H. Peter Anvin wrote:
->> On 06/21/2012 10:07 AM, Jean Delvare wrote:
->>>
->>> And FWIW, X86_FEATURE_DS has no user in the kernel. Doesn't look like a
->>> key feature to me, but maybe my view is biased...
->>>
->>
->> No, but apparently perfmon2 depends on it, in userspace, and it relies
->> on the string.
->>
->> So this is a nonstarter.
-> 
-> Maybe call the sensor thing "dtsen" or something similarly short but not
-> "dts"?
+On Thu, 21 Jun 2012 17:17:01 +0900
+Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> Now, mem_cgroup_force_empty_list() just returns 0 or -EBUSY and
+> -EBUSY is just indicating 'you need to retry.'.
+> This patch makes mem_cgroup_force_empty_list() as boolean function and
+> make the logic simpler.
 > 
 
-Yeah, that's what we have to do.  Sigh.
+For some reason I'm having trouble applying these patches - many
+rejects, need to massage it in by hand.
 
-	-hpa
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3797,7 +3797,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>    * This routine traverse page_cgroup in given list and drop them all.
+>    * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
+>    */
+> -static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+> +static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+>   				int node, int zid, enum lru_list lru)
+
+Let's document the return value.  The mem_cgroup_force_empty_list()
+comment is a mess so I tried to help it a bit.  How does this look?
+
+--- a/mm/memcontrol.c~memcg-make-mem_cgroup_force_empty_list-return-bool-fix
++++ a/mm/memcontrol.c
+@@ -3609,8 +3609,10 @@ unsigned long mem_cgroup_soft_limit_recl
+ }
+ 
+ /*
+- * This routine traverse page_cgroup in given list and drop them all.
+- * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
++ * Traverse a specified page_cgroup list and try to drop them all.  This doesn't
++ * reclaim the pages page themselves - it just removes the page_cgroups.
++ * Returns true if some page_cgroups were not freed, indicating that the caller
++ * must retry this operation.
+  */
+ static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 				int node, int zid, enum lru_list lru)
+_
+
 
