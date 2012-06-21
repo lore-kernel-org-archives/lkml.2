@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759718Ab2FUSzF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 14:55:05 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48935 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753935Ab2FUSzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 14:55:03 -0400
-Message-ID: <1340304902.22218.12.camel@joe2Laptop>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 21 Jun 2012 11:55:02 -0700
-In-Reply-To: <1340304566.27036.200.camel@gandalf.stny.rr.com>
-References: <20120614154153.GD17140@kroah.com>
-	 <1339693625.13377.242.camel@gandalf.stny.rr.com>
-	 <20120615042233.GA10973@localhost> <20120615043017.GA9587@kroah.com>
-	 <20120615120430.GB23681@gmail.com> <20120615231318.GD8205@kroah.com>
-	 <1339804415.25903.63.camel@gandalf.stny.rr.com>
-	 <20120618230337.GB23627@kroah.com>
-	 <1340069326.25903.177.camel@gandalf.stny.rr.com>
-	 <20120620122549.GA10561@gmail.com> <20120621171338.GF3270@kroah.com>
-	 <1340300509.27036.185.camel@gandalf.stny.rr.com>
-	 <1340302623.22065.9.camel@joe2Laptop>
-	 <1340303360.27036.194.camel@gandalf.stny.rr.com>
-	 <1340303969.22218.9.camel@joe2Laptop>
-	 <1340304566.27036.200.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1759797Ab2FUTGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 15:06:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61984 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759663Ab2FUTGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 15:06:51 -0400
+Message-ID: <4FE350D1.4070503@redhat.com>
+Date: Thu, 21 Jun 2012 12:50:25 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
+        andi@firstfloor.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH -mm 2/7] mm: get unmapped area from VMA tree
+References: <1340057126-31143-1-git-send-email-riel@redhat.com> <1340057126-31143-3-git-send-email-riel@redhat.com> <20120621090157.GG27816@cmpxchg.org>
+In-Reply-To: <20120621090157.GG27816@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-21 at 14:49 -0400, Steven Rostedt wrote:
-> Actually, I'm starting to lean back to my original patch, and stick a
-> pr_flush() in there.
+On 06/21/2012 05:01 AM, Johannes Weiner wrote:
 
-Oh good.  I think that's better than a new printk.
+>> +		/* Go left if it looks promising. */
+>> +		if (node_free_hole(rb_node->rb_left)>= len&&
+>> +					vma->vm_start - len>= lower_limit) {
+>> +			rb_node = rb_node->rb_left;
+>> +			continue;
+>
+> If we already are at a vma whose start has a lower address than the
+> overall length, does it make sense to check for a left hole?
+> I.e. shouldn't this be inside the if (vma->vm_start>  len) block?
 
-> As it basically just acts like a barrier. "Make
-> sure the output I printed actually gets out to the console before I
-> continue".
+You are right, I can move this in under the
+conditional.
 
-I think that'd be bad and hard to do.
+>> +		if (!found_here&&  node_free_hole(rb_node->rb_left)>= len) {
+>> +			/* Last known hole is to the right of this subtree. */
+>
+> "to the left"
 
-I think you mean simply attempt to deliver it
-rather than guarantee it's actually emitted.
-
+Actually, it is to the right.  We walked left from
+our parent to get here, so the holes found so far
+are to the right of here.
 
