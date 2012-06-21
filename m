@@ -1,57 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab2FUP4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 11:56:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29036 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755812Ab2FUP4q (ORCPT
+	id S1756247Ab2FUQCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 12:02:42 -0400
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:53514 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab2FUQCk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 11:56:46 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XOt6boVe9ZQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=qi6N67ELxb11JToVk7kA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340294204.27036.183.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] ring-buffer: fix uninitialized read_stamp
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com
-Date: Thu, 21 Jun 2012 11:56:44 -0400
-In-Reply-To: <1340293617.27036.177.camel@gandalf.stny.rr.com>
-References: <CAJL_eku9byV+Uk-5boR52HLEO0D-++2h_y=PeaaQG_PrCuALhQ@mail.gmail.com>
-	 <1340060577-9112-1-git-send-email-dhsharp@google.com>
-	 <1340293617.27036.177.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 21 Jun 2012 12:02:40 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Sha Zhengju <handai.szj@gmail.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, yinghan@google.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 2/2] memcg: add per cgroup dirty pages accounting
+References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com>
+	<1339761717-29070-1-git-send-email-handai.szj@taobao.com>
+	<xr93k3z8twtg.fsf@gthelen.mtv.corp.google.com>
+	<4FDC28F0.8050805@jp.fujitsu.com>
+	<CAFj3OHXuX7tpDe4famK3fFMZBcj2w-9mDs9mD9P_-SwaRKx8tg@mail.gmail.com>
+	<4FE2D2F4.2020202@jp.fujitsu.com>
+Date: Thu, 21 Jun 2012 09:02:37 -0700
+In-Reply-To: <4FE2D2F4.2020202@jp.fujitsu.com> (Kamezawa Hiroyuki's message of
+	"Thu, 21 Jun 2012 16:53:24 +0900")
+Message-ID: <xr938vfgmz4y.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-21 at 11:46 -0400, Steven Rostedt wrote:
+On Thu, Jun 21 2012, Kamezawa Hiroyuki wrote:
 
-> I'm wondering if it would be better to just not do the swap, and return
-> NULL when it is empty. This would also fix the problem, as the
-> read_stamp will only be set when you actually have data.
+> (2012/06/19 23:31), Sha Zhengju wrote:
+>> On Sat, Jun 16, 2012 at 2:34 PM, Kamezawa Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com>  wrote:
+>>> (2012/06/16 0:32), Greg Thelen wrote:
+>>>>
+>>>> On Fri, Jun 15 2012, Sha Zhengju wrote:
+>>>>
+>>>>> This patch adds memcg routines to count dirty pages. I notice that
+>>>>> the list has talked about per-cgroup dirty page limiting
+>>>>> (http://lwn.net/Articles/455341/) before, but it did not get merged.
+>>>>
+>>>>
+>>>> Good timing, I was just about to make another effort to get some of
+>>>> these patches upstream.  Like you, I was going to start with some basic
+>>>> counters.
+>>>>
+>>>> Your approach is similar to what I have in mind.  While it is good to
+>>>> use the existing PageDirty flag, rather than introducing a new
+>>>> page_cgroup flag, there are locking complications (see below) to handle
+>>>> races between moving pages between memcg and the pages being {un}marked
+>>>> dirty.
+>>>>
+>>>>> I've no idea how is this going now, but maybe we can add per cgroup
+>>>>> dirty pages accounting first. This allows the memory controller to
+>>>>> maintain an accurate view of the amount of its memory that is dirty
+>>>>> and can provide some infomation while group's direct reclaim is working.
+>>>>>
+>>>>> After commit 89c06bd5 (memcg: use new logic for page stat accounting),
+>>>>> we do not need per page_cgroup flag anymore and can directly use
+>>>>> struct page flag.
+>>>>>
+>>>>>
+>>>>> Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
+>>>>> ---
+>>>>>   include/linux/memcontrol.h |    1 +
+>>>>>   mm/filemap.c               |    1 +
+>>>>>   mm/memcontrol.c            |   32 +++++++++++++++++++++++++-------
+>>>>>   mm/page-writeback.c        |    2 ++
+>>>>>   mm/truncate.c              |    1 +
+>>>>>   5 files changed, 30 insertions(+), 7 deletions(-)
+>>>>>
+>>>>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>>>>> index a337c2e..8154ade 100644
+>>>>> --- a/include/linux/memcontrol.h
+>>>>> +++ b/include/linux/memcontrol.h
+>>>>> @@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
+>>>>>         MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>>>>>         MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+>>>>>         MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+>>>>> +       MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+>>>>>         MEM_CGROUP_STAT_NSTATS,
+>>>>>   };
+>>>>>
+>>>>> diff --git a/mm/filemap.c b/mm/filemap.c
+>>>>> index 79c4b2b..5b5c121 100644
+>>>>> --- a/mm/filemap.c
+>>>>> +++ b/mm/filemap.c
+>>>>> @@ -141,6 +141,7 @@ void __delete_from_page_cache(struct page *page)
+>>>>>          * having removed the page entirely.
+>>>>>          */
+>>>>>         if (PageDirty(page)&&    mapping_cap_account_dirty(mapping)) {
+>>>>> +               mem_cgroup_dec_page_stat(page,
+>>>>> MEM_CGROUP_STAT_FILE_DIRTY);
+>>>>
+>>>>
+>>>> You need to use mem_cgroup_{begin,end}_update_page_stat around critical
+>>>> sections that:
+>>>> 1) check PageDirty
+>>>> 2) update MEM_CGROUP_STAT_FILE_DIRTY counter
+>>>>
+>>>> This protects against the page from being moved between memcg while
+>>>> accounting.  Same comment applies to all of your new calls to
+>>>> mem_cgroup_{dec,inc}_page_stat.  For usage pattern, see
+>>>> page_add_file_rmap.
+>>>>
+>>>
+>>> If you feel some difficulty with mem_cgroup_{begin,end}_update_page_stat(),
+>>> please let me know...I hope they should work enough....
+>>>
+>>
+>> Hi, Kame
+>>
+>> While digging into the bigger lock of mem_cgroup_{begin,end}_update_page_stat(),
+>> I find the reality is more complex than I thought. Simply stated,
+>> modifying page info
+>> and update page stat may be wide apart and in different level (eg.
+>> mm&fs), so if we
+>> use the big lock it may lead to scalability and maintainability issues.
+>>
+>> For example:
+>>       mem_cgroup_begin_update_page_stat()
+>>       modify page information                 =>  TestSetPageDirty in　ceph_set_page_dirty() (fs/ceph/addr.c)
+>>       XXXXXX                                  =>  other fs operations
+>>       mem_cgroup_update_page_stat()   =>  account_page_dirtied() in　mm/page-writeback.c
+>>       mem_cgroup_end_update_page_stat().
+>>
+>> We can choose to get lock in higher level meaning vfs set_page_dirty()
+>> but this may span
+>> too much and can also have some missing cases.
+>> What's your opinion of this problem?
+>>
+>
+> yes, that's sad....If set_page_dirty() is always called under lock_page(), the
+> story will be easier (we'll take lock_page() in move side.)
+> but the comment on set_page_dirty() says it's not true.....Now, I haven't found a magical
+> way for avoiding the race.
+> (*) If holding lock_page() in move_account() can be a generic solution, it will be good.
+>     A proposal from me is a small-start. You can start from adding hooks to a
+> generic
+> functions as set_page_dirty() and __set_page_dirty_nobuffers(), clear_page_dirty_for_io().
+>
+> And see what happens. I guess we can add WARN_ONCE() against callers of update_page_stat()
+> who don't take mem_cgroup_begin/end_update_page_stat()
+> (by some new check, for example, checking !rcu_read_lock_held() in update_stat())
+>
+> I think we can make TODO list and catch up remaining things one by one.
+>
+> Thanks,
+> -Kame
 
-Does something like this work for you. Note, this is totally untested!
-
--- Steve
-
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index ad0239b..5943044 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3246,6 +3246,10 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
- 	if (cpu_buffer->commit_page == cpu_buffer->reader_page)
- 		goto out;
- 
-+	/* Don't bother swapping if the ring buffer is empty */
-+	if (rb_num_of_entries(cpu_buffer) == 0)
-+		goto out;
-+
- 	/*
- 	 * Reset the reader page to size zero.
- 	 */
-
-
+This might be a crazy idea.  Synchronization of PageDirty with the
+page->memcg->nr_dirty counter is a challenge because page->memcg can be
+reassigned due to inter-memcg page moving.  Could we avoid moving dirty
+pages between memcg?  Specifically, could we make them clean before
+moving.  This problem feels similar to page migration.  This would slow
+down inter-memcg page movement, because it would require writeback.  But
+I'm suspect that this is an infrequent operation.
