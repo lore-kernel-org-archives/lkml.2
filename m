@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760517Ab2FUWwC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 18:52:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37611 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760398Ab2FUWwA (ORCPT
+	id S1760578Ab2FUWwi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 18:52:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45132 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760482Ab2FUWwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 18:52:00 -0400
-Date: Thu, 21 Jun 2012 15:51:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, zheng.z.yan@intel.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf/x86: Add generic Intel uncore PMU support
-Message-Id: <20120621155159.239aa972.akpm@linux-foundation.org>
-In-Reply-To: <4FE3A495.1030008@zytor.com>
-References: <1339741902-8449-6-git-send-email-zheng.z.yan@intel.com>
-	<tip-087bfbb032691262f2f7d52b910652450c5554b8@git.kernel.org>
-	<20120621154334.05a74517.akpm@linux-foundation.org>
-	<4FE3A495.1030008@zytor.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Jun 2012 18:52:36 -0400
+Date: Thu, 21 Jun 2012 23:52:31 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, lee.jones@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 2/3] regulator: dt: regulator match by
+ regulator-compatible
+Message-ID: <20120621225231.GB4037@opensource.wolfsonmicro.com>
+References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com>
+ <201206211717.46142.arnd@arndb.de>
+ <4FE35A78.60003@wwwdotorg.org>
+ <201206212103.29517.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mBuDz+cd8w/hvK2v"
+Content-Disposition: inline
+In-Reply-To: <201206212103.29517.arnd@arndb.de>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012 15:47:49 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-> On 06/21/2012 03:43 PM, Andrew Morton wrote:
-> > 
-> > Regardless of that, we have some head-scratching to do:
-> > 
-> > 
-> > #define UNCORE_PMU_HRTIMER_INTERVAL       (60 * NSEC_PER_SEC)
-> > 
-> > and
-> > 
-> > #define NSEC_PER_SEC    1000000000L
-> > 
-> > and 60 billion doesn't fit in 32 bits.  So do we fix the
-> > perf_event_intel_uncore.c callsites?  Or do we fix the
-> > UNCORE_PMU_HRTIMER_INTERVAL definition?  Or do we fix the NSEC_PER_SEC
-> > definition?
-> > 
-> > I'm thinking perhaps the latter.  What *is* the type of a nanosecond in
-> > Linux?  include/linux/ktime.h is pretty insistent that it is u64.  If
-> > so, NSEC_PER_SEC should logically have type ULL.  But changing both its
-> > size and signedness is a pretty big change.
-> 
-> We could change the size only.  The range from 9223372036.854775808 to
-> 18446744073.709551615 seconds (292-584 years) isn't really that significant.
-> 
+--mBuDz+cd8w/hvK2v
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-What *is* significant is the effect of a signedness change upon
-arithmetic, conversions, warnings, etc.  And whether such a change
-might actually introduce bugs.
+On Thu, Jun 21, 2012 at 09:03:29PM +0000, Arnd Bergmann wrote:
 
+> The board specific settings on the other hand are about what to
+> put into those registers and what voltage to use. From all I can
+> tell, those settings belong into the node that actually uses the
+> regulator, not the node that defines it.
 
-Back away and ask the broader questions: why did ktime_t choose
-unsigned?  Is time a signed concept?  What is the right thing to do
-here, from a long-term design perspective?
+This doesn't work.  Each regulator may be used by multiple consumers,
+the configuration is for the supply as a whole not for an individual
+user.  The main service the API is providing is arbitration between
+multiple consumers and the physical capabilities of the board.
+
+Due to the fact that the binding of the device has to be done by the
+board you'd need to replace the regulator-compatible value with a
+phandle pointing to whatever nodes the .dtsi defines (and which would
+need to include some string as well so we can bind code to it).  And of
+course if anyone wants to use the device on a non-DT architecture we'd
+need to replicate everything in code anyway.
+
+--mBuDz+cd8w/hvK2v
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP46WoAAoJEBus8iNuMP3dK+IP/3SSfLIKAiMuCb0sbxgMMXqS
+fVtfNSjNOQSWCratur6ma2TOS3nbwtIHk6x3E31t/V85rGZ/uOzFP6EdwaJh9f0B
+NTB/xtd7MVWmm2XRWNfnGGqTcq4ZXXL1HImTm1J+oI1q6KgMvmIja63fO9Zh1GQP
+jNmPvNIzejEPIZmcW8Px4sP4G6BQ8KNo03PIAk+0IFcsZqIYuV0aG3h3VOKVbFXn
+Cli8T2DHybxlgw80MpE2FeLVooNdxtHqM0L2VCAcDoXqGUu9cWjVuX9VeQDi83cg
+jfwnKw9p9D23VRIeGJlUpDrGYmSWoBkJiPC9QWDg4tDg0XtqTYuySaqFz5IBnVp7
+gTN62VCIVD1ABd1eNKKhoMz6HyVnMP3gTTsp729CcWkbq2QqxFn1fzyJt1pSJV/D
+tOjsp/shAZNu9AHZmiNSbR/oK1tWqo61V7+54mweHsjXMWnrK2mSnaUoD2qCVysK
+cTK7aWKi3mq+HiG+NUqs0+HMj01dYeJS333A0YGKNLXJ7NPgOv0rVwwvRArfpVD+
+Zd2eUxLq/oKMaYy0gOjZUhnDKh/+m7zZriLYrHxiPgOQ/FgpSGQLYuWruokYpgDk
+Q2VKT9/pA76EXL+DzJ6EU5hbuP0wwc8dCZ7RhYRRHyYTtAescls5sF71YkGXUIGB
+nycXNjzuWOJ6xrlmBt2E
+=lzOV
+-----END PGP SIGNATURE-----
+
+--mBuDz+cd8w/hvK2v--
