@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760260Ab2FUUiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 16:38:09 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:34163 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760160Ab2FUUiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 16:38:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: mandeep.baines@gmail.com
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous suspend after abort
-Date: Thu, 21 Jun 2012 22:43:28 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
-        linux-pm@vger.kernel.org, stable@kernel.org,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Colin Cross <ccross@android.com>, Sameer Nanda <snanda@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-References: <1340158627-7586-1-git-send-email-msb@chromium.org> <1340208795-8049-1-git-send-email-msb@chromium.org>
-In-Reply-To: <1340208795-8049-1-git-send-email-msb@chromium.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1760269Ab2FUUvj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 16:51:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36192 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760246Ab2FUUvi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 16:51:38 -0400
+Date: Thu, 21 Jun 2012 13:51:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Anatolij Gustschin <agust@denx.de>,
+        Andreas Dumberger <andreas.dumberger@tqs.de>,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc/r9701: avoid second call to the rtc_valid_tm
+Message-Id: <20120621135136.1e2ff338.akpm@linux-foundation.org>
+In-Reply-To: <1340262280-15096-1-git-send-email-devendra.aaru@gmail.com>
+References: <1340262280-15096-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206212243.28984.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 20, 2012, mandeep.baines@gmail.com wrote:
-> From: Mandeep Singh Baines <msb@chromium.org>
-> 
-> __device_suspend() must always send a completion. Otherwise, parent
-> devices will wait forever.
-> 
-> Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
-> system sleep (v2)", introduced a regression by short-circuiting the
-> complete_all() for certain error cases.
-> 
-> This patch fixes the bug by always signalling a completion.
-> 
-> Addresses http://crosbug.com/31972
-> 
-> Tested by injecting an abort.
-> 
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: linux-pm@vger.kernel.org
-> Cc: stable@kernel.org
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Colin Cross <ccross@android.com>
-> Cc: Sameer Nanda <snanda@chromium.org>
-> Cc: Olof Johansson <olofj@chromium.org>
+On Thu, 21 Jun 2012 12:34:40 +0530
+Devendra Naga <devendra.aaru@gmail.com> wrote:
 
-Applied to linux-pm/linux-next, will be pushed to Linus in a couple of days.
-
-Thanks,
-Rafael
-
-
+> r9701_get_datetime will call the rtc_valid_tm and it returns the
+> value returned by rtc_valid_tm, which anyway can be used in the if
+> 
+> so calling rtc_valid_tm is not required.
+> 
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 > ---
->  drivers/base/power/main.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index e0fb5b0..9cb845e 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->  	dpm_wait_for_children(dev, async);
->  
->  	if (async_error)
-> -		return 0;
-> +		goto Complete;
->  
->  	pm_runtime_get_noresume(dev);
->  	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-> @@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->  	if (pm_wakeup_pending()) {
->  		pm_runtime_put_sync(dev);
->  		async_error = -EBUSY;
-> -		return 0;
-> +		goto Complete;
->  	}
->  
->  	device_lock(dev);
-> @@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
->  	}
->  
->  	device_unlock(dev);
-> +
-> + Complete:
->  	complete_all(&dev->power.completion);
->  
->  	if (error) {
 > 
+> This change is compiled tested only using gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3 on x86_64 (intel core i3).
+> 
+>  drivers/rtc/rtc-r9701.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-r9701.c b/drivers/rtc/rtc-r9701.c
+> index 33b6ba0..e6c34c0 100644
+> --- a/drivers/rtc/rtc-r9701.c
+> +++ b/drivers/rtc/rtc-r9701.c
+> @@ -138,8 +138,7 @@ static int __devinit r9701_probe(struct spi_device *spi)
+>  	 * contain invalid values. If so, try to write a default date:
+>  	 * 2000/1/1 00:00:00
+>  	 */
+> -	r9701_get_datetime(&spi->dev, &dt);
+> -	if (rtc_valid_tm(&dt)) {
+> +	if (r9701_get_datetime(&spi->dev, &dt)) {
+>  		dev_info(&spi->dev, "trying to repair invalid date/time\n");
+>  		dt.tm_sec  = 0;
+>  		dt.tm_min  = 0;
 
+Looks OK.
+
+
+I think the driver would be better if we were to do this:
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: drivers/rtc/rtc-r9701.c: check that r9701_set_datetime() succeeded
+
+When the driver detects that the clock time is invalid, it attempts to
+write a sane time into the hardware.  We curently assume that everything
+is OK is those writes succeeded.  But it is better to re-read the time
+from the hardware to ensure that the new settings got there OK.
+
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Anatolij Gustschin <agust@denx.de>
+Cc: Andreas Dumberger <andreas.dumberger@tqs.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/rtc/rtc-r9701.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff -puN drivers/rtc/rtc-r9701.c~a drivers/rtc/rtc-r9701.c
+--- a/drivers/rtc/rtc-r9701.c~a
++++ a/drivers/rtc/rtc-r9701.c
+@@ -147,7 +147,8 @@ static int __devinit r9701_probe(struct 
+ 		dt.tm_mon  = 0;
+ 		dt.tm_year = 100;
+ 
+-		if (r9701_set_datetime(&spi->dev, &dt)) {
++		if (r9701_set_datetime(&spi->dev, &dt) ||
++				r9701_get_datetime(&spi->dev, &dt)) {
+ 			dev_err(&spi->dev, "cannot repair RTC register\n");
+ 			return -ENODEV;
+ 		}
+_
+
+
+But I can't test this :(
