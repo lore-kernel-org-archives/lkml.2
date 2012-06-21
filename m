@@ -1,104 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760525Ab2FUVkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:40:33 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46703 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760504Ab2FUVk3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:40:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FE2B3D1.6070504@acm.org>
-References: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
-	<4FD345DC.6020405@acm.org>
-	<CAFR8ueca-MQWRipE+3OQSpqmJ40HKJEY7jWt6PQ+zTCQ9Bh=5Q@mail.gmail.com>
-	<4FD4DC26.5080902@acm.org>
-	<CAFR8uecF0LwbV8FvYob5m34sVbKqafrNoYOrcRUQCEOymGnYRA@mail.gmail.com>
-	<CAFR8uefK+nByiJ8tw5_KF1qEJs4du2mDdU36gg1_2nRNZXN5Fw@mail.gmail.com>
-	<20120618224253.GH32733@google.com>
-	<4FE21C15.6040409@acm.org>
-	<CAFR8ueeFcnMCqG=A1im09crBNckgfPixsCz9oceQCpPeJ3wiNw@mail.gmail.com>
-	<4FE2B3D1.6070504@acm.org>
-Date: Thu, 21 Jun 2012 14:40:28 -0700
-Message-ID: <CAFR8uecUUVD3Ra4ajNxMi=37LKWd7T46_xLR6C2=47MWZ6K=9Q@mail.gmail.com>
-Subject: Re: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
- before checking for dead queue.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf307f39aa43469704c3025db1
+	id S1760485Ab2FUVkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:40:11 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:46814
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1760443Ab2FUVkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 17:40:08 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        ohering@suse.com, apw@canonical.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 10/13] Tools: hv: Gather ipv[4,6] gateway information
+Date: Thu, 21 Jun 2012 14:31:42 -0700
+Message-Id: <1340314305-27126-10-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1340314305-27126-1-git-send-email-kys@microsoft.com>
+References: <1340314200-27078-1-git-send-email-kys@microsoft.com>
+ <1340314305-27126-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf307f39aa43469704c3025db1
-Content-Type: text/plain; charset=ISO-8859-1
+Collect ipv4 and ipv6 gateway information.
 
-On Wed, Jun 20, 2012 at 10:40 PM, Bart Van Assche <bvanassche@acm.org> wrote:
-> On 06/21/12 00:53, Muthu Kumar wrote:
->
->> Hmm... Shouldn't this be:
->>
->> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
->> Tested-by: Bart Van Assche <bvanassche@acm.org>
->
->
-> I'll modify that part of the patch if you prefer to be mentioned as the
-> author. I hadn't done that because you hadn't posted the patch in its
-> entirety yet.
->
->
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ tools/hv/hv_kvp_daemon.c |   80 ++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 59 insertions(+), 21 deletions(-)
 
-Its been in the attachment in all my previous mails, since gmail and
-patches in-line doesn't go well. Anyway, I have attached the patch
-with this again (v3). Thanks.
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 101ab7f..68a4cc1 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -490,16 +490,40 @@ done:
+ 	return;
+ }
+ 
++static void kvp_process_ipconfig_file(char *config_file,
++					char *config_buf, int len,
++					int element_size, int offset)
++{
++	char buf[256];
++	char *p;
++	char *x;
++	FILE *file;
++
++	file = fopen(config_file, "r");
++	if (file == NULL)
++		return;
++
++	if (offset == 0)
++		memset(config_buf, 0, len);
++	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
++		if ((len - strlen(config_buf)) < (element_size + 1))
++			break;
++
++		x = strchr(p, '\n');
++		*x = '\0';
++		strcat(config_buf, p);
++		strcat(config_buf, ";");
++	}
++	fclose(file);
++
++}
++
+ static void kvp_get_ipconfig_info(char *if_name,
+ 				 struct hv_kvp_ipaddr_value *buffer)
+ {
+ 	char cmd[512];
+ 	char *dns_config = "/var/opt/hyperv/.kvp_dns_cfg";
+-	FILE *file;
+-	char buf[256];
+-	char *dns_buf;
+-	char *p;
+-	char *x;
++	char *gw_config = "/var/opt/hyperv/.kvp_gw_cfg";
+ 
+ 	memset(cmd, 0, 512);
+ 	strcat(cmd, "cat /etc/resolv.conf 2>/tmp/null | ");
+@@ -508,29 +532,43 @@ static void kvp_get_ipconfig_info(char *if_name,
+ 
+ 	/*
+ 	 * Execute the command to gather dns info.
++	 * Note that all buffers are arrays of __u16.
+ 	 */
+ 	system(cmd);
+-	file = fopen(dns_config, "r");
+-	if (file == NULL)
+-		return;
++	kvp_process_ipconfig_file(dns_config, (char *)buffer->dns_addr,
++				(MAX_IP_ADDR_SIZE * 2), INET6_ADDRSTRLEN, 0);
+ 
+-	dns_buf = (char *)(buffer->dns_addr);
+ 	/*
+-	 * The buffer is an array of __u16 elements.
++	 * Get the address of default gateway (ipv4).
+ 	 */
+-	memset(dns_buf, 0, (MAX_IP_ADDR_SIZE * 2));
+-	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
+-		if (((MAX_IP_ADDR_SIZE * 2) - strlen(dns_buf)) <
+-				(INET6_ADDRSTRLEN + 1))
+-			break;
++	memset(cmd, 0, 512);
++	strcat(cmd, "/sbin/ip -f inet  route | grep -w ");
++	strcat(cmd, if_name);
++	strcat(cmd, " | awk '/default/ {print $3 }' > ");
++	strcat(cmd, "/var/opt/hyperv/.kvp_gw_cfg");
+ 
+-		x = strchr(p, '\n');
+-		*x = '\0';
+-		strcat(dns_buf, p);
+-		strcat(dns_buf, ";");
+-	}
+-	fclose(file);
++	/*
++	 * Execute the command to gather gateway info.
++	 */
++	system(cmd);
++	kvp_process_ipconfig_file(gw_config, (char *)buffer->gate_way,
++				(MAX_GATEWAY_SIZE * 2), INET_ADDRSTRLEN, 0);
++	/*
++	 * Get the address of default gateway (ipv6).
++	 */
++	memset(cmd, 0, 512);
++	strcat(cmd, "/sbin/ip -f inet6  route | grep -w ");
++	strcat(cmd, if_name);
++	strcat(cmd, " | awk '/default/ {print $3 }' > ");
++	strcat(cmd, "/var/opt/hyperv/.kvp_gw_cfg");
+ 
++	/*
++	 * Execute the command to gather gateway info (ipv6).
++	 */
++	system(cmd);
++	kvp_process_ipconfig_file(gw_config, (char *)buffer->gate_way,
++				(MAX_GATEWAY_SIZE * 2), INET6_ADDRSTRLEN,
++				strlen(gw_config));
+ }
+ 
+ 
+-- 
+1.7.4.1
 
->> This part already went in, its here only for testing - So in the final
->> patch, before applying this should be removed.
->
->
-> When did it go in ? As far as I can see that patch is not yet present in
-> Linus' tree nor in James' tree.
->
-
-My bad. I thought Jens/James took it already... may be not.
-
-Regards,
-Muthu
-
-> Bart.
-
---20cf307f39aa43469704c3025db1
-Content-Type: application/octet-stream; 
-	name="blk-exec-assign-endio-to-bart-v3.patch"
-Content-Disposition: attachment; 
-	filename="blk-exec-assign-endio-to-bart-v3.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3qcq8400
-
-LS0tLS0tLS0KW1BBVENIXSBibG9jazogYmxrX2V4ZWN1dGVfcnFfbm93YWl0KCk6IGluaXQgcnEt
-PmVuZF9pbyBiZWZvcmUgY2hlY2tpbmcgZm9yIGRlYWQgcXVldWUuCgpibGstZXhlYy5jOiBJbiBi
-bGtfZXhlY3V0ZV9ycV9ub3dhaXQoKSwgaWYgdGhlIHF1ZXVlIGlzIGRlYWQsIGNhbGwgdG8KZG9u
-ZSgpIHJvdXRpbmUgaXMgbm90IG1hZGUuIFRoYXQgd2lsbCByZXN1bHQgaW4gYmxrX2V4ZWN1dGVf
-cnEoKSBzdHVjawppbiB3YWl0X2Zvcl9jb21wbGV0aW9uKCkuIEF2b2lkIHRoaXMgYnkgaW5pdGlh
-bGl6aW5nIHJxLT5lbmRfaW8gdG8KZG9uZSgpIHJvdXRpbmUgYmVmb3JlIHdlIGNoZWNrIGZvciBk
-ZWFkIHF1ZXVlLgoKU2lnbmVkLW9mZi1ieTogTXV0aHVrdW1hciBSYXR0eSA8bXV0aHVyQGdtYWls
-LmNvbT4KVGVzdGVkLWJ5OiBCYXJ0IFZhbiBBc3NjaGUgPGJ2YW5hc3NjaGVAYWNtLm9yZz4KQ0M6
-IFRlanVuIEhlbyA8dGpAa2VybmVsLm9yZz4KQ0M6IEplbnMgQXhib2UgPGF4Ym9lQGtlcm5lbC5k
-az4KQ0M6IEphbWVzIEJvdHRvbWxleSA8SmFtZXMuQm90dG9tbGV5QGhhbnNlbnBhcnRuZXJzaGlw
-LmNvbT4KCi0tLS0tLS0tCmRpZmYgLS1naXQgYS9ibG9jay9ibGstZXhlYy5jIGIvYmxvY2svYmxr
-LWV4ZWMuYwppbmRleCBmYjJjYmQ1Li4wMGE3MmRhIDEwMDY0NAotLS0gYS9ibG9jay9ibGstZXhl
-Yy5jCisrKyBiL2Jsb2NrL2Jsay1leGVjLmMKQEAgLTUxLDYgKzUxLDEwIEBAIHZvaWQgYmxrX2V4
-ZWN1dGVfcnFfbm93YWl0KHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgZ2VuZGlzayAq
-YmRfZGlzaywKIAlpbnQgd2hlcmUgPSBhdF9oZWFkID8gRUxFVkFUT1JfSU5TRVJUX0ZST05UIDog
-RUxFVkFUT1JfSU5TRVJUX0JBQ0s7CiAKIAlXQVJOX09OKGlycXNfZGlzYWJsZWQoKSk7CisKKwly
-cS0+cnFfZGlzayA9IGJkX2Rpc2s7CisJcnEtPmVuZF9pbyA9IGRvbmU7CisKIAlzcGluX2xvY2tf
-aXJxKHEtPnF1ZXVlX2xvY2spOwogCiAJaWYgKHVubGlrZWx5KGJsa19xdWV1ZV9kZWFkKHEpKSkg
-ewpAQCAtNjEsOCArNjUsNiBAQCB2b2lkIGJsa19leGVjdXRlX3JxX25vd2FpdChzdHJ1Y3QgcmVx
-dWVzdF9xdWV1ZSAqcSwgc3RydWN0IGdlbmRpc2sgKmJkX2Rpc2ssCiAJCXJldHVybjsKIAl9CiAK
-LQlycS0+cnFfZGlzayA9IGJkX2Rpc2s7Ci0JcnEtPmVuZF9pbyA9IGRvbmU7CiAJX19lbHZfYWRk
-X3JlcXVlc3QocSwgcnEsIHdoZXJlKTsKIAlfX2Jsa19ydW5fcXVldWUocSk7CiAJLyogdGhlIHF1
-ZXVlIGlzIHN0b3BwZWQgc28gaXQgd29uJ3QgYmUgcnVuICovCg==
---20cf307f39aa43469704c3025db1--
