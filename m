@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758989Ab2FULMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:12:13 -0400
-Received: from mail.ysu.am ([89.249.207.230]:60630 "EHLO mail.ysu.am"
+	id S1758949Ab2FULML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 07:12:11 -0400
+Received: from mail.ysu.am ([89.249.207.230]:60629 "EHLO mail.ysu.am"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755002Ab2FULMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754964Ab2FULMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Jun 2012 07:12:09 -0400
+X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jun 2012 07:12:09 EDT
 To: undisclosed-recipients:;
 Subject: =?UTF-8?Q?spr=C3=A1vn=C3=AD=20zpr=C3=A1vy?=
 X-PHP-Originating-Script: 0:main.inc
@@ -13,12 +14,12 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8;
  format=flowed
 Content-Transfer-Encoding: 8bit
-Date: Thu, 21 Jun 2012 11:03:59 +0100
+Date: Thu, 21 Jun 2012 11:03:15 +0100
 From: Univerzita Karlova <saqn@cuni.cz>
 Organization: Univerzita Karlova
 Reply-To: <dq2sdde@ml.lt>
 Mail-Reply-To: <dq2sdde@ml.lt>
-Message-ID: <3dde7f2af0154c137af314fe899ee839@ysu.am>
+Message-ID: <354f3324e1e827a4abfffe8b894eb977@ysu.am>
 User-Agent: YSU Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
