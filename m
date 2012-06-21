@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854Ab2FULEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:04:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38424 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755006Ab2FULE2 (ORCPT
+	id S1758849Ab2FULH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 07:07:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33878 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab2FULH6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 07:04:28 -0400
-Date: Thu, 21 Jun 2012 21:04:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kim, Milo" <Milo.Kim@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, "Girdwood, Liam" <lrg@ti.com>,
-        axel.lin@gmail.com, Alberto Panizzo <alberto@amarulasolutions.com>,
-        Jingoo Han <jg1.han@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: linux-next: build failure after merge of the regulator tree
-Message-Id: <20120621210412.72321b3ff43d50930b17f760@canb.auug.org.au>
-In-Reply-To: <CAF+7xWkzKkwfBFQS1vr-Tk2Auu+5HQmX7bZCGJhsmXRi0V5OZw@mail.gmail.com>
-References: <20120621132738.6e797593acc58b3e30902f69@canb.auug.org.au>
-	<A874F61F95741C4A9BA573A70FE3998FC074@DQHE02.ent.ti.com>
-	<CAF+7xWkzKkwfBFQS1vr-Tk2Auu+5HQmX7bZCGJhsmXRi0V5OZw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 21 Jun 2012 07:07:58 -0400
+Message-ID: <1340276867.21745.172.camel@twins>
+Subject: Re: [PATCH -mm 1/7] mm: track free size between VMAs in VMA rbtree
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
+        hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>
+Date: Thu, 21 Jun 2012 13:07:47 +0200
+In-Reply-To: <1340057126-31143-2-git-send-email-riel@redhat.com>
+References: <1340057126-31143-1-git-send-email-riel@redhat.com>
+	 <1340057126-31143-2-git-send-email-riel@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__21_Jun_2012_21_04_12_+1000__8PMDz3vER=Ho=if"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__21_Jun_2012_21_04_12_+1000__8PMDz3vER=Ho=if
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-06-18 at 18:05 -0400, Rik van Riel wrote:
+> @@ -473,11 +524,17 @@ __vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
+>                 struct vm_area_struct *prev)
+>  {
+>         struct vm_area_struct *next = vma->vm_next;
+> +       struct rb_node *deepest;
+>  
+>         prev->vm_next = next;
+> -       if (next)
+> +       if (next) {
+>                 next->vm_prev = prev;
+> +               adjust_free_gap(next);
+> +       }
+> +       deepest = rb_augment_erase_begin(&vma->vm_rb);
+>         rb_erase(&vma->vm_rb, &mm->mm_rb);
+> +       rb_augment_erase_end(deepest, vma_rb_augment_cb, NULL);
+> +
+>         if (mm->mmap_cache == vma)
+>                 mm->mmap_cache = prev;
+>  }
 
-Hi Andrew,
 
-On Thu, 21 Jun 2012 16:20:46 +0800 Axel Lin <axel.lin@gmail.com> wrote:
->
-> 2012/6/21 Kim, Milo <Milo.Kim@ti.com>:
-> >> Caused by commit 809d310c7e69 ("regulator: lp872x: Don't allow modular
-> >> build") but that was done to fix a different build problem.
-> >
-> > Sorry for this conflict.
-> >
-> > Build config of lp872x driver has been changed as tristate.
-> > And related undefined symbol error has been fixed.
-> > (don't use devm_gpio_request_one() at this moment because it can not be=
- exported.)
->=20
-> I don't think this is the good way, other drivers may have this build pro=
-blem.
-> I think we can fix it by having the patch exporting
-> devm_gpio_request_one upstrem ASAP.
->=20
-> BTW, In yesterday's linux-next tree, Andrew has below commit.
->=20
-> commit a291ede7be8359a8986740b11b93f9c80e40210b
-> Author: Andrew Morton <akpm@linux-foundation.org>
-> Date:   Wed Jun 20 09:55:47 2012 +1000
->=20
->     backlight-l4f00242t03-use-devm_gpio_request_one-fix
->=20
->     export devm_gpio_request_one() to modules
->=20
->     Cc: Alberto Panizzo <alberto@amarulasolutions.com>
->     Cc: Jingoo Han <jg1.han@samsung.com>
->     Cc: Richard Purdie <rpurdie@rpsys.net>
->     Cc: Grant Likely <grant.likely@secretlab.ca>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> @@ -1933,7 +2002,10 @@ detach_vmas_to_be_unmapped(struct mm_struct *mm, struct vm_area_struct *vma,
+>         insertion_point = (prev ? &prev->vm_next : &mm->mmap);
+>         vma->vm_prev = NULL;
+>         do {
+> +               struct rb_node *deepest;
+> +               deepest = rb_augment_erase_begin(&vma->vm_rb);
+>                 rb_erase(&vma->vm_rb, &mm->mm_rb);
+> +               rb_augment_erase_end(deepest, vma_rb_augment_cb, NULL); 
 
-This export is needed for a patch in the regulator tree, so can we have
-that patch sent to Linus ASAP, please?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+---
+ include/linux/rbtree.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---Signature=_Thu__21_Jun_2012_21_04_12_+1000__8PMDz3vER=Ho=if
-Content-Type: application/pgp-signature
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index 033b507..07c5843 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -155,6 +155,14 @@ extern struct rb_node *rb_augment_erase_begin(struct rb_node *node);
+ extern void rb_augment_erase_end(struct rb_node *node,
+ 				 rb_augment_f func, void *data);
+ 
++static inline void rb_augment_erase(struct rb_node *node, struct rb_root *root,
++				    rb_augment_f func, void *data)
++{
++	struct rb_node *deepest = rb_augment_erase_begin(node);
++	rb_erase(node, root);
++	rb_augment_erase_end(deepest, func, data);
++}
++
+ /* Find logical next and previous nodes in a tree */
+ extern struct rb_node *rb_next(const struct rb_node *);
+ extern struct rb_node *rb_prev(const struct rb_node *);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP4v+sAAoJEECxmPOUX5FEY0UP/2i7yGqhpUKaw79t6rwMDzxe
-HNgnGc5YHej/Gl2nGeHbuTnyMNtxinRGFtCpZ0ihYR4Q+2qpaJJd9JyYAkE4jWsp
-ve6k720oTx/ItSSZbaMMWLkFCQQC3RW3stXLGfNdCmkKJkfsir2Pfw5n7+6pSv6C
-Sii9gARSpowH7BupXlR4iUCs5F8ycbIrTP8PVC9eJLI093c4HlO7tljO/i0trLf+
-D3NDogxo2u1dBWG/bk1qClni1SaD956o75oYYuq1mCNSJUdFlzHoAnrQVm85EILK
-Q87KwIRxW39Tk1bONVMxYzY2O6QVc/i3aw4RAkM6n4PM4OvnAf5nZEgzkXDwU8WI
-Gbc2ukEjUcYbgvmvVttN6TYzJgJgEXtDDiSOIG5YTY5CC5knBUiyATk2j3H7tcsX
-JtPBIryrPUVQSkU94HLXNDcsC4kzzoC6SRM2zUPCK+bF8/g2XUiDKoknbUxViB/o
-lcYQuEubu/aOYKem35bu5QVSDwV3bM+e66xqzUm8l5PLpAOFMcRQ+kfjlL38jqfJ
-zxC9qW3N1jFhm7vBM4HQuZU12OaxlluR3O/xH5tE8VkgivNQ27ZwuamYxorkz16y
-7JzE/QFDTKdFoFeRgbkvbahsDrfV6y14srQ2hQ8ASunQcfHqoPyJAWIhKBLTIxpB
-1sWFlWdX+htUkSZIZqQS
-=Q1VS
------END PGP SIGNATURE-----
-
---Signature=_Thu__21_Jun_2012_21_04_12_+1000__8PMDz3vER=Ho=if--
