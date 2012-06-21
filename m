@@ -1,306 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759101Ab2FUJCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:02:25 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51679 "EHLO zene.cmpxchg.org"
+	id S1759105Ab2FUJG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:06:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23004 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759086Ab2FUJCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:02:21 -0400
-Date: Thu, 21 Jun 2012 11:01:57 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
-        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
-        andi@firstfloor.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@surriel.com>
-Subject: Re: [PATCH -mm 2/7] mm: get unmapped area from VMA tree
-Message-ID: <20120621090157.GG27816@cmpxchg.org>
-References: <1340057126-31143-1-git-send-email-riel@redhat.com>
- <1340057126-31143-3-git-send-email-riel@redhat.com>
+	id S1759076Ab2FUJG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 05:06:26 -0400
+Date: Thu, 21 Jun 2012 11:04:51 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, gorcunov@openvz.org
+Subject: Re: [PATCH 2/2] x86, x2apic: limit the vector reservation to the
+ user specified mask
+Message-ID: <20120621090451.GD2223@dhcp-26-207.brq.redhat.com>
+References: <1340067097.3696.6.camel@sbsiddha-desk.sc.intel.com>
+ <1340149411-2972-1-git-send-email-suresh.b.siddha@intel.com>
+ <1340149411-2972-2-git-send-email-suresh.b.siddha@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340057126-31143-3-git-send-email-riel@redhat.com>
+In-Reply-To: <1340149411-2972-2-git-send-email-suresh.b.siddha@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 06:05:21PM -0400, Rik van Riel wrote:
-> From: Rik van Riel <riel@surriel.com>
+On Tue, Jun 19, 2012 at 04:43:31PM -0700, Suresh Siddha wrote:
+> For the x2apic cluster mode, vector for an interrupt is currently reserved on
+> all the cpu's that are part of the x2apic cluster. But the interrupts will
+> be routed only to the cluster (derived from the first cpu in the mask) members
+> specified in the mask. So there is no need to reserve the vector in the unused
+> cluster members.
 > 
-> Change the generic implementations of arch_get_unmapped_area(_topdown)
-> to use the free space info in the VMA rbtree. This makes it possible
-> to find free address space in O(log(N)) complexity.
+> Modify __assign_irq_vector() to reserve the vectors based on the user
+> specified irq destination mask and the corresponding vector domain specified
+> by the apic driver.
 > 
-> For bottom-up allocations, we pick the lowest hole that is large
-> enough for our allocation. For topdown allocations, we pick the
-> highest hole of sufficient size.
-> 
-> For topdown allocations, we need to keep track of the highest
-> mapped VMA address, because it might be below mm->mmap_base,
-> and we only keep track of free space to the left of each VMA
-> in the VMA tree.  It is tempting to try and keep track of
-> the free space to the right of each VMA when running in
-> topdown mode, but that gets us into trouble when running on
-> x86, where a process can switch direction in the middle of
-> execve.
-> 
-> We have to leave the mm->free_area_cache and mm->largest_hole_size
-> in place for now, because the architecture specific versions still
-> use those.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 > ---
->  include/linux/mm_types.h |    1 +
->  mm/mmap.c                |  270 +++++++++++++++++++++++++++++++---------------
->  2 files changed, 184 insertions(+), 87 deletions(-)
+>  arch/x86/include/asm/apic.h           |   14 +++++++++---
+>  arch/x86/kernel/apic/apic_noop.c      |    5 +++-
+>  arch/x86/kernel/apic/io_apic.c        |   36 ++++++++++++++++++++++-----------
+>  arch/x86/kernel/apic/x2apic_cluster.c |    8 ++++--
+>  4 files changed, 43 insertions(+), 20 deletions(-)
 > 
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index bf56d66..8ccb4e1 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -307,6 +307,7 @@ struct mm_struct {
->  	unsigned long task_size;		/* size of task vm space */
->  	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
->  	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
-> +	unsigned long highest_vma;		/* highest vma end address */
-
-It's not clear from the name that this is an end address.  Would
-highest_vm_end be better?
-
->  	pgd_t * pgd;
->  	atomic_t mm_users;			/* How many users with user space? */
->  	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 1963ef9..40c848e 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -4,6 +4,7 @@
->   * Written by obz.
->   *
->   * Address space accounting code	<alan@lxorguk.ukuu.org.uk>
-> + * Rbtree get_unmapped_area Copyright (C) 2012  Rik van Riel
->   */
+> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+> index b37fa12..7746acb 100644
+> --- a/arch/x86/include/asm/apic.h
+> +++ b/arch/x86/include/asm/apic.h
+> @@ -306,7 +306,9 @@ struct apic {
+>  	unsigned long (*check_apicid_used)(physid_mask_t *map, int apicid);
+>  	unsigned long (*check_apicid_present)(int apicid);
 >  
->  #include <linux/slab.h>
-> @@ -250,6 +251,17 @@ static void adjust_free_gap(struct vm_area_struct *vma)
->  	rb_augment_erase_end(&vma->vm_rb, vma_rb_augment_cb, NULL);
->  }
+> -	void (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
+> +	void (*vector_allocation_domain)(const struct cpumask *mask,
+> +					 struct cpumask *retmask,
+> +					 const struct cpumask *prevmask);
+>  	void (*init_apic_ldr)(void);
 >  
-> +static unsigned long node_free_hole(struct rb_node *node)
-> +{
-> +	struct vm_area_struct *vma;
-> +
-> +	if (!node)
-> +		return 0;
-> +
-> +	vma = container_of(node, struct vm_area_struct, vm_rb);
-> +	return vma->free_gap;
-> +}
-> +
->  /*
->   * Unlink a file-based vm structure from its prio_tree, to hide
->   * vma from rmap and vmtruncate before freeing its page tables.
-> @@ -386,12 +398,16 @@ void validate_mm(struct mm_struct *mm)
->  	int bug = 0;
->  	int i = 0;
->  	struct vm_area_struct *tmp = mm->mmap;
-> +	unsigned long highest_address = 0;
->  	while (tmp) {
->  		if (tmp->free_gap != max_free_space(&tmp->vm_rb))
->  			printk("free space %lx, correct %lx\n", tmp->free_gap, max_free_space(&tmp->vm_rb)), bug = 1;
-> +		highest_address = tmp->vm_end;
->  		tmp = tmp->vm_next;
->  		i++;
->  	}
-> +	if (highest_address != mm->highest_vma)
-> +		printk("mm->highest_vma %lx, found %lx\n", mm->highest_vma, highest_address), bug = 1;
->  	if (i != mm->map_count)
->  		printk("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
->  	i = browse_rb(&mm->mm_rb);
-> @@ -449,6 +465,9 @@ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
->  	/* Propagate the new free gap between next and us up the tree. */
->  	if (vma->vm_next)
->  		adjust_free_gap(vma->vm_next);
-> +	else
-> +		/* This is the VMA with the highest address. */
-> +		mm->highest_vma = vma->vm_end;
->  }
+>  	void (*ioapic_phys_id_map)(physid_mask_t *phys_map, physid_mask_t *retmap);
+> @@ -615,7 +617,9 @@ default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
+>  			       unsigned int *apicid);
 >  
->  static void __vma_link_file(struct vm_area_struct *vma)
-> @@ -648,6 +667,8 @@ again:			remove_next = 1 + (end > next->vm_end);
->  	vma->vm_start = start;
->  	vma->vm_end = end;
->  	vma->vm_pgoff = pgoff;
-> +	if (!next)
-> +		mm->highest_vma = end;
->  	if (adjust_next) {
->  		next->vm_start += adjust_next << PAGE_SHIFT;
->  		next->vm_pgoff += adjust_next;
-> @@ -1456,13 +1477,29 @@ unacct_error:
->   * This function "knows" that -ENOMEM has the bits set.
->   */
->  #ifndef HAVE_ARCH_UNMAPPED_AREA
-> +struct rb_node *continue_next_right(struct rb_node *node)
-> +{
-> +	struct rb_node *prev;
-> +
-> +	while ((prev = node) && (node = rb_parent(node))) {
-> +		if (prev == node->rb_right)
-> +			continue;
-> +
-> +		if (node->rb_right)
-> +			return node->rb_right;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
->  unsigned long
->  arch_get_unmapped_area(struct file *filp, unsigned long addr,
->  		unsigned long len, unsigned long pgoff, unsigned long flags)
+>  static inline void
+> -flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+> +flat_vector_allocation_domain(const struct cpumask *mask,
+> +			      struct cpumask *retmask,
+> +			      const struct cpumask *prevmask)
 >  {
->  	struct mm_struct *mm = current->mm;
-> -	struct vm_area_struct *vma;
-> -	unsigned long start_addr;
-> +	struct vm_area_struct *vma = NULL;
-> +	struct rb_node *rb_node;
-> +	unsigned long lower_limit = TASK_UNMAPPED_BASE;
+>  	/* Careful. Some cpus do not strictly honor the set of cpus
+>  	 * specified in the interrupt destination when using lowest
+> @@ -630,9 +634,11 @@ flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+>  }
 >  
->  	if (len > TASK_SIZE)
->  		return -ENOMEM;
-> @@ -1477,40 +1514,76 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
->  		    (!vma || addr + len <= vma->vm_start))
->  			return addr;
->  	}
-> -	if (len > mm->cached_hole_size) {
-> -	        start_addr = addr = mm->free_area_cache;
-> -	} else {
-> -	        start_addr = addr = TASK_UNMAPPED_BASE;
-> -	        mm->cached_hole_size = 0;
-> -	}
+>  static inline void
+> -default_vector_allocation_domain(int cpu, struct cpumask *retmask)
+> +default_vector_allocation_domain(const struct cpumask *mask,
+> +				 struct cpumask *retmask,
+> +				 const struct cpumask *prevmask)
+>  {
+> -	cpumask_copy(retmask, cpumask_of(cpu));
+> +	cpumask_copy(retmask, cpumask_of(cpumask_first(retmask)));
+>  }
 >  
-> -full_search:
-> -	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
-> -		/* At this point:  (!vma || addr < vma->vm_end). */
-> -		if (TASK_SIZE - len < addr) {
-> -			/*
-> -			 * Start a new search - just in case we missed
-> -			 * some holes.
-> -			 */
-> -			if (start_addr != TASK_UNMAPPED_BASE) {
-> -				addr = TASK_UNMAPPED_BASE;
-> -			        start_addr = addr;
-> -				mm->cached_hole_size = 0;
-> -				goto full_search;
-> +	/* Find the left-most free area of sufficient size. */
-> +	for (addr = 0, rb_node = mm->mm_rb.rb_node; rb_node; ) {
-> +		unsigned long vma_start;
-> +		int found_here = 0;
+>  static inline unsigned long default_check_apicid_used(physid_mask_t *map, int apicid)
+> diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
+> index 08c337b..847ece1 100644
+> --- a/arch/x86/kernel/apic/apic_noop.c
+> +++ b/arch/x86/kernel/apic/apic_noop.c
+> @@ -100,8 +100,11 @@ static unsigned long noop_check_apicid_present(int bit)
+>  	return physid_isset(bit, phys_cpu_present_map);
+>  }
+>  
+> -static void noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
+> +static void noop_vector_allocation_domain(const struct cpumask *mask,
+> +					  struct cpumask *retmask,
+> +					  const struct cpumask *prevmask)
+>  {
+> +	int cpu = cpumask_first(retmask);
+>  	if (cpu != 0)
+>  		pr_warning("APIC: Vector allocated for non-BSP cpu\n");
+>  	cpumask_copy(retmask, cpumask_of(cpu));
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 7a945f8..0a55eb8 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -1097,6 +1097,22 @@ void unlock_vector_lock(void)
+>  	raw_spin_unlock(&vector_lock);
+>  }
+>  
+> +/*
+> + * New cpu mask using the vector is a subset of the current in use mask.
+> + * So cleanup the vector allocation for the members that are not used anymore.
+> + */
+> +static inline int
+> +cleanup_unused_subset(struct cpumask *mask, struct irq_cfg *cfg)
+> +{
+> +	if (!cpumask_equal(mask, cfg->domain)) {
+> +		cpumask_andnot(cfg->old_domain, cfg->domain, mask);
+> +		cfg->move_in_progress = 1;
+> +		cpumask_and(cfg->domain, cfg->domain, mask);
+> +	}
+> +	free_cpumask_var(mask);
+> +	return 0;
+> +}
 > +
-> +		vma = rb_to_vma(rb_node);
-> +
-> +		if (vma->vm_start > len) {
 
-vmas can abut, and vma->vm_end == vma->vm_next->vm_start.  Should this
-be >=?
+Adding to 1st Yinghai's comment, this function does not appear needed at all...
 
-> +			if (!vma->vm_prev) {
-> +				/* This is the left-most VMA. */
-> +				if (vma->vm_start - len >= lower_limit) {
-> +					addr = lower_limit;
-> +					goto found_addr;
-> +				}
-> +			} else {
-> +				/* Is this hole large enough? Remember it. */
-> +				vma_start = max(vma->vm_prev->vm_end, lower_limit);
-> +				if (vma->vm_start - len >= vma_start) {
-> +					addr = vma_start;
-> +					found_here = 1;
-> +				}
->  			}
-> -			return -ENOMEM;
->  		}
-> -		if (!vma || addr + len <= vma->vm_start) {
-> -			/*
-> -			 * Remember the place where we stopped the search:
-> -			 */
-> -			mm->free_area_cache = addr + len;
-> -			return addr;
-> +
-> +		/* Go left if it looks promising. */
-> +		if (node_free_hole(rb_node->rb_left) >= len &&
-> +					vma->vm_start - len >= lower_limit) {
-> +			rb_node = rb_node->rb_left;
-> +			continue;
+>  static int
+>  __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+>  {
+> @@ -1126,10 +1142,9 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+>  	old_vector = cfg->vector;
+>  	if (old_vector) {
+>  		cpumask_and(tmp_mask, mask, cpu_online_mask);
+> -		if (cpumask_subset(tmp_mask, cfg->domain)) {
+> -			free_cpumask_var(tmp_mask);
+> -			return 0;
+> -		}
+> +		apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
+> +		if (cpumask_subset(tmp_mask, cfg->domain))
+> +			return cleanup_unused_subset(tmp_mask, cfg);
 
-If we already are at a vma whose start has a lower address than the
-overall length, does it make sense to check for a left hole?
-I.e. shouldn't this be inside the if (vma->vm_start > len) block?
+...but if you decide to leave cleanup_unused_subset() then cpumask_subset()
+check is better to move inside the function while free_cpumask_var() move
+out.
 
->  		}
-> -		if (addr + mm->cached_hole_size < vma->vm_start)
-> -		        mm->cached_hole_size = vma->vm_start - addr;
-> -		addr = vma->vm_end;
-> +
-> +		if (!found_here && node_free_hole(rb_node->rb_right) >= len) {
-> +			/* Last known hole is to the right of this subtree. */
-> +			rb_node = rb_node->rb_right;
-> +			continue;
-> +		} else if (!addr) {
-> +			rb_node = continue_next_right(rb_node);
-> +			continue;
-> +		}
-> +
-> +		/* This is the left-most hole. */
-> +		goto found_addr;
 >  	}
-> +
-> +	/*
-> +	 * There is not enough space to the left of any VMA.
-> +	 * Check the far right-hand side of the VMA tree.
-> +	 */
-> +	rb_node = mm->mm_rb.rb_node;
-> +	while (rb_node->rb_right)
-> +		rb_node = rb_node->rb_right;
-> +	vma = rb_to_vma(rb_node);
-> +	addr = vma->vm_end;
+>  
+>  	/* Only try and allocate irqs on cpus that are present */
+> @@ -1137,15 +1152,12 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+>  	cpumask_clear(cfg->old_domain);
+>  	cpu = cpumask_first_and(mask, cpu_online_mask);
+>  	while (cpu < nr_cpu_ids) {
+> -		int new_cpu;
+> -		int vector, offset;
+> +		int new_cpu, vector, offset;
+>  
+> -		apic->vector_allocation_domain(cpu, tmp_mask);
+> -
+> -		if (cpumask_subset(tmp_mask, cfg->domain)) {
+> -			free_cpumask_var(tmp_mask);
+> -			return 0;
+> -		}
+> +		cpumask_copy(tmp_mask, cpumask_of(cpu));
+> +		apic->vector_allocation_domain(mask, tmp_mask, cfg->domain);
 
-Unless I missed something, we only reach here when
-continue_next_right(rb_node) above returned NULL.  And if it does, the
-rb_node it was passed was the right-most node in the tree, so we could
-do something like
+I might be missing the point.. in the two lines above you copy a cpumask to
+tmp_mask, then scan it in vector_allocation_domain() just to find the cpu
+which you already know. Why not just pass cpu rather then cpumask_of(cpu)?
 
-	} else if (!addr) {
-		struct rb_node *rb_right = continue_next_right(rb_node);
-		if (!rb_right)
-			break;
-		rb_node = rb_right;
-		continue;
-	}
+> +		if (cpumask_subset(tmp_mask, cfg->domain))
+> +			return cleanup_unused_subset(tmp_mask, cfg);
+>  
+>  		vector = current_vector;
+>  		offset = current_offset;
+> diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+> index b5d889b..4d49512 100644
+> --- a/arch/x86/kernel/apic/x2apic_cluster.c
+> +++ b/arch/x86/kernel/apic/x2apic_cluster.c
+> @@ -212,10 +212,12 @@ static int x2apic_cluster_probe(void)
+>  /*
+>   * Each x2apic cluster is an allocation domain.
+>   */
+> -static void cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
+> +static void cluster_vector_allocation_domain(const struct cpumask *mask,
+> +					     struct cpumask *retmask,
+> +					     const struct cpumask *prevmask)
+>  {
+> -	cpumask_clear(retmask);
+> -	cpumask_copy(retmask, per_cpu(cpus_in_cluster, cpu));
+> +	int cpu = cpumask_first(retmask);
+> +	cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
+>  }
+>  
+>  static struct apic apic_x2apic_cluster = {
+> -- 
+> 1.7.6.5
+> 
 
-above and then save the lookup after the loop.
-
-Also, dereferencing mm->mm_rb.rb_node unconditionally after the loop
-assumes that the tree always contains at least one vma.  Is this
-guaranteed for all architectures?
-
-> -fail:
-> -	/*
-> -	 * if hint left us with no space for the requested
-> -	 * mapping then try again:
-> -	 *
-> -	 * Note: this is different with the case of bottomup
-> -	 * which does the fully line-search, but we use find_vma
-> -	 * here that causes some holes skipped.
-> -	 */
-> -	if (start_addr != mm->mmap_base) {
-> -		mm->free_area_cache = mm->mmap_base;
-> -		mm->cached_hole_size = 0;
-> -		goto try_again;
-> +		if (!found_here && node_free_hole(rb_node->rb_left) >= len) {
-> +			/* Last known hole is to the right of this subtree. */
-
-"to the left"
-
-So, nothing major from me, either.  The patch looks really good!
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
