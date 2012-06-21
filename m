@@ -1,193 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759496Ab2FUM2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 08:28:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24363 "EHLO mx1.redhat.com"
+	id S1759510Ab2FUM2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 08:28:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9050 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757323Ab2FUM2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 08:28:23 -0400
-Date: Thu, 21 Jun 2012 09:26:33 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Cc: peterz@infradead.org, mingo@elte.hu, avi@redhat.com,
-        raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
-        vatsa@linux.vnet.ibm.com, hpa@zytor.com
-Subject: Re: [PATCH v2 3/7] KVM: Add paravirt kvm_flush_tlb_others
-Message-ID: <20120621122633.GA3842@amt.cnet>
-References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
- <20120604050629.4560.85284.stgit@abhimanyu.in.ibm.com>
- <20120612230218.GD1973@amt.cnet>
- <87a9zzsudx.fsf@abhimanyu.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9zzsudx.fsf@abhimanyu.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757323Ab2FUM2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 08:28:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="160664631"
+Message-ID: <1340281963.13910.213.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] udf: stop using s_dirt
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Jun 2012 15:32:43 +0300
+In-Reply-To: <20120604134409.GB11010@quack.suse.cz>
+References: <1338810384-26437-1-git-send-email-dedekind1@gmail.com>
+	 <20120604134409.GB11010@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-QW5M6kbjA22D/oQvFzcl"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 11:41:54AM +0530, Nikunj A Dadhania wrote:
-> Hi Marcelo,
-> 
-> Thanks for the review.
-> 
-> On Tue, 12 Jun 2012 20:02:18 -0300, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> > On Mon, Jun 04, 2012 at 10:37:24AM +0530, Nikunj A. Dadhania wrote:
-> > > flush_tlb_others_ipi depends on lot of statics in tlb.c.  Replicated
-> > > the flush_tlb_others_ipi as kvm_flush_tlb_others to further adapt to
-> > > paravirtualization.
-> > > 
-> > > Use the vcpu state information inside the kvm_flush_tlb_others to
-> > > avoid sending ipi to pre-empted vcpus.
-> > > 
-> > > * Do not send ipi's to offline vcpus and set flush_on_enter flag
-> > > * For online vcpus: Wait for them to clear the flag
-> > > 
-> > > The approach was discussed here: https://lkml.org/lkml/2012/2/20/157
-> > > 
-> > > Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
-> > 
-> > Why not reintroduce the hypercall to flush TLBs? 
-> Sure, I will get a version with this.
-> 
-> > No waiting, no entry/exit trickery.
-> > 
-> Are you also suggesting to get rid of vcpu-running information?
 
-Yes.
+--=-QW5M6kbjA22D/oQvFzcl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> We would atleast need this to raise a flushTLB hypercall on the sleeping
-> vcpu.
+On Mon, 2012-06-04 at 15:44 +0200, Jan Kara wrote:
+> On Mon 04-06-12 14:46:24, Artem Bityutskiy wrote:
+> > From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> >=20
+> > The UDF file-system does not need the 's_dirt' superblock flag because =
+it does
+> > not define the 'write_super()' method. This flag was set to 1 in few pl=
+aces and
+> > set to 0 in '->sync_fs()' and was basically useless. Stop using it beca=
+use it
+> > is on its way out.
+>   Thanks. I've merged the patch to my tree.
 
-No, you always raise a flush TLB hypercall on flush_tlb_others, like Xen does.
-Instead of an MMIO exit to APIC to IPI, its a hypercall exit.
+Sorry Jan, but which one? I do not see it here at least:
 
-> > This is half-way-there paravirt with all the downsides. 
-> Some more details on what are the downsides would help us reach to a
-> better solution.
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs
 
-The downside i refer to is overhead to write, test and maintain separate code
-for running as a guest. If you are adding awareness about hypervisor
-anyway, a hypercall is the simplest way:
+[I am trying to find out which bits and pieces of this work are where]
 
-- It is simple to request a remote TLB flush via vcpu->requests in the
-  hypervisor. Information about which vcpus are in/out guest mode 
-  already available.
-- Maintenance of in/out guest mode information in guest memory adds more
-  overhead to entry/exit paths.
-- No need to handle the interprocessor synchronization in the pseudo
-  algo below (already handled by vcpu->requests mechanism).
-- The guest TLB IPI flow is (target vcpu):
-  - exit-due-to-external-interrupt.
-  - inject-ipi.
-  - enter guest mode.
-  - execute IPI handler, flush TLB.
-  - ACK IPI.
-  - source vcpu continues.
-- The hypervisor TLB flush flow is:
-  - exit-due-to-external-interrupt.
-  - execute IPI handler (in host, from make_all_cpus_request)
-  - ACK IPI.
-  - source vcpu continues.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Unless there is an advantage in using APIC IPI exit vs hypercall
-exit?
+--=-QW5M6kbjA22D/oQvFzcl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-> > Even though the guest running information might be useful in other
-> > cases.
-> > 
-> Yes, that was one of the things on the mind.
-> 
-> > > Pseudo Algo:
-> > > 
-> > >    Write()
-> > >    ======
-> > > 
-> > > 	   guest_exit()
-> > > 		   flush_on_enter[i]=0;
-> > > 		   running[i] = 0;
-> > > 
-> > > 	   guest_enter()
-> > > 		   running[i] = 1;
-> > > 		   smp_mb();
-> > > 		   if(flush_on_enter[i]) {
-> > > 			   tlb_flush()
-> > > 			   flush_on_enter[i]=0;
-> > > 		   }
-> > > 
-> > > 
-> > >    Read()
-> > >    ======
-> > > 
-> > > 	   GUEST                                                KVM-HV
-> > > 
-> > >    f->flushcpumask = cpumask - me;
-> > > 
-> > > again:
-> > >    for_each_cpu(i, f->flushmask) {
-> > > 
-> > > 	   if (!running[i]) {
-> > > 						   case 1:
-> > > 
-> > > 						   running[n]=1
-> > > 
-> > > 						   (cpuN does not see
-> > > 						   flush_on_enter set,
-> > > 						   guest later finds it
-> > > 						   running and sends ipi,
-> > > 						   we are fine here, need
-> > > 						   to clear the flag on
-> > > 						   guest_exit)
-> > > 
-> > > 		  flush_on_enter[i] = 1;
-> > > 						   case2:
-> > > 
-> > > 						   running[n]=1
-> > > 						   (cpuN - will see flush
-> > > 						   on enter and an IPI as
-> > > 						   well - addressed in patch-4)
-> > > 
-> > > 		  if (!running[i])
-> > > 		     cpu_clear(f->flushmask);      All is well, vm_enter
-> > > 						   will do the fixup
-> > > 	   }
-> > > 						   case 3:
-> > > 						   running[n] = 0;
-> > > 
-> > > 						   (cpuN went to sleep,
-> > > 						   we saw it as awake,
-> > > 						   ipi sent, but wait
-> > > 						   will break without
-> > > 						   zero_mask and goto
-> > > 						   again will take care)
-> > > 
-> > >    }
-> > >    send_ipi(f->flushmask)
-> > > 
-> > >    wait_a_while_for_zero_mask();
-> > > 
-> > >    if (!zero_mask)
-> > > 	   goto again;
-> > > ---
-> > >  arch/x86/include/asm/kvm_para.h |    3 +-
-> > >  arch/x86/include/asm/tlbflush.h |    9 ++++++
-> > >  arch/x86/kernel/kvm.c           |    1 +
-> > >  arch/x86/kvm/x86.c              |   14 ++++++++-
-> > >  arch/x86/mm/tlb.c               |   61 +++++++++++++++++++++++++++++++++++++++
-> > >  5 files changed, 86 insertions(+), 2 deletions(-)
-> > > 
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP4xRrAAoJECmIfjd9wqK0IQAP/i5YbTHHxRul+fXjq1hpT7jl
+n9Dwb6tSzZvDvi9K1/cyhCztPy4GUMItvRbrX+te1ZZqwdfEoGlmH6v/3tRZU3g8
+RP++TWDQawj4v5YoJmWTSOFd15D1+J84mz/LeG1ndhzsk/RKu/k05eqzWb1/wY41
+nhQ9OCFTY7ZJGKGk0GLjwqQGrh+pcotNOCxo5IegnKITMd1X1Wv9zy563225XHxg
+z888WRYMeezUnPVPnk/tyOzpP/6HrZqMnmc2AM7NxCVYSAw7a3Fxrybo5abNhTTT
+VsIJGWuLiWXFfZu4Po+TgoJUE//kIm0OO4UC3Z9u0YE9r+3JWPN5GYkho1bQBN+a
+92ffh5Ise9KyE5NB/QspUaeGxSEufI0O0A3DTLnaw4oeNVr30PwrG56FsmLs4JZx
+y4qfe3FSAm5s5rLL/ihn4bWxMhEUyYwDRw36VIN9bWU7O1GRDFsCcAxiSSlYzitF
+0PVSWBVYef1HLOE1AXoIfuPNDMJ42MZCBQ8aaTxzdd2OBspe7DqLWfZtgwNG3Kks
+OV6SBjxPbVu/wm82IiiLGLq13GuNRcHGx+3zptvJe4nniTmOd4FNXgr3e3w9PToy
+C0Jp8HaigD/0gPCqXMNclhG+7xqIBkgw9CAZ4QU7BbX1aB7Qz69v3zXgoAqXL8r1
+mr+pHaKsOGCxteNIZNoo
+=Q4hR
+-----END PGP SIGNATURE-----
+
+--=-QW5M6kbjA22D/oQvFzcl--
+
