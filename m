@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab2FUAqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 20:46:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56261 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab2FUAqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 20:46:30 -0400
+	id S1754385Ab2FUAqv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 20:46:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50516 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754070Ab2FUAqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 20:46:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="160302694"
+Message-ID: <4FE26EF9.5060004@linux.intel.com>
+Date: Wed, 20 Jun 2012 17:46:49 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1340231192.21745.154.camel@twins>
-References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
-	<1340231192.21745.154.camel@twins>
-Date: Thu, 21 Jun 2012 02:46:29 +0200
-Message-ID: <CAFTL4hz9UZr0Xfd4m3WTBma8vSvbm0Lg8o=oXsjFbpPfG9RxjQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
- and consolidation
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>
+To: Robin Holt <holt@sgi.com>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] phys_efi_set_virtual_address_map needs va, no pa.
+References: <20120620082457.GE3464@sgi.com> <20120620120702.GA3983@srcf.ucam.org> <4FE23592.60201@linux.intel.com> <20120621002742.GL3464@sgi.com>
+In-Reply-To: <20120621002742.GL3464@sgi.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/21 Peter Zijlstra <peterz@infradead.org>:
-> On Tue, 2012-06-19 at 15:43 +0200, Frederic Weisbecker wrote:
->>
->> I wish we could do more vtime cputime accounting consolidation
->> but archs do the things pretty differently although I bet the
->> behaviour could be more unified.
->>
-> Yes.. so s390,ia64 use thread_info, ppc uses their paca (arch private
-> precursor to per-cpu data).
->
-> So I understand why s390,ia64 want the sched hook, but I don't see why
-> ppc would need it, their account_process_tick() can fold whatever they
-> need on the tick.
+On 06/20/2012 05:27 PM, Robin Holt wrote:
+> 
+> What do you need from me?  If you want me to help with this, I have a
+> _WHOLE_ lot of learning to do.  Can you give me any pointers?
+> 
+> We are trying to get this finally fixed.  We have had work-around code
+> in SLES11 SP1, SLES11 SP2, and RHEL 6.x.  I would love to get this fixed
+> for future distro snaps.
+> 
 
-I think in any case you need to flush the time on a descheduling task otherwise
-its pending time will be accounted later to the next task when it
-receives an irq.
+If you want to tackle it, the task is basically that when we modify the
+pgds in 32-bit legacy (non-PAE) mode, we should make the corresponding
+modifications to initial_page_table, and in 64-bit mode to
+real_mode_header->trampoline_pgd.  It might be worthwhile to introduce a
+common pointer for both, obviously.
 
-So I fear we still need that sched switch hook even with per cpu data. This
-may be a simple account_system_vtime() call.
+This is currently handled via something called the pgd_list (when we
+update the top level kernel address space we walk pgd_list and update
+them all), but there are two issues:
 
-> So I think reworking s390,ia64 to use per-cpu storage should get rid of
-> this switch hook altogether.
->
->
-> Now everybody using VIRT_CPU_ACCOUNTING has the
-> syscall/__irq_{enter,exit} hooks and uses 64bit cputime_t.
->
-> IRQ_TIME_ACCOUNTING only has the __irq_{enter,exit} hook and uses
-> unsigned long cputime_t, it adds cputime_one_jiffy every tick when the
-> per-cpu counter is ahead of the cputime.
->
->
-> We could merge both and do away with the 64bit cputime thing by keeping
-> a (2nd) per-cpu kernel_cpustat which we fill with optional syscall/irq
-> hooks and have account_process_tick() first check if any of the
-> fine-grained fields overflow and if not, fall back to the regular tick
-> accounting (much like an extended irqtime_account_process_tick).
->
->
-> This would merge the fine-grain and tick based code-paths and do away
-> with the whole cputime_t mess, it would also merge the VIRT and IRQ
-> paths and make Frederic's optional syscall accounting trivial.
->
-> Or am I missing something obvious here? -- its late after all.
+1. Obviously, in the case of the 1:1 map, we don't just need to maintain
+the kernel area, but the "user space" part of the address space should
+contain a copy, as well.
 
-No that looks pretty sensible.
+2. To complicate things, there is code in there to grab an mm lock for
+the benefit of Xen.  The 1:1 map doesn't have an mm associated with it,
+so I'm not quite sure how that is to be handled.  Perhaps Xen just plain
+won't need it and we can just bypass it, but I have no bloody idea.
 
-> I'll try and write some code tomorrow.
+It is also a bit "cute" how we seem to make a function call to indirect
+through a pointer (why on Earth is pgd_page_get_mm() not an inline?!),
+and then grab a lock unconditionally, regardless of if we are affected
+by Xen or not.
 
-Thanks!
+	-hpa
