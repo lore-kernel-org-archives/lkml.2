@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760241Ab2FUUZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 16:25:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7516 "EHLO mx1.redhat.com"
+	id S1760252Ab2FUUZz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 16:25:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61916 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760220Ab2FUUZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 16:25:21 -0400
+	id S1760186Ab2FUUZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 16:25:20 -0400
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 9/9] PCI: integrate 'pci_fixup_final' quirks into hot-plug
-	paths
+Subject: [PATCH 8/9] PCI: move final fixup quirks from __init to __devinit
 To: bhelgaas@google.com
 Cc: linux-pci@vger.kernel.org, linux@arm.linux.org.uk, ralf@linux-mips.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         linux-kernel@vger.kernel.org
-Date: Thu, 21 Jun 2012 14:25:10 -0600
-Message-ID: <20120621202510.16865.77324.stgit@amt.stowe>
+Date: Thu, 21 Jun 2012 14:25:05 -0600
+Message-ID: <20120621202504.16865.35445.stgit@amt.stowe>
 In-Reply-To: <20120621202415.16865.6226.stgit@amt.stowe>
 References: <20120621202415.16865.6226.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -25,108 +24,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI's final quirks (pci_fixup_final) are currently invoked by
-pci_apply_final_quirk() which traverses the platform's list of PCI
-devices.  The calling mechanism limits the quirk invocations to a single
-instance during boot.  As such, hot-plugable devices do not have their
-associated final quirks called upon hot-plug events.
+The PCI subsystem's final fixups are executed once during boot, after the
+pci-device is found.  As long as the system does not support hot-plug,
+specifying __init is fine.
 
-This series implements a interim solution[1] to integrate pci_fixup_final
-quirks into the various hot-plug event paths.
+With hot-plug, either physically based hot-plug events or pseudo hot-plug
+events such as "echo 1 > /sys/bus/pci/rescan", it is possible to remove a
+PCI bus during run time and have it rediscovered which will require the
+call of the fixups again in order for the device to function properly.
 
-As I intend for the global variable introduced by this patch to be
-temporary I purposely chose not to include its 'extern' declaration within
-a header file (i.e. include/linux/pci.h).
-
-
-[1] I intended to come up with a single, uniform, solution that would
-satisfy both the boot path and the various hot-plug event paths with
-respect to final quirks.  From an architectural perspective, the proper
-placement for the final quirks is somewhere just prior to, or within, the
-device_add path.
-
-I originally started with that approach but eventually realized that there
-are issues with moving the quirks into the device_add path with respect to
-the boot path.  Currently, the boot path scans the PCI devices, adds the
-devices, assigns resources, and then call the final quirks whereas the
-hot-plug paths scan, assign resources, and then add the devices which is
-better sequencing with respect to the assignment of resources and the
-addition of devices.
-
-All of this suggests that we should change PCI device setup in the boot
-path to be more like hot-plug: scan, assign resources, (final fixups),
-then add.  While I think that is the correct approach, and something that
-we should be addressing, it will require a lot of work.  So until that
-occurs, this series should serve as a stop-gap solution for the interim by
-keeping the current boot path sequencing in place and then adding the
-final quirk processing into the device_add path for hot-plug events via a
-(temporary) global variable qualifier.
-
-When the boot path's PCI device setup is addressed we should end up with a
-single, uniform, device_add based solution for applying final quirks
-by:
-  o  removing 'fs_initcall_sync(pci_apply_final_quirks);',
-  o  removing the global variable 'pci_fixup_final_inited' and all
-     of its usages,
-  o  renaming, and moving, the 'pci_cache_line_size' related code
-     currently embedded in 'pci_apply_final_quirks()'.
+This patch prepares specific quirk(s) for use with hot-plug events.
 
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- drivers/pci/bus.c    |    4 ++++
- drivers/pci/quirks.c |   18 ++++++++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+ drivers/pci/quirks.c |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 4ce5ef2..b511bd4 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -164,6 +164,10 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
- int pci_bus_add_device(struct pci_dev *dev)
- {
- 	int retval;
-+	extern bool pci_fixup_final_inited;
-+
-+	if (pci_fixup_final_inited)
-+		pci_fixup_device(pci_fixup_final, dev);
- 	retval = device_add(&dev->dev);
- 	if (retval)
- 		return retval;
 diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 815c009..79c3351 100644
+index 1a7effa..815c009 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -3030,6 +3030,22 @@ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev)
- }
- EXPORT_SYMBOL(pci_fixup_device);
+@@ -57,7 +57,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_MELLANOX,PCI_DEVICE_ID_MELLANOX_TAVOR_BRID
  
-+
-+/*
-+ * The global variable 'pci_fixup_final_inited' is being used as a interim
-+ * solution for calling the final quirks only during hot-plug events (not
-+ * during boot processing).
-+ *
-+ * When the boot path's PCI device setup sequencing is addressed, we can
-+ * remove the instance, and usages of, 'pci_fixup_final_inited' along with
-+ * removing 'fs_initcall_sync(pci_apply_final_quirks);' and end up with a
-+ * single, uniform, solution that satisfies both the boot path and the
-+ * various hot-plug event paths.
-+ *
-+ * ToDo: Remove 'pci_fixup_final_inited'
-+ */
-+bool pci_fixup_final_inited;
-+
- static int __init pci_apply_final_quirks(void)
+ /* Deal with broken BIOS'es that neglect to enable passive release,
+    which can cause problems in combination with the 82441FX/PPro MTRRs */
+-static void quirk_passive_release(struct pci_dev *dev)
++static void __devinit quirk_passive_release(struct pci_dev *dev)
  {
- 	struct pci_dev *dev = NULL;
-@@ -3060,6 +3076,8 @@ static int __init pci_apply_final_quirks(void)
- 			pci_cache_line_size = pci_dfl_cache_line_size;
- 		}
- 	}
-+	pci_fixup_final_inited = 1;
-+
- 	if (!pci_cache_line_size) {
- 		printk(KERN_DEBUG "PCI: CLS %u bytes, default %u\n",
- 		       cls << 2, pci_dfl_cache_line_size << 2);
+ 	struct pci_dev *d = NULL;
+ 	unsigned char dlc;
+@@ -173,7 +173,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 	PCI_DEVICE_ID_INTEL_82439TX, 	quir
+  *	Updated based on further information from the site and also on
+  *	information provided by VIA 
+  */
+-static void quirk_vialatency(struct pci_dev *dev)
++static void __devinit quirk_vialatency(struct pci_dev *dev)
+ {
+ 	struct pci_dev *p;
+ 	u8 busarb;
+@@ -733,7 +733,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_XIO2000A,
+  * TODO: When we have device-specific interrupt routers,
+  * this code will go away from quirks.
+  */
+-static void quirk_via_ioapic(struct pci_dev *dev)
++static void __devinit quirk_via_ioapic(struct pci_dev *dev)
+ {
+ 	u8 tmp;
+ 	
+@@ -757,7 +757,7 @@ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_VIA,	PCI_DEVICE_ID_VIA_82C686,	quir
+  * Set this bit to get rid of cycle wastage.
+  * Otherwise uncritical.
+  */
+-static void quirk_via_vt8237_bypass_apic_deassert(struct pci_dev *dev)
++static void __devinit quirk_via_vt8237_bypass_apic_deassert(struct pci_dev *dev)
+ {
+ 	u8 misc_control2;
+ #define BYPASS_APIC_DEASSERT 8
+@@ -939,7 +939,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA,	PCI_DEVICE_ID_VIA_82C597_0,	quirk_vt
+  * do this even if the Linux CardBus driver is not loaded, because
+  * the Linux i82365 driver does not (and should not) handle CardBus.
+  */
+-static void quirk_cardbus_legacy(struct pci_dev *dev)
++static void __devinit quirk_cardbus_legacy(struct pci_dev *dev)
+ {
+ 	pci_write_config_dword(dev, PCI_CB_LEGACY_MODE_BASE, 0);
+ }
+@@ -955,7 +955,7 @@ DECLARE_PCI_FIXUP_CLASS_RESUME_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+  * To be fair to AMD, it follows the spec by default, its BIOS people
+  * who turn it off!
+  */
+-static void quirk_amd_ordering(struct pci_dev *dev)
++static void __devinit quirk_amd_ordering(struct pci_dev *dev)
+ {
+ 	u32 pcic;
+ 	pci_read_config_dword(dev, 0x4C, &pcic);
+@@ -1005,7 +1005,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_TOSHIBA,	0x605,	quirk_transparent_bridge)
+  * datasheets found at http://www.national.com/analog for info on what
+  * these bits do.  <christer@weinigel.se>
+  */
+-static void quirk_mediagx_master(struct pci_dev *dev)
++static void __devinit quirk_mediagx_master(struct pci_dev *dev)
+ {
+ 	u8 reg;
+ 	pci_read_config_byte(dev, 0x41, &reg);
+@@ -1023,7 +1023,7 @@ DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_CYRIX,	PCI_DEVICE_ID_CYRIX_PCI_MASTER, qu
+  *	the BIOS but in the odd case it is not the results are corruption
+  *	hence the presence of a Linux check
+  */
+-static void quirk_disable_pxb(struct pci_dev *pdev)
++static void __devinit quirk_disable_pxb(struct pci_dev *pdev)
+ {
+ 	u16 config;
+ 	
+@@ -1591,7 +1591,7 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_PXHV,	quirk_pci
+  * Some Intel PCI Express chipsets have trouble with downstream
+  * device power management.
+  */
+-static void quirk_intel_pcie_pm(struct pci_dev * dev)
++static void __devinit quirk_intel_pcie_pm(struct pci_dev *dev)
+ {
+ 	pci_pm_d3_delay = 120;
+ 	dev->no_d1d2 = 1;
+@@ -1626,7 +1626,8 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL,	0x260b, quirk_intel_pcie_pm);
+  * that a PCI device's interrupt handler is installed on the boot interrupt
+  * line instead.
+  */
+-static void quirk_reroute_to_boot_interrupts_intel(struct pci_dev *dev)
++static void __devinit
++quirk_reroute_to_boot_interrupts_intel(struct pci_dev *dev)
+ {
+ 	if (noioapicquirk || noioapicreroute)
+ 		return;
+@@ -1664,7 +1665,7 @@ DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_80332_1,	quirk
+ #define INTEL_6300_IOAPIC_ABAR		0x40
+ #define INTEL_6300_DISABLE_BOOT_IRQ	(1<<14)
+ 
+-static void quirk_disable_intel_boot_interrupt(struct pci_dev *dev)
++static void __devinit quirk_disable_intel_boot_interrupt(struct pci_dev *dev)
+ {
+ 	u16 pci_config_word;
+ 
+@@ -1689,7 +1690,7 @@ DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_INTEL,   PCI_DEVICE_ID_INTEL_ESB_10, 	qui
+ #define BC_HT1000_MAP_IDX		0xC00
+ #define BC_HT1000_MAP_DATA		0xC01
+ 
+-static void quirk_disable_broadcom_boot_interrupt(struct pci_dev *dev)
++static void __devinit quirk_disable_broadcom_boot_interrupt(struct pci_dev *dev)
+ {
+ 	u32 pci_config_dword;
+ 	u8 irq;
+@@ -1727,7 +1728,7 @@ DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_SERVERWORKS,   PCI_DEVICE_ID_SERVERWORKS_
+ #define AMD_813X_REV_B1			0x12
+ #define AMD_813X_REV_B2			0x13
+ 
+-static void quirk_disable_amd_813x_boot_interrupt(struct pci_dev *dev)
++static void __devinit quirk_disable_amd_813x_boot_interrupt(struct pci_dev *dev)
+ {
+ 	u32 pci_config_dword;
+ 
+@@ -1751,7 +1752,7 @@ DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_AMD,	PCI_DEVICE_ID_AMD_8132_BRIDGE,	quirk
+ 
+ #define AMD_8111_PCI_IRQ_ROUTING	0x56
+ 
+-static void quirk_disable_amd_8111_boot_interrupt(struct pci_dev *dev)
++static void __devinit quirk_disable_amd_8111_boot_interrupt(struct pci_dev *dev)
+ {
+ 	u16 pci_config_word;
+ 
+@@ -1989,7 +1990,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL,	0x1460,		quirk_p64h2_1k_io_fix_iobl
+  * Force it to be linked by setting the corresponding control bit in the
+  * config space.
+  */
+-static void quirk_nvidia_ck804_pcie_aer_ext_cap(struct pci_dev *dev)
++static void __devinit quirk_nvidia_ck804_pcie_aer_ext_cap(struct pci_dev *dev)
+ {
+ 	uint8_t b;
+ 	if (pci_read_config_byte(dev, 0xf41, &b) == 0) {
 
