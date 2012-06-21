@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab2FUJYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:24:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49521 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932465Ab2FUJYL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:24:11 -0400
-Date: Thu, 21 Jun 2012 10:24:09 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 3/3] regulator: change message level on probing lp872x
- driver
-Message-ID: <20120621092408.GK4037@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998FC05A@DQHE02.ent.ti.com>
+	id S932467Ab2FUJc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:32:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41294 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759160Ab2FUJc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 05:32:26 -0400
+Date: Thu, 21 Jun 2012 10:32:20 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, thp: abort compaction if migration page cannot be
+ charged to memcg
+Message-ID: <20120621093220.GL4011@suse.de>
+References: <alpine.DEB.2.00.1206202351030.28770@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YZQs1kEQY307C4ut"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FC05A@DQHE02.ent.ti.com>
-X-Cookie: You are always busy.
+In-Reply-To: <alpine.DEB.2.00.1206202351030.28770@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 20, 2012 at 11:52:35PM -0700, David Rientjes wrote:
+> If page migration cannot charge the new page to the memcg,
+> migrate_pages() will return -ENOMEM. 
 
---YZQs1kEQY307C4ut
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I take it this happens in a memcg that is full and the temporary page
+is enough to push it over the edge. Is that correct? If so, it should
+be included in the changelog because that would make this a -stable
+candidate on the grounds that it is a corner case where compaction can
+consume excessive CPU when using memcgs leading to apparant stalls.
 
-On Thu, Jun 21, 2012 at 08:03:56AM +0000, Kim, Milo wrote:
-> Use err log rather than warning message when the platform data is NULL
+> This isn't considered in memory
+> compaction however, and the loop continues to iterate over all pageblocks
+> trying in a futile attempt to continue migrations which are only bound to
+> fail.
+> 
 
-Really what you should be doing here is making the driver able to probe
-without platform data at all, there should be no need for it.
+This is not necessarily true if it was just one small memcg that was
+occupying that pageblock for example. 
 
---YZQs1kEQY307C4ut
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> This will short circuit and fail memory compaction if migrate_pages()
+> returns -ENOMEM.  COMPACT_PARTIAL is returned in case some migrations
+> were successful so that the page allocator will retry.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+the "some migration" could have been in other unrelated zones so
+COMPACT_PARTIAL makes sense from that perspective.
 
-iQIcBAEBAgAGBQJP4ueHAAoJEBus8iNuMP3dHCEP/iQ1GYHqM+GijZG5gML9Iwwz
-YbBHMF38GyHOcZ6cyyQVrIoMSi4EP9zIZp+zZYeE8VfDXq74o1GKf4yOP5lCNUrO
-sIkMIUZk6WZktL4nClfD9iphtbtvnki2O7/Q0uTAx0Lxh4D90GnBQ0WUQAcbYqLG
-FfawrnqEism0HXQ1yXttRY3rT8u3Qs28NS4P0FsMuHVYsa+0V95tY2R7CE98MMsj
-jlbJY1aKLgVGMWKVA9soeEp+w3Gqp660Z5+wWSpmzqD9qIDqnQMwhNQC8Bl2W25m
-z7LpNbG3oC7T4AOuuDPskflcCD4X93rNXvXNvLlA5Moo3YZvTnJ7yexV5Rc/MaRn
-edDAwQLb5gA/PsnhXtN0ntEZJnohjLob5/PuMCW3jDs2s3t4B3Ptx8YzgWeVdhXx
-hiInvB4RiIrl+M3ayjNfxWFEhwXjZ3XlkKzvj45RsyNaNjxTprteFZLEohQIrDym
-QXY7bYpEPwaK5bIDyEulXrV3uU4FREOg3iuqUFC/JnxZ78uvlfvb5I8LGweNJPJc
-5cPk5QvCW7UXyQfMXHin/ppKFUf4nPKtey2EOcyDa3b/P621y3JX/3T+T+tjiMl4
-vWxCnOB3epYHVwMk9vZq4kaLUkPaVZZnyjjQqPXLhLSfGaYD6nbsbaevL7ETh6UW
-ncUBN4MR3mzbEPL3NkBk
-=pn3d
------END PGP SIGNATURE-----
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
---YZQs1kEQY307C4ut--
+There is a side-effect that a small memcg that is full will cause
+compaction to abort when it could have succeeded. This will impact THP
+allocation success rates in other memcgs or in the root domain.
+
+The ideal would be to backout iff the memcg occupied a large percentage of
+the zone that was poorly fragmented. There is no way of finding this out
+easily and a good value for a "large percentage" is unknowable. Besides it
+would depend on the distribution as if the memcg had one page per pageblock
+it would still fail so you'd need a full scan anyway. That all feels
+like a bust and a path to fail. I'd like to see a more detailed
+changelog but otherwise;
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+However, here is a possible extention to your patch that should work while
+preserving THP success rates but needs a more messing.  At the place of
+your patch do something like this in compact_zone
+
+arbitrary_mem_group = NULL
+
+...
+
+/*
+ * Break out if memcg has "unmovable" pages that disable compaction in
+ * this zone
+ */
+if err == -ENOMEM
+  foreach page in cc->migratepages
+    cgroup = page_cgroup(page)
+    if cgroup
+      mem_group = cgroup->mem_cgroup
+      if mem_cgroup->disabled_compaction == true
+         goto out
+      else
+         arbitrary_cgroup = mem_cgroup
+      
+i.e. add a new boolean to mem_cgroup that is set to true if this memcg
+has impaired compaction. If a cgroup is not disabled_compaction then
+remember that.
+
+Next is when to set disabled_compaction. At the end of compact_zones,
+do
+
+if ret == COMPACT_COMPLETE && cc->order != -1 && arbitrary_cgroup
+   arbitrary_cgroup->disabled_compaction = true
+
+i.e. if we are in direct compaction and there was a full compaction
+cycle that failed due to a cgroup getting in the way then tag that
+cgroup is "disabled_compaction". On subsequent compaction attempts if
+that cgroup is encountered again then abort compaction faster.
+
+This will mitigate a small full memcg disabling compaction for the entire
+zone at least until such time as the memcg has polluted every movable
+pageblock.
+
+>  			putback_lru_pages(&cc->migratepages);
+>  			cc->nr_migratepages = 0;
+> +			if (err == -ENOMEM) {
+> +				ret = COMPACT_PARTIAL;
+> +				goto out;
+> +			}
+>  		}
+> -
+>  	}
+>  
+>  out:
+
+-- 
+Mel Gorman
+SUSE Labs
