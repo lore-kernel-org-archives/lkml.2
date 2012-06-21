@@ -1,66 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760296Ab2FUVDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:03:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:63994 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760281Ab2FUVDj (ORCPT
+	id S1760304Ab2FUVGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:06:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35662 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994Ab2FUVGp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:03:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH V3 2/3] regulator: dt: regulator match by regulator-compatible
-Date: Thu, 21 Jun 2012 21:03:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, lee.jones@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com> <201206211717.46142.arnd@arndb.de> <4FE35A78.60003@wwwdotorg.org>
-In-Reply-To: <4FE35A78.60003@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206212103.29517.arnd@arndb.de>
-X-Provags-ID: V02:K0:HrUMPmmX/4lsrNttrsDcBWsRwUqUwA2wCk+hvk5vwUU
- G3wF9fgzkX5i/wnVUHlr96am3XThMFPyF/Tg13b+h0YhH/o/Nt
- zBfc4p2WivL8/WoBG8Iu9nxEaA4TWNlPREDiVB8XgPr8RCyUYP
- 9AW0/cQuc9PSWtyI/1Pxz0i54L6rl/8d+8fkB5INbHoV2rvEst
- oHKiuk+y4wWeAyd+Uk9TlMDR32+yqeqVeYPjlhErFhnwmgCFFC
- 3xQ89hi4ExjpZ/G7RY/AMaGhyO1/74lIscwinFzwz9BXdCTKB0
- 5KZB3N0xyg8OKbKDsoi0Nms4ns70hD97CEmL8JlXFyCiPdiFJD
- q8Ich4o276cs+kAvPgyQ=
+	Thu, 21 Jun 2012 17:06:45 -0400
+Message-ID: <1340312765.18025.40.camel@twins>
+Subject: Re: [PATCH -mm 2/7] mm: get unmapped area from VMA tree
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
+        hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>
+Date: Thu, 21 Jun 2012 23:06:05 +0200
+In-Reply-To: <1340057126-31143-3-git-send-email-riel@redhat.com>
+References: <1340057126-31143-1-git-send-email-riel@redhat.com>
+	 <1340057126-31143-3-git-send-email-riel@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 June 2012, Stephen Warren wrote:
-> > It should never be necessary to add board-specific properties in the
-> > nodes that describe the SoC specific bits. What I was referring to
-> > is just moving the data that currently resides in the regulator
-> > driver into DT.
-> 
-> I guess I must be misunderstanding that comment - there are many many
-> examples of boards adding properties to nodes that describe the SoC. For
-> example, the GPIOs used by SDHCI controllers, board-specific max clock
-> rates for SDHCI or I2C controllers, pinmux configuration properties, to
-> name just a few.
+On Mon, 2012-06-18 at 18:05 -0400, Rik van Riel wrote:
+> +       /* Find the left-most free area of sufficient size. */
 
-The difference is that configuration is board specific, but capabilities
-of the hardware are soc specific. The regulator-compatible property
-identifies just the capabilities and the location of one regulator:
 
-Look at struct ab8500_regulator_info, everything in there describes
-the soc: min/max voltages, register banks, startup delay. Those are
-all things that we could in theory have in the .dtsi file describing
-the soc.
+Just because there's nothing better than writing it yourself.. I tried
+writing something that does the above. The below is the result, it
+doesn't use your uncle functions and is clearly limited to two
+traversals and thus trivially still O(log n). [ although I think with a
+bit of effort you can prove the same for your version ].
 
-The board specific settings on the other hand are about what to
-put into those registers and what voltage to use. From all I can
-tell, those settings belong into the node that actually uses the
-regulator, not the node that defines it.
+---
 
-	Arnd
+static inline struct vm_area_struct *vma_of(struct rb_node *node)
+{
+        return container_of(node, struct vm_area_struct, vm_rb);
+}
+
+static inline unsigned long max_gap_of(struct rb_node *node)
+{
+        return vma_of(node)->free_gap;
+}
+
+static unsigned long gap_of(struct rb_node *node)
+{
+        struct vm_area_struct *vma = vma_of(node);
+
+        if (!vma->vm_prev)
+                return vma->vm_start;
+
+        return vma->vm_start - vma->vm_prev->vm_end;
+}
+
+static bool node_better(struct rb_node *node, struct rb_node *best)
+{
+        if (!best)
+                return true;
+
+        return vma_of(node)->vm_start < vma_of(best)->vm_start;
+}
+
+unsigned long find_leftmost_gap(struct mm_struct *mm, unsigned long len)
+{
+        struct rb_node *node = mm->mm_rb.rb_node, *best = NULL, *tree = NULL;
+
+        /*
+         * Do a search for TASK_UNMAPPED_BASE + len, all nodes right of this
+         * boundary should be considered. Path nodes are immediate candidates,
+         * their right sub-tree is stored for later consideration in case
+         * the immediate path doesn't yield a suitable node.
+         */
+        while (node) {
+                if (vma_of(node)->vm_start - len >= TASK_UNMAPPED_BASE) {
+                        /*
+                         * If our node has a big enough hole, track it.
+                         */
+                        if (gap_of(node) > len && node_better(node, best))
+                                best = node;
+
+                        /*
+                         * In case we flunk out on the path nodes, keep track 
+                         * of the right sub-trees which have big enough holes.
+                         */
+                        if (node->rb_right && max_gap_of(node-rb_right) >= len &&
+                            node_better(node->rb_right, tree))
+                                tree = node->rb_right;
+
+                        node = node->rb_left;
+                        continue;
+                }
+                node = node->rb_right;
+        }
+
+        if (best)
+                return vma_of(best)->vm_start - len;
+
+        /*
+         * Our stored subtree must be entirely right of TASK_UNMAPPED_BASE + len
+         * so do a simple search for leftmost hole of appropriate size.
+         */
+        while (tree) {
+                if (gap_of(tree) >= len && node_better(tree, best))
+                        best = tree;
+
+                if (tree->rb_left && max_gap_of(tree->rb_left) >= len) {
+                        tree = tree->rb_left;
+                        continue;
+                }
+
+                tree = tree->rb_right;
+        }
+
+        if (best)
+                return vma_of(best)->vm_start - len;
+
+        /*
+         * Ok, so no path node, nor right sub-tree had a properly sized hole
+         * we could use, use the rightmost address in the tree.
+         */
+        node = mm->mm_rb.rb_node;
+        while (node && node->rb_right)
+                node = node->rb_right;
+
+        return max(vma_of(node)->vm_end, TASK_UNMAPPED_BASE);
+}
