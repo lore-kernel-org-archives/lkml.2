@@ -1,245 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614Ab2FUJlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:41:09 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:19245
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932535Ab2FUJlH (ORCPT
+	id S1759205Ab2FUJq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:46:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37656 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753835Ab2FUJqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:41:07 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -13
-X-BigFish: VS-13(zzbb2dI98dI9371I936eI146fI179dN1432I1447Izz1202hzz8275dhz2dh2a8h668h839h944hd25hf0ah)
-Date: Thu, 21 Jun 2012 17:37:03 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Rob Herring <robherring2@gmail.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+	Thu, 21 Jun 2012 05:46:24 -0400
+Date: Thu, 21 Jun 2012 10:46:21 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 1/1] of: reform prom_update_property function
-Message-ID: <20120621093702.GE21231@shlinux2.ap.freescale.net>
-References: <1340171647-2815-1-git-send-email-b29396@freescale.com>
- <4FE1CB2C.5040208@gmail.com>
- <1340237796.28143.207.camel@pasglop>
+        Axel Lin <axel.lin@gmail.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        "Girdwood, Liam" <lrg@ti.com>
+Subject: Re: linux-next: build failure after merge of the regulator tree
+Message-ID: <20120621094621.GM4037@opensource.wolfsonmicro.com>
+References: <20120621132738.6e797593acc58b3e30902f69@canb.auug.org.au>
+ <A874F61F95741C4A9BA573A70FE3998FC074@DQHE02.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zHDeOHGDnzKksZSU"
 Content-Disposition: inline
-In-Reply-To: <1340237796.28143.207.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FC074@DQHE02.ent.ti.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 08:16:36AM +0800, Benjamin Herrenschmidt wrote:
-> On Wed, 2012-06-20 at 08:07 -0500, Rob Herring wrote:
-> > On 06/20/2012 12:54 AM, Dong Aisheng wrote:
-> > > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > > 
-> > > prom_update_property() currently fails if the property doesn't
-> > > actually exist yet which isn't what we want. Change to add-or-update
-> > > instead of update-only, then we can remove a lot duplicated lines.
-> > > 
-> > > Suggested-by: Grant Likely <grant.likely@secretlab.ca>
-> > > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > > ---
-> > 
-> > Looks fine, but you need to cc powerpc maintainers.
-> 
-> Generally fine, just one issue I spotted:
-> 
-Thanks for the review.
 
-> > > diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-> > > index 7b3bf76..4c92f1c 100644
-> > > --- a/arch/powerpc/platforms/pseries/reconfig.c
-> > > +++ b/arch/powerpc/platforms/pseries/reconfig.c
-> > > @@ -432,7 +432,7 @@ static int do_update_property(char *buf, size_t bufsize)
-> > >  	unsigned char *value;
-> > >  	char *name, *end, *next_prop;
-> > >  	int rc, length;
-> > > -	struct property *newprop, *oldprop;
-> > > +	struct property *newprop;
-> > >  	buf = parse_node(buf, bufsize, &np);
-> > >  	end = buf + bufsize;
-> > >  
-> > > @@ -450,18 +450,11 @@ static int do_update_property(char *buf, size_t bufsize)
-> > >  	if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
-> > >  		slb_set_size(*(int *)value);
-> > >  
-> > > -	oldprop = of_find_property(np, name,NULL);
-> > > -	if (!oldprop) {
-> > > -		if (strlen(name))
-> > > -			return prom_add_property(np, newprop);
-> > > -		return -ENODEV;
-> > > -	}
-> > > -
-> 
-> Here the code would exit the function with an error if the property
-> didn't already exist, you are losing that semantic.
-> 
-You're correct.
+--zHDeOHGDnzKksZSU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Additionally there's that oddball test for strlen(name) ... you might
-> want to check that somewhere... and the strange fact that it would
-> actually add the new property anyway despite returning an error which is
-> very very odd semantics but I'd rather not break them since this is
-> exposed to userspace, so we may have tools relying on them.
-> 
-Right, i also feel it's strange.
-I do not know that code history, what i can do may be try to keep
-the code follow the same as before.
+On Thu, Jun 21, 2012 at 08:13:15AM +0000, Kim, Milo wrote:
+> > Caused by commit 809d310c7e69 ("regulator: lp872x: Don't allow modular
+> > build") but that was done to fix a different build problem.
+>=20
+> Sorry for this conflict.
+>=20
+> Build config of lp872x driver has been changed as tristate.
+> And related undefined symbol error has been fixed.
+> (don't use devm_gpio_request_one() at this moment because it can not be e=
+xported.)
 
-Maybe we could change it as as follows.
-It looks then the code follow is the same as before.
-Do you think if it's ok?
+I'm not going to apply those patches, they're a step back in terms of
+driver quality.  We just need to bodge the Kconfig dependencies until
+the fix for gpiolib gets merged.
 
-diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-index 7b3bf76..4c237f4 100644
---- a/arch/powerpc/platforms/pseries/reconfig.c
-+++ b/arch/powerpc/platforms/pseries/reconfig.c
-@@ -443,6 +443,9 @@ static int do_update_property(char *buf, size_t bufsize)
-        if (!next_prop)
-                return -EINVAL;
+--zHDeOHGDnzKksZSU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-+       if (!strlen(name)
-+               return -ENODEV;
-+
-        newprop = new_property(name, length, value, NULL);
-        if (!newprop)
-                return -ENOMEM;
-@@ -450,13 +453,6 @@ static int do_update_property(char *buf, size_t bufsize)
-        if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
-                slb_set_size(*(int *)value);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--       oldprop = of_find_property(np, name,NULL);
--       if (!oldprop) {
--               if (strlen(name))
--                       return prom_add_property(np, newprop);
--               return -ENODEV;
--       }
--
+iQIcBAEBAgAGBQJP4u1XAAoJEBus8iNuMP3duQMP/jHitsD5/Sn1trjquNNmMDMP
+cWHzp5HawaREK650PZ9STE35k9CYtC/op9oE1S5hKfCjY31BspGKqJ6F+CuliRvT
+DMZmtZq0uuxlvLDFZ5UfN26SqDEJ280ZBxiNSWWwElUD55VQP6jlLa2iPHd/ggFH
+V07POT4mlRCeKJQ+y+5bhT+jtTGMvXr+RUOUFMz4Kb/9KoQbD0XfudOl5m87fe7f
+9ufypjWYUP/eE7vdfczIIAYH6skuhh5ucsMdrqCyVnYh3k6xf7mPeLGAe3qhnGT+
+jNLO+JGkMNGf4n/lFPMB4Do1KEj/hn8x7PvtmNkRhU/TjcPEcXy0RYv3oM0OnMDY
+b1qUx+RdK9XsntTEPVGHnpELrjJlqZbqTWqwAIWkVAKpx1wM7rSGOUp7SXZhv2IG
+ZFQrpizTVRs6US48FrAwCIyvqSpTijPGHSsXWUgZOiBtMDuP9Q/wxsP7osT8JrMv
+24PqhUUfcmzYZfmSK5m/VXvbSvwmovV8wbWkyiU/wDk7DioRp34hNiQHuWtoTMf8
+Cbf0tgut8cS/630vLUWBsNc6OmlLWhHPpfagjzGYlUAVw8syVywvp8U413vjY76n
+RhU7vX4QxG34eq6OrlB5p3Px2eTeMbZ2kYcK7V77Con2/zVOxe4TJLMvkALFmGqK
+cdrR/HAN4EnO4rqnAUgB
+=pDvW
+-----END PGP SIGNATURE-----
 
-> > >  	upd_value.node = np;
-> > >  	upd_value.property = newprop;
-> > >  	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
-> > >  
-> > > -	rc = prom_update_property(np, newprop, oldprop);
-> > > +	rc = prom_update_property(np, newprop);
-> > >  	if (rc)
-> > >  		return rc;
-> > >  
-> > > @@ -486,7 +479,7 @@ static int do_update_property(char *buf, size_t bufsize)
-> > >  
-> > >  		rc = pSeries_reconfig_notify(action, value);
-> > >  		if (rc) {
-> > > -			prom_update_property(np, oldprop, newprop);
-> > > +			prom_update_property(np, newprop);
-> > >  			return rc;
-> > >  		}
-> > >  	}
-> > > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > > index d9bfd49..a14f109 100644
-> > > --- a/drivers/of/base.c
-> > > +++ b/drivers/of/base.c
-> > > @@ -1051,7 +1051,8 @@ int prom_remove_property(struct device_node *np, struct property *prop)
-> > >  }
-> > >  
-> > >  /*
-> > > - * prom_update_property - Update a property in a node.
-> > > + * prom_update_property - Update a property in a node, if the property does
-> > > + * not exist, add it.
-> > >   *
-> > >   * Note that we don't actually remove it, since we have given out
-> > >   * who-knows-how-many pointers to the data using get-property.
-> > > @@ -1059,13 +1060,19 @@ int prom_remove_property(struct device_node *np, struct property *prop)
-> > >   * and add the new property to the property list
-> > >   */
-> > >  int prom_update_property(struct device_node *np,
-> > > -			 struct property *newprop,
-> > > -			 struct property *oldprop)
-> > > +			 struct property *newprop)
-> > >  {
-> > > -	struct property **next;
-> > > +	struct property **next, *oldprop;
-> > >  	unsigned long flags;
-> > >  	int found = 0;
-> > >  
-> > > +	if (!newprop->name)
-> > > +		return -EINVAL;
-> > > +
-> > > +	oldprop = of_find_property(np, newprop->name, NULL);
-> > > +	if (!oldprop)
-> > > +		return prom_add_property(np, newprop);
-> > > +
-> > >  	write_lock_irqsave(&devtree_lock, flags);
-> > >  	next = &np->properties;
-> > >  	while (*next) {
-> > > diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
-> > > index 927cbd1..df7dd08 100644
-> > > --- a/fs/proc/proc_devtree.c
-> > > +++ b/fs/proc/proc_devtree.c
-> > > @@ -101,6 +101,11 @@ void proc_device_tree_update_prop(struct proc_dir_entry *pde,
-> > >  {
-> > >  	struct proc_dir_entry *ent;
-> > >  
-> > > +	if (!oldprop) {
-> > > +		proc_device_tree_add_prop(pde, newprop);
-> > > +		return;
-> > > +	}
-> > > +
-> > >  	for (ent = pde->subdir; ent != NULL; ent = ent->next)
-> > >  		if (ent->data == oldprop)
-> > >  			break;
-> > > diff --git a/include/linux/of.h b/include/linux/of.h
-> > > index 2ec1083..b27c871 100644
-> > > --- a/include/linux/of.h
-> > > +++ b/include/linux/of.h
-> > > @@ -260,8 +260,7 @@ extern int of_machine_is_compatible(const char *compat);
-> > >  extern int prom_add_property(struct device_node* np, struct property* prop);
-> > >  extern int prom_remove_property(struct device_node *np, struct property *prop);
-> > >  extern int prom_update_property(struct device_node *np,
-> > > -				struct property *newprop,
-> > > -				struct property *oldprop);
-> > > +				struct property *newprop);
-> > >  
-> > >  #if defined(CONFIG_OF_DYNAMIC)
-> > >  /* For updating the device tree at runtime */
-> 
-> Note that another issue you aren't addressing is that this is a
-> fundamentally leaky operation.
-> 
-> IE. The allocation of the "old" property isn't disposed of. It can't
-> because today we don't know whether any of those pointers was
-> dynamically allocated or not. IE they could point to the fdt
-Hmm, i did not see static allocated property before.
-Where can we see an exist case?
-
-If we really have this issue, it seems of_node_release also has the same issue,
-since it frees the property without distinguish whether the property is allocated
-dynamically.
-
-> string list, data block, or could be bootmem ... or could be
-> actual kernel memory.
-> 
-> We might want to extend the struct property to contain indications of
-> the allocation type so we can kfree dynamic properties properly.
-> 
-I wonder the simplest way may be not allow static allocated property, like dt
-node does i guess.
-
-> But then there's the question of the lifetime of a property... since
-> they aren't reference counted like nodes are.
-> 
-Yes, that's a real exist problem.
-
-Anyway, i guess we could do that work of this problem in another patch
-rather than have to in this patch series.
-
-Regards
-Dong Aisheng
-
+--zHDeOHGDnzKksZSU--
