@@ -1,99 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760137Ab2FUT4R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 15:56:17 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53127 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759914Ab2FUT4Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 15:56:16 -0400
-Message-ID: <4FE37C5C.4090009@gmail.com>
-Date: Thu, 21 Jun 2012 15:56:12 -0400
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
-        sameo@linux.intel.com, David Miller <davem@davemloft.net>,
-        ilane@ti.com
-CC: linux-kernel@vger.kernel.org, security@kernel.org,
-        linux-netdev@vger.kernel.org
-Subject: [PATCH] NFC: prevent multiple buffer overflows in NCI
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760153Ab2FUUBk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 16:01:40 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44484 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756484Ab2FUUBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 16:01:39 -0400
+Message-ID: <1340308898.22218.24.camel@joe2Laptop>
+Subject: [RFC PATCH] printk: Enable/disable buffering and add printk_flush()
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 21 Jun 2012 13:01:38 -0700
+In-Reply-To: <1340307523.27036.207.camel@gandalf.stny.rr.com>
+References: <20120614154153.GD17140@kroah.com>
+	 <1339693625.13377.242.camel@gandalf.stny.rr.com>
+	 <20120615042233.GA10973@localhost> <20120615043017.GA9587@kroah.com>
+	 <20120615120430.GB23681@gmail.com> <20120615231318.GD8205@kroah.com>
+	 <1339804415.25903.63.camel@gandalf.stny.rr.com>
+	 <20120618230337.GB23627@kroah.com>
+	 <1340069326.25903.177.camel@gandalf.stny.rr.com>
+	 <20120620122549.GA10561@gmail.com> <20120621171338.GF3270@kroah.com>
+	 <1340300509.27036.185.camel@gandalf.stny.rr.com>
+	 <1340302623.22065.9.camel@joe2Laptop>
+	 <1340303360.27036.194.camel@gandalf.stny.rr.com>
+	 <1340303969.22218.9.camel@joe2Laptop>
+	 <1340304566.27036.200.camel@gandalf.stny.rr.com>
+	 <1340304902.22218.12.camel@joe2Laptop>
+	 <1340307523.27036.207.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix multiple remotely-exploitable stack-based buffer overflows due to the NCI
-code pulling length fields directly from incoming frames and copying too much
-data into statically-sized arrays. Fortunately, there don't appear to be any
-active users of this code (yet).
+Add functions to enable/disable printk buffering.
+Add a function to force any buffered output to be emitted.
 
-This patch fixes the overflows, but I suspect the code will need to be
-completely reworked since this doesn't address the more systemic problem of
-failing to check that the values read from incoming frame data aren't from
-beyond the end of the pulled skb data. Build tested only.
+printk_flush() also emits "printk_flush\n" at KERN_DEFAULT.
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Cc: stable@kernel.org
-Cc: security@kernel.org
-Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
-Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Ilan Elias <ilane@ti.com>
 ---
- net/nfc/nci/ntf.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/net/nfc/nci/ntf.c b/net/nfc/nci/ntf.c
-index cb26461..2ab196a 100644
---- a/net/nfc/nci/ntf.c
-+++ b/net/nfc/nci/ntf.c
-@@ -106,7 +106,7 @@ static __u8 *nci_extract_rf_params_nfca_passive_poll(struct
-nci_dev *ndev,
- 	nfca_poll->sens_res = __le16_to_cpu(*((__u16 *)data));
- 	data += 2;
- -	nfca_poll->nfcid1_len = *data++;
-+	nfca_poll->nfcid1_len = min_t(__u8, *data++, NFC_NFCID1_MAXSIZE);
-  	pr_debug("sens_res 0x%x, nfcid1_len %d\n",
- 		 nfca_poll->sens_res, nfca_poll->nfcid1_len);
-@@ -130,7 +130,7 @@ static __u8 *nci_extract_rf_params_nfcb_passive_poll(struct
-nci_dev *ndev,
- 			struct rf_tech_specific_params_nfcb_poll *nfcb_poll,
- 						     __u8 *data)
+Perhaps something like this instead of just the one printk_flush()?
+Doesn't require any additional KERN_LEVEL '<f>' addition.
+
+Compiled but completely untested...
+
+ include/linux/printk.h |   18 ++++++++++++++++++
+ kernel/printk.c        |   36 ++++++++++++++++++++++++++++++++++--
+ 2 files changed, 52 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 1bec2f7..165b6a2 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -111,6 +111,11 @@ asmlinkage int printk_emit(int facility, int level,
+ asmlinkage __printf(1, 2) __cold
+ int printk(const char *fmt, ...);
+ 
++bool printk_set_buffering(bool enable);
++bool printk_get_buffering(void);
++void printk_flush(void);	/* forcibly emit any internal buffers */
++
++
+ /*
+  * Special printk facility for scheduler use only, _DO_NOT_USE_ !
+  */
+@@ -143,6 +148,17 @@ int printk(const char *s, ...)
  {
--	nfcb_poll->sensb_res_len = *data++;
-+	nfcb_poll->sensb_res_len = min_t(__u8, *data++, NFC_SENSB_RES_MAXSIZE);
-  	pr_debug("sensb_res_len %d\n", nfcb_poll->sensb_res_len);
- @@ -145,7 +145,7 @@ static __u8 *nci_extract_rf_params_nfcf_passive_poll(struct
-nci_dev *ndev,
- 						     __u8 *data)
+ 	return 0;
+ }
++static bool printk_set_buffering(bool enable)
++{
++	return false;
++}
++bool printk_get_buffering(void)
++{
++	return false;
++}
++static inline void printk_flush(void)
++{
++}
+ static inline __printf(1, 2) __cold
+ int printk_sched(const char *s, ...)
  {
- 	nfcf_poll->bit_rate = *data++;
--	nfcf_poll->sensf_res_len = *data++;
-+	nfcf_poll->sensf_res_len = min_t(__u8, *data++, NFC_SENSF_RES_MAXSIZE);
-  	pr_debug("bit_rate %d, sensf_res_len %d\n",
- 		 nfcf_poll->bit_rate, nfcf_poll->sensf_res_len);
-@@ -331,7 +331,7 @@ static int nci_extract_activation_params_iso_dep(struct
-nci_dev *ndev,
- 	switch (ntf->activation_rf_tech_and_mode) {
- 	case NCI_NFC_A_PASSIVE_POLL_MODE:
- 		nfca_poll = &ntf->activation_params.nfca_poll_iso_dep;
--		nfca_poll->rats_res_len = *data++;
-+		nfca_poll->rats_res_len = min_t(__u8, *data++, 20);
- 		pr_debug("rats_res_len %d\n", nfca_poll->rats_res_len);
- 		if (nfca_poll->rats_res_len > 0) {
- 			memcpy(nfca_poll->rats_res,
-@@ -341,7 +341,7 @@ static int nci_extract_activation_params_iso_dep(struct
-nci_dev *ndev,
-  	case NCI_NFC_B_PASSIVE_POLL_MODE:
- 		nfcb_poll = &ntf->activation_params.nfcb_poll_iso_dep;
--		nfcb_poll->attrib_res_len = *data++;
-+		nfcb_poll->attrib_res_len = min_t(__u8, *data++, 50);
- 		pr_debug("attrib_res_len %d\n", nfcb_poll->attrib_res_len);
- 		if (nfcb_poll->attrib_res_len > 0) {
- 			memcpy(nfcb_poll->attrib_res,
+@@ -191,6 +207,8 @@ extern void dump_stack(void) __cold;
+ #define pr_cont(fmt, ...) \
+ 	printk(KERN_CONT fmt, ##__VA_ARGS__)
+ 
++#define pr_flush printk_flush
++
+ /* pr_devel() should produce zero code unless DEBUG is defined */
+ #ifdef DEBUG
+ #define pr_devel(fmt, ...) \
+diff --git a/kernel/printk.c b/kernel/printk.c
+index a2276b9..0e35931 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1144,6 +1144,23 @@ module_param(ignore_loglevel, bool, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
+ 	"print all kernel messages to the console.");
+ 
++atomic_t printk_buffering = ATOMIC_INIT(1);
++
++bool printk_set_buffering(bool enable)
++{
++	if (enable)
++		return atomic_inc_and_test(&printk_buffering);
++
++	return atomic_dec_and_test(&printk_buffering);
++}
++EXPORT_SYMBOL(printk_set_buffering);
++
++bool printk_get_buffering(void)
++{
++        return atomic_read(&printk_buffering);
++}
++EXPORT_SYMBOL(printk_get_buffering);
++
+ /*
+  * Call the console drivers, asking them to write out
+  * log_buf[start] to log_buf[end - 1].
+@@ -1288,6 +1305,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	int this_cpu;
+ 	bool newline = false;
+ 	bool prefix = false;
++	bool buffered = atomic_read(&printk_buffering);
+ 	int printed_len = 0;
+ 
+ 	boot_delay_msec();
+@@ -1355,8 +1373,16 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		}
+ 	}
+ 
+-	if (level == -1)
++	switch (level) {
++	case -1:
+ 		level = default_message_loglevel;
++		break;
++	case -2:
++		prefix = true;
++		level = default_message_loglevel;
++		buffered = false;
++		break;
++	}
+ 
+ 	if (dict) {
+ 		prefix = true;
+@@ -1364,7 +1390,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	}
+ 
+ 	if (!newline) {
+-		if (cont_len && (prefix || cont_task != current)) {
++		if (cont_len && (prefix || cont_task != current || !buffered)) {
+ 			/*
+ 			 * Flush earlier buffer, which is either from a
+ 			 * different thread, or when we got a new prefix.
+@@ -1454,6 +1480,12 @@ asmlinkage int printk_emit(int facility, int level,
+ }
+ EXPORT_SYMBOL(printk_emit);
+ 
++void printk_flush(void)
++{
++	printk_emit(0, -2, NULL, 0, "printk_flush\n");
++}
++EXPORT_SYMBOL(printk_flush);
++
+ /**
+  * printk - print a kernel message
+  * @fmt: format string
 
 
