@@ -1,137 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760101Ab2FUTXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 15:23:06 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:59483 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760055Ab2FUTXC (ORCPT
+	id S1760111Ab2FUTXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 15:23:52 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20177 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759961Ab2FUTXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 15:23:02 -0400
-Message-ID: <1340306563.1631.280.camel@cumari.coelho.fi>
-Subject: pull request: TI wireless drivers 2012-06-21 (for 3.6)
-From: Luciano Coelho <coelho@ti.com>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arik@wizery.com, assaf@ti.com
-Date: Thu, 21 Jun 2012 22:22:43 +0300
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-IU9bs+2JbZK1eyvnkjVe"
-X-Mailer: Evolution 3.2.2-1+b1
-Mime-Version: 1.0
+	Thu, 21 Jun 2012 15:23:51 -0400
+Date: Thu, 21 Jun 2012 15:16:06 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Robin Holt <holt@sgi.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-kernel@vger.kernel.org,
+        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
+Subject: Re: [PATCH] phys_efi_set_virtual_address_map needs va, no pa.
+Message-ID: <20120621191606.GA6885@phenom.dumpdata.com>
+References: <20120620082457.GE3464@sgi.com>
+ <20120620120702.GA3983@srcf.ucam.org>
+ <4FE23592.60201@linux.intel.com>
+ <20120621002742.GL3464@sgi.com>
+ <4FE26EF9.5060004@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE26EF9.5060004@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 20, 2012 at 05:46:49PM -0700, H. Peter Anvin wrote:
+> On 06/20/2012 05:27 PM, Robin Holt wrote:
+> > 
+> > What do you need from me?  If you want me to help with this, I have a
+> > _WHOLE_ lot of learning to do.  Can you give me any pointers?
+> > 
+> > We are trying to get this finally fixed.  We have had work-around code
+> > in SLES11 SP1, SLES11 SP2, and RHEL 6.x.  I would love to get this fixed
+> > for future distro snaps.
+> > 
+> 
+> If you want to tackle it, the task is basically that when we modify the
+> pgds in 32-bit legacy (non-PAE) mode, we should make the corresponding
+> modifications to initial_page_table, and in 64-bit mode to
+> real_mode_header->trampoline_pgd.  It might be worthwhile to introduce a
+> common pointer for both, obviously.
+> 
+> This is currently handled via something called the pgd_list (when we
+> update the top level kernel address space we walk pgd_list and update
+> them all), but there are two issues:
+> 
+> 1. Obviously, in the case of the 1:1 map, we don't just need to maintain
+> the kernel area, but the "user space" part of the address space should
+> contain a copy, as well.
+> 
+> 2. To complicate things, there is code in there to grab an mm lock for
+> the benefit of Xen.  The 1:1 map doesn't have an mm associated with it,
+> so I'm not quite sure how that is to be handled.  Perhaps Xen just plain
+> won't need it and we can just bypass it, but I have no bloody idea.
 
---=-IU9bs+2JbZK1eyvnkjVe
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+You mean this?
 
-Hi John,
+79e53d8        (Andrea Arcangeli       2011-02-16 15:45:22 -0800       127)    spin_lock(&pgd_lock);
+4f76cd38        (Jeremy Fitzhardinge    2008-03-17 16:36:55 -0700       128)    pgd_list_del(pgd);
+a79e53d8        (Andrea Arcangeli       2011-02-16 15:45:22 -0800       129)    spin_unlock(&pgd_lock);
 
-This is another pull request intended for 3.6.  A few new small
-features, some cleaning up and bugfixes.  Nothing major really.
+which says:
+    x86/mm: Fix pgd_lock deadlock
+    
+    It's forbidden to take the page_table_lock with the irq disabled
+    or if there's contention the IPIs (for tlb flushes) sent with
+    the page_table_lock held will never run leading to a deadlock.
+    
+    Nobody takes the pgd_lock from irq context so the _irqsave can be
+    removed.
+    
+Looking before that git commit I see Jeremy's 4f76cd38 unification of
+the 32-bit and 64-bit pgtable, and before that:
 
-Please pull or let me know if there's any problem.
+1da177e4c3f41524e886b7f1b8a0c1fc7321cac2
+Linux-2.6.12-rc2
 
+I am not really convienced that lock was put there for Xen as the
+git history seems to point to well, way ancient stuff.
 
-The following changes since commit f761b6947dde42890beea59b020e1be87491809e=
-:
+Or are you referring to something else?
 
-  rtlwifi: rtl8192se: Fix gcc 4.7.x warning (2012-06-20 15:14:57 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/luca/wl12xx.git for-linvill=
-e
-
-for you to fetch changes up to da0b1baa94a9c11448e010a150280d0834b11c32:
-
-  Merge branch 'wl12xx-next' into for-linville (2012-06-21 17:31:46 +0300)
-
-----------------------------------------------------------------
-
-Arik Nemtsov (8):
-      wlcore: suppress error message on Rx BA session removal
-      wlcore: allow setting sleep_auth before interface init
-      wlcore: reconfigure sleep_auth when removing interfaces
-      wl18xx: increase Rx descriptors for PG2
-      wl18xx: set Tx align quirk for PG2
-      wl18xx: explicitly remove the 5Ghz MIMO HT cap
-      wl18xx: sane defaults for HT capabilities
-      wl18xx: split siso40 HT cap between 2Ghz and 5Ghz
-
-Eliad Peller (2):
-      wlcore: update basic rates on channel switch
-      wlcore: declare interface combinations
-
-Eyal Shapira (2):
-      wlcore: avoid using NET_IP_ALIGN for RX alignment
-      wlcore: send EAPOLs with basic rate policy
-
-Igal Chernobelsky (1):
-      wlcore: read FW logs from FW memory on watchdog recovery
-
-Luciano Coelho (3):
-      wlcore: add a debugfs entry to allow changing the sleep mode by hand
-      wl18xx: use %zu for size_t arguments in printk calls
-      Merge branch 'wl12xx-next' into for-linville
-
-Yair Shapira (2):
-      wlcore/wl12xx: add support for HP and SKW FEM radio manufacturers
-      wlcore: add print logs of radio_status in case of BIP calibration
-
-Yoni Divinsky (1):
-      wlcore: do not report noise level in get survey op
-
- drivers/net/wireless/ti/wl12xx/cmd.c      |   16 +++++----
- drivers/net/wireless/ti/wl12xx/main.c     |    7 ++--
- drivers/net/wireless/ti/wl18xx/main.c     |  105 +++++++++++++++++++++++++=
-+++++++++--------------------------
- drivers/net/wireless/ti/wlcore/acx.c      |    8 ++++-
- drivers/net/wireless/ti/wlcore/acx.h      |    5 +++
- drivers/net/wireless/ti/wlcore/cmd.h      |   21 ++++++++++++
- drivers/net/wireless/ti/wlcore/conf.h     |    8 ++++-
- drivers/net/wireless/ti/wlcore/debugfs.c  |   63 +++++++++++++++++++++++++=
-+++++++++++
- drivers/net/wireless/ti/wlcore/ini.h      |   22 ++++++++++---
- drivers/net/wireless/ti/wlcore/init.c     |   43 ++++++++++++-------------
- drivers/net/wireless/ti/wlcore/main.c     |   97 +++++++++++++++++++++++++=
-+++++++++++++++++++-----------
- drivers/net/wireless/ti/wlcore/ps.c       |    2 +-
- drivers/net/wireless/ti/wlcore/rx.c       |    4 +--
- drivers/net/wireless/ti/wlcore/rx.h       |    6 ++++
- drivers/net/wireless/ti/wlcore/testmode.c |   14 ++++++++
- drivers/net/wireless/ti/wlcore/tx.c       |   10 ++++--
- drivers/net/wireless/ti/wlcore/wlcore.h   |   10 ++++++
- 17 files changed, 332 insertions(+), 109 deletions(-)
-
---=20
-Cheers,
-Luca.
-
---=-IU9bs+2JbZK1eyvnkjVe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP43SDAAoJEKFHnKIaPMX6E1wP/2Sk+szJ+5j5Ffg5mf361sKm
-ZRQrNrevQNnZL0bVF7i87Y9v3nxWafwuggxnJXAjs77CzAs3tu5teY52rBH+FaR6
-IqaEYULqWQi2yXOksO1GDPbaK4A+AhGaAD97uE50CX98WyTSpnpDtkLEYjFGm2au
-OGrDXF41B9N3U2afmUfMEyObt5RWOGEmsBjMmCvqkGY9eXFkg6NXgCra4GnINqVI
-Cnb9/WQo+V/1F7O20P6R0//fQPjS0RycsV8WHb3z3m+e35CPCuUUr414dnbkQd/G
-mNeoLKE2usEwz+n+BlP3dtGEnbsHTaXOEDQ4K7xvNFOdX7beiDW21vaGmegJHXI5
-/jbMs0zuZuPKQ+1PNZpzOqODfRi82bo6kPhaN94WTSFQbuBQT6YY7wE1S9S9StvL
-ufmR0HLwJy/ihJGYoCRu5NM/Krfuj73TKxVTGt/OTf2E/ZW2vXpZxB44fKplvRkX
-QXoM9Qc542oZ4QTOvrR3nUQC+PP0Bmub+vdy+KhIAbHsPxIFLW1O2Z7bbj50JWbn
-d+S1arrSGwarFlxip+0JQUKXOizuC8KaWzrbf8Yl/DSdu1ZLmtdXdCQpvH9zmU1v
-K5WXn9Ii1JEhD/YZ/C9lsICa2ln+3ukhi1YJyurrlpOw5yEj1sOcRePXLRSTDQmw
-ns1ZqNHy0guxin+D0EEI
-=ma+O
------END PGP SIGNATURE-----
-
---=-IU9bs+2JbZK1eyvnkjVe--
-
+> 
+> It is also a bit "cute" how we seem to make a function call to indirect
+> through a pointer (why on Earth is pgd_page_get_mm() not an inline?!),
+> and then grab a lock unconditionally, regardless of if we are affected
+> by Xen or not.
+> 
+> 	-hpa
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
