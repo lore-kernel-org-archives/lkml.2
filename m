@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756Ab2FUUY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 16:24:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44940 "EHLO mx1.redhat.com"
+	id S932772Ab2FUUZK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 16:25:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41034 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab2FUUYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 16:24:53 -0400
+	id S932219Ab2FUUZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 16:25:04 -0400
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 4/9] MIPS/PCI: move final fixup quirks from __init to __devinit
+Subject: [PATCH 5/9] parisc/PCI: move final fixup quirks from __init to
+	__devinit
 To: bhelgaas@google.com
 Cc: linux-pci@vger.kernel.org, linux@arm.linux.org.uk, ralf@linux-mips.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         linux-kernel@vger.kernel.org
-Date: Thu, 21 Jun 2012 14:24:41 -0600
-Message-ID: <20120621202441.16865.64949.stgit@amt.stowe>
+Date: Thu, 21 Jun 2012 14:24:47 -0600
+Message-ID: <20120621202447.16865.32486.stgit@amt.stowe>
 In-Reply-To: <20120621202415.16865.6226.stgit@amt.stowe>
 References: <20120621202415.16865.6226.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -38,38 +39,21 @@ This patch prepares specific quirk(s) for use with hot-plug events.
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- arch/mips/txx9/generic/pci.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/parisc/superio.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/txx9/generic/pci.c b/arch/mips/txx9/generic/pci.c
-index 682efb0..de83b30 100644
---- a/arch/mips/txx9/generic/pci.c
-+++ b/arch/mips/txx9/generic/pci.c
-@@ -304,7 +304,7 @@ static void __init quirk_slc90e66_bridge(struct pci_dev *dev)
- 	smsc_fdc37m81x_config_end();
+diff --git a/drivers/parisc/superio.c b/drivers/parisc/superio.c
+index 5003458..2d24cf2 100644
+--- a/drivers/parisc/superio.c
++++ b/drivers/parisc/superio.c
+@@ -149,8 +149,7 @@ superio_interrupt(int parent_irq, void *devp)
  }
  
--static void quirk_slc90e66_ide(struct pci_dev *dev)
-+static void __devinit quirk_slc90e66_ide(struct pci_dev *dev)
+ /* Initialize Super I/O device */
+-static void
+-superio_init(struct pci_dev *pcidev)
++static void __devinit superio_init(struct pci_dev *pcidev)
  {
- 	unsigned char dat;
- 	int regs[2] = {0x41, 0x43};
-@@ -339,7 +339,7 @@ static void quirk_slc90e66_ide(struct pci_dev *dev)
- }
- #endif /* CONFIG_TOSHIBA_FPCIB0 */
- 
--static void tc35815_fixup(struct pci_dev *dev)
-+static void __devinit tc35815_fixup(struct pci_dev *dev)
- {
- 	/* This device may have PM registers but not they are not suported. */
- 	if (dev->pm_cap) {
-@@ -348,7 +348,7 @@ static void tc35815_fixup(struct pci_dev *dev)
- 	}
- }
- 
--static void final_fixup(struct pci_dev *dev)
-+static void __devinit final_fixup(struct pci_dev *dev)
- {
- 	unsigned char bist;
- 
+ 	struct superio_device *sio = &sio_dev;
+ 	struct pci_dev *pdev = sio->lio_pdev;
 
