@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759377Ab2FULhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:37:21 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35427 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759351Ab2FULhT convert rfc822-to-8bit (ORCPT
+	id S1759400Ab2FULlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 07:41:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37393 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754784Ab2FULlI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 07:37:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120621091833.GH2193@core.coreip.homeip.net>
-References: <1340192062-10565-1-git-send-email-aletes.xgr@gmail.com>
-	<20120621091833.GH2193@core.coreip.homeip.net>
-Date: Thu, 21 Jun 2012 08:37:18 -0300
-Message-ID: <CAAAP30GsU1wy87QJjcctpu-=uYH6O0XEikMs5GeGDsz-gvwsZQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND] input: gpio_keys_polled: convert to dt
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, JJ Ding <dgdunix@gmail.com>,
-        Roland Stigge <stigge@antcom.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Jun 2012 07:41:08 -0400
+Message-ID: <1340278853.21745.178.camel@twins>
+Subject: Re: [PATCH V6 0/13] perf: Intel uncore pmu counting support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, jolsa@redhat.com,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Thu, 21 Jun 2012 13:40:53 +0200
+In-Reply-To: <CABPqkBTESKqVG6shXsLi85w=ZJ=1hXxu8+_7tNp23euds8JPbg@mail.gmail.com>
+References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
+	 <1340208092.21745.114.camel@twins> <4FE28823.80704@intel.com>
+	 <CABPqkBTi8-yKg_kzFTwLe1_m2Zprt5vGk9WPQW14yHQpy=PiWw@mail.gmail.com>
+	 <4FE2DE9A.70202@intel.com>
+	 <CABPqkBTESKqVG6shXsLi85w=ZJ=1hXxu8+_7tNp23euds8JPbg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 6:18 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
->> @@ -38,7 +40,7 @@ struct gpio_keys_button_data {
->>  struct gpio_keys_polled_dev {
->>       struct input_polled_dev *poll_dev;
->>       struct device *dev;
->> -     struct gpio_keys_platform_data *pdata;
->> +     struct gpio_keys_platform_data pdata;
->
-> I am not sure why this change is needed. Also it seems that the driver
-> leaks DT-created pdata on unload.
+On Thu, 2012-06-21 at 11:13 +0200, Stephane Eranian wrote:
 
-Pdata is now a member of gpio_keys_polled_dev now and that one is
-kzalloc'ed at probe and kfree'd at the removal and errors. I see no
-leaks there.
+> >>> How about treat the 'cpu' parameter for uncore event as socket id instead
+> >>> of cpu id?
+> >>>
+> >> But that does not address the use case of Peter, i.e., no cpu parameter passed.
+> >> Looks like sysfs might be the only way to do this in a portable manner.
+> >>
+> > It does. For example, on a dual socket system, perf can only register uncore
+> > counter with 'cpu' parameter is equal to 0 or 1. This method is hacky, but it
+> > requires minimal change for the kernel and perf tool.
+> >
+> I was saying, I don't want to have to pass -C x with -a and yet have perf stat
+> only instantiate the event once per socket. I think that's what PeterZ was
+> asking about.
 
-I could kzalloc and kfree gpio_keys_polled_dev independently instead,
-to avoid all those pointer changes if you think it's better.
+What Zheng is saying is that -a will iterate [0..nr_cpus), but since
+we're interpreting the sys_perf_event_open(.cpu) argument as node, we'll
+fail the syscall with -EINVAL or so for .cpu >= nr_node_ids.
 
-This is mostly a clone from the dt handling in gpio_keys, and
-comparing both now,
-I see that it will leak on pdata->buttons, so I will fix that.
+This way, we'll only create one counter per node.
 
->> +
->> +#define gpio_keys_polled_of_match NULL
->
-> Please use of_match_ptr() instead.
-
-Thanks for the suggestion, I will implement that.
+I would work, but its not pretty since we still don't know what we're
+iterating.
