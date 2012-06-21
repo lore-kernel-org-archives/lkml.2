@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759468Ab2FUMTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 08:19:31 -0400
-Received: from linux-sh.org ([111.68.239.195]:52881 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757039Ab2FUMTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 08:19:30 -0400
-Date: Thu, 21 Jun 2012 21:18:44 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Rob Herring <robherring2@gmail.com>, Mitch Bradley <wmb@laptop.org>,
-        mturquette@linaro.org, devicetree-discuss@lists.ozlabs.org,
-        sboyd@codeaurora.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, skannan@codeaurora.org,
-        shawn.guo@linaro.org, s.hauer@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 02/02] clk: clk-of: Use alloc_bootmem() instead of
- kzalloc()
-Message-ID: <20120621121843.GA20236@linux-sh.org>
-References: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
- <87bokd15x7.fsf@octavius.laptop.org>
- <87395p15or.fsf_-_@octavius.laptop.org>
+	id S1759479Ab2FUMWy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 08:22:54 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54494 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759450Ab2FUMWx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 08:22:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87395p15or.fsf_-_@octavius.laptop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 21 Jun 2012 07:22:50 -0500
+Message-ID: <CAL3m8eA=46wdwVosiE54eNx3FOuLyxfE5axKs_HjyMTGxDHRDw@mail.gmail.com>
+Subject: [PATCH] fbdev: Add ioctls FBIO_COPYRECT, FBIO_FILLRECT, lest these
+ operations be done in software.
+From: Strake <strake888@gmail.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 03:32:04AM -0400, Chris Ball wrote:
-> When of_clk_add_provider() is used at boot time (during .init_early on
-> ARM, in the motivating case for this patch), kzalloc() cannot be used
-> because slab isn't up yet.
-> 
-> Signed-off-by: Chris Ball <cjb@laptop.org>
+From: Matthew Farkas-Dyck <strake888@gmail.com>
 
-I wouldn't use alloc_bootmem() unconditionally for this, as you have no
-idea where other platforms may wire the call site up. slab is also
-available a lot earlier now than it used to be, so many places that
-required bootmem pages previously can get away with slab allocations now.
+Add ioctls FBIO_COPYRECT, FBIO_FILLRECT, lest these operations be done
+in software.
 
-You could rework this as:
+Signed-off-by: Matthew Farkas-Dyck <strake888@gmail.com>
+---
 
-	if (slab_is_available())
-		cp = kzalloc(...)
-	else
-		cp = alloc_bootmem(...)
+Reason: If it can be done in hardware, it ought to be. This will
+enable user-mode software to do so.
 
-and then it doesn't matter when and where it gets called.
+commit 2c002c58b6c5d5b211423da8eaa242ca443fdd72
+Author: strake <strake888@gmail.com>
+Date:   Wed Jan 1 19:10:24 2003 -0500
+
+    Add ioctls FBIO_COPYRECT, FBIO_FILLRECT
+
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index 4ac1201..f525e91 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1019,6 +1019,8 @@ static long do_fb_ioctl(struct fb_info *info,
+unsigned int cmd,
+ 	struct fb_cmap cmap_from;
+ 	struct fb_cmap_user cmap;
+ 	struct fb_event event;
++	struct fb_copyarea copy;
++	struct fb_fillrect fill;
+ 	void __user *argp = (void __user *)arg;
+ 	long ret = 0;
+
+@@ -1126,6 +1128,26 @@ static long do_fb_ioctl(struct fb_info *info,
+unsigned int cmd,
+ 		console_unlock();
+ 		unlock_fb_info(info);
+ 		break;
++	case FBIO_FILLRECT:
++		if (copy_from_user(&fill, argp, sizeof(fill)))
++			return -EFAULT;
++		if (!lock_fb_info(info))
++			return -ENODEV;
++		console_lock();
++		(*(info->fbops->fb_fillrect))(info, &fill);
++		console_unlock();
++		unlock_fb_info(info);
++		break;
++	case FBIO_COPYRECT:
++		if (copy_from_user(&copy, argp, sizeof(copy)))
++			return -EFAULT;
++		if (!lock_fb_info(info))
++			return -ENODEV;
++		console_lock();
++		(*(info->fbops->fb_copyarea))(info, &copy);
++		console_unlock();
++		unlock_fb_info(info);
++		break;
+ 	default:
+ 		if (!lock_fb_info(info))
+ 			return -ENODEV;
+diff --git a/include/linux/fb.h b/include/linux/fb.h
+index d1631d3..fc18459 100644
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -39,6 +39,8 @@
+ #define FBIOPUT_MODEINFO        0x4617
+ #define FBIOGET_DISPINFO        0x4618
+ #define FBIO_WAITFORVSYNC	_IOW('F', 0x20, __u32)
++#define FBIO_COPYRECT		_IOW('F', 0x22, struct fb_copyarea)
++#define FBIO_FILLRECT		_IOW('F', 0x23, struct fb_fillrect)
+
+ #define FB_TYPE_PACKED_PIXELS		0	/* Packed Pixels	*/
+ #define FB_TYPE_PLANES			1	/* Non interleaved planes */
