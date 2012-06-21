@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2FUPyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 11:54:10 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59137 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755981Ab2FUPxm convert rfc822-to-8bit (ORCPT
+	id S1756067Ab2FUP4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 11:56:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29036 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812Ab2FUP4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 11:53:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FE353E0020000780008B263@nat28.tlf.novell.com>
-References: <4FDF2044020000780008A66F@nat28.tlf.novell.com>
- <CAErSpo4yf66A-MoBLyUynMaha3Oa8_M2rNpwgK+2D1LgTaLhUw@mail.gmail.com>
- <4FE3040B020000780008B030@nat28.tlf.novell.com> <CAErSpo4Nc0RjwDEhwt=BLaKez2KRxVoVBc5EENG53VBMzgg67Q@mail.gmail.com>
- <4FE32E87.1020809@zytor.com> <4FE353E0020000780008B263@nat28.tlf.novell.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 21 Jun 2012 09:53:20 -0600
-Message-ID: <CAErSpo5-UcvYGTX66REMf--QNdv0kyhmTgp3vyG39GOQQUJ=Lg@mail.gmail.com>
-Subject: Re: [PATCH] x86/PCI: adjust section annotations
-To: Jan Beulich <JBeulich@suse.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-cris-kernel@axis.com,
-        mingo@elte.hu, Ingo Molnar <mingo@kernel.org>, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 21 Jun 2012 11:56:46 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XOt6boVe9ZQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=qi6N67ELxb11JToVk7kA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340294204.27036.183.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] ring-buffer: fix uninitialized read_stamp
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com
+Date: Thu, 21 Jun 2012 11:56:44 -0400
+In-Reply-To: <1340293617.27036.177.camel@gandalf.stny.rr.com>
+References: <CAJL_eku9byV+Uk-5boR52HLEO0D-++2h_y=PeaaQG_PrCuALhQ@mail.gmail.com>
+	 <1340060577-9112-1-git-send-email-dhsharp@google.com>
+	 <1340293617.27036.177.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 9:03 AM, Jan Beulich <JBeulich@suse.com> wrote:
->>>> On 21.06.12 at 16:24, "H. Peter Anvin" <hpa@zytor.com> wrote:
->> On 06/21/2012 07:19 AM, Bjorn Helgaas wrote:
->>>
->>> OK.  Ingo, do you want to take this after all?
->>>
->>> If I push stuff through my PCI tree, I try really hard to make PCI
->>> overall more consistent, not less consistent, so I'm not very
->>> interested in taking minor improvements to just one arch.
->>>
->>
->> I can take this, but the above sounds very close to a NAK to me...
->
-> If that one hunk is causing so much grief, how about I resend
-> the whole patch with that one change dropped?
+On Thu, 2012-06-21 at 11:46 -0400, Steven Rostedt wrote:
 
-I'm sorry, I didn't handle this very well.  I'm afraid it sounded as
-if I were faulting you for not doing more, but that's not it.
-Suggesting the pcibios_setup() change was valuable because reviewing
-it uncovered a bug and a nice cleanup opportunity, so thank you for
-that!
+> I'm wondering if it would be better to just not do the swap, and return
+> NULL when it is empty. This would also fix the problem, as the
+> read_stamp will only be set when you actually have data.
 
-My *intent*, in this as in other cases, is just to encourage folks to
-step back from "solving my immediate problem" and take a broader view
-that includes "does this same problem occur other places?" and "how
-can I leverage this point solution to make things a bit cleaner for
-everybody?"
+Does something like this work for you. Note, this is totally untested!
 
-In the time I've spent on this email thread, I could have done the
-whole cleanup myself, but in the long term, I think it's important to
-encourage an attitude of preserving and improving the commons.  Maybe
-the fact that I'd rather deal with more general solutions will
-encourage employers to support that kind of work, or at least give
-people more ammunition when they management to support it.  That's my
-hope, anyway :)
+-- Steve
 
-Bjorn
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index ad0239b..5943044 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3246,6 +3246,10 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	if (cpu_buffer->commit_page == cpu_buffer->reader_page)
+ 		goto out;
+ 
++	/* Don't bother swapping if the ring buffer is empty */
++	if (rb_num_of_entries(cpu_buffer) == 0)
++		goto out;
++
+ 	/*
+ 	 * Reset the reader page to size zero.
+ 	 */
+
+
