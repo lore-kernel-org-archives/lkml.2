@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740Ab2FURXB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 13:23:01 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49591 "EHLO
+	id S1759984Ab2FUR3I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 13:29:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38462 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759957Ab2FURXA convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755032Ab2FUR3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 13:23:00 -0400
+	Thu, 21 Jun 2012 13:29:06 -0400
+Date: Thu, 21 Jun 2012 14:28:59 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: "Pierre-Loup A. Griffais" <pgriffais@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, torvalds@linux-foundation.org,
+        Mike Sartain <mikesart@valvesoftware.com>
+Subject: Re: [PATCH] perf symbols: Follow .gnu_debuglink section to find
+ separate symbols
+Message-ID: <20120621172859.GA17747@infradead.org>
+References: <4FE24D31.3070608@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <4FE2FCFB.4040808@jp.fujitsu.com>
-References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com>
- <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com>
- <4FE26470.90401@kernel.org> <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com>
- <4FE27F15.8050102@kernel.org> <CAHGf_=pDw4axwG2tQ+B5hPks-sz2S5+G1Kk-=HSDmo=DSXOkEw@mail.gmail.com>
- <4FE2A937.6040701@kernel.org> <4FE2FCFB.4040808@jp.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Thu, 21 Jun 2012 13:22:37 -0400
-Message-ID: <CAHGf_=rZm8JhyQg_Fuovw3STR=bZBUpUvAXH2yYtNn0phjOU5g@mail.gmail.com>
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE24D31.3070608@nvidia.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Hm. I'm sorry if I couldn't chase the disucussion...Can I make summary ?
->
-> As you shown, it seems to be not difficult to counting free pages under
-> MIGRATE_ISOLATE.
-> And we can know the zone contains MIGRATE_ISOLATE area or not by simple
-> check.
-> for example.
-> ==
->                set_pageblock_migratetype(page, MIGRATE_ISOLATE);
->                move_freepages_block(zone, page, MIGRATE_ISOLATE);
->                zone->nr_isolated_areas++;
-> =
->
-> Then, the solution will be adding a function like following
-> =
-> u64 zone_nr_free_pages(struct zone *zone) {
->        unsigned long free_pages;
->
->        free_pages = zone_page_state(NR_FREE_PAGES);
->        if (unlikely(z->nr_isolated_areas)) {
->                isolated = count_migrate_isolated_pages(zone);
->                free_pages -= isolated;
->        }
->        return free_pages;
-> }
-> =
->
-> Right ?
+Em Wed, Jun 20, 2012 at 03:22:41PM -0700, Pierre-Loup A. Griffais escreveu:
+> The .gnu_debuglink section is specified to contain the filename of the
+> debug info file, as well as a CRC that can be used to validate it.
 
-This represent my intention exactly. :)
+> This provides more context:
+> http://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+> 
+> +++ b/tools/perf/util/symbol.c
+> +static int filename__read_debuglink(const char *filename,
+> +				    char *path, size_t size)
+> +{
 
-> and... zone->all_unreclaimable is a different problem ?
+Isn't there any other function that opens an ELF file, looks for an
+specific session to then read its contents?
 
-Yes, all_unreclaimable derived livelock don't depend on memory hotplug.
+Couldn't it be reused here?
+
+> +		case SYMTAB__DEBUGLINK: {
+> +			char *last_slash;
+> +			strncpy(name, dso->long_name, size);
+> +			last_slash = name + dso->long_name_len;
+> +			while (last_slash && *last_slash != '/')
+> +				last_slash--;
+
+Why the test for last_slash to be != NULL? How could it ever be? This is
+an optimization since we have the dso->long_name_len so that we avoid
+using strrchr that in turn would do an strlen?
+
+So the test should be:
+
+			while (last_slash != name && *last_slash != '/')
+
+To avoid underflowing, right?
+
+> +			if (last_slash)
+> +				last_slash++;
+> +			filename__read_debuglink(dso->long_name, last_slash,
+
+How last_slash can point to the path? It looks like it points to the
+basename, no?
+
+Yeah, it is, and then your algorithm will work because last_slash
+doesn't point to the _path_, but to a string _preceded_ by the path, so
+for /bin/ls, the debuglink content would be ls.debug and that is what
+will be stashed there, ending up with:
+
+name = "/bin/\0"
+last_slash---^
+name = "/bin/ls.debug\0"
+
+I.e. its not really the last slash, but where the debuglink content has
+to be stashed, concatenating with the same dirname as the associated
+binary.
+
+Can you please rename "last_slash" to "debuglink"? And "path" to
+"debuglink" as well in the routine that reads the debuglink.
+
+> +						 size - (last_slash - name));
+> +			}
+
+Other than that, thanks a lot for working on this, surely we have to
+support this feature!
+
+- ARnaldo
