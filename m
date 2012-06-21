@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759892Ab2FUQwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 12:52:23 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:51302 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759870Ab2FUQwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 12:52:21 -0400
-Date: Thu, 21 Jun 2012 11:52:20 -0500
-From: Robin Holt <holt@sgi.com>
+	id S1759936Ab2FURH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 13:07:59 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:39632 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759913Ab2FURH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 13:07:58 -0400
+Date: Thu, 21 Jun 2012 19:07:43 +0200
+From: Jean Delvare <khali@linux-fr.org>
 To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Robin Holt <holt@sgi.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-kernel@vger.kernel.org,
-        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] phys_efi_set_virtual_address_map needs va, no pa.
-Message-ID: <20120621165220.GQ3464@sgi.com>
-References: <20120620082457.GE3464@sgi.com>
- <20120620120702.GA3983@srcf.ucam.org>
- <4FE23592.60201@linux.intel.com>
- <20120621002742.GL3464@sgi.com>
- <4FE26EF9.5060004@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FE26EF9.5060004@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>,
+        hpa@zytor.com
+Subject: Re: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
+Message-ID: <20120621190743.2e6601f6@endymion.delvare>
+In-Reply-To: <4FE34BCB.5050305@linux.intel.com>
+References: <20120621162807.3c621d46@endymion.delvare>
+	<4FE34BCB.5050305@linux.intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 05:46:49PM -0700, H. Peter Anvin wrote:
-> On 06/20/2012 05:27 PM, Robin Holt wrote:
-> > 
-> > What do you need from me?  If you want me to help with this, I have a
-> > _WHOLE_ lot of learning to do.  Can you give me any pointers?
-> > 
-> > We are trying to get this finally fixed.  We have had work-around code
-> > in SLES11 SP1, SLES11 SP2, and RHEL 6.x.  I would love to get this fixed
-> > for future distro snaps.
-> > 
+On Thu, 21 Jun 2012 09:28:59 -0700, H. Peter Anvin wrote:
+> Good spotting, but I'm worried this is the wrong fix.
 > 
-> If you want to tackle it, the task is basically that when we modify the
-> pgds in 32-bit legacy (non-PAE) mode, we should make the corresponding
-> modifications to initial_page_table, and in 64-bit mode to
-> real_mode_header->trampoline_pgd.  It might be worthwhile to introduce a
-> common pointer for both, obviously.
+> This is a userspace ABI change, and the and we have used "dts" for debug
+> store (debug trace store?) for a very long tie, whereas digital thermal
+> sensor only has been used since 2010; another *major* question is which
+> of these is more likely to be of interest to userspace.
 
-I am completely lost as to what should be done.  How do we know
-which identity maps need to be created?  Do we just add them as we are
-scanning the e820/EFI memory maps and include the reserved, etc ranges?
-Do we look at the table handed to us by EFI at the beginning of boot and
-use that as the basis?  Or do we simply wait until the kernel's memory
-initialization is complete and cover all of physical memory from zero
-up to the highest physical address?
+I am aware of this problem. I found the bug because I was looking for
+the Digital Thermal Sensor feature, and /proc/cpuinfo said "dts" but
+the driver wouldn't work, this confused me. So at least the Digital
+Thermal Sensor is of interest. That being said I believe interest is
+more from humans than software, which is why I do not feel bad changing
+it. The current situation could already lead to false positives anyway,
+both for humans and software.
 
-> This is currently handled via something called the pgd_list (when we
-> update the top level kernel address space we walk pgd_list and update
-> them all), but there are two issues:
-> 
-> 1. Obviously, in the case of the 1:1 map, we don't just need to maintain
-> the kernel area, but the "user space" part of the address space should
-> contain a copy, as well.
-> 
-> 2. To complicate things, there is code in there to grab an mm lock for
-> the benefit of Xen.  The 1:1 map doesn't have an mm associated with it,
-> so I'm not quite sure how that is to be handled.  Perhaps Xen just plain
-> won't need it and we can just bypass it, but I have no bloody idea.
-> 
-> It is also a bit "cute" how we seem to make a function call to indirect
-> through a pointer (why on Earth is pgd_page_get_mm() not an inline?!),
-> and then grab a lock unconditionally, regardless of if we are affected
-> by Xen or not.
-> 
-> 	-hpa
+If your "right fix" is to find something else for the Digital Thermal
+Sensor, I doubt you can find something that won't confuse people even
+more. Especially when there is also the Package Thermal Sensor feature
+which is properly labeled "pts" already. "DTS" is widely used in the
+technical documentation to refer to this feature.
+
+And FWIW, X86_FEATURE_DS has no user in the kernel. Doesn't look like a
+key feature to me, but maybe my view is biased...
+
+-- 
+Jean Delvare
