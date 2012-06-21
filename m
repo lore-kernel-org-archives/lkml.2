@@ -1,37 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab2FUHyl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 03:54:41 -0400
-Received: from mail.renton.name ([90.155.165.44]:36703 "EHLO
-	beaver.old-horrors.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab2FUHyk (ORCPT
+	id S1757649Ab2FUH4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 03:56:30 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48725 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab2FUH42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 03:54:40 -0400
-Date: Thu, 21 Jun 2012 11:54:28 +0400
-From: Alexey Vlasov <renton@renton.name>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Attaching a process to cgroups
-Message-ID: <20120621075428.GE31797@beaver>
-References: <20120619185856.GC31797@beaver>
- <1340195298.15707.3.camel@marge.simpson.net>
+	Thu, 21 Jun 2012 03:56:28 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FE2D2F4.2020202@jp.fujitsu.com>
+Date: Thu, 21 Jun 2012 16:53:24 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1340195298.15707.3.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, yinghan@google.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 2/2] memcg: add per cgroup dirty pages accounting
+References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com> <1339761717-29070-1-git-send-email-handai.szj@taobao.com> <xr93k3z8twtg.fsf@gthelen.mtv.corp.google.com> <4FDC28F0.8050805@jp.fujitsu.com> <CAFj3OHXuX7tpDe4famK3fFMZBcj2w-9mDs9mD9P_-SwaRKx8tg@mail.gmail.com>
+In-Reply-To: <CAFj3OHXuX7tpDe4famK3fFMZBcj2w-9mDs9mD9P_-SwaRKx8tg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 02:28:18PM +0200, Mike Galbraith wrote:
-> 
-> kernel/cgroup.c::cgroup_attach_task()
-> {
-> ...
-> 	synchronize_rcu();
-> ...
-> }
+(2012/06/19 23:31), Sha Zhengju wrote:
+> On Sat, Jun 16, 2012 at 2:34 PM, Kamezawa Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com>  wrote:
+>> (2012/06/16 0:32), Greg Thelen wrote:
+>>>
+>>> On Fri, Jun 15 2012, Sha Zhengju wrote:
+>>>
+>>>> This patch adds memcg routines to count dirty pages. I notice that
+>>>> the list has talked about per-cgroup dirty page limiting
+>>>> (http://lwn.net/Articles/455341/) before, but it did not get merged.
+>>>
+>>>
+>>> Good timing, I was just about to make another effort to get some of
+>>> these patches upstream.  Like you, I was going to start with some basic
+>>> counters.
+>>>
+>>> Your approach is similar to what I have in mind.  While it is good to
+>>> use the existing PageDirty flag, rather than introducing a new
+>>> page_cgroup flag, there are locking complications (see below) to handle
+>>> races between moving pages between memcg and the pages being {un}marked
+>>> dirty.
+>>>
+>>>> I've no idea how is this going now, but maybe we can add per cgroup
+>>>> dirty pages accounting first. This allows the memory controller to
+>>>> maintain an accurate view of the amount of its memory that is dirty
+>>>> and can provide some infomation while group's direct reclaim is working.
+>>>>
+>>>> After commit 89c06bd5 (memcg: use new logic for page stat accounting),
+>>>> we do not need per page_cgroup flag anymore and can directly use
+>>>> struct page flag.
+>>>>
+>>>>
+>>>> Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
+>>>> ---
+>>>>   include/linux/memcontrol.h |    1 +
+>>>>   mm/filemap.c               |    1 +
+>>>>   mm/memcontrol.c            |   32 +++++++++++++++++++++++++-------
+>>>>   mm/page-writeback.c        |    2 ++
+>>>>   mm/truncate.c              |    1 +
+>>>>   5 files changed, 30 insertions(+), 7 deletions(-)
+>>>>
+>>>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>>>> index a337c2e..8154ade 100644
+>>>> --- a/include/linux/memcontrol.h
+>>>> +++ b/include/linux/memcontrol.h
+>>>> @@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
+>>>>         MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>>>>         MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+>>>>         MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+>>>> +       MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+>>>>         MEM_CGROUP_STAT_NSTATS,
+>>>>   };
+>>>>
+>>>> diff --git a/mm/filemap.c b/mm/filemap.c
+>>>> index 79c4b2b..5b5c121 100644
+>>>> --- a/mm/filemap.c
+>>>> +++ b/mm/filemap.c
+>>>> @@ -141,6 +141,7 @@ void __delete_from_page_cache(struct page *page)
+>>>>          * having removed the page entirely.
+>>>>          */
+>>>>         if (PageDirty(page)&&    mapping_cap_account_dirty(mapping)) {
+>>>> +               mem_cgroup_dec_page_stat(page,
+>>>> MEM_CGROUP_STAT_FILE_DIRTY);
+>>>
+>>>
+>>> You need to use mem_cgroup_{begin,end}_update_page_stat around critical
+>>> sections that:
+>>> 1) check PageDirty
+>>> 2) update MEM_CGROUP_STAT_FILE_DIRTY counter
+>>>
+>>> This protects against the page from being moved between memcg while
+>>> accounting.  Same comment applies to all of your new calls to
+>>> mem_cgroup_{dec,inc}_page_stat.  For usage pattern, see
+>>> page_add_file_rmap.
+>>>
+>>
+>> If you feel some difficulty with mem_cgroup_{begin,end}_update_page_stat(),
+>> please let me know...I hope they should work enough....
+>>
+>
+> Hi, Kame
+>
+> While digging into the bigger lock of mem_cgroup_{begin,end}_update_page_stat(),
+> I find the reality is more complex than I thought. Simply stated,
+> modifying page info
+> and update page stat may be wide apart and in different level (eg.
+> mm&fs), so if we
+> use the big lock it may lead to scalability and maintainability issues.
+>
+> For example:
+>       mem_cgroup_begin_update_page_stat()
+>       modify page information                 =>  TestSetPageDirty in　ceph_set_page_dirty() (fs/ceph/addr.c)
+>       XXXXXX                                  =>  other fs operations
+>       mem_cgroup_update_page_stat()   =>  account_page_dirtied() in　mm/page-writeback.c
+>       mem_cgroup_end_update_page_stat().
+>
+> We can choose to get lock in higher level meaning vfs set_page_dirty()
+> but this may span
+> too much and can also have some missing cases.
+> What's your opinion of this problem?
+>
 
-So nothing can be done here? (I mean if only I knew how to fix it I
-wouldn't ask about it ;)
+yes, that's sad....If set_page_dirty() is always called under lock_page(), the
+story will be easier (we'll take lock_page() in move side.)
+but the comment on set_page_dirty() says it's not true.....Now, I haven't found a magical
+way for avoiding the race.
+(*) If holding lock_page() in move_account() can be a generic solution, it will be good.
+     
+A proposal from me is a small-start. You can start from adding hooks to a generic
+functions as set_page_dirty() and __set_page_dirty_nobuffers(), clear_page_dirty_for_io().
+
+And see what happens. I guess we can add WARN_ONCE() against callers of update_page_stat()
+who don't take mem_cgroup_begin/end_update_page_stat()
+(by some new check, for example, checking !rcu_read_lock_held() in update_stat())
+
+I think we can make TODO list and catch up remaining things one by one.
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
