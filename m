@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab2FUMM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 08:12:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14178 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756842Ab2FUMM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 08:12:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="156613423"
-Message-ID: <1340280986.13910.207.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 0/4] hfsplus: stop using write_supers and s_dirt
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Jun 2012 15:16:26 +0300
-In-Reply-To: <1339587471-2713-1-git-send-email-dedekind1@gmail.com>
-References: <1339587471-2713-1-git-send-email-dedekind1@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-zjJjlPYIzBeBZqTfGQd9"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1759436Ab2FUMMf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 08:12:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40163 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756842Ab2FUMMd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 08:12:33 -0400
+Message-ID: <1340280742.18025.5.camel@twins>
+Subject: Re: [PATCH -v2 1/2] x86, microcode: Sanitize per-cpu microcode
+ reloading interface
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Date: Thu, 21 Jun 2012 14:12:22 +0200
+In-Reply-To: <1340280437-7718-2-git-send-email-bp@amd64.org>
+References: <1340280437-7718-1-git-send-email-bp@amd64.org>
+	 <1340280437-7718-2-git-send-email-bp@amd64.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-zjJjlPYIzBeBZqTfGQd9
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 2012-06-13 at 14:37 +0300, Artem Bityutskiy wrote:
-> This patch-set makes HFSPLUS file-system stop using the VFS '->write_supe=
-rs()'
-> call-back and the '->s_dirt' superblock field because I plan to remove th=
-em
-> once all users are gone.
-
-Hi, Al or Andrew, would you please consider picking this patch-set?
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-zjJjlPYIzBeBZqTfGQd9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP4xCaAAoJECmIfjd9wqK0KyoQAK81qzhv2WgRUQPqjMmCSpwa
-B7oxT5jfb13qeoeH9tkU7edu2s7kTLMaC7Bwd0w1tel1aMJ3oId9kOzw15xC2qjr
-Cw18DceVLLPIe6LR3GITFWdKXLyh3KMbXW/92/mcJlZfszAdQK1GETO1A63x3iAw
-HiYK0g9lofarCDkaAsFBH06w/rbyKqHamz6jcW9XzN9B76zfvqSKwTLr7XBEwR27
-H4E+xa2fnOKbkJa0UewC73et2tDruEmbZiDeXQ/NeuiJUMl79QAUJb0Mn5r1Y58B
-Ree5+jCTj+cJEXb6KNhlanK88GgapFAeQ7zr+MVwWGONTgssaC5uJHy0PtgpJmZ6
-X87ingpPYgzxuAAM7J9FUNcIxSxeNuZpEDcFeZ/GOZDhkBpc0B9RLdYGXnRYMqZB
-jce4hPeGr2khobC8oAWiUN1ysOs3jCoAZx/ATVvs8OkaWd19PmvFAxWg3E2BiKFC
-48Jhjv3goTozqdwzlpS0X91tMDqo2kyCxZh0TYbSzPn+NeoyfgA7vwEMsIwsFxuk
-M+n+d+uZKWjEKT1MR/dUlHMD/xeGgqQdVRUzAC0noW5f3DVGTGsAtVa3k53WYP4S
-+S7eRRMs8kf1TSddacbQuByOXtqVfUQXqvMk3VCrXkUcD/j3aVmqs4PUSd1cl8eT
-p7NEgvpCjlF35VrF2tVG
-=xquD
------END PGP SIGNATURE-----
-
---=-zjJjlPYIzBeBZqTfGQd9--
-
+On Thu, 2012-06-21 at 14:07 +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> Microcode reloading in a per-core manner is a very bad idea for both
+> major x86 vendors. And the thing is, we have such interface with which
+> we can end up with different microcode versions applied on different
+> cores of an otherwise homogeneous wrt (family,model,stepping) system.
+> 
+> So turn off the possibility of doing that per core and allow it only
+> system-wide.
+> 
+> This is a minimal fix which we'd like to see in stable too thus the
+> more-or-less arbitrary decision to allow system-wide reloading only on
+> the BSP:
+> 
+> $ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
+> ...
+> 
+> and disable the interface on the other cores:
+> 
+> $ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
+> -bash: echo: write error: Invalid argument
+> 
+> Also, allowing the reload only from one CPU (the BSP in
+> that case) doesn't allow the reload procedure to degenerate
+> into an O(n^2) deal when triggering reloads from all
+> /sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
+> simultaneously.
+> 
+> A more generic fix will follow.
+> 
+> Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Acked-by: Peter Zijlstra <peterz@infradead.org> 
