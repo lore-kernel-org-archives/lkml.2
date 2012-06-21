@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab2FUA4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 20:56:40 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37469 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab2FUA4i (ORCPT
+	id S1755412Ab2FUA5w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 20:57:52 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:58333 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571Ab2FUA5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 20:56:38 -0400
+	Wed, 20 Jun 2012 20:57:50 -0400
+Message-ID: <4FE27188.3040402@linaro.org>
+Date: Wed, 20 Jun 2012 17:57:44 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAFR8ueeFcnMCqG=A1im09crBNckgfPixsCz9oceQCpPeJ3wiNw@mail.gmail.com>
-References: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
-	<4FD345DC.6020405@acm.org>
-	<CAFR8ueca-MQWRipE+3OQSpqmJ40HKJEY7jWt6PQ+zTCQ9Bh=5Q@mail.gmail.com>
-	<4FD4DC26.5080902@acm.org>
-	<CAFR8uecF0LwbV8FvYob5m34sVbKqafrNoYOrcRUQCEOymGnYRA@mail.gmail.com>
-	<CAFR8uefK+nByiJ8tw5_KF1qEJs4du2mDdU36gg1_2nRNZXN5Fw@mail.gmail.com>
-	<20120618224253.GH32733@google.com>
-	<4FE21C15.6040409@acm.org>
-	<CAFR8ueeFcnMCqG=A1im09crBNckgfPixsCz9oceQCpPeJ3wiNw@mail.gmail.com>
-Date: Wed, 20 Jun 2012 17:56:36 -0700
-X-Google-Sender-Auth: Zo0b9lrXwnTbyIjp2ZucE4hcdFI
-Message-ID: <CAOS58YPiPK-p3dPRb9jLY0H8cKFT-RxaU4LkuMF0XHEVMLyLBw@mail.gmail.com>
-Subject: Re: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
- before checking for dead queue.
-From: Tejun Heo <tj@kernel.org>
-To: Muthu Kumar <muthu.lkml@gmail.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, Jens Axboe <axboe@kernel.dk>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: [GIT PULL] Timekeeping changes for 3.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062100-4242-0000-0000-0000020E8FCD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hey Thomas,
 
-On Wed, Jun 20, 2012 at 5:53 PM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
->> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
->> Reported-by: Muthukumar Ratty <muthur@gmail.com>
->
-> Hmm... Shouldn't this be:
->
-> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-> Tested-by: Bart Van Assche <bvanassche@acm.org>
+     Just wanted to send a pull request for my current timekeeping queue 
+for 3.6.
 
-Yeah and From: tag at the beginning too. Bart?
+Let me know if you have any concerns or objections.
 
-Thanks.
+thanks
+-john
 
--- 
-tejun
+You can find it here against current tip/timers/core:
+   git://git.linaro.org/people/jstultz/linux.git fortglx/3.6/time
+
+for you to fetch changes up to 406d3845a5b75129277576034a0b260c90495dc9:
+
+   time: Kill xtime_lock, replacing it with jiffies_lock (2012-06-20 
+20:26:58 -0400)
+
+----------------------------------------------------------------
+John Stultz (8):
+       time: Condense timekeeper.xtime into xtime_sec
+       time: Rework timekeeping functions to take timekeeper ptr as argument
+       time: Refactor accumulation of nsecs to secs
+       time: Whitespace cleanups per Ingo's requests
+       time: Explicitly use u32 instead of int for shift values
+       time: Move TAI managment into timekeeping core from ntp
+       time: Add CLOCK_TAI clockid
+       time: Kill xtime_lock, replacing it with jiffies_lock
+
+  drivers/clocksource/i8253.c |    2 +-
+  include/linux/jiffies.h     |    3 +-
+  include/linux/time.h        |    9 +-
+  kernel/posix-timers.c       |   10 +
+  kernel/time/jiffies.c       |    6 +-
+  kernel/time/ntp.c           |   18 +-
+  kernel/time/tick-common.c   |    8 +-
+  kernel/time/tick-internal.h |    1 -
+  kernel/time/tick-sched.c    |   22 +--
+  kernel/time/timekeeping.c   |  461 
+++++++++++++++++++++++++++-----------------
+  10 files changed, 332 insertions(+), 208 deletions(-)
+
