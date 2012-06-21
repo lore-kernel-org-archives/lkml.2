@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab2FUCdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 22:33:32 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47610 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753814Ab2FUCdb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 22:33:31 -0400
-X-Sasl-enc: VNcwvKCIts+Jrpq6m841C21KBe4fOfVn7XczSUoStO// 1340246010
-Date: Wed, 20 Jun 2012 23:33:27 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@amd64.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [PATCH] x86, microcode: Make reload interface per system
-Message-ID: <20120621023327.GA16269@khazad-dum.debian.net>
-References: <20120619051116.GB31591@aftab.osrc.amd.com>
- <1340093864.21745.6.camel@twins>
- <20120619102250.GA787@aftab.osrc.amd.com>
- <1340101568.21745.37.camel@twins>
- <20120619182228.GA18816@khazad-dum.debian.net>
- <4FE0DF9F.10401@zytor.com>
- <20120620234651.GD4223@khazad-dum.debian.net>
- <4FE26182.5070107@zytor.com>
- <20120621000631.GH4223@khazad-dum.debian.net>
- <4FE2683E.4060707@zytor.com>
+	id S1756284Ab2FUCeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 22:34:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23902 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753360Ab2FUCeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Jun 2012 22:34:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="168292781"
+Message-ID: <4FE28823.80704@intel.com>
+Date: Thu, 21 Jun 2012 10:34:11 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FE2683E.4060707@zytor.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@elte.hu, jolsa@redhat.com, eranian@google.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH V6 0/13] perf: Intel uncore pmu counting support
+References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com> <1340208092.21745.114.camel@twins>
+In-Reply-To: <1340208092.21745.114.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jun 2012, H. Peter Anvin wrote:
-> On 06/20/2012 05:06 PM, Henrique de Moraes Holschuh wrote:
-> > No, because dd if=<whatever> of=/dev/cpu/microcode bs=1M means I have to
-> > add dd to the initramfs or to busybox, AND it will break the day the
-> > microcode data file gets bigger than 1M.  And it will be at best very
-> > annoying to have to special case each vendor to locate the correct
-> > microcode, etc.
+On 06/21/2012 12:01 AM, Peter Zijlstra wrote:
 > 
-> No.
+> ok, so with this stuff something like:
 > 
-> The whole point is you won't have to put ANYTHING in your initramfs,
-> period.  The early microcode blob will be all you need there.
+>   perf stat -ae uncore/event=clockticks/ foo
+> 
+> will register a counter per cpu, which is somewhat silly since we only
+> need one per node. What would be the best way to 'fix' this?
+> 
+> We could of course create another variant of -a which iterates nodes
+> instead of cpus, -N or so.
+> 
+> Alternatively we could try and describe this in sysfs in some way, one
+> possibility would be to include a link to /sys/devices/system/{cpu,node}
+> or somesuch and use that link to iterate the correct space.
+> 
+> Any other suggestions?
+> 
+How about treat the 'cpu' parameter for uncore event as socket id instead
+of cpu id?
 
-Yes.  And the sooner it gets done that way, the better.  But until then, IMO
-the firmware_request + sysfs trigger interface is easier and friendler to
-use than /dev/cpu/microcode.
+Regards
+Yan, Zheng
 
-> So the only issue left is what to do when you want to update the
-> microcode in an already running system.
 
-Well, IMO the firmware interface makes that somewhat easier on the userland
-side, as it is more userfriendly from a generic support for processor
-microcode updates point-of-view.  And the sysfs trigger isn't that horrible,
-it is certainly easier to script than an ioctl or syscall.
-
-I guess it's better if we just agree to disagree on this...
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
