@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758266Ab2FUHHI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 03:07:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34799 "EHLO mga02.intel.com"
+	id S1758394Ab2FUHHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 03:07:55 -0400
+Received: from ozlabs.org ([203.10.76.45]:44121 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755113Ab2FUHHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 03:07:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="160441010"
-Date: Thu, 21 Jun 2012 10:08:37 +0300
-From: Andrei Emeltchenko <Andrei.Emeltchenko.news@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] Docs: printk-formats: add description for %pMR
-Message-ID: <20120621070827.GA9341@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <Andrei.Emeltchenko.news@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Randy Dunlap <rdunlap@xenotime.net>
-References: <1338210316-12299-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
- <1340189089-20257-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
- <20120620141957.d865133a.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120620141957.d865133a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757659Ab2FUHHx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 03:07:53 -0400
+Message-ID: <1340262473.1998.19.camel@concordia>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (powerpc related)
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org,
+        amodra@gmail.com
+Date: Thu, 21 Jun 2012 17:07:53 +1000
+In-Reply-To: <1340259896.3942.2.camel@pasglop>
+References: <20120620175014.a822a766e0f91f7b44f48fa0@canb.auug.org.au>
+	 <1340256961.1998.11.camel@concordia> <1340259896.3942.2.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Jun 20, 2012 at 02:19:57PM -0700, Andrew Morton wrote:
-> > --- a/Documentation/printk-formats.txt
-> > +++ b/Documentation/printk-formats.txt
-> > @@ -56,6 +56,7 @@ Struct Resources:
-> >  MAC/FDDI addresses:
-> >  
-> >  	%pM	00:01:02:03:04:05
-> > +	%pMR	05:04:03:02:01:00
-> >  	%pMF	00-01-02-03-04-05
-> >  	%pm	000102030405
-> >  
-> > @@ -67,6 +68,10 @@ MAC/FDDI addresses:
-> >  	the 'M' specifier to use dash ('-') separators instead of the default
-> >  	separator.
-> >  
-> > +	For Bluetooth addresses the 'R' specifier shall be used after the 'M'
-> > +	specifier to use reversed byte order suitable for visual interpretation
-> > +	of Bluetooth addresses which are in the little endian order.
-> > +
+On Thu, 2012-06-21 at 16:24 +1000, Benjamin Herrenschmidt wrote:
+> On Thu, 2012-06-21 at 15:36 +1000, Michael Ellerman wrote:
+> > 
+> > powerpc64-linux-ld: /src/next/net/openvswitch/vport-netdev.c:189:(.text+0x89b990): 
+> >         sibling call optimization to `_restgpr0_28' does not allow automatic multiple TOCs;
+> >         recompile with -mminimal-toc or -fno-optimize-sibling-calls, or make `_restgpr0_28' extern
+> > 
+> > 
+> > And those are generated calls so I don't see how we can fix them.
 > 
-> huh, I didn't know about that file, or I forgot about it.
+> Is this a module ? We should really be linking that stuff directly with the module....
 
-This happens also to me.
+No, it's builtin.
 
-> I wonder if it is otherwise up to date.
-> Do we really need it?  
+> The interesting thing is that we do build everything except a handful of
+> files with -mminimal-toc unless something's wrong with our main Makefile....
 
-I feel that the document is very good.
+Yeah, the top arch Makefile sets it, though we do override it in a few
+places. I tried removing those overrides and it didn't seem to make any
+difference.
 
-> If we can sufficiently document the printk
-> formats in lib/vsprintf.c then let's remove
-> Documentation/printk-formats.txt.  
+> Can you show the full build command that triggers the above ?
 
-Until I read that vsprintf.c I did not know where to find printk format
-specifiers. It does make sense to keep it.
+Well that would be a few MBs of log, but here's an excerpt:
 
-> Otherwise, I shall do this:
-> 
-> 
-> --- a/lib/vsprintf.c
-> +++ a/lib/vsprintf.c
-> @@ -1297,6 +1297,8 @@ qualifier:
->   *   case.
->   * %n is ignored
->   *
-> + * ** Please update Documentation/printk-formats.txt when making changes **
-> + *
+make -f scripts/Makefile.build obj=net/openvswitch
+  /opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-gcc -m64 -Wp,-MD,net/openvswitch/.vport-netdev.o.d  -nostdinc -isystem /opt/cross/gcc-4.6.3-nolibc/powerpc64-linux/lib/gcc/powerpc64-linux/4.6.3/include -I/home/michael/src/kmk/next/arch/powerpc/include -Iarch/powerpc/include/generated -Iinclude  -include /home/michael/src/kmk/next/include/linux/kconfig.h -D__KERNEL__ -Iarch/powerpc -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -msoft-float -pipe -Iarch/powerpc -mminimal-toc -mtraceback=no -mcall-aixdesc -mtune=power7 -mtune=cell -mno-altivec -mno-vsx -mno-spe -mspe=no -funit-at-a-time -fno-dwarf2-cfi-asm -mno-string -mno-sched-epilog -Wa,-maltivec -fno-reorder-blocks -fno-ipa-cp-clone -fno-partial-inlining -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -g -femit-struct-debug-baseonly -pg -fno-inline-functions-called-once -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO  -fprofile-arcs -ftest-coverage    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(vport_netdev)"  -D"KBUILD_MODNAME=KBUILD_STR(openvswitch)" -c -o net/openvswitch/.tmp_vport-netdev.o net/openvswitch/vport-netdev.c
+  if [ "-pg" = "-pg" ]; then set -e ; perl /home/michael/src/kmk/next/scripts/recordmcount.pl "powerpc" "little" "64" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-objdump" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-objcopy" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-gcc -m64 -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -msoft-float -pipe -Iarch/powerpc -mminimal-toc -mtraceback=no -mcall-aixdesc -mtune=power7 -mtune=cell -mno-altivec -mno-vsx -mno-spe -mspe=no -funit-at-a-time -fno-dwarf2-cfi-asm -mno-string -mno-sched-epilog -Wa,-maltivec -fno-reorder-blocks -fno-ipa-cp-clone -fno-partial-inlining -Wframe-larger-than=2048  -fno-stack-protector -Wno-unused-but-set-variable -g  -femit-struct-debug-baseonly -pg  -fno-inline-functions-called-once -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-ld -m elf64ppc" "/opt/cross/gcc-4.6-nolibc/powerpc64-linux/bin/powerpc64-linux-nm --synthetic" "" "" "0" "net/openvswitch/vport-netdev.o"; fi;
 
-Looks good.
+And then a whole bunch of calls to ld.
 
-Best regards 
-Andrei Emeltchenko 
+So we are at least building that file with -mminimal-toc.
+
+cheers
 
