@@ -1,101 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582Ab2FUDs5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 23:48:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33929 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832Ab2FUDs4 (ORCPT
+	id S1758598Ab2FUDuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 23:50:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42804 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758523Ab2FUDuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 23:48:56 -0400
-Date: Thu, 21 Jun 2012 13:48:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, David Rientjes <rientjes@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Mackey <tdmackey@twitter.com>, Pekka Enberg <penberg@kernel.org>
-Subject: linux-next: manual merge of the tip tree with the slab tree
-Message-Id: <20120621134844.36eacc287e76a38b960f2ef2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta8 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__21_Jun_2012_13_48_44_+1000_GzACR0nQ70yUgwR="
+	Wed, 20 Jun 2012 23:50:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQWUo3uffM4NCUORJXR1pdPaf0E1Sws1hwVNAibHg5_yjQ@mail.gmail.com>
+References: <CAE9FiQU=Uvj_OFYQLdddf8j59vE7D0aE9cdNZv7P8_Rn7=MmUQ@mail.gmail.com>
+	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
+	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
+	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
+	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
+	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
+	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
+	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
+	<CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
+	<CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
+	<20120620193438.GB2248@gmail.com>
+	<CAE9FiQWUo3uffM4NCUORJXR1pdPaf0E1Sws1hwVNAibHg5_yjQ@mail.gmail.com>
+Date: Wed, 20 Jun 2012 20:50:03 -0700
+X-Google-Sender-Auth: ceDCwFNB6vnPGQcWzqEMi-uZq-g
+Message-ID: <CAE9FiQWKxe9VYvrQy5h4RP2dS7YHHXu4icjC+KPipkRKbsZN1g@mail.gmail.com>
+Subject: Re: SNB PCI root information
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Ulrich Drepper <drepper@gmail.com>,
+        jbarnes@virtuousgeek.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b33d6502ab75304c2f369b5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__21_Jun_2012_13_48_44_+1000_GzACR0nQ70yUgwR=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--047d7b33d6502ab75304c2f369b5
+Content-Type: text/plain; charset=ISO-8859-1
 
-Hi all,
+On Wed, Jun 20, 2012 at 7:37 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Jun 20, 2012 at 12:34 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>>> if the vendor provide _PXM, that _PXM should be right and be
+>>> trusted.
+>>>
+>>> if the vendor does not provide _PXM, we can have command line
+>>> to input it before user can get one updated BIOS from vendor.
+>>
+>> So how about an incorrect _PXM, or a slightly inefficient one?
+>> Why shouldn't it be possible for the user to override it?
+>
+> Try to keep the code simple.
+>
+>>
+>> I mean, if we create a parameter space that tweaks data then why
+>> not make it complete and allow *all* firmware data to be
+>> (optionally) modified, from the kernel boot line?
+>
+> that pxm/node for pci device should be consistent with srat table etc,
+> so better solution is that BIOS keep them consistent.
+>
+> If BIOS provide _PXM for pci device, the _PXM should have more chance
+> to be right.
+>
+> Anyway if you insist that it should cover that wrong case, let me
+> check if it could be done simply.
 
-Today's linux-next merge of the tip tree got conflicts in mm/slab.c and
-mm/slub.c between commit e7b691b085fd ("slab/mempolicy: always use local
-policy from interrupt context") from the slab tree and commit
-2ab41dd59922 ("mm: Optimize put_mems_allowed() usage") from the tip tree.
+please check -v3, and it will add 40 lines.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+and -v2 is about 25 lines.
 
-diff --cc mm/slab.c
-index dd607a8,5070f96..0000000
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@@ -3341,8 -3367,8 +3341,8 @@@ static void *fallback_alloc(struct kmem
-  	local_flags =3D flags & (GFP_CONSTRAINT_MASK|GFP_RECLAIM_MASK);
- =20
-  retry_cpuset:
-- 	cpuset_mems_cookie =3D get_mems_allowed();
-+ 	cpuset_mems_cookie =3D read_mems_allowed_begin();
- -	zonelist =3D node_zonelist(slab_node(current->mempolicy), flags);
- +	zonelist =3D node_zonelist(slab_node(), flags);
- =20
-  retry:
-  	/*
-diff --cc mm/slub.c
-index f96d8bc,fb2ef09..0000000
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@@ -1616,8 -1616,8 +1616,8 @@@ static void *get_any_partial(struct kme
-  		return NULL;
- =20
-  	do {
-- 		cpuset_mems_cookie =3D get_mems_allowed();
-+ 		cpuset_mems_cookie =3D read_mems_allowed_begin();
- -		zonelist =3D node_zonelist(slab_node(current->mempolicy), flags);
- +		zonelist =3D node_zonelist(slab_node(), flags);
-  		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
-  			struct kmem_cache_node *n;
- =20
+Thanks
 
---Signature=_Thu__21_Jun_2012_13_48_44_+1000_GzACR0nQ70yUgwR=
-Content-Type: application/pgp-signature
+Yinghai
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+--047d7b33d6502ab75304c2f369b5
+Content-Type: application/octet-stream; name="busnum_node_v3.patch"
+Content-Disposition: attachment; filename="busnum_node_v3.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h3paiuk40
 
-iQIcBAEBCAAGBQJP4pmcAAoJEECxmPOUX5FEcS0P/R09twGtt4C0QbHoJ4BbIL1D
-SBGKZ9W2RQlOTXWcjXWFJyZRooN5gexFsiu4sy02FRuEh9H8jzzdR2pxs7vpoQWQ
-Ea9PatkY7apVDJjRG6ObR+4/WUjD82JudSuKllMNtmkipcQu2BK2Z/+Ek20E0zdt
-HdG4bKb98S3/4K+tfcoZjHVZcJXr2dWWIGjCjtXZTyX9pAdHdb0D2DE2hY0To6dw
-1uxsYq+tAxzxYUvddYIy5O+lt03RkNLF9qx+62H7D2y64CkRLysdbwPh92/DHaDM
-t4RAD/M1v+9pnKPcEyfZh84LEiiLaNm3zF87jt6hSf8jxD6CShUzG6gCAMyNiy4C
-oUnALi0VUnbtIRZ1ujAjiOVSk/RgBZponMQGxB9haAKt9Xw6emG4wUOvRjt1/415
-x0RlSwM8nTvzhNDdQGvMAoMVdTu3hN0BkcKng0i4gidxRgBfBoI+9/L0ppgJ2a6l
-1sB1S2xKl/0VTPfRXL99tvBJiUyA4syob1XRrIRgbgsSd4Si2UMPPR5sYptoa5L6
-Eq1aDYy/ypZy7AtCajVH5j7DmjEZwH8s/3ikXY/L8zGHN14hWjeoxUoEj4y86Gm1
-1rAGVbbB5kIrOqX0QZ8G8J947RhGIutrXGtey64/vGVuUJcxzx2cphyKaFZDh4x7
-2zRn3l/2IW8pAU/oteqW
-=OyA2
------END PGP SIGNATURE-----
-
---Signature=_Thu__21_Jun_2012_13_48_44_+1000_GzACR0nQ70yUgwR=--
+U3ViamVjdDogW1BBVENIXSBQQ0ksIFg4NjogYnVzbnVtL25vZGUgYm9vdCBjb21tYW5kIGxpbmUg
+Zm9yIHBjaSBkZXYgbm9kZSBzZXR0aW5nLgoKU29tZSBpbnRlbCBuZXcgc2FuZHlicmlkZ2Ugb3Ig
+bmV3ZXIgdHdvIHNvY2tldHMgc3lzdGVtIGRvIHN1cHBvcnQgc3VwcG9ydCBudW1hCmZvciBwY2kg
+ZGV2aWNlcy4gQnV0IEJJT1MgZG9lcyBub3QgcHJvdmlkZSBfUFhNIHVuZGVyIHRob3NlIHJvb3Qg
+YnVzIGluIERTRFQuCgpBZGQgYm9vdCBjb21tYW5kIGxpbmUsIHNvIHVzZXIgY291bGQgaGF2ZSBj
+aGFuY2UgdG8gaW5wdXQgbm9kZSBpbmZvIGJlZm9yZQpCSU9TIGd1eXMgZmlndXJlIG91dCB0byBh
+ZGQgX1BYTS4KCkZvbGQgZml4IGZyb20gVWxyaWNoIHRvIHVzZSAiOyIgaW5zdGVhZCBvZiAiLCIu
+CnwgVGhlIHByb2JsZW0gaXMgdGhlIHBjaT0gcGFyYW1ldGVyCnwgaGFuZGxpbmcgdXNlcyAnLCcg
+dG8gc2VwYXJhdGUgcGFyYW1ldGVycyBhbmQgdGhlcmVmb3JlIHRoZSBzZWNvbmQgUENJCnwgcm9v
+dCBpbmZvcm1hdGlvbiwgc2VwYXJhdGVkIGJ5IGEgY29tbWEsIGlzIGludGVycHJldGVkIGFzIGEg
+bmV3IHBjaT0KfCBwYXJhbWV0ZXIuCgotdjM6IEFjY29yZGluZyB0byBCam9ybiBhbmQgSW5nbywg
+Y2hhbmdlIHRvIHVzZSAidXNlciBpbnB1dCBmaXJzdCIgcG9saWN5CiAgICAgc28gaXQgY291bGQg
+Y292ZXIgd3JvbmcgX1BYTSBjYXNlLgoKUmVwb3J0ZWQtYnk6IFVscmljaCBEcmVwcGVyIDxkcmVw
+cGVyQGdtYWlsLmNvbT4KU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwu
+b3JnPgoKLS0tCiBEb2N1bWVudGF0aW9uL2tlcm5lbC1wYXJhbWV0ZXJzLnR4dCB8ICAgIDUgKysr
+KysKIGFyY2gveDg2L2luY2x1ZGUvYXNtL3BjaV94ODYuaCAgICAgIHwgICAgMyArKysKIGFyY2gv
+eDg2L3BjaS9hY3BpLmMgICAgICAgICAgICAgICAgIHwgICAyMiArKysrKysrKysrKysrLS0tLS0t
+LS0tCiBhcmNoL3g4Ni9wY2kvY29tbW9uLmMgICAgICAgICAgICAgICB8ICAgMjggKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKwogNCBmaWxlcyBjaGFuZ2VkLCA0OSBpbnNlcnRpb25zKCspLCA5
+IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9Eb2N1bWVudGF0aW9uL2tlcm5lbC1wYXJh
+bWV0ZXJzLnR4dAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9Eb2N1bWVudGF0aW9uL2tl
+cm5lbC1wYXJhbWV0ZXJzLnR4dAorKysgbGludXgtMi42L0RvY3VtZW50YXRpb24va2VybmVsLXBh
+cmFtZXRlcnMudHh0CkBAIC0yMTk1LDYgKzIxOTUsMTEgQEAgYnl0ZXMgcmVzcGVjdGl2ZWx5LiBT
+dWNoIGxldHRlciBzdWZmaXhlcwogCQkJCW9ubHkgbG9vayBmb3Igb25lIGRldmljZSBiZWxvdyBh
+IFBDSWUgZG93bnN0cmVhbQogCQkJCXBvcnQuCiAKKwlidXNudW1fbm9kZT0gICAgW1g4Nl0gU2V0
+IG5vZGUgZm9yIHJvb3QgYnVzLgorCQkJRm9ybWF0OgorCQkJPGJ1cz46PG5vZGU+WzsgLi4uXQor
+CQkJU3BlY2lmaWVzIG5vZGUgZm9yIGJ1cywgd2lsbCBvdmVycmlkZSBiaW9zIF9QWE0KKwkJCW9y
+IHByb2JlZCB2YWx1ZSBmcm9tIGhvc3RicmlkZ2UuCiAJcGNpZV9hc3BtPQlbUENJRV0gRm9yY2li
+bHkgZW5hYmxlIG9yIGRpc2FibGUgUENJZSBBY3RpdmUgU3RhdGUgUG93ZXIKIAkJCU1hbmFnZW1l
+bnQuCiAJCW9mZglEaXNhYmxlIEFTUE0uCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvcGNpL2Nv
+bW1vbi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L3BjaS9jb21tb24u
+YworKysgbGludXgtMi42L2FyY2gveDg2L3BjaS9jb21tb24uYwpAQCAtNDk0LDYgKzQ5NCwzNCBA
+QCBpbnQgX19pbml0IHBjaWJpb3NfaW5pdCh2b2lkKQogCXJldHVybiAwOwogfQogCitpbnQgZ2V0
+X3VzZXJfYnVzbnVtX25vZGUoaW50IGJ1c251bSkKK3sKKwlpbnQgYnVzLCBub2RlLCBjb3VudDsK
+KwljaGFyICpwOworCisJcCA9IHN0cnN0cihib290X2NvbW1hbmRfbGluZSwgImJ1c251bV9ub2Rl
+PSIpOworCWlmICghcCkKKwkJcmV0dXJuIC0xOworCisJcCArPSAxMjsgLyogc3RybGVuKCJidXNu
+dW1fbm9kZT0iKSAqLworCXdoaWxlICgqcCkgeworCQljb3VudCA9IDA7CisJCWlmIChzc2NhbmYo
+cCwgIiV4OiV4JW4iLCAmYnVzLCAmbm9kZSwgJmNvdW50KSAhPSAyKSB7CisJCQlwcmludGsoS0VS
+Tl9FUlIgIlBDSTogQ2FuJ3QgcGFyc2UgYnVzbnVtX25vZGUgaW5wdXQ6ICVzXG4iLAorCQkJCQlw
+KTsKKwkJCWJyZWFrOworCQl9CisJCWlmIChidXMgPT0gYnVzbnVtKQorCQkJcmV0dXJuIG5vZGU7
+CisJCXAgKz0gY291bnQ7CisJCWlmICgqcCAhPSAnOycpCisJCQlicmVhazsKKwkJcCsrOworCX0K
+KworCXJldHVybiAtMTsKK30KKwogY2hhciAqIF9fZGV2aW5pdCAgcGNpYmlvc19zZXR1cChjaGFy
+ICpzdHIpCiB7CiAJaWYgKCFzdHJjbXAoc3RyLCAib2ZmIikpIHsKSW5kZXg6IGxpbnV4LTIuNi9h
+cmNoL3g4Ni9pbmNsdWRlL2FzbS9wY2lfeDg2LmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9y
+aWcvYXJjaC94ODYvaW5jbHVkZS9hc20vcGNpX3g4Ni5oCisrKyBsaW51eC0yLjYvYXJjaC94ODYv
+aW5jbHVkZS9hc20vcGNpX3g4Ni5oCkBAIC00Niw2ICs0Niw5IEBAIGVudW0gcGNpX2JmX3NvcnRf
+c3RhdGUgewogCXBjaV9kbWlfYmYsCiB9OwogCisvKiBwY2ktY29tbW9uLmMgKi8KK2ludCBnZXRf
+dXNlcl9idXNudW1fbm9kZShpbnQgYnVzbnVtKTsKKwogLyogcGNpLWkzODYuYyAqLwogCiB2b2lk
+IHBjaWJpb3NfcmVzb3VyY2Vfc3VydmV5KHZvaWQpOwpJbmRleDogbGludXgtMi42L2FyY2gveDg2
+L3BjaS9hY3BpLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvcGNpL2Fj
+cGkuYworKysgbGludXgtMi42L2FyY2gveDg2L3BjaS9hY3BpLmMKQEAgLTQzMyw3ICs0MzMsNyBA
+QCBzdHJ1Y3QgcGNpX2J1cyAqIF9fZGV2aW5pdCBwY2lfYWNwaV9zY2FuCiAJc3RydWN0IHBjaV9z
+eXNkYXRhICpzZDsKIAlpbnQgbm9kZTsKICNpZmRlZiBDT05GSUdfQUNQSV9OVU1BCi0JaW50IHB4
+bTsKKwlpbnQgcHhtID0gLTE7CiAjZW5kaWYKIAogCWlmIChkb21haW4gJiYgIXBjaV9kb21haW5z
+X3N1cHBvcnRlZCkgewpAQCAtNDQzLDE2ICs0NDMsMjAgQEAgc3RydWN0IHBjaV9idXMgKiBfX2Rl
+dmluaXQgcGNpX2FjcGlfc2NhbgogCQlyZXR1cm4gTlVMTDsKIAl9CiAKLQlub2RlID0gLTE7CisJ
+bm9kZSA9IGdldF91c2VyX2J1c251bV9ub2RlKGJ1c251bSk7CisJaWYgKG5vZGUgPT0gLTEpIHsK
+ICNpZmRlZiBDT05GSUdfQUNQSV9OVU1BCi0JcHhtID0gYWNwaV9nZXRfcHhtKGRldmljZS0+aGFu
+ZGxlKTsKLQlpZiAocHhtID49IDApCi0JCW5vZGUgPSBweG1fdG9fbm9kZShweG0pOwotCWlmIChu
+b2RlICE9IC0xKQotCQlzZXRfbXBfYnVzX3RvX25vZGUoYnVzbnVtLCBub2RlKTsKLQllbHNlCi0j
+ZW5kaWYKKwkJcHhtID0gYWNwaV9nZXRfcHhtKGRldmljZS0+aGFuZGxlKTsKKwkJaWYgKHB4bSA+
+PSAwKQorCQkJbm9kZSA9IHB4bV90b19ub2RlKHB4bSk7CisJCWlmIChub2RlICE9IC0xKQorCQkJ
+c2V0X21wX2J1c190b19ub2RlKGJ1c251bSwgbm9kZSk7CisJCWVsc2UKKwkJCW5vZGUgPSBnZXRf
+bXBfYnVzX3RvX25vZGUoYnVzbnVtKTsKKyNlbHNlCiAJCW5vZGUgPSBnZXRfbXBfYnVzX3RvX25v
+ZGUoYnVzbnVtKTsKKyNlbmRpZgorCX0KIAogCWlmIChub2RlICE9IC0xICYmICFub2RlX29ubGlu
+ZShub2RlKSkKIAkJbm9kZSA9IC0xOwo=
+--047d7b33d6502ab75304c2f369b5--
