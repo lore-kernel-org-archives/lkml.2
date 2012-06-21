@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758947Ab2FUIu5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:50:57 -0400
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:38918 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758907Ab2FUIuy (ORCPT
+	id S1758957Ab2FUIvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:51:31 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:58575 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758907Ab2FUIv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:50:54 -0400
-Date: Thu, 21 Jun 2012 17:50:37 +0900
+	Thu, 21 Jun 2012 04:51:29 -0400
+Date: Thu, 21 Jun 2012 17:51:14 +0900
 From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 To: avi@redhat.com, mtosatti@redhat.com
 Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
         kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
         takuya.yoshikawa@gmail.com
-Subject: [PATCH 3/6] KVM: MMU: Make kvm_handle_hva() handle range of
- addresses
-Message-Id: <20120621175037.1f95a5cc.yoshikawa.takuya@oss.ntt.co.jp>
+Subject: [PATCH 4/6] KVM: Introduce kvm_unmap_hva_range() for
+ kvm_mmu_notifier_invalidate_range_start()
+Message-Id: <20120621175114.eed3285c.yoshikawa.takuya@oss.ntt.co.jp>
 In-Reply-To: <20120621174842.22779780.yoshikawa.takuya@oss.ntt.co.jp>
 References: <20120621174842.22779780.yoshikawa.takuya@oss.ntt.co.jp>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
@@ -26,168 +26,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When guest's memory is backed by THP pages, MMU notifier needs to call
-kvm_unmap_hva(), which in turn leads to kvm_handle_hva(), in a loop to
-invalidate a range of pages which constitute one huge page:
+When we tested KVM under memory pressure, with THP enabled on the host,
+we noticed that MMU notifier took a long time to invalidate huge pages.
 
-  for each page
-    for each memslot
-      if page is in memslot
-        unmap using rmap
+Since the invalidation was done with mmu_lock held, it not only wasted
+the CPU but also made the host harder to respond.
 
-This means although every page in that range is expected to be found in
-the same memslot, we are forced to check unrelated memslots many times.
-If the guest has more memslots, the situation will become worse.
-
-Furthermore, if the range does not include any pages in the guest's
-memory, the loop over the pages will just consume extra time.
-
-This patch, together with the following patches, solves this problem by
-introducing kvm_handle_hva_range() which makes the loop look like this:
-
-  for each memslot
-    for each page in memslot
-      unmap using rmap
-
-In this new processing, the actual work is converted to a loop over rmap
-which is much more cache friendly than before.
+This patch mitigates this by using kvm_handle_hva_range().
 
 Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 Cc: Alexander Graf <agraf@suse.de>
 Cc: Paul Mackerras <paulus@samba.org>
 ---
- arch/powerpc/kvm/book3s_64_mmu_hv.c |   31 +++++++++++++++++++++-------
- arch/x86/kvm/mmu.c                  |   37 +++++++++++++++++++++++++---------
- 2 files changed, 50 insertions(+), 18 deletions(-)
+ arch/powerpc/include/asm/kvm_host.h |    2 ++
+ arch/powerpc/kvm/book3s_64_mmu_hv.c |    7 +++++++
+ arch/x86/include/asm/kvm_host.h     |    1 +
+ arch/x86/kvm/mmu.c                  |    5 +++++
+ virt/kvm/kvm_main.c                 |    3 +--
+ 5 files changed, 16 insertions(+), 2 deletions(-)
 
+diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+index 50ea12f..572ad01 100644
+--- a/arch/powerpc/include/asm/kvm_host.h
++++ b/arch/powerpc/include/asm/kvm_host.h
+@@ -52,6 +52,8 @@
+ 
+ struct kvm;
+ extern int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
++extern int kvm_unmap_hva_range(struct kvm *kvm,
++			       unsigned long start, unsigned long end);
+ extern int kvm_age_hva(struct kvm *kvm, unsigned long hva);
+ extern int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
+ extern void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
 diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-index 3703755..aec8046 100644
+index aec8046..33a6dc2 100644
 --- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
 +++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -756,9 +756,12 @@ int kvmppc_book3s_hv_page_fault(struct kvm_run *run, struct kvm_vcpu *vcpu,
- 	goto out_put;
- }
- 
--static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
--			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
--					 unsigned long gfn))
-+static int kvm_handle_hva_range(struct kvm *kvm,
-+				unsigned long start,
-+				unsigned long end,
-+				int (*handler)(struct kvm *kvm,
-+					       unsigned long *rmapp,
-+					       unsigned long gfn))
- {
- 	int ret;
- 	int retval = 0;
-@@ -767,12 +770,17 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
- 
- 	slots = kvm_memslots(kvm);
- 	kvm_for_each_memslot(memslot, slots) {
--		unsigned long start = memslot->userspace_addr;
--		unsigned long end;
-+		gfn_t gfn;
-+		unsigned long hva_start, hva_end;
- 
--		end = start + (memslot->npages << PAGE_SHIFT);
--		if (hva >= start && hva < end) {
--			gfn_t gfn = hva_to_gfn_memslot(hva, memslot);
-+		hva_start = max(start, memslot->userspace_addr);
-+		hva_end = min(end, memslot->userspace_addr +
-+					(memslot->npages << PAGE_SHIFT));
-+		if (hva_start >= hva_end)
-+			continue;
-+
-+		for (gfn = hva_to_gfn_memslot(hva_start, memslot);
-+		     gfn < hva_to_gfn_memslot(hva_end, memslot); gfn++) {
- 			gfn_t gfn_offset = gfn - memslot->base_gfn;
- 
- 			ret = handler(kvm, &memslot->rmap[gfn_offset], gfn);
-@@ -783,6 +791,13 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
- 	return retval;
- }
- 
-+static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
-+			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
-+					 unsigned long gfn))
-+{
-+	return kvm_handle_hva_range(kvm, hva, hva + PAGE_SIZE, handler);
-+}
-+
- static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 			   unsigned long gfn)
- {
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index b898bec..f995b8a 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1183,10 +1183,13 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+@@ -865,6 +865,13 @@ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva)
  	return 0;
  }
  
--static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
--			  unsigned long data,
--			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
--					 unsigned long data))
-+static int kvm_handle_hva_range(struct kvm *kvm,
-+				unsigned long start,
-+				unsigned long end,
-+				unsigned long data,
-+				int (*handler)(struct kvm *kvm,
-+					       unsigned long *rmapp,
-+					       unsigned long data))
- {
- 	int j;
- 	int ret;
-@@ -1197,13 +1200,17 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
- 	slots = kvm_memslots(kvm);
- 
- 	kvm_for_each_memslot(memslot, slots) {
--		unsigned long start = memslot->userspace_addr;
--		unsigned long end;
-+		gfn_t gfn;
-+		unsigned long hva_start, hva_end;
- 
--		end = start + (memslot->npages << PAGE_SHIFT);
--		if (hva >= start && hva < end) {
--			gfn_t gfn = hva_to_gfn_memslot(hva, memslot);
-+		hva_start = max(start, memslot->userspace_addr);
-+		hva_end = min(end, memslot->userspace_addr +
-+					(memslot->npages << PAGE_SHIFT));
-+		if (hva_start >= hva_end)
-+			continue;
- 
-+		for (gfn = hva_to_gfn_memslot(hva_start, memslot);
-+		     gfn < hva_to_gfn_memslot(hva_end, memslot); gfn++) {
- 			ret = 0;
- 
- 			for (j = PT_PAGE_TABLE_LEVEL;
-@@ -1213,7 +1220,9 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
- 				rmapp = __gfn_to_rmap(gfn, j, memslot);
- 				ret |= handler(kvm, rmapp, data);
- 			}
--			trace_kvm_age_page(hva, memslot, ret);
-+			trace_kvm_age_page(memslot->userspace_addr +
-+					(gfn - memslot->base_gfn) * PAGE_SIZE,
-+					memslot, ret);
- 			retval |= ret;
- 		}
- 	}
-@@ -1221,6 +1230,14 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
- 	return retval;
- }
- 
-+static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
-+			  unsigned long data,
-+			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
-+					 unsigned long data))
++int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end)
 +{
-+	return kvm_handle_hva_range(kvm, hva, hva + PAGE_SIZE, data, handler);
++	if (kvm->arch.using_mmu_notifiers)
++		kvm_handle_hva_range(kvm, start, end, kvm_unmap_rmapp);
++	return 0;
 +}
 +
- int kvm_unmap_hva(struct kvm *kvm, unsigned long hva)
+ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 			 unsigned long gfn)
  {
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index db7c1f2..d6ad50d 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -930,6 +930,7 @@ extern bool kvm_rebooting;
+ 
+ #define KVM_ARCH_WANT_MMU_NOTIFIER
+ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
++int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end);
+ int kvm_age_hva(struct kvm *kvm, unsigned long hva);
+ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
+ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index f995b8a..0659376 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1243,6 +1243,11 @@ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva)
  	return kvm_handle_hva(kvm, hva, 0, kvm_unmap_rmapp);
+ }
+ 
++int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end)
++{
++	return kvm_handle_hva_range(kvm, start, end, 0, kvm_unmap_rmapp);
++}
++
+ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte)
+ {
+ 	kvm_handle_hva(kvm, hva, (unsigned long)&pte, kvm_set_pte_rmapp);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 02cb440..44e44c0 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -332,8 +332,7 @@ static void kvm_mmu_notifier_invalidate_range_start(struct mmu_notifier *mn,
+ 	 * count is also read inside the mmu_lock critical section.
+ 	 */
+ 	kvm->mmu_notifier_count++;
+-	for (; start < end; start += PAGE_SIZE)
+-		need_tlb_flush |= kvm_unmap_hva(kvm, start);
++	need_tlb_flush = kvm_unmap_hva_range(kvm, start, end);
+ 	need_tlb_flush |= kvm->tlbs_dirty;
+ 	/* we've to flush the tlb before the pages can be freed */
+ 	if (need_tlb_flush)
 -- 
 1.7.5.4
 
