@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab2FUJX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:23:57 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46417 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759128Ab2FUJX4 (ORCPT
+	id S932563Ab2FUJYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:24:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49521 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932465Ab2FUJYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:23:56 -0400
-Message-ID: <4FE2E81C.2040402@linux.vnet.ibm.com>
-Date: Thu, 21 Jun 2012 17:23:40 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 21 Jun 2012 05:24:11 -0400
+Date: Thu, 21 Jun 2012 10:24:09 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "axel.lin@gmail.com" <axel.lin@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 3/3] regulator: change message level on probing lp872x
+ driver
+Message-ID: <20120621092408.GK4037@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FC05A@DQHE02.ent.ti.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: mingo@kernel.org, pjt@google.com, venki@google.com, efault@gmx.de,
-        rostedt@goodmis.org, glommer@parallels.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 2/4] sched: Push put_prev_task() into pick_next_task()
-References: <20120614132902.800827488@chello.nl> <20120614133212.690691207@chello.nl> <4FE2CEB0.7080200@linux.vnet.ibm.com> <1340268104.21745.159.camel@twins>
-In-Reply-To: <1340268104.21745.159.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12062109-9574-0000-0000-0000033FB52D
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZQs1kEQY307C4ut"
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FC05A@DQHE02.ent.ti.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 04:41 PM, Peter Zijlstra wrote:
 
-> On Thu, 2012-06-21 at 15:35 +0800, Michael Wang wrote:
->>> +pick_next_task_fair(struct rq *rq, struct task_struct *prev)
->>>  {
->>>  	struct task_struct *p;
->>>  	struct cfs_rq *cfs_rq = &rq->cfs;
->>> @@ -2999,6 +3000,9 @@ static struct task_struct *pick_next_tas
->>>  	if (!cfs_rq->nr_running)
->>>  		return NULL;
->>>
->>> +	if (prev)
->>> +		prev->sched_class->put_prev_task(rq, prev);
->>> +
->>>  	do {
->>>  		se = pick_next_entity(cfs_rq);
->>>  		set_next_entity(cfs_rq, se);
->>> --- a/kernel/sched/idle_task.c
->>> +++ b/kernel/sched/idle_task.c
->>> @@ -22,8 +22,12 @@ static void check_preempt_curr_idle(stru
->>>  	resched_task(rq->idle);
->>>  }
->>
->> Will it cause trouble when the last task on cfs_rq was dequeued before
->> been putted?
->>
->> The cfs_rq->nr_running will be 0 and we will miss the chance to put
->> prev, will we?
-> 
-> pick_next_task_idle() will then do the put, no?
+--YZQs1kEQY307C4ut
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Oh, that's right, I see.
+On Thu, Jun 21, 2012 at 08:03:56AM +0000, Kim, Milo wrote:
+> Use err log rather than warning message when the platform data is NULL
 
-> 
+Really what you should be doing here is making the driver able to probe
+without platform data at all, there should be no need for it.
 
+--YZQs1kEQY307C4ut
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP4ueHAAoJEBus8iNuMP3dHCEP/iQ1GYHqM+GijZG5gML9Iwwz
+YbBHMF38GyHOcZ6cyyQVrIoMSi4EP9zIZp+zZYeE8VfDXq74o1GKf4yOP5lCNUrO
+sIkMIUZk6WZktL4nClfD9iphtbtvnki2O7/Q0uTAx0Lxh4D90GnBQ0WUQAcbYqLG
+FfawrnqEism0HXQ1yXttRY3rT8u3Qs28NS4P0FsMuHVYsa+0V95tY2R7CE98MMsj
+jlbJY1aKLgVGMWKVA9soeEp+w3Gqp660Z5+wWSpmzqD9qIDqnQMwhNQC8Bl2W25m
+z7LpNbG3oC7T4AOuuDPskflcCD4X93rNXvXNvLlA5Moo3YZvTnJ7yexV5Rc/MaRn
+edDAwQLb5gA/PsnhXtN0ntEZJnohjLob5/PuMCW3jDs2s3t4B3Ptx8YzgWeVdhXx
+hiInvB4RiIrl+M3ayjNfxWFEhwXjZ3XlkKzvj45RsyNaNjxTprteFZLEohQIrDym
+QXY7bYpEPwaK5bIDyEulXrV3uU4FREOg3iuqUFC/JnxZ78uvlfvb5I8LGweNJPJc
+5cPk5QvCW7UXyQfMXHin/ppKFUf4nPKtey2EOcyDa3b/P621y3JX/3T+T+tjiMl4
+vWxCnOB3epYHVwMk9vZq4kaLUkPaVZZnyjjQqPXLhLSfGaYD6nbsbaevL7ETh6UW
+ncUBN4MR3mzbEPL3NkBk
+=pn3d
+-----END PGP SIGNATURE-----
+
+--YZQs1kEQY307C4ut--
