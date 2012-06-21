@@ -1,75 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab2FUNIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 09:08:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39716 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759583Ab2FUNIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 09:08:23 -0400
+	id S932352Ab2FUNS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 09:18:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759600Ab2FUNS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 09:18:27 -0400
+Message-ID: <4FE31ED7.4000305@redhat.com>
+Date: Thu, 21 Jun 2012 09:17:11 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CABPqkBSV7MwALrv1Sah6L9C2FP=AGXC2+yeN=jsJk=HrO1bNzA@mail.gmail.com>
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
-	<1340208092.21745.114.camel@twins>
-	<4FE28823.80704@intel.com>
-	<CABPqkBTi8-yKg_kzFTwLe1_m2Zprt5vGk9WPQW14yHQpy=PiWw@mail.gmail.com>
-	<4FE2DE9A.70202@intel.com>
-	<CABPqkBTESKqVG6shXsLi85w=ZJ=1hXxu8+_7tNp23euds8JPbg@mail.gmail.com>
-	<1340278853.21745.178.camel@twins>
-	<CABPqkBSV7MwALrv1Sah6L9C2FP=AGXC2+yeN=jsJk=HrO1bNzA@mail.gmail.com>
-Date: Thu, 21 Jun 2012 21:08:22 +0800
-X-Google-Sender-Auth: j793Zm5H1U4r2A3oqFqbC-czqVE
-Message-ID: <CAAM7YAkyZb6p0Nhsft4NvyTH0WFeekwG74MozkToUj2kuEqPDw@mail.gmail.com>
-Subject: Re: [PATCH V6 0/13] perf: Intel uncore pmu counting support
-From: "Yan, Zheng" <zheng.z.yan@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
+        andi@firstfloor.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@surriel.com>
+Subject: Re: [PATCH -mm 2/7] mm: get unmapped area from VMA tree
+References: <1340057126-31143-1-git-send-email-riel@redhat.com> <1340057126-31143-3-git-send-email-riel@redhat.com> <20120621090157.GG27816@cmpxchg.org>
+In-Reply-To: <20120621090157.GG27816@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 7:48 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Thu, Jun 21, 2012 at 1:40 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> On Thu, 2012-06-21 at 11:13 +0200, Stephane Eranian wrote:
->>
->>> >>> How about treat the 'cpu' parameter for uncore event as socket id instead
->>> >>> of cpu id?
->>> >>>
->>> >> But that does not address the use case of Peter, i.e., no cpu parameter passed.
->>> >> Looks like sysfs might be the only way to do this in a portable manner.
->>> >>
->>> > It does. For example, on a dual socket system, perf can only register uncore
->>> > counter with 'cpu' parameter is equal to 0 or 1. This method is hacky, but it
->>> > requires minimal change for the kernel and perf tool.
->>> >
->>> I was saying, I don't want to have to pass -C x with -a and yet have perf stat
->>> only instantiate the event once per socket. I think that's what PeterZ was
->>> asking about.
->>
->> What Zheng is saying is that -a will iterate [0..nr_cpus), but since
->> we're interpreting the sys_perf_event_open(.cpu) argument as node, we'll
->> fail the syscall with -EINVAL or so for .cpu >= nr_node_ids.
->>
-> Ok, but how do you distinguish EINVAL is this case from an error with a non
-> uncore event? Unless you return a unique error code, I don't see how you'd solve
-> that. In general, I don't like it when perf switches events or CPUs under the
-> cover.
->
-> When happens with -a -A?
->
->
->> This way, we'll only create one counter per node.
->>
->> I would work, but its not pretty since we still don't know what we're
->> iterating.
->
-> Not pretty.
+On 06/21/2012 05:01 AM, Johannes Weiner wrote:
 
-Ok, I will try implementing the sysfs link approach that Peter suggested.
+>> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+>> index bf56d66..8ccb4e1 100644
+>> --- a/include/linux/mm_types.h
+>> +++ b/include/linux/mm_types.h
+>> @@ -307,6 +307,7 @@ struct mm_struct {
+>>   	unsigned long task_size;		/* size of task vm space */
+>>   	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
+>>   	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
+>> +	unsigned long highest_vma;		/* highest vma end address */
+>
+> It's not clear from the name that this is an end address.  Would
+> highest_vm_end be better?
 
-Thanks
-Yan, Zheng
+Good idea.  Will fix.
+
+>> +	/* Find the left-most free area of sufficient size. */
+>> +	for (addr = 0, rb_node = mm->mm_rb.rb_node; rb_node; ) {
+>> +		unsigned long vma_start;
+>> +		int found_here = 0;
+>> +
+>> +		vma = rb_to_vma(rb_node);
+>> +
+>> +		if (vma->vm_start>  len) {
+>
+> vmas can abut, and vma->vm_end == vma->vm_next->vm_start.  Should this
+> be>=?
+
+We do not want to mmap at address 0.
+
+>> +		/* Go left if it looks promising. */
+>> +		if (node_free_hole(rb_node->rb_left)>= len&&
+>> +					vma->vm_start - len>= lower_limit) {
+>> +			rb_node = rb_node->rb_left;
+>> +			continue;
+>
+> If we already are at a vma whose start has a lower address than the
+> overall length, does it make sense to check for a left hole?
+> I.e. shouldn't this be inside the if (vma->vm_start>  len) block?
+
+I am trying to preserve the same fragmentation
+semantics as the current code, so we do not
+get any regressions in that area.
+
+>> +	/*
+>> +	 * There is not enough space to the left of any VMA.
+>> +	 * Check the far right-hand side of the VMA tree.
+>> +	 */
+>> +	rb_node = mm->mm_rb.rb_node;
+>> +	while (rb_node->rb_right)
+>> +		rb_node = rb_node->rb_right;
+>> +	vma = rb_to_vma(rb_node);
+>> +	addr = vma->vm_end;
+>
+> Unless I missed something, we only reach here when
+> continue_next_right(rb_node) above returned NULL.  And if it does, the
+> rb_node it was passed was the right-most node in the tree, so we could
+> do something like
+
+We break out of the large while() loop once rb_node
+is NULL, due to falling off the end of the tree.
+
+> 	} else if (!addr) {
+> 		struct rb_node *rb_right = continue_next_right(rb_node);
+> 		if (!rb_right)
+> 			break;
+> 		rb_node = rb_right;
+> 		continue;
+> 	}
+>
+> above and then save the lookup after the loop.
+
+That might work, but I expect the situation to be rare
+enough that I would rather pick the more readable option.
+
+> Also, dereferencing mm->mm_rb.rb_node unconditionally after the loop
+> assumes that the tree always contains at least one vma.  Is this
+> guaranteed for all architectures?
+
+When a process is execve'd, a stack VMA is set up.
+This means every process has at least one VMA by the
+time we can get to this code.
+
+>> -fail:
+>> -	/*
+>> -	 * if hint left us with no space for the requested
+>> -	 * mapping then try again:
+>> -	 *
+>> -	 * Note: this is different with the case of bottomup
+>> -	 * which does the fully line-search, but we use find_vma
+>> -	 * here that causes some holes skipped.
+>> -	 */
+>> -	if (start_addr != mm->mmap_base) {
+>> -		mm->free_area_cache = mm->mmap_base;
+>> -		mm->cached_hole_size = 0;
+>> -		goto try_again;
+>> +		if (!found_here&&  node_free_hole(rb_node->rb_left)>= len) {
+>> +			/* Last known hole is to the right of this subtree. */
+>
+> "to the left"
+
+Thanks, will fix.
+
+-- 
+All rights reversed
