@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab2FUJyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 05:54:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39378 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759212Ab2FUJyW (ORCPT
+	id S932665Ab2FUJzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 05:55:21 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53447 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759212Ab2FUJzT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 05:54:22 -0400
-Date: Thu, 21 Jun 2012 10:54:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: gregkh@linuxfoundation.org, thomas.abraham@linaro.org,
-        grant.likely@secretlab.ca, sameo@linux.intel.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd: add irq domain support for max8997 interrupts
-Message-ID: <20120621095420.GO4037@opensource.wolfsonmicro.com>
-References: <1340241040-22257-1-git-send-email-cw00.choi@samsung.com>
+	Thu, 21 Jun 2012 05:55:19 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TYjWXklH5JTzT8n9"
-Content-Disposition: inline
-In-Reply-To: <1340241040-22257-1-git-send-email-cw00.choi@samsung.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339678763-14509-1-git-send-email-aletes.xgr@gmail.com>
+References: <1339678763-14509-1-git-send-email-aletes.xgr@gmail.com>
+Date: Thu, 21 Jun 2012 11:49:13 +0200
+Message-ID: <CAMSQXEHOtgk7wRRqOdpMaTvpxFd1Cpom=BG65GheY6Z4p2Jc3A@mail.gmail.com>
+Subject: Re: [PATCH] SPI: at25: Parse dt settings
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Chris Wright <chrisw@sous-sol.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Roland Stigge <stigge@antcom.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---TYjWXklH5JTzT8n9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+2012/6/14 Alexandre Pereira da Silva <aletes.xgr@gmail.com>:
+> @@ -305,25 +305,54 @@ static ssize_t at25_mem_write(struct memory_accessor *mem, const char *buf,
+> +       if (!spi->dev.platform_data) {
+> +               if (np) {
+> +                       u32 val;
+> +
+> +                       memset(&chip, 0, sizeof(chip));
+> +                       strncpy(chip.name, np->name, 10);
+> +
+> +                       err = of_property_read_u32(np, "at25,byte-len", &val);
+> +                       if (err) {
+> +                               dev_dbg(&spi->dev, "invalid chip dt description\n");
+> +                               goto fail;
+> +                       }
+> +                       chip.byte_len = val;
+> +
+> +                       err = of_property_read_u32(np, "at25,addr-mode", &val);
+> +                       if (err) {
+> +                               dev_dbg(&spi->dev, "invalid chip dt description\n");
+> +                               goto fail;
+> +                       }
+> +                       chip.flags = (u16)val;
+> +
+> +                       err = of_property_read_u32(np, "at25,page-size", &val);
+> +                       if (err) {
+> +                               dev_dbg(&spi->dev, "invalid chip dt description\n");
+> +                               goto fail;
+> +                       }
+> +                       chip.page_size = (u16)val;
+> +               } else {
+> +                       dev_dbg(&spi->dev, "no chip description\n");
+> +                       err = -ENODEV;
+> +                       goto fail;
+> +               }
+> +       } else
+> +               chip = *(struct spi_eeprom *)spi->dev.platform_data;
 
-On Thu, Jun 21, 2012 at 10:10:40AM +0900, Chanwoo Choi wrote:
+One small remark:
+In case of platform_data, the "if (!chip)" check has been removed and
+is now only handled in the device tree initialization.
+Maybe add this check to the platform initialization as well:
 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+} else {
+        if (!spi->dev.platform_data) {
+                dev_dbg(&spi->dev, "no chip description\n");
+                err = -ENODEV;
+                goto fail;
+        }
+        chip =  *(struct spi_eeprom *)spi->dev.platform_data;
+}
 
-Small procedural thing: it's not Signed-off-by as I didn't write or
-forward the patch, I'll have sent a Reviwed-by or something.
+Furthermore looks good to me...
+(Note: I am not familiar with device trees, so I cannot judge that
+part of this patch)
 
---TYjWXklH5JTzT8n9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP4u8+AAoJEBus8iNuMP3dsIsQAI1Y5jhzyj95o9KNWbkAu2r0
-l3hkv3+Zm7Wo+bWJ3pLYcNMmU+z4VqVzz/VSJ39c0frNXLEdb6pvQ2Bi8W4k8N3j
-G0BUbLRmtc2ZZFEQ6xwDod3PUSk0qt0Rn1TcQeZkeol6k9LTqVzY5S+0YQsp1C07
-X1YwL1l5fe9yIedd0nq9u9bzkE/Tzd0W/gpU6VUoHHsobycetHJ54NatgX/35CuB
-SfNPo0W9/AW6VA+BAKCemivYQqW/YA6RIJn4JPcaF3rfji9JP1DzzOMISDMntxjP
-2mbTmJr5yTBsSw5S2INjxjCShIIWZ7Y6qs31OQwOVcSCiCdmai13OFyp3O8olYaX
-p4+LKM60bXvFVUfSJEBnqA6Jd3Qxe3gzB0/tglsqOBMuaNjkX1Jri8FBRJVh7hY7
-FOmqW0IpoLB6KPMaXRVFq3YPwjTTzyHLkrljvCi/Ixd4R2hIm8YHzeHhsgR81W0Z
-7YL5UoJXxtxinU+QBLlLHsaAZ/VmN3Exja3pdYIx496jfzegs/Lm83zB07Ztzaae
-J6BetmNEpVOc0F2oXL1f6ktjLXEKOcnc+o6jNTFlhqGZB3lGPNL1iSIEBkA40o+o
-kfaIPLp88s/ubLh/KMwA7HjuqMWnPX60JqIhcbwrUr6OhMnnivD1NepNgykJR4BT
-CYi7IOubAYo8ZjJgSjy2
-=X7/S
------END PGP SIGNATURE-----
-
---TYjWXklH5JTzT8n9--
+Regards,
+Ivo Sieben
