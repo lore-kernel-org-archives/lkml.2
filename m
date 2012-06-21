@@ -1,219 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab2FUVlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 17:41:14 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:46816
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1760444Ab2FUVkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 17:40:08 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        ohering@suse.com, apw@canonical.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 04/13] Tools: hv: Prepare to expand  kvp_get_ip_address() functionality
-Date: Thu, 21 Jun 2012 14:31:36 -0700
-Message-Id: <1340314305-27126-4-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1340314305-27126-1-git-send-email-kys@microsoft.com>
-References: <1340314200-27078-1-git-send-email-kys@microsoft.com>
- <1340314305-27126-1-git-send-email-kys@microsoft.com>
+	id S1760435Ab2FUVsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 17:48:06 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:65409 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760353Ab2FUVsD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 17:48:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120621213235.GF4642@google.com>
+References: <20120307162851.GC13430@redhat.com>
+	<4F57AF4A.6080703@kernel.dk>
+	<CAKA=qzak6N-6oHVjDozJ6KLMSWXEgzZf1xaC_1cgnoaUCyw8Ag@mail.gmail.com>
+	<CAKA=qzaHJ0OcbvtT-mwKBUBvzPkxE4r-bW6gDvicKhoQeyFWEg@mail.gmail.com>
+	<20120308234016.GA925@redhat.com>
+	<CAKA=qzbsL9UVYLZ3=hoT-1jfp=v=_Sr=h+YeHu0qAA=Ko_7P6w@mail.gmail.com>
+	<CAKA=qzbqoK5_3GXM8DZhbQ5cTU=DTg5DFFJ+46OrD7y=XrMLTg@mail.gmail.com>
+	<20120621203217.GC14095@redhat.com>
+	<20120621203615.GE4642@google.com>
+	<CAKA=qzaFRubzvyjJQzgThRLsxLDc8NMdZy6WVZMFrF7ohsyjHw@mail.gmail.com>
+	<20120621213235.GF4642@google.com>
+Date: Thu, 21 Jun 2012 14:48:03 -0700
+Message-ID: <CAOT6A4-H5inkkRZm2A2YpLkn=iYpn2NDGWxY3uZHRKA-y7RiWA@mail.gmail.com>
+Subject: Re: multi-second application stall in open()
+From: Rakesh Iyer <rni@google.com>
+To: Tejun Heo <tj@kernel.org>, Josh Hunt <joshhunt00@gmail.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kvp_get_ip_address() implemented the functionality to retrieve IP address info.
-Make this function more generic so that we could retrieve additional
-per-interface information.
+-- Resending because my mail went out in html text and got bounced by
+the list, apologies if you see it twice --
 
+Hello,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- tools/hv/hv_kvp_daemon.c |  129 ++++++++++++++++++++++++++++++----------------
- 1 files changed, 84 insertions(+), 45 deletions(-)
+I coded up the watchdog and dropped it in but never did get the time
+to go looking for evidence of stalls so no confirmed evidence of what
+the cause was.
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 4831997..4fa6f95 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -491,7 +491,8 @@ done:
- }
- 
- static int
--kvp_get_ip_address(int family, char *buffer, int length)
-+kvp_get_ip_address(int family, char *if_name, int op,
-+		 void  *out_buffer, int length)
- {
- 	struct ifaddrs *ifap;
- 	struct ifaddrs *curp;
-@@ -501,10 +502,19 @@ kvp_get_ip_address(int family, char *buffer, int length)
- 	const char *str;
- 	char tmp[50];
- 	int error = 0;
--
-+	char *buffer;
-+	struct hv_kvp_ipaddr_value *ip_buffer;
-+
-+	if (op == KVP_OP_ENUMERATE) {
-+		buffer = out_buffer;
-+	} else {
-+		ip_buffer = out_buffer;
-+		buffer = (char *)ip_buffer->ip_addr;
-+		ip_buffer->addr_family = 0;
-+	}
- 	/*
- 	 * On entry into this function, the buffer is capable of holding the
--	 * maximum key value (2048 bytes).
-+	 * maximum key value.
- 	 */
- 
- 	if (getifaddrs(&ifap)) {
-@@ -514,58 +524,87 @@ kvp_get_ip_address(int family, char *buffer, int length)
- 
- 	curp = ifap;
- 	while (curp != NULL) {
--		if ((curp->ifa_addr != NULL) &&
--		   (curp->ifa_addr->sa_family == family)) {
--			if (family == AF_INET) {
--				struct sockaddr_in *addr =
--				(struct sockaddr_in *) curp->ifa_addr;
--
--				str = inet_ntop(family, &addr->sin_addr,
--						tmp, 50);
--				if (str == NULL) {
--					strcpy(buffer, "inet_ntop failed\n");
--					error = 1;
--					goto getaddr_done;
--				}
--				if (offset == 0)
--					strcpy(buffer, tmp);
--				else
--					strcat(buffer, tmp);
--				strcat(buffer, ";");
-+		if (curp->ifa_addr == NULL) {
-+			curp = curp->ifa_next;
-+			continue;
-+		}
- 
--				offset += strlen(str) + 1;
--				if ((length - offset) < (ipv4_len + 1))
--					goto getaddr_done;
-+		if ((if_name != NULL) &&
-+			(strncmp(curp->ifa_name, if_name, strlen(if_name)))) {
-+			/*
-+			 * We want info about a specific interface;
-+			 * just continue.
-+			 */
-+			curp = curp->ifa_next;
-+			continue;
-+		}
- 
--			} else {
-+		/*
-+		 * We only support two address families: AF_INET and AF_INET6.
-+		 * If a family value of 0 is specified, we collect both
-+		 * supported address families; if not we gather info on
-+		 * the specified address family.
-+		 */
-+		if ((family != 0) && (curp->ifa_addr->sa_family != family)) {
-+			curp = curp->ifa_next;
-+			continue;
-+		}
-+		if ((curp->ifa_addr->sa_family != AF_INET) &&
-+			(curp->ifa_addr->sa_family != AF_INET6)) {
-+			curp = curp->ifa_next;
-+			continue;
-+		}
-+
-+		if ((curp->ifa_addr->sa_family == AF_INET) &&
-+			((family == AF_INET) || (family == 0))) {
-+			struct sockaddr_in *addr =
-+			(struct sockaddr_in *) curp->ifa_addr;
-+
-+			str = inet_ntop(AF_INET, &addr->sin_addr, tmp, 50);
-+			if (str == NULL) {
-+				strcpy(buffer, "inet_ntop failed\n");
-+				error = 1;
-+				goto getaddr_done;
-+			}
-+			if (offset == 0)
-+				strcpy(buffer, tmp);
-+			else
-+				strcat(buffer, tmp);
-+			strcat(buffer, ";");
-+
-+			offset += strlen(str) + 1;
-+			if ((length - offset) < (ipv4_len + 1))
-+				goto getaddr_done;
-+
-+		} else if ((family == AF_INET6) || (family == 0)) {
- 
- 			/*
- 			 * We only support AF_INET and AF_INET6
- 			 * and the list of addresses is separated by a ";".
- 			 */
--				struct sockaddr_in6 *addr =
-+			struct sockaddr_in6 *addr =
- 				(struct sockaddr_in6 *) curp->ifa_addr;
- 
--				str = inet_ntop(family,
-+			str = inet_ntop(AF_INET6,
- 					&addr->sin6_addr.s6_addr,
- 					tmp, 50);
--				if (str == NULL) {
--					strcpy(buffer, "inet_ntop failed\n");
--					error = 1;
--					goto getaddr_done;
--				}
--				if (offset == 0)
--					strcpy(buffer, tmp);
--				else
--					strcat(buffer, tmp);
--				strcat(buffer, ";");
--				offset += strlen(str) + 1;
--				if ((length - offset) < (ipv6_len + 1))
--					goto getaddr_done;
--
-+			if (str == NULL) {
-+				strcpy(buffer, "inet_ntop failed\n");
-+				error = 1;
-+				goto getaddr_done;
- 			}
-+			if (offset == 0)
-+				strcpy(buffer, tmp);
-+			else
-+				strcat(buffer, tmp);
-+			strcat(buffer, ";");
-+			offset += strlen(str) + 1;
-+			if ((length - offset) < (ipv6_len + 1))
-+				goto getaddr_done;
- 
- 		}
-+
-+
- 		curp = curp->ifa_next;
- 	}
- 
-@@ -812,13 +851,13 @@ int main(void)
- 			strcpy(key_value, lic_version);
- 			break;
- 		case NetworkAddressIPv4:
--			kvp_get_ip_address(AF_INET, key_value,
--					HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
-+			kvp_get_ip_address(AF_INET, NULL, KVP_OP_ENUMERATE,
-+				key_value, HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
- 			strcpy(key_name, "NetworkAddressIPv4");
- 			break;
- 		case NetworkAddressIPv6:
--			kvp_get_ip_address(AF_INET6, key_value,
--					HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
-+			kvp_get_ip_address(AF_INET6, NULL, KVP_OP_ENUMERATE,
-+				key_value, HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
- 			strcpy(key_name, "NetworkAddressIPv6");
- 			break;
- 		case OSBuildNumber:
--- 
-1.7.4.1
+Chad and I did manage to stare at the code long and hard and sort of
+convince ourselves that cfq_cfqq_wait_busy & associated logic could be
+the cause of the stall (strictly in my opinion - that logic can be
+fully be fully folded into the idling logic, but that's a discussion
+for another day).
 
+Hope that helps.
+-Rakesh
+
+On Thu, Jun 21, 2012 at 2:32 PM, Tejun Heo <tj@kernel.org> wrote:
+>
+> Hello,
+>
+> On Thu, Jun 21, 2012 at 04:28:24PM -0500, Josh Hunt wrote:
+> > When you say the code has diverged from upstream, do you mean from 3.0
+> > to 3.5?
+>
+> It's based on something diverged from 2.6.X, so an ancient thing.
+>
+> > Or maybe I'm misunderstanding what you're getting at. Also, if
+> > you have any links to the watchdog timer code you're referring to I
+> > would appreciate it.
+>
+> Rakesh is the one who observed the bug and wrote the watchdog code.
+> Rakesh, I think Josh is seeing similar cfqq hang issue.  Did the
+> watchdog code reveal why that happened?  Or was it mainly to just kick
+> the queue and keep it going?
+>
+> Thanks.
+>
+> --
+> tejun
