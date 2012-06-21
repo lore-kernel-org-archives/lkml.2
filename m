@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab2FUBEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 21:04:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59108 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151Ab2FUBEk (ORCPT
+	id S1755579Ab2FUBKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 21:10:35 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:37675 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755480Ab2FUBKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 21:04:40 -0400
-Date: Wed, 20 Jun 2012 18:04:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Salman Qazi <sqazi@google.com>
-Subject: [GIT PULL] cgroup fixes for v3.5-rc3
-Message-ID: <20120621010435.GA30634@dhcp-172-17-108-109.mtv.corp.google.com>
+	Wed, 20 Jun 2012 21:10:33 -0400
+Message-ID: <4FE27471.8050505@xenotime.net>
+Date: Wed, 20 Jun 2012 18:10:09 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jun 20 (hweight return type)
+References: <20120620173536.b856bbd97497cf02ddf8d6d2@canb.auug.org.au>
+In-Reply-To: <20120620173536.b856bbd97497cf02ddf8d6d2@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On 06/20/2012 12:35 AM, Stephen Rothwell wrote:
 
-Please pull from the following branch to receive two patches fixing a
-refcnt race bug during css_put().  Decing and checking the value
-weren't atomic and two tasks could think that they both pushed the
-counter to zero.
+> Hi all,
+> 
+> Changes since 20120619:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.5-fixes
 
-Salman Qazi (2):
-      cgroup: make sure that decisions in __css_put are atomic
-      cgroups: Account for CSS_DEACT_BIAS in __css_put
+Someone changes the return type of __const_hweight8() to
+(unsigned long).  That causes printk format warnings when
+hweight8/16() etc. is passed a constant:
 
-Thanks.
----
- kernel/cgroup.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+drivers/input/joystick/analog.c:412:4: warning: format '%d' expects type 'int', but argument 4 has type 'long unsigned int'
+drivers/input/joystick/analog.c:412:4: warning: format '%d' expects type 'int', but argument 5 has type 'long unsigned int'
+drivers/input/joystick/analog.c:416:5: warning: format '%d' expects type 'int', but argument 5 has type 'long unsigned int'
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 72fcd30..2097684 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -255,12 +255,17 @@ int cgroup_lock_is_held(void)
- 
- EXPORT_SYMBOL_GPL(cgroup_lock_is_held);
- 
-+static int css_unbias_refcnt(int refcnt)
-+{
-+	return refcnt >= 0 ? refcnt : refcnt - CSS_DEACT_BIAS;
-+}
-+
- /* the current nr of refs, always >= 0 whether @css is deactivated or not */
- static int css_refcnt(struct cgroup_subsys_state *css)
- {
- 	int v = atomic_read(&css->refcnt);
- 
--	return v >= 0 ? v : v - CSS_DEACT_BIAS;
-+	return css_unbias_refcnt(v);
- }
- 
- /* convenient tests for these bits */
-@@ -4982,10 +4987,12 @@ EXPORT_SYMBOL_GPL(__css_tryget);
- void __css_put(struct cgroup_subsys_state *css)
- {
- 	struct cgroup *cgrp = css->cgroup;
-+	int v;
- 
- 	rcu_read_lock();
--	atomic_dec(&css->refcnt);
--	switch (css_refcnt(css)) {
-+	v = css_unbias_refcnt(atomic_dec_return(&css->refcnt));
-+
-+	switch (v) {
- 	case 1:
- 		if (notify_on_release(cgrp)) {
- 			set_bit(CGRP_RELEASABLE, &cgrp->flags);
+
+Note that in
+
+#define hweight8(w)  (__builtin_constant_p(w) ? __const_hweight8(w)  : __arch_hweight8(w))
+
+__arch_hweight*() still returns unsigned int while __const_hweight*()
+returns unsigned long.  This can't be good, can it?
+
+
+
+
+-- 
+~Randy
