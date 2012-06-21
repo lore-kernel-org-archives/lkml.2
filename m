@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759410Ab2FULoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 07:44:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60256 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759371Ab2FULoB (ORCPT
+	id S1759434Ab2FULsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 07:48:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60152 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759416Ab2FULsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 07:44:01 -0400
-Date: Thu, 21 Jun 2012 21:13:54 +0930
-From: Alan Modra <amodra@gmail.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (powerpc
- related)
-Message-ID: <20120621114354.GG20973@bubble.grove.modra.org>
-References: <20120620175014.a822a766e0f91f7b44f48fa0@canb.auug.org.au>
- <1340256961.1998.11.camel@concordia>
- <1340259896.3942.2.camel@pasglop>
- <1340262473.1998.19.camel@concordia>
- <1340264307.1998.20.camel@concordia>
- <20120621104839.GE20973@bubble.grove.modra.org>
+	Thu, 21 Jun 2012 07:48:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120621104839.GE20973@bubble.grove.modra.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1340278853.21745.178.camel@twins>
+References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
+	<1340208092.21745.114.camel@twins>
+	<4FE28823.80704@intel.com>
+	<CABPqkBTi8-yKg_kzFTwLe1_m2Zprt5vGk9WPQW14yHQpy=PiWw@mail.gmail.com>
+	<4FE2DE9A.70202@intel.com>
+	<CABPqkBTESKqVG6shXsLi85w=ZJ=1hXxu8+_7tNp23euds8JPbg@mail.gmail.com>
+	<1340278853.21745.178.camel@twins>
+Date: Thu, 21 Jun 2012 13:48:09 +0200
+Message-ID: <CABPqkBSV7MwALrv1Sah6L9C2FP=AGXC2+yeN=jsJk=HrO1bNzA@mail.gmail.com>
+Subject: Re: [PATCH V6 0/13] perf: Intel uncore pmu counting support
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, mingo@elte.hu, jolsa@redhat.com,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 08:18:39PM +0930, Alan Modra wrote:
-> Linker bug.  That's not a sibling call, but a normal function return
-> via an out-of-line register restore function.
+On Thu, Jun 21, 2012 at 1:40 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2012-06-21 at 11:13 +0200, Stephane Eranian wrote:
+>
+>> >>> How about treat the 'cpu' parameter for uncore event as socket id instead
+>> >>> of cpu id?
+>> >>>
+>> >> But that does not address the use case of Peter, i.e., no cpu parameter passed.
+>> >> Looks like sysfs might be the only way to do this in a portable manner.
+>> >>
+>> > It does. For example, on a dual socket system, perf can only register uncore
+>> > counter with 'cpu' parameter is equal to 0 or 1. This method is hacky, but it
+>> > requires minimal change for the kernel and perf tool.
+>> >
+>> I was saying, I don't want to have to pass -C x with -a and yet have perf stat
+>> only instantiate the event once per socket. I think that's what PeterZ was
+>> asking about.
+>
+> What Zheng is saying is that -a will iterate [0..nr_cpus), but since
+> we're interpreting the sys_perf_event_open(.cpu) argument as node, we'll
+> fail the syscall with -EINVAL or so for .cpu >= nr_node_ids.
+>
+Ok, but how do you distinguish EINVAL is this case from an error with a non
+uncore event? Unless you return a unique error code, I don't see how you'd solve
+that. In general, I don't like it when perf switches events or CPUs under the
+cover.
 
-I couldn't see how this might be occurring, then I remembered the
-kernel has this horrible practise of using ld -r to package object
-files.  So linker generated functions might be munged together with
-other functions.  Does this help?  (It won't if the kernel is
-providing its own save/restore functions.)
-
-Index: bfd/elf64-ppc.c
-===================================================================
-RCS file: /cvs/src/src/bfd/elf64-ppc.c,v
-retrieving revision 1.387
-diff -u -p -r1.387 elf64-ppc.c
-@@ -6494,9 +6494,10 @@ ppc64_elf_func_desc_adjust (bfd *obfd AT
- 
-   /* Provide any missing _save* and _rest* functions.  */
-   htab->sfpr->size = 0;
--  for (i = 0; i < sizeof (funcs) / sizeof (funcs[0]); i++)
--    if (!sfpr_define (info, &funcs[i]))
--      return FALSE;
-+  if (!info->relocatable)
-+    for (i = 0; i < sizeof (funcs) / sizeof (funcs[0]); i++)
-+      if (!sfpr_define (info, &funcs[i]))
-+	return FALSE;
- 
-   elf_link_hash_traverse (&htab->elf, func_desc_adjust, info);
- 
+When happens with -a -A?
 
 
--- 
-Alan Modra
-Australia Development Lab, IBM
+> This way, we'll only create one counter per node.
+>
+> I would work, but its not pretty since we still don't know what we're
+> iterating.
+
+Not pretty.
