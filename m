@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890Ab2FUC0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Jun 2012 22:26:20 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:51408 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757839Ab2FUC0T (ORCPT
+	id S1757648Ab2FUC0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Jun 2012 22:26:40 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:54863 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab2FUC0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Jun 2012 22:26:19 -0400
+	Wed, 20 Jun 2012 22:26:38 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-131.messagelabs.com!1340245577!13127470!1
-X-Originating-IP: [216.166.12.69]
+X-Msg-Ref: server-4.tower-160.messagelabs.com!1340245597!6425846!1
+X-Originating-IP: [216.166.12.180]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 07/12] staging: comedi: s626: remove forward declarations 5
-Date: Wed, 20 Jun 2012 19:26:11 -0700
+Subject: [PATCH 08/12] staging: comedi: s626: remove forward declarations 6
+Date: Wed, 20 Jun 2012 19:26:31 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,285 +23,271 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201206201926.12261.hartleys@visionengravers.com>
+Message-ID: <201206201926.32270.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the irq set/reset/clear and ns_to_timer helper functions
-up to remove the need for the forward declarations.
+Move the enc_private_data definition down to remove the need
+for the forward declarations.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/s626.c | 224 +++++++++++++++++-----------------
- 1 file changed, 109 insertions(+), 115 deletions(-)
+ drivers/staging/comedi/drivers/s626.c | 222 ++++++++++++++--------------------
+ 1 file changed, 94 insertions(+), 128 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index 3cdb293..cc18bf0 100644
+index cc18bf0..d7d72ac1 100644
 --- a/drivers/staging/comedi/drivers/s626.c
 +++ b/drivers/staging/comedi/drivers/s626.c
-@@ -207,12 +207,6 @@ static struct dio_private *dio_private_word[]={
- #define devpriv ((struct s626_private *)dev->private)
- #define diopriv ((struct dio_private *)s->private)
+@@ -233,36 +233,8 @@ struct enc_private {
+ static void s626_timer_load(struct comedi_device *dev, struct enc_private *k,
+ 			    int tick);
+ static uint32_t ReadLatch(struct comedi_device *dev, struct enc_private *k);
+-static void ResetCapFlags_A(struct comedi_device *dev, struct enc_private *k);
+-static void ResetCapFlags_B(struct comedi_device *dev, struct enc_private *k);
+-static uint16_t GetMode_A(struct comedi_device *dev, struct enc_private *k);
+-static uint16_t GetMode_B(struct comedi_device *dev, struct enc_private *k);
+-static void SetMode_A(struct comedi_device *dev, struct enc_private *k,
+-		      uint16_t Setup, uint16_t DisableIntSrc);
+-static void SetMode_B(struct comedi_device *dev, struct enc_private *k,
+-		      uint16_t Setup, uint16_t DisableIntSrc);
+-static void SetEnable_A(struct comedi_device *dev, struct enc_private *k,
+-			uint16_t enab);
+-static void SetEnable_B(struct comedi_device *dev, struct enc_private *k,
+-			uint16_t enab);
+-static uint16_t GetEnable_A(struct comedi_device *dev, struct enc_private *k);
+-static uint16_t GetEnable_B(struct comedi_device *dev, struct enc_private *k);
+ static void SetLatchSource(struct comedi_device *dev, struct enc_private *k,
+ 			   uint16_t value);
+-static void SetLoadTrig_A(struct comedi_device *dev, struct enc_private *k,
+-			  uint16_t Trig);
+-static void SetLoadTrig_B(struct comedi_device *dev, struct enc_private *k,
+-			  uint16_t Trig);
+-static uint16_t GetLoadTrig_A(struct comedi_device *dev, struct enc_private *k);
+-static uint16_t GetLoadTrig_B(struct comedi_device *dev, struct enc_private *k);
+-static void SetIntSrc_B(struct comedi_device *dev, struct enc_private *k,
+-			uint16_t IntSource);
+-static void SetIntSrc_A(struct comedi_device *dev, struct enc_private *k,
+-			uint16_t IntSource);
+-static uint16_t GetIntSrc_A(struct comedi_device *dev, struct enc_private *k);
+-static uint16_t GetIntSrc_B(struct comedi_device *dev, struct enc_private *k);
+-static void PulseIndex_A(struct comedi_device *dev, struct enc_private *k);
+-static void PulseIndex_B(struct comedi_device *dev, struct enc_private *k);
+ static void Preload(struct comedi_device *dev, struct enc_private *k,
+ 		    uint32_t value);
  
--static int s626_dio_set_irq(struct comedi_device *dev, unsigned int chan);
--static int s626_dio_reset_irq(struct comedi_device *dev, unsigned int gruop,
--			      unsigned int mask);
--static int s626_dio_clear_irq(struct comedi_device *dev);
--static int s626_ns_to_timer(int *nanosec, int round_mode);
+@@ -276,106 +248,6 @@ static void Preload(struct comedi_device *dev, struct enc_private *k,
+ /*  Translation table to map IntSrc into equivalent RDMISC2 event flag  bits. */
+ /* static const uint16_t EventBits[][4] = { EVBITS(0), EVBITS(1), EVBITS(2), EVBITS(3), EVBITS(4), EVBITS(5) }; */
+ 
+-/* struct enc_private; */
+-static struct enc_private enc_private_data[] = {
+-	{
+-	 .GetEnable = GetEnable_A,
+-	 .GetIntSrc = GetIntSrc_A,
+-	 .GetLoadTrig = GetLoadTrig_A,
+-	 .GetMode = GetMode_A,
+-	 .PulseIndex = PulseIndex_A,
+-	 .SetEnable = SetEnable_A,
+-	 .SetIntSrc = SetIntSrc_A,
+-	 .SetLoadTrig = SetLoadTrig_A,
+-	 .SetMode = SetMode_A,
+-	 .ResetCapFlags = ResetCapFlags_A,
+-	 .MyCRA = LP_CR0A,
+-	 .MyCRB = LP_CR0B,
+-	 .MyLatchLsw = LP_CNTR0ALSW,
+-	 .MyEventBits = EVBITS(0),
+-	 },
+-	{
+-	 .GetEnable = GetEnable_A,
+-	 .GetIntSrc = GetIntSrc_A,
+-	 .GetLoadTrig = GetLoadTrig_A,
+-	 .GetMode = GetMode_A,
+-	 .PulseIndex = PulseIndex_A,
+-	 .SetEnable = SetEnable_A,
+-	 .SetIntSrc = SetIntSrc_A,
+-	 .SetLoadTrig = SetLoadTrig_A,
+-	 .SetMode = SetMode_A,
+-	 .ResetCapFlags = ResetCapFlags_A,
+-	 .MyCRA = LP_CR1A,
+-	 .MyCRB = LP_CR1B,
+-	 .MyLatchLsw = LP_CNTR1ALSW,
+-	 .MyEventBits = EVBITS(1),
+-	 },
+-	{
+-	 .GetEnable = GetEnable_A,
+-	 .GetIntSrc = GetIntSrc_A,
+-	 .GetLoadTrig = GetLoadTrig_A,
+-	 .GetMode = GetMode_A,
+-	 .PulseIndex = PulseIndex_A,
+-	 .SetEnable = SetEnable_A,
+-	 .SetIntSrc = SetIntSrc_A,
+-	 .SetLoadTrig = SetLoadTrig_A,
+-	 .SetMode = SetMode_A,
+-	 .ResetCapFlags = ResetCapFlags_A,
+-	 .MyCRA = LP_CR2A,
+-	 .MyCRB = LP_CR2B,
+-	 .MyLatchLsw = LP_CNTR2ALSW,
+-	 .MyEventBits = EVBITS(2),
+-	 },
+-	{
+-	 .GetEnable = GetEnable_B,
+-	 .GetIntSrc = GetIntSrc_B,
+-	 .GetLoadTrig = GetLoadTrig_B,
+-	 .GetMode = GetMode_B,
+-	 .PulseIndex = PulseIndex_B,
+-	 .SetEnable = SetEnable_B,
+-	 .SetIntSrc = SetIntSrc_B,
+-	 .SetLoadTrig = SetLoadTrig_B,
+-	 .SetMode = SetMode_B,
+-	 .ResetCapFlags = ResetCapFlags_B,
+-	 .MyCRA = LP_CR0A,
+-	 .MyCRB = LP_CR0B,
+-	 .MyLatchLsw = LP_CNTR0BLSW,
+-	 .MyEventBits = EVBITS(3),
+-	 },
+-	{
+-	 .GetEnable = GetEnable_B,
+-	 .GetIntSrc = GetIntSrc_B,
+-	 .GetLoadTrig = GetLoadTrig_B,
+-	 .GetMode = GetMode_B,
+-	 .PulseIndex = PulseIndex_B,
+-	 .SetEnable = SetEnable_B,
+-	 .SetIntSrc = SetIntSrc_B,
+-	 .SetLoadTrig = SetLoadTrig_B,
+-	 .SetMode = SetMode_B,
+-	 .ResetCapFlags = ResetCapFlags_B,
+-	 .MyCRA = LP_CR1A,
+-	 .MyCRB = LP_CR1B,
+-	 .MyLatchLsw = LP_CNTR1BLSW,
+-	 .MyEventBits = EVBITS(4),
+-	 },
+-	{
+-	 .GetEnable = GetEnable_B,
+-	 .GetIntSrc = GetIntSrc_B,
+-	 .GetLoadTrig = GetLoadTrig_B,
+-	 .GetMode = GetMode_B,
+-	 .PulseIndex = PulseIndex_B,
+-	 .SetEnable = SetEnable_B,
+-	 .SetIntSrc = SetIntSrc_B,
+-	 .SetLoadTrig = SetLoadTrig_B,
+-	 .SetMode = SetMode_B,
+-	 .ResetCapFlags = ResetCapFlags_B,
+-	 .MyCRA = LP_CR2A,
+-	 .MyCRB = LP_CR2B,
+-	 .MyLatchLsw = LP_CNTR2BLSW,
+-	 .MyEventBits = EVBITS(5),
+-	 },
+-};
 -
- /*  COUNTER OBJECT ------------------------------------------------ */
- struct enc_private {
- 	/*  Pointers to functions that differ for A and B counters: */
-@@ -803,6 +797,87 @@ static unsigned int s626_ai_reg_to_uint(int data)
- /*   return 0; */
- /* } */
- 
-+static int s626_dio_set_irq(struct comedi_device *dev, unsigned int chan)
-+{
-+	unsigned int group;
-+	unsigned int bitmask;
-+	unsigned int status;
-+
-+	/* select dio bank */
-+	group = chan / 16;
-+	bitmask = 1 << (chan - (16 * group));
-+	DEBUG("s626_dio_set_irq: enable interrupt on dio channel %d group %d\n",
-+	      chan - (16 * group), group);
-+
-+	/* set channel to capture positive edge */
-+	status = DEBIread(dev,
-+			  ((struct dio_private *)(dev->subdevices + 2 +
-+						  group)->private)->RDEdgSel);
-+	DEBIwrite(dev,
-+		  ((struct dio_private *)(dev->subdevices + 2 +
-+					  group)->private)->WREdgSel,
-+		  bitmask | status);
-+
-+	/* enable interrupt on selected channel */
-+	status = DEBIread(dev,
-+			  ((struct dio_private *)(dev->subdevices + 2 +
-+						  group)->private)->RDIntSel);
-+	DEBIwrite(dev,
-+		  ((struct dio_private *)(dev->subdevices + 2 +
-+					  group)->private)->WRIntSel,
-+		  bitmask | status);
-+
-+	/* enable edge capture write command */
-+	DEBIwrite(dev, LP_MISC1, MISC1_EDCAP);
-+
-+	/* enable edge capture on selected channel */
-+	status = DEBIread(dev,
-+			  ((struct dio_private *)(dev->subdevices + 2 +
-+						  group)->private)->RDCapSel);
-+	DEBIwrite(dev,
-+		  ((struct dio_private *)(dev->subdevices + 2 +
-+					  group)->private)->WRCapSel,
-+		  bitmask | status);
-+
-+	return 0;
-+}
-+
-+static int s626_dio_reset_irq(struct comedi_device *dev, unsigned int group,
-+			      unsigned int mask)
-+{
-+	DEBUG
-+	    ("s626_dio_reset_irq: disable  interrupt on dio channel %d group %d\n",
-+	     mask, group);
-+
-+	/* disable edge capture write command */
-+	DEBIwrite(dev, LP_MISC1, MISC1_NOEDCAP);
-+
-+	/* enable edge capture on selected channel */
-+	DEBIwrite(dev,
-+		  ((struct dio_private *)(dev->subdevices + 2 +
-+					  group)->private)->WRCapSel, mask);
-+
-+	return 0;
-+}
-+
-+static int s626_dio_clear_irq(struct comedi_device *dev)
-+{
-+	unsigned int group;
-+
-+	/* disable edge capture write command */
-+	DEBIwrite(dev, LP_MISC1, MISC1_NOEDCAP);
-+
-+	for (group = 0; group < S626_DIO_BANKS; group++) {
-+		/* clear pending events and interrupt */
-+		DEBIwrite(dev,
-+			  ((struct dio_private *)(dev->subdevices + 2 +
-+						  group)->private)->WRCapSel,
-+			  0xffff);
-+	}
-+
-+	return 0;
-+}
-+
- static irqreturn_t s626_irq_handler(int irq, void *d)
- {
- 	struct comedi_device *dev = d;
-@@ -1500,6 +1575,34 @@ static int s626_ai_inttrig(struct comedi_device *dev,
- 	return 1;
+ /*  enab/disable a function or test status bit(s) that are accessed */
+ /*  through Main Control Registers 1 or 2. */
+ #define MC_ENABLE(REGADRS, CTRLWORD)	writel(((uint32_t)(CTRLWORD) << 16) | (uint32_t)(CTRLWORD), devpriv->base_addr+(REGADRS))
+@@ -2681,6 +2553,100 @@ static void Preload(struct comedi_device *dev, struct enc_private *k,
+ 		  (uint16_t) (value >> 16));
  }
  
-+/* This function doesn't require a particular form, this is just what
-+ * happens to be used in some of the drivers.  It should convert ns
-+ * nanoseconds to a counter value suitable for programming the device.
-+ * Also, it should adjust ns so that it cooresponds to the actual time
-+ * that the device will use. */
-+static int s626_ns_to_timer(int *nanosec, int round_mode)
-+{
-+	int divider, base;
++static struct enc_private enc_private_data[] = {
++	{
++		.GetEnable	= GetEnable_A,
++		.GetIntSrc	= GetIntSrc_A,
++		.GetLoadTrig	= GetLoadTrig_A,
++		.GetMode	= GetMode_A,
++		.PulseIndex	= PulseIndex_A,
++		.SetEnable	= SetEnable_A,
++		.SetIntSrc	= SetIntSrc_A,
++		.SetLoadTrig	= SetLoadTrig_A,
++		.SetMode	= SetMode_A,
++		.ResetCapFlags	= ResetCapFlags_A,
++		.MyCRA		= LP_CR0A,
++		.MyCRB		= LP_CR0B,
++		.MyLatchLsw	= LP_CNTR0ALSW,
++		.MyEventBits	= EVBITS(0),
++	}, {
++		.GetEnable	= GetEnable_A,
++		.GetIntSrc	= GetIntSrc_A,
++		.GetLoadTrig	= GetLoadTrig_A,
++		.GetMode	= GetMode_A,
++		.PulseIndex	= PulseIndex_A,
++		.SetEnable	= SetEnable_A,
++		.SetIntSrc	= SetIntSrc_A,
++		.SetLoadTrig	= SetLoadTrig_A,
++		.SetMode	= SetMode_A,
++		.ResetCapFlags	= ResetCapFlags_A,
++		.MyCRA		= LP_CR1A,
++		.MyCRB		= LP_CR1B,
++		.MyLatchLsw	= LP_CNTR1ALSW,
++		.MyEventBits	= EVBITS(1),
++	}, {
++		.GetEnable	= GetEnable_A,
++		.GetIntSrc	= GetIntSrc_A,
++		.GetLoadTrig	= GetLoadTrig_A,
++		.GetMode	= GetMode_A,
++		.PulseIndex	= PulseIndex_A,
++		.SetEnable	= SetEnable_A,
++		.SetIntSrc	= SetIntSrc_A,
++		.SetLoadTrig	= SetLoadTrig_A,
++		.SetMode	= SetMode_A,
++		.ResetCapFlags	= ResetCapFlags_A,
++		.MyCRA		= LP_CR2A,
++		.MyCRB		= LP_CR2B,
++		.MyLatchLsw	= LP_CNTR2ALSW,
++		.MyEventBits	= EVBITS(2),
++	}, {
++		.GetEnable	= GetEnable_B,
++		.GetIntSrc	= GetIntSrc_B,
++		.GetLoadTrig	= GetLoadTrig_B,
++		.GetMode	= GetMode_B,
++		.PulseIndex	= PulseIndex_B,
++		.SetEnable	= SetEnable_B,
++		.SetIntSrc	= SetIntSrc_B,
++		.SetLoadTrig	= SetLoadTrig_B,
++		.SetMode	= SetMode_B,
++		.ResetCapFlags	= ResetCapFlags_B,
++		.MyCRA		= LP_CR0A,
++		.MyCRB		= LP_CR0B,
++		.MyLatchLsw	= LP_CNTR0BLSW,
++		.MyEventBits	= EVBITS(3),
++	}, {
++		.GetEnable	= GetEnable_B,
++		.GetIntSrc	= GetIntSrc_B,
++		.GetLoadTrig	= GetLoadTrig_B,
++		.GetMode	= GetMode_B,
++		.PulseIndex	= PulseIndex_B,
++		.SetEnable	= SetEnable_B,
++		.SetIntSrc	= SetIntSrc_B,
++		.SetLoadTrig	= SetLoadTrig_B,
++		.SetMode	= SetMode_B,
++		.ResetCapFlags	= ResetCapFlags_B,
++		.MyCRA		= LP_CR1A,
++		.MyCRB		= LP_CR1B,
++		.MyLatchLsw	= LP_CNTR1BLSW,
++		.MyEventBits	= EVBITS(4),
++	}, {
++		.GetEnable	= GetEnable_B,
++		.GetIntSrc	= GetIntSrc_B,
++		.GetLoadTrig	= GetLoadTrig_B,
++		.GetMode	= GetMode_B,
++		.PulseIndex	= PulseIndex_B,
++		.SetEnable	= SetEnable_B,
++		.SetIntSrc	= SetIntSrc_B,
++		.SetLoadTrig	= SetLoadTrig_B,
++		.SetMode	= SetMode_B,
++		.ResetCapFlags	= ResetCapFlags_B,
++		.MyCRA		= LP_CR2A,
++		.MyCRB		= LP_CR2B,
++		.MyLatchLsw	= LP_CNTR2BLSW,
++		.MyEventBits	= EVBITS(5),
++	},
++};
 +
-+	base = 500;		/* 2MHz internal clock */
-+
-+	switch (round_mode) {
-+	case TRIG_ROUND_NEAREST:
-+	default:
-+		divider = (*nanosec + base / 2) / base;
-+		break;
-+	case TRIG_ROUND_DOWN:
-+		divider = (*nanosec) / base;
-+		break;
-+	case TRIG_ROUND_UP:
-+		divider = (*nanosec + base - 1) / base;
-+		break;
-+	}
-+
-+	*nanosec = base * divider;
-+	return divider - 1;
-+}
-+
- /*  TO COMPLETE  */
- static int s626_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ static void CountersInit(struct comedi_device *dev)
  {
-@@ -1832,34 +1935,6 @@ static int s626_ai_cancel(struct comedi_device *dev, struct comedi_subdevice *s)
- 	return 0;
- }
- 
--/* This function doesn't require a particular form, this is just what
-- * happens to be used in some of the drivers.  It should convert ns
-- * nanoseconds to a counter value suitable for programming the device.
-- * Also, it should adjust ns so that it cooresponds to the actual time
-- * that the device will use. */
--static int s626_ns_to_timer(int *nanosec, int round_mode)
--{
--	int divider, base;
--
--	base = 500;		/* 2MHz internal clock */
--
--	switch (round_mode) {
--	case TRIG_ROUND_NEAREST:
--	default:
--		divider = (*nanosec + base / 2) / base;
--		break;
--	case TRIG_ROUND_DOWN:
--		divider = (*nanosec) / base;
--		break;
--	case TRIG_ROUND_UP:
--		divider = (*nanosec + base - 1) / base;
--		break;
--	}
--
--	*nanosec = base * divider;
--	return divider - 1;
--}
--
- static int s626_ao_winsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 			 struct comedi_insn *insn, unsigned int *data)
- {
-@@ -1980,87 +2055,6 @@ static int s626_dio_insn_config(struct comedi_device *dev,
- 	return 1;
- }
- 
--static int s626_dio_set_irq(struct comedi_device *dev, unsigned int chan)
--{
--	unsigned int group;
--	unsigned int bitmask;
--	unsigned int status;
--
--	/* select dio bank */
--	group = chan / 16;
--	bitmask = 1 << (chan - (16 * group));
--	DEBUG("s626_dio_set_irq: enable interrupt on dio channel %d group %d\n",
--	      chan - (16 * group), group);
--
--	/* set channel to capture positive edge */
--	status = DEBIread(dev,
--			  ((struct dio_private *)(dev->subdevices + 2 +
--						  group)->private)->RDEdgSel);
--	DEBIwrite(dev,
--		  ((struct dio_private *)(dev->subdevices + 2 +
--					  group)->private)->WREdgSel,
--		  bitmask | status);
--
--	/* enable interrupt on selected channel */
--	status = DEBIread(dev,
--			  ((struct dio_private *)(dev->subdevices + 2 +
--						  group)->private)->RDIntSel);
--	DEBIwrite(dev,
--		  ((struct dio_private *)(dev->subdevices + 2 +
--					  group)->private)->WRIntSel,
--		  bitmask | status);
--
--	/* enable edge capture write command */
--	DEBIwrite(dev, LP_MISC1, MISC1_EDCAP);
--
--	/* enable edge capture on selected channel */
--	status = DEBIread(dev,
--			  ((struct dio_private *)(dev->subdevices + 2 +
--						  group)->private)->RDCapSel);
--	DEBIwrite(dev,
--		  ((struct dio_private *)(dev->subdevices + 2 +
--					  group)->private)->WRCapSel,
--		  bitmask | status);
--
--	return 0;
--}
--
--static int s626_dio_reset_irq(struct comedi_device *dev, unsigned int group,
--			      unsigned int mask)
--{
--	DEBUG
--	    ("s626_dio_reset_irq: disable  interrupt on dio channel %d group %d\n",
--	     mask, group);
--
--	/* disable edge capture write command */
--	DEBIwrite(dev, LP_MISC1, MISC1_NOEDCAP);
--
--	/* enable edge capture on selected channel */
--	DEBIwrite(dev,
--		  ((struct dio_private *)(dev->subdevices + 2 +
--					  group)->private)->WRCapSel, mask);
--
--	return 0;
--}
--
--static int s626_dio_clear_irq(struct comedi_device *dev)
--{
--	unsigned int group;
--
--	/* disable edge capture write command */
--	DEBIwrite(dev, LP_MISC1, MISC1_NOEDCAP);
--
--	for (group = 0; group < S626_DIO_BANKS; group++) {
--		/* clear pending events and interrupt */
--		DEBIwrite(dev,
--			  ((struct dio_private *)(dev->subdevices + 2 +
--						  group)->private)->WRCapSel,
--			  0xffff);
--	}
--
--	return 0;
--}
--
- /* Now this function initializes the value of the counter (data[0])
-    and set the subdevice. To complete with trigger and interrupt
-    configuration */
+ 	int chan;
 -- 
 1.7.11
 
