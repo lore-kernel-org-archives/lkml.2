@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759027Ab2FUI4c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 04:56:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37968 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758998Ab2FUI42 (ORCPT
+	id S1759053Ab2FUI4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 04:56:50 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63850 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758923Ab2FUI4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 04:56:28 -0400
-Date: Thu, 21 Jun 2012 01:56:23 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: axel.lin@gmail.com, riyer@nvidia.com, michael.hennerich@analog.com,
-        grant.likely@secretlab.ca, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com
-Subject: Re: [PATCH RESEND v4] input: keyboard: Add keys driver for the
- LPC32xx SoC
-Message-ID: <20120621085623.GF2193@core.coreip.homeip.net>
-References: <1339443891-15197-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339443891-15197-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Jun 2012 04:56:47 -0400
+X-AuditID: 9c930197-b7b87ae000000e4d-fa-4fe2e1cdcc88
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] perf evsel: Fix a build failure on cross compilation
+Date: Thu, 21 Jun 2012 17:52:52 +0900
+Message-Id: <1340268772-5737-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.10.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 09:44:51PM +0200, Roland Stigge wrote:
-> This patch adds a driver for the key scan interface of the LPC32xx SoC
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> For the DT binding: Acked-by: Rob Herring <rob.herring@calxeda.con>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Not a real review, just a quick question - if th driver is DT-only now
-do we need to have the platform data or it would make more sense to read
-DT-bindings and fill the main device structure directly?
+The commit c410431cefefd ("perf tools: Reconstruct event
+with modifiers from perf_event_attr") added the line, but
+it's broken since it needs to go up 3 directories to get
+to the kernel root directory, not 2.
 
-Thanks.
+However host gcc contains /usr/local/include in its
+search path, so that it can find the perf_event.h in
+/usr/include. This why we didn't notice the problem yet.
+But when I tried to cross compile it appears like:
 
-> +
-> +	matrix_keypad_build_keymap(NULL, NULL, kscandat->kscancfg->matrix_sz,
-> +				   kscandat->kscancfg->matrix_sz,
-> +				   kscandat->kscancfg->keymap, kscandat->input);
+      CC util/evsel.o
+  util/evsel.c:18:44: error: ../../include/linux/perf_event.h: No such file or directory
+  make: *** [util/evsel.o] Error 1
 
-This function may fail now.
+Looking at the source, it isn't needed at all as evsel.h
+already included the perf_event.h. So simply remove it
+would solve the problem.
 
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/evsel.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 876f639d69ed..3d1f6968f175 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -15,7 +15,6 @@
+ #include "cpumap.h"
+ #include "thread_map.h"
+ #include "target.h"
+-#include "../../include/linux/perf_event.h"
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
 -- 
-Dmitry
+1.7.10.2
+
