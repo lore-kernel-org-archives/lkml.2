@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab2FVOYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:24:38 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43656 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590Ab2FVOYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:24:36 -0400
-Message-ID: <1340375022.2464.29.camel@falcor>
-Subject: [PATCH] ima: use full pathnames in measurement list
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module <linux-security-module@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 22 Jun 2012 10:23:42 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062214-7182-0000-0000-000001D27D05
+	id S1756524Ab2FVOZH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:25:07 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:65456 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756206Ab2FVOZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:25:05 -0400
+Date: Fri, 22 Jun 2012 16:24:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, shuahkhan@gmail.com,
+        joe@perches.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/cleanups] x86/early_printk: Replace obsolete
+ simple_strtoul() usage with kstrtoint()
+Message-ID: <20120622142456.GA24850@gmail.com>
+References: <1338424803.3569.5.camel@lorien2>
+ <tip-fbd24153c48b8425b09c161a020483cd77da870e@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-fbd24153c48b8425b09c161a020483cd77da870e@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IMA measurement list contains filename hints, which can be
-ambigious without the full pathname.  This patch replaces the
-filename hint with the full pathname, simplifying for userspace
-the correlating of file hash measurements with files.
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- security/integrity/ima/ima_main.c |   40 +++++++++++++++++++++++++++++++-----
- 1 files changed, 34 insertions(+), 6 deletions(-)
+* tip-bot for Shuah Khan <shuahkhan@gmail.com> wrote:
 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index b17be79..91fa323 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -54,6 +54,7 @@ static void ima_rdwr_violation_check(struct file *file)
- 	fmode_t mode = file->f_mode;
- 	int rc;
- 	bool send_tomtou = false, send_writers = false;
-+	unsigned char *pathname = NULL, *pathbuf = NULL;
- 
- 	if (!S_ISREG(inode->i_mode) || !ima_initialized)
- 		return;
-@@ -75,12 +76,25 @@ static void ima_rdwr_violation_check(struct file *file)
- out:
- 	mutex_unlock(&inode->i_mutex);
- 
-+	if (!send_tomtou && !send_writers)
-+		return;
-+
-+	/* We will allow 11 spaces for ' (deleted)' to be appended */
-+	pathbuf = kmalloc(PATH_MAX + 11, GFP_KERNEL);
-+	if (pathbuf) {
-+		pathname = d_path(&file->f_path, pathbuf, PATH_MAX + 11);
-+		if (IS_ERR(pathname))
-+			pathname = NULL;
-+	}
- 	if (send_tomtou)
--		ima_add_violation(inode, dentry->d_name.name, "invalid_pcr",
--				  "ToMToU");
-+		ima_add_violation(inode,
-+				  !pathname ? dentry->d_name.name : pathname,
-+				  "invalid_pcr", "ToMToU");
- 	if (send_writers)
--		ima_add_violation(inode, dentry->d_name.name, "invalid_pcr",
--				  "open_writers");
-+		ima_add_violation(inode,
-+				  !pathname ? dentry->d_name.name : pathname,
-+				  "invalid_pcr", "open_writers");
-+	kfree(pathbuf);
- }
- 
- static void ima_check_last_writer(struct integrity_iint_cache *iint,
-@@ -123,6 +137,7 @@ static int process_measurement(struct file *file, const unsigned char *filename,
- {
- 	struct inode *inode = file->f_dentry->d_inode;
- 	struct integrity_iint_cache *iint;
-+	unsigned char *pathname = NULL, *pathbuf = NULL;
- 	int rc = 0;
- 
- 	if (!ima_initialized || !S_ISREG(inode->i_mode))
-@@ -147,8 +162,21 @@ retry:
- 		goto out;
- 
- 	rc = ima_collect_measurement(iint, file);
--	if (!rc)
--		ima_store_measurement(iint, file, filename);
-+	if (rc != 0)
-+		goto out;
-+
-+	if (function != BPRM_CHECK) {
-+		/* We will allow 11 spaces for ' (deleted)' to be appended */
-+		pathbuf = kmalloc(PATH_MAX + 11, GFP_KERNEL);
-+		if (pathbuf) {
-+			pathname =
-+			    d_path(&file->f_path, pathbuf, PATH_MAX + 11);
-+			if (IS_ERR(pathname))
-+				pathname = NULL;
-+		}
-+	}
-+	ima_store_measurement(iint, file, !pathname ? filename : pathname);
-+	kfree(pathbuf);
- out:
- 	mutex_unlock(&iint->mutex);
- 	return rc;
--- 
-1.7.7.6
+> Commit-ID:  fbd24153c48b8425b09c161a020483cd77da870e
+> Gitweb:     http://git.kernel.org/tip/fbd24153c48b8425b09c161a020483cd77da870e
+> Author:     Shuah Khan <shuahkhan@gmail.com>
+> AuthorDate: Wed, 30 May 2012 18:40:03 -0600
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 6 Jun 2012 11:44:22 +0200
+> 
+> x86/early_printk: Replace obsolete simple_strtoul() usage with kstrtoint()
+> 
+> Change early_serial_init() to call kstrtoul() instead of calling
+> obsoleted simple_strtoul().
+> 
+> Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+> Cc: Joe Perches <joe@perches.com>
+> Link: http://lkml.kernel.org/r/1338424803.3569.5.camel@lorien2
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/x86/kernel/early_printk.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+> index 9b9f18b..5e47712 100644
+> --- a/arch/x86/kernel/early_printk.c
+> +++ b/arch/x86/kernel/early_printk.c
+> @@ -119,7 +119,7 @@ static __init void early_serial_init(char *s)
+>  	unsigned char c;
+>  	unsigned divisor;
+>  	unsigned baud = DEFAULT_BAUD;
+> -	char *e;
+> +	ssize_t ret;
+>  
+>  	if (*s == ',')
+>  		++s;
+> @@ -127,14 +127,14 @@ static __init void early_serial_init(char *s)
+>  	if (*s) {
+>  		unsigned port;
+>  		if (!strncmp(s, "0x", 2)) {
+> -			early_serial_base = simple_strtoul(s, &e, 16);
+> +			ret = kstrtoint(s, 16, &early_serial_base);
+>  		} else {
+>  			static const int __initconst bases[] = { 0x3f8, 0x2f8 };
+>  
+>  			if (!strncmp(s, "ttyS", 4))
+>  				s += 4;
+> -			port = simple_strtoul(s, &e, 10);
+> -			if (port > 1 || s == e)
+> +			ret = kstrtouint(s, 10, &port);
+> +			if (ret || port > 1)
+>  				port = 0;
+>  			early_serial_base = bases[port];
+>  		}
+> @@ -149,8 +149,8 @@ static __init void early_serial_init(char *s)
+>  	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
+>  
+>  	if (*s) {
+> -		baud = simple_strtoul(s, &e, 0);
+> -		if (baud == 0 || s == e)
+> +		ret = kstrtouint(s, 0, &baud);
+> +		if (ret || baud == 0)
+>  			baud = DEFAULT_BAUD;
+>  	}
 
+This commit is quite buggy: kstrto*int() can return an error but 
+it's not checked in every path above. simple_strtoul() on the 
+other hand could not fail, so this patch subtly intruduces new 
+failure modes.
 
+I'm dropping this patch.
 
+Thanks,
+
+	Ingo
