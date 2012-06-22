@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762650Ab2FVRuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 13:50:17 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51775 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab2FVRuP (ORCPT
+	id S933059Ab2FVRyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 13:54:16 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:38642
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932079Ab2FVRyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 13:50:15 -0400
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: linux-kernel@vger.kernel.org
-Cc: rusty@rustcorp.com.au, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Alex Lyashkov <umka@cloudlinux.com>
-Subject: [PATCH] Taint kernel when lve module is loaded
-Date: Fri, 22 Jun 2012 13:49:31 -0400
-Message-Id: <1340387371-32292-1-git-send-email-mjg59@srcf.ucam.org>
-X-Mailer: git-send-email 1.7.10.4
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.41.104
-X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 22 Jun 2012 13:54:15 -0400
+X-Forefront-Antispam-Report: CIP:157.56.234.149;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0710HT005.namprd07.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: PS-5(zzbb2dI98dI9371I1432I4015Izz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
+Message-ID: <4FE4B13E.10709@caviumnetworks.com>
+Date: Fri, 22 Jun 2012 10:54:06 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Yoichi Yuasa <yuasa@linux-mips.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Paul Mundt <lethal@linux-sh.org>, <linux-kernel@vger.kernel.org>,
+        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH] MIPS: fix bug.h MIPS build regression
+References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org> <CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com> <20120620152759.2caceb8c.yuasa@linux-mips.org> <20120620161249.GB29196@linux-mips.org>
+In-Reply-To: <20120620161249.GB29196@linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cloudlinux have a product called lve that includes a kernel module. This
-was previously GPLed but is now under a proprietary license, but the
-module continues to declare MODULE_LICENSE("GPL") and makes use of some
-EXPORT_SYMBOL_GPL symbols. Forcibly taint it in order to avoid this.
+On 06/20/2012 09:12 AM, Ralf Baechle wrote:
+> On Wed, Jun 20, 2012 at 03:27:59PM +0900, Yoichi Yuasa wrote:
+>
+>> Commit: 3777808873b0c49c5cf27e44c948dfb02675d578 breaks all MIPS builds.
+>
+> Thanks, fix applied.
+>
 
-Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Alex Lyashkov <umka@cloudlinux.com>
----
- kernel/module.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Where was it applied?
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 4edbd9c..9ad9ee9 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2730,6 +2730,10 @@ static int check_module_license_and_versions(struct module *mod)
- 	if (strcmp(mod->name, "driverloader") == 0)
- 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
- 
-+	/* lve claims to be GPL but upstream won't provide source */
-+	if (strcmp(mod->name, "lve") == 0)
-+		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
-+
- #ifdef CONFIG_MODVERSIONS
- 	if ((mod->num_syms && !mod->crcs)
- 	    || (mod->num_gpl_syms && !mod->gpl_crcs)
--- 
-1.7.10.4
+It doesn't show up in linux-next for 20120622, which is where it is needed.
+
+David Daney
+
 
