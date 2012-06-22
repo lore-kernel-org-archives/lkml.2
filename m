@@ -1,80 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731Ab2FVMIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:08:04 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:41772 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932658Ab2FVMID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:08:03 -0400
-Date: Fri, 22 Jun 2012 20:07:55 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: crypto: gpf on boot with linux-next
-Message-ID: <20120622120755.GA24338@gondor.apana.org.au>
-References: <1340363755.27031.37.camel@lappy>
+	id S932842Ab2FVMLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:11:17 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57316 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932706Ab2FVMLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 08:11:12 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <balbi@ti.com>
+Subject: [PATCH v3 3/5] drivers: usb: musb: move otg specific initializations from twl to glue
+Date: Fri, 22 Jun 2012 17:40:53 +0530
+Message-ID: <1340367055-19835-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1340367055-19835-1-git-send-email-kishon@ti.com>
+References: <1340367055-19835-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340363755.27031.37.camel@lappy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 01:15:55PM +0200, Sasha Levin wrote:
-> Hi all,
-> 
-> I'm seeing the following panic when booting the latest linux-next kernel:
+Moved otg specific state(OTG_STATE_B_IDLE, OTG_STATE_A_IDLE) initializations
+from twl to glue. These initializations are removed from twl4030 and
+twl6030 and moved to the mailbox API defined in glue.
+This is part of the cleanup in preparation to make use of usb2 phy
+driver.
 
-Oops, stupid thinko on my part.  Can you see if the following patch
-on top of linux-next fixes the issue?
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/musb/omap2430.c   |    5 +++++
+ drivers/usb/otg/twl4030-usb.c |    8 --------
+ drivers/usb/otg/twl6030-usb.c |    6 ------
+ 3 files changed, 5 insertions(+), 14 deletions(-)
 
-diff --git a/crypto/algboss.c b/crypto/algboss.c
-index 368a832..f97027e 100644
---- a/crypto/algboss.c
-+++ b/crypto/algboss.c
-@@ -48,7 +48,7 @@ struct cryptomgr_param {
- 	char larval[CRYPTO_MAX_ALG_NAME];
- 	char template[CRYPTO_MAX_ALG_NAME];
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 0636870..c4dc92b 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -249,11 +249,14 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
+ 	struct device *dev = musb->controller;
+ 	struct musb_hdrc_platform_data *pdata = dev->platform_data;
+ 	struct omap_musb_board_data *data = pdata->board_data;
++	struct usb_otg *otg = musb->xceiv->otg;
  
--	struct completion completion;
-+	struct completion *completion;
+ 	switch (glue->status) {
+ 	case OMAP_MUSB_ID_GROUND:
+ 		dev_dbg(dev, "ID GND\n");
  
- 	u32 otype;
- 	u32 omask;
-@@ -87,7 +87,7 @@ static int cryptomgr_probe(void *data)
- 	crypto_tmpl_put(tmpl);
++		otg->default_a = true;
++		musb->xceiv->state = OTG_STATE_A_IDLE;
+ 		musb->xceiv->last_event = USB_EVENT_ID;
+ 		if (!is_otg_enabled(musb) || musb->gadget_driver) {
+ 			pm_runtime_get_sync(dev);
+@@ -265,6 +268,8 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
+ 	case OMAP_MUSB_VBUS_VALID:
+ 		dev_dbg(dev, "VBUS Connect\n");
  
- out:
--	complete(&param->completion);
-+	complete(param->completion);
- 	kfree(param);
- 	module_put_and_exit(0);
- }
-@@ -189,14 +189,13 @@ static int cryptomgr_schedule_probe(struct crypto_larval *larval)
++		otg->default_a = false;
++		musb->xceiv->state = OTG_STATE_B_IDLE;
+ 		musb->xceiv->last_event = USB_EVENT_VBUS;
+ 		if (musb->gadget_driver)
+ 			pm_runtime_get_sync(dev);
+diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+index 77f4ff6..990263e 100644
+--- a/drivers/usb/otg/twl4030-usb.c
++++ b/drivers/usb/otg/twl4030-usb.c
+@@ -251,7 +251,6 @@ static enum omap_musb_vbus_id_status
+ {
+ 	int	status;
+ 	enum omap_musb_vbus_id_status linkstat = OMAP_MUSB_UNKNOWN;
+-	struct usb_otg *otg = twl->phy.otg;
  
- 	memcpy(param->larval, larval->alg.cra_name, CRYPTO_MAX_ALG_NAME);
+ 	twl->vbus_supplied = false;
  
--	init_completion(&param->completion);
-+	param->completion = &larval->completion;
+@@ -291,13 +290,6 @@ static enum omap_musb_vbus_id_status
  
- 	thread = kthread_run(cryptomgr_probe, param, "cryptomgr_probe");
- 	if (IS_ERR(thread))
- 		goto err_free_param;
+ 	spin_lock_irq(&twl->lock);
+ 	twl->linkstat = linkstat;
+-	if (linkstat == OMAP_MUSB_ID_GROUND) {
+-		otg->default_a = true;
+-		twl->phy.state = OTG_STATE_A_IDLE;
+-	} else {
+-		otg->default_a = false;
+-		twl->phy.state = OTG_STATE_B_IDLE;
+-	}
+ 	spin_unlock_irq(&twl->lock);
  
--	wait_for_completion_interruptible_timeout(&param->completion, 60 * HZ);
--	complete_all(&larval->completion);
-+	wait_for_completion_interruptible(&larval->completion);
+ 	return linkstat;
+diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
+index 6c75883..66cfea7 100644
+--- a/drivers/usb/otg/twl6030-usb.c
++++ b/drivers/usb/otg/twl6030-usb.c
+@@ -256,7 +256,6 @@ static DEVICE_ATTR(vbus, 0444, twl6030_usb_vbus_show, NULL);
+ static irqreturn_t twl6030_usb_irq(int irq, void *_twl)
+ {
+ 	struct twl6030_usb *twl = _twl;
+-	struct usb_otg *otg = twl->phy.otg;
+ 	enum omap_musb_vbus_id_status status = OMAP_MUSB_UNKNOWN;
+ 	u8 vbus_state, hw_state;
  
- 	return NOTIFY_STOP;
+@@ -269,8 +268,6 @@ static irqreturn_t twl6030_usb_irq(int irq, void *_twl)
+ 			regulator_enable(twl->usb3v3);
+ 			twl->asleep = 1;
+ 			status = OMAP_MUSB_VBUS_VALID;
+-			otg->default_a = false;
+-			twl->phy.state = OTG_STATE_B_IDLE;
+ 			twl->linkstat = status;
+ 			omap_musb_mailbox(status);
+ 		} else {
+@@ -293,7 +290,6 @@ static irqreturn_t twl6030_usb_irq(int irq, void *_twl)
+ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
+ {
+ 	struct twl6030_usb *twl = _twl;
+-	struct usb_otg *otg = twl->phy.otg;
+ 	enum omap_musb_vbus_id_status status = OMAP_MUSB_UNKNOWN;
+ 	u8 hw_state;
  
-
-Thanks!
+@@ -307,8 +303,6 @@ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
+ 		twl6030_writeb(twl, TWL_MODULE_USB, USB_ID_INT_EN_HI_SET,
+ 								0x10);
+ 		status = OMAP_MUSB_ID_GROUND;
+-		otg->default_a = true;
+-		twl->phy.state = OTG_STATE_A_IDLE;
+ 		twl->linkstat = status;
+ 		omap_musb_mailbox(status);
+ 	} else  {
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.5.4
+
