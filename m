@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab2FVMcu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:32:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55353 "EHLO mx2.suse.de"
+	id S932910Ab2FVMdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:33:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50066 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932859Ab2FVMcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:32:47 -0400
-Date: Fri, 22 Jun 2012 14:32:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] memcg: cleanup typos in mem cgroup
-Message-ID: <20120622123244.GD4814@tiehlicka.suse.cz>
-References: <1340366474-28228-1-git-send-email-liwp.linux@gmail.com>
+	id S932823Ab2FVMdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 08:33:44 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Torsten Hilbrich <torsten.hilbrich@secunet.com>,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
+References: <4FDEC3C2.4060909@secunet.com>
+	<x49fw9smohy.fsf@segfault.boston.devel.redhat.com>
+	<4FE0155A.6010404@secunet.com>
+	<x49ehpbjiyp.fsf@segfault.boston.devel.redhat.com>
+	<20120622001202.GG11645@quack.suse.cz>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 22 Jun 2012 08:33:30 -0400
+In-Reply-To: <20120622001202.GG11645@quack.suse.cz> (Jan Kara's message of
+	"Fri, 22 Jun 2012 02:12:02 +0200")
+Message-ID: <x498vffmspx.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340366474-28228-1-git-send-email-liwp.linux@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-06-12 20:01:14, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> 
-> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
-> 
-> ---
->  mm/memcontrol.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 776fc57..9e3c74a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -115,8 +115,8 @@ static const char * const mem_cgroup_events_names[] = {
->  
->  /*
->   * Per memcg event counter is incremented at every pagein/pageout. With THP,
-> - * it will be incremated by the number of pages. This counter is used for
-> - * for trigger some periodic events. This is straightforward and better
-> + * it will be incremented by the number of pages. This counter is used for
+Jan Kara <jack@suse.cz> writes:
 
-.... is used to trigger ....
+>   I think it can have something to do with the fact that the partition size
+> is not a multiple of 4k (i.e. expected block size)?
 
-> + * trigger some periodic events. This is straightforward and better
->   * than using jiffies etc. to handle periodic memcg event.
->   */
->  enum mem_cgroup_events_target {
-> @@ -678,7 +678,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
->   *
->   * If there are kernel internal actions which can make use of some not-exact
->   * value, and reading all cpu value can be performance bottleneck in some
-> - * common workload, threashold and synchonization as vmstat[] should be
-> + * common workload, threshold and synchonization as vmstat[] should be
->   * implemented.
->   */
->  static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
-> @@ -2213,7 +2213,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  	if (mem_cgroup_wait_acct_move(mem_over_limit))
->  		return CHARGE_RETRY;
->  
-> -	/* If we don't need to call oom-killer at el, return immediately */
-> +	/* If we don't need to call oom-killer at all, return immediately */
+Ahh, yes.  Except that ext3 sets the blocksize to 1k by default.
+However, I still can't explain why we don't get an error attempting to
+access beyond the end of the device.  I'll keep digging on that.
 
-I think the whole comment should rather go away.
+>   BTW: blkdev_max_block() is a terrible name for something that intends to
+> return size in blocks...
 
->  	if (!oom_check)
->  		return CHARGE_NOMEM;
->  	/* check OOM */
+Fully agreed here, and I'll fix that up when I get my head completely
+wrapped around this one.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Thanks for taking a look, Jan!
+
+-Jeff
