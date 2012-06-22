@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758666Ab2FVTEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 15:04:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44234 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab2FVTEI (ORCPT
+	id S1758444Ab2FVTGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 15:06:35 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:37292 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754002Ab2FVTGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 15:04:08 -0400
-Message-ID: <4FE4C1A3.4080804@suse.cz>
-Date: Fri, 22 Jun 2012 21:04:03 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120610 Thunderbird/15.0a2
+	Fri, 22 Jun 2012 15:06:34 -0400
+Date: Fri, 22 Jun 2012 21:06:32 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20120622190632.GB8014@virgo.local>
+References: <20120622133650.GA24136@gmail.com>
+ <CA+55aFySaZ4huXgPM0yGPezAhnE9zT81tucC9WnDs5Ps+7+hGA@mail.gmail.com>
+ <20120622183827.GA8014@virgo.local>
+ <CA+55aFzpNtLSQvcOOut--2UkkMyqSb9e0_VO3JAxvZRTv7YT1g@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org, lwn@lwn.net,
-        Willy Tarreau <w@1wt.eu>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: Linux 2.6.32.55
-References: <20120125223434.GA31647@kroah.com>
-In-Reply-To: <20120125223434.GA31647@kroah.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzpNtLSQvcOOut--2UkkMyqSb9e0_VO3JAxvZRTv7YT1g@mail.gmail.com>
+X-Key-Id: 98350C22
+X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
+X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2012 11:34 PM, Greg KH wrote:
-> I'm announcing the release of the 2.6.32.55 kernel.
-...
-> Bjorn Helgaas (1): PNP: work around Dell 1536/1546 BIOS MMCONFIG
-> bug that breaks USB
+* Linus Torvalds | 2012-06-22 11:52:43 [-0700]:
 
-Hi, this one is dependant on 24d25dbfa63c3 (x86/PCI: amd: factor out
-MMCONFIG discovery), otherwise amd_get_mmconfig_range is undefined...
+>So even stubbed out, it's quite noticeable. The call causes the
+>function prologue to change quite a bit.
+>
+>That's actually especially true with newer versions of gcc that
+>*finally* seem to have done the "don't always generate the full
+>prologue if some case doesn't need it" optimization. So functions that
+>have early-out conditions (quite common) will exit before even having
+>done the prologue, and without doing the whole frame pointer setup
+>etc.
+>
+>Except if mcount generation is on. Then gcc will always do the
+>prologue and frame pointer setup before doing the mcount, because
+>mcount wants it.
+>
+>So it really isn't just the extra call instruction.
+>
+>I may be more sensitive to this than most, because I look at profiles
+>and the function prologue just looks very ugly with the call mcount
+>thing. Ugh.
 
-regards,
--- 
-js
-suse labs
+Yes, ugh. Even Stevens -mfentry replacement do not change things here. Maybe
+this performance problem should addressed on another level: distributors
+should build there kernel with disabled ftrace support. Kprobes and function
+tracing should be sufficient for 98% of their customers.
+
+I see no compiler (gcc) way around this performance issue. Maybe you/Steven
+should restart a G+ poll ... ;)
+
+Hagen
+
