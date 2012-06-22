@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761425Ab2FVGax (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 02:30:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60295 "EHLO mga11.intel.com"
+	id S1761410Ab2FVGar (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 02:30:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6744 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761412Ab2FVGau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 02:30:50 -0400
+	id S1761382Ab2FVGao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 02:30:44 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="168838486"
-Subject: [set5 PATCH 6/6] scsi: fix hot unplug vs async scan race
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="161108611"
+Subject: [set5 PATCH 5/6] Revert "[SCSI] fix async probe regression"
 To: linux-scsi@vger.kernel.org
 From: Dan Williams <dan.j.williams@intel.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>,
-        Kashyap Desai <kashyap.desai@lsi.com>, Matthew Wilcox <matthew@wil.cx>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dariusz Majchrzak <dariusz.majchrzak@intel.com>,
-        Robert Love <robert.w.love@intel.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
-Date: Thu, 21 Jun 2012 23:47:28 -0700
-Message-ID: <20120622064727.21538.26483.stgit@dwillia2-linux.jf.intel.com>
+Cc: Meelis Roos <mroos@linux.ee>, linux-kernel@vger.kernel.org
+Date: Thu, 21 Jun 2012 23:47:22 -0700
+Message-ID: <20120622064722.21538.62310.stgit@dwillia2-linux.jf.intel.com>
 In-Reply-To: <20120622064657.21538.61711.stgit@dwillia2-linux.jf.intel.com>
 References: <20120622064657.21538.61711.stgit@dwillia2-linux.jf.intel.com>
 User-Agent: StGit/0.16-1-g7004
@@ -30,120 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following crash results from cases where the end_device has been
-removed before scsi_sysfs_add_sdev has had a chance to run.
+This reverts commit 43a8d39d0137612c336aa8bbb2cb886a79772ffb.
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000098
- IP: [<ffffffff8115e100>] sysfs_create_dir+0x32/0xb6
- ...
- Call Trace:
-  [<ffffffff8125e4a8>] kobject_add_internal+0x120/0x1e3
-  [<ffffffff81075149>] ? trace_hardirqs_on+0xd/0xf
-  [<ffffffff8125e641>] kobject_add_varg+0x41/0x50
-  [<ffffffff8125e70b>] kobject_add+0x64/0x66
-  [<ffffffff8131122b>] device_add+0x12d/0x63a
-  [<ffffffff814b65ea>] ? _raw_spin_unlock_irqrestore+0x47/0x56
-  [<ffffffff8107de15>] ? module_refcount+0x89/0xa0
-  [<ffffffff8132f348>] scsi_sysfs_add_sdev+0x4e/0x28a
-  [<ffffffff8132dcbb>] do_scan_async+0x9c/0x145
+Commit 43a8d39d fixed the fact that wait_for_device_probe() was unable
+to flush sd probe work.  Now that sd probe work is once again flushable
+via wait_for_device_probe() this workaround is no longer needed.
 
-...teach scsi_sysfs_add_devices() to check for deleted devices() before
-trying to add them, and teach scsi_remove_target() how to remove targets
-that have not been added via device_add().
-
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Robert Love <robert.w.love@intel.com>
-Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
-Cc: Kashyap Desai <kashyap.desai@lsi.com>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: <stable@vger.kernel.org>
-Reported-by: Dariusz Majchrzak <dariusz.majchrzak@intel.com>
+Cc: Meelis Roos <mroos@linux.ee>
 Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/scsi/scsi_scan.c  |    3 +++
- drivers/scsi/scsi_sysfs.c |   41 ++++++++++++++++++++++++++---------------
- 2 files changed, 29 insertions(+), 15 deletions(-)
+ drivers/scsi/scsi_scan.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 03ebb37..56a9379 100644
+index 2731c81..03ebb37 100644
 --- a/drivers/scsi/scsi_scan.c
 +++ b/drivers/scsi/scsi_scan.c
-@@ -1702,6 +1702,9 @@ static void scsi_sysfs_add_devices(struct Scsi_Host *shost)
- {
- 	struct scsi_device *sdev;
- 	shost_for_each_device(sdev, shost) {
-+		/* target removed before the device could be added */
-+		if (sdev->sdev_state == SDEV_DEL)
-+			continue;
- 		if (!scsi_host_scan_allowed(shost) ||
- 		    scsi_sysfs_add_sdev(sdev) != 0)
- 			__scsi_remove_device(sdev);
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 04c2a27..f888aad 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -1000,7 +1000,6 @@ static void __scsi_remove_target(struct scsi_target *starget)
- 	struct scsi_device *sdev;
+@@ -147,7 +147,7 @@ int scsi_complete_async_scans(void)
  
- 	spin_lock_irqsave(shost->host_lock, flags);
--	starget->reap_ref++;
-  restart:
- 	list_for_each_entry(sdev, &shost->__devices, siblings) {
- 		if (sdev->channel != starget->channel ||
-@@ -1014,14 +1013,6 @@ static void __scsi_remove_target(struct scsi_target *starget)
- 		goto restart;
+ 	do {
+ 		if (list_empty(&scanning_hosts))
+-			goto out;
++			return 0;
+ 		/* If we can't get memory immediately, that's OK.  Just
+ 		 * sleep a little.  Even if we never get memory, the async
+ 		 * scans will finish eventually.
+@@ -179,11 +179,8 @@ int scsi_complete_async_scans(void)
  	}
- 	spin_unlock_irqrestore(shost->host_lock, flags);
--	scsi_target_reap(starget);
--}
+  done:
+ 	spin_unlock(&async_scan_lock);
+-	kfree(data);
 -
--static int __remove_child (struct device * dev, void * data)
--{
--	if (scsi_is_target_device(dev))
--		__scsi_remove_target(to_scsi_target(dev));
--	return 0;
- }
+- out:
+-	async_synchronize_full_domain(&scsi_sd_probe_domain);
  
- /**
-@@ -1034,14 +1025,34 @@ static int __remove_child (struct device * dev, void * data)
-  */
- void scsi_remove_target(struct device *dev)
- {
--	if (scsi_is_target_device(dev)) {
--		__scsi_remove_target(to_scsi_target(dev));
--		return;
-+	struct Scsi_Host *shost = dev_to_shost(dev->parent);
-+	struct scsi_target *starget, *found;
-+	unsigned long flags;
-+
-+ restart:
-+	found = NULL;
-+	spin_lock_irqsave(shost->host_lock, flags);
-+	list_for_each_entry(starget, &shost->__targets, siblings) {
-+		if (starget->state == STARGET_DEL)
-+			continue;
-+		if (starget->dev.parent == dev || &starget->dev == dev) {
-+			found = starget;
-+			found->reap_ref++;
-+			break;
-+		}
- 	}
-+	spin_unlock_irqrestore(shost->host_lock, flags);
- 
--	get_device(dev);
--	device_for_each_child(dev, NULL, __remove_child);
--	put_device(dev);
-+	if (found) {
-+		__scsi_remove_target(found);
-+		scsi_target_reap(found);
-+		/* in the case where @dev has multiple starget children,
-+		 * continue removing.
-+		 *
-+		 * FIXME: does such a case exist?
-+		 */
-+		goto restart;
-+	}
++	kfree(data);
+ 	return 0;
  }
- EXPORT_SYMBOL(scsi_remove_target);
  
 
