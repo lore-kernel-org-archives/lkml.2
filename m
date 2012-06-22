@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937Ab2FVNic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 09:38:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58551 "EHLO mx2.suse.de"
+	id S1762162Ab2FVNjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 09:39:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59907 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754561Ab2FVNib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 09:38:31 -0400
-Date: Fri, 22 Jun 2012 15:38:23 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH Stable 3.4.x] HID: hid-multitouch: fix wrong protocol
- detection
-In-Reply-To: <20120620162812.GA433@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1206221538100.18612@pobox.suse.cz>
-References: <1340111206-11659-1-git-send-email-benjamin.tissoires@gmail.com> <20120620162812.GA433@polaris.bitmath.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932877Ab2FVNjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 09:39:04 -0400
+References: <20120621162807.3c621d46@endymion.delvare> <4FE34BCB.5050305@linux.intel.com> <4FE434C0020000780008B45A@nat28.tlf.novell.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <4FE434C0020000780008B45A@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 22 Jun 2012 06:38:28 -0700
+To: Jan Beulich <JBeulich@suse.com>, Jean Delvare <khali@linux-fr.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <14009cd9-2cb2-4471-95d9-db8d0df10fa0@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jun 2012, Henrik Rydberg wrote:
+Definitely!
 
-> > From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> > 
-> > The previous implementation introduced a randomness in the splitting
-> > of the different touches reported by the device. This version is more
-> > robust as we don't rely on hi->input->absbit, but on our own structure.
-> > 
-> > This also prepares hid-multitouch to better support Win8 devices.
-> > 
-> > [commit 3ac36d15557d1bedfb1151d9911b9587b2d40759 in Linus' tree]
-> > 
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> > ---
-> > 
-> > Hi Jiri,
-> > 
-> > This patch is a port of the one included in the future 3.5.
-> > I already had users complaining about the broken behavior in 3.4, then this
-> > respin for 3.4. Kernels 3.3 and below are not impacted by the bug.
-> 
->     Acked-by: Henrik Rydberg <rydberg@euromail.se>
+Jan Beulich <JBeulich@suse.com> wrote:
 
-Thanks, I am pushing that for -stable.
+>>>> On 21.06.12 at 18:28, "H. Peter Anvin" <hpa@linux.intel.com> wrote:
+>> Good spotting, but I'm worried this is the wrong fix.
+>> 
+>> This is a userspace ABI change, and the and we have used "dts" for
+>debug
+>> store (debug trace store?) for a very long tie, whereas digital
+>thermal
+>> sensor only has been used since 2010; another *major* question is
+>which
+>> of these is more likely to be of interest to userspace.
+>> 
+>> Jan, do you have any feeling on this?
+>
+>Now that you already figured that there is user space code
+>depending on the current (questionable) string, I don't think
+>it matters much - I would have preferred to correct the string
+>to match the CPUID documentation (albeit I seem to recall
+>that early on the bit was indeed named DTS in the doc).
+>
+>Wouldn't it be helpful if mkcapflags.pl detected duplicates?
+>
+>Jan
 
 -- 
-Jiri Kosina
-SUSE Labs
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
