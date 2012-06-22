@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762787Ab2FVXSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:18:09 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:45040 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab2FVXSH (ORCPT
+	id S1762769Ab2FVXSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:18:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10341 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab2FVXSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:18:07 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-16.tower-132.messagelabs.com!1340407082!12243052!7
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/31] staging: comedi: ni_daq_700: Move the comedi_driver variable
-Date: Fri, 22 Jun 2012 16:17:52 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 22 Jun 2012 19:18:46 -0400
+X-Authority-Analysis: v=2.0 cv=bpjO9Tmi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=5sIdsdMLa0Prqo9Z8MAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340407123.27036.265.camel@gandalf.stny.rr.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Date: Fri, 22 Jun 2012 19:18:43 -0400
+In-Reply-To: <86448d73-2e19-416f-8104-ce72aa5d76eb@email.android.com>
+References: <20120622133650.GA24136@gmail.com>
+	 <CA+55aFySaZ4huXgPM0yGPezAhnE9zT81tucC9WnDs5Ps+7+hGA@mail.gmail.com>
+	 <20120622183827.GA8014@virgo.local>
+	 <CA+55aFzpNtLSQvcOOut--2UkkMyqSb9e0_VO3JAxvZRTv7YT1g@mail.gmail.com>
+	 <20120622190632.GB8014@virgo.local>
+	 <1340394896.27036.258.camel@gandalf.stny.rr.com>
+	 <86448d73-2e19-416f-8104-ce72aa5d76eb@email.android.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206221617.52547.hartleys@visionengravers.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the comedi_driver variable to remove the need for the
-forward declarations. Add some whitespace to the declaration
-for aesthetic reasons.
+On Fri, 2012-06-22 at 22:08 +0200, Hagen Paul Pfeifer wrote:
+> Rephrase "do not help": it helps for the framepointer aspect, no
+> doubt. So mfentry is superior in that aspect. But it still generates a
+> function call.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/ni_daq_700.c | 24 ++++++++++--------------
- 1 file changed, 10 insertions(+), 14 deletions(-)
+It generates a function call that at boot up is converted to a 5 byte
+nop. The output ends up being:
 
-diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
-index f9b0d67..b851e2e 100644
---- a/drivers/staging/comedi/drivers/ni_daq_700.c
-+++ b/drivers/staging/comedi/drivers/ni_daq_700.c
-@@ -55,10 +55,6 @@ static struct pcmcia_device *pcmcia_cur_dev;
- 
- #define DIO700_SIZE 8		/*  size of io region used by board */
- 
--static int dio700_attach(struct comedi_device *dev,
--			 struct comedi_devconfig *it);
--static void dio700_detach(struct comedi_device *dev);
--
- enum dio700_bustype { pcmcia_bustype };
- 
- struct dio700_board {
-@@ -101,16 +97,6 @@ struct dio700_private {
- 
- #define devpriv ((struct dio700_private *)dev->private)
- 
--static struct comedi_driver driver_dio700 = {
--	.driver_name = "ni_daq_700",
--	.module = THIS_MODULE,
--	.attach = dio700_attach,
--	.detach = dio700_detach,
--	.num_names = ARRAY_SIZE(dio700_boards),
--	.board_name = &dio700_boards[0].name,
--	.offset = sizeof(struct dio700_board),
--};
--
- #define _700_SIZE 8
- 
- #define _700_DATA 0
-@@ -306,6 +292,16 @@ static void dio700_detach(struct comedi_device *dev)
- 		free_irq(dev->irq, dev);
- };
- 
-+static struct comedi_driver driver_dio700 = {
-+	.driver_name	= "ni_daq_700",
-+	.module		= THIS_MODULE,
-+	.attach		= dio700_attach,
-+	.detach		= dio700_detach,
-+	.board_name	= &dio700_boards[0].name,
-+	.num_names	= ARRAY_SIZE(dio700_boards),
-+	.offset		= sizeof(struct dio700_board),
-+};
-+
- static void dio700_release(struct pcmcia_device *link)
- {
- 	dev_dbg(&link->dev, "dio700_release\n");
--- 
-1.7.11
+00000000000008c3 <schedule>:
+ 8c3:   0f 1f 44 00 00          nop
+ 8c8:   65 48 8b 04 25 00 00    mov    %gs:0x0,%rax
+ 8cf:   00 00 
+                        8cd: R_X86_64_32S       current_task
+ 8d1:   57                      push   %rdi
+ 8d2:   48 8b 10                mov    (%rax),%rdx
+ 8d5:   48 85 d2                test   %rdx,%rdx
+ 8d8:   74 45                   je     91f <schedule+0x5c>
+ 8da:   48 83 b8 60 06 00 00    cmpq   $0x0,0x660(%rax)
+ 8e1:   00 
+ 8e2:   75 3b                   jne    91f <schedule+0x5c>
+
+>  Which in turn affects code generation.
+
+How so? It's not a C function call (like the -finstrument-functions
+produces). It's an assembly function call. The only differences between
+having ftrace enabled and ftrace disabled with -mfentry is that you get
+a 5 byte nop at the start of each traceable function. Sure, it might put
+a little pressure on the icache, but from the benchmarks I've run, the
+impact has all been within the noise.
+
+I've been told that it doesn't even hurt the pipeline. But I've Cc'd hpa
+and Arjan for their comments. How much impact does a 5 byte nop at the
+start of each function really have on the normal operations of the
+kernel?
+
+>  That was the second concern of Linus, regarding mcount.
+
+Again, the only difference is those 5 bytes. There's no other code
+generation difference that I know of.
+
+-- Steve
+
+
 
