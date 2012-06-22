@@ -1,67 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab2FVQVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 12:21:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9667 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754204Ab2FVQVT convert rfc822-to-8bit (ORCPT
+	id S1762612Ab2FVQVc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 12:21:32 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:7169 "EHLO
+	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755711Ab2FVQVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 12:21:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="159626333"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Jan Beulich <JBeulich@suse.com>, "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: "Raj, Ashok" <ashok.raj@intel.com>,
-        "Dugger, Donald D" <donald.d.dugger@intel.com>,
-        "Shan, Haitao" <haitao.shan@intel.com>,
-        "Nakajima, Jun" <jun.nakajima@intel.com>,
-        "Li, Susie" <susie.li@intel.com>, "Auld, Will" <will.auld@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Keir Fraser <keir@xen.org>
-Subject: RE: [vMCE design RFC] Xen vMCE design
-Thread-Topic: [vMCE design RFC] Xen vMCE design
-Thread-Index: Ac1O/6XAexbUH0BVTLGVMLMLWAtaJwBAufgAACbfvoAAAhphAAAGzxWAAAIVhAAADioJcA==
-Date: Fri, 22 Jun 2012 16:21:17 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F193234FE@ORSMSX104.amr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
- <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923352542BD@SHSMSX101.ccr.corp.intel.com>
- <4FE475BE020000780008B624@nat28.tlf.novell.com>
- <3908561D78D1C84285E8C5FCA982C28F1932337D@ORSMSX104.amr.corp.intel.com>
- <4FE4B16C020000780008B7A6@nat28.tlf.novell.com>
-In-Reply-To: <4FE4B16C020000780008B7A6@nat28.tlf.novell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 22 Jun 2012 12:21:20 -0400
+X-IronPort-AV: E=Sophos;i="4.77,459,1336341600"; 
+   d="scan'208";a="148489808"
+Date: Fri, 22 Jun 2012 18:21:18 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Emil Goode <emilgoode@gmail.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>, FlorianSchandinat@gmx.de,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] grvga: Fix error handling issues
+In-Reply-To: <1340382044.3963.2.camel@localhost>
+Message-ID: <alpine.DEB.2.02.1206221820340.1901@hadrien>
+References: <1340381479-6371-1-git-send-email-emilgoode@gmail.com>  <alpine.DEB.2.02.1206221811150.1901@hadrien> <1340382044.3963.2.camel@localhost>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yet I don't think we're really concerned about performance when handling machine
-> checks. But having more than one usable bank must have advantages, else hardware
-> wouldn't implement things that way.
+On Fri, 22 Jun 2012, Emil Goode wrote:
 
-Primary reason for multiple banks is h/w design ... the silicon implementing the bank
-is generally included in the component that generates the error. E.g. there may be
-multiple memory controllers on a die, each with its own bank. H/W designers hate
-running long "wires" across the die as it messes up their layout options.
+> Good idea, I will take another look at it tomorrow.
 
-There may be some secondary side benefit that independent errors might be
-reported to different banks, and so avoid some overwrite problems.  But I don't
-think that Xen has a big worry with overwrite, does it? In general the errors that
-you will show to the guest are ones that you expect the guest to handle immediately
-(e.g. SRAO and SRAR signaled with a machine check). You do not log any corrected
-errors to the guest (they can't do anything useful with them). You certainly don't
-log any errors that are not signaled. So you should never have any errors hanging
-around in banks for long periods that would get overwritten.
+There is a devm_ function that combines request_mem_region and ioremap
+that could be useful.
 
--Tony
+julia
+
+>
+> Thanks,
+>
+> Emil
+>
+> On Fri, 2012-06-22 at 18:12 +0200, Julia Lawall wrote:
+> > Maybe you could used the devm_ functions for request_mem_region and
+> > ioremap so that the error handling can just be dropped?
+> >
+> > julia
+> >
+> > On Fri, 22 Jun 2012, Emil Goode wrote:
+> >
+> > > This patch fixes two problems with the error handling in the
+> > > grvga_probe function.
+> > >
+> > > - If the call to grvga_parse_custom on line 370 fails we use
+> > >   the wrong label so that release_mem_region will be called
+> > >   without a call to request_mem_region being made.
+> > >
+> > > - If the call to ioremap on line 436 fails we should not try
+> > >   to call iounmap. I added an if statement to check whether or
+> > >   not a call to iounmap should be made.
+> > >
+> > > - I also changed the names of the labels to make the code
+> > >   easier to read.
+> > >
+> > > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > > ---
+> > >  drivers/video/grvga.c |   34 ++++++++++++++++++----------------
+> > >  1 file changed, 18 insertions(+), 16 deletions(-)
+> > >
+> > > diff --git a/drivers/video/grvga.c b/drivers/video/grvga.c
+> > > index da066c2..d9d688a 100644
+> > > --- a/drivers/video/grvga.c
+> > > +++ b/drivers/video/grvga.c
+> > > @@ -354,7 +354,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  	 */
+> > >  	if (fb_get_options("grvga", &options)) {
+> > >  		retval = -ENODEV;
+> > > -		goto err;
+> > > +		goto free_fb;
+> > >  	}
+> > >
+> > >  	if (!options || !*options)
+> > > @@ -370,7 +370,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  			if (grvga_parse_custom(this_opt, &info->var) < 0) {
+> > >  				dev_err(&dev->dev, "Failed to parse custom mode (%s).\n", this_opt);
+> > >  				retval = -EINVAL;
+> > > -				goto err1;
+> > > +				goto free_fb;
+> > >  			}
+> > >  		} else if (!strncmp(this_opt, "addr", 4))
+> > >  			grvga_fix_addr = simple_strtoul(this_opt + 5, NULL, 16);
+> > > @@ -390,7 +390,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  	if (!request_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]), "grlib-svgactrl regs")) {
+> > >  		dev_err(&dev->dev, "registers already mapped\n");
+> > >  		retval = -EBUSY;
+> > > -		goto err;
+> > > +		goto free_fb;
+> > >  	}
+> > >
+> > >  	par->regs = of_ioremap(&dev->resource[0], 0,
+> > > @@ -400,14 +400,14 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  	if (!par->regs) {
+> > >  		dev_err(&dev->dev, "failed to map registers\n");
+> > >  		retval = -ENOMEM;
+> > > -		goto err1;
+> > > +		goto release_regs;
+> > >  	}
+> > >
+> > >  	retval = fb_alloc_cmap(&info->cmap, 256, 0);
+> > >  	if (retval < 0) {
+> > >  		dev_err(&dev->dev, "failed to allocate mem with fb_alloc_cmap\n");
+> > >  		retval = -ENOMEM;
+> > > -		goto err2;
+> > > +		goto unmap_regs;
+> > >  	}
+> > >
+> > >  	if (mode_opt) {
+> > > @@ -415,7 +415,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  				      grvga_modedb, sizeof(grvga_modedb), &grvga_modedb[0], 8);
+> > >  		if (!retval || retval == 4) {
+> > >  			retval = -EINVAL;
+> > > -			goto err3;
+> > > +			goto dealloc_cmap;
+> > >  		}
+> > >  	}
+> > >
+> > > @@ -430,7 +430,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  		if (!request_mem_region(physical_start, grvga_mem_size, dev->name)) {
+> > >  			dev_err(&dev->dev, "failed to request memory region\n");
+> > >  			retval = -ENOMEM;
+> > > -			goto err3;
+> > > +			goto dealloc_cmap;
+> > >  		}
+> > >
+> > >  		virtual_start = (unsigned long) ioremap(physical_start, grvga_mem_size);
+> > > @@ -438,7 +438,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  		if (!virtual_start) {
+> > >  			dev_err(&dev->dev, "error mapping framebuffer memory\n");
+> > >  			retval = -ENOMEM;
+> > > -			goto err4;
+> > > +			goto free_mem;
+> > >  		}
+> > >  	} else {	/* Allocate frambuffer memory */
+> > >
+> > > @@ -451,7 +451,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  				"unable to allocate framebuffer memory (%lu bytes)\n",
+> > >  				grvga_mem_size);
+> > >  			retval = -ENOMEM;
+> > > -			goto err3;
+> > > +			goto dealloc_cmap;
+> > >  		}
+> > >
+> > >  		physical_start = dma_map_single(&dev->dev, (void *)virtual_start, grvga_mem_size, DMA_TO_DEVICE);
+> > > @@ -484,7 +484,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >  	retval = register_framebuffer(info);
+> > >  	if (retval < 0) {
+> > >  		dev_err(&dev->dev, "failed to register framebuffer\n");
+> > > -		goto err4;
+> > > +		goto free_mem;
+> > >  	}
+> > >
+> > >  	__raw_writel(physical_start, &par->regs->fb_pos);
+> > > @@ -493,21 +493,23 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> > >
+> > >  	return 0;
+> > >
+> > > -err4:
+> > > +free_mem:
+> > >  	dev_set_drvdata(&dev->dev, NULL);
+> > >  	if (grvga_fix_addr) {
+> > >  		release_mem_region(physical_start, grvga_mem_size);
+> > > -		iounmap((void *)virtual_start);
+> > > +		if (virtual_start)
+> > > +			iounmap((void *)virtual_start);
+> > >  	} else
+> > >  		kfree((void *)virtual_start);
+> > > -err3:
+> > > +
+> > > +dealloc_cmap:
+> > >  	fb_dealloc_cmap(&info->cmap);
+> > > -err2:
+> > > +unmap_regs:
+> > >  	of_iounmap(&dev->resource[0], par->regs,
+> > >  		   resource_size(&dev->resource[0]));
+> > > -err1:
+> > > +release_regs:
+> > >  	release_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]));
+> > > -err:
+> > > +free_fb:
+> > >  	framebuffer_release(info);
+> > >
+> > >  	return retval;
+> > > --
+> > > 1.7.10
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > >
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
