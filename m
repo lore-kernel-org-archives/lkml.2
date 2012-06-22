@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab2FVSVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 14:21:21 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40638 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274Ab2FVSVT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 14:21:19 -0400
+	id S1755881Ab2FVSXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 14:23:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34242 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752779Ab2FVSXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 14:23:43 -0400
+Message-ID: <4FE4B796.3050009@zytor.com>
+Date: Fri, 22 Jun 2012 11:21:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120622121523.4DF5911F873@bugzilla.kernel.org>
-References: <bug-41622-5873@https.bugzilla.kernel.org/> <20120622121523.4DF5911F873@bugzilla.kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 22 Jun 2012 11:20:57 -0700
-X-Google-Sender-Auth: Nfmv5Mz_Z6-IF0TV6tUyrYa_CXM
-Message-ID: <CA+55aFxKDZaCq-GP2LJpLnDKc=Zd1pmnr8Rq7bBXH9eGuyiyew@mail.gmail.com>
-Subject: Re: [Bug 41622] [REGRESSION][BISECTED] Notebook crashes upon
- detecting the PCI subsystem with kernels >= 2.6.24-rc7
-To: bugzilla-daemon@bugzilla.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nix <nix@esperi.org.uk>
+CC: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "Yu\, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+References: <1340121811-4477-1-git-send-email-bp@amd64.org> <1340121811-4477-3-git-send-email-bp@amd64.org> <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com> <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com> <20120619232857.GH5996@aftab.osrc.amd.com> <1340182778.21745.75.camel@twins> <20120620095616.GB10012@aftab.osrc.amd.com> <1340186931.21745.90.camel@twins> <20120620101943.GE10012@aftab.osrc.amd.com> <87d34r5n4f.fsf@spindle.srvr.nix>
+In-Reply-To: <87d34r5n4f.fsf@spindle.srvr.nix>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 5:15 AM,  <bugzilla-daemon@bugzilla.kernel.org> wrote:
->
-> If, on the other hand, I apply the patch mentioned in comment #17 of this bug
-> report, then everything boots and works OK (for suitable values of "OK).
+On 06/22/2012 09:26 AM, Nix wrote:
+> On 20 Jun 2012, Borislav Petkov uttered the following:
+>> I know, right. Whose idea was it to do it like that I don't know.
+>> AFAICT, Intel delivers ucode as a single blob too, so why split it? The
+>> driver picks out the right blob anyway.
+> 
+> Only if supplied over the old interface. Over the new interface,
+> we just see
+> 
+>     microcode: error! Bad data in microcode data file
+> 
+> in the log. So clearly the driver doesn't know how to split up the
+> microcode.bin that Intel provides, and (until Henrique's iucode-tool or
+> something like it becomes ubiquitous) the old interface, and
+> microcode_ctl, cannot be removed.
+> 
 
-Gaah. These emails always happen at the most inconvenient time.
+Even more importantly, to do early microcode updates we need to stash
+away not just the current CPU's microcode but any compatible CPU's
+microcode, so just loading a single one is not going to work...
 
-Maybe we should just try that patch in
+Oif.
 
-   https://bugzilla.kernel.org/show_bug.cgi?id=41622#c17
+	-hpa
 
-but it really needs to happen early in a merge window. We didn't do
-that for 3.2, maybe we can do it for 3.6?
-
-Bjorn, what do you think? Sizing up transparent bridges really is a
-bit unnecessary.
-
-Although I really don't see what the difference there is any more.
-Yinghai noticed that the prefetchability of the cardbus bridge
-changed, but the commit that changed that apparently made no
-difference. What other changes does the transparent bridge sizing
-cause?
-
-                        Linus
