@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762656Ab2FVQQH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 12:16:07 -0400
-Received: from nm24-vm3.bullet.mail.ird.yahoo.com ([212.82.109.194]:33864 "HELO
-	nm24-vm3.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1762410Ab2FVQQF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 12:16:05 -0400
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Jun 2012 12:16:04 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 858321.43610.bm@omp1034.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=K+01wS9Zq4iBk/CUJbZJphe6o+FfplyPmuMHBGj0fDKkmh3eQjQL0rk47AT+pNBclYM9mZiFWz3+WRDi7wfRf7O7AbmcxDU++3gWLDY/mT/ys9DlQuxVSUUEBOPANhrADhKe3Z07kK+g5WC0ox9giu+RUi2+P2lQFAAXWC33KcE=;
-X-YMail-OSG: Dn9BsDMVM1m4RMNdF.qcB9eq4lLS_cCbHAymaTPS0k7qamN
- Mr1z5fKeHg3dM9qdI_j1ZKlSNO8eJXHImDC3Ytf454NNENyx4b6HMq66rQ2I
- eQGWsTCojivUToxBEhSq0tXVK4Dk_oPq8.AC4Kna1tOxTnb3cdrCAlj2wBWA
- 7ZMJsDtU6dH1EGoL6OfXFRUhfav4rz0PNUWQvc8y3oeyfOnhsms36PFuP9g1
- 79utGchs7dp_W0nJ3o8Hw2xvW_BE7M2qEOqMTOxdAf9hP02Aai_PWc_kx__b
- sekF2Rq6hBmaWaKsb36tFIFrDwM1Ocbh7RxP2nMXhlwXRrV9KmEnNug_k06A
- FBtxDinhNtF49p6zFKrKgh6c.dWN6aw--
-X-Mailer: YahooMailWebService/0.8.118.349524
-Message-ID: <1340381349.3375.YahooMailNeo@web132406.mail.ird.yahoo.com>
-Date: Fri, 22 Jun 2012 17:09:09 +0100 (BST)
-From: Tomiko Wiersma <dsedtalmo@yahoo.com>
-Reply-To: Tomiko Wiersma <tomiko.wiersma@yahoo.com>
-Subject: What do u think about spontaneous meetings?)
-To: "vbeachhawk@yahoo.com" <vbeachhawk@yahoo.com>
+	id S1762591Ab2FVQPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 12:15:12 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:57722 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762512Ab2FVQPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 12:15:08 -0400
+X-IronPort-AV: E=Sophos;i="4.77,459,1336363200"; 
+   d="scan'208";a="199722624"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>, <tim@xen.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH WIP 6/6] xen/arm: enable evtchn irqs
+Date: Fri, 22 Jun 2012 17:14:45 +0100
+Message-ID: <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
+ <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey there handsome! 
-Let's be friends. I'm Tomiko and no guess I like u
-I saw ur account and I find you to be quite pretty.
-Hit me back ))
+On ARM irqs are not enabled by default:
+
+- call enable_percpu_irq for IRQ_EVTCHN_CALLBACK;
+
+- set the IRQF_VALID flag for the other irqs bound to evtchns. It causes
+IRQ_NOAUTOEN to be set and as a consequence irq_unmask is going to be
+called when a xenbus driver calls request_irq.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ drivers/xen/events.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 0132505..ca92755 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -53,6 +53,7 @@
+ #include <xen/interface/hvm/params.h>
+ #include <xen/interface/physdev.h>
+ #include <xen/interface/sched.h>
++#include <asm/hw_irq.h>
+ 
+ /*
+  * This lock protects updates to the following mapping and reference-count
+@@ -827,6 +828,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+ 
+ 		xen_irq_info_evtchn_init(irq, evtchn);
+ 	}
++	set_irq_flags(irq, IRQF_VALID);
+ 
+ out:
+ 	mutex_unlock(&irq_mapping_update_lock);
+@@ -1751,6 +1753,7 @@ int __init xen_init_IRQ_arm(void)
+ 	if (rc) {
+ 		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
+ 	}
++	enable_percpu_irq(IRQ_EVTCHN_CALLBACK, 0);
+ 	return rc;
+ }
+ core_initcall(xen_init_IRQ_arm);
+-- 
+1.7.2.5
+
