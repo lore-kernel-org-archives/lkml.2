@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048Ab2FVPlq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:41:46 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:41137 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755694Ab2FVPlo (ORCPT
+	id S1762379Ab2FVPpI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:45:08 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:54278 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab2FVPpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:41:44 -0400
-Message-ID: <4FE4922D.8070501@surriel.com>
-Date: Fri, 22 Jun 2012 11:41:33 -0400
-From: Rik van Riel <riel@surriel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 22 Jun 2012 11:45:05 -0400
+Date: Fri, 22 Jun 2012 08:37:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: [PATCH tip/core/urgent] rcu: Stop rcu_do_batch() from multiplexing
+ the "count" variable
+Message-ID: <20120622153738.GA6800@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
-        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
-        mel@csn.ul.ie, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
- rbtree
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>    <1340315835-28571-2-git-send-email-riel@surriel.com>   <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>  <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com> <1340375872.18025.77.camel@twins>
-In-Reply-To: <1340375872.18025.77.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062215-6148-0000-0000-000006F61238
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2012 10:37 AM, Peter Zijlstra wrote:
-> On Fri, 2012-06-22 at 10:25 -0400, Rik van Riel wrote:
->> On 06/22/2012 10:13 AM, Peter Zijlstra wrote:
->>> On Fri, 2012-06-22 at 10:11 -0400, Rik van Riel wrote:
->>>>
->>>> I am still trying to wrap my brain around your alternative
->>>> search algorithm, not sure if/how it can be combined with
->>>> arbitrary address limits and alignment...
->>>
->>> for alignment we can do: len += align - 1;
->>
->> We could, but that might lead us to returning -ENOMEM
->> when we actually have memory available.
->>
->> When you consider architectures like HPPA, which use
->> a pretty large alignment, but align everything the same,
->> chances are pretty much every freed hole will have the
->> right alignment...
->
-> Well, if you don't your gap heap is next to useless and you'll revert to
-> simply walking all gaps until you find a suitable one.
+Commit b1420f1c (Make rcu_barrier() less disruptive) rearranged the
+code in rcu_do_batch(), moving the ->qlen manipulation to follow
+the requeueing of the callbacks.  Unfortunately, this rearrangement
+clobbered the value of the "count" local variable before the value
+of rdp->qlen was adjusted, resulting in the value of rdp->qlen being
+inaccurate.  This commit therefore introduces an index variable "i",
+avoiding the inadvertent multiplexing.
 
-I could see how that might potentially be a problem,
-especially when we have a small allocation with large
-alignment constraints, eg. HPPA cache alignment.
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> I really worry about this search function of yours, its complexity is
-> very non obvious.
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 2f34d02..2001d38 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1593,7 +1593,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
+ 	unsigned long flags;
+ 	struct rcu_head *next, *list, **tail;
+-	int bl, count, count_lazy;
++	int bl, count, count_lazy, i;
+ 
+ 	/* If no callbacks are ready, just return.*/
+ 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
+@@ -1616,9 +1616,9 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	rdp->nxtlist = *rdp->nxttail[RCU_DONE_TAIL];
+ 	*rdp->nxttail[RCU_DONE_TAIL] = NULL;
+ 	tail = rdp->nxttail[RCU_DONE_TAIL];
+-	for (count = RCU_NEXT_SIZE - 1; count >= 0; count--)
+-		if (rdp->nxttail[count] == rdp->nxttail[RCU_DONE_TAIL])
+-			rdp->nxttail[count] = &rdp->nxtlist;
++	for (i = RCU_NEXT_SIZE - 1; i >= 0; i--)
++		if (rdp->nxttail[i] == rdp->nxttail[RCU_DONE_TAIL])
++			rdp->nxttail[i] = &rdp->nxtlist;
+ 	local_irq_restore(flags);
+ 
+ 	/* Invoke callbacks. */
+@@ -1646,9 +1646,9 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	if (list != NULL) {
+ 		*tail = rdp->nxtlist;
+ 		rdp->nxtlist = list;
+-		for (count = 0; count < RCU_NEXT_SIZE; count++)
+-			if (&rdp->nxtlist == rdp->nxttail[count])
+-				rdp->nxttail[count] = tail;
++		for (i = 0; i < RCU_NEXT_SIZE; i++)
++			if (&rdp->nxtlist == rdp->nxttail[i])
++				rdp->nxttail[i] = tail;
+ 			else
+ 				break;
+ 	}
 
-Let me try implementing your algorithm with arbitrary
-address constraints and alignment/colouring.
-
-Basically, we need to remember if the allocation failed
-due to bad alignment.  If it did, we add shm_align_mask
-to the allocation length, and try a second search.
-
-This should result in at worst two whole tree traversals
-and one partial traversal. Less on sane architectures,
-or for non-MAP_SHARED allocations.
-
--- 
-All rights reversed.
