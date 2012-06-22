@@ -1,224 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932906Ab2FVMY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:24:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18663 "EHLO mga01.intel.com"
+	id S1761819Ab2FVM2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:28:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55177 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932833Ab2FVMY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:24:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="168920563"
-Date: Fri, 22 Jun 2012 20:24:53 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: boot hang on commit "PM / ACPI: Fix suspend/resume regression
- caused by cpuidle cleanup."
-Message-ID: <20120622122453.GA17341@localhost>
-References: <20120622073513.GA15864@localhost>
- <4FE44163.4060509@linux.vnet.ibm.com>
+	id S1755630Ab2FVM2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 08:28:10 -0400
+Date: Fri, 22 Jun 2012 14:28:07 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] memcg: use existing function to judge root mem cgroup
+Message-ID: <20120622122807.GC4814@tiehlicka.suse.cz>
+References: <1340366243-28104-1-git-send-email-liwp.linux@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FE44163.4060509@linux.vnet.ibm.com>
+In-Reply-To: <1340366243-28104-1-git-send-email-liwp.linux@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Deepthi,
+On Fri 22-06-12 19:57:22, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> 
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f72b5e5..776fc57 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4873,7 +4873,7 @@ mem_cgroup_create(struct cgroup *cont)
+>  			goto free_out;
+>  
+>  	/* root ? */
+> -	if (cont->parent == NULL) {
+> +	if (!(mem_cgroup_is_root(cont))) {
 
-I can no longer reproduce this issue... Sorry for the noise!
+This is not correct. mem_cgroup_is_root takes mem_cgroup and you are
+giving it cgroup, see?
 
-Thanks,
-Fengguang
+>  		int cpu;
+>  		enable_swap_cgroup();
+>  		parent = NULL;
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-On Fri, Jun 22, 2012 at 03:26:51PM +0530, Deepthi Dharwar wrote:
-> Hi,
-> 
-> This is interesting .. suspend fix breaking boot on kvm.
-> 
-> We complied and booted fine with mainline kernels including 3.5-rc2 with
-> this fix  on servers and laptops.
-> So wondering how different is  booting on machines Vs
-> from kvm ?
-> 
-> Also, are you seeing smooth boot on kvm by reverting only this patch ?
-> 
-> Cheers
-> Deepthi
-> 
-> On 06/22/2012 01:05 PM, wfg@linux.intel.com wrote:
-> 
-> > Hi Deepthi,
-> > 
-> > It seems that commit de08622 triggers a boot hang in my kvm boot test.
-> > 
-> > kvm -cpu kvm64 -enable-kvm \
-> >                 -kernel ./gpxelinux.lkrn \
-> >                 -initrd ./kvm.gpxe \
-> >                 -m 384M \
-> >                 -net nic,vlan=0,macaddr=00:00:00:00:00:00,model=e1000  \
-> >                 -net user,vlan=0,hostfwd=tcp::$port-:22 \
-> >                 -boot order=nc \
-> >                 -no-reboot \
-> >                 -watchdog i6300esb \
-> >                 $(qemu_drives) \
-> >                 -pidfile $pidfile \
-> >                 -serial file:$dmesg 
-> > 
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git linux-next
-> > head:   de08622731417ba429fc470ab8f2d7c260cb5c72
-> > commit: de08622731417ba429fc470ab8f2d7c260cb5c72 [9/9] PM / ACPI: Fix suspend/resume regression caused by cpuidle cleanup.
-> > config: x86_64-allyesdebian (attached as .config)
-> > 
-> > x86_64-allyesdebian         bbbbbbbbbB
-> > --
-> > 8:	b 0eb8c06  2012-06-19 22:23:37 +0200 PM / Sleep: Separate printing suspend times from initcall_debug
-> > 9:	B de08622  boot hang after [   81.370898] usbcore: registered new interface driver dw2102
-> > 
-> > legend: [b] boot fine  [B] boot error
-> > 
-> > commit de08622731417ba429fc470ab8f2d7c260cb5c72
-> > Author: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-> > Date:   Wed Jun 13 16:28:17 2012 +0530
-> > 
-> >     PM / ACPI: Fix suspend/resume regression caused by cpuidle cleanup.
-> >     
-> >     Commit e978aa7d7d57d04eb5f88a7507c4fb98577def77 ( cpuidle: Move
-> >     dev->last_residency update to driver enter routine; remove dev->last_state)
-> >     was  breaking suspend on laptops, as reported in the below link
-> >     	- https://lkml.org/lkml/2011/11/11/164
-> >     
-> >     This was fixed in commit 3439a8da16bcad6b0982ece938c9f8299bb53584
-> >     (ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend regression)
-> >     by removing acpi_idle_suspend flag.
-> >     	- https://lkml.org/lkml/2011/11/14/74
-> >     
-> >     But this fix did not work on all systems
-> >     as Suspend/resume regression was reported on Lenovo S10-3
-> >     recently by Dave.
-> >     	- https://lkml.org/lkml/2012/5/27/115
-> >     It looked like with commit e978aa7d broke suspend and
-> >     with commit 3439a8da resume was not working with acpi_idle driver.
-> >     
-> >     This patch fixes the regression that caused this issue
-> >     in the first place. acpi_idle_suspend flag is essential on
-> >     some x86 systems to prevent the cpus from going to deeper C-states
-> >     when suspend is triggered ( commit b04e7bdb984 )
-> >     So reverting the commit 3439a8da is essential.
-> >     
-> >     By default, irqs are disabled in cpu_idle arch specific call
-> >     and re-enabled in idle state return path . As the acpi_idle_suspend
-> >     flag was being set during suspend, which prevented the cpus
-> >     going to deeper idle states, it is essential to
-> >     enabling the irqs in its return path too.
-> >     
-> >     To address the suspend issue,
-> >     we were not re-enabling the interrupts while returning from
-> >     acpi_idle_enter_bm() routine if acpi_idle_suspend flag is set.
-> >     and this was causing suspend failure.
-> >     
-> >     In addition to the above fix, a sanity check has also been added
-> >     in x86 arch specific cpu_idle call to ensure that the idle call
-> >     always returns with IRQs enabled.
-> >     
-> >     Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-> >     Reported-and-Tested-by: Dav Hansen <dave@linux.vnet.ibm.com>
-> >     Tested-by: Preeti Murthy <preeti@linux.vnet.ibm.com>
-> >     Reviewed-by: Srivatsa S Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> >     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> > index 735279e..8ab76ad 100644
-> > --- a/arch/x86/kernel/process.c
-> > +++ b/arch/x86/kernel/process.c
-> > @@ -460,6 +460,12 @@ void cpu_idle(void)
-> >  				pm_idle();
-> > 
-> >  			rcu_idle_exit();
-> > +
-> > +			/*
-> > +			 * Sanity check to ensure that idle call returns
-> > +			 * with IRQs enabled
-> > +			 */
-> > +			WARN_ON(irqs_disabled());
-> >  			start_critical_timings();
-> > 
-> >  			/* In many cases the interrupt that ended idle
-> > diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> > index f3decb3..c2ffd84 100644
-> > --- a/drivers/acpi/processor_idle.c
-> > +++ b/drivers/acpi/processor_idle.c
-> > @@ -224,6 +224,7 @@ static void lapic_timer_state_broadcast(struct acpi_processor *pr,
-> >  /*
-> >   * Suspend / resume control
-> >   */
-> > +static int acpi_idle_suspend;
-> >  static u32 saved_bm_rld;
-> > 
-> >  static void acpi_idle_bm_rld_save(void)
-> > @@ -242,13 +243,21 @@ static void acpi_idle_bm_rld_restore(void)
-> > 
-> >  int acpi_processor_suspend(struct acpi_device * device, pm_message_t state)
-> >  {
-> > +	if (acpi_idle_suspend == 1)
-> > +		return 0;
-> > +
-> >  	acpi_idle_bm_rld_save();
-> > +	acpi_idle_suspend = 1;
-> >  	return 0;
-> >  }
-> > 
-> >  int acpi_processor_resume(struct acpi_device * device)
-> >  {
-> > +	if (acpi_idle_suspend == 0)
-> > +		return 0;
-> > +
-> >  	acpi_idle_bm_rld_restore();
-> > +	acpi_idle_suspend = 0;
-> >  	return 0;
-> >  }
-> > 
-> > @@ -754,6 +763,12 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
-> > 
-> >  	local_irq_disable();
-> > 
-> > +	if (acpi_idle_suspend) {
-> > +		local_irq_enable();
-> > +		cpu_relax();
-> > +		return -EINVAL;
-> > +	}
-> > +
-> >  	lapic_timer_state_broadcast(pr, cx, 1);
-> >  	kt1 = ktime_get_real();
-> >  	acpi_idle_do_entry(cx);
-> > @@ -823,6 +838,12 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
-> > 
-> >  	local_irq_disable();
-> > 
-> > +	if (acpi_idle_suspend) {
-> > +		local_irq_enable();
-> > +		cpu_relax();
-> > +		return -EINVAL;
-> > +	}
-> > +
-> >  	if (cx->entry_method != ACPI_CSTATE_FFH) {
-> >  		current_thread_info()->status &= ~TS_POLLING;
-> >  		/*
-> > @@ -901,6 +922,13 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
-> >  	if (unlikely(!pr))
-> >  		return -EINVAL;
-> > 
-> > +	if (acpi_idle_suspend) {
-> > +		if (irqs_disabled())
-> > +			local_irq_enable();
-> > +		cpu_relax();
-> > +		return -EINVAL;
-> > +	}
-> > +
-> >  	if (!cx->bm_sts_skip && acpi_idle_bm_check()) {
-> >  		if (drv->safe_state_index >= 0) {
-> >  			return drv->states[drv->safe_state_index].enter(dev,
-> 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
