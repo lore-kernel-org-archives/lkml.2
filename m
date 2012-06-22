@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab2FVVJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 17:09:31 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62205 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098Ab2FVVJ3 convert rfc822-to-8bit (ORCPT
+	id S933175Ab2FVVKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 17:10:31 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42465 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab2FVVK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 17:09:29 -0400
+	Fri, 22 Jun 2012 17:10:29 -0400
+Message-ID: <4FE4DF41.30400@suse.cz>
+Date: Fri, 22 Jun 2012 23:10:25 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120610 Thunderbird/15.0a2
 MIME-Version: 1.0
-In-Reply-To: <20120622125551.269552c2.akpm@linux-foundation.org>
-References: <20120622192413.GA5774@www.outflux.net>
-	<20120622125551.269552c2.akpm@linux-foundation.org>
-Date: Fri, 22 Jun 2012 14:09:28 -0700
-X-Google-Sender-Auth: YGTnwSI2MyHlUk4tE9eewzR1AG0
-Message-ID: <CAGXu5jLMRc3svVuPznUkUEcF2HOHRE_6b5bmL-Aiw7FtsN6zHw@mail.gmail.com>
-Subject: Re: [PATCH v3] fs: introduce pipe-only dump mode suid_dumpable=3
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rob Landley <rob@landley.net>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Doug Ledford <dledford@redhat.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Joe Korty <joe.korty@ccur.com>, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org, lwn@lwn.net,
+        Willy Tarreau <w@1wt.eu>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: Linux 2.6.32.55
+References: <20120125223434.GA31647@kroah.com> <4FE4C1A3.4080804@suse.cz> <20120622193824.GA3371@kroah.com>
+In-Reply-To: <20120622193824.GA3371@kroah.com>
+X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 12:55 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Fri, 22 Jun 2012 12:24:13 -0700
-> Kees Cook <keescook@chromium.org> wrote:
->
->> The value
->> of suid_dumpable=2 is now historic, and attempting to set this sysctl
->> value returns -EINVAL.
->
-> This sounds a bit harsh - will it not cause existing configurations to
-> immediately break?  If so, would it not be better to retain the =2 mode
-> for a while, and emit a nice warning when it is set?
+On 06/22/2012 09:38 PM, Greg KH wrote:
+> On Fri, Jun 22, 2012 at 09:04:03PM +0200, Jiri Slaby wrote:
+>> On 01/25/2012 11:34 PM, Greg KH wrote:
+>>> I'm announcing the release of the 2.6.32.55 kernel.
+>> ...
+>>> Bjorn Helgaas (1): PNP: work around Dell 1536/1546 BIOS MMCONFIG
+>>> bug that breaks USB
+>>
+>> Hi, this one is dependant on 24d25dbfa63c3 (x86/PCI: amd: factor out
+>> MMCONFIG discovery), otherwise amd_get_mmconfig_range is undefined...
+> 
+> Interesting that this was reported almost 6 months after it was released :)
 
-I view it as a security vulnerability, so I'd rather see it
-eliminated. I see "=1" as a security vulnerability too, but at least
-that's well-known to be a bad idea. The "=2" mode has been assumed to
-be safe, but it isn't.
+Yes :). This is because it is inside #ifdef CONFIG_AMD_NB which perhaps
+nobody has set in 2.6.32. (Other than that we have the kernel in suse
+enterprise for some time already.)
 
--Kees
+@Willy: 24d25dbfa63c3 is not enough. The header referenced in
+2.6.32.55's patch does not exist in that tree yet. It was renamed from
+asm/k8.h to asm/amd_nb.h later (by 23ac4ae827e62).
 
+Given nobody noticed till now, I would incline to drop that patch from
+2.6.32 series. Opinions?
+
+> Anyway, I'm no longer handling 2.6.32 kernel stuff anymore, so there's
+> nothing I can do here, sorry.
+
+Yeah, I see, I replied to the announcement and added Willy. Your email
+was @ suse, so you should have not received a copy anyway :).
+
+thanks,
 -- 
-Kees Cook
-Chrome OS Security
+js
+suse labs
