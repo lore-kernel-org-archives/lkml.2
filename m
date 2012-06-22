@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762697Ab2FVUlh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 16:41:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57402 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab2FVUlg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 16:41:36 -0400
+	id S1762707Ab2FVUmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 16:42:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754538Ab2FVUmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 16:42:13 -0400
+Date: Fri, 22 Jun 2012 16:42:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Josh Hunt <joshhunt00@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, tj@kernel.org
+Subject: Re: multi-second application stall in open()
+Message-ID: <20120622204207.GA22063@redhat.com>
+References: <CAKA=qzak6N-6oHVjDozJ6KLMSWXEgzZf1xaC_1cgnoaUCyw8Ag@mail.gmail.com>
+ <CAKA=qzaHJ0OcbvtT-mwKBUBvzPkxE4r-bW6gDvicKhoQeyFWEg@mail.gmail.com>
+ <20120308234016.GA925@redhat.com>
+ <CAKA=qzbsL9UVYLZ3=hoT-1jfp=v=_Sr=h+YeHu0qAA=Ko_7P6w@mail.gmail.com>
+ <CAKA=qzbqoK5_3GXM8DZhbQ5cTU=DTg5DFFJ+46OrD7y=XrMLTg@mail.gmail.com>
+ <20120621203217.GC14095@redhat.com>
+ <CAKA=qzYmh8DD7J__WWDyX_2fFQbSx+M=k4ttqRTD3M8nao-WVg@mail.gmail.com>
+ <20120622141211.GB18409@redhat.com>
+ <CAKA=qzYYK5KUNsZ1C7Z7BEkqo-7uvn=HYr0N9KLPaLt9ut+MDQ@mail.gmail.com>
+ <CAKA=qzY+u64vVZmbiH4zp_Fij2zejQBFUSNENKF=PZBT0G7xrQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4FE4D7B7.8000004@gmail.com>
-References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
-	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
-	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
-	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
-	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
-	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
-	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
-	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
-	<CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
-	<CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
-	<4FE22B28.9020402@gmail.com>
-	<CAE9FiQUkGCQ0Y=n3i=bq388T8N-vrHP2LtMTFGwry2nA+uppwA@mail.gmail.com>
-	<4FE2B788.3070505@gmail.com>
-	<CAE9FiQWBB0JVCLWa40k9qYJXGrv_z=RgspgQW4x2di0uCUFXmA@mail.gmail.com>
-	<4FE41B3E.7080609@gmail.com>
-	<CAE9FiQWB-=qRQfJS=95a+L_N32bZ97MCdW3voDCNSCbVcCnERQ@mail.gmail.com>
-	<4FE4D7B7.8000004@gmail.com>
-Date: Fri, 22 Jun 2012 13:41:35 -0700
-X-Google-Sender-Auth: lbaYd7_qbHeVrqLJHckX_jEdp0U
-Message-ID: <CAE9FiQUOWjLz86JZQrN-v1PdKfLAV022CPrjeArmYM5bRD+drA@mail.gmail.com>
-Subject: Re: SNB PCI root information
-From: Yinghai Lu <yinghai@kernel.org>
-To: Brice Goglin <brice.goglin@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Ulrich Drepper <drepper@gmail.com>,
-        jbarnes@virtuousgeek.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKA=qzY+u64vVZmbiH4zp_Fij2zejQBFUSNENKF=PZBT0G7xrQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 1:38 PM, Brice Goglin <brice.goglin@gmail.com> wrote:
-> Le 22/06/2012 19:28, Yinghai Lu a écrit :
->> On Fri, Jun 22, 2012 at 12:14 AM, Brice Goglin <brice.goglin@gmail.com> wrote:
->>
->>>> BIOS _PXM return 0 for both pci root buses?
->>>>
->>> Here's dmesg.
->>> I can't say for sure whether _PXM returns 0 since I don't know how to
->>> read all this :) But Linux puts the first socket cpumap in
->>> /sys/bus/pci/devices/*/local_cpus (and that's wrong according to the
->>> motherboard manual and according to the performance we see).
->>>
->> hi, looks like you system bios does not provide _PXM for the root bus.
->>
->
-> So why does Linux say that all buses are close to socket 0 instead of
-> close to everything as usual?
+On Fri, Jun 22, 2012 at 03:22:01PM -0500, Josh Hunt wrote:
 
-        if (bus && node != -1) {
-#ifdef CONFIG_ACPI_NUMA
-                if (pxm >= 0)
-                        dev_printk(KERN_DEBUG, &bus->dev,
-                                   "on NUMA node %d (pxm %d)\n", node, pxm);
-#else
-                dev_printk(KERN_DEBUG, &bus->dev, "on NUMA node %d\n", node);
-#endif
-        }
+[..]
+> It looks like my statement about busy_queues isn't entirely accurate.
+> I'm seeing this later on in the trace:
 
-so can you boot with "debug ignore_loglevel" ?
+Yes it is being called some times. But it is interesting to see that in
+the instance you pasted in last mail, we did not see "schedule_dispatch"
+message.  Are you sure that other requests were queued at that point of
+time and there were busy_queues? You can try printing cfqd->rq_queued
+to verify that.
+
+Also put some message in cfq_select_queue() to see why it did not select
+a new queue before the stall.
 
 Thanks
-
-Yinghai
+Vivek
