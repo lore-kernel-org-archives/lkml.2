@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760732Ab2FVAHI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 20:07:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55361 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760710Ab2FVAHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 20:07:06 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE3B69E.3040801@jp.fujitsu.com>
-Date: Fri, 22 Jun 2012 09:04:46 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1760739Ab2FVAJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 20:09:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45737 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760704Ab2FVAJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 20:09:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="156931619"
+Date: Thu, 21 Jun 2012 17:08:58 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Alexis Cortes <alexis.cortes@ti.com>
+Cc: "'Greg KH'" <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Quach, Brian'" <brian.quach@ti.com>,
+        "'Llamas, Jorge'" <jorge.llamas@ti.com>
+Subject: Re: [PATCH] usb: host: xhci: Compliance Mode port recovery
+Message-ID: <20120622000858.GB629@xanatos>
+References: <002801cd4e68$a4b4f3a0$ee1edae0$@cortes@ti.com>
+ <20120619223928.GD21104@xanatos>
+ <004101cd4f33$755e8eb0$601bac10$@cortes@ti.com>
+ <20120621000734.GB32743@xanatos>
+ <20120621003232.GD3255@kroah.com>
+ <003001cd4fd3$a7648950$f62d9bf0$@cortes@ti.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 2/2] memcg: clean up force_empty_list() return value check
-References: <4FDF17A3.9060202@jp.fujitsu.com> <4FDF1830.1000504@jp.fujitsu.com> <20120619165815.5ce24be7.akpm@linux-foundation.org> <4FE2D747.20506@jp.fujitsu.com> <4FE2D87D.2090500@jp.fujitsu.com> <20120621131328.1e906266.akpm@linux-foundation.org>
-In-Reply-To: <20120621131328.1e906266.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <003001cd4fd3$a7648950$f62d9bf0$@cortes@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/22 5:13), Andrew Morton wrote:
-> On Thu, 21 Jun 2012 17:17:01 +0900
-> Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>  wrote:
->
->> Now, mem_cgroup_force_empty_list() just returns 0 or -EBUSY and
->> -EBUSY is just indicating 'you need to retry.'.
->> This patch makes mem_cgroup_force_empty_list() as boolean function and
->> make the logic simpler.
->>
->
-> For some reason I'm having trouble applying these patches - many
-> rejects, need to massage it in by hand.
->
+On Thu, Jun 21, 2012 at 12:31:12PM -0500, Alexis Cortes wrote:
+> Hi Greg,
+> 
+> I understand your concerns, however as I mentioned before, any xHCI host
+> that has this particular re-driver between its root-ports and the physical
+> ports of the system will be subject to suffer of this compliance mode issue
+> (once the port has entered compliance mode, it becomes unusable so no device
+> that is plugged to that port will work until a warm reset is applied to it).
+> For a system that has this re-driver, this problem could hit about 20%-40%
+> of the times (however this percentage is subject to the quality of the
+> internal connection) and unfortunately there is no way to programmatically
+> detect if this re-driver is on the system.
+> 
+> As Sarah proposed, we certainly can apply this patch as a module parameter
+> disabled by default and let know our clients that we know are using this
+> re-driver to enable the feature to avoid the issue.
 
-Oh, sorry. Is it space breakage or some ? (I had mailer troubles in the last week..)
-Or, maybe, my tree/patch queue was too old.
-I'll rebased to new -mm tree when I post new patch.
+I don't think that would work very well.  Are those clients supposed to
+notify Linux OSVs when a system will ship with that redriver so they can
+turn it on for Linux preloads of those systems?  What about the average
+Linux user who installs Linux themselves?
 
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -3797,7 +3797,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->>     * This routine traverse page_cgroup in given list and drop them all.
->>     * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
->>     */
->> -static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->> +static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->>    				int node, int zid, enum lru_list lru)
->
-> Let's document the return value.  The mem_cgroup_force_empty_list()
-> comment is a mess so I tried to help it a bit.  How does this look?
->
-> --- a/mm/memcontrol.c~memcg-make-mem_cgroup_force_empty_list-return-bool-fix
-> +++ a/mm/memcontrol.c
-> @@ -3609,8 +3609,10 @@ unsigned long mem_cgroup_soft_limit_recl
->   }
->
->   /*
-> - * This routine traverse page_cgroup in given list and drop them all.
-> - * *And* this routine doesn't reclaim page itself, just removes page_cgroup.
-> + * Traverse a specified page_cgroup list and try to drop them all.  This doesn't
-> + * reclaim the pages page themselves - it just removes the page_cgroups.
-> + * Returns true if some page_cgroups were not freed, indicating that the caller
-> + * must retry this operation.
->    */
->   static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->   				int node, int zid, enum lru_list lru)
-> _
+An alternative approach, since you know which clients are using the
+re-driver, is to just add a quirk, and get them to tell us when they're
+shipping a system with your redriver.  Then we can turn it on in the
+mainline kernel, all Linux distros will pick it up, and we will avoid
+disgruntled users.
 
-Seems nice! Thank you very much.
+Or we can just modify the timer to a more reasonable value like 10
+seconds, and users will just have to put up with the longer enumeration
+times.
 
-Regards,
--Kame
-  
+Greg, what about exporting a sysfs file to change the polling interval?
+We could run the timer every 2 seconds by default, but get powertop to
+add a new setting for turning the interval off.
 
+Sarah Sharp
 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Wednesday, June 20, 2012 7:33 PM
+> > To: Sarah Sharp
+> > Cc: Alexis Cortes; linux-usb@vger.kernel.org;
+> linux-kernel@vger.kernel.org;
+> > 'Quach, Brian'; 'Llamas, Jorge'
+> > Subject: Re: [PATCH] usb: host: xhci: Compliance Mode port recovery
+> > 
+> > On Wed, Jun 20, 2012 at 05:07:34PM -0700, Sarah Sharp wrote:
+> >> > Unfortunately there is not a way to programmatically detect if the
+> >> > re-driver is present on the system, and since it might affect any
+> >> > host controller, I'm afraid this workaround can't be limited on the
+> > driver to specific hardware.
+> >>
+> >> Ok, then make it a module parameter that is off by default.  Users who
+> >> find they have this issue can reload the driver with the timer on, and
+> >> add the module parameter to their grub linux boot line.  If we find
+> >> that the redriver is used always for one particular host
+> >> vendor/revision, we'll add a quirk for it.
+> >>
+> >> But I really don't want an extra timer running and killing power
+> >> management for hosts that don't need this work around.
+> > 
+> > I don't want that either, but I really don't want a new module parameter
+> > that no one is going to know that they need to set.
+> > 
+> > I think the real solution is finding what pci devices this is a problem
+> > with, and using a quirk that way.
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
+> >
+> 
