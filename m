@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761151Ab2FVDxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 23:53:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37277 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761121Ab2FVDxn (ORCPT
+	id S1761143Ab2FVD7a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 23:59:30 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53878 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761050Ab2FVD73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 23:53:43 -0400
-Message-ID: <1340337209.6871.179.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.2.y 3.3.y] staging:rts_pstor:Fix possible panic by
- NULL pointer dereference
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Keng-Yu Lin <kengyu@canonical.com>
-Cc: stable@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        wwang <wei_wang@realsil.com.cn>,
-        Hitoshi NAKAMORI <hitoshi.nakamori@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Fri, 22 Jun 2012 04:53:29 +0100
-In-Reply-To: <1340266719-31983-1-git-send-email-kengyu@canonical.com>
-References: <1340266719-31983-1-git-send-email-kengyu@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-bIOpS249rMsnRDUQ0K8l"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 21 Jun 2012 23:59:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwBc=OxwU=qNYQs0rg4dPGBQObqg-EGnDDS-TWWpy0G2A@mail.gmail.com>
+References: <alpine.DEB.2.00.1206201758500.3068@chino.kir.corp.google.com>
+ <20120621164606.4ae1a71d.akpm@linux-foundation.org> <CA+55aFzPXMD3N3Oy-om6utDCQYmrBDnDgdqpVC5cgKe-v6uZ3w@mail.gmail.com>
+ <20120621184536.6dd97746.akpm@linux-foundation.org> <CA+55aFwBc=OxwU=qNYQs0rg4dPGBQObqg-EGnDDS-TWWpy0G2A@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 21 Jun 2012 20:59:07 -0700
+X-Google-Sender-Auth: I-0X3GbbwbjFamv7hGUeJfkLPT8
+Message-ID: <CA+55aFydstt7+oBy+ABVdkwUmiwDp-3qyAFmZbzi=PYTVyOXLw@mail.gmail.com>
+Subject: Re: [patch 3.5-rc3] mm, mempolicy: fix mbind() to do synchronous migration
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 21, 2012 at 8:33 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I'll see what it looks like if I only warn about casting *to* an enum.
 
---=-bIOpS249rMsnRDUQ0K8l
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hmm. That results in much fewer warnings. Not that I'm sure that my
+sparse hack is right. But for my normal build (which is pretty
+minimal), I get:
 
-On Thu, 2012-06-21 at 16:18 +0800, Keng-Yu Lin wrote:
-> From: wwang <wei_wang@realsil.com.cn>
->=20
-> commit 0d05568ac79bfc595f1eadc3e0fd7a20a45f7b69 upstream.
->=20
-> rtsx_transport.c (rtsx_transfer_sglist_adma_partial):
-> pointer struct scatterlist *sg, which is mapped in dma_map_sg,
-> is used as an iterator in later transfer operation. It is corrupted and
-> passed to dma_unmap_sg, thus causing fatal unmap of some erroneous addres=
-s.
-> Fix it by duplicating *sg_ptr for iterating.
-[...]
+    drivers/ata/libahci.c:1786:16: warning: casting to an enum type
+    drivers/ata/libata-sff.c:1662:16: warning: casting to an enum type
+    drivers/gpu/drm/i915/i915_irq.c:2300:16: warning: casting to an enum type
+    drivers/gpu/drm/i915/i915_irq.c:2544:16: warning: casting to an enum type
+    drivers/gpu/drm/i915/i915_irq.c:740:16: warning: casting to an enum type
+    drivers/gpu/drm/i915/intel_panel.c:319:50: warning: casting to an enum type
+    drivers/input/mouse/lifebook.c:148:59: warning: casting to an enum type
+    drivers/input/mouse/lifebook.c:153:80: warning: casting to an enum type
+    drivers/input/mouse/lifebook.c:156:59: warning: casting to an enum type
+    drivers/input/mouse/lifebook.c:159:73: warning: casting to an enum type
+    drivers/input/mouse/synaptics.c:1129:86: warning: casting to an enum type
+    drivers/input/serio/i8042.c:533:16: warning: casting to an enum type
+    drivers/input/serio/i8042.c:693:16: warning: casting to an enum type
+    drivers/net/ethernet/realtek/r8169.c:5860:16: warning: casting to
+an enum type
+    drivers/pci/probe.c:511:26: warning: casting to an enum type
+    drivers/tty/serial/8250/8250.c:1556:16: warning: casting to an enum type
+    drivers/usb/host/xhci-ring.c:2419:24: warning: casting to an enum type
+    fs/sysfs/sysfs.h:114:51: warning: casting to an enum type
+    include/linux/mm.h:660:47: warning: casting to an enum type
+    kernel/sched/rt.c:32:21: warning: casting to an enum type
+    kernel/time/alarmtimer.c:231:16: warning: casting to an enum type
+    kernel/time/alarmtimer.c:439:16: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1035:13: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1041:13: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1044:5: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1045:30: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1138:21: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1140:5: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1141:30: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1233:25: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1262:5: warning: casting to an enum type
+    lib/zlib_deflate/deflate.c:1263:30: warning: casting to an enum type
+    net/ipv4/ipmr.c:449:24: warning: casting to an enum type
+    net/ipv4/netfilter/nf_defrag_ipv4.c:58:47: warning: casting to an enum type
+    net/ipv4/netfilter/nf_defrag_ipv4.c:60:48: warning: casting to an enum type
+    net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:49:48: warning: casting
+to an enum type
+    net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:51:49: warning: casting
+to an enum type
+    sound/pci/intel8x0.c:821:24: warning: casting to an enum type
 
-Added to the queue for 3.2, thanks.
+but the ones I looked at were all ok. Admittedly I only looked at a
+few (maybe five), though.
 
-Ben.
+That said, the drivers/pci/probe.c case is actually ugly code. That
+"agp_speeds[]" array *could* be an array of the proper enum's, rather
+than "unsigned char". I don't know why it isn't (but 'unsigned char'
+may be more efficient than a compiler that might make it an 'int').
 
---=20
-Ben Hutchings
-Every program is either trivial or else contains at least one bug
+So the warning *may* be useful. However, to get sparse to give that
+warning I had to do some hacks that broke other parts of sparse, so I
+don't have a good sparse patch yet. I'll look at it some more
+tomorrow.
 
---=-bIOpS249rMsnRDUQ0K8l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT+PsOue/yOyVhhEJAQr9ahAAhpr5nftvY4jGlOFVuC7z7HPgBeJqLhaD
-bnhmlZAVTi+E4dx1kN4bj/Vg3IdSpXNCbzYsFqkww+4iMOVJUruHOYEUFTrOTzxd
-mXqTPEgEqeTrSfdYaI7yAVhaP0yUzQce5Ib17uQ8htihlYrMgXzxeGotrk1UOber
-99UWOhHEBeaI/Lkc29EN7Tv1TFI4f+ErgX2d2ovXyAlU6Rg0QQlX2nMOvZxZTx7W
-7B+mrf1gnDFW9YYgfBIwmqWADx0ZtmAU7yrOFmjIRO8KSyuHq8GmNM0OfPxcy1uV
-Iy/qn3lAKaVprri/Q8dNnbcJSNIkFfthJzSnwBTbL+Dq4AgFq/ueGueCOgikcM7k
-5ZXQW6Xg+hejrC9WO/2Yyq3jv4K0QBpqcGlcOB7dWESbPcKn5ugliNlK/npgoqKo
-zVVGwCrRYtBCnzob6WG/RB4NLhrvWpk4W+/f/vrkzrgBpqUryM2PWNWiPDgVWXyr
-umVMvEMMQSYJHT+N9Gsq0HYQKuf5W1TEgJ1C18bRjni7BL4ykAGbASJrVlyfPgY3
-E8sZQjFUeQzmrnY2w8d3nK6bmpiY12lGRduiiGY7eMnInnJ9T5OnAL09iERcWarS
-s66Jv/gvTWtyMZkJnBNGyGGg20JxplHWkUgHqwqT5vge0dSJQrJtD5Re8Evf4XCO
-HbpQiWa1D20=
-=8obw
------END PGP SIGNATURE-----
-
---=-bIOpS249rMsnRDUQ0K8l--
+               Linus
