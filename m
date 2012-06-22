@@ -1,44 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761297Ab2FVF6E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 01:58:04 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6561 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761246Ab2FVF6C (ORCPT
+	id S1761303Ab2FVF7Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 01:59:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45931 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761257Ab2FVF7X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 01:58:02 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 21 Jun 2012 22:57:56 -0700
-Message-ID: <4FE4093D.4070704@nvidia.com>
-Date: Fri, 22 Jun 2012 11:27:17 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 22 Jun 2012 01:59:23 -0400
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/2] regulator: tps65910: Remove unused min_uV and max_uV
- from struct tps_info
-References: <1340275546.2922.1.camel@phoenix>
-In-Reply-To: <1340275546.2922.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1340342704.1381.9.camel@tellur>
+References: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
+	<1340334073-17804-12-git-send-email-chenhc@lemote.com>
+	<1340342704.1381.9.camel@tellur>
+Date: Fri, 22 Jun 2012 13:59:21 +0800
+Message-ID: <CAAhV-H5pkm6en7oVjTdDmm2SSy1DyF7kDczPady+c+aB8eAXyA@mail.gmail.com>
+Subject: Re: [PATCH V3 11/16] drm/radeon: Make radeon card usable for Loongson.
+From: Huacai Chen <chenhuacai@gmail.com>
+To: Lucas Stach <dev@lynxeye.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Hua Yan <yanh@lemote.com>,
+        Fuxin Zhang <zhangfx@lemote.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Hongliang Tao <taohl@lemote.com>,
+        Huacai Chen <chenhc@lemote.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 June 2012 04:15 PM, Axel Lin wrote:
-> The min_uV and max_uV fields of struct tps_info are not used in the code.
-> For the case voltage_table is provided, the min_uV and max_uV are the same
-> values as volt_table[0] and volt_table[n_voltages -1].
-> For the case voltage_table is not available, having the min_uV and max_uV seems
-> misleading. Current code uses equations to get the voltage value in this case,
-> but these equations do not use the min_uV and max_uV fields of struct tps_info.
+On Fri, Jun 22, 2012 at 1:25 PM, Lucas Stach <dev@lynxeye.de> wrote:
+> Hello Huacai,
 >
-> Thus this patch removes the min_uV and max_uV fields from struct tps_info.
+> Am Freitag, den 22.06.2012, 11:01 +0800 schrieb Huacai Chen:
+>> 1, Handle io prot correctly for MIPS.
+>> 2, Define SAREA_MAX as the size of one page.
+>> 3, Don't use swiotlb on Loongson machines (Loonson need swioitlb, but
+>>    when use swiotlb, GPU reset occurs at resume from suspend).
+>>
+> I still think this is wrong. You say Loongson needs SWIOTLB, but when
+> it's actually used you ignore it in the radeon driver code.
 >
-> Signed-off-by: Axel Lin<axel.lin@gmail.com>
-> ---
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+> I looked up why you are using SWIOTLB and I don't agree with you that it
+> is needed. SWIOTLB just gives you bounce pages for DMA memory above
+> DMA32 and therefore papers over your >4GB DMA platform bug in some
+> cases, while hurting performance.
+>
+> Please fix your DMA platform code so that region DMA is an alias for
+> region DMA32. It should allow you to drop all those ugly workarounds.
+>
+Hmm, you are probably right, I think I should have a discuss with the
+original author of this part of code.
 
+>> Signed-off-by: Huacai Chen <chenhc@lemote.com>
+>> Signed-off-by: Hongliang Tao <taohl@lemote.com>
+>> Signed-off-by: Hua Yan <yanh@lemote.com>
+>> Reviewed-by: Michel Dänzer <michel@daenzer.net>
+>> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+>> Reviewed-by: Lucas Stach <dev@lynxeye.de>
+>> Reviewed-by: j.glisse <j.glisse@gmail.com>
+>
+> You should probably only stick this tag on your patches after the people
+> you are naming explicitly gave their r-b for a specific version of a
+> patch.
+>
+> Thanks,
+> Lucas
+>> Cc: dri-devel@lists.freedesktop.org
+>> ---
+>>  drivers/gpu/drm/drm_vm.c            |    2 +-
+>>  drivers/gpu/drm/radeon/radeon_ttm.c |    6 +++---
+>>  drivers/gpu/drm/ttm/ttm_bo_util.c   |    2 +-
+>>  include/drm/drm_sarea.h             |    2 ++
+>>  4 files changed, 7 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
+>> index 961ee08..3f06166 100644
+>> --- a/drivers/gpu/drm/drm_vm.c
+>> +++ b/drivers/gpu/drm/drm_vm.c
+>> @@ -62,7 +62,7 @@ static pgprot_t drm_io_prot(uint32_t map_type, struct vm_area_struct *vma)
+>>               tmp = pgprot_writecombine(tmp);
+>>       else
+>>               tmp = pgprot_noncached(tmp);
+>> -#elif defined(__sparc__) || defined(__arm__)
+>> +#elif defined(__sparc__) || defined(__arm__) || defined(__mips__)
+>>       tmp = pgprot_noncached(tmp);
+>>  #endif
+>>       return tmp;
+>> diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+>> index c94a225..f49bdd1 100644
+>> --- a/drivers/gpu/drm/radeon/radeon_ttm.c
+>> +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+>> @@ -630,7 +630,7 @@ static int radeon_ttm_tt_populate(struct ttm_tt *ttm)
+>>       }
+>>  #endif
+>>
+>> -#ifdef CONFIG_SWIOTLB
+>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
+>>       if (swiotlb_nr_tbl()) {
+>>               return ttm_dma_populate(&gtt->ttm, rdev->dev);
+>>       }
+>> @@ -676,7 +676,7 @@ static void radeon_ttm_tt_unpopulate(struct ttm_tt *ttm)
+>>       }
+>>  #endif
+>>
+>> -#ifdef CONFIG_SWIOTLB
+>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
+>>       if (swiotlb_nr_tbl()) {
+>>               ttm_dma_unpopulate(&gtt->ttm, rdev->dev);
+>>               return;
+>> @@ -906,7 +906,7 @@ static int radeon_ttm_debugfs_init(struct radeon_device *rdev)
+>>       radeon_mem_types_list[i].show = &ttm_page_alloc_debugfs;
+>>       radeon_mem_types_list[i].driver_features = 0;
+>>       radeon_mem_types_list[i++].data = NULL;
+>> -#ifdef CONFIG_SWIOTLB
+>> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
+>>       if (swiotlb_nr_tbl()) {
+>>               sprintf(radeon_mem_types_names[i], "ttm_dma_page_pool");
+>>               radeon_mem_types_list[i].name = radeon_mem_types_names[i];
+>> diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
+>> index f8187ea..0df71ea 100644
+>> --- a/drivers/gpu/drm/ttm/ttm_bo_util.c
+>> +++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+>> @@ -472,7 +472,7 @@ pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp)
+>>       else
+>>               tmp = pgprot_noncached(tmp);
+>>  #endif
+>> -#if defined(__sparc__)
+>> +#if defined(__sparc__) || defined(__mips__)
+>>       if (!(caching_flags & TTM_PL_FLAG_CACHED))
+>>               tmp = pgprot_noncached(tmp);
+>>  #endif
+>> diff --git a/include/drm/drm_sarea.h b/include/drm/drm_sarea.h
+>> index ee5389d..1d1a858 100644
+>> --- a/include/drm/drm_sarea.h
+>> +++ b/include/drm/drm_sarea.h
+>> @@ -37,6 +37,8 @@
+>>  /* SAREA area needs to be at least a page */
+>>  #if defined(__alpha__)
+>>  #define SAREA_MAX                       0x2000U
+>> +#elif defined(__mips__)
+>> +#define SAREA_MAX                       0x4000U
+>>  #elif defined(__ia64__)
+>>  #define SAREA_MAX                       0x10000U     /* 64kB */
+>>  #else
+>
+>
