@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135Ab2FVUOg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 16:14:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44946 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932456Ab2FVUOf (ORCPT
+	id S1762683Ab2FVUTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 16:19:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50483 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab2FVUTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 16:14:35 -0400
-Date: Fri, 22 Jun 2012 13:14:29 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Early boot panic on machine with lots of memory
-Message-ID: <20120622201429.GM4642@google.com>
-References: <20120619041154.GA28651@shangw>
- <20120619212059.GJ32733@google.com>
- <20120619212618.GK32733@google.com>
- <CAE9FiQVECyRBie-kgBETmqxPaMx24kUt1W07qAqoGD4vNus5xQ@mail.gmail.com>
- <20120621201728.GB4642@google.com>
- <CAE9FiQXubmnKHjnqOxVeoJknJZFNuStCcW=1XC6jLE7eznkTmg@mail.gmail.com>
- <20120622185113.GK4642@google.com>
- <CAE9FiQVV+WOWywnanrP7nX-wai=aXmQS1Dcvt4PxJg5XWynC+Q@mail.gmail.com>
- <20120622192919.GL4642@google.com>
- <CAE9FiQWcxEcuCjCSoAucvAOZ-6FCqRvjPoYc+JRmxdL50nyNxg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWcxEcuCjCSoAucvAOZ-6FCqRvjPoYc+JRmxdL50nyNxg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 22 Jun 2012 16:19:03 -0400
+Date: Fri, 22 Jun 2012 13:19:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: clear pages_scanned only if draining a pcp adds
+ pages to the buddy allocator again
+Message-Id: <20120622131901.28f273e3.akpm@linux-foundation.org>
+In-Reply-To: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
+References: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Yinghai.
+On Thu, 14 Jun 2012 12:16:10 -0400
+kosaki.motohiro@gmail.com wrote:
 
-On Fri, Jun 22, 2012 at 01:01:32PM -0700, Yinghai Lu wrote:
-> using yhlu.kernel@gmail.com to get mail from the list and respond as
-> yinghai@kernel.org.
-> 
-> gmail web client does not allow us to insert plain text.
-> 
-> if using standline thunderbird, that seems can not handle thousand mail.
+> commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
+> to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
+> another miuse still exist.
 
-I moved away from TB too (to gmail + mutt) but IIRC turning off
-indexing made it mostly bearable for me.
-
-> noticed now even Linus is attaching patch, so I assume that is ok
-> because there is no othe good rway.
-
-Yeah, it's okay but just not optimal.  I was wondering what changed.
-My setup is pretty similar and in case you're intersted, here are some
-tricks I've been using.
-
-Thunderbird
-
- * In the Composition & Addressing tab of account setting, clear
-   "Compose messages in HTML format".
-
- * Open Config Editor under Preferences -> Advanced -> General.
-   * set mailnews.wraplength to 9999
-   * set mailnews.send_plaintext_flowed to false
-
- * Install External Editor add-on and configure it to your favorite
-   editor.
-
-   http://globs.org/articles.php?pg=2&lng=en
-
-   Ctrl-E launches the external editor.  The only caveat is that there
-   seems to be a race condition and if the machine is under heavy load
-   the extension occassinally loses the edited text, so it usually is a
-   good idea to save a copy in a separate file before exiting the
-   external editor.  It never happens on my desktop but happens on my
-   laptop once in a blue moon.
-
-Alternatively, you can use mutt for patch sending / processing.  With
-caches turned on (set header_cache, set message_cachedir), it's
-actually pretty useable w/ gmail.
-
--- 
-tejun
+This changelog is irritating.  One can understand it a bit if one
+happens to have a git repo handy (and why do this to the reader?), but
+the changelog for 2ff754fa8f indicates that the patch might fix a
+livelock.  Is that true of this patch?  Who knows...
