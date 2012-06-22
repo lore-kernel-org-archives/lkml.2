@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab2FVUjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 16:39:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35900 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab2FVUjb (ORCPT
+	id S1762697Ab2FVUlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 16:41:37 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57402 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab2FVUlg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 16:39:31 -0400
-Date: Fri, 22 Jun 2012 13:39:14 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-d6a99b549bc2d52ecefe06e59ba4fdcc0e59714b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        JBeulich@suse.com, khali@linux-fr.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        JBeulich@suse.com, khali@linux-fr.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <4FE34BCB.5050305@linux.intel.com>
-References: <4FE34BCB.5050305@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, cpufeature:
-  Catch duplicate CPU feature strings
-Git-Commit-ID: d6a99b549bc2d52ecefe06e59ba4fdcc0e59714b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 22 Jun 2012 16:41:36 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 22 Jun 2012 13:39:20 -0700 (PDT)
+In-Reply-To: <4FE4D7B7.8000004@gmail.com>
+References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com>
+	<CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com>
+	<CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com>
+	<CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com>
+	<CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com>
+	<CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com>
+	<CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com>
+	<CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com>
+	<CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com>
+	<CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com>
+	<4FE22B28.9020402@gmail.com>
+	<CAE9FiQUkGCQ0Y=n3i=bq388T8N-vrHP2LtMTFGwry2nA+uppwA@mail.gmail.com>
+	<4FE2B788.3070505@gmail.com>
+	<CAE9FiQWBB0JVCLWa40k9qYJXGrv_z=RgspgQW4x2di0uCUFXmA@mail.gmail.com>
+	<4FE41B3E.7080609@gmail.com>
+	<CAE9FiQWB-=qRQfJS=95a+L_N32bZ97MCdW3voDCNSCbVcCnERQ@mail.gmail.com>
+	<4FE4D7B7.8000004@gmail.com>
+Date: Fri, 22 Jun 2012 13:41:35 -0700
+X-Google-Sender-Auth: lbaYd7_qbHeVrqLJHckX_jEdp0U
+Message-ID: <CAE9FiQUOWjLz86JZQrN-v1PdKfLAV022CPrjeArmYM5bRD+drA@mail.gmail.com>
+Subject: Re: SNB PCI root information
+From: Yinghai Lu <yinghai@kernel.org>
+To: Brice Goglin <brice.goglin@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Ulrich Drepper <drepper@gmail.com>,
+        jbarnes@virtuousgeek.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d6a99b549bc2d52ecefe06e59ba4fdcc0e59714b
-Gitweb:     http://git.kernel.org/tip/d6a99b549bc2d52ecefe06e59ba4fdcc0e59714b
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Fri, 22 Jun 2012 11:47:15 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 22 Jun 2012 11:47:15 -0700
+On Fri, Jun 22, 2012 at 1:38 PM, Brice Goglin <brice.goglin@gmail.com> wrote:
+> Le 22/06/2012 19:28, Yinghai Lu a écrit :
+>> On Fri, Jun 22, 2012 at 12:14 AM, Brice Goglin <brice.goglin@gmail.com> wrote:
+>>
+>>>> BIOS _PXM return 0 for both pci root buses?
+>>>>
+>>> Here's dmesg.
+>>> I can't say for sure whether _PXM returns 0 since I don't know how to
+>>> read all this :) But Linux puts the first socket cpumap in
+>>> /sys/bus/pci/devices/*/local_cpus (and that's wrong according to the
+>>> motherboard manual and according to the performance we see).
+>>>
+>> hi, looks like you system bios does not provide _PXM for the root bus.
+>>
+>
+> So why does Linux say that all buses are close to socket 0 instead of
+> close to everything as usual?
 
-x86, cpufeature: Catch duplicate CPU feature strings
+        if (bus && node != -1) {
+#ifdef CONFIG_ACPI_NUMA
+                if (pxm >= 0)
+                        dev_printk(KERN_DEBUG, &bus->dev,
+                                   "on NUMA node %d (pxm %d)\n", node, pxm);
+#else
+                dev_printk(KERN_DEBUG, &bus->dev, "on NUMA node %d\n", node);
+#endif
+        }
 
-We had a case of duplicate CPU feature strings, a user space ABI
-violation, for almost two years.  Make it a build error so that
-doesn't happen again.
+so can you boot with "debug ignore_loglevel" ?
 
-Link: http://lkml.kernel.org/r/4FE34BCB.5050305@linux.intel.com
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Jean Delvare <khali@linux-fr.org>
----
- arch/x86/kernel/cpu/mkcapflags.pl |   23 ++++++++++++++++++-----
- 1 files changed, 18 insertions(+), 5 deletions(-)
+Thanks
 
-diff --git a/arch/x86/kernel/cpu/mkcapflags.pl b/arch/x86/kernel/cpu/mkcapflags.pl
-index dfea390..0c5b549 100644
---- a/arch/x86/kernel/cpu/mkcapflags.pl
-+++ b/arch/x86/kernel/cpu/mkcapflags.pl
-@@ -11,22 +11,35 @@ open(OUT, "> $out\0") or die "$0: cannot create: $out: $!\n";
- print OUT "#include <asm/cpufeature.h>\n\n";
- print OUT "const char * const x86_cap_flags[NCAPINTS*32] = {\n";
- 
-+%features = ();
-+$err = 0;
-+
- while (defined($line = <IN>)) {
- 	if ($line =~ /^\s*\#\s*define\s+(X86_FEATURE_(\S+))\s+(.*)$/) {
- 		$macro = $1;
--		$feature = $2;
-+		$feature = "\L$2";
- 		$tail = $3;
- 		if ($tail =~ /\/\*\s*\"([^"]*)\".*\*\//) {
--			$feature = $1;
-+			$feature = "\L$1";
- 		}
- 
--		if ($feature ne '') {
--			printf OUT "\t%-32s = \"%s\",\n",
--				"[$macro]", "\L$feature";
-+		next if ($feature eq '');
-+
-+		if ($features{$feature}++) {
-+			print STDERR "$in: duplicate feature name: $feature\n";
-+			$err++;
- 		}
-+		printf OUT "\t%-32s = \"%s\",%s\n", "[$macro]", $feature;
- 	}
- }
- print OUT "};\n";
- 
- close(IN);
- close(OUT);
-+
-+if ($err) {
-+	unlink($out);
-+	exit(1);
-+}
-+
-+exit(0);
+Yinghai
