@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761751Ab2FVJXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 05:23:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43712 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758199Ab2FVJX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 05:23:29 -0400
-Date: Fri, 22 Jun 2012 11:23:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2012-06-21-16-20 uploaded
-Message-ID: <20120622092327.GA5742@tiehlicka.suse.cz>
-References: <20120621232149.F0286A026A@akpm.mtv.corp.google.com>
+	id S932423Ab2FVJdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 05:33:37 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:47134 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758748Ab2FVJdg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 05:33:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120621232149.F0286A026A@akpm.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 22 Jun 2012 12:33:35 +0300
+Message-ID: <CAFub=KRdM2Mc1RXa_HfYO8gSxpyCpsP9Z1YHRULCLwNDnXQyEg@mail.gmail.com>
+Subject: get_unused_fd and get_unused_fd_flags
+From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: viro@zeniv.linux.org.uk, mcgrof@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 21-06-12 16:21:49, Andrew Morton wrote:
-> The mm-of-the-moment snapshot 2012-06-21-16-20 has been uploaded to
-> 
->    http://www.ozlabs.org/~akpm/mmotm/
+Hi,
 
-And from now on, memcg-devel tree[1] will not only pick up memcg
-relevant patches but all patches in the mm section.
-The tree was mainly focused on memcg development in the past but it
-seems that having all mm and memcg patches together would be much easier
-and also non memcg developers could benefit from it.
+With,
 
-The tree will not be rebased (unlike linux-next) and after Linus
-releases X.Y a new branch (since-X.Y) will be created and the current
-stack rebased on top of vX.Y tag. Old branches stay at the place.
+commit 1027abe8827b47f7e9c4ed6514fde3d44f79963c
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Wed Jul 30 04:13:04 2008 -0400
 
-Please note that the tree doesn't substitute mmotm and all the changes
-still fly through Andrew. The sole purpose of the tree is to make git
-worklows for -mm development easier.
+    [PATCH] merge locate_fd() and get_unused_fd()
 
-Thanks Andrew for helping me with this and tweaking his series file to
-make it as much automated as possible.
+        New primitive: alloc_fd(start, flags).  get_unused_fd() and
+    get_unused_fd_flags() become wrappers on top of it.
 
----
-[1] https://github.com/mstsxfx/memcg-devel.git
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+Two wrappers get_unused_fd() and get_unused_fd_flags() are introduced.
+get_unused_fd() is an exported one-liner:
+
+int get_unused_fd(void)
+{
+        return alloc_fd(0, 0);
+}
+EXPORT_SYMBOL(get_unused_fd);
+
+But get_unused_fd_flags() is implemented through a macro:
+
+#define get_unused_fd_flags(flags) alloc_fd(0, (flags))
+
+Both are wrappers around alloc_fd(). I'm quite new to this stuff but
+why there's an asymmetry in here? One is exposed, the other is not.
+
+(BTW: I'm doing compat-drm stuff for GSoC and I have to call
+get_unused_fd_flags() but since alloc_fd() is not exported, this
+doesn't work.)
+
+Thanks :)
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Ozan Çağlayan
