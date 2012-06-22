@@ -1,249 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758358Ab2FVPrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:47:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39505 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab2FVPrN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:47:13 -0400
-Message-ID: <1340380019.18025.82.camel@twins>
-Subject: Re: [PATCH -v2 1/2] x86, microcode: Sanitize per-cpu microcode
- reloading interface
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Stephane Eranian <eranian@google.com>
-Date: Fri, 22 Jun 2012 17:46:59 +0200
-In-Reply-To: <1340280437-7718-2-git-send-email-bp@amd64.org>
-References: <1340280437-7718-1-git-send-email-bp@amd64.org>
-	 <1340280437-7718-2-git-send-email-bp@amd64.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	id S1762342Ab2FVPsF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:48:05 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:56898 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772Ab2FVPsC convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Fri, 22 Jun 2012 11:48:02 -0400
+Message-Id: <4FE4AFFD020000780008B799@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 22 Jun 2012 16:48:45 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Jinsong Liu" <jinsong.liu@intel.com>, "Tony Luck" <tony.luck@intel.com>
+Cc: "Ashok Raj" <ashok.raj@intel.com>,
+        "Donald D Dugger" <donald.d.dugger@intel.com>,
+        "Haitao Shan" <haitao.shan@intel.com>,
+        "Jun Nakajima" <jun.nakajima@intel.com>,
+        "Susie Li" <susie.li@intel.com>, "Will Auld" <will.auld@intel.com>,
+        "Xiantao Zhang" <xiantao.zhang@intel.com>,
+        "Yunhong Jiang" <yunhong.jiang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Keir Fraser" <keir@xen.org>
+Subject: RE: [vMCE design RFC] Xen vMCE design
+References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
+ <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923352542BD@SHSMSX101.ccr.corp.intel.com>
+ <4FE475BE020000780008B624@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335254989@SHSMSX101.ccr.corp.intel.com>
+ <4FE4A636020000780008B756@nat28.tlf.novell.com>
+ <3908561D78D1C84285E8C5FCA982C28F19323340@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19323340@ORSMSX104.amr.corp.intel.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What about something like so on top of those two microcode_core patches?
+>>> On 22.06.12 at 17:21, "Luck, Tony" <tony.luck@intel.com> wrote:
+>>>> I think that we minimally need to retain the MCG_CAP register
+>>>> as being of potentially variable content (and hence needing
+>>>> saving/restoring on migration). To support this in a forward
+>>>> compatible manner, we may have to have a way to tell the
+>>>> hypervisor e.g. via command line option which extra MSRs
+>>>> have to be treated read-as-zero/writes-ignored upon guest
+>>>> accesses.
+>>> 
+>>> Seems unnecessary, reason as above.
+>>
+>> So going forward you see no possibility of additions to the
+>> interface that might warrant allowing more bits to be set in
+>> MCG_CAP than you define to be set here? That really looks
+>> unrealistic to me.
+> 
+> More bits can be added to MCG_CAP - but this becomes a hard
+> problem for migration because most OS guests only look at
+> MCG_CAP at boot time (linux certainly does) ... so if you migrate
+> and change MCG_CAP to match the new host, the guest will have
+> no idea that things changed.
 
-Since we don't have to worry about per-cpu loads, we can do a single
-callback after the entire machine is updated.
+And it doesn't have to - respective events will just not occur
+anymore. All we need to make sure is that if it accesses an MSR
+that's no longer backed by anything in hardware, we don't
+inject a #GP (but instead return e.g. all zeros to reads, and
+drop all writes).
 
----
- arch/x86/include/asm/perf_event.h      |    2 +
- arch/x86/kernel/cpu/perf_event.c       |   21 +++++++++-----
- arch/x86/kernel/cpu/perf_event.h       |    4 ++
- arch/x86/kernel/cpu/perf_event_intel.c |   49 ++++++++++++++++++++++++++++++---
- arch/x86/kernel/microcode_core.c       |   10 ++++--
- 5 files changed, 72 insertions(+), 14 deletions(-)
+> MCG_SER_P bit is easy to deal with:
+> 1) You already know about it
+> 2) You can safely set it when the guest is running on a host that
+> does not support software error recover ... the guest will just
+> think that SRAO and SRAR events are possible, but they will never
+> actually occur. Setting it does make sure that the guest will be
+> ready should you migrate to a system that really does support it.
 
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -232,6 +232,7 @@ struct perf_guest_switch_msr {
- 
- extern struct perf_guest_switch_msr *perf_guest_get_msrs(int *nr);
- extern void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap);
-+extern void perf_check_microcode(void);
- #else
- static inline perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
- {
-@@ -245,6 +246,7 @@ static inline void perf_get_x86_pmu_capa
- }
- 
- static inline void perf_events_lapic_init(void)	{ }
-+static inline void perf_check_microcode(void) { }
- #endif
- 
- #if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_AMD)
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -378,7 +378,7 @@ int x86_pmu_hw_config(struct perf_event
- 		int precise = 0;
- 
- 		/* Support for constant skid */
--		if (x86_pmu.pebs_active) {
-+		if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
- 			precise++;
- 
- 			/* Support for IP fixup */
-@@ -1649,13 +1649,20 @@ static void x86_pmu_flush_branch_stack(v
- 		x86_pmu.flush_branch_stack();
- }
- 
-+void perf_check_microcode(void)
-+{
-+	if (x86_pmu.check_microcode)
-+		x86_pmu.check_microcode();
-+}
-+EXPORT_SYMBOL_GPL(perf_check_microcode);
-+
- static struct pmu pmu = {
- 	.pmu_enable		= x86_pmu_enable,
- 	.pmu_disable		= x86_pmu_disable,
- 
--	.attr_groups	= x86_pmu_attr_groups,
-+	.attr_groups		= x86_pmu_attr_groups,
- 
--	.event_init	= x86_pmu_event_init,
-+	.event_init		= x86_pmu_event_init,
- 
- 	.add			= x86_pmu_add,
- 	.del			= x86_pmu_del,
-@@ -1663,11 +1670,11 @@ static struct pmu pmu = {
- 	.stop			= x86_pmu_stop,
- 	.read			= x86_pmu_read,
- 
--	.start_txn	= x86_pmu_start_txn,
--	.cancel_txn	= x86_pmu_cancel_txn,
--	.commit_txn	= x86_pmu_commit_txn,
-+	.start_txn		= x86_pmu_start_txn,
-+	.cancel_txn		= x86_pmu_cancel_txn,
-+	.commit_txn		= x86_pmu_commit_txn,
- 
--	.event_idx	= x86_pmu_event_idx,
-+	.event_idx		= x86_pmu_event_idx,
- 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
- };
- 
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -361,6 +361,8 @@ struct x86_pmu {
- 	void		(*cpu_starting)(int cpu);
- 	void		(*cpu_dying)(int cpu);
- 	void		(*cpu_dead)(int cpu);
-+
-+	void		(*check_microcode)(void);
- 	void		(*flush_branch_stack)(void);
- 
- 	/*
-@@ -373,7 +375,7 @@ struct x86_pmu {
- 	 * Intel DebugStore bits
- 	 */
- 	int		bts, pebs;
--	int		bts_active, pebs_active;
-+	int		bts_active, pebs_active, pebs_broken;
- 	int		pebs_record_size;
- 	void		(*drain_pebs)(struct pt_regs *regs);
- 	struct event_constraint *pebs_constraints;
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1714,11 +1714,54 @@ static __init void intel_clovertown_quir
- 	x86_pmu.pebs_constraints = NULL;
- }
- 
-+static int intel_snb_pebs_broken(int cpu)
-+{
-+	u32 rev = UINT_MAX; /* default to broken for unknown models */
-+
-+	switch (cpu_data(cpu).x86_model) {
-+	case 42: /* SNB */
-+		rev = 0x28;
-+		break;
-+
-+	case 45: /* SNB-EP */
-+		switch (cpu_data(cpu).x86_mask) {
-+		case 6: rev = 0x618; break;
-+		case 7: rev = 0x70c; break;
-+		}
-+	}
-+
-+	return (cpu_data(cpu).microcode < rev);
-+}
-+
-+static void intel_snb_check_microcode(void)
-+{
-+	int pebs_broken = 0;
-+	int cpu;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu)
-+		pebs_broken |= intel_snb_pebs_broken(cpu);
-+	put_online_cpus();
-+
-+	if (pebs_broken == x86_pmu.pebs_broken)
-+		return;
-+
-+	/*
-+	 * Serialized by the microcode lock..
-+	 */
-+	if (x86_pmu.pebs_broken) {
-+		pr_info("PEBS enabled due to micro-code update\n");
-+		x86_pmu.pebs_broken = 0;
-+	} else {
-+		pr_info("PEBS disabled due to CPU errata, please upgrade micro-code\n");
-+		x86_pmu.pebs_broken = 1;
-+	}
-+}
-+
- static __init void intel_sandybridge_quirk(void)
- {
--	pr_warn("PEBS disabled due to CPU errata\n");
--	x86_pmu.pebs = 0;
--	x86_pmu.pebs_constraints = NULL;
-+	x86_pmu.check_microcode = intel_snb_check_microcode;
-+	intel_snb_check_microcode();
- }
- 
- static const struct { int id; char *name; } intel_arch_events_map[] __initconst = {
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -87,6 +87,7 @@
- #include <asm/microcode.h>
- #include <asm/processor.h>
- #include <asm/cpu_device_id.h>
-+#include <asm/perf_event.h>
- 
- MODULE_DESCRIPTION("Microcode Update Driver");
- MODULE_AUTHOR("Tigran Aivazian <tigran@aivazian.fsnet.co.uk>");
-@@ -277,7 +278,6 @@ static int reload_for_cpu(int cpu)
- 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
- 	int err = 0;
- 
--	mutex_lock(&microcode_mutex);
- 	if (uci->valid) {
- 		enum ucode_state ustate;
- 
-@@ -288,7 +288,6 @@ static int reload_for_cpu(int cpu)
- 			if (ustate == UCODE_ERROR)
- 				err = -EINVAL;
- 	}
--	mutex_unlock(&microcode_mutex);
- 
- 	return err;
- }
-@@ -309,6 +308,7 @@ static ssize_t reload_store(struct devic
- 		return size;
- 
- 	get_online_cpus();
-+	mutex_lock(&microcode_mutex);
- 	for_each_online_cpu(cpu) {
- 		tmp_ret = reload_for_cpu(cpu);
- 		if (tmp_ret != 0)
-@@ -318,6 +318,9 @@ static ssize_t reload_store(struct devic
- 		if (!ret)
- 			ret = tmp_ret;
- 	}
-+	if (!ret)
-+		perf_check_microcode();
-+	mutex_unlock(&microcode_mutex);
- 	put_online_cpus();
- 
- 	if (!ret)
-@@ -557,7 +560,8 @@ static int __init microcode_init(void)
- 	mutex_lock(&microcode_mutex);
- 
- 	error = subsys_interface_register(&mc_cpu_interface);
--
-+	if (!error)
-+		perf_check_microcode();
- 	mutex_unlock(&microcode_mutex);
- 	put_online_cpus();
- 
+And so is likely going to be the case for at least some of the
+additions to come.
+
+> Future bits would have to be dealt with on a case by case basis.
+> The same general model would apply ... set the bit everywhere ...
+> but you might need some Xen changes to virtualize any new resources
+> and capabilities that were described by the new bit. Side question:
+> when a guest is migrated from one machine to another, does the version
+> of Xen running on source and target have to be the same? This tactic
+> will not work if you migrate a guest running on Xen version 99 that
+> does have the code to virtualize some new capability to a machine
+> running Xen version 98 that doesn't.
+
+No, that's not a requirement, and hence we need to create a
+model that will at least always allow upward (destination host
+running higher version Xen than source) migration, and that
+preserves as much functionality as possible when moved
+between hosts with different MCA capabilities.
+
+Jan
 
