@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074Ab2FVOdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:33:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51758 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308Ab2FVOdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:33:44 -0400
-Date: Fri, 22 Jun 2012 23:33:38 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: avi@redhat.com, mtosatti@redhat.com, agraf@suse.de, paulus@samba.org,
-        aarcange@redhat.com, kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] KVM: MMU: Avoid handling same rmap_pde in
- kvm_handle_hva_range()
-Message-Id: <20120622233338.0e105766a0623ed7564d2c63@gmail.com>
-In-Reply-To: <20120621175238.705e6188.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120621174842.22779780.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120621175238.705e6188.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933047Ab2FVOdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:33:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33714 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762379Ab2FVObX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:31:23 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 11/12] nfs: Prevent page allocator recursions with swap over NFS.
+Date: Fri, 22 Jun 2012 15:31:07 +0100
+Message-Id: <1340375468-22509-12-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340375468-22509-1-git-send-email-mgorman@suse.de>
+References: <1340375468-22509-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012 17:52:38 +0900
-Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp> wrote:
+GFP_NOFS is _more_ permissive than GFP_NOIO in that it will initiate
+IO, just not of any filesystem data.
 
-...
-> +			/* Handle the first one even if idx == idx_end. */
-> +			do {
-> +				ret |= handler(kvm, rmapp++, data);
-> +			} while (++idx < idx_end);
+The problem is that previously NOFS was correct because that avoids
+recursion into the NFS code. With swap-over-NFS, it is no longer
+correct as swap IO can lead to this recursion.
 
-This is unclear and... maybe wrong.
-
-
-I will change this as follows:
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
-  hva_start = max(start, memslot->userspace_addr);
-  hva_end = min(end, memslot->userspace_addr +
-                          (memslot->npages << PAGE_SHIFT));
-  if (hva_start >= hva_end)
-          continue;
-  /*
-   * { gfn(page) | page intersects with [hva_start, hva_end) }
-   * = [gfn_start, gfn_end).
-   */
-  gfn_start = hva_to_gfn_memslot(hva_start, memslot);
-  gfn_end = hva_to_gfn_memslot(hva_end + PAGE_SIZE-1, memslot);
+ fs/nfs/pagelist.c |    2 +-
+ fs/nfs/write.c    |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-  for (j = PT_PAGE_TABLE_LEVEL;
-       j < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++j) {
-          unsigned long idx, idx_end;
-          unsigned long *rmapp; 
-          /*
-           * { idx(page_j) | page_j intersects with [hva_start, hva_end) }
-           * = [idx, idx_end].
-           */
-          idx = gfn_to_index(gfn_start, memslot->base_gfn, j);
-          idx_end = gfn_to_index(gfn_end - 1, memslot->base_gfn, j);
+diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
+index 9ef8b3c..7de1646 100644
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -70,7 +70,7 @@ void nfs_set_pgio_error(struct nfs_pgio_header *hdr, int error, loff_t pos)
+ static inline struct nfs_page *
+ nfs_page_alloc(void)
+ {
+-	struct nfs_page	*p = kmem_cache_zalloc(nfs_page_cachep, GFP_KERNEL);
++	struct nfs_page	*p = kmem_cache_zalloc(nfs_page_cachep, GFP_NOIO);
+ 	if (p)
+ 		INIT_LIST_HEAD(&p->wb_list);
+ 	return p;
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 947e1e6..0f7fdb7 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -52,7 +52,7 @@ static mempool_t *nfs_commit_mempool;
+ 
+ struct nfs_commit_data *nfs_commitdata_alloc(void)
+ {
+-	struct nfs_commit_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOFS);
++	struct nfs_commit_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOIO);
+ 
+ 	if (p) {
+ 		memset(p, 0, sizeof(*p));
+@@ -70,7 +70,7 @@ EXPORT_SYMBOL_GPL(nfs_commit_free);
+ 
+ struct nfs_write_header *nfs_writehdr_alloc(void)
+ {
+-	struct nfs_write_header *p = mempool_alloc(nfs_wdata_mempool, GFP_NOFS);
++	struct nfs_write_header *p = mempool_alloc(nfs_wdata_mempool, GFP_NOIO);
+ 
+ 	if (p) {
+ 		struct nfs_pgio_header *hdr = &p->header;
+-- 
+1.7.9.2
 
-          rmapp = __gfn_to_rmap(gfn_start, j, memslot);
-
-          for (; idx <= idx_end; ++idx) {
-                  ret |= handler(kvm, rmapp++, data);
-          }
-  }
----
-
-This way, much clearly, we can handle exactly same rmaps as before.
-
-I also need to change ppc code as well in patch 3.
-
-Thanks,
-	Takuya
