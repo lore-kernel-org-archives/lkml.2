@@ -1,200 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760486Ab2FVGpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 02:45:40 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51837 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759894Ab2FVGpi (ORCPT
+	id S1761385Ab2FVGtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 02:49:24 -0400
+Received: from prod-mail-xrelay05.akamai.com ([96.6.114.97]:60719 "EHLO
+	prod-mail-xrelay05.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758993Ab2FVGtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 02:45:38 -0400
-X-AuditID: 9c93016f-b7cbdae0000024ac-a0-4fe4148fb0c3
-To: undisclosed-recipients:;
-Message-ID: <4FE414A2.3000700@kernel.org>
-Date: Fri, 22 Jun 2012 15:45:54 +0900
-From: Minchan Kim <minchan@kernel.org>
+	Fri, 22 Jun 2012 02:49:23 -0400
+Message-ID: <4FE41570.4090803@akamai.com>
+Date: Fri, 22 Jun 2012 01:49:20 -0500
+From: Josh Hunt <johunt@akamai.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com> <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com> <4FE26470.90401@kernel.org> <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com> <4FE27F15.8050102@kernel.org> <CAHGf_=pDw4axwG2tQ+B5hPks-sz2S5+G1Kk-=HSDmo=DSXOkEw@mail.gmail.com> <4FE2A937.6040701@kernel.org> <4FE2FCFB.4040808@jp.fujitsu.com> <4FE3C4E4.2050107@kernel.org>
-In-Reply-To: <4FE3C4E4.2050107@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        Debabrata Banerjee <dbavatar@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "yoshfuji@linux-ipv6.org" <yoshfuji@linux-ipv6.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "pekkas@netcore.fi" <pekkas@netcore.fi>,
+        "kuznet@ms2.inr.ac.ru" <kuznet@ms2.inr.ac.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
+References: <CAATkVEzTxT6d5nzt_qwCuFWM-WcN8hdhjGxFRPXJ4=L35wKbGw@mail.gmail.com>  <4FE37783.9000409@akamai.com> <1340310469.4604.6702.camel@edumazet-glaptop>
+In-Reply-To: <1340310469.4604.6702.camel@edumazet-glaptop>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2012 10:05 AM, Minchan Kim wrote:
+On 06/21/2012 03:27 PM, Eric Dumazet wrote:
+> On Thu, 2012-06-21 at 14:35 -0500, Josh Hunt wrote:
+> 
+>> Can anyone provide details of the crash which was intended to be fixed
+>> by 2bec5a369ee79576a3eea2c23863325089785a2c? With this patch in and
+>> doing concurrent adds/deletes and dumping the table via netlink causes
+>> duplicate entries to be reported. Reverting this patch causes those
+>> problems to go away. We can provide a more detailed test if that is
+>> needed, but so far our testing has been unable to reproduce the crash
+>> mentioned in the above commit with it reverted.
+> 
+> A mere revert wont be enough.
+> 
+> Looking at this code, it lacks proper synchronization
+> between tree updaters and tree walkers.
+> 
+> fib6_walker_lock rwlock is not enough to prevent races.
+> 
+> Are you willing to fix this yourself ?
+> 
 
-> Second approach which is suggested by KOSAKI is what you mentioned.
-> But the concern about second approach is how to make sure matched count increase/decrease of nr_isolated_areas.
-> I mean how to make sure nr_isolated_areas would be zero when isolation is done.
-> Of course, we can investigate all of current caller and make sure they don't make mistake
-> now. But it's very error-prone if we consider future's user.
-> So we might need test_set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+Looking through the code a bit more it seems like we would need to have
+a lock in fib6_walker_t to protect its contents. Mainly for when we
+update the pointers in fib6_del_route and fib6_repair_tree. Right now
+there is the fib6_walker_lock, but that appears to only be protecting
+the elements of the list, not their contents. Is this what you had in
+mind? I just coded up something along these lines and it works for the
+most part, but I also got a message about unsafe lock ordering when I
+stressed it so I am messing something up. If this sounds like it's on
+the right track I can work out the kinks in the morning.
 
+Josh
 
-It's an implementation about above approach.
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index bf3404e..3e9a9e1 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -474,6 +474,11 @@ struct zone {
-         * rarely used fields:
-         */  
-        const char              *name;
-+       /*
-+        * the number of MIGRATE_ISOLATE pageblock
-+        * We need this for accurate free page counting.
-+        */
-+       atomic_t                nr_migrate_isolate;
- } ____cacheline_internodealigned_in_smp;
- 
- typedef enum {
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 2c29b1c..6cb1f9f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -219,6 +219,11 @@ EXPORT_SYMBOL(nr_online_nodes);
- 
- int page_group_by_mobility_disabled __read_mostly;
- 
-+/*
-+ * NOTE:
-+ * Don't use set_pageblock_migratetype(page, MIGRATE_ISOLATE) direclty.
-+ * Instead, use {un}set_pageblock_isolate.
-+ */
- void set_pageblock_migratetype(struct page *page, int migratetype)
- {
-        if (unlikely(page_group_by_mobility_disabled))
-@@ -1622,6 +1627,28 @@ bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-                                        zone_page_state(z, NR_FREE_PAGES));
- }
- 
-+unsigned long migrate_isolate_pages(struct zone *zone)
-+{
-+       unsigned long nr_pages = 0;
-+
-+       if (unlikely(atomic_read(&zone->nr_migrate_isolate))) {
-+               unsigned long flags;
-+               int order;
-+               spin_lock_irqsave(&zone->lock, flags);
-+               for (order = 0; order < MAX_ORDER; order++) {
-+                       struct free_area *area = &zone->free_area[order];
-+                       long count = 0;
-+                       struct list_head *curr;
-+
-+                       list_for_each(curr, &area->free_list[MIGRATE_ISOLATE])
-+                               count++;
-+                       nr_pages += (count << order);
-+               }
-+               spin_unlock_irqrestore(&zone->lock, flags);
-+       }
-+       return nr_pages;
-+}
-+
- bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
-                      int classzone_idx, int alloc_flags)
- {
-@@ -1630,6 +1657,14 @@ bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
-        if (z->percpu_drift_mark && free_pages < z->percpu_drift_mark)
-                free_pages = zone_page_state_snapshot(z, NR_FREE_PAGES);
- 
-+       /*
-+        * If the zone has MIGRATE_ISOLATE type free page,
-+        * we should consider it, too. Otherwise, kswapd can sleep forever.
-+        */
-+       free_pages -= migrate_isolate_pages(z);
-+       if (free_pages < 0)
-+               free_pages = 0;
-+
-        return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
-                                                                free_pages);
- }
-@@ -4408,6 +4443,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
-                lruvec_init(&zone->lruvec, zone);
-                zap_zone_vm_stats(zone);
-                zone->flags = 0;
-+               atomic_set(&zone->nr_migrate_isolate, 0);
-                if (!size)
-                        continue;
- 
-@@ -5555,6 +5591,45 @@ bool is_pageblock_removable_nolock(struct page *page)
-        return __count_immobile_pages(zone, page, 0);
- }
- 
-+static void set_pageblock_isolate(struct zone *zone, struct page *page)
-+{
-+       int old_migratetype;
-+       assert_spin_locked(&zone->lock);
-+
-+        if (unlikely(page_group_by_mobility_disabled)) {
-+               set_pageblock_flags_group(page, MIGRATE_UNMOVABLE,
-+                                       PB_migrate, PB_migrate_end);
-+               return;
-+       }
-+
-+       old_migratetype = get_pageblock_migratetype(page);
-+       set_pageblock_flags_group(page, MIGRATE_ISOLATE,
-+                                       PB_migrate, PB_migrate_end);
-+
-+       if (old_migratetype != MIGRATE_ISOLATE)
-+               atomic_inc(&zone->nr_migrate_isolate);
-+}
-+
-+static void unset_pageblock_isolate(struct zone *zone, struct page *page,
-+                               unsigned long migratetype)
-+{
-+       assert_spin_locked(&zone->lock);
-+
-+        if (unlikely(page_group_by_mobility_disabled)) {
-+               set_pageblock_flags_group(page, migratetype,
-+                                       PB_migrate, PB_migrate_end);
-+               return;
-+       }
-+
-+       BUG_ON(get_pageblock_migratetype(page) != MIGRATE_ISOLATE);
-+       BUG_ON(migratetype == MIGRATE_ISOLATE);
-+
-+       set_pageblock_flags_group(page, migratetype,
-+                                       PB_migrate, PB_migrate_end);
-+       atomic_dec(&zone->nr_migrate_isolate);
-+       BUG_ON(atomic_read(&zone->nr_migrate_isolate) < 0);
-+}
-+
- int set_migratetype_isolate(struct page *page)
- {
-        struct zone *zone;
-@@ -5601,7 +5676,7 @@ int set_migratetype_isolate(struct page *page)
- 
- out:
-        if (!ret) {
--               set_pageblock_migratetype(page, MIGRATE_ISOLATE);
-+               set_pageblock_isolate(zone, page);
-                move_freepages_block(zone, page, MIGRATE_ISOLATE);
-        }
- 
-@@ -5619,8 +5694,8 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
-        spin_lock_irqsave(&zone->lock, flags);
-        if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
-                goto out;
--       set_pageblock_migratetype(page, migratetype);
-        move_freepages_block(zone, page, migratetype);
-+       unset_pageblock_isolate(zone, page, migratetype);
- out:
-        spin_unlock_irqrestore(&zone->lock, flags);
- }
--- 
-1.7.9.5
-
-
--- 
-Kind regards,
-Minchan Kim
