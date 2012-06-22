@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762284Ab2FVPPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:15:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40690 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755545Ab2FVPPQ convert rfc822-to-8bit (ORCPT
+	id S932349Ab2FVPQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:16:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52463 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762239Ab2FVPQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:15:16 -0400
-Message-ID: <1340378107.18025.79.camel@twins>
-Subject: Re: [RFC][PATCH] sched: Fix race in task_group()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: mingo@kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Vagin <avagin@openvz.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Date: Fri, 22 Jun 2012 17:15:07 +0200
-In-Reply-To: <4FE48A09.7050305@canonical.com>
-References: <1340364965.18025.71.camel@twins>
-	 <4FE48A09.7050305@canonical.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 22 Jun 2012 11:16:55 -0400
+Date: Fri, 22 Jun 2012 08:16:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Joe Thornber <ejt@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [PATCH] dm thin: reinstate missing mempool_free in
+ cell_release_singleton
+Message-ID: <20120622151650.GA5785@kroah.com>
+References: <20120330195801.GA31806@kroah.com>
+ <20120330194856.784259750@linuxfoundation.org>
+ <20120622145947.GA4089@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120622145947.GA4089@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-22 at 17:06 +0200, Stefan Bader wrote:
-> > @@ -7595,6 +7597,11 @@ void sched_move_task(struct task_struct *tsk)
-> >       if (unlikely(running))
-> >               tsk->sched_class->put_prev_task(rq, tsk);
-> >  
-> > +     tg = container_of(task_subsys_state(p, cpu_cgroup_subsys_id),
-> s/p/tsk/
-> > +                       struct task_group, css);
-> > +     tg = autogroup_task_group(p, tg);
-> s/p/tsk/
-> > +     tsk->sched_task_group = tg;
-> > + 
+On Fri, Jun 22, 2012 at 10:59:48AM -0400, Mike Snitzer wrote:
+> Hi Greg,
+> 
+> 3.3-stable pulled in upstream commit
+> 6f94a4c45a6f744383f9f695dde019998db3df55 (dm thin: fix stacked bi_next usage)
+> 
+> But later in the 3.4 development window it was determined that that
+> commit introduced a significant leak.  The following upstream commit
+> fixes it (but unfortunately didn't cc: stable).
 
-Hmm, I'm very sure I at least compiled a kernel after this.. must've
-been the wrong machine.. /me dons a brown paper bag.
+3.3 is end-of-life, so there's not much I can do with the 3.3-stable
+tree anymore, sorry.  If there's any other tree I should apply this to
+that is active (i.e. 3.0 or 3.4), please let me know.
+
+sorry,
+
+greg k-h
