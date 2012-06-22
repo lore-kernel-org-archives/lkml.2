@@ -1,35 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548Ab2FVJMp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 05:12:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38413 "EHLO
+	id S1758776Ab2FVJSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 05:18:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47698 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932395Ab2FVJMo (ORCPT
+	by vger.kernel.org with ESMTP id S1754714Ab2FVJSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 05:12:44 -0400
-Date: Fri, 22 Jun 2012 10:12:38 +0100
+	Fri, 22 Jun 2012 05:18:17 -0400
+Date: Fri, 22 Jun 2012 10:18:15 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, Laxman Dewangan <ldewangan@nvidia.com>,
-        lee.jones@linaro.org, lrg@ti.com,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH V3 2/3] regulator: dt: regulator match by
- regulator-compatible
-Message-ID: <20120622091238.GF4037@opensource.wolfsonmicro.com>
-References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com>
- <1340194987-23654-3-git-send-email-ldewangan@nvidia.com>
- <201206201924.09618.arnd@arndb.de>
- <20120620194609.GA4037@opensource.wolfsonmicro.com>
- <20120622061314.GA15627@avionic-0098.adnet.avionic-design.de>
- <20120622084228.GD4037@opensource.wolfsonmicro.com>
- <20120622085909.GA24121@avionic-0098.mockup.avionic-design.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/2] regulator: tps65910: Remove unused min_uV and max_uV
+ from struct tps_info
+Message-ID: <20120622091814.GG4037@opensource.wolfsonmicro.com>
+References: <1340275546.2922.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GLa4d69Ev2s1FDzP"
+	protocol="application/pgp-signature"; boundary="iamKNtDj9HjMhSdE"
 Content-Disposition: inline
-In-Reply-To: <20120622085909.GA24121@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <1340275546.2922.1.camel@phoenix>
 X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,42 +28,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---GLa4d69Ev2s1FDzP
+--iamKNtDj9HjMhSdE
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Jun 22, 2012 at 10:59:09AM +0200, Thierry Reding wrote:
-> On Fri, Jun 22, 2012 at 09:42:29AM +0100, Mark Brown wrote:
+On Thu, Jun 21, 2012 at 06:45:46PM +0800, Axel Lin wrote:
+> The min_uV and max_uV fields of struct tps_info are not used in the code.
 
-> > We're talking about consumers here, not the regulator driver finding its
-> > own regulators.
+Applied both, thanks.
 
-> No we're not. of_regulator_match() isn't used by consumers but by
-> regulator drivers to parse the DT.
-
-This subthread has wandered off the topic of the original patch somewhat
-though.
-
---GLa4d69Ev2s1FDzP
+--iamKNtDj9HjMhSdE
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP5Db7AAoJEBus8iNuMP3dXK8P/2IlhIvWiL12zSg7LLMF8Rpb
-RvPy1Af5U0h2iG7aGVadiUIG+HzEwRqDCWvolrrtj+/ofPtxFyDGirtdUbH9S6MR
-T/TzlkFy4YOcaJgQ+49vKUd4RcQfHB1oYdDbEkxlXyK6CRlWqriKseJ6KpvZh2mc
-IAmkdMgjVRVAFVRCtkIoWtaAN6vWM5Il9A5oB02gnCp7iMuCOjmqTHPKgISsi/Ft
-xP+2FsTp0gIjcguU1kYOMwLMp+KmSOpUSoeYdJOJyOX++1Y0ngVxoQVPDcrzUjEx
-3dcGvbi9TIQF4l43iIQdBZGgq2eaNIAy6ZjHkNG3IpcTxLgz+b/mbuWRuNuWqw7D
-Ggz0Ks5yW46yeK9rfdaCyb2wgsFI3M492T7baicFok+RfZwlIToYHAhgk5ncWdfD
-cd7lP3mkAkbF0XyHjnHVUgkgYp4RjDPW07YpLMYCNKRLsd6LHCNnro/2KZMgdjpF
-h0udxw2GAaBcHjWUD5qe0dlj+wauS2gRH0R+0eAXpguMED6bKplKkmb2hm4vSde5
-PAFe7JmmdEbJs0LGYfOtSpNRDkTRyV/GiX0JZPHom/sztlTpem4CdDU1yRaFymTw
-MCf8+IR9IAdoXCNQ1rsXFd7t7I069KgPUkVflrjEcJQzbdHmNYJ7T6WIkOl1nmFu
-4DSCI47S49hlAJYzDOre
-=NXef
+iQIcBAEBAgAGBQJP5DgOAAoJEBus8iNuMP3degsQAJKxtCTrpS4iLzqS0B5YEAn4
+kuA25sh8bWh/DMYd2r9jdH3V86LdJfbe3/VgsIn/prKAY2EQIFTQoovAcV3sNWP0
+hD5hrZvQF/etV4osY2WATPAeA76rdsE63KKSIPgBx+rzqzNAtlbljvMZPP4zK6/G
+uiwKOSthqc/xEVhg8733ufb4rJ+8q/ut4C9yiDm2R9bORzcTMwny8RCsUpeC/Qvt
+tGgdQOJFFi5HQN1VHHzVFEuHulV6bcrdjTJQB2S9YihUtHFVBbwXvT9XD39bGNwN
+bWrSuPSkITSZwLpky/lpXW2IBuNC4zdXbB7QdrlW1BtEORW3WfbyfxeM0rI+mMvh
+CJVf8R0CSPAg+wRRpug671kwu7WzRcASs4ysZMEsJMBm5q9Y94lbkR+Zicu43vDm
+bMo1XkgTRnQp8qAq7wZMxCD2ZiAQybO2eO5cej5tOMRtFelticZJExpTOcLfZreK
+1ylkCo1pXjjS12l5I7qXc36MPKyf+HpQY4lLR/pXVWPclE88lAImZtiJ7slkCFOc
+0Qe4OH5VLc1q4CUaSTM4yKuz5OUwApzvQSB8IQxBXskfkmsTAaUt2qGhDzNPYEBW
+Vpq2VjG/l6HvfWZpOenGSp/7TX89BhPcbRxWqFlcsey9W8Cmy/uw8atengYTgJ3A
+c2TGtGwWkFqULE5Vz7up
+=+KeG
 -----END PGP SIGNATURE-----
 
---GLa4d69Ev2s1FDzP--
+--iamKNtDj9HjMhSdE--
