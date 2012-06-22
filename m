@@ -1,89 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762240Ab2FVPAU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:00:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23409 "EHLO mx1.redhat.com"
+	id S1762257Ab2FVPCd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:02:33 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52101 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757565Ab2FVPAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:00:17 -0400
-Date: Fri, 22 Jun 2012 10:59:48 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joe Thornber <ejt@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [PATCH] dm thin: reinstate missing mempool_free in
- cell_release_singleton
-Message-ID: <20120622145947.GA4089@redhat.com>
-References: <20120330195801.GA31806@kroah.com>
- <20120330194856.784259750@linuxfoundation.org>
+	id S1758377Ab2FVPCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 11:02:32 -0400
+Date: Fri, 22 Jun 2012 17:01:37 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rik van Riel <riel@surriel.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
+        andi@firstfloor.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm v2 00/11] mm: scalable and unified
+ arch_get_unmapped_area
+Message-ID: <20120622150137.GI27816@cmpxchg.org>
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120330194856.784259750@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1340315835-28571-1-git-send-email-riel@surriel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thu, Jun 21, 2012 at 05:57:04PM -0400, Rik van Riel wrote:
+> A long time ago, we decided to limit the number of VMAs per
+> process to 64k. As it turns out, there actually are programs
+> using tens of thousands of VMAs.
+> 
+> The linear search in arch_get_unmapped_area and
+> arch_get_unmapped_area_topdown can be a real issue for
+> those programs. 
+> 
+> This patch series aims to fix the scalability issue by
+> tracking the size of each free hole in the VMA rbtree,
+> propagating the free hole info up the tree. 
+> 
+> Another major goal is to put the bulk of the necessary
+> arch_get_unmapped_area(_topdown) functionality into one
+> set of functions, so we can eliminate the custom large
+> functions per architecture, sticking to a few much smaller
+> architecture specific functions instead.
+> 
+> In this version I have only gotten rid of the x86, ARM, SH
+> and MIPS arch-specific code, and am already showing a
+> fairly promising diffstat:
+> 
+>  arch/arm/include/asm/pgtable.h    |    6 
+>  arch/arm/mm/init.c                |    4 
+>  arch/arm/mm/mmap.c                |  217 ------------------
+>  arch/mips/include/asm/page.h      |    2 
+>  arch/mips/include/asm/pgtable.h   |    7 
+>  arch/mips/mm/mmap.c               |  177 --------------
+>  arch/sh/include/asm/pgtable.h     |    4 
+>  arch/sh/mm/mmap.c                 |  219 ------------------
+>  arch/x86/include/asm/elf.h        |    3 
+>  arch/x86/include/asm/pgtable_64.h |    4 
+>  arch/x86/kernel/sys_x86_64.c      |  200 ++--------------
+>  arch/x86/vdso/vma.c               |    2 
+>  include/linux/mm_types.h          |   19 +
+>  include/linux/rbtree.h            |   12 +
+>  include/linux/sched.h             |   13 +
+>  lib/rbtree.c                      |   46 +++
+>  mm/internal.h                     |    5 
+>  mm/mmap.c                         |  449 +++++++++++++++++++++++++++++---------
+>  18 files changed, 478 insertions(+), 911 deletions(-)
+> 
+> v2: address reviewers' comments
+>     optimize propagating info up the VMA tree (30% faster at frag test)
 
-3.3-stable pulled in upstream commit
-6f94a4c45a6f744383f9f695dde019998db3df55 (dm thin: fix stacked bi_next usage)
+Here is a comparison of running the anti-bench on all three kernels
+(an updated version of the test, I botched the initial one.  But it
+still yielded useful results, albeit from testing another aspect).
 
-But later in the 3.4 development window it was determined that that
-commit introduced a significant leak.  The following upstream commit
-fixes it (but unfortunately didn't cc: stable).
+First, repeated unmaps and remaps of one VMA in the midst of a few
+thousand other VMAs.  v2 did not improve over v1, unfortunately:
 
--------------------
+                        innerremap-next innerremap-agua-v1      innerremap-agua-v2
+Elapsed time            4.99 (  +0.00%)   12.66 (+128.05%)        12.55 (+126.21%)
+Elapsed time (stddev)   0.06 (  +0.00%)    0.73 ( +63.43%)         0.54 ( +45.51%)
+User time               0.41 (  +0.00%)    0.57 ( +10.66%)         0.47 (  +3.63%)
+User time (stddev)      0.02 (  +0.00%)    0.06 (  +3.34%)         0.07 (  +4.26%)
+System time             4.57 (  +0.00%)   12.09 (+134.86%)        12.08 (+134.68%)
+System time (stddev)    0.06 (  +0.00%)    0.69 ( +59.38%)         0.50 ( +41.05%)
 
-From: Mike Snitzer <snitzer@redhat.com>
+The vma_adjust() optimizations for the case where vmas were split or
+merged without changing adjacent holes seemed to improve for repeated
+mprotect-splitting instead of remapping of the VMA in v2:
 
-commit 03aaae7cdc71bc306888440b1f569d463e917b6d upstream.
+                        innermprot-next innermprot-agua-v1      innermprot-agua-v2
+Elapsed time            8.02 (  +0.00%)   18.84 (+119.93%)        13.10 ( +56.32%)
+Elapsed time (stddev)   0.77 (  +0.00%)    1.15 ( +21.25%)         0.79 (  +0.62%)
+User time               3.92 (  +0.00%)    3.95 (  +0.59%)         4.09 (  +3.50%)
+User time (stddev)      0.80 (  +0.00%)    0.69 (  -6.14%)         0.81 (  +0.34%)
+System time             4.10 (  +0.00%)   14.89 (+211.44%)         9.01 ( +96.18%)
+System time (stddev)    0.11 (  +0.00%)    0.90 ( +71.61%)         0.32 ( +19.00%)
 
-Fix a significant memory leak inadvertently introduced during
-simplification of cell_release_singleton() in commit
-6f94a4c45a6f744383f9f695dde019998db3df55 ("dm thin: fix stacked bi_next
-usage").
+The kernbench result did not measurably change from v1 to v2:
 
-A cell's hlist_del() must be accompanied by a mempool_free().
-Use __cell_release() to do this, like before.
+                        1x4kernbench-3.5.0-rc3-next-20120619    1x4kernbench-3.5.0-rc3-next-20120619-00007-g594e750     1x4kernbench-3.5.0-rc3-next-20120619-00011-g09982c8
+Elapsed time                               273.95 (  +0.00%)                                      274.11 (  +0.06%)                                       274.69 (  +0.27%)
+Elapsed time (stddev)                        0.23 (  +0.00%)                                        0.20 (  -2.81%)                                         0.30 (  +5.87%)
+User time                                  463.38 (  +0.00%)                                      463.13 (  -0.05%)                                       463.78 (  +0.09%)
+User time (stddev)                           0.16 (  +0.00%)                                        0.23 (  +6.66%)                                         0.32 ( +14.15%)
+System time                                 49.36 (  +0.00%)                                       50.16 (  +1.60%)                                        50.07 (  +1.42%)
+System time (stddev)                         0.24 (  +0.00%)                                        0.26 (  +1.43%)                                         0.27 (  +2.89%)
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 ---
- drivers/md/dm-thin.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index 213ae32..301db0f 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -279,8 +279,10 @@ static void __cell_release(struct cell *cell, struct bio_list *inmates)
- 
- 	hlist_del(&cell->list);
- 
--	bio_list_add(inmates, cell->holder);
--	bio_list_merge(inmates, &cell->bios);
-+	if (inmates) {
-+		bio_list_add(inmates, cell->holder);
-+		bio_list_merge(inmates, &cell->bios);
-+	}
- 
- 	mempool_free(cell, prison->cell_pool);
- }
-@@ -303,9 +305,10 @@ static void cell_release(struct cell *cell, struct bio_list *bios)
-  */
- static void __cell_release_singleton(struct cell *cell, struct bio *bio)
- {
--	hlist_del(&cell->list);
- 	BUG_ON(cell->holder != bio);
- 	BUG_ON(!bio_list_empty(&cell->bios));
-+
-+	__cell_release(cell, NULL);
- }
- 
- static void cell_release_singleton(struct cell *cell, struct bio *bio)
--- 
-1.7.4.4
+#include <sys/mman.h>
+
+int main(int ac, char **av)
+{
+	int orig_write;
+	unsigned int i;
+	int write = 0;
+	char *map;
+
+	for (i = 0; i < 4096; i++)
+		mmap(NULL, 2 << 12, (write ^= 1) ? PROT_WRITE : PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
+	map = mmap(NULL, 2 << 12, (orig_write = write ^= 1) ? PROT_WRITE : PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
+	sbrk(0);
+	for (i = 0; i < 8192; i++)
+		mmap(NULL, 2 << 12, (write ^= 1) ? PROT_WRITE : PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
+	sbrk(0);
+	for (i = 0; i < (1UL << 23); i++) {
+#if 1
+		mprotect(map, 1 << 12, PROT_NONE);
+		mprotect(map, 1 << 12, orig_write ? PROT_WRITE : PROT_READ);
+#else
+		munmap(map, 2 << 12);
+		map = mmap(NULL, 2 << 12, orig_write ? PROT_WRITE : PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
+#endif
+	}
+	return 0;
+}
