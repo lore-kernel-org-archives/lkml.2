@@ -1,99 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933145Ab2FVOkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:40:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60387 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933055Ab2FVOk3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:40:29 -0400
-Date: Fri, 22 Jun 2012 07:40:16 -0700
-From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-3f44392e7872bdc9470134f29cead2e06ed4d426@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        shuahkhan@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com, tglx@linutronix.de
-In-Reply-To: <1338424803.3569.5.camel@lorien2>
-References: <1338424803.3569.5.camel@lorien2>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] Revert "x86/early_printk:
-  Replace obsolete simple_strtoul() usage with kstrtoint()"
-Git-Commit-ID: 3f44392e7872bdc9470134f29cead2e06ed4d426
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 22 Jun 2012 07:40:21 -0700 (PDT)
+	id S933160Ab2FVOkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:40:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33489 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762242Ab2FVOa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:30:59 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 11/16] netvm: Propagate page->pfmemalloc from skb_alloc_page to skb
+Date: Fri, 22 Jun 2012 15:30:38 +0100
+Message-Id: <1340375443-22455-12-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340375443-22455-1-git-send-email-mgorman@suse.de>
+References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3f44392e7872bdc9470134f29cead2e06ed4d426
-Gitweb:     http://git.kernel.org/tip/3f44392e7872bdc9470134f29cead2e06ed4d426
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Fri, 22 Jun 2012 16:25:19 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 22 Jun 2012 16:25:19 +0200
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If page splitting is used, it is possible that pages will
+be allocated from the PFMEMALLOC reserve without propagating this
+information to the skb. This patch propagates page->pfmemalloc from
+pages allocated for fragments to the skb.
 
-Revert "x86/early_printk: Replace obsolete simple_strtoul() usage with kstrtoint()"
+It works by reintroducing and expanding the skb_alloc_page() API
+to take an skb. If the page was allocated from pfmemalloc reserves,
+it is automatically copied. If the driver allocates the page before
+the skb, it should call skb_propagate_pfmemalloc() after the skb is
+allocated to ensure the flag is copied properly.
 
-This reverts commit fbd24153c48b8425b09c161a020483cd77da870e.
+Failure to do so is not critical. The resulting driver may perform
+slower if it is used for swap-over-NBD or swap-over-NFS but it should
+not result in failure.
 
-This commit is subtly buggy: kstrto*int() can return an error but
-it's not checked in every path. simple_strtoul() on the other hand
-could not fail, so this patch subtly intruduces new failure modes.
-
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
-Link: http://lkml.kernel.org/r/1338424803.3569.5.camel@lorien2
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[davem@davemloft.net: API rename and consistency]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David S. Miller <davem@davemloft.net>
 ---
- arch/x86/kernel/early_printk.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
+ drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |    4 +-
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
+ drivers/net/usb/cdc-phonet.c                      |    2 +-
+ drivers/usb/gadget/f_phonet.c                     |    2 +-
+ include/linux/skbuff.h                            |   55 +++++++++++++++++++++
+ 8 files changed, 64 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index 5e47712..9b9f18b 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -119,7 +119,7 @@ static __init void early_serial_init(char *s)
- 	unsigned char c;
- 	unsigned divisor;
- 	unsigned baud = DEFAULT_BAUD;
--	ssize_t ret;
-+	char *e;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/sge.c b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+index 8596aca..d49933e 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+@@ -528,7 +528,7 @@ static unsigned int refill_fl(struct adapter *adap, struct sge_fl *q, int n,
+ #endif
  
- 	if (*s == ',')
- 		++s;
-@@ -127,14 +127,14 @@ static __init void early_serial_init(char *s)
- 	if (*s) {
- 		unsigned port;
- 		if (!strncmp(s, "0x", 2)) {
--			ret = kstrtoint(s, 16, &early_serial_base);
-+			early_serial_base = simple_strtoul(s, &e, 16);
- 		} else {
- 			static const int __initconst bases[] = { 0x3f8, 0x2f8 };
+ 	while (n--) {
+-		pg = alloc_page(gfp);
++		pg = __skb_alloc_page(gfp, NULL);
+ 		if (unlikely(!pg)) {
+ 			q->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+index f2d1ecd..8877fbf 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+@@ -653,7 +653,7 @@ static unsigned int refill_fl(struct adapter *adapter, struct sge_fl *fl,
  
- 			if (!strncmp(s, "ttyS", 4))
- 				s += 4;
--			ret = kstrtouint(s, 10, &port);
--			if (ret || port > 1)
-+			port = simple_strtoul(s, &e, 10);
-+			if (port > 1 || s == e)
- 				port = 0;
- 			early_serial_base = bases[port];
+ alloc_small_pages:
+ 	while (n--) {
+-		page = alloc_page(gfp | __GFP_NOWARN | __GFP_COLD);
++		page = __skb_alloc_page(gfp | __GFP_NOWARN, NULL);
+ 		if (unlikely(!page)) {
+ 			fl->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 01ced68..16e0892 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6233,7 +6233,7 @@ static bool igb_alloc_mapped_page(struct igb_ring *rx_ring,
+ 		return true;
+ 
+ 	if (!page) {
+-		page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++		page = __skb_alloc_page(GFP_ATOMIC, bi->skb);
+ 		bi->page = page;
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 21e083c..94f586b 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1146,8 +1146,8 @@ static bool ixgbe_alloc_mapped_page(struct ixgbe_ring *rx_ring,
+ 
+ 	/* alloc new page for storage */
+ 	if (likely(!page)) {
+-		page = alloc_pages(GFP_ATOMIC | __GFP_COLD | __GFP_COMP,
+-				   ixgbe_rx_pg_order(rx_ring));
++		page = __skb_alloc_pages(GFP_ATOMIC | __GFP_COLD | __GFP_COMP,
++				 	 bi->skb, ixgbe_rx_pg_order(rx_ring));
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_rx_page_failed++;
+ 			return false;
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index f69ec42..cd65fd8 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -369,7 +369,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 		if (!bi->page_dma &&
+ 		    (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED)) {
+ 			if (!bi->page) {
+-				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++				bi->page = __skb_alloc_page(GFP_ATOMIC, NULL);
+ 				if (!bi->page) {
+ 					adapter->alloc_rx_page_failed++;
+ 					goto no_buffers;
+@@ -403,6 +403,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 			 */
+ 			skb_reserve(skb, NET_IP_ALIGN);
+ 
++			skb_propagate_pfmemalloc(bi->page, skb);
+ 			bi->skb = skb;
  		}
-@@ -149,8 +149,8 @@ static __init void early_serial_init(char *s)
- 	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
+ 		if (!bi->dma) {
+diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
+index 187c144..6461004 100644
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -130,7 +130,7 @@ static int rx_submit(struct usbpn_dev *pnd, struct urb *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
  
- 	if (*s) {
--		ret = kstrtouint(s, 0, &baud);
--		if (ret || baud == 0)
-+		baud = simple_strtoul(s, &e, 0);
-+		if (baud == 0 || s == e)
- 			baud = DEFAULT_BAUD;
- 	}
+-	page = alloc_page(gfp_flags);
++	page = __skb_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
  
+diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
+index 965a629..8ee9268 100644
+--- a/drivers/usb/gadget/f_phonet.c
++++ b/drivers/usb/gadget/f_phonet.c
+@@ -301,7 +301,7 @@ pn_rx_submit(struct f_phonet *fp, struct usb_request *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __skb_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index b814bb8..7632c87 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1774,6 +1774,61 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
+ 	return __netdev_alloc_skb_ip_align(dev, length, GFP_ATOMIC);
+ }
+ 
++/*
++ *	__skb_alloc_page - allocate pages for ps-rx on a skb and preserve pfmemalloc data
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *	@order: size of the allocation
++ *
++ * 	Allocate a new page.
++ *
++ * 	%NULL is returned if there is no free memory.
++*/
++static inline struct page *__skb_alloc_pages(gfp_t gfp_mask,
++					      struct sk_buff *skb,
++					      unsigned int order)
++{
++	struct page *page;
++
++	gfp_mask |= __GFP_COLD;
++
++	if (!(gfp_mask & __GFP_NOMEMALLOC))
++		gfp_mask |= __GFP_MEMALLOC;
++
++	page = alloc_pages_node(NUMA_NO_NODE, gfp_mask, order);
++	if (skb && page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++
++	return page;
++}
++
++/**
++ *	__skb_alloc_page - allocate a page for ps-rx for a given skb and preserve pfmemalloc data
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *
++ * 	Allocate a new page.
++ *
++ * 	%NULL is returned if there is no free memory.
++ */
++static inline struct page *__skb_alloc_page(gfp_t gfp_mask,
++					     struct sk_buff *skb)
++{
++	return __skb_alloc_pages(gfp_mask, skb, 0);
++}
++
++/**
++ *	skb_propagate_pfmemalloc - Propagate pfmemalloc if skb is allocated after RX page
++ *	@page: The page that was allocated from skb_alloc_page
++ *	@skb: The skb that may need pfmemalloc set
++ */
++static inline void skb_propagate_pfmemalloc(struct page *page,
++					     struct sk_buff *skb)
++{
++	if (page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++}
++
+ /**
+  * skb_frag_page - retrieve the page refered to by a paged fragment
+  * @frag: the paged fragment
+-- 
+1.7.9.2
+
