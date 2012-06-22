@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762267Ab2FVQg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 12:36:59 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:13263
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755491Ab2FVQg6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 12:36:58 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432I4015Izz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M6125B-01-2VE-02
-X-M-MSG: 
-Date: Fri, 22 Jun 2012 18:36:43 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf, x86: Improve debug output in check_hw_exists()
-Message-ID: <20120622163643.GK24632@erda.amd.com>
-References: <1340217996-2254-1-git-send-email-robert.richter@amd.com>
- <1340217996-2254-5-git-send-email-robert.richter@amd.com>
- <1340380427.18025.84.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1340380427.18025.84.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S1762447Ab2FVQh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 12:37:27 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:60255 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755653Ab2FVQhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 12:37:25 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.5-rc4
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20120622163804.3781F402055@whiskey.americas.sgi.com>
+Date: Fri, 22 Jun 2012 11:38:04 -0500 (CDT)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.06.12 17:53:47, Peter Zijlstra wrote:
-> My gcc wants me to add the below to avoid used uninitialized warns:
-> 
-> ---
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -211,8 +211,9 @@ static bool check_hw_exists(void)
->  	 * that don't trap on the MSR access and always return 0s.
->  	 */
->  	val = 0xabcdUL;
-> -	ret = wrmsrl_safe(x86_pmu_event_addr(0), val);
-> -	ret |= rdmsrl_safe(x86_pmu_event_addr(0), &val_new);
-> +	reg = x86_pmu_event_addr(0);
-> +	ret = wrmsrl_safe(reg, val);
-> +	ret |= rdmsrl_safe(reg, &val_new);
+Hi Linus,
 
-Yes, this is correct. It fixes also correct reporting of reg if it
-fails here.
+   Please pull in these fixes for XFS for 3.5-rc4.  This includes:
 
-I wonder why my gcc this didn't report, its 4.4.5.
+   * Fix stale data exposure with unwritten extents
+   * Fix a warning in xfs_alloc_vextent with ODEBUG
+   * Fix overallocation and alignment of pages for xfs_bufs
+   * Fix a cursor leak
+   * Fix a log hang
+   * Fix a crash related to xfs_sync_worker
+   * Rename xfs log structure from struct log to struct xlog so we can
+     use crash dumps effectively
+
+   I thought I'd try a signed tag this time around.  My key ID is D5ABA64E:
+
+   gpg --keyserver pgp.mit.edu --recv-keys D5ABA64E
+
+   Hopefully I got it right.
 
 Thanks,
+Ben
 
--Robert
+The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
 
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs.git tags/for-linus-Jun-21-2012
+
+for you to fetch changes up to f7bdf03a99efc083608cd9c0c3e03abff311c79e:
+
+  xfs: rename log structure to xlog (2012-06-21 14:21:11 -0500)
+
+----------------------------------------------------------------
+Fixes for 3.5-rc
+
+----------------------------------------------------------------
+Alain Renaud (1):
+      xfs: xfs_vm_writepage clear iomap_valid when !buffer_uptodate (REV2)
+
+Ben Myers (1):
+      xfs: shutdown xfs_sync_worker before the log
+
+Brian Foster (1):
+      xfs: check for stale inode before acquiring iflock on push
+
+Dave Chinner (1):
+      xfs: fix allocbt cursor leak in xfs_alloc_ag_vextent_near
+
+Jan Kara (1):
+      xfs: Fix overallocation in xfs_buf_allocate_memory()
+
+Jeff Liu (1):
+      xfs: fix debug_object WARN at xfs_alloc_vextent()
+
+Mark Tinguely (1):
+      xfs: rename log structure to xlog
+
+ fs/xfs/xfs_alloc.c       |  3 +-
+ fs/xfs/xfs_aops.c        | 11 +++++--
+ fs/xfs/xfs_buf.c         | 16 ++--------
+ fs/xfs/xfs_inode_item.c  | 17 +++++------
+ fs/xfs/xfs_log.c         | 77 ++++++++++++++++++++++++++++--------------------
+ fs/xfs/xfs_log_cil.c     | 22 +++++++-------
+ fs/xfs/xfs_log_priv.h    | 46 +++++++++++++++++++----------
+ fs/xfs/xfs_log_recover.c | 38 ++++++++++++------------
+ fs/xfs/xfs_mount.h       |  4 +--
+ fs/xfs/xfs_sync.c        | 32 ++++++++++----------
+ fs/xfs/xfs_trace.h       | 18 +++++------
+ 11 files changed, 153 insertions(+), 131 deletions(-)
