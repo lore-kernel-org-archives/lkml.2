@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098Ab2FVPfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:35:40 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:41562 "EHLO
+	id S933061Ab2FVPfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:35:34 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:41521 "EHLO
 	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933017Ab2FVPfd (ORCPT
+	with ESMTP id S932969Ab2FVPfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:35:33 -0400
+	Fri, 22 Jun 2012 11:35:31 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,95 +15,44 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 02/17] rcu: Consolidate duplicate callback-list initialization
-Date: Fri, 22 Jun 2012 08:34:57 -0700
-Message-Id: <1340379312-6684-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 07/17] key: Remove extraneous parentheses from rcu_assign_keypointer()
+Date: Fri, 22 Jun 2012 08:35:02 -0700
+Message-Id: <1340379312-6684-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1340379312-6684-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120622153501.GA6626@linux.vnet.ibm.com>
  <1340379312-6684-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062215-7606-0000-0000-000001610749
+x-cbid: 12062215-7606-0000-0000-000001610723
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-There are a couple of open-coded initializations of the rcu_data
-structure's RCU callback list.  This commit therefore consolidates
-them into a new init_callback_list() function.
+This commit removes the extraneous parentheses from rcu_assign_keypointer()
+so that rcu_assign_pointer() can be wrapped in do-while.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutree.c |   23 ++++++++++++++---------
- 1 files changed, 14 insertions(+), 9 deletions(-)
+ include/linux/key.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 0f04480..d938671 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -936,6 +936,18 @@ check_for_new_grace_period(struct rcu_state *rsp, struct rcu_data *rdp)
- }
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 4cd22ed..6fafcf4 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -303,7 +303,7 @@ static inline bool key_is_instantiated(const struct key *key)
+ 				   rwsem_is_locked(&((struct key *)(KEY))->sem)))
  
- /*
-+ * Initialize the specified rcu_data structure's callback list to empty.
-+ */
-+static void init_callback_list(struct rcu_data *rdp)
-+{
-+	int i;
-+
-+	rdp->nxtlist = NULL;
-+	for (i = 0; i < RCU_NEXT_SIZE; i++)
-+		rdp->nxttail[i] = &rdp->nxtlist;
-+}
-+
-+/*
-  * Advance this CPU's callbacks, but only if the current grace period
-  * has ended.  This may be called only from the CPU to whom the rdp
-  * belongs.  In addition, the corresponding leaf rcu_node structure's
-@@ -1327,8 +1339,6 @@ static void
- rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
- 			  struct rcu_node *rnp, struct rcu_data *rdp)
- {
--	int i;
--
- 	/*
- 	 * Orphan the callbacks.  First adjust the counts.  This is safe
- 	 * because ->onofflock excludes _rcu_barrier()'s adoption of
-@@ -1368,9 +1378,7 @@ rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
- 	}
+ #define rcu_assign_keypointer(KEY, PAYLOAD)				\
+-	(rcu_assign_pointer((KEY)->payload.rcudata, PAYLOAD))
++	rcu_assign_pointer((KEY)->payload.rcudata, PAYLOAD)
  
- 	/* Finally, initialize the rcu_data structure's list to empty.  */
--	rdp->nxtlist = NULL;
--	for (i = 0; i < RCU_NEXT_SIZE; i++)
--		rdp->nxttail[i] = &rdp->nxtlist;
-+	init_callback_list(rdp);
- }
- 
- /*
-@@ -2404,16 +2412,13 @@ static void __init
- rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
- {
- 	unsigned long flags;
--	int i;
- 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
- 	struct rcu_node *rnp = rcu_get_root(rsp);
- 
- 	/* Set up local state, ensuring consistent view of global state. */
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
- 	rdp->grpmask = 1UL << (cpu - rdp->mynode->grplo);
--	rdp->nxtlist = NULL;
--	for (i = 0; i < RCU_NEXT_SIZE; i++)
--		rdp->nxttail[i] = &rdp->nxtlist;
-+	init_callback_list(rdp);
- 	rdp->qlen_lazy = 0;
- 	rdp->qlen = 0;
- 	rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
+ #ifdef CONFIG_SYSCTL
+ extern ctl_table key_sysctls[];
 -- 
 1.7.8
 
