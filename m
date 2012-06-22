@@ -1,123 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933107Ab2FVPkN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:40:13 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:51624 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762413Ab2FVPf1 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 22 Jun 2012 11:35:27 -0400
-Message-Id: <4FE4AD09020000780008B77F@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 22 Jun 2012 16:36:09 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <gregkh@linuxfoundation.org>
-Cc: <yuanhan.liu@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        <kay@vrfy.org>
-Subject: [PATCH] syslog: fill buffer with more than a single message
- for SYSLOG_ACTION_READ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S933153Ab2FVPk1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:40:27 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:53579 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751759Ab2FVPkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 11:40:23 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 14/17] rcu: Fix rcu_is_cpu_idle() #ifdef in TINY_RCU
+Date: Fri, 22 Jun 2012 08:35:09 -0700
+Message-Id: <1340379312-6684-14-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1340379312-6684-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120622153501.GA6626@linux.vnet.ibm.com>
+ <1340379312-6684-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062215-3534-0000-0000-000009AAC71A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent changes to the printk buffer management resulted in
-SYSLOG_ACTION_READ to only return a single message, whereas previously
-the buffer would get filled as much as possible. As, when too small to
-fit everything, filling it to the last byte would be pretty ugly with
-the new code, the patch arranges for as many messages as possible to
-get returned in a single invocation. User space tools in at least all
-SLES versions depend on the old behavior.
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-This at once addresses the issue attempted to get fixed with commit
-b56a39ac263e5b8cafedd551a49c2105e68b98c2 ("printk: return -EINVAL if
-the message len is bigger than the buf size"), and since that commit
-widened the possibility for losing a message altogether, the patch
-here assumes that this other commit would get reverted first
-(otherwise the patch here won't apply).
+The rcu_is_cpu_idle() function is used if CONFIG_DEBUG_LOCK_ALLOC,
+but TINY_RCU defines it only when CONFIG_PROVE_RCU.  This causes
+build failures when CONFIG_DEBUG_LOCK_ALLOC=y but CONFIG_PROVE_RCU=n.
+This commit therefore adjusts the #ifdefs for rcu_is_cpu_idle() so
+that it is defined when CONFIG_DEBUG_LOCK_ALLOC=y.
 
-Furthermore, this patch also addresses the problem dealt with in
-commit 4a77a5a06ec66ed05199b301e7c25f42f979afdc ("printk: use mutex
-lock to stop syslog_seq from going wild"), so I'd recommend reverting
-that one too (albeit there's no direct collision between the two).
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/printk.c |   51 +++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 37 insertions(+), 14 deletions(-)
+ kernel/rcutiny.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---- 3.5-rc3/kernel/printk.c
-+++ 3.5-rc3-syslog-read/kernel/printk.c
-@@ -860,26 +860,49 @@ static int syslog_print(char __user *buf
- {
- 	char *text;
- 	struct log *msg;
--	int len;
-+	int len = 0;
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 37a5444..547b1fe 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -172,7 +172,7 @@ void rcu_irq_enter(void)
+ 	local_irq_restore(flags);
+ }
  
- 	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
- 	if (!text)
- 		return -ENOMEM;
+-#ifdef CONFIG_PROVE_RCU
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
  
--	raw_spin_lock_irq(&logbuf_lock);
--	if (syslog_seq < log_first_seq) {
--		/* messages are gone, move to first one */
--		syslog_seq = log_first_seq;
--		syslog_idx = log_first_idx;
--	}
--	msg = log_from_idx(syslog_idx);
--	len = msg_print_text(msg, true, text, LOG_LINE_MAX);
--	syslog_idx = log_next(syslog_idx);
--	syslog_seq++;
--	raw_spin_unlock_irq(&logbuf_lock);
-+	while (size > 0) {
-+		size_t n;
-+
-+		raw_spin_lock_irq(&logbuf_lock);
-+		if (syslog_seq < log_first_seq) {
-+			/* messages are gone, move to first one */
-+			syslog_seq = log_first_seq;
-+			syslog_idx = log_first_idx;
-+		}
-+		if (syslog_seq == log_next_seq) {
-+			raw_spin_unlock_irq(&logbuf_lock);
-+			break;
-+		}
-+		msg = log_from_idx(syslog_idx);
-+		n = msg_print_text(msg, true, text, LOG_LINE_MAX);
-+		if (n <= size) {
-+			syslog_idx = log_next(syslog_idx);
-+			syslog_seq++;
-+		} else
-+			n = 0;
-+		raw_spin_unlock_irq(&logbuf_lock);
-+
-+		if (!n)
-+			break;
+ /*
+  * Test whether RCU thinks that the current CPU is idle.
+@@ -183,7 +183,7 @@ int rcu_is_cpu_idle(void)
+ }
+ EXPORT_SYMBOL(rcu_is_cpu_idle);
  
--	if (len > 0 && copy_to_user(buf, text, len))
--		len = -EFAULT;
-+		len += n;
-+		size -= n;
-+		buf += n;
-+		n = copy_to_user(buf - n, text, n);
-+
-+		if (n) {
-+			len -= n;
-+			if (!len)
-+				len = -EFAULT;
-+			break;
-+		}
-+	}
+-#endif /* #ifdef CONFIG_PROVE_RCU */
++#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
  
- 	kfree(text);
- 	return len;
-
-
+ /*
+  * Test whether the current CPU was interrupted from idle.  Nested
+-- 
+1.7.8
 
