@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab2FVKzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 06:55:43 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39241 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758106Ab2FVKzm convert rfc822-to-8bit (ORCPT
+	id S932545Ab2FVLD2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 07:03:28 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:4701 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757847Ab2FVLD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 06:55:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <87txy3sn20.fsf@lebrac.rtp-net.org>
-References: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
-	<1340334073-17804-12-git-send-email-chenhc@lemote.com>
-	<87txy3sn20.fsf@lebrac.rtp-net.org>
-Date: Fri, 22 Jun 2012 18:55:40 +0800
-Message-ID: <CAAhV-H5q5G87UMn0ixPUVZNcEV1b_qBHJKVKmCJsmzKdEB--4A@mail.gmail.com>
-Subject: Re: [PATCH V3 11/16] drm/radeon: Make radeon card usable for Loongson.
-From: Huacai Chen <chenhuacai@gmail.com>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Huacai Chen <chenhc@lemote.com>,
-        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 22 Jun 2012 07:03:27 -0400
+Message-ID: <1340363005.1773.86.camel@x61.thuisdomein>
+Subject: Re: finding unused header files
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ysato@users.sourceforge.jp
+Date: Fri, 22 Jun 2012 13:03:25 +0200
+In-Reply-To: <alpine.DEB.2.02.1206220641150.6493@oneiric>
+References: <alpine.DEB.2.02.1206220641150.6493@oneiric>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 22 Jun 2012 11:03:25.0648 (UTC) FILETIME=[A5761D00:01CD5066]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 5:39 PM, Arnaud Patard
-<arnaud.patard@rtp-net.org> wrote:
->
-> Hi,
->
-> Huacai Chen <chenhuacai@gmail.com> writes:
->
->> 1, Handle io prot correctly for MIPS.
->> 2, Define SAREA_MAX as the size of one page.
->> 3, Don't use swiotlb on Loongson machines (Loonson need swioitlb, but
->>    when use swiotlb, GPU reset occurs at resume from suspend).
->>
->> Signed-off-by: Huacai Chen <chenhc@lemote.com>
->> Signed-off-by: Hongliang Tao <taohl@lemote.com>
->> Signed-off-by: Hua Yan <yanh@lemote.com>
->> Reviewed-by: Michel Dänzer <michel@daenzer.net>
->> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
->> Reviewed-by: Lucas Stach <dev@lynxeye.de>
->> Reviewed-by: j.glisse <j.glisse@gmail.com>
->> Cc: dri-devel@lists.freedesktop.org
->> ---
->>  drivers/gpu/drm/drm_vm.c            |    2 +-
->>  drivers/gpu/drm/radeon/radeon_ttm.c |    6 +++---
->>  drivers/gpu/drm/ttm/ttm_bo_util.c   |    2 +-
->>  include/drm/drm_sarea.h             |    2 ++
->>  4 files changed, 7 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
->> index 961ee08..3f06166 100644
->> --- a/drivers/gpu/drm/drm_vm.c
->> +++ b/drivers/gpu/drm/drm_vm.c
->> @@ -62,7 +62,7 @@ static pgprot_t drm_io_prot(uint32_t map_type, struct vm_area_struct *vma)
->>               tmp = pgprot_writecombine(tmp);
->>       else
->>               tmp = pgprot_noncached(tmp);
->> -#elif defined(__sparc__) || defined(__arm__)
->> +#elif defined(__sparc__) || defined(__arm__) || defined(__mips__)
->>       tmp = pgprot_noncached(tmp);
->
-> btw, would it be a good idea to use uncached accelerated instead ?
-I have tried uncached accelerated, there will be random points in the
-monitor, it seems a hw issue...
+On Fri, 2012-06-22 at 06:46 -0400, Robert P. J. Day wrote:
+> inspired by that last post that located an unused header file under
+> arch/h8300, i ran my "find_unused_headers.sh" script on the same
+> sub-directory to see what would show up.
+> 
+>   the script is stupidly conservative and didn't identify that shm.h
+> header since *somewhere* in the entire kernel source tree, someone was
+> including a file called "shm.h" -- not even for the same architecture.
+> like i said, stupidly conservative.
+> 
+>   but it did find this:
+> 
+> $ ../s/find_unused_headers.sh arch/h8300
+> ===== target_time.h =====
+> ./arch/h8300/include/asm/target_time.h
+> $
+> 
+> and i see nothing anywhere in the entire tree that includes a
+> target_time.h header under any circumstances.
 
->
-> Arnaud
+See my patch "h8300: delete
+target_time.h" (https://lkml.org/lkml/2012/6/8/518 ). I don't remember
+getting a reply to that message.
+
+>   i should probably do another run of these scripts some day, just to
+> see what turns up.
+
+The script I use currently shows almost 200 (potentially) unused
+headers. It's not very sophisticated and errs on the safe side (ie, it
+must show absolutely no sign of files including the header). I'm not
+sure whether a sophisticated approach is actually feasible.
+
+In the last weeks I send patches to remove a few dozen of those 200
+headers.
+
+
+Paul Bolle
+
