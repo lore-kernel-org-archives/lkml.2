@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab2FVDFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 23:05:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61380 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2FVDFh (ORCPT
+	id S1757539Ab2FVDGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 23:06:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51103 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757417Ab2FVDGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 23:05:37 -0400
+	Thu, 21 Jun 2012 23:06:11 -0400
 From: Huacai Chen <chenhuacai@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
         Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
         Hua Yan <yanh@lemote.com>
-Subject: [PATCH V3 13/16] MIPS: Loongson 3: Add Loongson-3 SMP support.
-Date: Fri, 22 Jun 2012 11:01:10 +0800
-Message-Id: <1340334073-17804-14-git-send-email-chenhc@lemote.com>
+Subject: [PATCH V3 14/16] MIPS: Loongson 3: Add CPU hotplug support.
+Date: Fri, 22 Jun 2012 11:01:11 +0800
+Message-Id: <1340334073-17804-15-git-send-email-chenhc@lemote.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
 References: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
@@ -23,422 +23,335 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IPI registers of Loongson-3 include IPI_SET, IPI_CLEAR, IPI_STATUS,
-IPI_EN and IPI_MAILBOX_BUF. Each bit of IPI_STATUS indicate a type of
-IPI and IPI_EN indicate whether the IPI is enabled. The sender write 1
-to IPI_SET bits generate IPIs in IPI_STATUS, and receiver write 1 to
-bits of IPI_CLEAR to clear IPIs. IPI_MAILBOX_BUF are used to deliver
-more information about IPIs.
-
-Why we change code in arch/mips/loongson/common/setup.c?
-
-If without this change, when SMP configured, system cannot boot since
-it hang at printk() in cgroup_init_early(). The root cause is:
-
-console_trylock()
-  \-->down_trylock(&console_sem)
-    \-->raw_spin_unlock_irqrestore(&sem->lock, flags)
-      \-->_raw_spin_unlock_irqrestore()(SMP/UP have different versions)
-        \-->__raw_spin_unlock_irqrestore()  (following is the SMP case)
-          \-->do_raw_spin_unlock()
-            \-->arch_spin_unlock()
-              \-->nudge_writes()
-                \-->mb()
-                  \-->wbflush()
-                    \-->__wbflush()
-
-In previous code __wbflush() is initialized in plat_mem_setup(), but
-cgroup_init_early() is called before plat_mem_setup(). Therefore, In
-this patch we make changes to avoid boot failure.
+Tips of Loongson's CPU hotplug:
+1, To fully shutdown a core in Loongson 3, the target core should go to
+   CKSEG1 and flush all L2 cache entries at first. Then, another core
+   (usually Core 0) can safely disable the clock of the target core. So
+   play_dead() call loongson3_play_dead() via CKSEG1 (both uncached and
+   unmmaped).
+2, The default clocksource of Loongson is MIPS. Since clock source is a
+   global device, timekeeping need the CP0' Count registers of each core
+   be synchronous. Thus, when a core is up, we use a SMP_ASK_C0COUNT IPI
+   to ask Core-0's Count.
 
 Signed-off-by: Huacai Chen <chenhc@lemote.com>
 Signed-off-by: Hongliang Tao <taohl@lemote.com>
 Signed-off-by: Hua Yan <yanh@lemote.com>
+Reviewed-by: Yong Zhang <yong.zhang@windriver.com>
 ---
- arch/mips/loongson/common/init.c       |    5 +
- arch/mips/loongson/common/setup.c      |    8 +-
- arch/mips/loongson/loongson-3/Makefile |    2 +
- arch/mips/loongson/loongson-3/smp.c    |  278 ++++++++++++++++++++++++++++++++
- arch/mips/loongson/loongson-3/smp.h    |   24 +++
- 5 files changed, 312 insertions(+), 5 deletions(-)
- create mode 100644 arch/mips/loongson/loongson-3/smp.c
- create mode 100644 arch/mips/loongson/loongson-3/smp.h
+ arch/mips/Kconfig                              |    1 +
+ arch/mips/include/asm/mach-loongson/loongson.h |    6 +-
+ arch/mips/include/asm/smp.h                    |    1 +
+ arch/mips/loongson/loongson-3/irq.c            |   10 ++
+ arch/mips/loongson/loongson-3/smp.c            |  177 +++++++++++++++++++++++-
+ 5 files changed, 189 insertions(+), 6 deletions(-)
 
-diff --git a/arch/mips/loongson/common/init.c b/arch/mips/loongson/common/init.c
-index 1c29b19..30d20ad 100644
---- a/arch/mips/loongson/common/init.c
-+++ b/arch/mips/loongson/common/init.c
-@@ -12,6 +12,8 @@
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index da2b1e5..72a0bf1 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -256,6 +256,7 @@ config LASAT
+ config MACH_LOONGSON
+ 	bool "Loongson family of machines"
+ 	select SYS_SUPPORTS_ZBOOT
++	select SYS_SUPPORTS_HOTPLUG_CPU
+ 	help
+ 	  This enables the support of Loongson family of machines.
  
- #include <loongson.h>
+diff --git a/arch/mips/include/asm/mach-loongson/loongson.h b/arch/mips/include/asm/mach-loongson/loongson.h
+index fe7d9a6..7121d31 100644
+--- a/arch/mips/include/asm/mach-loongson/loongson.h
++++ b/arch/mips/include/asm/mach-loongson/loongson.h
+@@ -246,6 +246,9 @@ static inline void do_perfcnt_IRQ(void)
+ #define LOONGSON_PXARB_CFG		LOONGSON_REG(LOONGSON_REGBASE + 0x68)
+ #define LOONGSON_PXARB_STATUS		LOONGSON_REG(LOONGSON_REGBASE + 0x6c)
  
-+extern struct plat_smp_ops loongson3_smp_ops;
++/* Chip Config */
++#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
 +
- /* Loongson CPU address windows config space base address */
- unsigned long __maybe_unused _loongson_addrwincfg_base;
+ /* pcimap */
  
-@@ -33,6 +35,9 @@ void __init prom_init(void)
- 
- 	/*init the uart base address */
- 	prom_init_uart_base();
-+#if defined(CONFIG_SMP)
-+	register_smp_ops(&loongson3_smp_ops);
-+#endif
- }
- 
- void __init prom_free_prom_memory(void)
-diff --git a/arch/mips/loongson/common/setup.c b/arch/mips/loongson/common/setup.c
-index 27d826b..464cc5a 100644
---- a/arch/mips/loongson/common/setup.c
-+++ b/arch/mips/loongson/common/setup.c
-@@ -18,9 +18,6 @@
- #include <linux/screen_info.h>
+ #define LOONGSON_PCIMAP_PCIMAP_LO0	0x0000003f
+@@ -262,9 +265,6 @@ static inline void do_perfcnt_IRQ(void)
+ #include <linux/cpufreq.h>
+ extern void loongson2_cpu_wait(void);
+ extern struct cpufreq_frequency_table loongson2_clockmod_table[];
+-
+-/* Chip Config */
+-#define LOONGSON_CHIPCFG0		LOONGSON_REG(LOONGSON_REGBASE + 0x80)
  #endif
  
--void (*__wbflush)(void);
--EXPORT_SYMBOL(__wbflush);
--
- static void wbflush_loongson(void)
+ /*
+diff --git a/arch/mips/include/asm/smp.h b/arch/mips/include/asm/smp.h
+index d4fb4d8..a6edbbf 100644
+--- a/arch/mips/include/asm/smp.h
++++ b/arch/mips/include/asm/smp.h
+@@ -40,6 +40,7 @@ extern int __cpu_logical_map[NR_CPUS];
+ #define SMP_CALL_FUNCTION	0x2
+ /* Octeon - Tell another core to flush its icache */
+ #define SMP_ICACHE_FLUSH	0x4
++#define SMP_ASK_C0COUNT		0x8
+ 
+ extern volatile cpumask_t cpu_callin_map;
+ 
+diff --git a/arch/mips/loongson/loongson-3/irq.c b/arch/mips/loongson/loongson-3/irq.c
+index 27aef31..83f84e6 100644
+--- a/arch/mips/loongson/loongson-3/irq.c
++++ b/arch/mips/loongson/loongson-3/irq.c
+@@ -85,3 +85,13 @@ void __init mach_init_irq(void)
+ 
+ 	set_c0_status(STATUSF_IP2 | STATUSF_IP6);
+ }
++
++#ifdef CONFIG_HOTPLUG_CPU
++
++void fixup_irqs(void)
++{
++	irq_cpu_offline();
++	clear_c0_status(ST0_IM);
++}
++
++#endif
+diff --git a/arch/mips/loongson/loongson-3/smp.c b/arch/mips/loongson/loongson-3/smp.c
+index 8923117..b1f61cd 100644
+--- a/arch/mips/loongson/loongson-3/smp.c
++++ b/arch/mips/loongson/loongson-3/smp.c
+@@ -30,6 +30,9 @@
+ 
+ #include "smp.h"
+ 
++DEFINE_PER_CPU(int, cpu_state);
++DEFINE_PER_CPU(uint32_t, core0_c0count);
++
+ /* write a 64bit value to ipi register */
+ void loongson3_ipi_write64(uint64_t action, void * addr)
  {
- 	asm(".set\tpush\n\t"
-@@ -32,10 +29,11 @@ static void wbflush_loongson(void)
- 	    ".set mips0\n\t");
+@@ -167,8 +170,8 @@ static void loongson3_send_ipi_mask(const struct cpumask *mask, unsigned int act
+ 
+ void loongson3_ipi_interrupt(struct pt_regs *regs)
+ {
+-	int cpu = smp_processor_id();
+-	unsigned int action;
++	int i, cpu = smp_processor_id();
++	unsigned int action, c0count;
+ 
+ 	/* Load the ipi register to figure out what we're supposed to do */
+ 	action = loongson3_ipi_read32(ipi_status_regs0[cpu]);
+@@ -183,14 +186,24 @@ void loongson3_ipi_interrupt(struct pt_regs *regs)
+ 	if (action & SMP_CALL_FUNCTION) {
+ 		smp_call_function_interrupt();
+ 	}
++
++	if (action & SMP_ASK_C0COUNT) {
++		BUG_ON(cpu != 0);
++		c0count = read_c0_count();
++		for (i=1; i<NR_CPUS; i++)
++			per_cpu(core0_c0count, i) = c0count;
++	}
  }
  
-+void (*__wbflush)(void) = wbflush_loongson;
-+EXPORT_SYMBOL(__wbflush);
-+
- void __init plat_mem_setup(void)
++#define MAX_LOOPS 1250
+ /*
+  * SMP init and finish on secondary CPUs
+  */
+ void __cpuinit loongson3_init_secondary(void)
  {
--	__wbflush = wbflush_loongson;
--
- #ifdef CONFIG_VT
- #if defined(CONFIG_VGA_CONSOLE)
- 	conswitchp = &vga_con;
-diff --git a/arch/mips/loongson/loongson-3/Makefile b/arch/mips/loongson/loongson-3/Makefile
-index b9968cd..70152b2 100644
---- a/arch/mips/loongson/loongson-3/Makefile
-+++ b/arch/mips/loongson/loongson-3/Makefile
-@@ -2,3 +2,5 @@
- # Makefile for Loongson-3 family machines
- #
- obj-y			+= irq.o
+ 	int i;
++	uint32_t initcount;
++	unsigned int cpu = smp_processor_id();
+ 	unsigned int imask = STATUSF_IP7 | STATUSF_IP6 | STATUSF_IP5 |
+ 			     STATUSF_IP4 | STATUSF_IP3 | STATUSF_IP2;
+ 
+@@ -200,11 +213,24 @@ void __cpuinit loongson3_init_secondary(void)
+ 	for (i = 0; i < NR_CPUS; i++) {
+ 		loongson3_ipi_write32(0xffffffff, ipi_en0_regs[i]);
+ 	}
 +
-+obj-$(CONFIG_SMP)	+= smp.o
-diff --git a/arch/mips/loongson/loongson-3/smp.c b/arch/mips/loongson/loongson-3/smp.c
-new file mode 100644
-index 0000000..8923117
---- /dev/null
-+++ b/arch/mips/loongson/loongson-3/smp.c
-@@ -0,0 +1,278 @@
-+/*
-+ * Copyright (C) 2010, 2011, 2012, Lemote, Inc.
-+ * Author: Chen Huacai, chenhc@lemote.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-+ */
++	per_cpu(cpu_state, cpu) = CPU_ONLINE;
 +
-+#include <linux/init.h>
-+#include <linux/cpu.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/cpufreq.h>
-+#include <asm/processor.h>
-+#include <asm/time.h>
-+#include <asm/clock.h>
-+#include <asm/tlbflush.h>
-+#include <loongson.h>
++	i = 0;
++	__get_cpu_var(core0_c0count) = 0;
++	loongson3_send_ipi_single(0, SMP_ASK_C0COUNT);
++	while (!__get_cpu_var(core0_c0count))
++		i++;
 +
-+#include "smp.h"
++	if (i > MAX_LOOPS)
++		i = MAX_LOOPS;
++	initcount = __get_cpu_var(core0_c0count) + i;
++	write_c0_count(initcount);
++	write_c0_compare(initcount + mips_hpt_frequency/HZ);
+ }
+ 
+ void __cpuinit loongson3_smp_finish(void)
+ {
+-	write_c0_compare(read_c0_count() + mips_hpt_frequency/HZ);
+ 	local_irq_enable();
+ 	loongson3_ipi_write64(0, (void *)(ipi_mailbox_buf[smp_processor_id()]+0x0));
+ 	printk(KERN_INFO "CPU#%d finished, CP0_ST=%x\n",
+@@ -233,6 +259,8 @@ void __init loongson3_smp_setup(void)
+ 
+ void __init loongson3_prepare_cpus(unsigned int max_cpus)
+ {
++	init_cpu_present(cpu_possible_mask);
++	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
+ }
+ 
+ /*
+@@ -266,6 +294,145 @@ void __init loongson3_cpus_done(void)
+ {
+ }
+ 
++#ifdef CONFIG_HOTPLUG_CPU
 +
-+/* write a 64bit value to ipi register */
-+void loongson3_ipi_write64(uint64_t action, void * addr)
++extern void fixup_irqs(void);
++
++static int loongson3_cpu_disable(void)
 +{
-+	*((uint64_t *)addr) = action;
-+};
++	extern void (*flush_cache_all)(void);
++	unsigned int cpu = smp_processor_id();
 +
-+/* read a 64bit value from ipi register */
-+uint64_t loongson3_ipi_read64(void * addr)
-+{
-+	return *((uint64_t *)addr);
-+};
++	if (cpu == 0)
++		return -EBUSY;
 +
-+/* write a 32bit value to ipi register */
-+void loongson3_ipi_write32(uint32_t action, void * addr)
-+{
-+	*((uint32_t *)addr) = action;
-+};
-+
-+/* read a 32bit value from ipi register */
-+uint32_t loongson3_ipi_read32(void * addr)
-+{
-+	return *((uint32_t *)addr);
-+};
-+
-+static void *ipi_set0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + SET0),
-+};
-+
-+static void *ipi_clear0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + CLEAR0),
-+};
-+
-+static void *ipi_status_regs0[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + STATUS0),
-+};
-+
-+static void *ipi_en0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + EN0),
-+};
-+
-+static volatile void *ipi_mailbox_buf[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core3_offset + BUF),
-+};
-+
-+/*
-+ * Simple enough, just poke the appropriate ipi register
-+ */
-+static void loongson3_send_ipi_single(int cpu, unsigned int action)
-+{
-+	loongson3_ipi_write32((u32)action, ipi_set0_regs[cpu]);
-+}
-+
-+static void loongson3_send_ipi_mask(const struct cpumask *mask, unsigned int action)
-+{
-+	unsigned int i;
-+
-+	for_each_cpu(i, mask)
-+		loongson3_send_ipi_single(i, action);
-+}
-+
-+void loongson3_ipi_interrupt(struct pt_regs *regs)
-+{
-+	int cpu = smp_processor_id();
-+	unsigned int action;
-+
-+	/* Load the ipi register to figure out what we're supposed to do */
-+	action = loongson3_ipi_read32(ipi_status_regs0[cpu]);
-+
-+	/* Clear the ipi register to clear the interrupt */
-+	loongson3_ipi_write32((u32)action, ipi_clear0_regs[cpu]);
-+
-+	if (action & SMP_RESCHEDULE_YOURSELF) {
-+		scheduler_ipi();
-+	}
-+
-+	if (action & SMP_CALL_FUNCTION) {
-+		smp_call_function_interrupt();
-+	}
-+}
-+
-+/*
-+ * SMP init and finish on secondary CPUs
-+ */
-+void __cpuinit loongson3_init_secondary(void)
-+{
-+	int i;
-+	unsigned int imask = STATUSF_IP7 | STATUSF_IP6 | STATUSF_IP5 |
-+			     STATUSF_IP4 | STATUSF_IP3 | STATUSF_IP2;
-+
-+	/* Set interrupt mask, but don't enable */
-+	change_c0_status(ST0_IM, imask);
-+
-+	for (i = 0; i < NR_CPUS; i++) {
-+		loongson3_ipi_write32(0xffffffff, ipi_en0_regs[i]);
-+	}
-+}
-+
-+void __cpuinit loongson3_smp_finish(void)
-+{
-+	write_c0_compare(read_c0_count() + mips_hpt_frequency/HZ);
++	set_cpu_online(cpu, false);
++	cpu_clear(cpu, cpu_callin_map);
++	local_irq_disable();
++	fixup_irqs();
 +	local_irq_enable();
-+	loongson3_ipi_write64(0, (void *)(ipi_mailbox_buf[smp_processor_id()]+0x0));
-+	printk(KERN_INFO "CPU#%d finished, CP0_ST=%x\n",
-+			smp_processor_id(), read_c0_status());
++	flush_cache_all();
++	local_flush_tlb_all();
++
++	return 0;
 +}
 +
-+void __init loongson3_smp_setup(void)
++
++static void loongson3_cpu_die(unsigned int cpu)
 +{
-+	int i, num;
++	while (per_cpu(cpu_state, cpu) != CPU_DEAD)
++		cpu_relax();
 +
-+	init_cpu_possible(cpu_none_mask);
-+	set_cpu_possible(0, true);
++	mb();
++}
 +
-+	__cpu_number_map[0] = 0;
-+	__cpu_logical_map[0] = 0;
++/* To shutdown a core in Loongson 3, the target core should go to CKSEG1 and
++ * flush all L2 entries at first. Then, another core (usually Core 0) can
++ * safely disable the clock of the target core. loongson3_play_dead() is
++ * called via CKSEG1 (uncached and unmmaped) */
++void loongson3_play_dead(int *state_addr)
++{
++	__asm__ __volatile__(
++		"      .set push                         \n"
++		"      .set noreorder                    \n"
++		"      li $t0, 0x80000000                \n" /* KSEG0 */
++		"      li $t1, 512                       \n" /* num of L2 entries */
++		"flush_loop:                             \n" /* flush L2 */
++		"      cache 0, 0($t0)                   \n" /* ICache */
++		"      cache 0, 1($t0)                   \n"
++		"      cache 0, 2($t0)                   \n"
++		"      cache 0, 3($t0)                   \n"
++		"      cache 1, 0($t0)                   \n" /* DCache */
++		"      cache 1, 1($t0)                   \n"
++		"      cache 1, 2($t0)                   \n"
++		"      cache 1, 3($t0)                   \n"
++		"      addiu $t0, $t0, 0x20              \n"
++		"      bnez  $t1, flush_loop             \n"
++		"      addiu $t1, $t1, -1                \n"
++		"      li    $t0, 0x7                    \n" /* *state_addr = CPU_DEAD; */
++		"      sw    $t0, 0($a0)                 \n"
++		"      sync                              \n"
++		"      cache 21, 0($a0)                  \n" /* flush entry of *state_addr */
++		"      .set pop                          \n");
 +
-+	/* For unified kernel, NR_CPUS is the maximum possible value,
-+	 * nr_cpus_loongson is the really present value */
-+	for (i = 1, num = 0; i < nr_cpus_loongson; i++) {
-+		set_cpu_possible(i, true);
-+		__cpu_number_map[i] = ++num;
-+		__cpu_logical_map[num] = i;
++	__asm__ __volatile__(
++		"      .set push                         \n"
++		"      .set noreorder                    \n"
++		"      .set mips64                       \n"
++		"      mfc0  $t2, $15, 1                 \n"
++		"      andi  $t2, 0x3ff                  \n"
++		"      .set mips3                        \n"
++		"      dli   $t0, 0x900000003ff01000     \n"
++		"      andi  $t3, $t2, 0x3               \n"
++		"      sll   $t3, 8                      \n"  /* get cpu id */
++		"      or    $t0, $t0, $t3               \n"
++		"      andi  $t1, $t2, 0xc               \n"
++		"      dsll  $t1, 42                     \n"  /* get node id */
++		"      or    $t0, $t0, $t1               \n"
++		"wait_for_init:                          \n"
++		"      li    $a0, 0x100                  \n"
++		"idle_loop:                              \n"
++		"      bnez  $a0, idle_loop              \n"
++		"      addiu $a0, -1                     \n"
++		"      lw    $v0, 0x20($t0)              \n"  /* get PC via mailbox */
++		"      nop                               \n"
++		"      beqz  $v0, wait_for_init          \n"
++		"      nop                               \n"
++		"      ld    $sp, 0x28($t0)              \n"  /* get SP via mailbox */
++		"      nop                               \n"
++		"      ld    $gp, 0x30($t0)              \n"  /* get GP via mailbox */
++		"      nop                               \n"
++		"      ld    $a1, 0x38($t0)              \n"
++		"      nop                               \n"
++		"      jr  $v0                           \n"  /* jump to initial PC */
++		"      nop                               \n"
++		"      .set pop                          \n");
++}
++
++void play_dead(void)
++{
++	int *state_addr;
++	unsigned int cpu = smp_processor_id();
++	void (*play_dead_at_ckseg1)(int *);
++
++	idle_task_exit();
++	play_dead_at_ckseg1 = (void *)CKSEG1ADDR((unsigned long)loongson3_play_dead);
++	state_addr = &per_cpu(cpu_state, cpu);
++	mb();
++	play_dead_at_ckseg1(state_addr);
++}
++
++#define CPU_POST_DEAD_FROZEN	(CPU_POST_DEAD | CPU_TASKS_FROZEN)
++static int __cpuinit loongson3_cpu_callback(struct notifier_block *nfb,
++	unsigned long action, void *hcpu)
++{
++	unsigned int cpu = (unsigned long)hcpu;
++
++	switch (action) {
++	case CPU_POST_DEAD:
++	case CPU_POST_DEAD_FROZEN:
++		printk(KERN_INFO "Disable clock for CPU#%d\n", cpu);
++		LOONGSON_CHIPCFG0 &= ~(1 << (12 + cpu));
++		break;
++	case CPU_UP_PREPARE:
++	case CPU_UP_PREPARE_FROZEN:
++		printk(KERN_INFO "Enable clock for CPU#%d\n", cpu);
++		LOONGSON_CHIPCFG0 |= 1 << (12 + cpu);
++		break;
 +	}
-+	printk(KERN_INFO "Detected %i available secondary CPU(s)\n", num);
++
++	return NOTIFY_OK;
 +}
 +
-+void __init loongson3_prepare_cpus(unsigned int max_cpus)
++static int __cpuinit register_loongson3_notifier(void)
 +{
++	hotcpu_notifier(loongson3_cpu_callback, 0);
++	return 0;
 +}
++early_initcall(register_loongson3_notifier);
 +
-+/*
-+ * Setup the PC, SP, and GP of a secondary processor and start it runing!
-+ */
-+void __cpuinit loongson3_boot_secondary(int cpu, struct task_struct *idle)
-+{
-+	volatile unsigned long startargs[4];
++#endif
 +
-+	printk(KERN_INFO "Booting CPU#%d...\n", cpu);
-+
-+	/* startargs[] are initial PC, SP and GP for secondary CPU */
-+	startargs[0] = (unsigned long)&smp_bootstrap;
-+	startargs[1] = (unsigned long)__KSTK_TOS(idle);
-+	startargs[2] = (unsigned long)task_thread_info(idle);
-+	startargs[3] = 0;
-+
-+	printk(KERN_DEBUG "CPU#%d, func_pc=%lx, sp=%lx, gp=%lx\n",
-+			cpu, startargs[0], startargs[1], startargs[2]);
-+
-+	loongson3_ipi_write64(startargs[3], (void *)(ipi_mailbox_buf[cpu]+0x18));
-+	loongson3_ipi_write64(startargs[2], (void *)(ipi_mailbox_buf[cpu]+0x10));
-+	loongson3_ipi_write64(startargs[1], (void *)(ipi_mailbox_buf[cpu]+0x8));
-+	loongson3_ipi_write64(startargs[0], (void *)(ipi_mailbox_buf[cpu]+0x0));
-+}
-+
-+/*
-+ * Final cleanup after all secondaries booted
-+ */
-+void __init loongson3_cpus_done(void)
-+{
-+}
-+
-+struct plat_smp_ops loongson3_smp_ops = {
-+	.send_ipi_single = loongson3_send_ipi_single,
-+	.send_ipi_mask = loongson3_send_ipi_mask,
-+	.init_secondary = loongson3_init_secondary,
-+	.smp_finish = loongson3_smp_finish,
-+	.cpus_done = loongson3_cpus_done,
-+	.boot_secondary = loongson3_boot_secondary,
-+	.smp_setup = loongson3_smp_setup,
-+	.prepare_cpus = loongson3_prepare_cpus,
-+};
-diff --git a/arch/mips/loongson/loongson-3/smp.h b/arch/mips/loongson/loongson-3/smp.h
-new file mode 100644
-index 0000000..dc9ce69
---- /dev/null
-+++ b/arch/mips/loongson/loongson-3/smp.h
-@@ -0,0 +1,24 @@
-+/* for Loongson-3A smp support */
-+
-+/* 4 groups(nodes) in maximum in numa case */
-+#define  smp_core_group0_base    0x900000003ff01000
-+#define  smp_core_group1_base    0x900010003ff01000
-+#define  smp_core_group2_base    0x900020003ff01000
-+#define  smp_core_group3_base    0x900030003ff01000
-+
-+/* 4 cores in each group(node) */
-+#define  smp_core0_offset  0x000
-+#define  smp_core1_offset  0x100
-+#define  smp_core2_offset  0x200
-+#define  smp_core3_offset  0x300
-+
-+/* ipi registers offsets */
-+#define  STATUS0  0x00
-+#define  EN0      0x04
-+#define  SET0     0x08
-+#define  CLEAR0   0x0c
-+#define  STATUS1  0x10
-+#define  MASK1    0x14
-+#define  SET1     0x18
-+#define  CLEAR1   0x1c
-+#define  BUF      0x20
+ struct plat_smp_ops loongson3_smp_ops = {
+ 	.send_ipi_single = loongson3_send_ipi_single,
+ 	.send_ipi_mask = loongson3_send_ipi_mask,
+@@ -275,4 +442,8 @@ struct plat_smp_ops loongson3_smp_ops = {
+ 	.boot_secondary = loongson3_boot_secondary,
+ 	.smp_setup = loongson3_smp_setup,
+ 	.prepare_cpus = loongson3_prepare_cpus,
++#ifdef CONFIG_HOTPLUG_CPU
++	.cpu_disable = loongson3_cpu_disable,
++	.cpu_die = loongson3_cpu_die,
++#endif
+ };
 -- 
 1.7.7.3
 
