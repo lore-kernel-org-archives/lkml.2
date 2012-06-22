@@ -1,133 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762879Ab2FVXkx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:40:53 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:62695 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616Ab2FVXkw (ORCPT
+	id S1762902Ab2FVXlI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:41:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21761 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756463Ab2FVXlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:40:52 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-2.tower-132.messagelabs.com!1340408450!12239790!1
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 31/31] staging: comedi: ni_daq_700: refactor the pcmcia attach/detach
-Date: Fri, 22 Jun 2012 16:40:40 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 22 Jun 2012 19:41:06 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=FlAZEPfbBygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=eGxSazS_8z_6xVDDWDoA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340408464.27036.282.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
+ console
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
+Date: Fri, 22 Jun 2012 19:41:04 -0400
+In-Reply-To: <20120622145402.8047a669.akpm@linux-foundation.org>
+References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
+	 <20120622145402.8047a669.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206221640.40813.hartleys@visionengravers.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the pcmcia_disable_device() call where needed in the
-pcmcia attach/detach and delete the dio700_release() function.
+On Fri, 2012-06-22 at 14:54 -0700, Andrew Morton wrote:
+> On Thu, 21 Jun 2012 19:52:03 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > But with the new printk() changes, text without a newline gets buffered
+> > and does not print out to the console at the location of the printk.
+> 
+> uh, how about we fix that?  The old behaviour was good, the new
+> behaviour is noxious.
+> 
+> Please idenfity these "new printk() changes".  Was the new noxiousness
+> an unavoidable effect of them?
 
-Move the logic of dio700_config() directly into the attach
-function and properly return an error code when the config
-fails.
+See commit 7ff9554bb578 ("printk: convert byte-buffer to variable-length
+record buffer") and related commits.
 
-Only set the pcmcia_cur_dev, used by the comedi_driver, if
-the pcmcia attach is successful. Also, make sure to NULL it
-in the detach.
+But that said, there may be a way that I can make it still always flush
+and not add a new API. We can flush on partial writes, and keep track of
+the current task (as it already does). If a new task comes in, we can
+then force a newline before printing the content of the old task (if
+there wasn't a newline printed before).
 
-Remove all the kernel messages in the pcmcia support code. They
-are just added noise.
+This is basically what it does now, except that it buffers the data. If
+a new task were to do a print in between the two partial writes, it
+flushes what was buffered and adds a newline before printing the new
+text.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/ni_daq_700.c | 39 +++++++----------------------
- 1 file changed, 9 insertions(+), 30 deletions(-)
+I think I may be able to implement the same behavior, except that it
+wont buffer. It would just keep track of the state of the last write.
 
-diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
-index c57300f..83016b41 100644
---- a/drivers/staging/comedi/drivers/ni_daq_700.c
-+++ b/drivers/staging/comedi/drivers/ni_daq_700.c
-@@ -164,13 +164,6 @@ static struct comedi_driver driver_dio700 = {
- 	.offset		= sizeof(struct dio700_board),
- };
- 
--static void dio700_release(struct pcmcia_device *link)
--{
--	dev_dbg(&link->dev, "%s\n", __func__);
--
--	pcmcia_disable_device(link);
--}
--
- static int dio700_pcmcia_config_loop(struct pcmcia_device *p_dev,
- 				void *priv_data)
- {
-@@ -180,50 +173,36 @@ static int dio700_pcmcia_config_loop(struct pcmcia_device *p_dev,
- 	return pcmcia_request_io(p_dev);
- }
- 
--static void dio700_config(struct pcmcia_device *link)
-+static int dio700_cs_attach(struct pcmcia_device *link)
- {
- 	int ret;
- 
--	dev_dbg(&link->dev, "%s\n", __func__);
--
- 	link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_AUDIO |
- 		CONF_AUTO_SET_IO;
- 
- 	ret = pcmcia_loop_config(link, dio700_pcmcia_config_loop, NULL);
--	if (ret) {
--		dev_warn(&link->dev, "no configuration found\n");
-+	if (ret)
- 		goto failed;
--	}
- 
- 	if (!link->irq)
- 		goto failed;
- 
- 	ret = pcmcia_enable_device(link);
--	if (ret != 0)
-+	if (ret)
- 		goto failed;
- 
--	return;
--
--failed:
--	dev_dbg(&link->dev, "%s failed\n", __func__);
--	dio700_release(link);
--
--}
--
--static int dio700_cs_attach(struct pcmcia_device *link)
--{
--	dev_dbg(&link->dev, "%s\n", __func__);
--
- 	pcmcia_cur_dev = link;
--
--	dio700_config(link);
--
- 	return 0;
-+
-+failed:
-+	pcmcia_disable_device(link);
-+	return ret;
- }
- 
- static void dio700_cs_detach(struct pcmcia_device *link)
- {
--	dio700_release(link);
-+	pcmcia_disable_device(link);
-+	pcmcia_cur_dev = NULL;
- }
- 
- static const struct pcmcia_device_id dio700_cs_ids[] = {
--- 
-1.7.11
+-- Steve
+
+
 
