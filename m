@@ -1,181 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762613Ab2FVPcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:32:06 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40791 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762562Ab2FVPcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:32:03 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 12/12] tty: move the handling of the tty release logic
-To: greg@kroah.com, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Date: Fri, 22 Jun 2012 16:47:58 +0100
-Message-ID: <20120622154645.1405.7749.stgit@localhost.localdomain>
-In-Reply-To: <20120622153600.1405.15575.stgit@localhost.localdomain>
-References: <20120622153600.1405.15575.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1762538Ab2FVPc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:32:29 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:33564 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762327Ab2FVPc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 11:32:26 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 18/22] rcu: Move RCU grace-period initialization into a kthread
+Date: Fri, 22 Jun 2012 08:17:17 -0700
+Message-Id: <1340378241-6458-18-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120622151655.GA6249@linux.vnet.ibm.com>
+ <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062215-5930-0000-0000-0000092521EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we don't have tty->termios tied to drivers->tty we can untangle
-the logic here. In addition we can push the removal logic out of the
-destructor path.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-At that point we can think about sorting out tty_port and console and all
-the other ugly hangovers.
+As the first step towards allowing grace-period initialization to be
+preemptible, this commit moves the RCU grace-period initialization
+into its own kthread.  This is needed to keep large-system scheduling
+latency at reasonable levels.
 
-An important other property we now have is that the tty mutex does now cover
-the drivers array. An assumption other bits of the code made and which is
-necessary for the tty lock patch.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reported-by: Mike Galbraith <mgalbraith@suse.de>
+Reported-by: Dimitri Sivanich <sivanich@sgi.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
+ kernel/rcutree.c |  191 ++++++++++++++++++++++++++++++++++++------------------
+ kernel/rcutree.h |    3 +
+ 2 files changed, 130 insertions(+), 64 deletions(-)
 
- drivers/tty/pty.c               |    8 --------
- drivers/tty/tty_io.c            |   16 +++++-----------
- drivers/tty/vt/vt.c             |    1 -
- drivers/usb/serial/usb-serial.c |    3 +--
- include/linux/tty.h             |    1 -
- include/linux/tty_driver.h      |   11 +++--------
- 6 files changed, 9 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 56dcef4..f1ba793 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -497,12 +497,6 @@ static struct tty_struct *pts_unix98_lookup(struct tty_driver *driver,
- 	return tty;
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 1b0e441..faf4860 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1030,6 +1030,103 @@ rcu_start_gp_per_cpu(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
  }
  
--static void pty_unix98_shutdown(struct tty_struct *tty)
--{
--	tty_driver_remove_tty(tty->driver, tty);
--	/* We have our own method as we don't use the tty index */
--}
--
- /* We have no need to install and remove our tty objects as devpts does all
-    the work for us */
- 
-@@ -563,7 +557,6 @@ static const struct tty_operations ptm_unix98_ops = {
- 	.unthrottle = pty_unthrottle,
- 	.set_termios = pty_set_termios,
- 	.ioctl = pty_unix98_ioctl,
--	.shutdown = pty_unix98_shutdown,
- 	.resize = pty_resize
- };
- 
-@@ -579,7 +572,6 @@ static const struct tty_operations pty_unix98_ops = {
- 	.chars_in_buffer = pty_chars_in_buffer,
- 	.unthrottle = pty_unthrottle,
- 	.set_termios = pty_set_termios,
--	.shutdown = pty_unix98_shutdown
- };
- 
- /**
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 14db2a8..e062c1b 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1443,12 +1443,6 @@ void tty_free_termios(struct tty_struct *tty)
- }
- EXPORT_SYMBOL(tty_free_termios);
- 
--void tty_shutdown(struct tty_struct *tty)
--{
--	tty_driver_remove_tty(tty->driver, tty);
--	tty_free_termios(tty);
--}
--EXPORT_SYMBOL(tty_shutdown);
- 
- /**
-  *	release_one_tty		-	release tty structure memory
-@@ -1492,11 +1486,6 @@ static void queue_release_one_tty(struct kref *kref)
- {
- 	struct tty_struct *tty = container_of(kref, struct tty_struct, kref);
- 
--	if (tty->ops->shutdown)
--		tty->ops->shutdown(tty);
--	else
--		tty_shutdown(tty);
--
- 	/* The hangup queue is now free so we can reuse it rather than
- 	   waste a chunk of memory for each port */
- 	INIT_WORK(&tty->hangup_work, release_one_tty);
-@@ -1536,6 +1525,11 @@ static void release_tty(struct tty_struct *tty, int idx)
- 	/* This should always be true but check for the moment */
- 	WARN_ON(tty->index != idx);
- 
-+	if (tty->ops->shutdown)
-+		tty->ops->shutdown(tty);
-+	tty_free_termios(tty);
-+	tty_driver_remove_tty(tty->driver, tty);
+ /*
++ * Body of kthread that handles grace periods.
++ */
++static int rcu_gp_kthread(void *arg)
++{
++	unsigned long flags;
++	struct rcu_data *rdp;
++	struct rcu_node *rnp;
++	struct rcu_state *rsp = arg;
 +
- 	if (tty->link)
- 		tty_kref_put(tty->link);
- 	tty_kref_put(tty);
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 02c7cdd..2c9af9c 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -2839,7 +2839,6 @@ static void con_shutdown(struct tty_struct *tty)
- 	console_lock();
- 	vc->port.tty = NULL;
- 	console_unlock();
--	tty_shutdown(tty);
++	for (;;) {
++
++		/* Handle grace-period start. */
++		rnp = rcu_get_root(rsp);
++		for (;;) {
++			wait_event_interruptible(rsp->gp_wq, rsp->gp_flags);
++			if (rsp->gp_flags)
++				break;
++			flush_signals(current);
++		}
++		raw_spin_lock_irqsave(&rnp->lock, flags);
++		rsp->gp_flags = 0;
++		rdp = this_cpu_ptr(rsp->rda);
++
++		if (rcu_gp_in_progress(rsp)) {
++			/*
++			 * A grace period is already in progress, so
++			 * don't start another one.
++			 */
++			raw_spin_unlock_irqrestore(&rnp->lock, flags);
++			continue;
++		}
++
++		if (rsp->fqs_active) {
++			/*
++			 * We need a grace period, but force_quiescent_state()
++			 * is running.  Tell it to start one on our behalf.
++			 */
++			rsp->fqs_need_gp = 1;
++			raw_spin_unlock_irqrestore(&rnp->lock, flags);
++			continue;
++		}
++
++		/* Advance to a new grace period and initialize state. */
++		rsp->gpnum++;
++		trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
++		WARN_ON_ONCE(rsp->fqs_state == RCU_GP_INIT);
++		rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
++		rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
++		record_gp_stall_check_time(rsp);
++		raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
++
++		/* Exclude any concurrent CPU-hotplug operations. */
++		raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
++
++		/*
++		 * Set the quiescent-state-needed bits in all the rcu_node
++		 * structures for all currently online CPUs in breadth-first
++		 * order, starting from the root rcu_node structure.
++		 * This operation relies on the layout of the hierarchy
++		 * within the rsp->node[] array.  Note that other CPUs will
++		 * access only the leaves of the hierarchy, which still
++		 * indicate that no grace period is in progress, at least
++		 * until the corresponding leaf node has been initialized.
++		 * In addition, we have excluded CPU-hotplug operations.
++		 *
++		 * Note that the grace period cannot complete until
++		 * we finish the initialization process, as there will
++		 * be at least one qsmask bit set in the root node until
++		 * that time, namely the one corresponding to this CPU,
++		 * due to the fact that we have irqs disabled.
++		 */
++		rcu_for_each_node_breadth_first(rsp, rnp) {
++			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++			rcu_preempt_check_blocked_tasks(rnp);
++			rnp->qsmask = rnp->qsmaskinit;
++			rnp->gpnum = rsp->gpnum;
++			rnp->completed = rsp->completed;
++			if (rnp == rdp->mynode)
++				rcu_start_gp_per_cpu(rsp, rnp, rdp);
++			rcu_preempt_boost_start_gp(rnp);
++			trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
++						    rnp->level, rnp->grplo,
++						    rnp->grphi, rnp->qsmask);
++			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++		}
++
++		rnp = rcu_get_root(rsp);
++		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++		/* force_quiescent_state() now OK. */
++		rsp->fqs_state = RCU_SIGNAL_INIT;
++		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
++	}
++	return 0;
++}
++
++/*
+  * Start a new RCU grace period if warranted, re-initializing the hierarchy
+  * in preparation for detecting the next grace period.  The caller must hold
+  * the root node's ->lock, which is released before return.  Hard irqs must
+@@ -1046,77 +1143,20 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+-	if (!rcu_scheduler_fully_active ||
++	if (!rsp->gp_kthread ||
+ 	    !cpu_needs_another_gp(rsp, rdp)) {
+ 		/*
+-		 * Either the scheduler hasn't yet spawned the first
+-		 * non-idle task or this CPU does not need another
+-		 * grace period.  Either way, don't start a new grace
+-		 * period.
+-		 */
+-		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-		return;
+-	}
+-
+-	if (rsp->fqs_active) {
+-		/*
+-		 * This CPU needs a grace period, but force_quiescent_state()
+-		 * is running.  Tell it to start one on this CPU's behalf.
++		 * Either we have not yet spawned the grace-period
++		 * task or this CPU does not need another grace period.
++		 * Either way, don't start a new grace period.
+ 		 */
+-		rsp->fqs_need_gp = 1;
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		return;
+ 	}
+ 
+-	/* Advance to a new grace period and initialize state. */
+-	rsp->gpnum++;
+-	trace_rcu_grace_period(rsp->name, rsp->gpnum, "start");
+-	WARN_ON_ONCE(rsp->fqs_state == RCU_GP_INIT);
+-	rsp->fqs_state = RCU_GP_INIT; /* Hold off force_quiescent_state. */
+-	rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
+-	record_gp_stall_check_time(rsp);
+-	raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
+-
+-	/* Exclude any concurrent CPU-hotplug operations. */
+-	raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
+-
+-	/*
+-	 * Set the quiescent-state-needed bits in all the rcu_node
+-	 * structures for all currently online CPUs in breadth-first
+-	 * order, starting from the root rcu_node structure.  This
+-	 * operation relies on the layout of the hierarchy within the
+-	 * rsp->node[] array.  Note that other CPUs will access only
+-	 * the leaves of the hierarchy, which still indicate that no
+-	 * grace period is in progress, at least until the corresponding
+-	 * leaf node has been initialized.  In addition, we have excluded
+-	 * CPU-hotplug operations.
+-	 *
+-	 * Note that the grace period cannot complete until we finish
+-	 * the initialization process, as there will be at least one
+-	 * qsmask bit set in the root node until that time, namely the
+-	 * one corresponding to this CPU, due to the fact that we have
+-	 * irqs disabled.
+-	 */
+-	rcu_for_each_node_breadth_first(rsp, rnp) {
+-		raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
+-		rcu_preempt_check_blocked_tasks(rnp);
+-		rnp->qsmask = rnp->qsmaskinit;
+-		rnp->gpnum = rsp->gpnum;
+-		rnp->completed = rsp->completed;
+-		if (rnp == rdp->mynode)
+-			rcu_start_gp_per_cpu(rsp, rnp, rdp);
+-		rcu_preempt_boost_start_gp(rnp);
+-		trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
+-					    rnp->level, rnp->grplo,
+-					    rnp->grphi, rnp->qsmask);
+-		raw_spin_unlock(&rnp->lock);	/* irqs remain disabled. */
+-	}
+-
+-	rnp = rcu_get_root(rsp);
+-	raw_spin_lock(&rnp->lock);		/* irqs already disabled. */
+-	rsp->fqs_state = RCU_SIGNAL_INIT; /* force_quiescent_state now OK. */
+-	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
+-	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
++	rsp->gp_flags = 1;
++	raw_spin_unlock_irqrestore(&rnp->lock, flags);
++	wake_up(&rsp->gp_wq);
  }
  
- static int default_italic_color    = 2; // green (ASCII)
-diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-index 003b191..3bca1ea 100644
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -305,8 +305,7 @@ static void serial_close(struct tty_struct *tty, struct file *filp)
-  * Do the resource freeing and refcount dropping for the port.
-  * Avoid freeing the console.
-  *
-- * Called asynchronously after the last tty kref is dropped,
-- * and the tty layer has already done the tty_shutdown(tty);
-+ * Called asynchronously after the last tty kref is dropped.
-  */
- static void serial_cleanup(struct tty_struct *tty)
- {
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 86fce83..4132d9e 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -423,7 +423,6 @@ extern void tty_unthrottle(struct tty_struct *tty);
- extern int tty_do_resize(struct tty_struct *tty, struct winsize *ws);
- extern void tty_driver_remove_tty(struct tty_driver *driver,
- 				  struct tty_struct *tty);
--extern void tty_shutdown(struct tty_struct *tty);
- extern void tty_free_termios(struct tty_struct *tty);
- extern int is_current_pgrp_orphaned(void);
- extern struct pid *tty_get_pgrp(struct tty_struct *tty);
-diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
-index 6e6dbb7..2bcf2a9 100644
---- a/include/linux/tty_driver.h
-+++ b/include/linux/tty_driver.h
-@@ -45,14 +45,9 @@
-  *
-  * void (*shutdown)(struct tty_struct * tty);
-  *
-- * 	This routine is called synchronously when a particular tty device
-- *	is closed for the last time freeing up the resources.
-- *	Note that tty_shutdown() is not called if ops->shutdown is defined.
-- *	This means one is responsible to take care of calling ops->remove (e.g.
-- *	via tty_driver_remove_tty) and releasing tty->termios.
-- *	Note that this hook may be called from *all* the contexts where one
-- *	uses tty refcounting (e.g. tty_port_tty_get).
-- *
-+ * 	This routine is called under the tty lock when a particular tty device
-+ *	is closed for the last time. It executes before the tty resources
-+ *	are freed so may execute while another function holds a tty kref.
-  *
-  * void (*cleanup)(struct tty_struct * tty);
-  *
+ /*
+@@ -2615,6 +2655,28 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+ }
+ 
+ /*
++ * Spawn the kthread that handles this RCU flavor's grace periods.
++ */
++static int __init rcu_spawn_gp_kthread(void)
++{
++	unsigned long flags;
++	struct rcu_node *rnp;
++	struct rcu_state *rsp;
++	struct task_struct *t;
++
++	for_each_rcu_flavor(rsp) {
++		t = kthread_run(rcu_gp_kthread, rsp, rsp->name);
++		BUG_ON(IS_ERR(t));
++		rnp = rcu_get_root(rsp);
++		raw_spin_lock_irqsave(&rnp->lock, flags);
++		rsp->gp_kthread = t;
++		raw_spin_unlock_irqrestore(&rnp->lock, flags);
++	}
++	return 0;
++}
++early_initcall(rcu_spawn_gp_kthread);
++
++/*
+  * This function is invoked towards the end of the scheduler's initialization
+  * process.  Before this is called, the idle task might contain
+  * RCU read-side critical sections (during which time, this idle
+@@ -2715,6 +2777,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+ 	}
+ 
+ 	rsp->rda = rda;
++	init_waitqueue_head(&rsp->gp_wq);
+ 	rnp = rsp->level[rcu_num_lvls - 1];
+ 	for_each_possible_cpu(i) {
+ 		while (i > rnp->grphi)
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 138fb33..c7c31c2 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -370,6 +370,9 @@ struct rcu_state {
+ 	u8	boost;				/* Subject to priority boost. */
+ 	unsigned long gpnum;			/* Current gp number. */
+ 	unsigned long completed;		/* # of last completed gp. */
++	struct task_struct *gp_kthread;		/* Task for grace periods. */
++	wait_queue_head_t gp_wq;		/* Where GP task waits. */
++	int gp_flags;				/* Commands for GP task. */
+ 
+ 	/* End of fields guarded by root rcu_node's lock. */
+ 
+-- 
+1.7.8
 
