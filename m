@@ -1,149 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761892Ab2FVJeO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 05:34:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54011 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758748Ab2FVJeL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 05:34:11 -0400
+	id S1761902Ab2FVJej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 05:34:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44277 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758748Ab2FVJeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 05:34:37 -0400
+Date: Fri, 22 Jun 2012 10:34:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: Re: [PATCH 01/17] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20120622093432.GA8271@suse.de>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+ <1340192652-31658-2-git-send-email-mgorman@suse.de>
+ <4FE39290.8020609@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1340342704.1381.9.camel@tellur>
-References: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
-	<1340334073-17804-12-git-send-email-chenhc@lemote.com>
-	<1340342704.1381.9.camel@tellur>
-Date: Fri, 22 Jun 2012 17:34:09 +0800
-Message-ID: <CAAhV-H6qH9p9aO-Nd9=WUUG0dPRqLsTuC9QtnHP2m8GB-Oux_w@mail.gmail.com>
-Subject: Re: [PATCH V3 11/16] drm/radeon: Make radeon card usable for Loongson.
-From: Huacai Chen <chenhuacai@gmail.com>
-To: Lucas Stach <dev@lynxeye.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Hua Yan <yanh@lemote.com>,
-        Fuxin Zhang <zhangfx@lemote.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Hongliang Tao <taohl@lemote.com>,
-        Huacai Chen <chenhc@lemote.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4FE39290.8020609@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 1:25 PM, Lucas Stach <dev@lynxeye.de> wrote:
-> Hello Huacai,
->
-> Am Freitag, den 22.06.2012, 11:01 +0800 schrieb Huacai Chen:
->> 1, Handle io prot correctly for MIPS.
->> 2, Define SAREA_MAX as the size of one page.
->> 3, Don't use swiotlb on Loongson machines (Loonson need swioitlb, but
->>    when use swiotlb, GPU reset occurs at resume from suspend).
->>
-> I still think this is wrong. You say Loongson needs SWIOTLB, but when
-> it's actually used you ignore it in the radeon driver code.
->
-> I looked up why you are using SWIOTLB and I don't agree with you that it
-> is needed. SWIOTLB just gives you bounce pages for DMA memory above
-> DMA32 and therefore papers over your >4GB DMA platform bug in some
-> cases, while hurting performance.
->
-> Please fix your DMA platform code so that region DMA is an alias for
-> region DMA32. It should allow you to drop all those ugly workarounds.
->
-Hi, Lucas, I disable SWIOTLB and still make sure DMA <4G, radeon and
-sound card seems work fine, but OHCI still can't work. From git log
-arch/mips/cavium-octeon/dma-octeon.c, it seems Cavium also need
-SWIOTLB to avoid OHCI issue.
+On Thu, Jun 21, 2012 at 05:30:56PM -0400, Rik van Riel wrote:
+> On 06/20/2012 07:43 AM, Mel Gorman wrote:
+> 
+> >+/* Clears ac->pfmemalloc if no slabs have pfmalloc set */
+> >+static void check_ac_pfmemalloc(struct kmem_cache *cachep,
+> >+						struct array_cache *ac)
+> >+{
+> 
+> >+	pfmemalloc_active = false;
+> >+out:
+> >+	spin_unlock_irqrestore(&l3->list_lock, flags);
+> >+}
+> 
+> The comment and the function do not seem to match.
+> 
 
->> Signed-off-by: Huacai Chen <chenhc@lemote.com>
->> Signed-off-by: Hongliang Tao <taohl@lemote.com>
->> Signed-off-by: Hua Yan <yanh@lemote.com>
->> Reviewed-by: Michel Dänzer <michel@daenzer.net>
->> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
->> Reviewed-by: Lucas Stach <dev@lynxeye.de>
->> Reviewed-by: j.glisse <j.glisse@gmail.com>
->
-> You should probably only stick this tag on your patches after the people
-> you are naming explicitly gave their r-b for a specific version of a
-> patch.
->
-> Thanks,
-> Lucas
->> Cc: dri-devel@lists.freedesktop.org
->> ---
->>  drivers/gpu/drm/drm_vm.c            |    2 +-
->>  drivers/gpu/drm/radeon/radeon_ttm.c |    6 +++---
->>  drivers/gpu/drm/ttm/ttm_bo_util.c   |    2 +-
->>  include/drm/drm_sarea.h             |    2 ++
->>  4 files changed, 7 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
->> index 961ee08..3f06166 100644
->> --- a/drivers/gpu/drm/drm_vm.c
->> +++ b/drivers/gpu/drm/drm_vm.c
->> @@ -62,7 +62,7 @@ static pgprot_t drm_io_prot(uint32_t map_type, struct vm_area_struct *vma)
->>               tmp = pgprot_writecombine(tmp);
->>       else
->>               tmp = pgprot_noncached(tmp);
->> -#elif defined(__sparc__) || defined(__arm__)
->> +#elif defined(__sparc__) || defined(__arm__) || defined(__mips__)
->>       tmp = pgprot_noncached(tmp);
->>  #endif
->>       return tmp;
->> diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
->> index c94a225..f49bdd1 100644
->> --- a/drivers/gpu/drm/radeon/radeon_ttm.c
->> +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
->> @@ -630,7 +630,7 @@ static int radeon_ttm_tt_populate(struct ttm_tt *ttm)
->>       }
->>  #endif
->>
->> -#ifdef CONFIG_SWIOTLB
->> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
->>       if (swiotlb_nr_tbl()) {
->>               return ttm_dma_populate(&gtt->ttm, rdev->dev);
->>       }
->> @@ -676,7 +676,7 @@ static void radeon_ttm_tt_unpopulate(struct ttm_tt *ttm)
->>       }
->>  #endif
->>
->> -#ifdef CONFIG_SWIOTLB
->> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
->>       if (swiotlb_nr_tbl()) {
->>               ttm_dma_unpopulate(&gtt->ttm, rdev->dev);
->>               return;
->> @@ -906,7 +906,7 @@ static int radeon_ttm_debugfs_init(struct radeon_device *rdev)
->>       radeon_mem_types_list[i].show = &ttm_page_alloc_debugfs;
->>       radeon_mem_types_list[i].driver_features = 0;
->>       radeon_mem_types_list[i++].data = NULL;
->> -#ifdef CONFIG_SWIOTLB
->> +#if defined(CONFIG_SWIOTLB) && !defined(CONFIG_CPU_LOONGSON3)
->>       if (swiotlb_nr_tbl()) {
->>               sprintf(radeon_mem_types_names[i], "ttm_dma_page_pool");
->>               radeon_mem_types_list[i].name = radeon_mem_types_names[i];
->> diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
->> index f8187ea..0df71ea 100644
->> --- a/drivers/gpu/drm/ttm/ttm_bo_util.c
->> +++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
->> @@ -472,7 +472,7 @@ pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp)
->>       else
->>               tmp = pgprot_noncached(tmp);
->>  #endif
->> -#if defined(__sparc__)
->> +#if defined(__sparc__) || defined(__mips__)
->>       if (!(caching_flags & TTM_PL_FLAG_CACHED))
->>               tmp = pgprot_noncached(tmp);
->>  #endif
->> diff --git a/include/drm/drm_sarea.h b/include/drm/drm_sarea.h
->> index ee5389d..1d1a858 100644
->> --- a/include/drm/drm_sarea.h
->> +++ b/include/drm/drm_sarea.h
->> @@ -37,6 +37,8 @@
->>  /* SAREA area needs to be at least a page */
->>  #if defined(__alpha__)
->>  #define SAREA_MAX                       0x2000U
->> +#elif defined(__mips__)
->> +#define SAREA_MAX                       0x4000U
->>  #elif defined(__ia64__)
->>  #define SAREA_MAX                       0x10000U     /* 64kB */
->>  #else
->
->
+Well spotted. There used to be ac->pfmemalloc and obviously I failed to
+update the comment when it was removed.
+
+> Otherwise, the patch looks reasonable.
+
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
