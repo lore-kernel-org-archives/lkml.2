@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab2FVXK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:10:59 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38331 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab2FVXK5 convert rfc822-to-8bit (ORCPT
+	id S1755880Ab2FVXMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:12:19 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:21392 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754170Ab2FVXMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:10:57 -0400
+	Fri, 22 Jun 2012 19:12:18 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-209.messagelabs.com!1340406725!3842402!29
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/31] staging: comedi: ni_daq_700: cleanup the driver
+Date: Fri, 22 Jun 2012 16:12:05 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20120622215028.68334A0123@akpm.mtv.corp.google.com>
-References: <20120622215028.68334A0123@akpm.mtv.corp.google.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 22 Jun 2012 19:10:36 -0400
-X-Google-Sender-Auth: YMj6lCKtP42qDqWmXlj3699tZUo
-Message-ID: <CAHGf_=r3e4touVbnMQ9qVGCmi27teSgdQkr9wYAXOm2DUZndGw@mail.gmail.com>
-Subject: Re: + mm-oom-replace-some-information-in-tasklist-dump.patch added to
- -mm tree
-To: linux-kernel@vger.kernel.org
-Cc: mm-commits@vger.kernel.org, rientjes@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206221612.05750.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 5:50 PM,  <akpm@linux-foundation.org> wrote:
->
-> The patch titled
->     Subject: mm, oom: replace some information in tasklist dump
-> has been added to the -mm tree.  Its filename is
->     mm-oom-replace-some-information-in-tasklist-dump.patch
->
-> Before you just go and hit "reply", please:
->   a) Consider who else should be cc'ed
->   b) Prefer to cc a suitable mailing list as well
->   c) Ideally: find the original patch on the mailing list and do a
->      reply-to-all to that, adding suitable additional cc's
->
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
-> The -mm tree is included into linux-next and is updated
-> there every 3-4 working days
->
-> ------------------------------------------------------
-> From: David Rientjes <rientjes@google.com>
-> Subject: mm, oom: replace some information in tasklist dump
+This is a full cleanup of the ni_daq_700 comedi driver.
 
-This patch should be dropped.  See my comment on lkml.
+This driver was originally based on the 8255 driver which exports
+a subdevice interface used by other comedi drivers. This makes
+the ni_daq_700 driver overly complex. Also, the exported symbols
+in it are not referenced by any other code or declared in any
+headers.
+
+The pcmcia support code in this driver is also overly complex. All
+the driver needs from the pcmcia support is for the device to be
+enabled and to get the iobase address of the card. Everything else
+appears to be cut-and-paste from other drivers.
+
+H Hartley Sweeten (31):
+  staging: comedi: ni_daq_700: remove exported symbols
+  staging: comedi: ni_daq_700: move the MODULE_* stuff to the EOF
+  staging: comedi: ni_daq_700: add the module_{init,exit} declarations
+  staging: comedi: ni_daq_700: consolidate and init and exit functions
+  staging: comedi: ni_daq_700: change driver registration order
+  staging: comedi: ni_daq_700: cleanup to the pcmcia_driver declaration
+  staging: comedi: ni_daq_700: remove some useless comments
+  staging: comedi: ni_daq_700: refactor the pcmcia support code
+  staging: comedi: ni_daq_700: Move the comedi_driver variable
+  staging: comedi: ni_daq_700: Remove the unused private data struct
+  staging: comedi: ni_daq_700: Remove a "do nothing" function stub
+  staging: comedi: ni_daq_700: Remove unused variables from the
+    boardinfo
+  staging: comedi: ni_daq_700: Remove unneeded variables from the
+    boardinfo
+  staging: comedi: ni_daq_700: Remove bustype variable from the
+    boardinfo
+  staging: comedi: ni_daq_700: move the boardinfo variable
+  staging: comedi: ni_daq_700: remove thisboard macro
+  staging: comedi: ni_daq_700: remove unused private data variable
+  staging: comedi: ni_daq_700: remove the CALLBACK_* code
+  staging: comedi: ni_daq_700: remove a couple unused defines
+  staging: comedi: ni_daq_700: remove the subdev_700_init function
+  staging: comedi: ni_daq_700: remove the #ifdef'ed out irq code
+  staging: comedi: ni_daq_700: change to 'attach' printk's to
+    dev_printk's
+  staging: comedi: ni_daq_700: remove local variable in the 'attach'
+    function
+  staging: comedi: ni_daq_700: remove some dangling ';'
+  staging: comedi: ni_daq_700: use a local var to fix a > 80 char line
+    issue
+  staging: comedi: ni_daq_700: fix return for insn_config function
+  staging: comedi: ni_daq_700: cleanup pcmcia debug output messages
+  staging: comedi: ni_daq_700: remove unused pcmcia 'stop' logic
+  staging: comedi: ni_daq_700: remove unneeded pcmcia private data
+  staging: comedi: ni_daq_700: remove the pcmcia suspend/resume
+  staging: comedi: ni_daq_700: refactor the pcmcia attach/detach
+
+ drivers/staging/comedi/drivers/ni_daq_700.c | 508 +++++-----------------------
+ 1 file changed, 81 insertions(+), 427 deletions(-)
+
+-- 
+1.7.11
+
