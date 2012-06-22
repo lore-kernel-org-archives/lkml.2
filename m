@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762916Ab2FVX4N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:56:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38833 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab2FVX4M (ORCPT
+	id S1762926Ab2FVX4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:56:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11539 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255Ab2FVX4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:56:12 -0400
-Date: Fri, 22 Jun 2012 16:56:11 -0700 (PDT)
-Message-Id: <20120622.165611.2220193371527786713.davem@davemloft.net>
-To: c_manoha@qca.qualcomm.com
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-06-22
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20453.302.671438.533390@gargle.gargle.HOWL>
-References: <20120622201716.GB13918@tuxdriver.com>
-	<20452.64701.760819.559191@gargle.gargle.HOWL>
-	<20453.302.671438.533390@gargle.gargle.HOWL>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 22 Jun 2012 19:56:32 -0400
+X-Authority-Analysis: v=2.0 cv=cIliQyiN c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=FlAZEPfbBygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=AqGylah1dMg2c9Xj8t4A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340409391.27036.288.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
+ console
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
+Date: Fri, 22 Jun 2012 19:56:31 -0400
+In-Reply-To: <20120622164917.3121168a.akpm@linux-foundation.org>
+References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
+	 <20120622145402.8047a669.akpm@linux-foundation.org>
+	 <1340408464.27036.282.camel@gandalf.stny.rr.com>
+	 <20120622164917.3121168a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Date: Sat, 23 Jun 2012 05:05:10 +0530
+On Fri, 2012-06-22 at 16:49 -0700, Andrew Morton wrote:
 
-> Sujith Manoharan wrote:
->> John W. Linville wrote:
->> > Mohammed Shafi Shajakhan (1):
->> >       ath9k_hw: avoid possible infinite loop in ar9003_get_pll_sqsum_dvc
->> 
->> Um, this commit doesn't really fix anything - the timeout is also
->> arbitrary. Can you remove this from the 3.5 queue ? Thanks.
+> If a driver does
 > 
-> A review of the patch later, I think it's good. At least there's a
-> WARN_ON_ONCE() to indicate the situation in which the measurement fails.
-> It might come in handy as a debugging aid.
+> 	printk("testing the frobnozzle ...");
+> 	do_test();
+> 	printk(" OK\n");
+> 
+> and do_test() hangs up, we really really want the user to know that
+> there was a frobnozzle testing problem.  Please tell me this isn't
+> broken.
 
-Thanks for wasting our time.
+OK, then I wont tell you :-)  But this is exactly what happened to me.
+There was a config that caused the function tracer self test to triple
+fault the machine. The test does exactly what you just described:
 
-Make these determinations when changes to into John's tree, not
-later when he asks me to pull them into mine.
+	printk("Testing trace %s: ", tracer->name);
+	ret = run_tests(tracer);
+	if (ret == 0)
+		printk("PASSED!\n");
+	else
+		printk("FAILED!\n");
+
+But because of this new buffering, that didn't print. And unfortunately,
+the previous printk was the start of the rcu torture test. Thus when
+Fengguang saw that the last thing printed before his machine crashed was
+the rcu torture tests starting, he obviously (but incorrectly) blamed it
+on the rcu torture test.
+
+Yes, I think this is broken by design. But I have an idea for a fix.
+I'll work on it on Monday, and it wont require adding a pr_flush() like
+I did in this patch set.
+
+-- Steve
+
+
+
