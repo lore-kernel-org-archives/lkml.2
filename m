@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762363Ab2FVPYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:24:34 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40738 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762296Ab2FVPYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:24:32 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 03/12] tty: note race we need to fix
-To: greg@kroah.com, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Date: Fri, 22 Jun 2012 16:40:20 +0100
-Message-ID: <20120622153900.1405.47389.stgit@localhost.localdomain>
-In-Reply-To: <20120622153600.1405.15575.stgit@localhost.localdomain>
-References: <20120622153600.1405.15575.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1762391Ab2FVPZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:25:11 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56715 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762329Ab2FVPZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 11:25:09 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 06/22] rcu: Move _rcu_barrier()'s rcu_head structures to rcu_data structures
+Date: Fri, 22 Jun 2012 08:17:05 -0700
+Message-Id: <1340378241-6458-6-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120622151655.GA6249@linux.vnet.ibm.com>
+ <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062215-7182-0000-0000-000001D2B605
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was identified by Vincent Pillet with a high speed interface that uses
-low latency mode. In the low latency case we have a tiny race but it can
-be hit.
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+In order for multiple flavors of RCU to each concurrently run one
+rcu_barrier(), each flavor needs its own per-CPU set of rcu_head
+structures.  This commit therefore moves _rcu_barrier()'s set of
+per-CPU rcu_head structures from per-CPU variables to the existing
+per-CPU and per-RCU-flavor rcu_data structures.
+
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
+ kernel/rcutree.c |    6 ++----
+ kernel/rcutree.h |    3 +++
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
- drivers/tty/n_tty.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index ee1c268..4f34491 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1432,6 +1432,12 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 	 */
- 	if (tty->receive_room < TTY_THRESHOLD_THROTTLE)
- 		tty_throttle(tty);
-+
-+        /* FIXME: there is a tiny race here if the receive room check runs
-+           before the other work executes and empties the buffer (upping
-+           the receiving room and unthrottling. We then throttle and get
-+           stuck. This has been observed and traced down by Vincent Pillet/
-+           We need to address this when we sort out out the rx path locking */
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 24cd2f0..cb2d35d 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -157,7 +157,6 @@ unsigned long rcutorture_vernum;
+ 
+ /* State information for rcu_barrier() and friends. */
+ 
+-static DEFINE_PER_CPU(struct rcu_head, rcu_barrier_head) = {NULL};
+ static atomic_t rcu_barrier_cpu_count;
+ static DEFINE_MUTEX(rcu_barrier_mutex);
+ static struct completion rcu_barrier_completion;
+@@ -2279,12 +2278,11 @@ static void rcu_barrier_callback(struct rcu_head *notused)
+  */
+ static void rcu_barrier_func(void *type)
+ {
+-	int cpu = smp_processor_id();
+-	struct rcu_head *head = &per_cpu(rcu_barrier_head, cpu);
+ 	struct rcu_state *rsp = type;
++	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
+ 
+ 	atomic_inc(&rcu_barrier_cpu_count);
+-	rsp->call(head, rcu_barrier_callback);
++	rsp->call(&rdp->barrier_head, rcu_barrier_callback);
  }
  
- int is_ignored(int sig)
+ /*
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 15837d7..1783eae 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -300,6 +300,9 @@ struct rcu_data {
+ 	unsigned long n_rp_need_fqs;
+ 	unsigned long n_rp_need_nothing;
+ 
++	/* 6) _rcu_barrier() callback. */
++	struct rcu_head barrier_head;
++
+ 	int cpu;
+ 	struct rcu_state *rsp;
+ };
+-- 
+1.7.8
 
