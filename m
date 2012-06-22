@@ -1,55 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab2FVOiX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:38:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40029 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762132Ab2FVOiV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:38:21 -0400
-Message-ID: <1340375872.18025.77.camel@twins>
-Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
- rbtree
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Rik van Riel <riel@surriel.com>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
-        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
-        mel@csn.ul.ie, linux-kernel@vger.kernel.org
-Date: Fri, 22 Jun 2012 16:37:52 +0200
-In-Reply-To: <4FE48054.5090407@redhat.com>
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>
-	   <1340315835-28571-2-git-send-email-riel@surriel.com>
-	  <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>
-	 <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S933154Ab2FVOil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:38:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33567 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762305Ab2FVObK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:31:10 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 00/12] Swap-over-NFS without deadlocking V7
+Date: Fri, 22 Jun 2012 15:30:56 +0100
+Message-Id: <1340375468-22509-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-22 at 10:25 -0400, Rik van Riel wrote:
-> On 06/22/2012 10:13 AM, Peter Zijlstra wrote:
-> > On Fri, 2012-06-22 at 10:11 -0400, Rik van Riel wrote:
-> >>
-> >> I am still trying to wrap my brain around your alternative
-> >> search algorithm, not sure if/how it can be combined with
-> >> arbitrary address limits and alignment...
-> >
-> > for alignment we can do: len += align - 1;
-> 
-> We could, but that might lead us to returning -ENOMEM
-> when we actually have memory available.
-> 
-> When you consider architectures like HPPA, which use
-> a pretty large alignment, but align everything the same,
-> chances are pretty much every freed hole will have the
-> right alignment...
+Changelog since V6
+  - Rebase to linux-next 20120622
 
-Well, if you don't your gap heap is next to useless and you'll revert to
-simply walking all gaps until you find a suitable one.
+Changelog since V5
+  o Rebase to v3.5-rc3
 
-I really worry about this search function of yours, its complexity is
-very non obvious.
+Changelog since V4
+  o Catch if SOCK_MEMALLOC flag is cleared with rmem tokens	(davem)
+
+Changelog since V3
+  o Rebase to 3.4-rc5
+  o kmap pages for writing to swap				(akpm)
+  o Move forward declaration to reduce chance of duplication	(akpm)
+
+Changelog since V2
+  o Nothing significant, just rebases. A radix tree lookup is replaced with
+    a linear search would be the biggest rebase artifact
+
+This patch series is based on top of "Swap-over-NBD without deadlocking v13"
+as it depends on the same reservation of PF_MEMALLOC reserves logic.
+
+When a user or administrator requires swap for their application, they
+create a swap partition and file, format it with mkswap and activate it with
+swapon. In diskless systems this is not an option so if swap if required
+then swapping over the network is considered.  The two likely scenarios
+are when blade servers are used as part of a cluster where the form factor
+or maintenance costs do not allow the use of disks and thin clients.
+
+The Linux Terminal Server Project recommends the use of the Network
+Block Device (NBD) for swap but this is not always an option.  There is
+no guarantee that the network attached storage (NAS) device is running
+Linux or supports NBD. However, it is likely that it supports NFS so there
+are users that want support for swapping over NFS despite any performance
+concern. Some distributions currently carry patches that support swapping
+over NFS but it would be preferable to support it in the mainline kernel.
+
+Patch 1 avoids a stream-specific deadlock that potentially affects TCP.
+
+Patch 2 is a small modification to SELinux to avoid using PFMEMALLOC
+	reserves.
+
+Patch 3 adds three helpers for filesystems to handle swap cache pages.
+	For example, page_file_mapping() returns page->mapping for
+	file-backed pages and the address_space of the underlying
+	swap file for swap cache pages.
+
+Patch 4 adds two address_space_operations to allow a filesystem
+	to pin all metadata relevant to a swapfile in memory. Upon
+	successful activation, the swapfile is marked SWP_FILE and
+	the address space operation ->direct_IO is used for writing
+	and ->readpage for reading in swap pages.
+
+Patch 5 notes that patch 3 is bolting
+	filesystem-specific-swapfile-support onto the side and that
+	the default handlers have different information to what
+	is available to the filesystem. This patch refactors the
+	code so that there are generic handlers for each of the new
+	address_space operations.
+
+Patch 6 adds an API to allow a vector of kernel addresses to be
+	translated to struct pages and pinned for IO.
+
+Patch 7 adds support for using highmem pages for swap by kmapping
+	the pages before calling the direct_IO handler.
+
+Patch 8 updates NFS to use the helpers from patch 3 where necessary.
+
+Patch 9 avoids setting PF_private on PG_swapcache pages within NFS.
+
+Patch 10 implements the new swapfile-related address_space operations
+	for NFS and teaches the direct IO handler how to manage
+	kernel addresses.
+
+Patch 11 prevents page allocator recursions in NFS by using GFP_NOIO
+	where appropriate.
+
+Patch 12 fixes a NULL pointer dereference that occurs when using
+	swap-over-NFS.
+
+With the patches applied, it is possible to mount a swapfile that is on an
+NFS filesystem. Swap performance is not great with a swap stress test taking
+roughly twice as long to complete than if the swap device was backed by NBD.
+
+ Documentation/filesystems/Locking |   13 ++++
+ Documentation/filesystems/vfs.txt |   12 +++
+ fs/nfs/Kconfig                    |    8 ++
+ fs/nfs/direct.c                   |   82 ++++++++++++++-------
+ fs/nfs/file.c                     |   28 +++++--
+ fs/nfs/inode.c                    |    4 +
+ fs/nfs/internal.h                 |    7 +-
+ fs/nfs/pagelist.c                 |    4 +-
+ fs/nfs/read.c                     |    6 +-
+ fs/nfs/write.c                    |   91 ++++++++++++++---------
+ include/linux/blk_types.h         |    2 +
+ include/linux/fs.h                |    8 ++
+ include/linux/highmem.h           |    7 ++
+ include/linux/mm.h                |   29 ++++++++
+ include/linux/nfs_fs.h            |    4 +-
+ include/linux/pagemap.h           |    5 ++
+ include/linux/sunrpc/xprt.h       |    3 +
+ include/linux/swap.h              |    8 ++
+ include/net/sock.h                |    8 +-
+ mm/highmem.c                      |   12 +++
+ mm/memory.c                       |   52 +++++++++++++
+ mm/page_io.c                      |  145 +++++++++++++++++++++++++++++++++++++
+ mm/swap_state.c                   |    2 +-
+ mm/swapfile.c                     |  141 ++++++++++++++----------------------
+ net/caif/caif_socket.c            |    2 +-
+ net/core/sock.c                   |   14 +++-
+ net/ipv4/tcp_input.c              |   21 +++---
+ net/sctp/ulpevent.c               |    3 +-
+ net/sunrpc/Kconfig                |    5 ++
+ net/sunrpc/clnt.c                 |    2 +
+ net/sunrpc/sched.c                |    7 +-
+ net/sunrpc/xprtsock.c             |   53 ++++++++++++++
+ security/selinux/avc.c            |    2 +-
+ 33 files changed, 604 insertions(+), 186 deletions(-)
+
+-- 
+1.7.9.2
+
