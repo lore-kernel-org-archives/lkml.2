@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab2FVVM4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 17:12:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51146 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098Ab2FVVMz (ORCPT
+	id S933183Ab2FVVN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 17:13:26 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34305 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab2FVVNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 17:12:55 -0400
-Date: Fri, 22 Jun 2012 14:12:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Chris Friesen <chris.friesen@genband.com>
-Subject: Re: [PATCH v2 1/2] msync: support syncing a small part of the file
-Message-Id: <20120622141253.1e9747cf.akpm@linux-foundation.org>
-In-Reply-To: <1339773179-31210-2-git-send-email-pbonzini@redhat.com>
-References: <1339773179-31210-1-git-send-email-pbonzini@redhat.com>
-	<1339773179-31210-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Jun 2012 17:13:24 -0400
+Date: Sat, 23 Jun 2012 01:13:19 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kees Cook <keescook@chromium.org>, Per Forlin <per.forlin@stericsson.com>,
+        linux-kernel@vger.kernel.org, serge.hallyn@canonical.com,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Per Forlin <per.lkml@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] reboot: disable nonboot CPUs
+Message-ID: <20120622211319.GI2907@moon>
+References: <1339709115-531-1-git-send-email-per.forlin@stericsson.com>
+ <CAGXu5jKqaddf3T+LMS-6VMgH98JbMG-NsjB8uajNw19R7OAfig@mail.gmail.com>
+ <20120614214834.GB14301@moon>
+ <20120622135704.658eb79c.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120622135704.658eb79c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Jun 2012 17:12:58 +0200
-Paolo Bonzini <pbonzini@redhat.com> wrote:
-
-> msync does not need to flush changes to the entire file, even with MS_SYNC.
-> Instead, it can use vfs_fsync_range to only synchronize a part of the file.
-> This is part of the specification; expecting msync to synchronize all the
-> file would take a very creative interpretation of the manual page as well
-> as the specification.
+On Fri, Jun 22, 2012 at 01:57:04PM -0700, Andrew Morton wrote:
+> > since syscore_shutdown seems to call for generic irqs to shutdown
+> > when cpu get turned off already, not sure if this have any side
+> > effect and/or I've missed something (Thomas CC'ed).
 > 
-> In addition, not all metadata has to be synced; msync is closer to
-> fdatasync than it is to fsync.  So, pass 1 to vfs_fsync_range.
+> Let's use the scientific method: stick it in the tree and see what
+> happens. If it breaks, we fix or revert it.
 
-I renamed the patch to "msync: switch to syncing only the affected part
-of the file" to emphasise that there is a behavioural change here.
+yeah, i'll try to find some time on weekend for deeper review.
 
-Then I deleted the patch.
-
-Please recall my thus-far-utterly-and-irritatingly-ignored comments
-about nonlinear mappings.  Presently an msync() on a nonlinear mapping
-will work correctly, because we sync the whole file, yes?  And with
-this change, we will no longer sync all the pages which were covered by
-the affected memory range.  Thus breaking the syscall?
+	Cyrill
