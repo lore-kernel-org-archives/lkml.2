@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab2FVVLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 17:11:22 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:52040 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098Ab2FVVLU convert rfc822-to-8bit (ORCPT
+	id S933207Ab2FVVMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 17:12:10 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63134 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab2FVVMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 17:11:20 -0400
+	Fri, 22 Jun 2012 17:12:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120622131901.28f273e3.akpm@linux-foundation.org>
-References: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com> <20120622131901.28f273e3.akpm@linux-foundation.org>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Fri, 22 Jun 2012 17:10:59 -0400
-Message-ID: <CAHGf_=rQ6AaZBjfvkWWKi+a5q+1R29_PGWDyD77VFisgJHPQEA@mail.gmail.com>
-Subject: Re: [PATCH] mm: clear pages_scanned only if draining a pcp adds pages
- to the buddy allocator again
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
+In-Reply-To: <1340388785.4604.11442.camel@edumazet-glaptop>
+References: <CAATkVEzTxT6d5nzt_qwCuFWM-WcN8hdhjGxFRPXJ4=L35wKbGw@mail.gmail.com>
+	<4FE37783.9000409@akamai.com>
+	<1340310469.4604.6702.camel@edumazet-glaptop>
+	<4FE41570.4090803@akamai.com>
+	<1340353746.4604.9502.camel@edumazet-glaptop>
+	<4FE476A6.1050209@akamai.com>
+	<1340388785.4604.11442.camel@edumazet-glaptop>
+Date: Fri, 22 Jun 2012 17:12:07 -0400
+Message-ID: <CAATkVEyaocRcYJnfuQmGFAySBerQsXY44JDi4zjveP7TZNmu7Q@mail.gmail.com>
+Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
+From: Debabrata Banerjee <dbavatar@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Josh Hunt <johunt@akamai.com>, "davem@davemloft.net" <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "yoshfuji@linux-ipv6.org" <yoshfuji@linux-ipv6.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "pekkas@netcore.fi" <pekkas@netcore.fi>,
+        "kuznet@ms2.inr.ac.ru" <kuznet@ms2.inr.ac.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 4:19 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 14 Jun 2012 12:16:10 -0400
-> kosaki.motohiro@gmail.com wrote:
+On Fri, Jun 22, 2012 at 2:13 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Fri, 2012-06-22 at 08:44 -0500, Josh Hunt wrote:
 >
->> commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
->> to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
->> another miuse still exist.
+>> Ahh. That makes sense and is what Alexey said before I just didn't put
+>> it all together. So we are OK reverting this patch? I cannot find a path
+>> where the walker's pointers are updated without the tb6_lock write_lock.
+>>
 >
-> This changelog is irritating.  One can understand it a bit if one
-> happens to have a git repo handy (and why do this to the reader?), but
-> the changelog for 2ff754fa8f indicates that the patch might fix a
-> livelock.  Is that true of this patch?  Who knows...
+> There was a bug somewhere, not sure we want to NULL dereference again.
+>
 
-The code in this simple patch speak the right usage, isn't it? And yes,
-this patch also fixes a possibility of live lock. (but i haven't seen actual
-live lock cause from this mistake)
+As you identified, the tree seems to be protected by tb6_lock. I
+couldn't find a race by inspection either. If this is not the root of
+the problem, how would this patch fix it? So I think it does nothing.
+We are attempting to reproduce that crash to prove it, but like Gao
+feng I don't think we will see it.
 
-When anyone find a function misuse and fixes it, He/She should confirm other
-callsite and should all of mistake too. Otherwise we observe the same issue
-sooner of later.
+My current favorite theory is that inet6_dump_fib was called with a
+NULL func in callback. This looks like the approximate area of the
+crash, but it's impossible to say without more information from
+Patrick McHardy.
