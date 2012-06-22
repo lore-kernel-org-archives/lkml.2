@@ -1,49 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762422Ab2FVUiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 16:38:20 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:28155
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753746Ab2FVUiS (ORCPT
+	id S1762704Ab2FVUiq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 16:38:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35884 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2FVUio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 16:38:18 -0400
-X-IronPort-AV: E=Sophos;i="4.77,460,1336341600"; 
-   d="scan'208";a="148503203"
-Message-ID: <4FE4D7B7.8000004@gmail.com>
-Date: Fri, 22 Jun 2012 22:38:15 +0200
-From: Brice Goglin <brice.goglin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Fri, 22 Jun 2012 16:38:44 -0400
+Date: Fri, 22 Jun 2012 13:38:21 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-3bac8715443fc83413e221a5cd9d5cf3d82b79b4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        JBeulich@suse.com, khali@linux-fr.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, khali@linux-fr.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <4FE34BCB.5050305@linux.intel.com>
+References: <4FE34BCB.5050305@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, cpufeature:
+  Rename X86_FEATURE_DTS to X86_FEATURE_DTHERM
+Git-Commit-ID: 3bac8715443fc83413e221a5cd9d5cf3d82b79b4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Ulrich Drepper <drepper@gmail.com>,
-        jbarnes@virtuousgeek.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lenb@kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Subject: Re: SNB PCI root information
-References: <CAOPLpQfUm-2ENkbnYfXEn1nf9FHnaRk3aqQTSTBWb-CsfCUCFA@mail.gmail.com> <CAErSpo57H_ZD_-Z8z9vD3c50My4Rejtc9gXXrxGxDtQomYmrSA@mail.gmail.com> <CAOPLpQeJTfB2UNy3O9FgRCyZb=LyMqd0SOsz7qDM0Ur_sfeNhg@mail.gmail.com> <CAE9FiQVzKr+nyBh=8-v+HEDF=7JqN2CqdTNx1=LHTq=c_OyZvg@mail.gmail.com> <CAErSpo40SDii6PTNisAnsn6SoB7SzPUGztWAg9vaZZv+ByQsPw@mail.gmail.com> <CAE9FiQVDnS9n28GQrKVVTU7GiMtJZLFN1T9vmOm5oSysvMEVhQ@mail.gmail.com> <CAErSpo4x8+M6hGAqJR2rjGEGk2AnnZfJkmaJrJedzhnKiRf2qw@mail.gmail.com> <CAOPLpQchY4gMYaw-Ew5uujD9JCu==VLjQ7Z_OjrT6akTgX4+iA@mail.gmail.com> <CAErSpo6JWKoFcbsLnyzPGXLKssobfudjcYMvYzfEpYZ-bzCHPg@mail.gmail.com> <CAE9FiQWOUZhUQYc66ceG5EMWQ0uO7L3odh0+XwRsLV2Bza2ZpQ@mail.gmail.com> <4FE22B28.9020402@gmail.com> <CAE9FiQUkGCQ0Y=n3i=bq388T8N-vrHP2LtMTFGwry2nA+uppwA@mail.gmail.com> <4FE2B788.3070505@gmail.com> <CAE9FiQWBB0JVCLWa40k9qYJXGrv_z=RgspgQW4x2di0uCUFXmA@mail.gmail.com> <4FE41B3E.7080609@gmail.com> <CAE9FiQWB-=qRQfJS=95a+L_N32bZ97MCdW3voDCNSCbVcCnERQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQWB-=qRQfJS=95a+L_N32bZ97MCdW3voDCNSCbVcCnERQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 22 Jun 2012 13:38:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 22/06/2012 19:28, Yinghai Lu a écrit :
-> On Fri, Jun 22, 2012 at 12:14 AM, Brice Goglin <brice.goglin@gmail.com> wrote:
->
->>> BIOS _PXM return 0 for both pci root buses?
->>>
->> Here's dmesg.
->> I can't say for sure whether _PXM returns 0 since I don't know how to
->> read all this :) But Linux puts the first socket cpumap in
->> /sys/bus/pci/devices/*/local_cpus (and that's wrong according to the
->> motherboard manual and according to the performance we see).
->>
-> hi, looks like you system bios does not provide _PXM for the root bus.
->
+Commit-ID:  3bac8715443fc83413e221a5cd9d5cf3d82b79b4
+Gitweb:     http://git.kernel.org/tip/3bac8715443fc83413e221a5cd9d5cf3d82b79b4
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 22 Jun 2012 10:58:06 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 22 Jun 2012 10:58:06 -0700
 
-So why does Linux say that all buses are close to socket 0 instead of
-close to everything as usual?
+x86, cpufeature: Rename X86_FEATURE_DTS to X86_FEATURE_DTHERM
 
-Brice
+It makes sense to label "Digital Thermal Store" as "DTS", but
+unfortunately the string "dts" was already used for "Debug Store", and
+/proc/cpuinfo is a user space ABI.
 
+Therefore, rename this to "dtherm".
+
+This conflict went into mainline via the hwmon tree without any x86
+maintainer ack, and without any kind of hint in the subject.
+
+    a4659053 x86/hwmon: fix initialization of coretemp
+
+Reported-by: Jean Delvare <khali@linux-fr.org>
+Link: http://lkml.kernel.org/r/4FE34BCB.5050305@linux.intel.com
+Cc: Jan Beulich <JBeulich@suse.com>
+Cc: <stable@vger.kernel.org> v2.6.36..v3.4
+---
+ arch/x86/include/asm/cpufeature.h |    2 +-
+ arch/x86/kernel/cpu/scattered.c   |    2 +-
+ drivers/hwmon/coretemp.c          |    4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 340ee49..f91e80f 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -176,7 +176,7 @@
+ #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
+ #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
+ #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
+-#define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
++#define X86_FEATURE_DTHERM	(7*32+ 7) /* Digital Thermal Sensor */
+ #define X86_FEATURE_HW_PSTATE	(7*32+ 8) /* AMD HW-PState */
+ 
+ /* Virtualization flags: Linux defined, word 8 */
+diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+index addf9e8..ee8e9ab 100644
+--- a/arch/x86/kernel/cpu/scattered.c
++++ b/arch/x86/kernel/cpu/scattered.c
+@@ -31,7 +31,7 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+ 	const struct cpuid_bit *cb;
+ 
+ 	static const struct cpuid_bit __cpuinitconst cpuid_bits[] = {
+-		{ X86_FEATURE_DTS,		CR_EAX, 0, 0x00000006, 0 },
++		{ X86_FEATURE_DTHERM,		CR_EAX, 0, 0x00000006, 0 },
+ 		{ X86_FEATURE_IDA,		CR_EAX, 1, 0x00000006, 0 },
+ 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
+ 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index b9d5123..0f52799 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -664,7 +664,7 @@ static void __cpuinit get_core_online(unsigned int cpu)
+ 	 * sensors. We check this bit only, all the early CPUs
+ 	 * without thermal sensors will be filtered out.
+ 	 */
+-	if (!cpu_has(c, X86_FEATURE_DTS))
++	if (!cpu_has(c, X86_FEATURE_DTHERM))
+ 		return;
+ 
+ 	if (!pdev) {
+@@ -765,7 +765,7 @@ static struct notifier_block coretemp_cpu_notifier __refdata = {
+ };
+ 
+ static const struct x86_cpu_id coretemp_ids[] = {
+-	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTS },
++	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTHERM },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(x86cpu, coretemp_ids);
