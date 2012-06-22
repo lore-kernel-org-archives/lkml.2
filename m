@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761282Ab2FVFm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 01:42:58 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43654 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761217Ab2FVFlZ (ORCPT
+	id S1761239Ab2FVFpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 01:45:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36514 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761202Ab2FVFpg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 01:41:25 -0400
-X-AuditID: 9c93016f-b7cbdae0000024ac-75-4fe40583574d
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 3/8] tools lib traceevent: Detect build environment changes
-Date: Fri, 22 Jun 2012 14:37:37 +0900
-Message-Id: <1340343462-15556-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
-References: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 22 Jun 2012 01:45:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120621135136.1e2ff338.akpm@linux-foundation.org>
+References: <1340262280-15096-1-git-send-email-devendra.aaru@gmail.com>
+	<20120621135136.1e2ff338.akpm@linux-foundation.org>
+Date: Fri, 22 Jun 2012 11:15:36 +0530
+Message-ID: <CAHdPZaPPo0LQ9H6JhRyfCzJ7tiS7-7pQD_useZmHmNWM4e9kVQ@mail.gmail.com>
+Subject: Re: [PATCH] rtc/r9701: avoid second call to the rtc_valid_tm
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Anatolij Gustschin <agust@denx.de>,
+        Andreas Dumberger <andreas.dumberger@tqs.de>,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Andrew,
 
-Cross compiling perf requires setting ARCH and
-CROSS_COMPILE variables, but libtraceevent couldn't
-detect the changes so it ends up believing no
-recompiling is required. Thus the linker failed like:
+Thanks a lot for the reply. :-)
 
-     LINK perf
- ../lib/traceevent//libtraceevent.a: member ../lib/traceevent//libtraceevent.a(event-parse.o) in archive is not an object
- collect2: ld returned 1 exit status
- make: *** [perf] Error 1
+On Fri, Jun 22, 2012 at 2:21 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu, 21 Jun 2012 12:34:40 +0530
+> Looks OK.
+>
+>
+> I think the driver would be better if we were to do this:
+>
+>
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: drivers/rtc/rtc-r9701.c: check that r9701_set_datetime() succeeded
+>
+> When the driver detects that the clock time is invalid, it attempts to
+> write a sane time into the hardware.  We curently assume that everything
+> is OK is those writes succeeded.  But it is better to re-read the time
+> from the hardware to ensure that the new settings got there OK.
+>
+> Cc: Devendra Naga <devendra.aaru@gmail.com>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: Anatolij Gustschin <agust@denx.de>
+> Cc: Andreas Dumberger <andreas.dumberger@tqs.de>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>
+>  drivers/rtc/rtc-r9701.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff -puN drivers/rtc/rtc-r9701.c~a drivers/rtc/rtc-r9701.c
+> --- a/drivers/rtc/rtc-r9701.c~a
+> +++ a/drivers/rtc/rtc-r9701.c
+> @@ -147,7 +147,8 @@ static int __devinit r9701_probe(struct
+>                dt.tm_mon  = 0;
+>                dt.tm_year = 100;
+>
+> -               if (r9701_set_datetime(&spi->dev, &dt)) {
+> +               if (r9701_set_datetime(&spi->dev, &dt) ||
+> +                               r9701_get_datetime(&spi->dev, &dt)) {
+Yeah, agreed, crosschecking whether we have a valid time set at the
+hardware by the r9701_set_datetime.
 
-This patch fixes this by adding TRACEEVENT-CFLAGS
-file like PERF-CFLAGS to track those changes.
+>                        dev_err(&spi->dev, "cannot repair RTC register\n");
+>                        return -ENODEV;
+>                }
+> _
+>
+>
+> But I can't test this :(
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/Makefile |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+I also dont have the RTC-j9701 hardware :(.
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 68a1d088d77e..56daa768b9e3 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -207,7 +207,7 @@ libtraceevent.so: $(PEVENT_LIB_OBJS)
- libtraceevent.a: $(PEVENT_LIB_OBJS)
- 	$(Q)$(do_build_static_lib)
- 
--$(PEVENT_LIB_OBJS): %.o: $(src)/%.c
-+$(PEVENT_LIB_OBJS): %.o: $(src)/%.c TRACEEVENT-CFLAGS
- 	$(Q)$(do_fpic_compile)
- 
- define make_version.h
-@@ -272,6 +272,16 @@ ifneq ($(dep_includes),)
-  include $(dep_includes)
- endif
- 
-+### Detect environment changes
-+TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):$(ARCH):$(CROSS_COMPILE)
-+
-+TRACEEVENT-CFLAGS: force
-+	@FLAGS='$(TRACK_CFLAGS)'; \
-+	    if test x"$$FLAGS" != x"`cat TRACEEVENT-CFLAGS 2>/dev/null`" ; then \
-+		echo 1>&2 "    * new build flags or cross compiler"; \
-+		echo "$$FLAGS" >TRACEEVENT-CFLAGS; \
-+            fi
-+
- tags:	force
- 	$(RM) tags
- 	find . -name '*.[ch]' | xargs ctags --extra=+f --c-kinds=+px
--- 
-1.7.10.2
+i was thinking of cases like setting / getting of time from ioctl. but
+there was no ioctl support inside the driver.
 
+i am really a newbie in kernel, pardon me if i told anything wrong ...
+
+Thanks,
+Devendra.
