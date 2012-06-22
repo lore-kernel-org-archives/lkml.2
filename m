@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761955Ab2FVKKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 06:10:43 -0400
-Received: from mail.mailmerkezi.tk ([37.59.255.238]:36427 "EHLO
-	ks27510-VDS.yoncu.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758748Ab2FVKKm convert rfc822-to-8bit (ORCPT
+	id S1762028Ab2FVK2L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 06:28:11 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53802 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762015Ab2FVK2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 06:10:42 -0400
-X-Greylist: delayed 6774 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Jun 2012 06:10:42 EDT
-Message-ID: <b9daeb5ee9b3555ebafd00202dac6e57@mailmerkezi.tk>
-From: "=?iso-8859-9?B?RGVuaXogQVlH3Ew=?=" <posta@mailmerkezi.tk>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-9?B?3W5naWxpemNleWkgVXlndW4gZml5YXRhINZaZWwgRGVycyBhbGFy?=
-	=?iso-8859-9?B?YWsg9vByZW5pbg==?=
-Date: Fri, 22 Jun 2012 10:09:46 +0300
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
+	Fri, 22 Jun 2012 06:28:09 -0400
+Message-ID: <1340360943.27031.34.camel@lappy>
+Subject: Re: Early boot panic on machine with lots of memory
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 22 Jun 2012 12:29:03 +0200
+In-Reply-To: <20120621201935.GC4642@google.com>
+References: <1339623535.3321.4.camel@lappy>
+	 <20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <1339667440.3321.7.camel@lappy> <20120618223203.GE32733@google.com>
+	 <1340059850.3416.3.camel@lappy> <20120619041154.GA28651@shangw>
+	 <20120619212059.GJ32733@google.com> <20120621201935.GC4642@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merhaba
+On Thu, 2012-06-21 at 13:19 -0700, Tejun Heo wrote:
+> Hello,
+> 
+> Sasha, can you please apply the following patch and verify that the
+> issue is gone?
 
-Ýngilizceyi çok uygun fiyatlarda ÖZEL DERS alarak öðrenmek için benimle iletiþime geçiniz.(Kampanyalý Ders Saati Fiyatýmýz 35 TL dir)
+That did the trick.
 
-Saygýlarýmla
-
-Deniz AYGÜL
-KANADA KÜLTÜR MERKEZÝ 
-0212 252 90 35 pbx
-
-
+Thanks!
 
