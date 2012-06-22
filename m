@@ -1,88 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762619Ab2FVQPN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 12:15:13 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:57722 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762508Ab2FVQPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 12:15:08 -0400
-X-IronPort-AV: E=Sophos;i="4.77,459,1336363200"; 
-   d="scan'208";a="199722609"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
-        <Ian.Campbell@citrix.com>, <tim@xen.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH WIP 3/6] xen/arm: get privilege status
-Date: Fri, 22 Jun 2012 17:14:42 +0100
-Message-ID: <1340381685-22529-3-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
- <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	id S1762656Ab2FVQQH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 12:16:07 -0400
+Received: from nm24-vm3.bullet.mail.ird.yahoo.com ([212.82.109.194]:33864 "HELO
+	nm24-vm3.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1762410Ab2FVQQF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 12:16:05 -0400
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Jun 2012 12:16:04 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 858321.43610.bm@omp1034.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=K+01wS9Zq4iBk/CUJbZJphe6o+FfplyPmuMHBGj0fDKkmh3eQjQL0rk47AT+pNBclYM9mZiFWz3+WRDi7wfRf7O7AbmcxDU++3gWLDY/mT/ys9DlQuxVSUUEBOPANhrADhKe3Z07kK+g5WC0ox9giu+RUi2+P2lQFAAXWC33KcE=;
+X-YMail-OSG: Dn9BsDMVM1m4RMNdF.qcB9eq4lLS_cCbHAymaTPS0k7qamN
+ Mr1z5fKeHg3dM9qdI_j1ZKlSNO8eJXHImDC3Ytf454NNENyx4b6HMq66rQ2I
+ eQGWsTCojivUToxBEhSq0tXVK4Dk_oPq8.AC4Kna1tOxTnb3cdrCAlj2wBWA
+ 7ZMJsDtU6dH1EGoL6OfXFRUhfav4rz0PNUWQvc8y3oeyfOnhsms36PFuP9g1
+ 79utGchs7dp_W0nJ3o8Hw2xvW_BE7M2qEOqMTOxdAf9hP02Aai_PWc_kx__b
+ sekF2Rq6hBmaWaKsb36tFIFrDwM1Ocbh7RxP2nMXhlwXRrV9KmEnNug_k06A
+ FBtxDinhNtF49p6zFKrKgh6c.dWN6aw--
+X-Mailer: YahooMailWebService/0.8.118.349524
+Message-ID: <1340381349.3375.YahooMailNeo@web132406.mail.ird.yahoo.com>
+Date: Fri, 22 Jun 2012 17:09:09 +0100 (BST)
+From: Tomiko Wiersma <dsedtalmo@yahoo.com>
+Reply-To: Tomiko Wiersma <tomiko.wiersma@yahoo.com>
+Subject: What do u think about spontaneous meetings?)
+To: "vbeachhawk@yahoo.com" <vbeachhawk@yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use Xen features to figure out if we are privileged.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/arm/xen/enlighten.c         |    9 ++++++++-
- include/xen/interface/features.h |    3 +++
- 2 files changed, 11 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index e1c2e4d..ddacecf 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -3,6 +3,7 @@
- #include <xen/interface/memory.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <xen/features.h>
- 
- #include <linux/module.h>
- 
-@@ -11,7 +12,7 @@
- 
- #include <asm/pgtable.h>
- 
--struct start_info _xen_start_info = { .flags = (SIF_INITDOMAIN|SIF_PRIVILEGED) };
-+struct start_info _xen_start_info;
- struct start_info *xen_start_info = &_xen_start_info;
- EXPORT_SYMBOL_GPL(xen_start_info);
- 
-@@ -133,6 +134,12 @@ static void __init xen_hvm_init_shared_info(void)
- 	struct xen_add_to_physmap xatp;
- 	static struct shared_info *shared_info_page = 0;
- 
-+	xen_setup_features();
-+	if (xen_feature(XENFEAT_dom0))
-+		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
-+	else
-+		xen_start_info->flags &= ~(SIF_INITDOMAIN|SIF_PRIVILEGED);
-+
- 	/* already setup */
- 	if (shared_info_page != 0 && HYPERVISOR_shared_info == shared_info_page)
- 		return;
-diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
-index b6ca39a..131a6cc 100644
---- a/include/xen/interface/features.h
-+++ b/include/xen/interface/features.h
-@@ -50,6 +50,9 @@
- /* x86: pirq can be used by HVM guests */
- #define XENFEAT_hvm_pirqs           10
- 
-+/* operation as Dom0 is supported */
-+#define XENFEAT_dom0                      11
-+
- #define XENFEAT_NR_SUBMAPS 1
- 
- #endif /* __XEN_PUBLIC_FEATURES_H__ */
--- 
-1.7.2.5
-
+Hey there handsome! 
+Let's be friends. I'm Tomiko and no guess I like u
+I saw ur account and I find you to be quite pretty.
+Hit me back ))
