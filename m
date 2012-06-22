@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761657Ab2FVIYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 04:24:12 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33345 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1761632Ab2FVIYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 04:24:09 -0400
-Message-ID: <1340353448.31821.0.camel@joe2Laptop>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        AndrewMorton <akpm@linux-foundation.org>
-Date: Fri, 22 Jun 2012 01:24:08 -0700
-In-Reply-To: <1340322723.27036.220.camel@gandalf.stny.rr.com>
-References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
+	id S1761665Ab2FVI3R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 04:29:17 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50792 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761530Ab2FVI3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 04:29:12 -0400
+Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Josh Hunt <johunt@akamai.com>
+Cc: "davem@davemloft.net" <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        Debabrata Banerjee <dbavatar@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "yoshfuji@linux-ipv6.org" <yoshfuji@linux-ipv6.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "pekkas@netcore.fi" <pekkas@netcore.fi>,
+        "kuznet@ms2.inr.ac.ru" <kuznet@ms2.inr.ac.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4FE41570.4090803@akamai.com>
+References: <CAATkVEzTxT6d5nzt_qwCuFWM-WcN8hdhjGxFRPXJ4=L35wKbGw@mail.gmail.com>
+	 <4FE37783.9000409@akamai.com> <1340310469.4604.6702.camel@edumazet-glaptop>
+	 <4FE41570.4090803@akamai.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+Date: Fri, 22 Jun 2012 10:29:06 +0200
+Message-ID: <1340353746.4604.9502.camel@edumazet-glaptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-21 at 19:52 -0400, Steven Rostedt wrote:
-> Fengguang Wu had a config that caused the system to lockup. It reported:
-[]
+On Fri, 2012-06-22 at 01:49 -0500, Josh Hunt wrote:
+> On 06/21/2012 03:27 PM, Eric Dumazet wrote:
+> > On Thu, 2012-06-21 at 14:35 -0500, Josh Hunt wrote:
+> > 
+> >> Can anyone provide details of the crash which was intended to be fixed
+> >> by 2bec5a369ee79576a3eea2c23863325089785a2c? With this patch in and
+> >> doing concurrent adds/deletes and dumping the table via netlink causes
+> >> duplicate entries to be reported. Reverting this patch causes those
+> >> problems to go away. We can provide a more detailed test if that is
+> >> needed, but so far our testing has been unable to reproduce the crash
+> >> mentioned in the above commit with it reverted.
+> > 
+> > A mere revert wont be enough.
+> > 
+> > Looking at this code, it lacks proper synchronization
+> > between tree updaters and tree walkers.
+> > 
+> > fib6_walker_lock rwlock is not enough to prevent races.
+> > 
+> > Are you willing to fix this yourself ?
+> > 
+> 
+> Looking through the code a bit more it seems like we would need to have
+> a lock in fib6_walker_t to protect its contents. Mainly for when we
+> update the pointers in fib6_del_route and fib6_repair_tree. Right now
+> there is the fib6_walker_lock, but that appears to only be protecting
+> the elements of the list, not their contents. Is this what you had in
+> mind? I just coded up something along these lines and it works for the
+> most part, but I also got a message about unsafe lock ordering when I
+> stressed it so I am messing something up. If this sounds like it's on
+> the right track I can work out the kinks in the morning.
 
-It'd have been nicer if you'd have cc'd me.
+Hmm, it seems tb6_lock is held by a writer, so its safe :
 
-What I submitted is far simpler and it allows a knob
-to control the printk buffering on a global basis.
+a tree walker can run only holding a read_lock on tb6_lock
 
-Did you try it?  It seems to work here, but I don't
-have your other patches to rcu-torture with inserted
-printk_flush patches to verify it.  Can I have a
-copy of those please.
 
 
 
