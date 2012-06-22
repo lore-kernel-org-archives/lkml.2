@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762457Ab2FVPf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:35:29 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56272 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762422Ab2FVPf1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933107Ab2FVPkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:40:13 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:51624 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762413Ab2FVPf1 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
 	Fri, 22 Jun 2012 11:35:27 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 04/17] rcu: Add a gcc-style structure initializer for RCU pointers
-Date: Fri, 22 Jun 2012 08:34:59 -0700
-Message-Id: <1340379312-6684-4-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1340379312-6684-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120622153501.GA6626@linux.vnet.ibm.com>
- <1340379312-6684-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062215-5518-0000-0000-0000056D6602
+Message-Id: <4FE4AD09020000780008B77F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 22 Jun 2012 16:36:09 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <gregkh@linuxfoundation.org>
+Cc: <yuanhan.liu@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <kay@vrfy.org>
+Subject: [PATCH] syslog: fill buffer with more than a single message
+ for SYSLOG_ACTION_READ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+The recent changes to the printk buffer management resulted in
+SYSLOG_ACTION_READ to only return a single message, whereas previously
+the buffer would get filled as much as possible. As, when too small to
+fit everything, filling it to the last byte would be pretty ugly with
+the new code, the patch arranges for as many messages as possible to
+get returned in a single invocation. User space tools in at least all
+SLES versions depend on the old behavior.
 
-RCU_INIT_POINTER() returns a value that is never used, and which should
-be abolished due to terminal ugliness:
+This at once addresses the issue attempted to get fixed with commit
+b56a39ac263e5b8cafedd551a49c2105e68b98c2 ("printk: return -EINVAL if
+the message len is bigger than the buf size"), and since that commit
+widened the possibility for losing a message altogether, the patch
+here assumes that this other commit would get reverted first
+(otherwise the patch here won't apply).
 
-	q = RCU_INIT_POINTER(global_p, p);
+Furthermore, this patch also addresses the problem dealt with in
+commit 4a77a5a06ec66ed05199b301e7c25f42f979afdc ("printk: use mutex
+lock to stop syslog_seq from going wild"), so I'd recommend reverting
+that one too (albeit there's no direct collision between the two).
 
-However, there are two uses that cannot be handled by a do-while
-formulation because they do gcc-style initialization:
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>
 
-	RCU_INIT_POINTER(.real_cred, &init_cred),
-	RCU_INIT_POINTER(.cred, &init_cred),
-
-This usage is clever, but not necessarily the nicest approach.
-This commit therefore creates an RCU_POINTER_INITIALIZER() macro that
-is specifically designed for gcc-style initialization.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ kernel/printk.c |   51 +++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 37 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 26d1a47..88e4e08 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -906,6 +906,14 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
- #define RCU_INIT_POINTER(p, v) \
- 		p = (typeof(*v) __force __rcu *)(v)
- 
-+/**
-+ * RCU_POINTER_INITIALIZER() - statically initialize an RCU protected pointer
-+ *
-+ * GCC-style initialization for an RCU-protected pointer in a structure field.
-+ */
-+#define RCU_POINTER_INITIALIZER(p, v) \
-+		.p = (typeof(*v) __force __rcu *)(v)
-+
- static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
+--- 3.5-rc3/kernel/printk.c
++++ 3.5-rc3-syslog-read/kernel/printk.c
+@@ -860,26 +860,49 @@ static int syslog_print(char __user *buf
  {
- 	return offset < 4096;
--- 
-1.7.8
+ 	char *text;
+ 	struct log *msg;
+-	int len;
++	int len = 0;
+ 
+ 	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
+ 	if (!text)
+ 		return -ENOMEM;
+ 
+-	raw_spin_lock_irq(&logbuf_lock);
+-	if (syslog_seq < log_first_seq) {
+-		/* messages are gone, move to first one */
+-		syslog_seq = log_first_seq;
+-		syslog_idx = log_first_idx;
+-	}
+-	msg = log_from_idx(syslog_idx);
+-	len = msg_print_text(msg, true, text, LOG_LINE_MAX);
+-	syslog_idx = log_next(syslog_idx);
+-	syslog_seq++;
+-	raw_spin_unlock_irq(&logbuf_lock);
++	while (size > 0) {
++		size_t n;
++
++		raw_spin_lock_irq(&logbuf_lock);
++		if (syslog_seq < log_first_seq) {
++			/* messages are gone, move to first one */
++			syslog_seq = log_first_seq;
++			syslog_idx = log_first_idx;
++		}
++		if (syslog_seq == log_next_seq) {
++			raw_spin_unlock_irq(&logbuf_lock);
++			break;
++		}
++		msg = log_from_idx(syslog_idx);
++		n = msg_print_text(msg, true, text, LOG_LINE_MAX);
++		if (n <= size) {
++			syslog_idx = log_next(syslog_idx);
++			syslog_seq++;
++		} else
++			n = 0;
++		raw_spin_unlock_irq(&logbuf_lock);
++
++		if (!n)
++			break;
+ 
+-	if (len > 0 && copy_to_user(buf, text, len))
+-		len = -EFAULT;
++		len += n;
++		size -= n;
++		buf += n;
++		n = copy_to_user(buf - n, text, n);
++
++		if (n) {
++			len -= n;
++			if (!len)
++				len = -EFAULT;
++			break;
++		}
++	}
+ 
+ 	kfree(text);
+ 	return len;
+
+
 
