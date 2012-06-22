@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762902Ab2FVXlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:41:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21761 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463Ab2FVXlG (ORCPT
+	id S1762893Ab2FVXlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:41:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51948 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756463Ab2FVXlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:41:06 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=FlAZEPfbBygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=eGxSazS_8z_6xVDDWDoA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340408464.27036.282.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
-Date: Fri, 22 Jun 2012 19:41:04 -0400
-In-Reply-To: <20120622145402.8047a669.akpm@linux-foundation.org>
-References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
-	 <20120622145402.8047a669.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Jun 2012 19:41:44 -0400
+Date: Fri, 22 Jun 2012 16:41:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: shuox.liu@intel.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>, andi@firstfloor.org,
+        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v4 2/2] x86 mce: use new printk recursion disabling
+ interface
+Message-Id: <20120622164143.bb7dc290.akpm@linux-foundation.org>
+In-Reply-To: <4FCC265F.5@intel.com>
+References: <4FBC444A.6060500@intel.com>
+	<20120523100138.GA13506@x1.osrc.amd.com>
+	<4FBDCE4A.7050900@intel.com>
+	<20120524061145.GA18284@liondog.tnic>
+	<20120524155611.b7aeff4d.akpm@linux-foundation.org>
+	<1337905811.14538.206.camel@ymzhang.sh.intel.com>
+	<4FBF3295.7090608@intel.com>
+	<4FBF32E8.90101@intel.com>
+	<20120525074114.GA5417@liondog.tnic>
+	<4FC2DDFF.3020600@intel.com>
+	<20120530090844.GA23663@liondog.tnic>
+	<4FCC25D3.7070308@intel.com>
+	<4FCC265F.5@intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-22 at 14:54 -0700, Andrew Morton wrote:
-> On Thu, 21 Jun 2012 19:52:03 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
+On Mon, 04 Jun 2012 11:07:11 +0800
+ShuoX Liu <shuox.liu@intel.com> wrote:
+
+> From: ShuoX Liu <shuox.liu@intel.com>
 > 
-> > But with the new printk() changes, text without a newline gets buffered
-> > and does not print out to the console at the location of the printk.
+> Disable printk recursion to make sure MCE logs printed out.
 > 
-> uh, how about we fix that?  The old behaviour was good, the new
-> behaviour is noxious.
+> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> ---
+> We hit it when running a MTBF testing on a Android atom mobile.
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> Please idenfity these "new printk() changes".  Was the new noxiousness
-> an unavoidable effect of them?
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 2afcbd2..906e838 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -306,6 +306,7 @@ static void mce_panic(char *msg, struct mce *final, char *exp)
+>  {
+>  	int i, apei_err = 0;
+>  
+> +	printk_recursion_check_disable();
+>  	if (!fake_panic) {
+>  		/*
+>  		 * Make sure only one CPU runs in machine check panic
+> @@ -360,6 +361,7 @@ static void mce_panic(char *msg, struct mce *final, char *exp)
+>  		panic(msg);
+>  	} else
+>  		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
+> +	printk_recursion_check_enable();
+>  }
+>  
+>  /* Support code for software error injection */
 
-See commit 7ff9554bb578 ("printk: convert byte-buffer to variable-length
-record buffer") and related commits.
+A couple of things here.
 
-But that said, there may be a way that I can make it still always flush
-and not add a new API. We can flush on partial writes, and keep track of
-the current task (as it already does). If a new task comes in, we can
-then force a newline before printing the content of the old task (if
-there wasn't a newline printed before).
+a) mce_panic() has a "return" statement deep inside.  So we return
+   from mce_panic() with the recursion check disabled.  whoops.
 
-This is basically what it does now, except that it buffers the data. If
-a new task were to do a print in between the two partial writes, it
-flushes what was buffered and adds a newline before printing the new
-text.
+b) adding a nice comment is nice.
 
-I think I may be able to implement the same behavior, except that it
-wont buffer. It would just keep track of the state of the last write.
-
--- Steve
-
-
+--- a/arch/x86/kernel/cpu/mcheck/mce.c~x86-mce-use-new-printk-recursion-disabling-interface-fix
++++ a/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -303,11 +303,10 @@ static void wait_for_panic(void)
+ 	panic("Panicing machine check CPU died");
+ }
+ 
+-static void mce_panic(char *msg, struct mce *final, char *exp)
++static void __mce_panic(char *msg, struct mce *final, char *exp)
+ {
+ 	int i, apei_err = 0;
+ 
+-	printk_recursion_check_disable();
+ 	if (!fake_panic) {
+ 		/*
+ 		 * Make sure only one CPU runs in machine check panic
+@@ -362,6 +361,17 @@ static void mce_panic(char *msg, struct 
+ 		panic(msg);
+ 	} else
+ 		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
++}
++
++/*
++ * If an MCE happens to occur during the execution of a printk(), we want the
++ * MCE information to be displayed.  But printk()'s recursion checking prevents
++ * that.  So temporarily disable it.
++ */
++static void mce_panic(char *msg, struct mce *final, char *exp)
++{
++	printk_recursion_check_disable();
++	__mce_panic(msg, final, exp);
+ 	printk_recursion_check_enable();
+ }
+ 
+_
 
