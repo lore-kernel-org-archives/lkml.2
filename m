@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762325Ab2FVPTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:19:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53029 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762302Ab2FVPTJ (ORCPT
+	id S1762318Ab2FVPUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:20:51 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40730 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762237Ab2FVPUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:19:09 -0400
-Subject: Re: [PATCH 5/8] perf symbols: Do not use ELF's symbol binding
- constants
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-In-Reply-To: <20120622124329.GG17747@infradead.org>
-References: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
-	 <1340343462-15556-6-git-send-email-namhyung@kernel.org>
-	 <20120622124329.GG17747@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 23 Jun 2012 00:19:02 +0900
-Message-ID: <1340378342.1478.24.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 22 Jun 2012 11:20:49 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 01/12] f81232: correct stubbed termios handler
+To: greg@kroah.com, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Date: Fri, 22 Jun 2012 16:36:42 +0100
+Message-ID: <20120622153600.1405.15575.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-06-22 (금), 09:43 -0300, Arnaldo Carvalho de Melo:
-> Em Fri, Jun 22, 2012 at 02:37:39PM +0900, Namhyung Kim escreveu:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > There's no need to use the ELF's internal value directly.
-> > Define and use our own - it's required to eliminated the
-> > dependency of libelf.
-> 
-> Why don't you set STB_GLOBAL, etc to the expected values when libelf is
-> not present? That way no changes need to be made to symbol.c
-> 
-> Ditto for GELF_ST_BIND.
-> 
-> I.e. keep the subset of libelf.h that we use, providing those
-> definitions on the poor man's libelf.h we should use when the "real
-> thing" is not available.
-> 
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-I just tried to be independent to (lib)elf as much as possible. And I
-thought that using same macro name might cause a bit of confusion - at
-least for me - so I wanted to use more descriptive and generic name.
+ drivers/usb/serial/f81232.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-But it's not a big deal. If you insist on using the same name is the
-better way, I can change it.
-
-
--- 
-Regards,
-Namhyung Kim
-
+diff --git a/drivers/usb/serial/f81232.c b/drivers/usb/serial/f81232.c
+index 499b15f..acd3267 100644
+--- a/drivers/usb/serial/f81232.c
++++ b/drivers/usb/serial/f81232.c
+@@ -177,6 +177,7 @@ static void f81232_set_termios(struct tty_struct *tty,
+ 		return;
+ 
+ 	/* Do the real work here... */
++	tty_termios_copy_hw(&tty->termios, old_termios);
+ }
+ 
+ static int f81232_tiocmget(struct tty_struct *tty)
 
