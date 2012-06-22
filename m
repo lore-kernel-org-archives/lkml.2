@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762531Ab2FVP3u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:29:50 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38816 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762328Ab2FVP3q convert rfc822-to-8bit (ORCPT
+	id S1762554Ab2FVP35 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:29:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39705 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762537Ab2FVP3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:29:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="159608865"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Jan Beulich <JBeulich@suse.com>, "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: "Raj, Ashok" <ashok.raj@intel.com>,
-        "Dugger, Donald D" <donald.d.dugger@intel.com>,
-        "Shan, Haitao" <haitao.shan@intel.com>,
-        "Nakajima, Jun" <jun.nakajima@intel.com>,
-        "Li, Susie" <susie.li@intel.com>, "Auld, Will" <will.auld@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Keir Fraser <keir@xen.org>
-Subject: RE: [vMCE design RFC] Xen vMCE design
-Thread-Topic: [vMCE design RFC] Xen vMCE design
-Thread-Index: Ac1O/6XAexbUH0BVTLGVMLMLWAtaJwBAufgAACbfvoAAAhphAAAGzxWA
-Date: Fri, 22 Jun 2012 15:29:41 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1932337D@ORSMSX104.amr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
- <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923352542BD@SHSMSX101.ccr.corp.intel.com>
- <4FE475BE020000780008B624@nat28.tlf.novell.com>
-In-Reply-To: <4FE475BE020000780008B624@nat28.tlf.novell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 22 Jun 2012 11:29:54 -0400
+Date: Fri, 22 Jun 2012 12:29:48 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 5/8] perf symbols: Do not use ELF's symbol binding
+ constants
+Message-ID: <20120622152948.GI17747@infradead.org>
+References: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
+ <1340343462-15556-6-git-send-email-namhyung@kernel.org>
+ <20120622124329.GG17747@infradead.org>
+ <1340378342.1478.24.camel@leonhard>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1340378342.1478.24.camel@leonhard>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 1). still use 1 bank and simply ignore this issue. I mean, even if guest 
-> runs at bank0 quirks platform, when hypervisor inject vMCE# to guest, guest 
-> skip bank0, then guest MCE logic would think it detect a spurious mce, then 
-> kill itself. Considering bank0 quirks is only for old cpus, this is 
-> acceptable;
-> 2). use 32 banks
-> 
-> In fact, a third option is, use 1 bank, but hypervisor kill guest when it 
-> detect bank0 quirks. This would be same effect as option 1, so I prefer let 
-> guest kill itself.
+Em Sat, Jun 23, 2012 at 12:19:02AM +0900, Namhyung Kim escreveu:
+> 2012-06-22 (금), 09:43 -0300, Arnaldo Carvalho de Melo:
+> > Why don't you set STB_GLOBAL, etc to the expected values when libelf is
+> > not present? That way no changes need to be made to symbol.c
 
-Don't you control what CPUID is shown to the guest? Under what circumstances
-would you tell the guest that it is running on an AMD-K7 or an Intel family
-6 with model < 0x1A?   Surely for migration reasons you need to present the
-same virtualized family/model all the time ... so just don't use ones that
-cause problems.
+> > Ditto for GELF_ST_BIND.
 
-If that isn't an option - then say there are 2 banks and have Xen ignore bank
-0 (make MC0_STATUS always appear to contain 0) and put all the errors into
-bank1.  If you tell the guest there are 32 banks it will read all of them.
-Which means a lot of pointless exits to the hypervisor.
+> > I.e. keep the subset of libelf.h that we use, providing those
+> > definitions on the poor man's libelf.h we should use when the "real
+> > thing" is not available.
 
--Tony
+> I just tried to be independent to (lib)elf as much as possible. And I
+> thought that using same macro name might cause a bit of confusion - at
+> least for me - so I wanted to use more descriptive and generic name.
+
+> But it's not a big deal. If you insist on using the same name is the
+> better way, I can change it.
+
+I think its better to use the well know names, libelf is not just one
+implementation, there are several, and we are interested in people
+experienced with those APIs to feel at ease when looking at our code :-)
+
+Also as a general practice I try hard to reduce patch size, so
+restricting the changes to allow building with an alternative, stripped
+down libelf to the stripped down libelf headers seems like a good path
+to follow.
+
+- Arnaldo
