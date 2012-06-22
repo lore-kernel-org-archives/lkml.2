@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910Ab2FVMdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:33:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50066 "EHLO mx1.redhat.com"
+	id S932919Ab2FVMgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:36:24 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:60743 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932823Ab2FVMdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:33:44 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Torsten Hilbrich <torsten.hilbrich@secunet.com>,
-        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
-References: <4FDEC3C2.4060909@secunet.com>
-	<x49fw9smohy.fsf@segfault.boston.devel.redhat.com>
-	<4FE0155A.6010404@secunet.com>
-	<x49ehpbjiyp.fsf@segfault.boston.devel.redhat.com>
-	<20120622001202.GG11645@quack.suse.cz>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 22 Jun 2012 08:33:30 -0400
-In-Reply-To: <20120622001202.GG11645@quack.suse.cz> (Jan Kara's message of
-	"Fri, 22 Jun 2012 02:12:02 +0200")
-Message-ID: <x498vffmspx.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755631Ab2FVMgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 08:36:22 -0400
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        s-guiriec@ti.com, Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH 1/3] MFD: palmas fix regulator pdata missing
+Date: Fri, 22 Jun 2012 13:36:18 +0100
+Message-Id: <1340368581-11882-2-git-send-email-gg@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1340368581-11882-1-git-send-email-gg@slimlogic.co.uk>
+References: <1340368581-11882-1-git-send-email-gg@slimlogic.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+Due to a merge error the section of code passing the pdata for the
+regulator driver to the mfd_add_devices via the children structure
+was missing. This corrects this problem.
 
->   I think it can have something to do with the fact that the partition size
-> is not a multiple of 4k (i.e. expected block size)?
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+---
+ drivers/mfd/palmas.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Ahh, yes.  Except that ext3 sets the blocksize to 1k by default.
-However, I still can't explain why we don't get an error attempting to
-access beyond the end of the device.  I'll keep digging on that.
+diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+index 00c0aba..7dfb018 100644
+--- a/drivers/mfd/palmas.c
++++ b/drivers/mfd/palmas.c
+@@ -441,6 +441,9 @@ static int __devinit palmas_i2c_probe(struct i2c_client *i2c,
+ 		goto err;
+ 	}
+ 
++	children[PALMAS_PMIC_ID].platform_data = pdata->pmic_pdata;
++	children[PALMAS_PMIC_ID].pdata_size = sizeof(*pdata->pmic_pdata);
++
+ 	ret = mfd_add_devices(palmas->dev, -1,
+ 			      children, ARRAY_SIZE(palmas_children),
+ 			      NULL, regmap_irq_chip_get_base(palmas->irq_data));
+-- 
+1.7.9.5
 
->   BTW: blkdev_max_block() is a terrible name for something that intends to
-> return size in blocks...
-
-Fully agreed here, and I'll fix that up when I get my head completely
-wrapped around this one.
-
-Thanks for taking a look, Jan!
-
--Jeff
