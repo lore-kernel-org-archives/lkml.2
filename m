@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412Ab2FVKy6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 06:54:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48718 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755505Ab2FVKy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 06:54:56 -0400
-Date: Fri, 22 Jun 2012 11:54:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 10/17] netvm: Allow skb allocation to use PFMEMALLOC
- reserves
-Message-ID: <20120622105451.GC8271@suse.de>
-References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
- <1340192652-31658-11-git-send-email-mgorman@suse.de>
- <20120621163029.GB6045@breakpoint.cc>
+	id S1758246Ab2FVKzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 06:55:43 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39241 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758106Ab2FVKzm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 06:55:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120621163029.GB6045@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87txy3sn20.fsf@lebrac.rtp-net.org>
+References: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
+	<1340334073-17804-12-git-send-email-chenhc@lemote.com>
+	<87txy3sn20.fsf@lebrac.rtp-net.org>
+Date: Fri, 22 Jun 2012 18:55:40 +0800
+Message-ID: <CAAhV-H5q5G87UMn0ixPUVZNcEV1b_qBHJKVKmCJsmzKdEB--4A@mail.gmail.com>
+Subject: Re: [PATCH V3 11/16] drm/radeon: Make radeon card usable for Loongson.
+From: Huacai Chen <chenhuacai@gmail.com>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
+        Zhangjin Wu <wuzhangjin@gmail.com>, Huacai Chen <chenhc@lemote.com>,
+        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 06:30:29PM +0200, Sebastian Andrzej Siewior wrote:
-> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> > index 1d6ecc8..9a58dcc 100644
-> > --- a/net/core/skbuff.c
-> > +++ b/net/core/skbuff.c
-> > @@ -167,14 +206,19 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
-> >   *	%GFP_ATOMIC.
-> >   */
-> >  struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
-> > -			    int fclone, int node)
-> > +			    int flags, int node)
-> >  {
-> >  	struct kmem_cache *cache;
-> >  	struct skb_shared_info *shinfo;
-> >  	struct sk_buff *skb;
-> >  	u8 *data;
-> > +	bool pfmemalloc;
-> >  
-> > -	cache = fclone ? skbuff_fclone_cache : skbuff_head_cache;
-> > +	cache = (flags & SKB_ALLOC_FCLONE)
-> > +		? skbuff_fclone_cache : skbuff_head_cache;
-> > +
-> > +	if (sk_memalloc_socks() && (flags & SKB_ALLOC_RX))
-> > +		gfp_mask |= __GFP_MEMALLOC;
-> >  
-> >  	/* Get the HEAD */
-> >  	skb = kmem_cache_alloc_node(cache, gfp_mask & ~__GFP_DMA, node);
-> 
-> This is mostly used by nic to refil their RX skb pool. You add the
-> __GFP_MEMALLOC to the allocation to rise the change of a successfull refill
-> for the swap case.
-> A few drivers use build_skb() to create the skb. __netdev_alloc_skb()
-> shouldn't be affected since the allocation happens with GFP_ATOMIC. Looking at
-> TG3 it uses build_skb() and get_pages() / kmalloc(). Shouldn't this be some
-> considered?
-> 
+On Fri, Jun 22, 2012 at 5:39 PM, Arnaud Patard
+<arnaud.patard@rtp-net.org> wrote:
+>
+> Hi,
+>
+> Huacai Chen <chenhuacai@gmail.com> writes:
+>
+>> 1, Handle io prot correctly for MIPS.
+>> 2, Define SAREA_MAX as the size of one page.
+>> 3, Don't use swiotlb on Loongson machines (Loonson need swioitlb, but
+>>    when use swiotlb, GPU reset occurs at resume from suspend).
+>>
+>> Signed-off-by: Huacai Chen <chenhc@lemote.com>
+>> Signed-off-by: Hongliang Tao <taohl@lemote.com>
+>> Signed-off-by: Hua Yan <yanh@lemote.com>
+>> Reviewed-by: Michel Dänzer <michel@daenzer.net>
+>> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+>> Reviewed-by: Lucas Stach <dev@lynxeye.de>
+>> Reviewed-by: j.glisse <j.glisse@gmail.com>
+>> Cc: dri-devel@lists.freedesktop.org
+>> ---
+>>  drivers/gpu/drm/drm_vm.c            |    2 +-
+>>  drivers/gpu/drm/radeon/radeon_ttm.c |    6 +++---
+>>  drivers/gpu/drm/ttm/ttm_bo_util.c   |    2 +-
+>>  include/drm/drm_sarea.h             |    2 ++
+>>  4 files changed, 7 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
+>> index 961ee08..3f06166 100644
+>> --- a/drivers/gpu/drm/drm_vm.c
+>> +++ b/drivers/gpu/drm/drm_vm.c
+>> @@ -62,7 +62,7 @@ static pgprot_t drm_io_prot(uint32_t map_type, struct vm_area_struct *vma)
+>>               tmp = pgprot_writecombine(tmp);
+>>       else
+>>               tmp = pgprot_noncached(tmp);
+>> -#elif defined(__sparc__) || defined(__arm__)
+>> +#elif defined(__sparc__) || defined(__arm__) || defined(__mips__)
+>>       tmp = pgprot_noncached(tmp);
+>
+> btw, would it be a good idea to use uncached accelerated instead ?
+I have tried uncached accelerated, there will be random points in the
+monitor, it seems a hw issue...
 
-While TG3 is not exactly as you describe after rebasing build_skb should
-make a similar check to __alloc_skb. As it is always used for RX allocation
-from the skbuff_head_cache cache the following should be suitable. Thanks.
-
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 9832001..063830c 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -310,8 +310,12 @@ struct sk_buff *build_skb(void *data, unsigned int frag_size)
- 	struct skb_shared_info *shinfo;
- 	struct sk_buff *skb;
- 	unsigned int size = frag_size ? : ksize(data);
-+	gfp_t gfp_mask = GFP_ATOMIC;
- 
--	skb = kmem_cache_alloc(skbuff_head_cache, GFP_ATOMIC);
-+	if (sk_memalloc_socks())
-+		gfp_mask |= __GFP_MEMALLOC;
-+
-+	skb = kmem_cache_alloc(skbuff_head_cache, gfp_mask);
- 	if (!skb)
- 		return NULL;
- 
+>
+> Arnaud
