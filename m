@@ -1,148 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762500Ab2FVPd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:33:27 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56305 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762445Ab2FVPZ1 (ORCPT
+	id S1762603Ab2FVPde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:33:34 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:35207 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762327Ab2FVPdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:25:27 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 07/22] rcu: Move rcu_barrier_cpu_count to rcu_state structure
-Date: Fri, 22 Jun 2012 08:17:06 -0700
-Message-Id: <1340378241-6458-7-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120622151655.GA6249@linux.vnet.ibm.com>
- <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062215-5518-0000-0000-0000056D4B75
+	Fri, 22 Jun 2012 11:33:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FE45C4E.8060808@gmail.com>
+References: <CACVXFVO-Wm1Qwporby1M=+yPz81AWHpZRBZSbr5tgT32b6sSEA@mail.gmail.com>
+	<CANrkHUYd8Ww6De4MiZ8_oPfcnhvtsZXOySLRiWSBU4QUQ6beHw@mail.gmail.com>
+	<CACVXFVP16UmHe-GGydrSMgGHwnkSvYhnY339=zr=BfCehvS8Kw@mail.gmail.com>
+	<CANrkHUaxJGcv2bdUWTCB_oKct-iFCKCdb7OQPTUjS4MuKeCS2w@mail.gmail.com>
+	<4FE0AE7B.4040502@gmail.com>
+	<CANrkHUawrQfb+o+W7FrYACv6NocZn_MAym5A209peP8tW1nZRQ@mail.gmail.com>
+	<4FE45C4E.8060808@gmail.com>
+Date: Fri, 22 Jun 2012 21:03:28 +0530
+Message-ID: <CANrkHUYFZ3y1hyDD54nD-wqmhPcvkrjBQAzf23OknABJsUS0AA@mail.gmail.com>
+Subject: Re: MMC: commit dba3c29 ruins mmc card data on beagle-xm revB
+From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
+To: Paolo Pisati <p.pisati@gmail.com>
+Cc: Ming Lei <ming.lei@canonical.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Venkatraman S <svenkatr@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Fri, Jun 22, 2012 at 5:21 PM, Paolo Pisati <p.pisati@gmail.com> wrote:
+> On 06/20/2012 09:23 AM, T Krishnamoorthy, Balaji wrote:
+>>>
+>>> i just want to say that i'm affected by this too, and i can reproduce it
+>>> 100%.
+>>>
+>>
+>> Is it with SD or MMC card
+>> Can you provide Beagle board rev info?
+>
+> kingston 4g class 4 sdhc c04g taiwan
+>
+> tested on a beagle xm rev a and rev c, both boards exhibit the same
+> problem with this card, while with a brand new sandisk 16gb sdhc class 4
+> card, everything is ok.
+>
+> i tried reverting dba3c29 "Enable Auto CMD12", and both cards are
+> behaving fine.
+>
+>>> do you want me to run that patch or you already have enough data?
+>>
+>> Can you enable MMC debug and apply the debug patch I provided.
+>> The debug patch did not print any AUTOCMD errors with Ming Lei setup.
+>
+> http://people.canonical.com/~ppisati/mmc-testing/
+>
+> test-mmc.sh: script used for testing
+>
+> test-mmc.log: md5sum of file copied around (as you can see after the
+> umount the md5 changes)
+>
+> test-mmc.syslog: mmc-debug output (plus your patch)
 
-In order to allow each RCU flavor to concurrently execute its rcu_barrier()
-function, it is necessary to move the relevant state to the rcu_state
-structure.  This commit therefore moves the rcu_barrier_cpu_count global
-variable to a new ->barrier_cpu_count field in the rcu_state structure.
+Thanks for testing and sharing the log.
+md5sum is giving 2 different values for 8 tries which indicates writes are not
+entirely random.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/rcutree.c |   25 ++++++++++++++-----------
- kernel/rcutree.h |    1 +
- 2 files changed, 15 insertions(+), 11 deletions(-)
+>
+> after the test, my sd card was so badly wounded that it wouldn't even boot.
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index cb2d35d..592c43f 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -157,7 +157,6 @@ unsigned long rcutorture_vernum;
- 
- /* State information for rcu_barrier() and friends. */
- 
--static atomic_t rcu_barrier_cpu_count;
- static DEFINE_MUTEX(rcu_barrier_mutex);
- static struct completion rcu_barrier_completion;
- 
-@@ -2267,9 +2266,12 @@ static int rcu_cpu_has_callbacks(int cpu)
-  * RCU callback function for _rcu_barrier().  If we are last, wake
-  * up the task executing _rcu_barrier().
-  */
--static void rcu_barrier_callback(struct rcu_head *notused)
-+static void rcu_barrier_callback(struct rcu_head *rhp)
- {
--	if (atomic_dec_and_test(&rcu_barrier_cpu_count))
-+	struct rcu_data *rdp = container_of(rhp, struct rcu_data, barrier_head);
-+	struct rcu_state *rsp = rdp->rsp;
-+
-+	if (atomic_dec_and_test(&rsp->barrier_cpu_count))
- 		complete(&rcu_barrier_completion);
- }
- 
-@@ -2281,7 +2283,7 @@ static void rcu_barrier_func(void *type)
- 	struct rcu_state *rsp = type;
- 	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
- 
--	atomic_inc(&rcu_barrier_cpu_count);
-+	atomic_inc(&rsp->barrier_cpu_count);
- 	rsp->call(&rdp->barrier_head, rcu_barrier_callback);
- }
- 
-@@ -2294,9 +2296,9 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	int cpu;
- 	unsigned long flags;
- 	struct rcu_data *rdp;
--	struct rcu_head rh;
-+	struct rcu_data rd;
- 
--	init_rcu_head_on_stack(&rh);
-+	init_rcu_head_on_stack(&rd.barrier_head);
- 
- 	/* Take mutex to serialize concurrent rcu_barrier() requests. */
- 	mutex_lock(&rcu_barrier_mutex);
-@@ -2321,7 +2323,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	 *	us -- but before CPU 1's orphaned callbacks are invoked!!!
- 	 */
- 	init_completion(&rcu_barrier_completion);
--	atomic_set(&rcu_barrier_cpu_count, 1);
-+	atomic_set(&rsp->barrier_cpu_count, 1);
- 	raw_spin_lock_irqsave(&rsp->onofflock, flags);
- 	rsp->rcu_barrier_in_progress = current;
- 	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
-@@ -2360,15 +2362,16 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	rcu_adopt_orphan_cbs(rsp);
- 	rsp->rcu_barrier_in_progress = NULL;
- 	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
--	atomic_inc(&rcu_barrier_cpu_count);
-+	atomic_inc(&rsp->barrier_cpu_count);
- 	smp_mb__after_atomic_inc(); /* Ensure atomic_inc() before callback. */
--	rsp->call(&rh, rcu_barrier_callback);
-+	rd.rsp = rsp;
-+	rsp->call(&rd.barrier_head, rcu_barrier_callback);
- 
- 	/*
- 	 * Now that we have an rcu_barrier_callback() callback on each
- 	 * CPU, and thus each counted, remove the initial count.
- 	 */
--	if (atomic_dec_and_test(&rcu_barrier_cpu_count))
-+	if (atomic_dec_and_test(&rsp->barrier_cpu_count))
- 		complete(&rcu_barrier_completion);
- 
- 	/* Wait for all rcu_barrier_callback() callbacks to be invoked. */
-@@ -2377,7 +2380,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	/* Other rcu_barrier() invocations can now safely proceed. */
- 	mutex_unlock(&rcu_barrier_mutex);
- 
--	destroy_rcu_head_on_stack(&rh);
-+	destroy_rcu_head_on_stack(&rd.barrier_head);
- }
- 
- /**
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 1783eae..e7d29b7 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -386,6 +386,7 @@ struct rcu_state {
- 	struct task_struct *rcu_barrier_in_progress;
- 						/* Task doing rcu_barrier(), */
- 						/*  or NULL if no barrier. */
-+	atomic_t barrier_cpu_count;		/* # CPUs waiting on. */
- 	raw_spinlock_t fqslock;			/* Only one task forcing */
- 						/*  quiescent states. */
- 	unsigned long jiffies_force_qs;		/* Time at which to invoke */
--- 
-1.7.8
+I guess boot partition was not updated, so I think it should boot until kernel
+and fail at mounting filesystem as filesystem would have got corrupted by
+previous test.
 
+> --
+> bye,
+> p.
