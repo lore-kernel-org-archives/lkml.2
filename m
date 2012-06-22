@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153Ab2FVPk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:40:27 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:53579 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759Ab2FVPkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:40:23 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 14/17] rcu: Fix rcu_is_cpu_idle() #ifdef in TINY_RCU
-Date: Fri, 22 Jun 2012 08:35:09 -0700
-Message-Id: <1340379312-6684-14-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1340379312-6684-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120622153501.GA6626@linux.vnet.ibm.com>
- <1340379312-6684-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062215-3534-0000-0000-000009AAC71A
+	id S933048Ab2FVPlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:41:46 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:41137 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694Ab2FVPlo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 11:41:44 -0400
+Message-ID: <4FE4922D.8070501@surriel.com>
+Date: Fri, 22 Jun 2012 11:41:33 -0400
+From: Rik van Riel <riel@surriel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
+        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
+ rbtree
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>    <1340315835-28571-2-git-send-email-riel@surriel.com>   <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>  <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com> <1340375872.18025.77.camel@twins>
+In-Reply-To: <1340375872.18025.77.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On 06/22/2012 10:37 AM, Peter Zijlstra wrote:
+> On Fri, 2012-06-22 at 10:25 -0400, Rik van Riel wrote:
+>> On 06/22/2012 10:13 AM, Peter Zijlstra wrote:
+>>> On Fri, 2012-06-22 at 10:11 -0400, Rik van Riel wrote:
+>>>>
+>>>> I am still trying to wrap my brain around your alternative
+>>>> search algorithm, not sure if/how it can be combined with
+>>>> arbitrary address limits and alignment...
+>>>
+>>> for alignment we can do: len += align - 1;
+>>
+>> We could, but that might lead us to returning -ENOMEM
+>> when we actually have memory available.
+>>
+>> When you consider architectures like HPPA, which use
+>> a pretty large alignment, but align everything the same,
+>> chances are pretty much every freed hole will have the
+>> right alignment...
+>
+> Well, if you don't your gap heap is next to useless and you'll revert to
+> simply walking all gaps until you find a suitable one.
 
-The rcu_is_cpu_idle() function is used if CONFIG_DEBUG_LOCK_ALLOC,
-but TINY_RCU defines it only when CONFIG_PROVE_RCU.  This causes
-build failures when CONFIG_DEBUG_LOCK_ALLOC=y but CONFIG_PROVE_RCU=n.
-This commit therefore adjusts the #ifdefs for rcu_is_cpu_idle() so
-that it is defined when CONFIG_DEBUG_LOCK_ALLOC=y.
+I could see how that might potentially be a problem,
+especially when we have a small allocation with large
+alignment constraints, eg. HPPA cache alignment.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutiny.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> I really worry about this search function of yours, its complexity is
+> very non obvious.
 
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 37a5444..547b1fe 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -172,7 +172,7 @@ void rcu_irq_enter(void)
- 	local_irq_restore(flags);
- }
- 
--#ifdef CONFIG_PROVE_RCU
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
- /*
-  * Test whether RCU thinks that the current CPU is idle.
-@@ -183,7 +183,7 @@ int rcu_is_cpu_idle(void)
- }
- EXPORT_SYMBOL(rcu_is_cpu_idle);
- 
--#endif /* #ifdef CONFIG_PROVE_RCU */
-+#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
- 
- /*
-  * Test whether the current CPU was interrupted from idle.  Nested
+Let me try implementing your algorithm with arbitrary
+address constraints and alignment/colouring.
+
+Basically, we need to remember if the allocation failed
+due to bad alignment.  If it did, we add shm_align_mask
+to the allocation length, and try a second search.
+
+This should result in at worst two whole tree traversals
+and one partial traversal. Less on sane architectures,
+or for non-MAP_SHARED allocations.
+
 -- 
-1.7.8
-
+All rights reversed.
