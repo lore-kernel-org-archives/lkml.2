@@ -1,80 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761279Ab2FVF4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 01:56:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56914 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761233Ab2FVF4Q (ORCPT
+	id S1761293Ab2FVF4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 01:56:40 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6501 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab2FVF4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 01:56:16 -0400
-Date: Fri, 22 Jun 2012 07:56:13 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
-Cc: kernel@pengutronix.de
-Subject: Re: [PATCH RESEND] of: add const to struct of_device_id.data
-Message-ID: <20120622055613.GL5642@pengutronix.de>
-References: <1335171381-24869-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20120607102014.GI22191@pengutronix.de>
+	Fri, 22 Jun 2012 01:56:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 21 Jun 2012 22:56:33 -0700
+Message-ID: <4FE408E9.6050909@nvidia.com>
+Date: Fri, 22 Jun 2012 11:25:53 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120607102014.GI22191@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 2/2] regulator: tps65910: Convert to regulator_list_voltage_table
+References: <1340275546.2922.1.camel@phoenix> <1340275680.2922.3.camel@phoenix>
+In-Reply-To: <1340275680.2922.3.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 12:20:14PM +0200, Uwe Kleine-König wrote:
-> Drivers should never need to modify the data of a device id. So it can
-> be const which in turn allows more consts in the driver.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+On Thursday 21 June 2012 04:18 PM, Axel Lin wrote:
+> Convert tps65910_ops and tps65910_ops_vdd3 to regulator_list_voltage_table.
+>
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
 > ---
-> (Cc += lkml + Grant)
-> 
-> Hello,
-> 
-> this might introduce warnings in drivers that access the data member
-> without using const, so this is definitly merge window material if it is
-> considered at all.
-ping
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+I am fine with this change.
 
-Best regards
-Uwe
-
->  include/linux/mod_devicetable.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-> index 501da4c..183f411 100644
-> --- a/include/linux/mod_devicetable.h
-> +++ b/include/linux/mod_devicetable.h
-> @@ -222,7 +222,7 @@ struct of_device_id
->  	char	type[32];
->  	char	compatible[128];
->  #ifdef __KERNEL__
-> -	void	*data;
-> +	const void *data;
->  #else
->  	kernel_ulong_t data;
->  #endif
-> -- 
-> 1.7.10
-> 
-> 
-> 
-> -- 
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> 
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
