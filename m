@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762391Ab2FVPZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:25:11 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56715 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762329Ab2FVPZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:25:09 -0400
+	id S933035Ab2FVPZb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:25:31 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56337 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932873Ab2FVPZ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 11:25:29 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,78 +15,68 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 06/22] rcu: Move _rcu_barrier()'s rcu_head structures to rcu_data structures
-Date: Fri, 22 Jun 2012 08:17:05 -0700
-Message-Id: <1340378241-6458-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 21/22] rcu: Allow RCU grace-period cleanup to be preempted
+Date: Fri, 22 Jun 2012 08:17:20 -0700
+Message-Id: <1340378241-6458-21-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120622151655.GA6249@linux.vnet.ibm.com>
  <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062215-7182-0000-0000-000001D2B605
+x-cbid: 12062215-5518-0000-0000-0000056D4B8D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-In order for multiple flavors of RCU to each concurrently run one
-rcu_barrier(), each flavor needs its own per-CPU set of rcu_head
-structures.  This commit therefore moves _rcu_barrier()'s set of
-per-CPU rcu_head structures from per-CPU variables to the existing
-per-CPU and per-RCU-flavor rcu_data structures.
+RCU grace-period cleanup is currently carried out with interrupts
+disabled, which can result in excessive latency spikes on large systems
+(many hundreds or thousands of CPUs).  This patch therefore makes the
+RCU grace-period cleanup be preemptible, including voluntary preemption
+points, which should eliminate those latency spikes.  Similar spikes from
+forcing of quiescent states will be dealt with similarly by later patches.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Reported-by: Mike Galbraith <mgalbraith@suse.de>
+Reported-by: Dimitri Sivanich <sivanich@sgi.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutree.c |    6 ++----
- kernel/rcutree.h |    3 +++
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ kernel/rcutree.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 24cd2f0..cb2d35d 100644
+index 4a3f6b0..d21c2d3 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -157,7 +157,6 @@ unsigned long rcutorture_vernum;
+@@ -1160,7 +1160,7 @@ static int rcu_gp_kthread(void *arg)
+ 		 * completed.
+ 		 */
+ 		if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
+-			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++			raw_spin_unlock_irqrestore(&rnp->lock, flags);
  
- /* State information for rcu_barrier() and friends. */
+ 			/*
+ 			 * Propagate new ->completed value to rcu_node
+@@ -1169,14 +1169,13 @@ static int rcu_gp_kthread(void *arg)
+ 			 * to process their callbacks.
+ 			 */
+ 			rcu_for_each_node_breadth_first(rsp, rnp) {
+-				/* irqs already disabled. */
+-				raw_spin_lock(&rnp->lock);
++				raw_spin_lock_irqsave(&rnp->lock, flags);
+ 				rnp->completed = rsp->gpnum;
+-				/* irqs remain disabled. */
+-				raw_spin_unlock(&rnp->lock);
++				raw_spin_unlock_irqrestore(&rnp->lock, flags);
++				cond_resched();
+ 			}
+ 			rnp = rcu_get_root(rsp);
+-			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++			raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		}
  
--static DEFINE_PER_CPU(struct rcu_head, rcu_barrier_head) = {NULL};
- static atomic_t rcu_barrier_cpu_count;
- static DEFINE_MUTEX(rcu_barrier_mutex);
- static struct completion rcu_barrier_completion;
-@@ -2279,12 +2278,11 @@ static void rcu_barrier_callback(struct rcu_head *notused)
-  */
- static void rcu_barrier_func(void *type)
- {
--	int cpu = smp_processor_id();
--	struct rcu_head *head = &per_cpu(rcu_barrier_head, cpu);
- 	struct rcu_state *rsp = type;
-+	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
- 
- 	atomic_inc(&rcu_barrier_cpu_count);
--	rsp->call(head, rcu_barrier_callback);
-+	rsp->call(&rdp->barrier_head, rcu_barrier_callback);
- }
- 
- /*
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 15837d7..1783eae 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -300,6 +300,9 @@ struct rcu_data {
- 	unsigned long n_rp_need_fqs;
- 	unsigned long n_rp_need_nothing;
- 
-+	/* 6) _rcu_barrier() callback. */
-+	struct rcu_head barrier_head;
-+
- 	int cpu;
- 	struct rcu_state *rsp;
- };
+ 		rsp->completed = rsp->gpnum; /* Declare grace period done. */
 -- 
 1.7.8
 
