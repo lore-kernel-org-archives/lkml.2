@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762796Ab2FVXWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:22:16 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36278 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762774Ab2FVXWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:22:14 -0400
-Date: Fri, 22 Jun 2012 16:21:49 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Kees Cook <keescook@chromium.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>, alsa-devel@alsa-project.org,
-        Joshua Kroll <joshkroll@google.com>
-Subject: [PATCH] sound: fix MODULE_LICENSE typos
-Message-ID: <20120622232149.GA29819@www.outflux.net>
+	id S1762810Ab2FVXXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:23:16 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:13823 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab2FVXXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 19:23:15 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-127.messagelabs.com!1340407394!6581103!1
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 14/31] staging: comedi: ni_daq_700: Remove bustype variable from the boardinfo
+Date: Fri, 22 Jun 2012 16:23:04 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+Message-ID: <201206221623.04580.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-include/linux/license.h does not recognize "GPLv2", so adjust these
-declarations to add the needed space before the version.
+This driver is only used for pcmcia type devices. There is no need for
+the 'bustype' check. Remove the variable from the boardinfo and refactor
+the code based on it's removal.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-hartman <gregkh@linuxfoundation.org>
 ---
- sound/soc/ux500/ux500_msp_dai.c |    2 +-
- sound/soc/ux500/ux500_msp_i2s.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/ni_daq_700.c | 27 ++++++---------------------
+ 1 file changed, 6 insertions(+), 21 deletions(-)
 
-diff --git a/sound/soc/ux500/ux500_msp_dai.c b/sound/soc/ux500/ux500_msp_dai.c
-index 93c6c40..62ac028 100644
---- a/sound/soc/ux500/ux500_msp_dai.c
-+++ b/sound/soc/ux500/ux500_msp_dai.c
-@@ -840,4 +840,4 @@ static struct platform_driver msp_i2s_driver = {
+diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
+index 47e8cf4..106da08 100644
+--- a/drivers/staging/comedi/drivers/ni_daq_700.c
++++ b/drivers/staging/comedi/drivers/ni_daq_700.c
+@@ -55,21 +55,16 @@ static struct pcmcia_device *pcmcia_cur_dev;
+ 
+ #define DIO700_SIZE 8		/*  size of io region used by board */
+ 
+-enum dio700_bustype { pcmcia_bustype };
+-
+ struct dio700_board {
+ 	const char *name;
+-	enum dio700_bustype bustype;	/*  PCMCIA */
  };
- module_platform_driver(msp_i2s_driver);
  
--MODULE_LICENSE("GPLv2");
-+MODULE_LICENSE("GPL v2");
-diff --git a/sound/soc/ux500/ux500_msp_i2s.c b/sound/soc/ux500/ux500_msp_i2s.c
-index 496dec1..ee14d2d 100644
---- a/sound/soc/ux500/ux500_msp_i2s.c
-+++ b/sound/soc/ux500/ux500_msp_i2s.c
-@@ -739,4 +739,4 @@ void ux500_msp_i2s_cleanup_msp(struct platform_device *pdev,
- 	devm_kfree(&pdev->dev, msp);
- }
+ static const struct dio700_board dio700_boards[] = {
+ 	{
+ 	 .name = "daqcard-700",
+-	 .bustype = pcmcia_bustype,
+ 	 },
+ 	{
+ 	 .name = "ni_daq_700",
+-	 .bustype = pcmcia_bustype,
+ 	 },
+ };
  
--MODULE_LICENSE("GPLv2");
-+MODULE_LICENSE("GPL v2");
+@@ -200,22 +195,14 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	struct pcmcia_device *link;
+ 	int ret;
+ 
+-	/*  get base address, irq etc. based on bustype */
+-	switch (thisboard->bustype) {
+-	case pcmcia_bustype:
+-		link = pcmcia_cur_dev;	/* XXX hack */
+-		if (!link)
+-			return -EIO;
+-		iobase = link->resource[0]->start;
++	link = pcmcia_cur_dev;	/* XXX hack */
++	if (!link)
++		return -EIO;
++	iobase = link->resource[0]->start;
+ #ifdef incomplete
+-		irq = link->irq;
++	irq = link->irq;
+ #endif
+-		break;
+-	default:
+-		printk(KERN_ERR "bug! couldn't determine board type\n");
+-		return -EINVAL;
+-		break;
+-	}
++
+ 	printk(KERN_ERR "comedi%d: ni_daq_700: %s, io 0x%lx", dev->minor,
+ 	       thisboard->name, iobase);
+ #ifdef incomplete
+@@ -255,8 +242,6 @@ static void dio700_detach(struct comedi_device *dev)
+ {
+ 	if (dev->subdevices)
+ 		subdev_700_cleanup(dev, dev->subdevices + 0);
+-	if (thisboard->bustype != pcmcia_bustype && dev->iobase)
+-		release_region(dev->iobase, DIO700_SIZE);
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+ };
 -- 
-1.7.0.4
+1.7.11
 
