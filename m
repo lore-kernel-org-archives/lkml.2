@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761991Ab2FVKCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 06:02:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39022 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761964Ab2FVKCa (ORCPT
+	id S1761995Ab2FVKDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 06:03:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35600 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761960Ab2FVKDO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 06:02:30 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH] driver core: fix shutdown races with probe/remove(v3)
-Date: Fri, 22 Jun 2012 18:01:40 +0800
-Message-Id: <1340359301-7468-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 22 Jun 2012 06:03:14 -0400
+Message-ID: <1340359379.18025.60.camel@twins>
+Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
+ rbtree
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@surriel.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        minchan@gmail.com, kosaki.motohiro@gmail.com, andi@firstfloor.org,
+        hannes@cmpxchg.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>
+Date: Fri, 22 Jun 2012 12:02:59 +0200
+In-Reply-To: <1340315835-28571-2-git-send-email-riel@surriel.com>
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>
+	 <1340315835-28571-2-git-send-email-riel@surriel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Firstly, .shutdown callback may touch a uninitialized hardware
-if dev->driver is set and .probe is not completed.
+On Thu, 2012-06-21 at 17:57 -0400, Rik van Riel wrote:
+> +static unsigned long largest_free_gap(struct rb_node *node)
+> +{
+> +       struct vm_area_struct *vma, *prev, *left = NULL, *right = NULL;
+> +       unsigned long largest = 0;
+> +
+> +       if (node->rb_left)
+> +               left = rb_to_vma(node->rb_left);
+> +       if (node->rb_right)
+> +               right = rb_to_vma(node->rb_right);
+> +
+> +       /* Calculate the free gap size between us and the VMA to our left. */
+> +       vma = rb_to_vma(node);
+> +       prev = vma->vm_prev;
+> +
+> +       if (prev)
+> +               largest = vma->vm_start - prev->vm_end;
+> +       else
+> +               largest = vma->vm_start;
+> +
+> +       /* We propagate the largest of our own, or our children's free gaps. */
+> +       if (left)
+> +               largest = max(largest, left->free_gap);
+> +       if (right)
+> +               largest = max(largest, right->free_gap);
+> +
+> +       return largest;
+> +} 
 
-Secondly, device_shutdown() may dereference a null pointer to cause
-oops when dev->driver is cleared after it has been checked in
-device_shutdown().
+If you introduce helpers like:
 
-So just hold device lock and its parent lock(if it has) to
-fix the races.
+static inline struct vm_area_struct *vma_of(struct rb_node *node)
+{
+        return container_of(node, struct vm_area_struct, vm_rb);
+}
 
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
-v3:
-	- add comments on holding parent's reference count
-	- acquire device lock directly instead of using device_trylock
-	as required by Greg
+static inline unsigned long max_gap_of(struct rb_node *node)
+{
+        return vma_of(node)->free_gap;
+}
 
-v2:
-	- take Alan's suggestion to use device_trylock to avoid
-	hanging during shutdown by buggy device or driver
-	- hold parent reference counter
+static unsigned long gap_of(struct rb_node *node)
+{
+        struct vm_area_struct *vma = vma_of(node);
 
- drivers/base/core.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+        if (!vma->vm_prev)
+                return vma->vm_start;
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 846d12b..65849a9 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1812,6 +1812,13 @@ void device_shutdown(void)
- 	while (!list_empty(&devices_kset->list)) {
- 		dev = list_entry(devices_kset->list.prev, struct device,
- 				kobj.entry);
-+
-+		/*
-+		 * hold reference count of device's parent to
-+		 * prevent it from being freed because parent's
-+		 * lock is to be held
-+		 */
-+		get_device(dev->parent);
- 		get_device(dev);
- 		/*
- 		 * Make sure the device is off the kset list, in the
-@@ -1820,6 +1827,11 @@ void device_shutdown(void)
- 		list_del_init(&dev->kobj.entry);
- 		spin_unlock(&devices_kset->list_lock);
- 
-+		/* hold lock to avoid race with probe/release */
-+		if (dev->parent)
-+			device_lock(dev->parent);
-+		device_lock(dev);
-+
- 		/* Don't allow any more runtime suspends */
- 		pm_runtime_get_noresume(dev);
- 		pm_runtime_barrier(dev);
-@@ -1831,7 +1843,13 @@ void device_shutdown(void)
- 			dev_dbg(dev, "shutdown\n");
- 			dev->driver->shutdown(dev);
- 		}
-+
-+		device_unlock(dev);
-+		if (dev->parent)
-+			device_unlock(dev->parent);
-+
- 		put_device(dev);
-+		put_device(dev->parent);
- 
- 		spin_lock(&devices_kset->list_lock);
- 	}
--- 
-1.7.9.5
+        return vma->vm_start - vma->vm_prev->vm_end;
+}
 
+You can write your largest free gap as:
+
+unsigned long largest_gap(struct rb_node *node)
+{
+	unsigned long gap = gap_of(node);
+
+	if (node->rb_left)
+		gap = max(gap, max_gap_of(node->rb_left));
+	if (node->rb_right)
+		gap = max(gap, max_gap_of(node->rb_right));
+
+	return gap;
+}
+
+And as shown, you can re-used those {max_,}gap_of() function in the
+lookup function in the next patch.
