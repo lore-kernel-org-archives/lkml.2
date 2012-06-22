@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab2FVPQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:16:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52463 "EHLO
+	id S1762297Ab2FVPSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:18:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36186 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762239Ab2FVPQz (ORCPT
+	with ESMTP id S1758421Ab2FVPSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:16:55 -0400
-Date: Fri, 22 Jun 2012 08:16:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joe Thornber <ejt@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: [PATCH] dm thin: reinstate missing mempool_free in
- cell_release_singleton
-Message-ID: <20120622151650.GA5785@kroah.com>
-References: <20120330195801.GA31806@kroah.com>
- <20120330194856.784259750@linuxfoundation.org>
- <20120622145947.GA4089@redhat.com>
+	Fri, 22 Jun 2012 11:18:38 -0400
+Message-ID: <4FE48CCA.2050506@gmail.com>
+Date: Fri, 22 Jun 2012 09:18:34 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120622145947.GA4089@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@gmail.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC/PATCHSET 0/8] perf tools: Minimal build without libelf dependency
+ (v2)
+References: <1340343462-15556-1-git-send-email-namhyung@kernel.org>  <1340358478.18025.51.camel@twins> <1340377510.1478.10.camel@leonhard>
+In-Reply-To: <1340377510.1478.10.camel@leonhard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 10:59:48AM -0400, Mike Snitzer wrote:
-> Hi Greg,
-> 
-> 3.3-stable pulled in upstream commit
-> 6f94a4c45a6f744383f9f695dde019998db3df55 (dm thin: fix stacked bi_next usage)
-> 
-> But later in the 3.4 development window it was determined that that
-> commit introduced a significant leak.  The following upstream commit
-> fixes it (but unfortunately didn't cc: stable).
+On 6/22/12 9:05 AM, Namhyung Kim wrote:
+> Hi Peter,
+>
+> 2012-06-22 (금), 11:47 +0200, Peter Zijlstra:
+>> On Fri, 2012-06-22 at 14:37 +0900, Namhyung Kim wrote:
+>>> And then I realized that the perf record needs to know about the
+>>> build-id's anyway. :( So I implemented a poor man's version of elf
+>>> parser only for parsing the build-id info.
+>>
+>> Why? the very first versions didn't know about any of that nonsense :-)
+>> It works just fine as long as you don't go change binaries around.
+>>
+>> That said, you did the work already, so no objection, just saying
+>> builtids aren't that important.
+>
+> I'm not sure I understood you correctly. But 'perf record' needs to know
+> about the build-id's to save them to perf.data for 'perf report' later.
+> And 'perf archive' also needs to know about them to select necessary
+> binaries for the session.
+>
 
-3.3 is end-of-life, so there's not much I can do with the 3.3-stable
-tree anymore, sorry.  If there's any other tree I should apply this to
-that is active (i.e. 3.0 or 3.4), please let me know.
+And build-id's are not required for report (-B option for record).
 
-sorry,
+Also, the intent is for a small footprint binary for embedded systems. 
+On such a system I would expect binaries and libraries to be stripped, 
+so no point in running perf-archive.
 
-greg k-h
+
+David
