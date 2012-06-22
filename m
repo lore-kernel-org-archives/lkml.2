@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762342Ab2FVPsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:48:05 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56898 "EHLO
+	id S1762431Ab2FVPyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:54:19 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36339 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab2FVPsC convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755733Ab2FVPyL convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 22 Jun 2012 11:48:02 -0400
-Message-Id: <4FE4AFFD020000780008B799@nat28.tlf.novell.com>
+	Fri, 22 Jun 2012 11:54:11 -0400
+Message-Id: <4FE4B16C020000780008B7A6@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 22 Jun 2012 16:48:45 +0100
+Date: Fri, 22 Jun 2012 16:54:52 +0100
 From: "Jan Beulich" <JBeulich@suse.com>
 To: "Jinsong Liu" <jinsong.liu@intel.com>, "Tony Luck" <tony.luck@intel.com>
 Cc: "Ashok Raj" <ashok.raj@intel.com>,
@@ -27,10 +27,8 @@ References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com
  <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
  <DE8DF0795D48FD4CA783C40EC82923352542BD@SHSMSX101.ccr.corp.intel.com>
  <4FE475BE020000780008B624@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335254989@SHSMSX101.ccr.corp.intel.com>
- <4FE4A636020000780008B756@nat28.tlf.novell.com>
- <3908561D78D1C84285E8C5FCA982C28F19323340@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19323340@ORSMSX104.amr.corp.intel.com>
+ <3908561D78D1C84285E8C5FCA982C28F1932337D@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1932337D@ORSMSX104.amr.corp.intel.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -39,60 +37,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 22.06.12 at 17:21, "Luck, Tony" <tony.luck@intel.com> wrote:
->>>> I think that we minimally need to retain the MCG_CAP register
->>>> as being of potentially variable content (and hence needing
->>>> saving/restoring on migration). To support this in a forward
->>>> compatible manner, we may have to have a way to tell the
->>>> hypervisor e.g. via command line option which extra MSRs
->>>> have to be treated read-as-zero/writes-ignored upon guest
->>>> accesses.
->>> 
->>> Seems unnecessary, reason as above.
->>
->> So going forward you see no possibility of additions to the
->> interface that might warrant allowing more bits to be set in
->> MCG_CAP than you define to be set here? That really looks
->> unrealistic to me.
+>>> On 22.06.12 at 17:29, "Luck, Tony" <tony.luck@intel.com> wrote:
+>>  1). still use 1 bank and simply ignore this issue. I mean, even if guest 
+>> runs at bank0 quirks platform, when hypervisor inject vMCE# to guest, guest 
+>> skip bank0, then guest MCE logic would think it detect a spurious mce, then 
+>> kill itself. Considering bank0 quirks is only for old cpus, this is 
+>> acceptable;
+>> 2). use 32 banks
+>> 
+>> In fact, a third option is, use 1 bank, but hypervisor kill guest when it 
+>> detect bank0 quirks. This would be same effect as option 1, so I prefer let 
+>> guest kill itself.
 > 
-> More bits can be added to MCG_CAP - but this becomes a hard
-> problem for migration because most OS guests only look at
-> MCG_CAP at boot time (linux certainly does) ... so if you migrate
-> and change MCG_CAP to match the new host, the guest will have
-> no idea that things changed.
+> Don't you control what CPUID is shown to the guest? Under what circumstances
+> would you tell the guest that it is running on an AMD-K7 or an Intel family
+> 6 with model < 0x1A?   Surely for migration reasons you need to present the
+> same virtualized family/model all the time ... so just don't use ones that
+> cause problems.
 
-And it doesn't have to - respective events will just not occur
-anymore. All we need to make sure is that if it accesses an MSR
-that's no longer backed by anything in hardware, we don't
-inject a #GP (but instead return e.g. all zeros to reads, and
-drop all writes).
+I don't think family/model/stepping are frequently faked, it's
+normally just the various feature flags that get normalized to
+the smallest common set.
 
-> MCG_SER_P bit is easy to deal with:
-> 1) You already know about it
-> 2) You can safely set it when the guest is running on a host that
-> does not support software error recover ... the guest will just
-> think that SRAO and SRAR events are possible, but they will never
-> actually occur. Setting it does make sure that the guest will be
-> ready should you migrate to a system that really does support it.
+> If that isn't an option - then say there are 2 banks and have Xen ignore bank
+> 0 (make MC0_STATUS always appear to contain 0) and put all the errors into
+> bank1.  If you tell the guest there are 32 banks it will read all of them.
+> Which means a lot of pointless exits to the hypervisor.
 
-And so is likely going to be the case for at least some of the
-additions to come.
-
-> Future bits would have to be dealt with on a case by case basis.
-> The same general model would apply ... set the bit everywhere ...
-> but you might need some Xen changes to virtualize any new resources
-> and capabilities that were described by the new bit. Side question:
-> when a guest is migrated from one machine to another, does the version
-> of Xen running on source and target have to be the same? This tactic
-> will not work if you migrate a guest running on Xen version 99 that
-> does have the code to virtualize some new capability to a machine
-> running Xen version 98 that doesn't.
-
-No, that's not a requirement, and hence we need to create a
-model that will at least always allow upward (destination host
-running higher version Xen than source) migration, and that
-preserves as much functionality as possible when moved
-between hosts with different MCA capabilities.
+Indeed, emulating too many banks can have its own downsides.
+Yet I don't think we're really concerned about performance when
+handling machine checks. But having more than one usable bank
+must have advantages, else hardware wouldn't implement things
+that way.
 
 Jan
 
