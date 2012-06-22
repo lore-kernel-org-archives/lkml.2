@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab2FVDLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 23:11:18 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:64487 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757403Ab2FVDLQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 23:11:16 -0400
+	id S1761005Ab2FVDTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 23:19:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55364 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757458Ab2FVDTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 23:19:30 -0400
+Message-ID: <4FE3E428.8080207@zytor.com>
+Date: Thu, 21 Jun 2012 20:19:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FC1C3@DQHE02.ent.ti.com>
-References: <1340323926-6826-1-git-send-email-gshark.jeong@gmail.com>
- <1340323926-6826-2-git-send-email-gshark.jeong@gmail.com> <A874F61F95741C4A9BA573A70FE3998FC1C3@DQHE02.ent.ti.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Fri, 22 Jun 2012 11:10:55 +0800
-X-Google-Sender-Auth: iEiZ3Bu8DbbUgqoYTM0rYsU069Y
-Message-ID: <CAK5ve-K=Cr4jg0aN128DN4nQLBHzJ4kocBs3D53PU0PWsUy_1A@mail.gmail.com>
-Subject: Re: [PATCH 1/1 v4] leds: Add LED driver for lm3556 chip
-To: "G.Shark Jeong" <gshark.jeong@gmail.com>, "Kim, Milo" <Milo.Kim@ti.com>,
-        Axel Lin <axel.lin@gmail.com>
-Cc: "Jeong, Daniel" <Daniel.Jeong@ti.com>, Rob Landley <rob@landley.net>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Borislav Petkov <bp@amd64.org>
+CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+References: <1340121811-4477-3-git-send-email-bp@amd64.org> <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com> <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com> <20120619232857.GH5996@aftab.osrc.amd.com> <4FE26155.8030207@zytor.com> <20120621100721.GB6437@aftab.osrc.amd.com> <4FE3ADDF.2060908@zytor.com> <20120622025631.GD29505@aftab.osrc.amd.com>
+In-Reply-To: <20120622025631.GD29505@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 9:05 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
->> LM3556 :
->> The LM3556 is a 4 MHz fixed-frequency synchronous boost
->> converter plus 1.5A constant current driver for a high-current white
->> LED.
->
-> Overall, it looks pretty good to me, especially core functionality of lm3556 is well supported and it's easy to use.
->
-> Just one thing to be better,
-> I would suggest to use module_i2c_driver() rather than lm3556_init/lm3556_exit for code simplicity.
->
+On 06/21/2012 07:56 PM, Borislav Petkov wrote:
+>>
+>> That is orthogonal.  Anyway, my only concern about the request_firmware
+>> interface is that the timing will be inherently wrong.
+> 
+> Timing? Please elaborate.
+> 
 
-Hi G.Shark,
+The request_firmware will happen as soon as the driver is loaded; with
+the early microcode blob scheme the driver will need to be built in and
+so the request_firmware will happen, redundantly, immediately...
 
-I also think this patch is good enough for merging now after your
-fixed several issues pointed out by Axel Lin.
-I fixed this module_i2c_driver() issue mentioned by Milo here and push
-it to my -devel branch.
-If there is no problem, I will applied it to for-next branch.
-
-Thanks,
--Bryan
-
->> +static int __init lm3556_init(void)
->> +{
->> +     return i2c_add_driver(&lm3556_i2c_driver);
->> +}
->> +
->> +static void __exit lm3556_exit(void)
->> +{
->> +     i2c_del_driver(&lm3556_i2c_driver);
->> +}
->> +
->> +module_init(lm3556_init);
->> +module_exit(lm3556_exit);
->
-> module_i2c_driver(lm3556_i2c_driver);
->
-> Thanks,
-> Milo -
-
-
+	-hpa
 
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
