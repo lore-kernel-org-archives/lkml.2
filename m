@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762155Ab2FVNdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 09:33:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41192 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932990Ab2FVNdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 09:33:02 -0400
+	id S933056Ab2FVNeO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 09:34:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35897 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932987Ab2FVNc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 09:32:59 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
@@ -15,9 +16,9 @@ To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
         <hvaibhav@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>
-Subject: [RFC PATCH 03/10] drivers: usb: otg: make twl6030_usb as a comparator driver to omap_usb2
-Date: Fri, 22 Jun 2012 19:02:12 +0530
-Message-ID: <1340371939-23572-4-git-send-email-kishon@ti.com>
+Subject: [RFC PATCH 01/10] drivers: usb: otg: add a new driver for omap usb2 phy
+Date: Fri, 22 Jun 2012 19:02:10 +0530
+Message-ID: <1340371939-23572-2-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1340371939-23572-1-git-send-email-kishon@ti.com>
 References: <1340371939-23572-1-git-send-email-kishon@ti.com>
@@ -27,356 +28,441 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the PHY configuration other than VBUS, ID GND and OTG SRP are removed
-from twl6030. The phy configurations are taken care by the dedicated
-usb2 phy driver. So twl6030 is made as comparator driver for VBUS and
-ID detection.
+All phy related programming like enabling/disabling the clocks, powering
+on/off the phy is taken care of by this driver. It is also used for OTG
+related functionality like srp.
 
+This also includes device tree support for usb2 phy driver and
+the documentation with device tree binding information is updated.
+
+Cc: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/musb/omap2430.c   |   38 +++++++++++---
- drivers/usb/otg/twl6030-usb.c |  114 +++++------------------------------------
- 2 files changed, 44 insertions(+), 108 deletions(-)
+ .../devicetree/bindings/misc/omap-ocp2scp.txt      |    3 +
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   14 ++
+ drivers/usb/otg/Kconfig                            |   17 +-
+ drivers/usb/otg/Makefile                           |    1 +
+ drivers/usb/otg/omap-usb2.c                        |  239 ++++++++++++++++++++
+ include/linux/usb/omap_usb.h                       |   43 ++++
+ include/linux/usb/phy_companion.h                  |   34 +++
+ 7 files changed, 347 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/omap-usb.txt
+ create mode 100644 drivers/usb/otg/omap-usb2.c
+ create mode 100644 include/linux/usb/omap_usb.h
+ create mode 100644 include/linux/usb/phy_companion.h
 
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 2813490..9a836e8 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -35,6 +35,8 @@
- #include <linux/pm_runtime.h>
- #include <linux/err.h>
- #include <linux/usb/musb-omap.h>
-+#include <linux/usb/omap4_usb_phy.h>
-+#include <linux/mfd/omap_control.h>
+diff --git a/Documentation/devicetree/bindings/misc/omap-ocp2scp.txt b/Documentation/devicetree/bindings/misc/omap-ocp2scp.txt
+index e9391d8..d1c7480 100644
+--- a/Documentation/devicetree/bindings/misc/omap-ocp2scp.txt
++++ b/Documentation/devicetree/bindings/misc/omap-ocp2scp.txt
+@@ -7,3 +7,6 @@ properties:
  
- #include "musb_core.h"
- #include "omap2430.h"
-@@ -44,6 +46,7 @@ struct omap2430_glue {
- 	struct platform_device	*musb;
- 	enum omap_musb_vbus_id_status status;
- 	struct work_struct	omap_musb_mailbox_work;
-+	struct device		*control_dev;
- };
- #define glue_to_musb(g)		platform_get_drvdata(g->musb)
+ Sub-nodes:
+ All the devices connected to ocp2scp are described using sub-node to ocp2scp
++- usb2phy :
++   The binding details of usb2phy can be found in:
++   Documentation/devicetree/bindings/usb/omap-usb.txt
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+new file mode 100644
+index 0000000..1c38feb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -0,0 +1,14 @@
++OMAP USB PHY AND OMAP USB GLUE
++
++OMAP USB2 PHY
++
++Required properties:
++ - compatible: Should be "ti,omap-usb2"
++ - reg : Address and length of the register set for the device
++
++This is usually a subnode of ocp2scp to which it is connected.
++
++usb2phy@0x4a0ad080 {
++	compatible = "ti,omap-usb2";
++	reg = <0x4a0ad080 0x58>;
++};
+diff --git a/drivers/usb/otg/Kconfig b/drivers/usb/otg/Kconfig
+index e2840f1..18fb625 100644
+--- a/drivers/usb/otg/Kconfig
++++ b/drivers/usb/otg/Kconfig
+@@ -73,10 +73,8 @@ config TWL6030_USB
+ 	help
+ 	  Enable this to support the USB OTG transceiver on TWL6030
+ 	  family chips. This TWL6030 transceiver has the VBUS and ID GND
+-	  and OTG SRP events capabilities. For all other transceiver functionality
+-	  UTMI PHY is embedded in OMAP4430. The internal PHY configurations APIs
+-	  are hooked to this driver through platform_data structure.
+-	  The definition of internal PHY APIs are in the mach-omap2 layer.
++	  and OTG SRP events capabilities. For all other transceiver
++	  functionality UTMI PHY is embedded in OMAP4430.
  
-@@ -245,6 +248,7 @@ EXPORT_SYMBOL_GPL(omap_musb_mailbox);
+ config OMAP4_USB_PHY
+ 	tristate "Texas Instruments OMAP4+ USB pin control driver"
+@@ -91,6 +89,17 @@ config OMAP4_USB_PHY
+ 	  performing the above mentioned configuration, API's are added in
+ 	  by this children of the control module driver.
  
- static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- {
-+	u32 val;
- 	struct musb *musb = glue_to_musb(glue);
- 	struct device *dev = musb->controller;
- 	struct musb_hdrc_platform_data *pdata = dev->platform_data;
-@@ -260,7 +264,10 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- 		musb->xceiv->last_event = USB_EVENT_ID;
- 		if (!is_otg_enabled(musb) || musb->gadget_driver) {
- 			pm_runtime_get_sync(dev);
--			usb_phy_init(musb->xceiv);
-+			if (!IS_ERR(glue->control_dev)) {
-+				val = AVALID | VBUSVALID;
-+				omap4_usb_phy_mailbox(glue->control_dev, val);
-+			}
- 			omap2430_musb_set_vbus(musb, 1);
- 		}
- 		break;
-@@ -273,7 +280,10 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- 		musb->xceiv->last_event = USB_EVENT_VBUS;
- 		if (musb->gadget_driver)
- 			pm_runtime_get_sync(dev);
--		usb_phy_init(musb->xceiv);
-+		if (!IS_ERR(glue->control_dev)) {
-+			val = IDDIG | AVALID | VBUSVALID;
-+			omap4_usb_phy_mailbox(glue->control_dev, val);
-+		}
- 		break;
- 
- 	case OMAP_MUSB_ID_FLOAT:
-@@ -291,7 +301,10 @@ static void omap_musb_set_mailbox(struct omap2430_glue *glue)
- 			if (musb->xceiv->otg->set_vbus)
- 				otg_set_vbus(musb->xceiv->otg, 0);
- 		}
--		usb_phy_shutdown(musb->xceiv);
-+		if (!IS_ERR(glue->control_dev)) {
-+			val = SESSEND | IDDIG;
-+			omap4_usb_phy_mailbox(glue->control_dev, val);
-+		}
- 		break;
- 	default:
- 		dev_dbg(dev, "ID float\n");
-@@ -366,6 +379,7 @@ err1:
- static void omap2430_musb_enable(struct musb *musb)
- {
- 	u8		devctl;
-+	u32		val;
- 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
- 	struct device *dev = musb->controller;
- 	struct omap2430_glue *glue = dev_get_drvdata(dev->parent);
-@@ -375,7 +389,10 @@ static void omap2430_musb_enable(struct musb *musb)
- 	switch (glue->status) {
- 
- 	case OMAP_MUSB_ID_GROUND:
--		usb_phy_init(musb->xceiv);
-+		if (!IS_ERR(glue->control_dev)) {
-+			val = AVALID | VBUSVALID;
-+			omap4_usb_phy_mailbox(glue->control_dev, val);
-+		}
- 		if (data->interface_type != MUSB_INTERFACE_UTMI)
- 			break;
- 		devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
-@@ -394,7 +411,10 @@ static void omap2430_musb_enable(struct musb *musb)
- 		break;
- 
- 	case OMAP_MUSB_VBUS_VALID:
--		usb_phy_init(musb->xceiv);
-+		if (!IS_ERR(glue->control_dev)) {
-+			val = IDDIG | AVALID | VBUSVALID;
-+			omap4_usb_phy_mailbox(glue->control_dev, val);
-+		}
- 		break;
- 
- 	default:
-@@ -404,11 +424,14 @@ static void omap2430_musb_enable(struct musb *musb)
- 
- static void omap2430_musb_disable(struct musb *musb)
- {
-+	u32 val;
- 	struct device *dev = musb->controller;
- 	struct omap2430_glue *glue = dev_get_drvdata(dev->parent);
- 
--	if (glue->status != OMAP_MUSB_UNKNOWN)
--		usb_phy_shutdown(musb->xceiv);
-+	if (glue->status != OMAP_MUSB_UNKNOWN && !IS_ERR(glue->control_dev)) {
-+		val = SESSEND | IDDIG;
-+		omap4_usb_phy_mailbox(glue->control_dev, val);
-+	}
- }
- 
- static int omap2430_musb_exit(struct musb *musb)
-@@ -461,6 +484,7 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
- 	glue->dev			= &pdev->dev;
- 	glue->musb			= musb;
- 	glue->status			= OMAP_MUSB_UNKNOWN;
-+	glue->control_dev		= omap_control_get();
- 
- 	pdata->platform_ops		= &omap2430_ops;
- 
-diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
-index 600c27a..6a361d2 100644
---- a/drivers/usb/otg/twl6030-usb.c
-+++ b/drivers/usb/otg/twl6030-usb.c
-@@ -25,8 +25,9 @@
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
--#include <linux/usb/otg.h>
- #include <linux/usb/musb-omap.h>
-+#include <linux/usb/phy_companion.h>
++config OMAP_USB2
++	tristate "OMAP USB2 PHY Driver"
++	depends on OMAP_OCP2SCP
++	depends on OMAP4_USB_PHY
++	select USB_OTG_UTILS
++	help
++	  Enable this to support the transceiver that is part of SOC. This
++	  driver takes care of all the PHY functionality apart from comparator.
++	  The USB OTG controller communicates with the comparator using this
++	  driver.
++
+ config NOP_USB_XCEIV
+ 	tristate "NOP USB Transceiver Driver"
+ 	select USB_OTG_UTILS
+diff --git a/drivers/usb/otg/Makefile b/drivers/usb/otg/Makefile
+index 60c8c83..2f02912 100644
+--- a/drivers/usb/otg/Makefile
++++ b/drivers/usb/otg/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_ISP1301_OMAP)	+= isp1301_omap.o
+ obj-$(CONFIG_TWL4030_USB)	+= twl4030-usb.o
+ obj-$(CONFIG_TWL6030_USB)	+= twl6030-usb.o
+ obj-$(CONFIG_OMAP4_USB_PHY)	+= omap4-usb-phy.o
++obj-$(CONFIG_OMAP_USB2)		+= omap-usb2.o
+ obj-$(CONFIG_NOP_USB_XCEIV)	+= nop-usb-xceiv.o
+ obj-$(CONFIG_USB_ULPI)		+= ulpi.o
+ obj-$(CONFIG_USB_ULPI_VIEWPORT)	+= ulpi_viewport.o
+diff --git a/drivers/usb/otg/omap-usb2.c b/drivers/usb/otg/omap-usb2.c
+new file mode 100644
+index 0000000..d355570
+--- /dev/null
++++ b/drivers/usb/otg/omap-usb2.c
+@@ -0,0 +1,239 @@
++/*
++ * omap-usb2.c - USB PHY, talking to musb controller in OMAP.
++ *
++ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * Author: Kishon Vijay Abraham I <kishon@ti.com>
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/of.h>
 +#include <linux/usb/omap_usb.h>
- #include <linux/i2c/twl.h>
- #include <linux/regulator/consumer.h>
- #include <linux/err.h>
-@@ -87,7 +88,7 @@
- #define	VBUS_DET			BIT(2)
- 
- struct twl6030_usb {
--	struct usb_phy		phy;
-+	struct phy_companion	comparator;
- 	struct device		*dev;
- 
- 	/* for vbus reporting with irqs disabled */
-@@ -107,7 +108,7 @@ struct twl6030_usb {
- 	unsigned long		features;
- };
- 
--#define phy_to_twl(x)		container_of((x), struct twl6030_usb, phy)
-+#define	comparator_to_twl(x) container_of((x), struct twl6030_usb, comparator)
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -137,50 +138,9 @@ static inline u8 twl6030_readb(struct twl6030_usb *twl, u8 module, u8 address)
- 	return ret;
- }
- 
--static int twl6030_phy_init(struct usb_phy *x)
-+static int twl6030_start_srp(struct phy_companion *comparator)
- {
--	struct twl6030_usb *twl;
--	struct device *dev;
--	struct twl4030_usb_data *pdata;
--
--	twl = phy_to_twl(x);
--	dev  = twl->dev;
--	pdata = dev->platform_data;
--
--	if (twl->linkstat == OMAP_MUSB_ID_GROUND)
--		pdata->phy_power(twl->dev, 1, 1);
--	else
--		pdata->phy_power(twl->dev, 0, 1);
--
--	return 0;
--}
--
--static void twl6030_phy_shutdown(struct usb_phy *x)
--{
--	struct twl6030_usb *twl;
--	struct device *dev;
--	struct twl4030_usb_data *pdata;
--
--	twl = phy_to_twl(x);
--	dev  = twl->dev;
--	pdata = dev->platform_data;
--	pdata->phy_power(twl->dev, 0, 0);
--}
--
--static int twl6030_phy_suspend(struct usb_phy *x, int suspend)
--{
--	struct twl6030_usb *twl = phy_to_twl(x);
--	struct device *dev = twl->dev;
--	struct twl4030_usb_data *pdata = dev->platform_data;
--
--	pdata->phy_suspend(dev, suspend);
--
--	return 0;
--}
--
--static int twl6030_start_srp(struct usb_otg *otg)
--{
--	struct twl6030_usb *twl = phy_to_twl(otg->phy);
-+	struct twl6030_usb *twl = comparator_to_twl(comparator);
- 
- 	twl6030_writeb(twl, TWL_MODULE_USB, 0x24, USB_VBUS_CTRL_SET);
- 	twl6030_writeb(twl, TWL_MODULE_USB, 0x84, USB_VBUS_CTRL_SET);
-@@ -316,23 +276,8 @@ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
- 	return IRQ_HANDLED;
- }
- 
--static int twl6030_set_peripheral(struct usb_otg *otg,
--		struct usb_gadget *gadget)
-+static int twl6030_enable_irq(struct twl6030_usb *twl)
- {
--	if (!otg)
--		return -ENODEV;
--
--	otg->gadget = gadget;
--	if (!gadget)
--		otg->phy->state = OTG_STATE_UNDEFINED;
--
--	return 0;
--}
--
--static int twl6030_enable_irq(struct usb_phy *x)
--{
--	struct twl6030_usb *twl = phy_to_twl(x);
--
- 	twl6030_writeb(twl, TWL_MODULE_USB, USB_ID_INT_EN_HI_SET, 0x1);
- 	twl6030_interrupt_unmask(0x05, REG_INT_MSK_LINE_C);
- 	twl6030_interrupt_unmask(0x05, REG_INT_MSK_STS_C);
-@@ -365,9 +310,9 @@ static void otg_set_vbus_work(struct work_struct *data)
- 							CHARGERUSB_CTRL1);
- }
- 
--static int twl6030_set_vbus(struct usb_otg *otg, bool enabled)
-+static int twl6030_set_vbus(struct phy_companion *comparator, bool enabled)
- {
--	struct twl6030_usb *twl = phy_to_twl(otg->phy);
-+	struct twl6030_usb *twl = comparator_to_twl(comparator);
- 
- 	twl->vbus_enable = enabled;
- 	schedule_work(&twl->set_vbus_work);
-@@ -375,23 +320,11 @@ static int twl6030_set_vbus(struct usb_otg *otg, bool enabled)
- 	return 0;
- }
- 
--static int twl6030_set_host(struct usb_otg *otg, struct usb_bus *host)
--{
--	if (!otg)
--		return -ENODEV;
--
--	otg->host = host;
--	if (!host)
--		otg->phy->state = OTG_STATE_UNDEFINED;
--	return 0;
--}
--
- static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- {
- 	struct twl6030_usb	*twl;
- 	int			status, err;
- 	struct twl4030_usb_data *pdata;
--	struct usb_otg		*otg;
- 	struct device *dev = &pdev->dev;
- 	pdata = dev->platform_data;
- 
-@@ -399,28 +332,15 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	if (!twl)
- 		return -ENOMEM;
- 
--	otg = devm_kzalloc(dev, sizeof *otg, GFP_KERNEL);
--	if (!otg)
--		return -ENOMEM;
--
- 	twl->dev		= &pdev->dev;
- 	twl->irq1		= platform_get_irq(pdev, 0);
- 	twl->irq2		= platform_get_irq(pdev, 1);
- 	twl->features		= pdata->features;
- 	twl->linkstat		= OMAP_MUSB_UNKNOWN;
- 
--	twl->phy.dev		= twl->dev;
--	twl->phy.label		= "twl6030";
--	twl->phy.otg		= otg;
--	twl->phy.init		= twl6030_phy_init;
--	twl->phy.shutdown	= twl6030_phy_shutdown;
--	twl->phy.set_suspend	= twl6030_phy_suspend;
--
--	otg->phy		= &twl->phy;
--	otg->set_host		= twl6030_set_host;
--	otg->set_peripheral	= twl6030_set_peripheral;
--	otg->set_vbus		= twl6030_set_vbus;
--	otg->start_srp		= twl6030_start_srp;
-+	twl->comparator.set_vbus	= twl6030_set_vbus;
-+	twl->comparator.start_srp	= twl6030_start_srp;
-+	omap_usb2_set_comparator(&twl->comparator);
- 
- 	/* init spinlock for workqueue */
- 	spin_lock_init(&twl->lock);
-@@ -430,7 +350,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "ldo init failed\n");
- 		return err;
- 	}
--	usb_add_phy(&twl->phy, USB_PHY_TYPE_USB2);
- 
- 	platform_set_drvdata(pdev, twl);
- 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
-@@ -461,9 +380,7 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	}
- 
- 	twl->asleep = 0;
--	pdata->phy_init(dev);
--	twl6030_phy_suspend(&twl->phy, 0);
--	twl6030_enable_irq(&twl->phy);
-+	twl6030_enable_irq(twl);
- 	dev_info(&pdev->dev, "Initialized TWL6030 USB module\n");
- 
- 	return 0;
-@@ -473,10 +390,6 @@ static int __exit twl6030_usb_remove(struct platform_device *pdev)
- {
- 	struct twl6030_usb *twl = platform_get_drvdata(pdev);
- 
--	struct twl4030_usb_data *pdata;
--	struct device *dev = &pdev->dev;
--	pdata = dev->platform_data;
--
- 	twl6030_interrupt_mask(TWL6030_USBOTG_INT_MASK,
- 		REG_INT_MSK_LINE_C);
- 	twl6030_interrupt_mask(TWL6030_USBOTG_INT_MASK,
-@@ -484,7 +397,6 @@ static int __exit twl6030_usb_remove(struct platform_device *pdev)
- 	free_irq(twl->irq1, twl);
- 	free_irq(twl->irq2, twl);
- 	regulator_put(twl->usb3v3);
--	pdata->phy_exit(twl->dev);
- 	device_remove_file(twl->dev, &dev_attr_vbus);
- 	cancel_work_sync(&twl->set_vbus_work);
- 
++#include <linux/usb/phy_companion.h>
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/pm_runtime.h>
++#include <linux/delay.h>
++#include <linux/mfd/omap_control.h>
++#include <linux/usb/omap4_usb_phy.h>
++
++/**
++ * omap_usb2_set_comparator - links the comparator present in the sytem with
++ *	this phy
++ * @comparator - the companion phy(comparator) for this phy
++ *
++ * The phy companion driver should call this API passing the phy_companion
++ * filled with set_vbus and start_srp to be used by usb phy.
++ *
++ * For use by phy companion driver
++ */
++void omap_usb2_set_comparator(struct phy_companion *comparator)
++{
++	struct usb_phy	*x = usb_get_phy(USB_PHY_TYPE_USB2);
++	struct omap_usb	*phy = phy_to_omapusb(x);
++
++	phy->comparator = comparator;
++}
++EXPORT_SYMBOL_GPL(omap_usb2_set_comparator);
++
++static int omap_usb_set_vbus(struct usb_otg *otg, bool enabled)
++{
++	struct omap_usb *phy = phy_to_omapusb(otg->phy);
++
++	if (!phy->comparator)
++		return -ENODEV;
++
++	return phy->comparator->set_vbus(phy->comparator, enabled);
++}
++
++static int omap_usb_start_srp(struct usb_otg *otg)
++{
++	struct omap_usb *phy = phy_to_omapusb(otg->phy);
++
++	if (!phy->comparator)
++		return -ENODEV;
++
++	return phy->comparator->start_srp(phy->comparator);
++}
++
++static int omap_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
++{
++	struct usb_phy	*phy = otg->phy;
++
++	otg->host = host;
++	if (!host)
++		phy->state = OTG_STATE_UNDEFINED;
++
++	return 0;
++}
++
++static int omap_usb_set_peripheral(struct usb_otg *otg,
++		struct usb_gadget *gadget)
++{
++	struct usb_phy	*phy = otg->phy;
++
++	otg->gadget = gadget;
++	if (!gadget)
++		phy->state = OTG_STATE_UNDEFINED;
++
++	return 0;
++}
++
++static int omap_usb2_suspend(struct usb_phy *x, int suspend)
++{
++	struct omap_usb *phy = phy_to_omapusb(x);
++
++	if (suspend && !phy->is_suspended) {
++		pm_runtime_put_sync(phy->dev);
++		phy->is_suspended = 1;
++	} else if (!suspend && phy->is_suspended) {
++		pm_runtime_get_sync(phy->dev);
++		phy->is_suspended = 0;
++	}
++
++	return 0;
++}
++
++static int __devinit omap_usb2_probe(struct platform_device *pdev)
++{
++	struct omap_usb			*phy;
++	struct usb_otg			*otg;
++
++	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
++	if (!phy) {
++		dev_err(&pdev->dev, "unable to allocate memory for USB2 PHY\n");
++		return -ENOMEM;
++	}
++
++	otg = devm_kzalloc(&pdev->dev, sizeof(*otg), GFP_KERNEL);
++	if (!otg) {
++		dev_err(&pdev->dev, "unable to allocate memory for USB OTG\n");
++		return -ENOMEM;
++	}
++
++	phy->dev		= &pdev->dev;
++
++	phy->phy.dev		= phy->dev;
++	phy->phy.label		= "omap-usb2";
++	phy->phy.set_suspend	= omap_usb2_suspend;
++	phy->phy.otg		= otg;
++
++	phy->control_dev	= omap_control_get();
++	if (IS_ERR(phy->control_dev)) {
++		dev_err(&pdev->dev, "no control device present in system\n");
++		return PTR_ERR(phy->control_dev);
++	}
++
++	phy->is_suspended	= 1;
++	omap4_usb_phy_power(phy->control_dev, 0);
++
++	otg->set_host		= omap_usb_set_host;
++	otg->set_peripheral	= omap_usb_set_peripheral;
++	otg->set_vbus		= omap_usb_set_vbus;
++	otg->start_srp		= omap_usb_start_srp;
++	otg->phy		= &phy->phy;
++
++	phy->wkupclk = clk_get(phy->dev, "usb_phy_cm_clk32k");
++	if (IS_ERR(phy->wkupclk)) {
++		dev_err(&pdev->dev, "unable to get usb_phy_cm_clk32k\n");
++		return PTR_ERR(phy->wkupclk);
++	}
++
++	usb_add_phy(&phy->phy, USB_PHY_TYPE_USB2);
++
++	platform_set_drvdata(pdev, phy);
++
++	pm_runtime_enable(phy->dev);
++
++	return 0;
++}
++
++static int __devexit omap_usb2_remove(struct platform_device *pdev)
++{
++	struct omap_usb	*phy = platform_get_drvdata(pdev);
++
++	usb_remove_phy(&phy->phy);
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++
++static int omap_usb2_runtime_suspend(struct device *dev)
++{
++	struct platform_device	*pdev = to_platform_device(dev);
++	struct omap_usb	*phy = platform_get_drvdata(pdev);
++
++	clk_disable(phy->wkupclk);
++	omap4_usb_phy_power(phy->control_dev, 0);
++
++	return 0;
++}
++
++static int omap_usb2_runtime_resume(struct device *dev)
++{
++	struct platform_device	*pdev = to_platform_device(dev);
++	struct omap_usb	*phy = platform_get_drvdata(pdev);
++
++	omap4_usb_phy_power(phy->control_dev, 1);
++	clk_enable(phy->wkupclk);
++
++	return 0;
++}
++
++static const struct dev_pm_ops omap_usb2_pm_ops = {
++	SET_RUNTIME_PM_OPS(omap_usb2_runtime_suspend, omap_usb2_runtime_resume,
++		NULL)
++};
++
++#define DEV_PM_OPS     (&omap_usb2_pm_ops)
++#else
++#define DEV_PM_OPS     NULL
++#endif
++
++static const struct of_device_id omap_usb2_id_table[] = {
++	{ .compatible = "ti,omap-usb2" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
++
++static struct platform_driver omap_usb2_driver = {
++	.probe		= omap_usb2_probe,
++	.remove		= __devexit_p(omap_usb2_remove),
++	.driver		= {
++		.name	= "omap-usb2",
++		.owner	= THIS_MODULE,
++		.pm	= DEV_PM_OPS,
++		.of_match_table = of_match_ptr(omap_usb2_id_table),
++	},
++};
++
++static int __init usb2_omap_init(void)
++{
++	return platform_driver_register(&omap_usb2_driver);
++}
++arch_initcall(usb2_omap_init);
++
++static void __exit usb2_omap_exit(void)
++{
++	platform_driver_unregister(&omap_usb2_driver);
++}
++module_exit(usb2_omap_exit);
++
++MODULE_ALIAS("platform: omap_usb2");
++MODULE_AUTHOR("Texas Instruments Inc.");
++MODULE_DESCRIPTION("OMAP USB2 PHY DRIVER");
++MODULE_LICENSE("GPLv2");
+diff --git a/include/linux/usb/omap_usb.h b/include/linux/usb/omap_usb.h
+new file mode 100644
+index 0000000..7b7b9cd
+--- /dev/null
++++ b/include/linux/usb/omap_usb.h
+@@ -0,0 +1,43 @@
++/*
++ * omap_usb.h -- omap usb2 phy header file
++ *
++ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * Author: Kishon Vijay Abraham I <kishon@ti.com>
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __DRIVERS_OMAP_USB2_H
++#define __DRIVERS_OMAP_USB2_H
++
++#include <linux/usb/otg.h>
++
++struct omap_usb {
++	struct usb_phy		phy;
++	struct phy_companion	*comparator;
++	struct device		*dev;
++	struct device		*control_dev;
++	struct clk		*wkupclk;
++	u8			is_suspended:1;
++};
++
++#define	phy_to_omapusb(x)	container_of((x), struct omap_usb, phy)
++
++#if defined(CONFIG_OMAP_USB2) || defined(CONFIG_OMAP_USB2_MODULE)
++void omap_usb2_set_comparator(struct phy_companion *comparator);
++#else
++static inline void omap_usb2_set_comparator(struct phy_companion *comparator)
++{
++}
++#endif
++
++#endif /* __DRIVERS_OMAP_USB_H */
+diff --git a/include/linux/usb/phy_companion.h b/include/linux/usb/phy_companion.h
+new file mode 100644
+index 0000000..321290f
+--- /dev/null
++++ b/include/linux/usb/phy_companion.h
+@@ -0,0 +1,34 @@
++/*
++ * phy-companion.h -- phy companion to indicate the comparator part of PHY
++ *
++ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * Author: Kishon Vijay Abraham I <kishon@ti.com>
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __DRIVERS_PHY_COMPANION_H
++#define __DRIVERS_PHY_COMPANION_H
++
++#include <linux/usb/otg.h>
++
++/* phy_companion to take care of VBUS, ID and srp capabilities */
++struct phy_companion {
++
++	/* effective for A-peripheral, ignored for B devices */
++	int	(*set_vbus)(struct phy_companion *x, bool enabled);
++
++	/* for B devices only:  start session with A-Host */
++	int	(*start_srp)(struct phy_companion *x);
++};
++
++#endif /* __DRIVERS_PHY_COMPANION_H */
 -- 
 1.7.5.4
 
