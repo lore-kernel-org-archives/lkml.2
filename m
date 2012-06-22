@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab2FVPbg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:31:36 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:35986 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762378Ab2FVPZv (ORCPT
+	id S933104Ab2FVPZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:25:42 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56531 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933076Ab2FVPZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:25:51 -0400
+	Fri, 22 Jun 2012 11:25:39 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,165 +15,100 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 05/22] rcu: Place pointer to call_rcu() in rcu_data structure
-Date: Fri, 22 Jun 2012 08:17:04 -0700
-Message-Id: <1340378241-6458-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 19/22] rcu: Allow RCU grace-period initialization to be preempted
+Date: Fri, 22 Jun 2012 08:17:18 -0700
+Message-Id: <1340378241-6458-19-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120622151655.GA6249@linux.vnet.ibm.com>
  <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062215-6148-0000-0000-000006F5DFAC
+x-cbid: 12062215-5518-0000-0000-0000056D4C34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This is a preparatory commit for increasing rcu_barrier()'s concurrency.
-It adds a pointer in the rcu_data structure to the corresponding call_rcu()
-function.  This allows a pointer to the rcu_data structure to imply the
-function pointer, which allows _rcu_barrier() state to be placed in the
-rcu_state structure.
+RCU grace-period initialization is currently carried out with interrupts
+disabled, which can result in 200-microsecond latency spikes on systems
+on which RCU has been configured for 4096 CPUs.  This patch therefore
+makes the RCU grace-period initialization be preemptible, which should
+eliminate those latency spikes.  Similar spikes from grace-period cleanup
+and the forcing of quiescent states will be dealt with similarly by later
+patches.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Reported-by: Mike Galbraith <mgalbraith@suse.de>
+Reported-by: Dimitri Sivanich <sivanich@sgi.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutree.c        |   27 ++++++++++++---------------
- kernel/rcutree.h        |    2 ++
- kernel/rcutree_plugin.h |    5 +++--
- 3 files changed, 17 insertions(+), 17 deletions(-)
+ kernel/rcutree.c |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 4580126..24cd2f0 100644
+index faf4860..e5b4532 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -62,8 +62,9 @@
+@@ -1059,6 +1059,7 @@ static int rcu_gp_kthread(void *arg)
+ 			 * don't start another one.
+ 			 */
+ 			raw_spin_unlock_irqrestore(&rnp->lock, flags);
++			cond_resched();
+ 			continue;
+ 		}
  
- static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+@@ -1069,6 +1070,7 @@ static int rcu_gp_kthread(void *arg)
+ 			 */
+ 			rsp->fqs_need_gp = 1;
+ 			raw_spin_unlock_irqrestore(&rnp->lock, flags);
++			cond_resched();
+ 			continue;
+ 		}
  
--#define RCU_STATE_INITIALIZER(sname) { \
-+#define RCU_STATE_INITIALIZER(sname, cr) { \
- 	.level = { &sname##_state.node[0] }, \
-+	.call = cr, \
- 	.fqs_state = RCU_GP_IDLE, \
- 	.gpnum = -300, \
- 	.completed = -300, \
-@@ -76,10 +77,11 @@ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
- 	.name = #sname, \
+@@ -1079,10 +1081,10 @@ static int rcu_gp_kthread(void *arg)
+ 		rsp->fqs_state = RCU_GP_INIT; /* Stop force_quiescent_state. */
+ 		rsp->jiffies_force_qs = jiffies + RCU_JIFFIES_TILL_FORCE_QS;
+ 		record_gp_stall_check_time(rsp);
+-		raw_spin_unlock(&rnp->lock);  /* leave irqs disabled. */
++		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 
+ 		/* Exclude any concurrent CPU-hotplug operations. */
+-		raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
++		get_online_cpus();
+ 
+ 		/*
+ 		 * Set the quiescent-state-needed bits in all the rcu_node
+@@ -1102,7 +1104,7 @@ static int rcu_gp_kthread(void *arg)
+ 		 * due to the fact that we have irqs disabled.
+ 		 */
+ 		rcu_for_each_node_breadth_first(rsp, rnp) {
+-			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++			raw_spin_lock_irqsave(&rnp->lock, flags);
+ 			rcu_preempt_check_blocked_tasks(rnp);
+ 			rnp->qsmask = rnp->qsmaskinit;
+ 			rnp->gpnum = rsp->gpnum;
+@@ -1113,15 +1115,16 @@ static int rcu_gp_kthread(void *arg)
+ 			trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
+ 						    rnp->level, rnp->grplo,
+ 						    rnp->grphi, rnp->qsmask);
+-			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
++			raw_spin_unlock_irqrestore(&rnp->lock, flags);
++			cond_resched();
+ 		}
+ 
+ 		rnp = rcu_get_root(rsp);
+-		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		/* force_quiescent_state() now OK. */
+ 		rsp->fqs_state = RCU_SIGNAL_INIT;
+-		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+-		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
++		raw_spin_unlock_irqrestore(&rnp->lock, flags);
++		put_online_cpus();
+ 	}
+ 	return 0;
  }
- 
--struct rcu_state rcu_sched_state = RCU_STATE_INITIALIZER(rcu_sched);
-+struct rcu_state rcu_sched_state =
-+	RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
- DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
- 
--struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh);
-+struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
- DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
- 
- static struct rcu_state *rcu_state;
-@@ -2279,21 +2281,17 @@ static void rcu_barrier_func(void *type)
- {
- 	int cpu = smp_processor_id();
- 	struct rcu_head *head = &per_cpu(rcu_barrier_head, cpu);
--	void (*call_rcu_func)(struct rcu_head *head,
--			      void (*func)(struct rcu_head *head));
-+	struct rcu_state *rsp = type;
- 
- 	atomic_inc(&rcu_barrier_cpu_count);
--	call_rcu_func = type;
--	call_rcu_func(head, rcu_barrier_callback);
-+	rsp->call(head, rcu_barrier_callback);
- }
- 
- /*
-  * Orchestrate the specified type of RCU barrier, waiting for all
-  * RCU callbacks of the specified type to complete.
-  */
--static void _rcu_barrier(struct rcu_state *rsp,
--			 void (*call_rcu_func)(struct rcu_head *head,
--					       void (*func)(struct rcu_head *head)))
-+static void _rcu_barrier(struct rcu_state *rsp)
- {
- 	int cpu;
- 	unsigned long flags;
-@@ -2345,8 +2343,7 @@ static void _rcu_barrier(struct rcu_state *rsp,
- 			while (cpu_is_offline(cpu) && ACCESS_ONCE(rdp->qlen))
- 				schedule_timeout_interruptible(1);
- 		} else if (ACCESS_ONCE(rdp->qlen)) {
--			smp_call_function_single(cpu, rcu_barrier_func,
--						 (void *)call_rcu_func, 1);
-+			smp_call_function_single(cpu, rcu_barrier_func, rsp, 1);
- 			preempt_enable();
- 		} else {
- 			preempt_enable();
-@@ -2367,7 +2364,7 @@ static void _rcu_barrier(struct rcu_state *rsp,
- 	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
- 	atomic_inc(&rcu_barrier_cpu_count);
- 	smp_mb__after_atomic_inc(); /* Ensure atomic_inc() before callback. */
--	call_rcu_func(&rh, rcu_barrier_callback);
-+	rsp->call(&rh, rcu_barrier_callback);
- 
- 	/*
- 	 * Now that we have an rcu_barrier_callback() callback on each
-@@ -2390,7 +2387,7 @@ static void _rcu_barrier(struct rcu_state *rsp,
-  */
- void rcu_barrier_bh(void)
- {
--	_rcu_barrier(&rcu_bh_state, call_rcu_bh);
-+	_rcu_barrier(&rcu_bh_state);
- }
- EXPORT_SYMBOL_GPL(rcu_barrier_bh);
- 
-@@ -2399,7 +2396,7 @@ EXPORT_SYMBOL_GPL(rcu_barrier_bh);
-  */
- void rcu_barrier_sched(void)
- {
--	_rcu_barrier(&rcu_sched_state, call_rcu_sched);
-+	_rcu_barrier(&rcu_sched_state);
- }
- EXPORT_SYMBOL_GPL(rcu_barrier_sched);
- 
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index df3c2c8..15837d7 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -350,6 +350,8 @@ struct rcu_state {
- 	u32 levelcnt[MAX_RCU_LVLS + 1];		/* # nodes in each level. */
- 	u8 levelspread[RCU_NUM_LVLS];		/* kids/node in each level. */
- 	struct rcu_data __percpu *rda;		/* pointer of percu rcu_data. */
-+	void (*call)(struct rcu_head *head,	/* call_rcu() flavor. */
-+		     void (*func)(struct rcu_head *head));
- 
- 	/* The following fields are guarded by the root rcu_node's lock. */
- 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 67b3b97..a401508 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -78,7 +78,8 @@ static void __init rcu_bootup_announce_oddness(void)
- 
- #ifdef CONFIG_TREE_PREEMPT_RCU
- 
--struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt);
-+struct rcu_state rcu_preempt_state =
-+	RCU_STATE_INITIALIZER(rcu_preempt, call_rcu);
- DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
- static struct rcu_state *rcu_state = &rcu_preempt_state;
- 
-@@ -944,7 +945,7 @@ static int rcu_preempt_cpu_has_callbacks(int cpu)
-  */
- void rcu_barrier(void)
- {
--	_rcu_barrier(&rcu_preempt_state, call_rcu);
-+	_rcu_barrier(&rcu_preempt_state);
- }
- EXPORT_SYMBOL_GPL(rcu_barrier);
- 
 -- 
 1.7.8
 
