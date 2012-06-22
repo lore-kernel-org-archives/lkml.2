@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab2FVOkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:40:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33511 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762253Ab2FVObC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:31:02 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 13/16] mm: Micro-optimise slab to avoid a function call
-Date: Fri, 22 Jun 2012 15:30:40 +0100
-Message-Id: <1340375443-22455-14-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340375443-22455-1-git-send-email-mgorman@suse.de>
-References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
+	id S933145Ab2FVOkg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:40:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60387 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933055Ab2FVOk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:40:29 -0400
+Date: Fri, 22 Jun 2012 07:40:16 -0700
+From: tip-bot for Ingo Molnar <mingo@kernel.org>
+Message-ID: <tip-3f44392e7872bdc9470134f29cead2e06ed4d426@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        shuahkhan@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com, tglx@linutronix.de
+In-Reply-To: <1338424803.3569.5.camel@lorien2>
+References: <1338424803.3569.5.camel@lorien2>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] Revert "x86/early_printk:
+  Replace obsolete simple_strtoul() usage with kstrtoint()"
+Git-Commit-ID: 3f44392e7872bdc9470134f29cead2e06ed4d426
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 22 Jun 2012 07:40:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Getting and putting objects in SLAB currently requires a function call
-but the bulk of the work is related to PFMEMALLOC reserves which are
-only consumed when network-backed storage is critical. Use an inline
-function to determine if the function call is required.
+Commit-ID:  3f44392e7872bdc9470134f29cead2e06ed4d426
+Gitweb:     http://git.kernel.org/tip/3f44392e7872bdc9470134f29cead2e06ed4d426
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Fri, 22 Jun 2012 16:25:19 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 22 Jun 2012 16:25:19 +0200
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Revert "x86/early_printk: Replace obsolete simple_strtoul() usage with kstrtoint()"
+
+This reverts commit fbd24153c48b8425b09c161a020483cd77da870e.
+
+This commit is subtly buggy: kstrto*int() can return an error but
+it's not checked in every path. simple_strtoul() on the other hand
+could not fail, so this patch subtly intruduces new failure modes.
+
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+Link: http://lkml.kernel.org/r/1338424803.3569.5.camel@lorien2
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/slab.c |   28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
+ arch/x86/kernel/early_printk.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index d9fe508..84f471e 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -117,6 +117,8 @@
- #include	<linux/memory.h>
- #include	<linux/prefetch.h>
+diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+index 5e47712..9b9f18b 100644
+--- a/arch/x86/kernel/early_printk.c
++++ b/arch/x86/kernel/early_printk.c
+@@ -119,7 +119,7 @@ static __init void early_serial_init(char *s)
+ 	unsigned char c;
+ 	unsigned divisor;
+ 	unsigned baud = DEFAULT_BAUD;
+-	ssize_t ret;
++	char *e;
  
-+#include	<net/sock.h>
-+
- #include	<asm/cacheflush.h>
- #include	<asm/tlbflush.h>
- #include	<asm/page.h>
-@@ -991,7 +993,7 @@ out:
- 	spin_unlock_irqrestore(&l3->list_lock, flags);
- }
+ 	if (*s == ',')
+ 		++s;
+@@ -127,14 +127,14 @@ static __init void early_serial_init(char *s)
+ 	if (*s) {
+ 		unsigned port;
+ 		if (!strncmp(s, "0x", 2)) {
+-			ret = kstrtoint(s, 16, &early_serial_base);
++			early_serial_base = simple_strtoul(s, &e, 16);
+ 		} else {
+ 			static const int __initconst bases[] = { 0x3f8, 0x2f8 };
  
--static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
-+static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 						gfp_t flags, bool force_refill)
- {
- 	int i;
-@@ -1038,7 +1040,20 @@ static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 	return objp;
- }
+ 			if (!strncmp(s, "ttyS", 4))
+ 				s += 4;
+-			ret = kstrtouint(s, 10, &port);
+-			if (ret || port > 1)
++			port = simple_strtoul(s, &e, 10);
++			if (port > 1 || s == e)
+ 				port = 0;
+ 			early_serial_base = bases[port];
+ 		}
+@@ -149,8 +149,8 @@ static __init void early_serial_init(char *s)
+ 	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
  
--static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
-+static inline void *ac_get_obj(struct kmem_cache *cachep,
-+			struct array_cache *ac, gfp_t flags, bool force_refill)
-+{
-+	void *objp;
-+
-+	if (unlikely(sk_memalloc_socks()))
-+		objp = __ac_get_obj(cachep, ac, flags, force_refill);
-+	else
-+		objp = ac->entry[--ac->avail];
-+
-+	return objp;
-+}
-+
-+static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 								void *objp)
- {
- 	if (unlikely(pfmemalloc_active)) {
-@@ -1048,6 +1063,15 @@ static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 			set_obj_pfmemalloc(&objp);
+ 	if (*s) {
+-		ret = kstrtouint(s, 0, &baud);
+-		if (ret || baud == 0)
++		baud = simple_strtoul(s, &e, 0);
++		if (baud == 0 || s == e)
+ 			baud = DEFAULT_BAUD;
  	}
  
-+	return objp;
-+}
-+
-+static inline void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
-+								void *objp)
-+{
-+	if (unlikely(sk_memalloc_socks()))
-+		objp = __ac_put_obj(cachep, ac, objp);
-+
- 	ac->entry[ac->avail++] = objp;
- }
- 
--- 
-1.7.9.2
-
