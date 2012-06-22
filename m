@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab2FVXKd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:10:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51744 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632Ab2FVXKc (ORCPT
+	id S1756055Ab2FVXK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:10:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38331 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab2FVXK5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:10:32 -0400
-Date: Fri, 22 Jun 2012 16:10:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: shuox.liu@intel.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-        "Andrew J. Schorr" <aschorr@telemetry-investments.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cpuidle: move field disable from per-driver to per-cpu
-Message-Id: <20120622161030.da016ccf.akpm@linux-foundation.org>
-In-Reply-To: <4FD95200.1090701@intel.com>
-References: <4FD95200.1090701@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Jun 2012 19:10:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120622215028.68334A0123@akpm.mtv.corp.google.com>
+References: <20120622215028.68334A0123@akpm.mtv.corp.google.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 22 Jun 2012 19:10:36 -0400
+X-Google-Sender-Auth: YMj6lCKtP42qDqWmXlj3699tZUo
+Message-ID: <CAHGf_=r3e4touVbnMQ9qVGCmi27teSgdQkr9wYAXOm2DUZndGw@mail.gmail.com>
+Subject: Re: + mm-oom-replace-some-information-in-tasklist-dump.patch added to
+ -mm tree
+To: linux-kernel@vger.kernel.org
+Cc: mm-commits@vger.kernel.org, rientjes@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jun 2012 10:52:48 +0800
-ShuoX Liu <shuox.liu@intel.com> wrote:
-
-> From: ShuoX Liu <shuox.liu@intel.com>
-> 
-> Andrew J.Schorr raises a question. When he changes the disable setting
-> on a single CPU, it affects all the other CPUs. Basically, currently,
-> the disable field is per-driver instead of per-cpu. All the C states of
-> the same driver are shared by all CPU in the same machine.
-> 
-> Below patch changes field disable to per-cpu, so we could set this
-> separately for each cpu.
-> 
-> ...
+On Fri, Jun 22, 2012 at 5:50 PM,  <akpm@linux-foundation.org> wrote:
 >
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -34,6 +34,7 @@ struct cpuidle_driver;
->  struct cpuidle_state_usage {
->  	void		*driver_data;
->  
-> +	unsigned long long	disable;
+> The patch titled
+>     Subject: mm, oom: replace some information in tasklist dump
+> has been added to the -mm tree.  Its filename is
+>     mm-oom-replace-some-information-in-tasklist-dump.patch
+>
+> Before you just go and hit "reply", please:
+>   a) Consider who else should be cc'ed
+>   b) Prefer to cc a suitable mailing list as well
+>   c) Ideally: find the original patch on the mailing list and do a
+>      reply-to-all to that, adding suitable additional cc's
+>
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
+> The -mm tree is included into linux-next and is updated
+> there every 3-4 working days
+>
+> ------------------------------------------------------
+> From: David Rientjes <rientjes@google.com>
+> Subject: mm, oom: replace some information in tasklist dump
 
-hrmpf.  We're using 64 bits for this where one bit would do, afaict
-because the magic macros in drivers/cpuidle/sysfs.c are using %llu.
-
+This patch should be dropped.  See my comment on lkml.
