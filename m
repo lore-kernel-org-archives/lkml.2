@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab2FVVMK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 17:12:10 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63134 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098Ab2FVVMI (ORCPT
+	id S933234Ab2FVVMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 17:12:22 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:44612 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933210Ab2FVVMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 17:12:08 -0400
+	Fri, 22 Jun 2012 17:12:20 -0400
+Date: Fri, 22 Jun 2012 17:12:19 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <greg@kroah.com>
+cc: Kay Sievers <kay@vrfy.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] printk: fix regression in SYSLOG_ACTION_CLEAR
+Message-ID: <Pine.LNX.4.44L0.1206221710030.1184-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1340388785.4604.11442.camel@edumazet-glaptop>
-References: <CAATkVEzTxT6d5nzt_qwCuFWM-WcN8hdhjGxFRPXJ4=L35wKbGw@mail.gmail.com>
-	<4FE37783.9000409@akamai.com>
-	<1340310469.4604.6702.camel@edumazet-glaptop>
-	<4FE41570.4090803@akamai.com>
-	<1340353746.4604.9502.camel@edumazet-glaptop>
-	<4FE476A6.1050209@akamai.com>
-	<1340388785.4604.11442.camel@edumazet-glaptop>
-Date: Fri, 22 Jun 2012 17:12:07 -0400
-Message-ID: <CAATkVEyaocRcYJnfuQmGFAySBerQsXY44JDi4zjveP7TZNmu7Q@mail.gmail.com>
-Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
-From: Debabrata Banerjee <dbavatar@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Josh Hunt <johunt@akamai.com>, "davem@davemloft.net" <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "yoshfuji@linux-ipv6.org" <yoshfuji@linux-ipv6.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "pekkas@netcore.fi" <pekkas@netcore.fi>,
-        "kuznet@ms2.inr.ac.ru" <kuznet@ms2.inr.ac.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 2:13 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Fri, 2012-06-22 at 08:44 -0500, Josh Hunt wrote:
->
->> Ahh. That makes sense and is what Alexey said before I just didn't put
->> it all together. So we are OK reverting this patch? I cannot find a path
->> where the walker's pointers are updated without the tb6_lock write_lock.
->>
->
-> There was a bug somewhere, not sure we want to NULL dereference again.
->
+Commit 7ff9554bb578ba02166071d2d487b7fc7d860d62 (printk: convert
+byte-buffer to variable-length record buffer) introduced a regression
+by accidentally removing a "break" statement from inside the big
+switch in printk's do_syslog().  The symptom of this bug is that the
+"dmesg -C" command doesn't only clear the kernel's log buffer; it also
+disables console logging.
 
-As you identified, the tree seems to be protected by tb6_lock. I
-couldn't find a race by inspection either. If this is not the root of
-the problem, how would this patch fix it? So I think it does nothing.
-We are attempting to reproduce that crash to prove it, but like Gao
-feng I don't think we will see it.
+This patch (as1561) fixes the regression by adding the missing
+"break".
 
-My current favorite theory is that inet6_dump_fib was called with a
-NULL func in callback. This looks like the approximate area of the
-crash, but it's impossible to say without more information from
-Patrick McHardy.
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Kay Sievers <kay@vrfy.org>
+
+---
+
+This is needed in 3.5-rc.  3.4 is okay.
+
+
+ kernel/printk.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: usb-3.4/kernel/printk.c
+===================================================================
+--- usb-3.4.orig/kernel/printk.c
++++ usb-3.4/kernel/printk.c
+@@ -1027,6 +1027,7 @@ int do_syslog(int type, char __user *buf
+ 	/* Clear ring buffer */
+ 	case SYSLOG_ACTION_CLEAR:
+ 		syslog_print_all(NULL, 0, true);
++		break;
+ 	/* Disable logging to console */
+ 	case SYSLOG_ACTION_CONSOLE_OFF:
+ 		if (saved_console_loglevel == -1)
+
