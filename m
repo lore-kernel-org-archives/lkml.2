@@ -1,130 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760714Ab2FVABx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 20:01:53 -0400
-Received: from gate.crashing.org ([63.228.1.57]:49579 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760682Ab2FVABw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 20:01:52 -0400
-Message-ID: <1340323284.16104.4.camel@pasglop>
-Subject: Re: [PATCH 1/1] of: reform prom_update_property function
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Date: Fri, 22 Jun 2012 10:01:24 +1000
-In-Reply-To: <20120621093702.GE21231@shlinux2.ap.freescale.net>
-References: <1340171647-2815-1-git-send-email-b29396@freescale.com>
-	 <4FE1CB2C.5040208@gmail.com> <1340237796.28143.207.camel@pasglop>
-	 <20120621093702.GE21231@shlinux2.ap.freescale.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1760725Ab2FVAFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 20:05:24 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:42487 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760706Ab2FVAFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 20:05:22 -0400
+Message-ID: <4FE3B6A9.60109@xenotime.net>
+Date: Thu, 21 Jun 2012 17:04:57 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] pstore: fix printk format warning in ram.c
+References: <20120615143303.3b88edcbc3efc7b1bf81839b@canb.auug.org.au> <4FDB8AB8.6060703@xenotime.net>
+In-Reply-To: <4FDB8AB8.6060703@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-21 at 17:37 +0800, Dong Aisheng wrote:
-> Maybe we could change it as as follows.
-> It looks then the code follow is the same as before.
-> Do you think if it's ok?
+Greg,
+This patch is still needed in linux-next.....
+
+
+also:
+Acked-by: Kees Cook <keescook@chromium.org>
+
+
+
+On 06/15/2012 12:19 PM, Randy Dunlap wrote:
+
+> From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-> index 7b3bf76..4c237f4 100644
-> --- a/arch/powerpc/platforms/pseries/reconfig.c
-> +++ b/arch/powerpc/platforms/pseries/reconfig.c
-> @@ -443,6 +443,9 @@ static int do_update_property(char *buf, size_t bufsize)
->         if (!next_prop)
->                 return -EINVAL;
+> Fix printk format warning (on i386) in pstore:
 > 
-> +       if (!strlen(name)
-> +               return -ENODEV;
-> +
->         newprop = new_property(name, length, value, NULL);
->         if (!newprop)
->                 return -ENOMEM;
-> @@ -450,13 +453,6 @@ static int do_update_property(char *buf, size_t bufsize)
->         if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
->                 slb_set_size(*(int *)value);
+> fs/pstore/ram.c:378:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
 > 
-> -       oldprop = of_find_property(np, name,NULL);
-> -       if (!oldprop) {
-> -               if (strlen(name))
-> -                       return prom_add_property(np, newprop);
-> -               return -ENODEV;
-> -       }
-
-No:
-
-IE. Old code did:
-
-	if (property doesn't exist) {
-		if (has a name)
-			create_it()
-		return -ENODEV;
-	}
-
-What you propose is:
-
-	if (!has_a_name)
-		return -ENODEV;
-
-Not at all the same semantic.
-
- .../...
- 
-> > IE. The allocation of the "old" property isn't disposed of. It can't
-> > because today we don't know whether any of those pointers was
-> > dynamically allocated or not. IE they could point to the fdt
-
-> Hmm, i did not see static allocated property before.
-> Where can we see an exist case?
-
-Almost all your property names and values. They are pointers to the
-original fdt block, so you can't free them. But dynamically added
-propreties will have kmalloc'ed pointers which should be freed. We need
-to add flags to indicate that if we want to avoid leaking memory in very
-dynamic environments.
-
-> If we really have this issue, it seems of_node_release also has the same issue,
-> since it frees the property without distinguish whether the property is allocated
-> dynamically.
-
-Well, actually we do have a flag:
-
-        if (!of_node_check_flag(node, OF_DYNAMIC))
-                return;
-
-So we use that. Good. So if update property uses that flag it should be
-able to know when to free or not. I forgot we had that :-)
-
-> > string list, data block, or could be bootmem ... or could be
-> > actual kernel memory.
-> > 
-> > We might want to extend the struct property to contain indications of
-> > the allocation type so we can kfree dynamic properties properly.
-> > 
-> I wonder the simplest way may be not allow static allocated property, like dt
-> node does i guess.
-
-No way. We generate the device-tree way before we have an allocator
-available.
-
-> > But then there's the question of the lifetime of a property... since
-> > they aren't reference counted like nodes are.
-> > 
-> Yes, that's a real exist problem.
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> ---
+>  fs/pstore/ram.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Anyway, i guess we could do that work of this problem in another patch
-> rather than have to in this patch series.
+> --- linux-next-20120615.orig/fs/pstore/ram.c
+> +++ linux-next-20120615/fs/pstore/ram.c
+> @@ -375,7 +375,7 @@ static int __init ramoops_probe(struct p
+>  		goto fail_init_cprz;
+>  
+>  	if (!cxt->przs && !cxt->cprz) {
+> -		pr_err("memory size too small, minimum is %lu\n",
+> +		pr_err("memory size too small, minimum is %zu\n",
+>  			cxt->console_size + cxt->record_size);
+>  		goto fail_cnt;
+>  	}
+> 
 
-Cheers,
-Ben.
 
 
+-- 
+~Randy
