@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761867Ab2FVJIz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 05:08:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33543 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761839Ab2FVJIx (ORCPT
+	id S1761884Ab2FVJK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 05:10:26 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:36812 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761816Ab2FVJKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 05:08:53 -0400
-Date: Fri, 22 Jun 2012 11:08:51 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        leroy christophe <christophe.leroy@c-s.fr>,
-        Iratxo Pichel Ortiz <ipichel@albentia.com>,
-        David Garcia <dgarcia@albentia.com>
-Subject: Re: [PATCH][RT] spinlock: Add include for BUG() in spinlock_rt.h
-In-Reply-To: <1340285878.27036.138.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1206221108180.2853@ionos>
-References: <1340285878.27036.138.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 22 Jun 2012 05:10:24 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: As5NAMo15E9V5qg+PGdsb2JhbABFihWrTBkBAQEBNzSCdRMBAQ4YEXEKGhOID7okFJEcA5sRjH0
+X-IronPort-AV: E=Sophos;i="4.77,457,1336341600"; 
+   d="scan'208";a="363406076"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jan Beulich <jbeulich@suse.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH] HID: Fix the Kconfig option for generic device handling
+Date: Fri, 22 Jun 2012 11:13:10 +0200
+Message-Id: <1340356390-4614-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Jun 2012, Steven Rostedt wrote:
+The generic HID driver is obviously not a special driver, so move
+it outside of the special drivers menu. Explain the usage and make
+the default follow the HID setting. This should simplify migration
+from older kernels.
 
-> spinlock_rt.h references BUG(), but it does not include bug.h, and on
-> some architectures (powerpc) this can cause a build failure.
-> 
-> Reported-by: Iratxo Pichel Ortiz <ipichel@albentia.com>
-> Reported-by: leroy christophe <christophe.leroy@c-s.fr>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ----
-> [ Thomas, can you add this patch to your queue so that I can add it to
-> stable. Please, let me know when you have. Thanks! ]
+Reported-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Hi Jiri,
 
-Picked it up, thanks. Please take it right away w/o waiting for my
-release.
+As pointed out by Jan Beulich, the generic hid driver Kconfig option
+is confusing. This patch ought to fix most of the concerns. For 3.5.
 
 Thanks,
+Henrik
 
-	Thomas
+ drivers/hid/Kconfig |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 034c80a..fabf817 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -61,21 +61,22 @@ config HIDRAW
  
-> diff --git a/include/linux/spinlock_rt.h b/include/linux/spinlock_rt.h
-> index 3b555b4..0618387 100644
-> --- a/include/linux/spinlock_rt.h
-> +++ b/include/linux/spinlock_rt.h
-> @@ -5,6 +5,8 @@
->  #error Do not include directly. Use spinlock.h
->  #endif
->  
-> +#include <linux/bug.h>
-> +
->  extern void
->  __rt_spin_lock_init(spinlock_t *lock, char *name, struct lock_class_key *key);
->  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+ source "drivers/hid/usbhid/Kconfig"
+ 
+-menu "Special HID drivers"
+-	depends on HID
+-
+ config HID_GENERIC
+ 	tristate "Generic HID driver"
+ 	depends on HID
+-	default y
++	default HID
+ 	---help---
+-	Support for generic HID devices.
++	Support for generic devices on the HID bus. This includes most
++	keyboards and mice, joysticks, tablets and digitizers.
+ 
+ 	To compile this driver as a module, choose M here: the module
+ 	will be called hid-generic.
+ 
+ 	If unsure, say Y.
+ 
++menu "Special HID drivers"
++	depends on HID
++
+ config HID_A4TECH
+ 	tristate "A4 tech mice" if EXPERT
+ 	depends on USB_HID
+-- 
+1.7.10.4
+
