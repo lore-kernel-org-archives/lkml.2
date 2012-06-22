@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761448Ab2FVHGE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 03:06:04 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:50216 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761418Ab2FVHGB (ORCPT
+	id S1761455Ab2FVHHI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 03:07:08 -0400
+Received: from smtp-out-128.synserver.de ([212.40.185.128]:1045 "EHLO
+	smtp-out-127.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761427Ab2FVHHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 03:06:01 -0400
+	Fri, 22 Jun 2012 03:07:06 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 22388
+Message-ID: <4FE41A77.40103@metafoo.de>
+Date: Fri, 22 Jun 2012 09:10:47 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <1339549862-653-2-git-send-email-john.stultz@linaro.org>
-References: <1339549862-653-1-git-send-email-john.stultz@linaro.org>
-	<1339549862-653-2-git-send-email-john.stultz@linaro.org>
-Date: Fri, 22 Jun 2012 00:06:00 -0700
-Message-ID: <CANN689EUC26UjmGSAhsmZD5iPjmzTPPgGsZ9ZyPfy0RHFBp06g@mail.gmail.com>
-Subject: Re: [PATCH 1/6] [RFC] Interval tree implementation
-From: Michel Lespinasse <walken@google.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+To: Saranya Gopal <saranya.gopal@intel.com>
+CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] bq27x00_battery: Add support for BQ27425 chip
+References: <1340035678-2195-1-git-send-email-saranya.gopal@intel.com>
+In-Reply-To: <1340035678-2195-1-git-send-email-saranya.gopal@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 6:10 PM, John Stultz <john.stultz@linaro.org> wrote:
-> After Andrew suggested something like his mumbletree idea
-> to better store a list of intervals, I worked on a few different
-> approaches, and this is what I've finally managed to get working.
->
-> The idea of storing intervals in a tree is nice, but has a number
-> of complications. When adding an interval, its possible that a
-> large interval will consume and merge a number of smaller intervals.
-> When removing a interval, its possible you may end up splitting an
-> existing interval, causing one interval to become two. This makes it
-> very difficult to provide generic list_head like behavior, as
-> the parent structures would need to be duplicated and removed,
-> and that has lots of memory ownership issues.
->
-> So, this is a much simplified and more list_head like
-> implementation. You can add a node to a tree, or remove a node
-> to a tree, but the generic implementation doesn't do the
-> merging or splitting for you. But it does provide helpers to
-> find overlapping and adjacent intervals.
->
-> Andrew also really wanted this interval-tree implementation to be
-> resuable so we don't duplicate the file locking logic. I'm not
-> totally convinced that the requirements between the volatile
-> intervals and file locking are really equivelent, but this reduced
-> impelementation may make it possible.
+On 06/18/2012 06:07 PM, Saranya Gopal wrote:
+> This patch adds support for BQ27425 (TI) chip. This
+> chip is same as BQ27500 with few registers removed
+> and register address map changed. The data sheet for
+> this chip is publicly available at
+> http://www.ti.com/product/bq27425-g1
+> 
+> Changes since v1:
+> 	Remove the additional Kconfig entry
+> 	Add a second power_supply_property array for bq27425
+> 	 and assign the appropriate array at run-time based
+> 	 on battery type.
+> Signed-off-by: Saranya Gopal <saranya.gopal@intel.com>
 
-Well, we already have several implementations of interval trees:
+Looks mostly good. Two comments inline.
 
-* lib/prio_tree.c seems to do what you want. It's often used with
-VMAs, but there is also a 'raw' node structure, as used in
-mm/kmemleak.c, which supports all the operations you are proposing.
+> ---
+>  drivers/power/bq27x00_battery.c |   99 +++++++++++++++++++++++++++++++--------
+>  1 files changed, 79 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+> index f5d6d37..58775ea 100644
+> --- a/drivers/power/bq27x00_battery.c
+> +++ b/drivers/power/bq27x00_battery.c
+> @@ -22,6 +22,7 @@
+>   * Datasheets:
+>   * http://focus.ti.com/docs/prod/folders/print/bq27000.html
+>   * http://focus.ti.com/docs/prod/folders/print/bq27500.html
+> + * http://www.ti.com/product/bq27425-g1
+>   */
+>  
+>  #include <linux/module.h>
+> @@ -67,6 +68,14 @@
+>  #define BQ27500_FLAG_SOC1		BIT(2) /* State-of-Charge threshold 1 */
+>  #define BQ27500_FLAG_FC			BIT(9)
+>  
+> +#define BQ27425_REG_TEMP		0x02
+> +#define BQ27425_REG_VOLT		0x04
+> +#define BQ27425_REG_FLAGS		0x06
+> +#define BQ27425_REG_NAC			0x08
+> +#define BQ27425_REG_FCC			0x0E
+> +#define BQ27425_REG_AI			0x10
+> +#define BQ27425_REG_SOC			0x1C
 
-* lib/rb_tree.c has some support for the "augmented tree" structure,
-with which you can implement interval trees as is done in
-arch/x86/mm/pat_rbtree.c
+It looks as if all these register addresses (with the exception of REG_SOC)
+are the same as the BQ27X00 register address minus 4.
 
-I don't think it makes sense to have two implementations already, and
-I am looking into possibly collapsing these into one. Please don't add
-a third one :)
+What do you think about applying this offset in bq27x00_read? This would
+safe us a lot of these
+
+	if (di->chip == BQ27425)
+		curr = bq27x00_read(di, BQ27425_REG_..., false);
+	else
+		curr = bq27x00_read(di, BQ27x00_REG_..., false);
 
 
-Also, the name "interval tree" typically implies a data structure that
-is capable of representing overlapping intervals. Since your
-implementation does not support that (it requires its callers to make
-sure the intervals are non-overlapping), I think calling it "interval
-tree" could cause confusion.
+> [...]
+>  
+> -	if (di->chip == BQ27500)
+> +	if (di->chip == BQ27500  || di->chip == BQ27425)
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Maybe it makes sense to put this check in a small helper function, this will
+make it less noisy to add another chip with a similar register layout.
+
+> [...]
+
