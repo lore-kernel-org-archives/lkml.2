@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab2FVMBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:01:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51381 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760320Ab2FVMBm (ORCPT
+	id S932731Ab2FVMIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:08:04 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:41772 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932658Ab2FVMID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:01:42 -0400
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: [PATCH 2/2] memcg: cleanup typos in mem cgroup
-Date: Fri, 22 Jun 2012 20:01:14 +0800
-Message-Id: <1340366474-28228-1-git-send-email-liwp.linux@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 22 Jun 2012 08:08:03 -0400
+Date: Fri, 22 Jun 2012 20:07:55 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: crypto: gpf on boot with linux-next
+Message-ID: <20120622120755.GA24338@gondor.apana.org.au>
+References: <1340363755.27031.37.camel@lappy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340363755.27031.37.camel@lappy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Fri, Jun 22, 2012 at 01:15:55PM +0200, Sasha Levin wrote:
+> Hi all,
+> 
+> I'm seeing the following panic when booting the latest linux-next kernel:
 
-Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+Oops, stupid thinko on my part.  Can you see if the following patch
+on top of linux-next fixes the issue?
 
----
- mm/memcontrol.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 776fc57..9e3c74a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -115,8 +115,8 @@ static const char * const mem_cgroup_events_names[] = {
+diff --git a/crypto/algboss.c b/crypto/algboss.c
+index 368a832..f97027e 100644
+--- a/crypto/algboss.c
++++ b/crypto/algboss.c
+@@ -48,7 +48,7 @@ struct cryptomgr_param {
+ 	char larval[CRYPTO_MAX_ALG_NAME];
+ 	char template[CRYPTO_MAX_ALG_NAME];
  
- /*
-  * Per memcg event counter is incremented at every pagein/pageout. With THP,
-- * it will be incremated by the number of pages. This counter is used for
-- * for trigger some periodic events. This is straightforward and better
-+ * it will be incremented by the number of pages. This counter is used for
-+ * trigger some periodic events. This is straightforward and better
-  * than using jiffies etc. to handle periodic memcg event.
-  */
- enum mem_cgroup_events_target {
-@@ -678,7 +678,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
-  *
-  * If there are kernel internal actions which can make use of some not-exact
-  * value, and reading all cpu value can be performance bottleneck in some
-- * common workload, threashold and synchonization as vmstat[] should be
-+ * common workload, threshold and synchonization as vmstat[] should be
-  * implemented.
-  */
- static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
-@@ -2213,7 +2213,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 	if (mem_cgroup_wait_acct_move(mem_over_limit))
- 		return CHARGE_RETRY;
+-	struct completion completion;
++	struct completion *completion;
  
--	/* If we don't need to call oom-killer at el, return immediately */
-+	/* If we don't need to call oom-killer at all, return immediately */
- 	if (!oom_check)
- 		return CHARGE_NOMEM;
- 	/* check OOM */
-@@ -2291,7 +2291,7 @@ again:
- 		 * In that case, "memcg" can point to root or p can be NULL with
- 		 * race with swapoff. Then, we have small risk of mis-accouning.
- 		 * But such kind of mis-account by race always happens because
--		 * we don't have cgroup_mutex(). It's overkill and we allo that
-+		 * we don't have cgroup_mutex(). It's overkill and we allow that
- 		 * small race, here.
- 		 * (*) swapoff at el will charge against mm-struct not against
- 		 * task-struct. So, mm->owner can be NULL.
-@@ -2396,7 +2396,7 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
+ 	u32 otype;
+ 	u32 omask;
+@@ -87,7 +87,7 @@ static int cryptomgr_probe(void *data)
+ 	crypto_tmpl_put(tmpl);
+ 
+ out:
+-	complete(&param->completion);
++	complete(param->completion);
+ 	kfree(param);
+ 	module_put_and_exit(0);
  }
+@@ -189,14 +189,13 @@ static int cryptomgr_schedule_probe(struct crypto_larval *larval)
  
- /*
-- * Cancel chrages in this cgroup....doesn't propagate to parent cgroup.
-+ * Cancel charges in this cgroup....doesn't propagate to parent cgroup.
-  * This is useful when moving usage to parent cgroup.
-  */
- static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
--- 
-1.7.9.5
+ 	memcpy(param->larval, larval->alg.cra_name, CRYPTO_MAX_ALG_NAME);
+ 
+-	init_completion(&param->completion);
++	param->completion = &larval->completion;
+ 
+ 	thread = kthread_run(cryptomgr_probe, param, "cryptomgr_probe");
+ 	if (IS_ERR(thread))
+ 		goto err_free_param;
+ 
+-	wait_for_completion_interruptible_timeout(&param->completion, 60 * HZ);
+-	complete_all(&larval->completion);
++	wait_for_completion_interruptible(&larval->completion);
+ 
+ 	return NOTIFY_STOP;
+ 
 
+Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
