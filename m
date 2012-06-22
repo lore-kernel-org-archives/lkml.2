@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab2FVTW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 15:22:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42104 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab2FVTW1 (ORCPT
+	id S932109Ab2FVTXZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 15:23:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57855 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002Ab2FVTXY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 15:22:27 -0400
-Date: Fri, 22 Jun 2012 12:22:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        Alex Lyashkov <umka@cloudlinux.com>
-Subject: Re: [PATCH] Taint kernel when lve module is loaded
-Message-ID: <20120622192222.GA22633@kroah.com>
-References: <1340387371-32292-1-git-send-email-mjg59@srcf.ucam.org>
- <20120622184359.GA25552@kroah.com>
- <20120622185142.GA13225@srcf.ucam.org>
+	Fri, 22 Jun 2012 15:23:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120622185142.GA13225@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120622185113.GK4642@google.com>
+References: <20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
+	<1339667440.3321.7.camel@lappy>
+	<20120618223203.GE32733@google.com>
+	<1340059850.3416.3.camel@lappy>
+	<20120619041154.GA28651@shangw>
+	<20120619212059.GJ32733@google.com>
+	<20120619212618.GK32733@google.com>
+	<CAE9FiQVECyRBie-kgBETmqxPaMx24kUt1W07qAqoGD4vNus5xQ@mail.gmail.com>
+	<20120621201728.GB4642@google.com>
+	<CAE9FiQXubmnKHjnqOxVeoJknJZFNuStCcW=1XC6jLE7eznkTmg@mail.gmail.com>
+	<20120622185113.GK4642@google.com>
+Date: Fri, 22 Jun 2012 12:23:24 -0700
+X-Google-Sender-Auth: BLcJwb3wDvL8RKJncDdwdQ7qSEM
+Message-ID: <CAE9FiQVV+WOWywnanrP7nX-wai=aXmQS1Dcvt4PxJg5XWynC+Q@mail.gmail.com>
+Subject: Re: Early boot panic on machine with lots of memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 07:51:42PM +0100, Matthew Garrett wrote:
-> On Fri, Jun 22, 2012 at 11:43:59AM -0700, Greg KH wrote:
-> 
-> > Do you have a pointer to this code anywhere?  Lying about the license to
-> > the kernel is a pretty blatent thing to do and I'd like to have some
-> > people follow up on that issue.
-> 
-> http://repo.cloudlinux.com/cloudlinux/5.8/updates-testing/x86_64/RPMS/kmod-lve-2.6.18-408.el5.lve1.1.64.2-1.1-10.7.3.el5.x86_64.rpm 
-> - there's no corresponding SRPM in 
-> http://repo.cloudlinux.com/cloudlinux/5.8/updates-testing/SRPMS/ and 
-> upstream apparently refuse to provide source. Alex Lyashkov (Cc:ed) is 
-> listed as module author in the metadata.
+On Fri, Jun 22, 2012 at 11:51 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Yinghai.
+>>
+>> Also I add another patch to double check if there is any reference
+>> with reserved.region.
+>> so far there is no reference found.
+>
+> Thanks for checking it.  I was worried because of the re-reservation
+> of reserved.regions after giving memory to the page allocator -
+> ie. memblock_reserve_reserved_regions() call.  If memblock is done at
+> that point, there's no reason to have that call at all.  It could be
+> that that's just dead code.  If so, why aren't we freeing
+> memory.regions?
 
-Hm, and at least one reason it needs to be GPL is due to it using
-symbols I created, no fun.
+During converting bootmem to use early_res stage, I still kept the
+numa handling.
+like one node by one node. So need to put the reserved.regions back.
+Later found we could do that for all node at the same time.
 
-Alex, can you please provide the source code for this module?  Or is the
-license that the code is saying it is, somehow incorrect?  If so, can
-you please fix it?  If you can't do this, is there someone else I should
-be contacting?
+For memory.regions, a little different, at that time I want to kill
+e820 all like e820_all_mapped_ram.
 
-thanks,
+Yes, we should get back region that is allocated for doubled memory.regions.
+but did not trigger that doubling yet.
 
-greg k-h
+Also for x86, all memblock in __initdata, and will be freed later.
+
+> Also, shouldn't we be clearing
+> memblock.cnt/max/total_size/regions so that we know for sure that it's
+> never used again?  What am I missing?
+
+64bit mem_init(), after absent_page_in_range(), will not need memblock anymore.
+  --- absent_page_in_range will refer for_each_mem_pfn_range.
+
+so after that could clear that for memory.regions too.
+
+Thanks
+
+Yinghai
