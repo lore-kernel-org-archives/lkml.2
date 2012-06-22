@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761640Ab2FVIOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 04:14:43 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59941 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761609Ab2FVIO1 (ORCPT
+	id S1761645Ab2FVIWD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 04:22:03 -0400
+Received: from service88.mimecast.com ([195.130.217.12]:48179 "EHLO
+	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761630Ab2FVIWA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 04:14:27 -0400
-X-AuditID: 9c93016f-b7cbdae0000024ac-e0-4fe4295fdda4
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 1/2] tools lib traceevent: Teach [ce]tags about libtraceeevent error codes
-Date: Fri, 22 Jun 2012 17:10:14 +0900
-Message-Id: <1340352615-20737-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.10.2
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 22 Jun 2012 04:22:00 -0400
+Message-ID: <4FE42964.8050404@arm.com>
+Date: Fri, 22 Jun 2012 09:14:28 +0100
+From: viresh kumar <viresh.kumar2@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "mm-commits@vger.kernel.org" <mm-commits@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: mmotm 2012-06-21-16-20 uploaded
+References: <20120621232149.F0286A026A@akpm.mtv.corp.google.com>
+In-Reply-To: <20120621232149.F0286A026A@akpm.mtv.corp.google.com>
+X-MC-Unique: 112062209143105402
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 22/06/12 00:21, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2012-06-21-16-20 has been uploaded to
+>
+>    http://www.ozlabs.org/~akpm/mmotm/
+>
+> It contains the following patches against 3.5-rc3:
+> (patches marked "*" will be included in linux-next)
+>
+> * clk-add-non-config_have_clk-routines.patch
+> * clk-remove-redundant-depends-on-from-drivers-kconfig.patch
+> * i2c-i2c-pxa-remove-conditional-compilation-of-clk-code.patch
+> * usb-marvell-remove-conditional-compilation-of-clk-code.patch
+> * usb-musb-remove-conditional-compilation-of-clk-code.patch
+> * ata-pata_arasan-remove-conditional-compilation-of-clk-code.patch
+> * net-c_can-remove-conditional-compilation-of-clk-code.patch
+> * net-stmmac-remove-conditional-compilation-of-clk-code.patch
+> * gadget-m66592-remove-conditional-compilation-of-clk-code.patch
+> * gadget-r8a66597-remove-conditional-compilation-of-clk-code.patch
+> * usb-host-r8a66597-remove-conditional-compilation-of-clk-code.patch
 
-As we use a macro trick to sync each error codes with its
-description string, teach [ce]tags to process them properly.
+Hi Andrew,
 
-This patch modifies the libtraceevent's Makefile not a
-kernel one.
+You need
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Suggested-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-3101nsbg52glxdqih291qj74@git.kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/Makefile |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+http://permalink.gmane.org/gmane.linux.ports.arm.kernel/172024
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 56daa768b9e3..15f6eb8f4935 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -284,11 +284,13 @@ TRACEEVENT-CFLAGS: force
- 
- tags:	force
- 	$(RM) tags
--	find . -name '*.[ch]' | xargs ctags --extra=+f --c-kinds=+px
-+	find . -name '*.[ch]' | xargs ctags --extra=+f --c-kinds=+px \
-+	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
- 
- TAGS:	force
- 	$(RM) TAGS
--	find . -name '*.[ch]' | xargs etags
-+	find . -name '*.[ch]' | xargs etags \
-+	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'
- 
- define do_install
- 	$(print_install)				\
--- 
-1.7.10.2
+to make above patchset complete.
+
+--
+Viresh
+
+-- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
 
