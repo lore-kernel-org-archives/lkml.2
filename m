@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab2FVSxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 14:53:40 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:40009 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159Ab2FVSxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 14:53:39 -0400
-Message-ID: <1340390943.2299.139.camel@groeck-laptop>
-Subject: Re: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Jean Delvare <khali@linux-fr.org>, "x86@kernel.org" <x86@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>
-Date: Fri, 22 Jun 2012 11:49:03 -0700
-In-Reply-To: <4FE4B2F7.9070302@zytor.com>
-References: <20120621162807.3c621d46@endymion.delvare>
-	 <4FE34BCB.5050305@linux.intel.com>
-	 <20120621190743.2e6601f6@endymion.delvare> <4FE3628C.6000604@zytor.com>
-	 <20120621184403.GC15472@liondog.tnic> <4FE37FE9.6000107@linux.intel.com>
-	 <20120622065937.GA22167@gmail.com> <4FE4B2F7.9070302@zytor.com>
-Organization: Ericsson
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1758391Ab2FVSzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 14:55:17 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:54128 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755958Ab2FVSzP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 14:55:15 -0400
 MIME-Version: 1.0
+In-Reply-To: <1340391005-10880-1-git-send-email-vnagarnaik@google.com>
+References: <1340391005-10880-1-git-send-email-vnagarnaik@google.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Fri, 22 Jun 2012 11:54:43 -0700
+Message-ID: <CAL26m8L-x0jW-aW5DtrNEuihp5CnsMw54OvE9BBx4g6Zp3c=dg@mail.gmail.com>
+Subject: Re: [PATCH] tracing: Fix crash due to uninitialized new_pages list head
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Justin Teravest <teravest@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-22 at 14:01 -0400, H. Peter Anvin wrote:
-> On 06/21/2012 11:59 PM, Ingo Molnar wrote:
-> > 
-> > Plus add a kernel build time check to avoid such string clashes 
-> > in the future? These acronyms tend to be short and hard to read, 
-> > I'd not be surprised if this repeated in the future.
-> > 
-> 
-> Another *MASSIVE* fail is that an x86 cpufeature was added by a patch
-> that went through the hwmon tree without any x86 maintainer ACK, and
-> with a subject line that would not have made anyone aware of it:
-> 
-> a4659053 x86/hwmon: fix initialization of coretemp
-> 
-> We maintain x86/cpufeature as a separate -tip branch for a reason:
-> changes to that stuff mucks with *everything* as it is.
+On Fri, Jun 22, 2012 at 11:50 AM, Vaibhav Nagarnaik
+<vnagarnaik@google.com> wrote:
+> The new_pages list head in the cpu_buffer is not initialized. When
+> adding pages to the ring buffer, if the memory allocation fails in
+> ring_buffer_resize, the clean up handler tries to free up the allocated
+> pages from all the cpu buffers. The panic is caused by referencing the
+> uninitialized new_pages list head.
+>
+> Initializing the new_pages list head in rb_allocate_cpu_buffer fixes
+> this.
+>
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> ---
 
-My apologies. Hope I learned a bit since then.
+Hi Steven,
 
-Guenter
+I believe this fix should be pushed to 3.5 along with the other patch
+I sent earlier:
+tracing: Update entries counter when removing pages
+
+These two patches fix issues with the recently added atomic resize patches.
 
 
+Thanks
+
+Vaibhav Nagarnaik
