@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762038Ab2FVK3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 06:29:32 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:37462 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755524Ab2FVK3b (ORCPT
+	id S1762061Ab2FVKds (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 06:33:48 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:1232 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762044Ab2FVKdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 06:29:31 -0400
-Date: Fri, 22 Jun 2012 13:27:13 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, balbi@ti.com,
-        Vikram Pandita <vikram.pandita@ti.com>
-Subject: Re: [PATCH v2 1/5] usb: musb: move work_struct(otg_notifier_work)
- from core to omap glue
-Message-ID: <20120622102712.GE28472@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1340010262-22025-1-git-send-email-kishon@ti.com>
- <1340010262-22025-2-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="//IivP0gvsAy3Can"
-Content-Disposition: inline
-In-Reply-To: <1340010262-22025-2-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Jun 2012 06:33:47 -0400
+Message-ID: <1340361221.1773.78.camel@x61.thuisdomein>
+Subject: [PATCH] m68k: remove never used asm/shm.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 22 Jun 2012 12:33:41 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 22 Jun 2012 10:33:42.0281 (UTC) FILETIME=[7E7DE790:01CD5062]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+m68k's asm/shm.h header has been part of the tree ever since m68k
+support got added in v1.3.94. (It started as /include/asm-m68k/shm.h and
+moved to its current location a few years ago.) It seems it was never
+used: no file ever included it and nothing used the macros it defines.
 
---//IivP0gvsAy3Can
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(Actually, from v2.5.46 until v2.6.29-rc3 it was included by m68knommu's
+asm/shm.h. But that header was just a very thin wrapper for this header
+and was itself unused too.)
 
-On Mon, Jun 18, 2012 at 02:34:18PM +0530, Kishon Vijay Abraham I wrote:
-> Commit 712d8e(fixes pm_runtime calls while atomic by using a work
-> queue. musb pm_runtime_get_sync call happens in interrupt context
-> on cable attach case. That can result in re-enabling the interrupts and
-> cause side affect. To avoid this deferred processing is used)
->=20
-> While the issue and the work queue implementation is specific to omap
-> (omap2430.c), the work_struct is defined as a member of struct musb
-> (musb_core.h). Hence moved the work_struct from musb_core to omap
-> glue.
->=20
-> Cc: Vikram Pandita <vikram.pandita@ti.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+This header can safely be removed.
 
-didn't apply, please rebase on my musb branch.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Tested by using various git commands on (way too much of the history
+of) the tree.
 
---=20
-balbi
+1) There's an almost identical patch for h8300's asm/shm.h header.
 
---//IivP0gvsAy3Can
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ arch/m68k/include/asm/shm.h |   31 -------------------------------
+ 1 files changed, 0 insertions(+), 31 deletions(-)
+ delete mode 100644 arch/m68k/include/asm/shm.h
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/arch/m68k/include/asm/shm.h b/arch/m68k/include/asm/shm.h
+deleted file mode 100644
+index fa56ec8..0000000
+--- a/arch/m68k/include/asm/shm.h
++++ /dev/null
+@@ -1,31 +0,0 @@
+-#ifndef _M68K_SHM_H
+-#define _M68K_SHM_H
+-
+-
+-/* format of page table entries that correspond to shared memory pages
+-   currently out in swap space (see also mm/swap.c):
+-   bits 0-1 (PAGE_PRESENT) is  = 0
+-   bits 8..2 (SWP_TYPE) are = SHM_SWP_TYPE
+-   bits 31..9 are used like this:
+-   bits 15..9 (SHM_ID) the id of the shared memory segment
+-   bits 30..16 (SHM_IDX) the index of the page within the shared memory segment
+-                    (actually only bits 25..16 get used since SHMMAX is so low)
+-   bit 31 (SHM_READ_ONLY) flag whether the page belongs to a read-only attach
+-*/
+-/* on the m68k both bits 0 and 1 must be zero */
+-/* format on the sun3 is similar, but bits 30, 31 are set to zero and all
+-   others are reduced by 2. --m */
+-
+-#ifndef CONFIG_SUN3
+-#define SHM_ID_SHIFT	9
+-#else
+-#define SHM_ID_SHIFT	7
+-#endif
+-#define _SHM_ID_BITS	7
+-#define SHM_ID_MASK	((1<<_SHM_ID_BITS)-1)
+-
+-#define SHM_IDX_SHIFT	(SHM_ID_SHIFT+_SHM_ID_BITS)
+-#define _SHM_IDX_BITS	15
+-#define SHM_IDX_MASK	((1<<_SHM_IDX_BITS)-1)
+-
+-#endif /* _M68K_SHM_H */
+-- 
+1.7.7.6
 
-iQIcBAEBAgAGBQJP5EiAAAoJEIaOsuA1yqREQOUP+QG3kErP5qIlSbPLnZx8Xg5D
-CWzJgx/Qe8F3HHV0h+VYsFsW/owdPxfN1n5t7Fm+/Aenf5hTmowvbJqRLuabb7Uu
-J+4TAxIPKFx85/v2auXPq6hs+e746QvJ4RWXu+9nS2y3/qyvX+D2sT6pFBb1Ze32
-guYB79hnKfl8By2JIfu//w7c1WkFlpeawsFvnFNC1JoD6uSoXW2e5xft8rYlYluZ
-Rns7ztqdj0kOcq+9BF8HDBGXkDiwgk3OJ25/pL9+fM77Td8PnIS25RzLPAys285g
-0a5qD1I5WLytvuOT887lwzZkFxb4AOKlXgbSLTl/VAcCsLumqGS+0IZQCv1RQ4vo
-eyjNDMs27HDiOizOwPIO1cBaSOw1C0mQ8RZgzCVxziJ/Kbpn5qxCiASeAdAgyywh
-9Bbnf77G40YsXqyBwl+CGiAECwkT5wnkSpdlBI1UZMSF3QFZy1piLvWo/ZjT6B65
-Gbd97A5C7WzRSmaEJwaHKresczZNtUvmM2z7wLEg6uNrmLqWsUqsj/TalePkYkX7
-ftenSiu3ZOpXP+7JLKOO5hGsGTiNOhQ1cxeP2J4bTsGXTyNy1kkpLa7ND9aDgtb+
-jbnYo82o2benIvUUfl3m02tKaKz6YWd6cxs4lwDqnU1+T/roykFo4y+92yeD49h3
-Yd0chmYjnEtvW/WVFJ8Z
-=58um
------END PGP SIGNATURE-----
-
---//IivP0gvsAy3Can--
