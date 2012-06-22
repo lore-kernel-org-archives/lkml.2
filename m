@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234Ab2FVVMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 17:12:22 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:44612 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933210Ab2FVVMU (ORCPT
+	id S933210Ab2FVVM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 17:12:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51146 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab2FVVMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 17:12:20 -0400
-Date: Fri, 22 Jun 2012 17:12:19 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>
-cc: Kay Sievers <kay@vrfy.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH] printk: fix regression in SYSLOG_ACTION_CLEAR
-Message-ID: <Pine.LNX.4.44L0.1206221710030.1184-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 22 Jun 2012 17:12:55 -0400
+Date: Fri, 22 Jun 2012 14:12:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Chris Friesen <chris.friesen@genband.com>
+Subject: Re: [PATCH v2 1/2] msync: support syncing a small part of the file
+Message-Id: <20120622141253.1e9747cf.akpm@linux-foundation.org>
+In-Reply-To: <1339773179-31210-2-git-send-email-pbonzini@redhat.com>
+References: <1339773179-31210-1-git-send-email-pbonzini@redhat.com>
+	<1339773179-31210-2-git-send-email-pbonzini@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7ff9554bb578ba02166071d2d487b7fc7d860d62 (printk: convert
-byte-buffer to variable-length record buffer) introduced a regression
-by accidentally removing a "break" statement from inside the big
-switch in printk's do_syslog().  The symptom of this bug is that the
-"dmesg -C" command doesn't only clear the kernel's log buffer; it also
-disables console logging.
+On Fri, 15 Jun 2012 17:12:58 +0200
+Paolo Bonzini <pbonzini@redhat.com> wrote:
 
-This patch (as1561) fixes the regression by adding the missing
-"break".
+> msync does not need to flush changes to the entire file, even with MS_SYNC.
+> Instead, it can use vfs_fsync_range to only synchronize a part of the file.
+> This is part of the specification; expecting msync to synchronize all the
+> file would take a very creative interpretation of the manual page as well
+> as the specification.
+> 
+> In addition, not all metadata has to be synced; msync is closer to
+> fdatasync than it is to fsync.  So, pass 1 to vfs_fsync_range.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Kay Sievers <kay@vrfy.org>
+I renamed the patch to "msync: switch to syncing only the affected part
+of the file" to emphasise that there is a behavioural change here.
 
----
+Then I deleted the patch.
 
-This is needed in 3.5-rc.  3.4 is okay.
-
-
- kernel/printk.c |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: usb-3.4/kernel/printk.c
-===================================================================
---- usb-3.4.orig/kernel/printk.c
-+++ usb-3.4/kernel/printk.c
-@@ -1027,6 +1027,7 @@ int do_syslog(int type, char __user *buf
- 	/* Clear ring buffer */
- 	case SYSLOG_ACTION_CLEAR:
- 		syslog_print_all(NULL, 0, true);
-+		break;
- 	/* Disable logging to console */
- 	case SYSLOG_ACTION_CONSOLE_OFF:
- 		if (saved_console_loglevel == -1)
-
+Please recall my thus-far-utterly-and-irritatingly-ignored comments
+about nonlinear mappings.  Presently an msync() on a nonlinear mapping
+will work correctly, because we sync the whole file, yes?  And with
+this change, we will no longer sync all the pages which were covered by
+the affected memory range.  Thus breaking the syscall?
