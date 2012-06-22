@@ -1,132 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916Ab2FVMjm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:39:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43170 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932846Ab2FVMjl (ORCPT
+	id S1761794Ab2FVMng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:43:36 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37112 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760241Ab2FVMne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:39:41 -0400
-Date: Fri, 22 Jun 2012 09:39:35 -0300
+	Fri, 22 Jun 2012 08:43:34 -0400
+Date: Fri, 22 Jun 2012 09:43:29 -0300
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: "Pierre-Loup A. Griffais" <pgriffais@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        Mike Sartain <mikesart@valvesoftware.com>
-Subject: Re: [PATCH] perf symbols: Follow .gnu_debuglink section to find
- separate symbols
-Message-ID: <20120622123935.GF17747@infradead.org>
-References: <4FE24D31.3070608@nvidia.com>
- <20120621172859.GA17747@infradead.org>
- <4FE36AC1.70407@nvidia.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 5/8] perf symbols: Do not use ELF's symbol binding
+ constants
+Message-ID: <20120622124329.GG17747@infradead.org>
+References: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
+ <1340343462-15556-6-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FE36AC1.70407@nvidia.com>
+In-Reply-To: <1340343462-15556-6-git-send-email-namhyung@kernel.org>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 21, 2012 at 11:41:05AM -0700, Pierre-Loup A. Griffais escreveu:
-> On 06/21/2012 10:28 AM, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Jun 20, 2012 at 03:22:41PM -0700, Pierre-Loup A. Griffais escreveu:
-> >> The .gnu_debuglink section is specified to contain the filename of the
-
-> >> http://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
-
-> >> +static int filename__read_debuglink(const char *filename,
-
-> > Isn't there any other function that opens an ELF file, looks for an
-> > specific session to then read its contents?
-
-> > Couldn't it be reused here?
- 
-> There are plenty, but they're all different enough that trying to fold
-> them into common code seemed involved and risky. The closest looks like
-> elf_read_build_id(), but in order to leverage that one the common
-> function would need to take a list of sections to try in sequence.
-
-But we can have helper routines to do what is done to open the elf file,
-etc, right?
-
-> Unless you have strong feelings against using filename__read_debuglink()
-> as-is I would recommend that any such work happen outside of that patch
-> in the interest of minimizing risk.
-
-Agreed, that could be done later.
-
-> >> +		case SYMTAB__DEBUGLINK: {
-> >> +			char *last_slash;
-> >> +			strncpy(name, dso->long_name, size);
-> >> +			last_slash = name + dso->long_name_len;
-> >> +			while (last_slash && *last_slash != '/')
-> >> +				last_slash--;
-
-> > Why the test for last_slash to be != NULL? How could it ever be? This is
-> > an optimization since we have the dso->long_name_len so that we avoid
-> > using strrchr that in turn would do an strlen?
-
-> > So the test should be:
-> > 			while (last_slash != name && *last_slash != '/')
-
-> > To avoid underflowing, right?
+Em Fri, Jun 22, 2012 at 02:37:39PM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> Oops, yeah; not what I had in mind. Thanks for catching that.
-> 
-> >> +			if (last_slash)
-> >> +				last_slash++;
-> >> +			filename__read_debuglink(dso->long_name, last_slash,
+> There's no need to use the ELF's internal value directly.
+> Define and use our own - it's required to eliminated the
+> dependency of libelf.
 
-> > How last_slash can point to the path? It looks like it points to the
-> > basename, no?
-> > 
-> > Yeah, it is, and then your algorithm will work because last_slash
-> > doesn't point to the _path_, but to a string _preceded_ by the path, so
-> > for /bin/ls, the debuglink content would be ls.debug and that is what
-> > will be stashed there, ending up with:
-> > 
-> > name = "/bin/\0"
-> > last_slash---^
-> > name = "/bin/ls.debug\0"
-> > 
-> > I.e. its not really the last slash, but where the debuglink content has
-> > to be stashed, concatenating with the same dirname as the associated
-> > binary.
-> 
-> Yes, that's correct; sorry for the ill-named variables.
-> 
-> > Can you please rename "last_slash" to "debuglink"? And "path" to
-> > "debuglink" as well in the routine that reads the debuglink.
-> 
-> Done. I'm proposing to resend with:
-> 
-> 			while (debuglink != name && *debuglink != '/')
-> 				debuglink--;
-> 			if (*debuglink == '/')
-> 				debuglink++;
-> 
-> The underflow and subsequent "*debuglink == '/'" checks are only there
-> to do the right thing in case dso->long_name happens to just be a local
-> filename without any slashes in it. I realize that's probably never
-> supposed to happen, so I could remove them if you want. I'd rather err
-> on the side of caution, though.
+Why don't you set STB_GLOBAL, etc to the expected values when libelf is
+not present? That way no changes need to be made to symbol.c
 
-That is the right mindset, code has to be robust.
- 
-> >> +						 size - (last_slash - name));
-> >> +			}
-> > 
-> > Other than that, thanks a lot for working on this, surely we have to
-> > support this feature!
-> 
-> Thanks a lot for walking through the logic. Looking forward to your
-> comments before I resend!
+Ditto for GELF_ST_BIND.
 
-Please resend! :-)
+I.e. keep the subset of libelf.h that we use, providing those
+definitions on the poor man's libelf.h we should use when the "real
+thing" is not available.
 
 - Arnaldo
+ 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-top.c     |    5 ++---
+>  tools/perf/ui/browsers/map.c |    5 ++---
+>  tools/perf/util/symbol.c     |   40 ++++++++++++++++++++++++++--------------
+>  tools/perf/util/symbol.h     |    4 ++++
+>  4 files changed, 34 insertions(+), 20 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index e3cab5f088f8..e0977175f689 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -42,7 +42,6 @@
+>  #include "util/debug.h"
+>  
+>  #include <assert.h>
+> -#include <elf.h>
+>  #include <fcntl.h>
+>  
+>  #include <stdio.h>
+> @@ -181,8 +180,8 @@ static void ui__warn_map_erange(struct map *map, struct symbol *sym, u64 ip)
+>  		    "Please report to linux-kernel@vger.kernel.org\n",
+>  		    ip, map->dso->long_name, dso__symtab_origin(map->dso),
+>  		    map->start, map->end, sym->start, sym->end,
+> -		    sym->binding == STB_GLOBAL ? 'g' :
+> -		    sym->binding == STB_LOCAL  ? 'l' : 'w', sym->name,
+> +		    sym->binding == SYMBIND_GLOBAL ? 'g' :
+> +		    sym->binding == SYMBIND_LOCAL  ? 'l' : 'w', sym->name,
+>  		    err ? "[unknown]" : uts.machine,
+>  		    err ? "[unknown]" : uts.release, perf_version_string);
+>  	if (use_browser <= 0)
+> diff --git a/tools/perf/ui/browsers/map.c b/tools/perf/ui/browsers/map.c
+> index 98851d55a53e..f2059664b23f 100644
+> --- a/tools/perf/ui/browsers/map.c
+> +++ b/tools/perf/ui/browsers/map.c
+> @@ -1,5 +1,4 @@
+>  #include "../libslang.h"
+> -#include <elf.h>
+>  #include <newt.h>
+>  #include <inttypes.h>
+>  #include <sys/ttydefaults.h>
+> @@ -61,8 +60,8 @@ static void map_browser__write(struct ui_browser *self, void *nd, int row)
+>  	ui_browser__set_percent_color(self, 0, current_entry);
+>  	slsmg_printf("%*" PRIx64 " %*" PRIx64 " %c ",
+>  		     mb->addrlen, sym->start, mb->addrlen, sym->end,
+> -		     sym->binding == STB_GLOBAL ? 'g' :
+> -		     sym->binding == STB_LOCAL  ? 'l' : 'w');
+> +		     sym->binding == SYMBIND_GLOBAL ? 'g' :
+> +		     sym->binding == SYMBIND_LOCAL  ? 'l' : 'w');
+>  	width = self->width - ((mb->addrlen * 2) + 4);
+>  	if (width > 0)
+>  		slsmg_write_nstring(sym->name, width);
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index 38447ad42ad1..db807a8535d1 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -114,16 +114,16 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
+>  		return SYMBOL_B;
+>  
+>  	/* Prefer a non weak symbol over a weak one */
+> -	a = syma->binding == STB_WEAK;
+> -	b = symb->binding == STB_WEAK;
+> +	a = syma->binding == SYMBIND_WEAK;
+> +	b = symb->binding == SYMBIND_WEAK;
+>  	if (b && !a)
+>  		return SYMBOL_A;
+>  	if (a && !b)
+>  		return SYMBOL_B;
+>  
+>  	/* Prefer a global symbol over a non global one */
+> -	a = syma->binding == STB_GLOBAL;
+> -	b = symb->binding == STB_GLOBAL;
+> +	a = syma->binding == SYMBIND_GLOBAL;
+> +	b = symb->binding == SYMBIND_GLOBAL;
+>  	if (a && !b)
+>  		return SYMBOL_A;
+>  	if (b && !a)
+> @@ -259,8 +259,8 @@ static size_t symbol__fprintf(struct symbol *sym, FILE *fp)
+>  {
+>  	return fprintf(fp, " %" PRIx64 "-%" PRIx64 " %c %s\n",
+>  		       sym->start, sym->end,
+> -		       sym->binding == STB_GLOBAL ? 'g' :
+> -		       sym->binding == STB_LOCAL  ? 'l' : 'w',
+> +		       sym->binding == SYMBIND_GLOBAL ? 'g' :
+> +		       sym->binding == SYMBIND_LOCAL  ? 'l' : 'w',
+>  		       sym->name);
+>  }
+>  
+> @@ -609,12 +609,12 @@ struct process_kallsyms_args {
+>  	struct dso *dso;
+>  };
+>  
+> -static u8 kallsyms2elf_type(char type)
+> +static u8 kallsyms_binding(char type)
+>  {
+>  	if (type == 'W')
+> -		return STB_WEAK;
+> +		return SYMBIND_WEAK;
+>  
+> -	return isupper(type) ? STB_GLOBAL : STB_LOCAL;
+> +	return isupper(type) ? SYMBIND_GLOBAL : SYMBIND_LOCAL;
+>  }
+>  
+>  static int map__process_kallsym_symbol(void *arg, const char *name,
+> @@ -628,7 +628,7 @@ static int map__process_kallsym_symbol(void *arg, const char *name,
+>  		return 0;
+>  
+>  	sym = symbol__new(start, end - start + 1,
+> -			  kallsyms2elf_type(type), name);
+> +			  kallsyms_binding(type), name);
+>  	if (sym == NULL)
+>  		return -ENOMEM;
+>  	/*
+> @@ -851,7 +851,7 @@ static int dso__load_perf_map(struct dso *dso, struct map *map,
+>  		if (len + 2 >= line_len)
+>  			continue;
+>  
+> -		sym = symbol__new(start, size, STB_GLOBAL, line + len);
+> +		sym = symbol__new(start, size, SYMBIND_GLOBAL, line + len);
+>  
+>  		if (sym == NULL)
+>  			goto out_delete_line;
+> @@ -1064,7 +1064,7 @@ dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
+>  				 "%s@plt", elf_sym__name(&sym, symstrs));
+>  
+>  			f = symbol__new(plt_offset, shdr_plt.sh_entsize,
+> -					STB_GLOBAL, sympltname);
+> +					SYMBIND_GLOBAL, sympltname);
+>  			if (!f)
+>  				goto out_elf_end;
+>  
+> @@ -1086,7 +1086,7 @@ dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
+>  				 "%s@plt", elf_sym__name(&sym, symstrs));
+>  
+>  			f = symbol__new(plt_offset, shdr_plt.sh_entsize,
+> -					STB_GLOBAL, sympltname);
+> +					SYMBIND_GLOBAL, sympltname);
+>  			if (!f)
+>  				goto out_elf_end;
+>  
+> @@ -1157,6 +1157,18 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+>  	return -1;
+>  }
+>  
+> +static int elf_sym__binding(const GElf_Sym *sym)
+> +{
+> +	switch (GELF_ST_BIND(sym->st_info)) {
+> +	case STB_GLOBAL:
+> +		return SYMBIND_GLOBAL;
+> +	case STB_WEAK:
+> +		return SYMBIND_WEAK;
+> +	default:
+> +		return SYMBIND_LOCAL;
+> +	}
+> +}
+> +
+>  static int dso__swap_init(struct dso *dso, unsigned char eidata)
+>  {
+>  	static unsigned int const endian = 1;
+> @@ -1390,7 +1402,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+>  			elf_name = demangled;
+>  new_symbol:
+>  		f = symbol__new(sym.st_value, sym.st_size,
+> -				GELF_ST_BIND(sym.st_info), elf_name);
+> +				elf_sym__binding(&sym), elf_name);
+>  		free(demangled);
+>  		if (!f)
+>  			goto out_elf_end;
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index 295a9aa1cc78..bd91d2aa8262 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -50,6 +50,10 @@ char *strxfrchar(char *s, char from, char to);
+>  
+>  #define BUILD_ID_SIZE 20
+>  
+> +#define SYMBIND_LOCAL	0
+> +#define SYMBIND_GLOBAL	1
+> +#define SYMBIND_WEAK	2
+> +
+>  /** struct symbol - symtab entry
+>   *
+>   * @ignore - resolvable but tools ignore it (e.g. idle routines)
+> -- 
+> 1.7.10.2
