@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762525Ab2FVP3n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:29:43 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:46178 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762328Ab2FVP3k (ORCPT
+	id S1762531Ab2FVP3u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:29:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38816 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762328Ab2FVP3q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:29:40 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 13/22] rcu: Add rcu_barrier() statistics to debugfs tracing
-Date: Fri, 22 Jun 2012 08:17:12 -0700
-Message-Id: <1340378241-6458-13-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120622151655.GA6249@linux.vnet.ibm.com>
- <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062215-2398-0000-0000-000007C70052
+	Fri, 22 Jun 2012 11:29:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="159608865"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Jan Beulich <JBeulich@suse.com>, "Liu, Jinsong" <jinsong.liu@intel.com>
+CC: "Raj, Ashok" <ashok.raj@intel.com>,
+        "Dugger, Donald D" <donald.d.dugger@intel.com>,
+        "Shan, Haitao" <haitao.shan@intel.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "Li, Susie" <susie.li@intel.com>, "Auld, Will" <will.auld@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keir Fraser <keir@xen.org>
+Subject: RE: [vMCE design RFC] Xen vMCE design
+Thread-Topic: [vMCE design RFC] Xen vMCE design
+Thread-Index: Ac1O/6XAexbUH0BVTLGVMLMLWAtaJwBAufgAACbfvoAAAhphAAAGzxWA
+Date: Fri, 22 Jun 2012 15:29:41 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1932337D@ORSMSX104.amr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
+ <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923352542BD@SHSMSX101.ccr.corp.intel.com>
+ <4FE475BE020000780008B624@nat28.tlf.novell.com>
+In-Reply-To: <4FE475BE020000780008B624@nat28.tlf.novell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 1). still use 1 bank and simply ignore this issue. I mean, even if guest 
+> runs at bank0 quirks platform, when hypervisor inject vMCE# to guest, guest 
+> skip bank0, then guest MCE logic would think it detect a spurious mce, then 
+> kill itself. Considering bank0 quirks is only for old cpus, this is 
+> acceptable;
+> 2). use 32 banks
+> 
+> In fact, a third option is, use 1 bank, but hypervisor kill guest when it 
+> detect bank0 quirks. This would be same effect as option 1, so I prefer let 
+> guest kill itself.
 
-This commit adds an rcubarrier file to RCU's debugfs statistical tracing
-directory, providing diagnostic information on rcu_barrier().
+Don't you control what CPUID is shown to the guest? Under what circumstances
+would you tell the guest that it is running on an AMD-K7 or an Intel family
+6 with model < 0x1A?   Surely for migration reasons you need to present the
+same virtualized family/model all the time ... so just don't use ones that
+cause problems.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/rcutree_trace.c |   39 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 39 insertions(+), 0 deletions(-)
+If that isn't an option - then say there are 2 banks and have Xen ignore bank
+0 (make MC0_STATUS always appear to contain 0) and put all the errors into
+bank1.  If you tell the guest there are 32 banks it will read all of them.
+Which means a lot of pointless exits to the hypervisor.
 
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index a3556a2..057408b 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -46,6 +46,40 @@
- #define RCU_TREE_NONCORE
- #include "rcutree.h"
- 
-+static void print_rcubarrier(struct seq_file *m, struct rcu_state *rsp)
-+{
-+	seq_printf(m, "%c bcc: %d nbd: %lu\n",
-+		   rsp->rcu_barrier_in_progress ? 'B' : '.',
-+		   atomic_read(&rsp->barrier_cpu_count),
-+		   rsp->n_barrier_done);
-+}
-+
-+static int show_rcubarrier(struct seq_file *m, void *unused)
-+{
-+#ifdef CONFIG_TREE_PREEMPT_RCU
-+	seq_puts(m, "rcu_preempt: ");
-+	print_rcubarrier(m, &rcu_preempt_state);
-+#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
-+	seq_puts(m, "rcu_sched: ");
-+	print_rcubarrier(m, &rcu_sched_state);
-+	seq_puts(m, "rcu_bh: ");
-+	print_rcubarrier(m, &rcu_bh_state);
-+	return 0;
-+}
-+
-+static int rcubarrier_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, show_rcubarrier, NULL);
-+}
-+
-+static const struct file_operations rcubarrier_fops = {
-+	.owner = THIS_MODULE,
-+	.open = rcubarrier_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
- #ifdef CONFIG_RCU_BOOST
- 
- static char convert_kthread_status(unsigned int kthread_status)
-@@ -453,6 +487,11 @@ static int __init rcutree_trace_init(void)
- 	if (!rcudir)
- 		goto free_out;
- 
-+	retval = debugfs_create_file("rcubarrier", 0444, rcudir,
-+						NULL, &rcubarrier_fops);
-+	if (!retval)
-+		goto free_out;
-+
- 	retval = debugfs_create_file("rcudata", 0444, rcudir,
- 						NULL, &rcudata_fops);
- 	if (!retval)
--- 
-1.7.8
-
+-Tony
