@@ -1,322 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761098Ab2FVDGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 23:06:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51103 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756988Ab2FVDG2 (ORCPT
+	id S1757619Ab2FVDLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 23:11:18 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:64487 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757403Ab2FVDLQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 23:06:28 -0400
-From: Huacai Chen <chenhuacai@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Subject: [PATCH V3 16/16] MIPS: Loongson: Add a Loongson-3 default config file.
-Date: Fri, 22 Jun 2012 11:01:13 +0800
-Message-Id: <1340334073-17804-17-git-send-email-chenhc@lemote.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
-References: <1340334073-17804-1-git-send-email-chenhc@lemote.com>
+	Thu, 21 Jun 2012 23:11:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FC1C3@DQHE02.ent.ti.com>
+References: <1340323926-6826-1-git-send-email-gshark.jeong@gmail.com>
+ <1340323926-6826-2-git-send-email-gshark.jeong@gmail.com> <A874F61F95741C4A9BA573A70FE3998FC1C3@DQHE02.ent.ti.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Fri, 22 Jun 2012 11:10:55 +0800
+X-Google-Sender-Auth: iEiZ3Bu8DbbUgqoYTM0rYsU069Y
+Message-ID: <CAK5ve-K=Cr4jg0aN128DN4nQLBHzJ4kocBs3D53PU0PWsUy_1A@mail.gmail.com>
+Subject: Re: [PATCH 1/1 v4] leds: Add LED driver for lm3556 chip
+To: "G.Shark Jeong" <gshark.jeong@gmail.com>, "Kim, Milo" <Milo.Kim@ti.com>,
+        Axel Lin <axel.lin@gmail.com>
+Cc: "Jeong, Daniel" <Daniel.Jeong@ti.com>, Rob Landley <rob@landley.net>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Hongliang Tao <taohl@lemote.com>
-Signed-off-by: Hua Yan <yanh@lemote.com>
-Reviewed-by: LIU Qi <liuqi82@gmail.com>
----
- arch/mips/configs/loongson3_defconfig |  279 +++++++++++++++++++++++++++++++++
- 1 files changed, 279 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/configs/loongson3_defconfig
+On Fri, Jun 22, 2012 at 9:05 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
+>> LM3556 :
+>> The LM3556 is a 4 MHz fixed-frequency synchronous boost
+>> converter plus 1.5A constant current driver for a high-current white
+>> LED.
+>
+> Overall, it looks pretty good to me, especially core functionality of lm3556 is well supported and it's easy to use.
+>
+> Just one thing to be better,
+> I would suggest to use module_i2c_driver() rather than lm3556_init/lm3556_exit for code simplicity.
+>
 
-diff --git a/arch/mips/configs/loongson3_defconfig b/arch/mips/configs/loongson3_defconfig
-new file mode 100644
-index 0000000..bf388b0
---- /dev/null
-+++ b/arch/mips/configs/loongson3_defconfig
-@@ -0,0 +1,279 @@
-+CONFIG_MACH_LOONGSON=y
-+CONFIG_LEMOTE_MACH3A=y
-+CONFIG_LOONGSON_BIGMEM=y
-+CONFIG_CPU_LOONGSON3=y
-+CONFIG_64BIT=y
-+CONFIG_PAGE_SIZE_16KB=y
-+CONFIG_SPARSEMEM_MANUAL=y
-+CONFIG_KSM=y
-+CONFIG_SMP=y
-+CONFIG_NR_CPUS=4
-+CONFIG_HZ_256=y
-+CONFIG_PREEMPT=y
-+CONFIG_KEXEC=y
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_POSIX_MQUEUE=y
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_BSD_PROCESS_ACCT_V3=y
-+CONFIG_AUDIT=y
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_CPUSETS=y
-+CONFIG_RESOURCE_COUNTERS=y
-+CONFIG_CGROUP_MEM_RES_CTLR=y
-+CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
-+CONFIG_BLK_CGROUP=y
-+CONFIG_SCHED_AUTOGROUP=y
-+CONFIG_SYSFS_DEPRECATED=y
-+CONFIG_RELAY=y
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_SYSCTL_SYSCALL=y
-+CONFIG_EMBEDDED=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_MODULE_FORCE_UNLOAD=y
-+CONFIG_PARTITION_ADVANCED=y
-+CONFIG_CFQ_GROUP_IOSCHED=y
-+CONFIG_PCI=y
-+CONFIG_HT_PCI=y
-+CONFIG_HOTPLUG_PCI=y
-+CONFIG_HOTPLUG_PCI_SHPC=m
-+CONFIG_MIPS32_COMPAT=y
-+CONFIG_MIPS32_O32=y
-+CONFIG_MIPS32_N32=y
-+CONFIG_PM_RUNTIME=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_MULTICAST=y
-+CONFIG_IP_ADVANCED_ROUTER=y
-+CONFIG_IP_MULTIPLE_TABLES=y
-+CONFIG_IP_ROUTE_MULTIPATH=y
-+CONFIG_IP_ROUTE_VERBOSE=y
-+CONFIG_NETFILTER=y
-+CONFIG_NETFILTER_NETLINK_LOG=m
-+CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
-+CONFIG_NETFILTER_XT_TARGET_MARK=m
-+CONFIG_NETFILTER_XT_TARGET_NFQUEUE=m
-+CONFIG_NETFILTER_XT_MATCH_COMMENT=m
-+CONFIG_NETFILTER_XT_MATCH_DCCP=m
-+CONFIG_NETFILTER_XT_MATCH_ESP=m
-+CONFIG_NETFILTER_XT_MATCH_LENGTH=m
-+CONFIG_NETFILTER_XT_MATCH_LIMIT=m
-+CONFIG_NETFILTER_XT_MATCH_MAC=m
-+CONFIG_NETFILTER_XT_MATCH_MARK=m
-+CONFIG_NETFILTER_XT_MATCH_MULTIPORT=m
-+CONFIG_NETFILTER_XT_MATCH_PKTTYPE=m
-+CONFIG_NETFILTER_XT_MATCH_QUOTA=m
-+CONFIG_NETFILTER_XT_MATCH_REALM=m
-+CONFIG_NETFILTER_XT_MATCH_SCTP=m
-+CONFIG_NETFILTER_XT_MATCH_STATISTIC=m
-+CONFIG_NETFILTER_XT_MATCH_STRING=m
-+CONFIG_NETFILTER_XT_MATCH_TCPMSS=m
-+CONFIG_IP_NF_QUEUE=m
-+CONFIG_IP_NF_IPTABLES=m
-+CONFIG_IP_NF_MATCH_AH=m
-+CONFIG_IP_NF_MATCH_ECN=m
-+CONFIG_IP_NF_MATCH_TTL=m
-+CONFIG_IP_NF_FILTER=m
-+CONFIG_IP_NF_TARGET_REJECT=m
-+CONFIG_IP_NF_TARGET_ULOG=m
-+CONFIG_IP_NF_MANGLE=m
-+CONFIG_IP_NF_TARGET_ECN=m
-+CONFIG_IP_NF_TARGET_TTL=m
-+CONFIG_IP_NF_RAW=m
-+CONFIG_IP_NF_ARPTABLES=m
-+CONFIG_IP_NF_ARPFILTER=m
-+CONFIG_IP_NF_ARP_MANGLE=m
-+CONFIG_CFG80211=y
-+CONFIG_LIB80211=y
-+CONFIG_MAC80211=y
-+CONFIG_RFKILL=y
-+CONFIG_RFKILL_INPUT=y
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+CONFIG_MTD=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_CRYPTOLOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_SIZE=8192
-+CONFIG_RAID_ATTRS=m
-+CONFIG_SCSI_TGT=y
-+CONFIG_BLK_DEV_SD=y
-+CONFIG_CHR_DEV_SG=y
-+CONFIG_CHR_DEV_SCH=m
-+CONFIG_SCSI_MULTI_LUN=y
-+CONFIG_SCSI_CONSTANTS=y
-+CONFIG_SCSI_LOGGING=y
-+CONFIG_SCSI_SPI_ATTRS=m
-+CONFIG_SCSI_FC_ATTRS=m
-+CONFIG_SCSI_ISCSI_ATTRS=m
-+CONFIG_ATA=y
-+CONFIG_SATA_AHCI=y
-+CONFIG_MD=y
-+CONFIG_BLK_DEV_DM=y
-+CONFIG_DM_CRYPT=y
-+CONFIG_DM_SNAPSHOT=y
-+CONFIG_DM_MIRROR=y
-+CONFIG_DM_ZERO=y
-+CONFIG_NETDEVICES=y
-+CONFIG_R8169=y
-+CONFIG_ATH_COMMON=y
-+CONFIG_ATH9K=y
-+CONFIG_INPUT_POLLDEV=m
-+CONFIG_INPUT_SPARSEKMAP=y
-+CONFIG_INPUT_EVDEV=y
-+CONFIG_KEYBOARD_XTKBD=m
-+CONFIG_MOUSE_PS2_SENTELIC=y
-+CONFIG_MOUSE_SERIAL=m
-+CONFIG_INPUT_MISC=y
-+CONFIG_INPUT_UINPUT=m
-+CONFIG_SERIO_SERPORT=m
-+CONFIG_SERIO_RAW=m
-+CONFIG_LEGACY_PTY_COUNT=16
-+CONFIG_SERIAL_NONSTANDARD=y
-+CONFIG_N_HDLC=m
-+CONFIG_STALDRV=y
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+CONFIG_SERIAL_8250_NR_UARTS=16
-+CONFIG_SERIAL_8250_EXTENDED=y
-+CONFIG_SERIAL_8250_MANY_PORTS=y
-+CONFIG_SERIAL_8250_SHARE_IRQ=y
-+CONFIG_SERIAL_8250_RSA=y
-+CONFIG_IPMI_HANDLER=m
-+CONFIG_IPMI_DEVICE_INTERFACE=m
-+CONFIG_IPMI_SI=m
-+CONFIG_IPMI_WATCHDOG=m
-+CONFIG_IPMI_POWEROFF=m
-+CONFIG_HW_RANDOM=y
-+CONFIG_R3964=m
-+CONFIG_RAW_DRIVER=m
-+CONFIG_I2C_CHARDEV=y
-+CONFIG_I2C_PIIX4=y
-+CONFIG_SPI=y
-+CONFIG_SPI_BITBANG=m
-+CONFIG_SENSORS_ADM1021=m
-+CONFIG_SENSORS_ADM1025=m
-+CONFIG_SENSORS_ADM1026=m
-+CONFIG_SENSORS_ADM1031=m
-+CONFIG_SENSORS_ADM9240=m
-+CONFIG_SENSORS_ATXP1=m
-+CONFIG_SENSORS_DS1621=m
-+CONFIG_SENSORS_GL518SM=m
-+CONFIG_SENSORS_GL520SM=m
-+CONFIG_SENSORS_IT87=m
-+CONFIG_SENSORS_LM63=m
-+CONFIG_SENSORS_LM70=m
-+CONFIG_SENSORS_LM75=m
-+CONFIG_SENSORS_LM77=m
-+CONFIG_SENSORS_LM78=m
-+CONFIG_SENSORS_LM80=m
-+CONFIG_SENSORS_LM83=m
-+CONFIG_SENSORS_LM85=m
-+CONFIG_SENSORS_LM87=m
-+CONFIG_SENSORS_LM90=m
-+CONFIG_SENSORS_LM92=m
-+CONFIG_SENSORS_MAX1619=m
-+CONFIG_SENSORS_PC87360=m
-+CONFIG_SENSORS_SMSC47M1=m
-+CONFIG_SENSORS_SMSC47M192=m
-+CONFIG_SENSORS_SMSC47B397=m
-+CONFIG_SENSORS_W83781D=m
-+CONFIG_SENSORS_W83791D=m
-+CONFIG_SENSORS_W83792D=m
-+CONFIG_SENSORS_W83793=m
-+CONFIG_SENSORS_W83L785TS=m
-+CONFIG_SENSORS_W83627HF=m
-+CONFIG_SENSORS_W83627EHF=m
-+CONFIG_DRM=y
-+CONFIG_DRM_RADEON=y
-+CONFIG_DRM_RADEON_KMS=y
-+CONFIG_VIDEO_OUTPUT_CONTROL=y
-+CONFIG_FB_RADEON=y
-+CONFIG_FB_ATY128=y
-+CONFIG_FB_ATY=y
-+CONFIG_FB_ATY_CT=y
-+CONFIG_FB_ATY_GENERIC_LCD=y
-+CONFIG_FB_ATY_GX=y
-+CONFIG_LCD_CLASS_DEVICE=y
-+# CONFIG_VGA_CONSOLE is not set
-+CONFIG_FRAMEBUFFER_CONSOLE=y
-+CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
-+CONFIG_LOGO=y
-+CONFIG_SOUND=y
-+CONFIG_SND=y
-+CONFIG_SND_SEQUENCER=m
-+CONFIG_SND_SEQ_DUMMY=m
-+CONFIG_SND_DUMMY=y
-+CONFIG_SND_ALOOP=y
-+CONFIG_SND_HDA_INTEL=y
-+CONFIG_SND_HDA_PATCH_LOADER=y
-+CONFIG_HID_A4TECH=m
-+CONFIG_USB=y
-+CONFIG_USB_MON=y
-+CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_ROOT_HUB_TT=y
-+CONFIG_USB_OHCI_HCD=y
-+CONFIG_USB_UHCI_HCD=m
-+CONFIG_USB_STORAGE=m
-+CONFIG_RTC_CLASS=y
-+CONFIG_RTC_DRV_CMOS=y
-+CONFIG_DMADEVICES=y
-+CONFIG_EXT2_FS=y
-+CONFIG_EXT2_FS_XATTR=y
-+CONFIG_EXT2_FS_POSIX_ACL=y
-+CONFIG_EXT2_FS_SECURITY=y
-+CONFIG_EXT3_FS=y
-+CONFIG_EXT3_FS_POSIX_ACL=y
-+CONFIG_EXT3_FS_SECURITY=y
-+CONFIG_EXT4_FS=y
-+CONFIG_EXT4_FS_POSIX_ACL=y
-+CONFIG_EXT4_FS_SECURITY=y
-+CONFIG_QUOTA=y
-+CONFIG_AUTOFS4_FS=y
-+CONFIG_FUSE_FS=m
-+CONFIG_ISO9660_FS=m
-+CONFIG_JOLIET=y
-+CONFIG_PROC_KCORE=y
-+CONFIG_TMPFS=y
-+CONFIG_NFS_FS=m
-+CONFIG_NFS_V3_ACL=y
-+CONFIG_NFS_V4=y
-+CONFIG_NFSD=m
-+CONFIG_NFSD_V3_ACL=y
-+CONFIG_NFSD_V4=y
-+CONFIG_CIFS=m
-+CONFIG_NLS_CODEPAGE_437=y
-+CONFIG_NLS_CODEPAGE_936=y
-+CONFIG_NLS_UTF8=y
-+CONFIG_PRINTK_TIME=y
-+CONFIG_FRAME_WARN=1024
-+CONFIG_MAGIC_SYSRQ=y
-+CONFIG_STRIP_ASM_SYMS=y
-+CONFIG_DEBUG_SECTION_MISMATCH=y
-+CONFIG_CRYPTO_AUTHENC=m
-+CONFIG_CRYPTO_HMAC=y
-+CONFIG_CRYPTO_MD5=y
-+CONFIG_CRYPTO_MICHAEL_MIC=m
-+CONFIG_CRYPTO_SHA1=m
-+CONFIG_CRYPTO_SHA256=m
-+CONFIG_CRYPTO_SHA512=m
-+CONFIG_CRYPTO_TGR192=m
-+CONFIG_CRYPTO_WP512=m
-+CONFIG_CRYPTO_ANUBIS=m
-+CONFIG_CRYPTO_BLOWFISH=m
-+CONFIG_CRYPTO_CAST5=m
-+CONFIG_CRYPTO_CAST6=m
-+CONFIG_CRYPTO_KHAZAD=m
-+CONFIG_CRYPTO_SERPENT=m
-+CONFIG_CRYPTO_TEA=m
-+CONFIG_CRYPTO_TWOFISH=m
-+CONFIG_CRYPTO_DEFLATE=m
-+CONFIG_CRC_T10DIF=m
-+CONFIG_LIBCRC32C=m
+Hi G.Shark,
+
+I also think this patch is good enough for merging now after your
+fixed several issues pointed out by Axel Lin.
+I fixed this module_i2c_driver() issue mentioned by Milo here and push
+it to my -devel branch.
+If there is no problem, I will applied it to for-next branch.
+
+Thanks,
+-Bryan
+
+>> +static int __init lm3556_init(void)
+>> +{
+>> +     return i2c_add_driver(&lm3556_i2c_driver);
+>> +}
+>> +
+>> +static void __exit lm3556_exit(void)
+>> +{
+>> +     i2c_del_driver(&lm3556_i2c_driver);
+>> +}
+>> +
+>> +module_init(lm3556_init);
+>> +module_exit(lm3556_exit);
+>
+> module_i2c_driver(lm3556_i2c_driver);
+>
+> Thanks,
+> Milo -
+
+
+
 -- 
-1.7.7.3
-
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
