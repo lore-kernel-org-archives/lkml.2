@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762866Ab2FVXtU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:49:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51961 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463Ab2FVXtT (ORCPT
+	id S932242Ab2FVXxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:53:36 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:59338 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756406Ab2FVXxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:49:19 -0400
-Date: Fri, 22 Jun 2012 16:49:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-Message-Id: <20120622164917.3121168a.akpm@linux-foundation.org>
-In-Reply-To: <1340408464.27036.282.camel@gandalf.stny.rr.com>
-References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
-	<20120622145402.8047a669.akpm@linux-foundation.org>
-	<1340408464.27036.282.camel@gandalf.stny.rr.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Jun 2012 19:53:35 -0400
+From: Bryan Freed <bfreed@chromium.org>
+To: spi-devel-general@lists.sourceforge.net
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        Bryan Freed <bfreed@chromium.org>
+Subject: [PATCH] spi: Unlock a spinlock before calling into the controller driver.
+Date: Fri, 22 Jun 2012 16:53:25 -0700
+Message-Id: <1340409205-23606-1-git-send-email-bfreed@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jun 2012 19:41:04 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+spi_pump_messages() calls into a controller driver with
+unprepare_transfer_hardware() which is documented as "This may sleep".
+As in the prepare_transfer_hardware() call below, we should release the
+queue_lock spinlock before making the call.
+Rework the logic a bit to hold queue_lock to protect the 'busy' flag,
+then release it to call unprepare_transfer_hardware().
 
-> On Fri, 2012-06-22 at 14:54 -0700, Andrew Morton wrote:
-> > On Thu, 21 Jun 2012 19:52:03 -0400
-> > Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > But with the new printk() changes, text without a newline gets buffered
-> > > and does not print out to the console at the location of the printk.
-> > 
-> > uh, how about we fix that?  The old behaviour was good, the new
-> > behaviour is noxious.
-> > 
-> > Please idenfity these "new printk() changes".  Was the new noxiousness
-> > an unavoidable effect of them?
-> 
-> See commit 7ff9554bb578 ("printk: convert byte-buffer to variable-length
-> record buffer") and related commits.
-> 
-> But that said, there may be a way that I can make it still always flush
-> and not add a new API. We can flush on partial writes, and keep track of
-> the current task (as it already does). If a new task comes in, we can
-> then force a newline before printing the content of the old task (if
-> there wasn't a newline printed before).
-> 
-> This is basically what it does now, except that it buffers the data. If
-> a new task were to do a print in between the two partial writes, it
-> flushes what was buffered and adds a newline before printing the new
-> text.
+Signed-off-by: Bryan Freed <bfreed@chromium.org>
 
-If a driver does
+---
+ drivers/spi/spi.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
-	printk("testing the frobnozzle ...");
-	do_test();
-	printk(" OK\n");
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index fc0da39..f7f9df9 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -532,17 +532,16 @@ static void spi_pump_messages(struct kthread_work *work)
+ 	/* Lock queue and check for queue work */
+ 	spin_lock_irqsave(&master->queue_lock, flags);
+ 	if (list_empty(&master->queue) || !master->running) {
+-		if (master->busy && master->unprepare_transfer_hardware) {
+-			ret = master->unprepare_transfer_hardware(master);
+-			if (ret) {
+-				spin_unlock_irqrestore(&master->queue_lock, flags);
+-				dev_err(&master->dev,
+-					"failed to unprepare transfer hardware\n");
+-				return;
+-			}
++		if (!master->busy) {
++			spin_unlock_irqrestore(&master->queue_lock, flags);
++			return;
+ 		}
+ 		master->busy = false;
+ 		spin_unlock_irqrestore(&master->queue_lock, flags);
++		if (master->unprepare_transfer_hardware &&
++		    master->unprepare_transfer_hardware(master))
++			dev_err(&master->dev,
++				"failed to unprepare transfer hardware\n");
+ 		return;
+ 	}
+ 
+-- 
+1.7.7.3
 
-and do_test() hangs up, we really really want the user to know that
-there was a frobnozzle testing problem.  Please tell me this isn't
-broken.
