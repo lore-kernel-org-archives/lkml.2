@@ -1,58 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762595Ab2FVPar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:30:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45927 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762367Ab2FVPan convert rfc822-to-8bit (ORCPT
+	id S1755659Ab2FVPbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:31:36 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:35986 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762378Ab2FVPZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:30:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <87ipejo2am.fsf@xmission.com>
-References: <20120622000049.GA7877@www.outflux.net>
-	<87ipejo2am.fsf@xmission.com>
-Date: Fri, 22 Jun 2012 08:30:41 -0700
-X-Google-Sender-Auth: OJHhwWFrIUINx3yHxh6a3-b0OwM
-Message-ID: <CAGXu5jJrYywN3Y93efpyxnu8AnhWsSpFuogb8=GUkOYgsH01rQ@mail.gmail.com>
-Subject: Re: [PATCH v2] fs: introduce pipe-only dump mode suid_dumpable=3
-From: Kees Cook <keescook@chromium.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Alan Cox <alan@linux.intel.com>, Marcel Holtmann <marcel@holtmann.org>,
-        Doug Ledford <dledford@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Joe Korty <joe.korty@ccur.com>, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 22 Jun 2012 11:25:51 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 05/22] rcu: Place pointer to call_rcu() in rcu_data structure
+Date: Fri, 22 Jun 2012 08:17:04 -0700
+Message-Id: <1340378241-6458-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120622151655.GA6249@linux.vnet.ibm.com>
+ <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062215-6148-0000-0000-000006F5DFAC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 7:21 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->
->> This patch introduces suid_dumpable=3 to allow privilege-changed processes
->> to be dumped only to a pipe handler (and not directly to disk). The value
->> of suid_dumpable=2 is now deprecated, and attempting to set this sysctl
->> value returns -EINVAL.
->
-> Your patch descriptoin is wrong.  Deprecate means something is encouraged
-> not to be used not that the functionality is removed.  I think what
-> you are trying to say is that the value suid_dumpable=2 is now historic.
->
-> Your implementation is absolutely gross.  Reading the value from
-> twice from user space??    Is an if statement that hard to code?
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-I will rework this and resend.
+This is a preparatory commit for increasing rcu_barrier()'s concurrency.
+It adds a pointer in the rcu_data structure to the corresponding call_rcu()
+function.  This allows a pointer to the rcu_data structure to imply the
+function pointer, which allows _rcu_barrier() state to be placed in the
+rcu_state structure.
 
--Kees
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/rcutree.c        |   27 ++++++++++++---------------
+ kernel/rcutree.h        |    2 ++
+ kernel/rcutree_plugin.h |    5 +++--
+ 3 files changed, 17 insertions(+), 17 deletions(-)
 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 4580126..24cd2f0 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -62,8 +62,9 @@
+ 
+ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+ 
+-#define RCU_STATE_INITIALIZER(sname) { \
++#define RCU_STATE_INITIALIZER(sname, cr) { \
+ 	.level = { &sname##_state.node[0] }, \
++	.call = cr, \
+ 	.fqs_state = RCU_GP_IDLE, \
+ 	.gpnum = -300, \
+ 	.completed = -300, \
+@@ -76,10 +77,11 @@ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+ 	.name = #sname, \
+ }
+ 
+-struct rcu_state rcu_sched_state = RCU_STATE_INITIALIZER(rcu_sched);
++struct rcu_state rcu_sched_state =
++	RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
+ DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
+ 
+-struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh);
++struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
+ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+ 
+ static struct rcu_state *rcu_state;
+@@ -2279,21 +2281,17 @@ static void rcu_barrier_func(void *type)
+ {
+ 	int cpu = smp_processor_id();
+ 	struct rcu_head *head = &per_cpu(rcu_barrier_head, cpu);
+-	void (*call_rcu_func)(struct rcu_head *head,
+-			      void (*func)(struct rcu_head *head));
++	struct rcu_state *rsp = type;
+ 
+ 	atomic_inc(&rcu_barrier_cpu_count);
+-	call_rcu_func = type;
+-	call_rcu_func(head, rcu_barrier_callback);
++	rsp->call(head, rcu_barrier_callback);
+ }
+ 
+ /*
+  * Orchestrate the specified type of RCU barrier, waiting for all
+  * RCU callbacks of the specified type to complete.
+  */
+-static void _rcu_barrier(struct rcu_state *rsp,
+-			 void (*call_rcu_func)(struct rcu_head *head,
+-					       void (*func)(struct rcu_head *head)))
++static void _rcu_barrier(struct rcu_state *rsp)
+ {
+ 	int cpu;
+ 	unsigned long flags;
+@@ -2345,8 +2343,7 @@ static void _rcu_barrier(struct rcu_state *rsp,
+ 			while (cpu_is_offline(cpu) && ACCESS_ONCE(rdp->qlen))
+ 				schedule_timeout_interruptible(1);
+ 		} else if (ACCESS_ONCE(rdp->qlen)) {
+-			smp_call_function_single(cpu, rcu_barrier_func,
+-						 (void *)call_rcu_func, 1);
++			smp_call_function_single(cpu, rcu_barrier_func, rsp, 1);
+ 			preempt_enable();
+ 		} else {
+ 			preempt_enable();
+@@ -2367,7 +2364,7 @@ static void _rcu_barrier(struct rcu_state *rsp,
+ 	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
+ 	atomic_inc(&rcu_barrier_cpu_count);
+ 	smp_mb__after_atomic_inc(); /* Ensure atomic_inc() before callback. */
+-	call_rcu_func(&rh, rcu_barrier_callback);
++	rsp->call(&rh, rcu_barrier_callback);
+ 
+ 	/*
+ 	 * Now that we have an rcu_barrier_callback() callback on each
+@@ -2390,7 +2387,7 @@ static void _rcu_barrier(struct rcu_state *rsp,
+  */
+ void rcu_barrier_bh(void)
+ {
+-	_rcu_barrier(&rcu_bh_state, call_rcu_bh);
++	_rcu_barrier(&rcu_bh_state);
+ }
+ EXPORT_SYMBOL_GPL(rcu_barrier_bh);
+ 
+@@ -2399,7 +2396,7 @@ EXPORT_SYMBOL_GPL(rcu_barrier_bh);
+  */
+ void rcu_barrier_sched(void)
+ {
+-	_rcu_barrier(&rcu_sched_state, call_rcu_sched);
++	_rcu_barrier(&rcu_sched_state);
+ }
+ EXPORT_SYMBOL_GPL(rcu_barrier_sched);
+ 
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index df3c2c8..15837d7 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -350,6 +350,8 @@ struct rcu_state {
+ 	u32 levelcnt[MAX_RCU_LVLS + 1];		/* # nodes in each level. */
+ 	u8 levelspread[RCU_NUM_LVLS];		/* kids/node in each level. */
+ 	struct rcu_data __percpu *rda;		/* pointer of percu rcu_data. */
++	void (*call)(struct rcu_head *head,	/* call_rcu() flavor. */
++		     void (*func)(struct rcu_head *head));
+ 
+ 	/* The following fields are guarded by the root rcu_node's lock. */
+ 
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 67b3b97..a401508 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -78,7 +78,8 @@ static void __init rcu_bootup_announce_oddness(void)
+ 
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+-struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt);
++struct rcu_state rcu_preempt_state =
++	RCU_STATE_INITIALIZER(rcu_preempt, call_rcu);
+ DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
+ static struct rcu_state *rcu_state = &rcu_preempt_state;
+ 
+@@ -944,7 +945,7 @@ static int rcu_preempt_cpu_has_callbacks(int cpu)
+  */
+ void rcu_barrier(void)
+ {
+-	_rcu_barrier(&rcu_preempt_state, call_rcu);
++	_rcu_barrier(&rcu_preempt_state);
+ }
+ EXPORT_SYMBOL_GPL(rcu_barrier);
+ 
 -- 
-Kees Cook
-Chrome OS Security
+1.7.8
+
