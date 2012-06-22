@@ -1,226 +1,488 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762209Ab2FVN5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 09:57:12 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:59598 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762152Ab2FVN5K (ORCPT
+	id S932950Ab2FVODS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:03:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39089 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762196Ab2FVODR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 09:57:10 -0400
-Message-ID: <1340373489.27031.40.camel@lappy>
-Subject: New tty ldisc lockup on 3.5-rc3
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, gregkh <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Date: Fri, 22 Jun 2012 15:58:09 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Jun 2012 10:03:17 -0400
+Message-ID: <1340373782.18025.74.camel@twins>
+Subject: RE: [PATCH] sched: Folding nohz load accounting more accurate
+From: Peter Zijlstra <peterz@infradead.org>
+To: Doug Smythies <dsmythies@telus.net>
+Cc: "'Yong Zhang'" <yong.zhang0@gmail.com>,
+        "'Charles Wang'" <muming.wq@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Ingo Molnar'" <mingo@redhat.com>, "'Tao Ma'" <tm@tao.ma>,
+        =?UTF-8?Q?=27=E5=90=AB=E9=BB=9B=27?= <handai.szj@taobao.com>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>
+Date: Fri, 22 Jun 2012 16:03:02 +0200
+In-Reply-To: <002301cd4f64$17a055c0$46e10140$@net>
+References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
+			 <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>
+			 <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com>
+			 <1340035417.15222.95.camel@twins> <20120619060824.GA31684@zhy>
+		 <1340097532.21745.19.camel@twins> <000001cd4e33$496f6c30$dc4e4490$@net>
+	 <1340185528.21745.86.camel@twins> <002301cd4f64$17a055c0$46e10140$@net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Doug, Charles,
 
-I'm seeing the following when fuzzing using trinity inside a KVM tools guest on 3.5-rc3:
+Can you both confirm that the below patch is what you tested and we
+should finally be able to close this issue?
 
-[   60.361427] tty_ldisc_hangup: waiting (trinity-child1) for ttyS0 took too long, but we keep waiting...
-[  242.690529] INFO: task trinity-watchdo:5872 blocked for more than 120 seconds.
-[  242.693495] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.696567] trinity-watchdo D 000000000000001a  6016  5872   5844 0x00000000
-[  242.697640]  ffff88000a079df8 0000000000000046 ffffffff83698795 00007fad79ce7000
-[  242.699148]  ffff88000a078000 ffff88000a078010 ffff88000a079fd8 ffff88000a078000
-[  242.700128]  ffff88000a078010 ffff88000a079fd8 ffff88000d5c0000 ffff88000be33000
-[  242.701082] Call Trace:
-[  242.701403]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  242.702289]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  242.702921]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  242.703685]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  242.704484]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  242.705202]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  242.705867]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  242.706654]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  242.707439]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  242.708112]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  242.708764]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  242.709554] no locks held by trinity-watchdo/5872.
-[  242.710200] INFO: task trinity-child1:5881 blocked for more than 120 seconds.
-[  242.711877] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.714508] trinity-child1  D ffff88001949be58  5472  5881   5873 0x00000004
-[  242.716891]  ffff88001949bce8 0000000000000046 0000000000000000 0000000000000001
-[  242.719381]  ffff88001949a000 ffff88001949a010 ffff88001949bfd8 ffff88001949a000
-[  242.721894]  ffff88001949a010 ffff88001949bfd8 ffff88000d5b8000 ffff88001b578000
-[  242.724336] Call Trace:
-[  242.725147]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  242.726861]  [<ffffffff8369462a>] schedule_timeout+0x3a/0x400
-[  242.728772]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  242.731031]  [<ffffffff8114d74d>] ? trace_hardirqs_on+0xd/0x10
-[  242.732916]  [<ffffffff836987c4>] ? _raw_spin_unlock_irqrestore+0x94/0xc0
-[  242.735143]  [<ffffffff81107d52>] ? prepare_to_wait+0x72/0x80
-[  242.737060]  [<ffffffff81b29c50>] tty_ldisc_wait_idle+0x80/0xd0
-[  242.738867]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  242.740654]  [<ffffffff81b29e63>] tty_ldisc_hangup+0x1c3/0x310
-[  242.742486]  [<ffffffff8114f29a>] ? __lock_release+0x1ba/0x1d0
-[  242.744336]  [<ffffffff81b22c82>] ? __tty_hangup+0x122/0x400
-[  242.746091]  [<ffffffff81b22c8a>] __tty_hangup+0x12a/0x400
-[  242.747883]  [<ffffffff836987c4>] ? _raw_spin_unlock_irqrestore+0x94/0xc0
-[  242.750101]  [<ffffffff81b22fae>] tty_vhangup_self+0x1e/0x30
-[  242.751992]  [<ffffffff81233390>] sys_vhangup+0x20/0x30
-[  242.753757]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  242.755777] 1 lock held by trinity-child1/5881:
-[  242.757296]  #0:  (&tty->ldisc_mutex){+.+...}, at: [<ffffffff81b29dbf>] tty_ldisc_hangup+0x11f/0x310
-[  242.760256] INFO: task trinity-child2:5882 blocked for more than 120 seconds.
-[  242.762581] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.765060] trinity-child2  D 0000000000000029  5472  5882   5873 0x00000000
-[  242.767294]  ffff8800283a1df8 0000000000000046 ffffffff83698795 00007fad79ce7000
-[  242.769394]  ffff8800283a0000 ffff8800283a0010 ffff8800283a1fd8 ffff8800283a0000
-[  242.771649]  ffff8800283a0010 ffff8800283a1fd8 ffff88000cf80000 ffff88002833b000
-[  242.773901] Call Trace:
-[  242.774668]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  242.776815]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  242.779035]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  242.780900]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  242.782866]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  242.784512]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  242.786098]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  242.787971]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  242.789915]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  242.791566]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  242.793199]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  242.795122] no locks held by trinity-child2/5882.
-[  242.796617] INFO: task trinity-child3:5883 blocked for more than 120 seconds.
-[  242.798844] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.801274] trinity-child3  D 0000000000000029  5472  5883   5873 0x00000000
-[  242.803471]  ffff8800276dddf8 0000000000000046 ffffffff83698795 00007fad79ce7000
-[  242.805797]  ffff8800276dc000 ffff8800276dc010 ffff8800276ddfd8 ffff8800276dc000
-[  242.808065]  ffff8800276dc010 ffff8800276ddfd8 ffff88000cf68000 ffff8800283f8000
-[  242.810339] Call Trace:
-[  242.811131]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  242.813291]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  242.814801]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  242.816636]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  242.818613]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  242.820370]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  242.822033]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  242.823885]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  242.825839]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  242.827418]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  242.829027]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  242.830905] no locks held by trinity-child3/5883.
-[  242.832385] INFO: task trinity-child0:5884 blocked for more than 120 seconds.
-[  242.834995] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.837596] trinity-child0  D ffff8800283dd4c0  5472  5884   5873 0x00000000
-[  242.839973]  ffff8800276fddf8 0000000000000046 ffffffff83698795 00007fad79ce7000
-[  242.842401]  ffff8800276fc000 ffff8800276fc010 ffff8800276fdfd8 ffff8800276fc000
-[  242.844698]  ffff8800276fc010 ffff8800276fdfd8 ffff88000be2b000 ffff880027700000
-[  242.847072] Call Trace:
-[  242.847897]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  242.850167]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  242.851878]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  242.853664]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  242.855573]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  242.857390]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  242.859135]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  242.861128]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  242.863046]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  242.863050]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  242.863054]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  242.875268] no locks held by trinity-child0/5884.
-[  242.876897] INFO: task trinity:5885 blocked for more than 120 seconds.
-[  242.879055] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.881625] trinity         D 0000000000000019  6272  5885   5870 0x00000000
-[  242.884195]  ffff880027729df8 0000000000000046 ffffffff83698795 00007f408df16000
-[  242.886714]  ffff880027728000 ffff880027728010 ffff880027729fd8 ffff880027728000
-[  242.889129]  ffff880027728010 ffff880027729fd8 ffff88000d5c0000 ffff880027703000
-[  242.891481] Call Trace:
-[  242.892258]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  242.894477]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  242.896084]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  242.897935]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  242.900250]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  242.902019]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  242.903610]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  242.905487]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  242.907485]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  242.909209]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  242.910894]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  242.924276] no locks held by trinity/5885.
-[  242.925716] INFO: task trinity-main:5886 blocked for more than 120 seconds.
-[  242.927986] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.930560] trinity-main    D 0000000000000024  6176  5886   5870 0x00000000
-[  242.932901]  ffff880027759df8 0000000000000046 ffffffff83698795 00007f408df16000
-[  242.935298]  ffff880027758000 ffff880027758010 ffff880027759fd8 ffff880027758000
-[  242.937726]  ffff880027758010 ffff880027759fd8 ffff88000d5bb000 ffff880027750000
-[  242.939999] Call Trace:
-[  242.940800]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  242.942899]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  242.944442]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  242.946323]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  242.948378]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  242.950186]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  242.951803]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  242.953490]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  242.955215]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  242.956636]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  242.958094]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  242.959763] no locks held by trinity-main/5886.
-[  242.960978] INFO: task trinity:5887 blocked for more than 120 seconds.
-[  242.962737] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.964793] trinity         D 0000000000000019  6176  5887   5862 0x00000000
-[  242.966724]  ffff88000a13bdf8 0000000000000046 ffffffff83698795 00007f1eb1681000
-[  242.968765]  ffff88000a13a000 ffff88000a13a010 ffff88000a13bfd8 ffff88000a13a000
-[  242.970809]  ffff88000a13a010 ffff88000a13bfd8 ffff88000d5b8000 ffff88000be18000
-[  242.972830] Call Trace:
-[  242.973529]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  242.975395]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  242.976799]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  242.978389]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  242.980083]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  242.981556]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  242.982984]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  242.984602]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  242.986262]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  242.987649]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  242.989059]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  242.990694] no locks held by trinity/5887.
-[  242.991849] INFO: task trinity-main:5888 blocked for more than 120 seconds.
-[  242.993959] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  242.996099] trinity-main    D 0000000000000024  6224  5888   5862 0x00000000
-[  242.997984]  ffff88000a155df8 0000000000000046 ffffffff83698795 00007f1eb1681000
-[  242.999936]  ffff88000a154000 ffff88000a154010 ffff88000a155fd8 ffff88000a154000
-[  243.001902]  ffff88000a154010 ffff88000a155fd8 ffff88000d5b8000 ffff88000a158000
-[  243.004305] Call Trace:
-[  243.005032]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  243.006916]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  243.008298]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  243.009916]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  243.011581]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  243.013070]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  243.014466]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  243.016157]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  243.017808]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  243.019212]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  243.020590]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  243.022231] no locks held by trinity-main/5888.
-[  243.023472] INFO: task trinity:5889 blocked for more than 120 seconds.
-[  243.025221] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  243.027293] trinity         D 0000000000000019  6272  5889   5859 0x00000000
-[  243.029152]  ffff880027789df8 0000000000000046 ffffffff83698795 00007f9af2075000
-[  243.031095]  ffff880027788000 ffff880027788010 ffff880027789fd8 ffff880027788000
-[  243.033041]  ffff880027788010 ffff880027789fd8 ffffffff8482d400 ffff880027753000
-[  243.035040] Call Trace:
-[  243.035763]  [<ffffffff83698795>] ? _raw_spin_unlock_irqrestore+0x65/0xc0
-[  243.037603]  [<ffffffff83696d15>] schedule+0x55/0x60
-[  243.039248]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-[  243.040911]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
-[  243.042603]  [<ffffffff81107a50>] ? wake_up_bit+0x40/0x40
-[  243.044118]  [<ffffffff81b22539>] tty_write+0x99/0x100
-[  243.045540]  [<ffffffff8197fc10>] ? do_raw_spin_unlock+0xd0/0xe0
-[  243.047209]  [<ffffffff81b22635>] redirected_tty_write+0x95/0xc0
-[  243.048830]  [<ffffffff81235b1a>] vfs_write+0xca/0x190
-[  243.050258]  [<ffffffff81235cbf>] sys_write+0x4f/0x90
-[  243.051653]  [<ffffffff83699739>] system_call_fastpath+0x16/0x1b
-[  243.053318] no locks held by trinity/5889.
+
+---
+Subject: sched, nohz: Rewrite load-avg computation -- again
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri Jun 22 15:52:09 CEST 2012
+
+Thanks to Charles Wang for spotting the defects in the current code:
+
+ - If we go idle during the sample window -- after sampling, we get a
+   negative bias because we can negate our own sample.
+
+ - If we wake up during the sample window we get a positive bias
+   because we push the sample to a known active period.
+
+So rewrite the entire nohz load-avg muck once again, now adding
+copious documentation to the code.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Reported-and-tested-by: Doug Smythies <dsmythies@telus.net>
+Reported-and-tested-by: Charles Wang <muming.wq@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-gf8b3sh96a50dken51axdjdk@git.kernel.org
+---
+ include/linux/sched.h    |    8 +
+ kernel/sched/core.c      |  275 ++++++++++++++++++++++++++++++++++-------------
+ kernel/sched/idle_task.c |    1 
+ kernel/sched/sched.h     |    2 
+ kernel/time/tick-sched.c |    2 
+ 5 files changed, 213 insertions(+), 75 deletions(-)
+
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1928,6 +1928,14 @@ static inline int set_cpus_allowed_ptr(s
+ }
+ #endif
+ 
++#ifdef CONFIG_NO_HZ
++void calc_load_enter_idle(void);
++void calc_load_exit_idle(void);
++#else
++static inline void calc_load_enter_idle(void) { }
++static inline void calc_load_exit_idle(void) { }
++#endif /* CONFIG_NO_HZ */
++
+ #ifndef CONFIG_CPUMASK_OFFSTACK
+ static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
+ {
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2162,11 +2162,73 @@ unsigned long this_cpu_load(void)
+ }
+ 
+ 
++/*
++ * Global load-average calculations
++ *
++ * We take a distributed and async approach to calculating the global load-avg
++ * in order to minimize overhead.
++ *
++ * The global load average is an exponentially decaying average of nr_running +
++ * nr_uninterruptible.
++ *
++ * Once every LOAD_FREQ:
++ *
++ *   nr_active = 0;
++ *   for_each_possible_cpu(cpu)
++ *   	nr_active += cpu_of(cpu)->nr_running + cpu_of(cpu)->nr_uninterruptible;
++ *
++ *   avenrun[n] = avenrun[0] * exp_n + nr_active * (1 - exp_n)
++ *
++ * Due to a number of reasons the above turns in the mess below:
++ *
++ *  - for_each_possible_cpu() is prohibitively expensive on machines with
++ *    serious number of cpus, therefore we need to take a distributed approach
++ *    to calculating nr_active.
++ *
++ *        \Sum_i x_i(t) = \Sum_i x_i(t) - x_i(t_0) | x_i(t_0) := 0
++ *                      = \Sum_i { \Sum_j=1 x_i(t_j) - x_i(t_j-1) }
++ *
++ *    So assuming nr_active := 0 when we start out -- true per definition, we
++ *    can simply take per-cpu deltas and fold those into a global accumulate
++ *    to obtain the same result. See calc_load_fold_active().
++ *
++ *    Furthermore, in order to avoid synchronizing all per-cpu delta folding
++ *    across the machine, we assume 10 ticks is sufficient time for every
++ *    cpu to have completed this task.
++ *
++ *    This places an upper-bound on the IRQ-off latency of the machine. Then
++ *    again, being late doesn't loose the delta, just wrecks the sample.
++ *
++ *  - cpu_rq()->nr_uninterruptible isn't accurately tracked per-cpu because
++ *    this would add another cross-cpu cacheline miss and atomic operation
++ *    to the wakeup path. Instead we increment on whatever cpu the task ran
++ *    when it went into uninterruptible state and decrement on whatever cpu
++ *    did the wakeup. This means that only the sum of nr_uninterruptible over
++ *    all cpus yields the correct result.
++ *
++ *  This covers the NO_HZ=n code, for extra head-aches, see the comment below.
++ */
++
+ /* Variables and functions for calc_load */
+ static atomic_long_t calc_load_tasks;
+ static unsigned long calc_load_update;
+ unsigned long avenrun[3];
+-EXPORT_SYMBOL(avenrun);
++EXPORT_SYMBOL(avenrun); /* should be removed */
++
++/**
++ * get_avenrun - get the load average array
++ * @loads:	pointer to dest load array
++ * @offset:	offset to add
++ * @shift:	shift count to shift the result left
++ *
++ * These values are estimates at best, so no need for locking.
++ */
++void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
++{
++	loads[0] = (avenrun[0] + offset) << shift;
++	loads[1] = (avenrun[1] + offset) << shift;
++	loads[2] = (avenrun[2] + offset) << shift;
++}
+ 
+ static long calc_load_fold_active(struct rq *this_rq)
+ {
+@@ -2183,6 +2245,9 @@ static long calc_load_fold_active(struct
+ 	return delta;
+ }
+ 
++/*
++ * a1 = a0 * e + a * (1 - e)
++ */
+ static unsigned long
+ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+ {
+@@ -2194,30 +2259,118 @@ calc_load(unsigned long load, unsigned l
+ 
+ #ifdef CONFIG_NO_HZ
+ /*
+- * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
++ * Handle NO_HZ for the global load-average.
++ *
++ * Since the above described distributed algorithm to compute the global
++ * load-average relies on per-cpu sampling from the tick, it is affected by
++ * NO_HZ.
++ *
++ * The basic idea is to fold the nr_active delta into a global idle-delta upon
++ * entering NO_HZ state such that we can include this as an 'extra' cpu delta
++ * when we read the global state.
++ *
++ * Obviously reality has to ruin such a delightfully simple scheme:
++ *
++ *  - When we go NO_HZ idle during the window, we can negate our sample
++ *    contribution, causing under-accounting.
++ *
++ *    We avoid this by keeping two idle-delta counters and flipping them
++ *    when the window starts, thus separating old and new NO_HZ load.
++ *
++ *    The only trick is the slight shift in index flip for read vs write.
++ *
++ *        0s            5s            10s           15s
++ *          +10           +10           +10           +10
++ *        |-|-----------|-|-----------|-|-----------|-|
++ *    r:0 0 1           1 0           0 1           1 0
++ *    w:0 1 1           0 0           1 1           0 0
++ *
++ *    This ensures we'll fold the old idle contribution in this window while
++ *    accumlating the new one.
++ *
++ *  - When we wake up from NO_HZ idle during the window, we push up our
++ *    contribution, since we effectively move our sample point to a known
++ *    busy state.
++ *
++ *    This is solved by pushing the window forward, and thus skipping the
++ *    sample, for this cpu (effectively using the idle-delta for this cpu which
++ *    was in effect at the time the window opened). This also solves the issue
++ *    of having to deal with a cpu having been in NOHZ idle for multiple
++ *    LOAD_FREQ intervals.
+  *
+  * When making the ILB scale, we should try to pull this in as well.
+  */
+-static atomic_long_t calc_load_tasks_idle;
++static atomic_long_t calc_load_idle[2];
++static int calc_load_idx;
++
++static inline int calc_load_write_idx(void)
++{
++	int idx = calc_load_idx;
+ 
+-void calc_load_account_idle(struct rq *this_rq)
++	/*
++	 * See calc_global_nohz(), if we observe the new index, we also
++	 * need to observe the new update time.
++	 */
++	smp_rmb();
++
++	/*
++	 * If the folding window started, make sure we start writing in the
++	 * next idle-delta.
++	 */
++	if (!time_before(jiffies, calc_load_update))
++		idx++;
++
++	return idx & 1;
++}
++
++static inline int calc_load_read_idx(void)
+ {
++	return calc_load_idx & 1;
++}
++
++void calc_load_enter_idle(void)
++{
++	struct rq *this_rq = this_rq();
+ 	long delta;
+ 
++	/*
++	 * We're going into NOHZ mode, if there's any pending delta, fold it
++	 * into the pending idle delta.
++	 */
+ 	delta = calc_load_fold_active(this_rq);
+-	if (delta)
+-		atomic_long_add(delta, &calc_load_tasks_idle);
++	if (delta) {
++		int idx = calc_load_write_idx();
++		atomic_long_add(delta, &calc_load_idle[idx]);
++	}
+ }
+ 
+-static long calc_load_fold_idle(void)
++void calc_load_exit_idle(void)
+ {
+-	long delta = 0;
++	struct rq *this_rq = this_rq();
++
++	/*
++	 * If we're still before the sample window, we're done.
++	 */
++	if (time_before(jiffies, this_rq->calc_load_update))
++		return;
+ 
+ 	/*
+-	 * Its got a race, we don't care...
++	 * We woke inside or after the sample window, this means we're already
++	 * accounted through the nohz accounting, so skip the entire deal and
++	 * sync up for the next window.
+ 	 */
+-	if (atomic_long_read(&calc_load_tasks_idle))
+-		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
++	this_rq->calc_load_update = calc_load_update;
++       	if (time_before(jiffies, this_rq->calc_load_update + 10))
++		this_rq->calc_load_update += LOAD_FREQ;
++}
++
++static long calc_load_fold_idle(void)
++{
++	int idx = calc_load_read_idx();
++	long delta = 0;
++
++	if (atomic_long_read(&calc_load_idle[idx]))
++		delta = atomic_long_xchg(&calc_load_idle[idx], 0);
+ 
+ 	return delta;
+ }
+@@ -2303,66 +2456,39 @@ static void calc_global_nohz(void)
+ {
+ 	long delta, active, n;
+ 
+-	/*
+-	 * If we crossed a calc_load_update boundary, make sure to fold
+-	 * any pending idle changes, the respective CPUs might have
+-	 * missed the tick driven calc_load_account_active() update
+-	 * due to NO_HZ.
+-	 */
+-	delta = calc_load_fold_idle();
+-	if (delta)
+-		atomic_long_add(delta, &calc_load_tasks);
++	if (!time_before(jiffies, calc_load_update + 10)) {
++		/*
++		 * Catch-up, fold however many we are behind still
++		 */
++		delta = jiffies - calc_load_update - 10;
++		n = 1 + (delta / LOAD_FREQ);
++
++		active = atomic_long_read(&calc_load_tasks);
++		active = active > 0 ? active * FIXED_1 : 0;
++
++		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
++		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
++		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+ 
+-	/*
+-	 * It could be the one fold was all it took, we done!
+-	 */
+-	if (time_before(jiffies, calc_load_update + 10))
+-		return;
++		calc_load_update += n * LOAD_FREQ;
++	}
+ 
+ 	/*
+-	 * Catch-up, fold however many we are behind still
++	 * Flip the idle index...
++	 *
++	 * Make sure we first write the new time then flip the index, so that
++	 * calc_load_write_idx() will see the new time when it reads the new
++	 * index, this avoids a double flip messing things up.
+ 	 */
+-	delta = jiffies - calc_load_update - 10;
+-	n = 1 + (delta / LOAD_FREQ);
+-
+-	active = atomic_long_read(&calc_load_tasks);
+-	active = active > 0 ? active * FIXED_1 : 0;
+-
+-	avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
+-	avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
+-	avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+-
+-	calc_load_update += n * LOAD_FREQ;
+-}
+-#else
+-void calc_load_account_idle(struct rq *this_rq)
+-{
++	smp_wmb();
++	calc_load_idx++;
+ }
++#else /* !CONFIG_NO_HZ */
+ 
+-static inline long calc_load_fold_idle(void)
+-{
+-	return 0;
+-}
+-
+-static void calc_global_nohz(void)
+-{
+-}
+-#endif
++static inline long calc_load_fold_idle(void) { return 0; }
++static inline void calc_global_nohz(void) { }
+ 
+-/**
+- * get_avenrun - get the load average array
+- * @loads:	pointer to dest load array
+- * @offset:	offset to add
+- * @shift:	shift count to shift the result left
+- *
+- * These values are estimates at best, so no need for locking.
+- */
+-void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
+-{
+-	loads[0] = (avenrun[0] + offset) << shift;
+-	loads[1] = (avenrun[1] + offset) << shift;
+-	loads[2] = (avenrun[2] + offset) << shift;
+-}
++#endif /* CONFIG_NO_HZ */
+ 
+ /*
+  * calc_load - update the avenrun load estimates 10 ticks after the
+@@ -2370,11 +2496,18 @@ void get_avenrun(unsigned long *loads, u
+  */
+ void calc_global_load(void)
+ {
+-	long active;
++	long active, delta;
+ 
+ 	if (time_before(jiffies, calc_load_update + 10))
+ 		return;
+ 
++	/*
++	 * Fold the 'old' idle-delta to include all NO_HZ cpus.
++	 */
++	delta = calc_load_fold_idle();
++	if (delta)
++		atomic_long_add(delta, &calc_load_tasks);
++
+ 	active = atomic_long_read(&calc_load_tasks);
+ 	active = active > 0 ? active * FIXED_1 : 0;
+ 
+@@ -2385,12 +2518,7 @@ void calc_global_load(void)
+ 	calc_load_update += LOAD_FREQ;
+ 
+ 	/*
+-	 * Account one period with whatever state we found before
+-	 * folding in the nohz state and ageing the entire idle period.
+-	 *
+-	 * This avoids loosing a sample when we go idle between 
+-	 * calc_load_account_active() (10 ticks ago) and now and thus
+-	 * under-accounting.
++	 * In case we idled for multiple LOAD_FREQ intervals, catch up in bulk.
+ 	 */
+ 	calc_global_nohz();
+ }
+@@ -2407,7 +2535,6 @@ static void calc_load_account_active(str
+ 		return;
+ 
+ 	delta  = calc_load_fold_active(this_rq);
+-	delta += calc_load_fold_idle();
+ 	if (delta)
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 
+@@ -2415,6 +2542,10 @@ static void calc_load_account_active(str
+ }
+ 
+ /*
++ * End of global load-average stuff
++ */
++
++/*
+  * The exact cpuload at various idx values, calculated at every tick would be
+  * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
+  *
+--- a/kernel/sched/idle_task.c
++++ b/kernel/sched/idle_task.c
+@@ -25,7 +25,6 @@ static void check_preempt_curr_idle(stru
+ static struct task_struct *pick_next_task_idle(struct rq *rq)
+ {
+ 	schedstat_inc(rq, sched_goidle);
+-	calc_load_account_idle(rq);
+ 	return rq->idle;
+ }
+ 
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -961,8 +961,6 @@ static inline u64 sched_avg_period(void)
+ 	return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2;
+ }
+ 
+-void calc_load_account_idle(struct rq *this_rq);
+-
+ #ifdef CONFIG_SCHED_HRTICK
+ 
+ /*
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -373,6 +373,7 @@ static ktime_t tick_nohz_stop_sched_tick
+ 		 */
+ 		if (!ts->tick_stopped) {
+ 			select_nohz_load_balancer(1);
++			calc_load_enter_idle();
+ 
+ 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+@@ -572,6 +573,7 @@ static void tick_nohz_restart_sched_tick
+ 	tick_do_update_jiffies64(now);
+ 	update_cpu_load_nohz();
+ 
++	calc_load_exit_idle();
+ 	touch_softlockup_watchdog();
+ 	/*
+ 	 * Cancel the scheduled timer and restore the tick
 
