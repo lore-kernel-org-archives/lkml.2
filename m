@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761455Ab2FVHHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 03:07:08 -0400
-Received: from smtp-out-128.synserver.de ([212.40.185.128]:1045 "EHLO
-	smtp-out-127.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761427Ab2FVHHG (ORCPT
+	id S1761467Ab2FVHMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 03:12:50 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:58102 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761447Ab2FVHMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 03:07:06 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22388
-Message-ID: <4FE41A77.40103@metafoo.de>
-Date: Fri, 22 Jun 2012 09:10:47 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Fri, 22 Jun 2012 03:12:49 -0400
+Date: Fri, 22 Jun 2012 09:12:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patch 3.5-rc3] mm, mempolicy: fix mbind() to do synchronous
+ migration
+Message-ID: <20120622071243.GB22167@gmail.com>
+References: <alpine.DEB.2.00.1206201758500.3068@chino.kir.corp.google.com>
+ <20120621164606.4ae1a71d.akpm@linux-foundation.org>
+ <CA+55aFzPXMD3N3Oy-om6utDCQYmrBDnDgdqpVC5cgKe-v6uZ3w@mail.gmail.com>
+ <20120621184536.6dd97746.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Saranya Gopal <saranya.gopal@intel.com>
-CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] bq27x00_battery: Add support for BQ27425 chip
-References: <1340035678-2195-1-git-send-email-saranya.gopal@intel.com>
-In-Reply-To: <1340035678-2195-1-git-send-email-saranya.gopal@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120621184536.6dd97746.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 06:07 PM, Saranya Gopal wrote:
-> This patch adds support for BQ27425 (TI) chip. This
-> chip is same as BQ27500 with few registers removed
-> and register address map changed. The data sheet for
-> this chip is publicly available at
-> http://www.ti.com/product/bq27425-g1
+
+* Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Thu, 21 Jun 2012 17:46:52 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
 > 
-> Changes since v1:
-> 	Remove the additional Kconfig entry
-> 	Add a second power_supply_property array for bq27425
-> 	 and assign the appropriate array at run-time based
-> 	 on battery type.
-> Signed-off-by: Saranya Gopal <saranya.gopal@intel.com>
-
-Looks mostly good. Two comments inline.
-
-> ---
->  drivers/power/bq27x00_battery.c |   99 +++++++++++++++++++++++++++++++--------
->  1 files changed, 79 insertions(+), 20 deletions(-)
+> > On Thu, Jun 21, 2012 at 4:46 PM, Andrew Morton
+> > <akpm@linux-foundation.org> wrote:
+> > >
+> > > I can't really do anything with this patch - it's a bug 
+> > > added by Peter's "mm/mpol: Simplify do_mbind()" and added 
+> > > to linux-next via one of Ingo's trees.
+> > >
+> > > And I can't cleanly take the patch over as it's all bound 
+> > > up with the other changes for sched/numa balancing.
+> > 
+> > I took the patch, it looked obviously correct (passing in a 
+> > boolean was clearly crap).
 > 
-> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-> index f5d6d37..58775ea 100644
-> --- a/drivers/power/bq27x00_battery.c
-> +++ b/drivers/power/bq27x00_battery.c
-> @@ -22,6 +22,7 @@
->   * Datasheets:
->   * http://focus.ti.com/docs/prod/folders/print/bq27000.html
->   * http://focus.ti.com/docs/prod/folders/print/bq27500.html
-> + * http://www.ti.com/product/bq27425-g1
->   */
->  
->  #include <linux/module.h>
-> @@ -67,6 +68,14 @@
->  #define BQ27500_FLAG_SOC1		BIT(2) /* State-of-Charge threshold 1 */
->  #define BQ27500_FLAG_FC			BIT(9)
->  
-> +#define BQ27425_REG_TEMP		0x02
-> +#define BQ27425_REG_VOLT		0x04
-> +#define BQ27425_REG_FLAGS		0x06
-> +#define BQ27425_REG_NAC			0x08
-> +#define BQ27425_REG_FCC			0x0E
-> +#define BQ27425_REG_AI			0x10
-> +#define BQ27425_REG_SOC			0x1C
+> Ah, OK, the bug was actually "retained" by "mm/mpol: Simplify 
+> do_mbind()".
+> 
+> I do still ask what the plans are for that patchset..
 
-It looks as if all these register addresses (with the exception of REG_SOC)
-are the same as the BQ27X00 register address minus 4.
+Somewhat off topic, but the main sched/numa objections were over 
+the mbind/etc. syscalls and the extra configuration space - we 
+dropped those bits and just turned it all into an improved NUMA 
+scheduling feature, as suggested by Peter and me in the original 
+discussion.
 
-What do you think about applying this offset in bq27x00_read? This would
-safe us a lot of these
+There were no objections to that approach so the reworked NUMA 
+scheduling/balancing scheme is now in the scheduler tree 
+(tip:sched/core).
 
-	if (di->chip == BQ27425)
-		curr = bq27x00_read(di, BQ27425_REG_..., false);
-	else
-		curr = bq27x00_read(di, BQ27x00_REG_..., false);
+The mbind/etc. syscall changes and all the related cleanups, 
+speedups and reorganization of the MM code are still in limbo.
 
+I dropped them with the rest of tip:sched/numa as nobody from 
+the MM side expressed much interest in them and I wanted to keep 
+things simple and not carry objected-to commits.
 
-> [...]
->  
-> -	if (di->chip == BQ27500)
-> +	if (di->chip == BQ27500  || di->chip == BQ27425)
+We can revive them if there's interest and consensus. I suspect 
+once we gather experience with the automatic NUMA scheduling 
+feature we'll see whether it's worth exposing that to user-space 
+as an ABI - or whether we should go back to random placement and 
+forget about it all.
 
-Maybe it makes sense to put this check in a small helper function, this will
-make it less noisy to add another chip with a similar register layout.
+Thanks,
 
-> [...]
-
+	Ingo
