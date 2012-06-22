@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2FVAgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 20:36:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54419 "EHLO mail.zytor.com"
+	id S1760791Ab2FVAj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 20:39:58 -0400
+Received: from ozlabs.org ([203.10.76.45]:50504 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760764Ab2FVAgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 20:36:05 -0400
-Message-ID: <4FE3BDD9.60105@zytor.com>
-Date: Thu, 21 Jun 2012 17:35:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Robin Holt <holt@sgi.com>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] phys_efi_set_virtual_address_map needs va, no pa.
-References: <20120620082457.GE3464@sgi.com> <20120620120702.GA3983@srcf.ucam.org> <4FE23592.60201@linux.intel.com> <20120621002742.GL3464@sgi.com> <4FE26EF9.5060004@linux.intel.com> <20120621165220.GQ3464@sgi.com>
-In-Reply-To: <20120621165220.GQ3464@sgi.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760772Ab2FVAj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Jun 2012 20:39:56 -0400
+Message-ID: <1340325596.9531.1.camel@concordia>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (powerpc related)
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Alan Modra <amodra@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org
+Date: Fri, 22 Jun 2012 10:39:56 +1000
+In-Reply-To: <20120621114354.GG20973@bubble.grove.modra.org>
+References: <20120620175014.a822a766e0f91f7b44f48fa0@canb.auug.org.au>
+	 <1340256961.1998.11.camel@concordia> <1340259896.3942.2.camel@pasglop>
+	 <1340262473.1998.19.camel@concordia> <1340264307.1998.20.camel@concordia>
+	 <20120621104839.GE20973@bubble.grove.modra.org>
+	 <20120621114354.GG20973@bubble.grove.modra.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 09:52 AM, Robin Holt wrote:
+On Thu, 2012-06-21 at 21:13 +0930, Alan Modra wrote:
+> On Thu, Jun 21, 2012 at 08:18:39PM +0930, Alan Modra wrote:
+> > Linker bug.  That's not a sibling call, but a normal function return
+> > via an out-of-line register restore function.
 > 
-> I am completely lost as to what should be done.  How do we know
-> which identity maps need to be created?  Do we just add them as we are
-> scanning the e820/EFI memory maps and include the reserved, etc ranges?
-> Do we look at the table handed to us by EFI at the beginning of boot and
-> use that as the basis?  Or do we simply wait until the kernel's memory
-> initialization is complete and cover all of physical memory from zero
-> up to the highest physical address?
-> 
+> I couldn't see how this might be occurring, then I remembered the
+> kernel has this horrible practise of using ld -r to package object
+> files.  So linker generated functions might be munged together with
+> other functions.  Does this help?  (It won't if the kernel is
+> providing its own save/restore functions.)
 
-Robin, we already create the 1:1 maps.  Right now there is some
-weirdness with some of the issues that you mention, but that is
-orthogonal to this.
+The kernel does provide its own AIUI.
 
-The 1:1 map created for the kernel is created at a specific offset,
-__PAGE_OFFSET, and is propagated into every vm context created by the
-kernel.  There are two problems:
-
-1. The "initial" (32 bit) or "trampoline" (64 bit) maps aren't on the
-list of vm contexts created by the kernel (pgd_list), so they never get
-updated after a particular point in the boot.
-
-2. The initial/trampoline maps need these mappings not just at address
-__PAGE_OFFSET, but also at address zero (identity mapping), which means
-that just adding it to the pgd_list is insufficient.
-
-Note that i386-PAE is unaffected, simply because the contents of the top
-(3rd) level is always fixed.
-
-	-hpa
+cheers
 
