@@ -1,84 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762326Ab2FVObO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:31:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33547 "EHLO mx2.suse.de"
+	id S1762347Ab2FVObS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:31:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33604 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762275Ab2FVObF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:31:05 -0400
+	id S1762323Ab2FVObO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:31:14 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 16/16] mm: Account for the number of times direct reclaimers get throttled
-Date: Fri, 22 Jun 2012 15:30:43 +0100
-Message-Id: <1340375443-22455-17-git-send-email-mgorman@suse.de>
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 03/12] mm: Methods for teaching filesystems about PG_swapcache pages
+Date: Fri, 22 Jun 2012 15:30:59 +0100
+Message-Id: <1340375468-22509-4-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340375443-22455-1-git-send-email-mgorman@suse.de>
-References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1340375468-22509-1-git-send-email-mgorman@suse.de>
+References: <1340375468-22509-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under significant pressure when writing back to network-backed storage,
-direct reclaimers may get throttled. This is expected to be a
-short-lived event and the processes get woken up again but processes do
-get stalled. This patch counts how many times such stalling occurs. It's
-up to the administrator whether to reduce these stalls by increasing
-min_free_kbytes.
+In order to teach filesystems to handle swap cache pages, three new
+page functions are introduced:
 
+  pgoff_t page_file_index(struct page *);
+  loff_t page_file_offset(struct page *);
+  struct address_space *page_file_mapping(struct page *);
+
+page_file_index() - gives the offset of this page in the file in
+PAGE_CACHE_SIZE blocks. Like page->index is for mapped pages, this
+function also gives the correct index for PG_swapcache pages.
+
+page_file_offset() - uses page_file_index(), so that it will give
+the expected result, even for PG_swapcache pages.
+
+page_file_mapping() - gives the mapping backing the actual page;
+that is for swap cache pages it will give swap_file->f_mapping.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/vm_event_item.h |    1 +
- mm/vmscan.c                   |    3 +++
- mm/vmstat.c                   |    1 +
- 3 files changed, 5 insertions(+)
+ include/linux/mm.h      |   25 +++++++++++++++++++++++++
+ include/linux/pagemap.h |    5 +++++
+ mm/swapfile.c           |   19 +++++++++++++++++++
+ 3 files changed, 49 insertions(+)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 3b54c36..0dee79c 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -30,6 +30,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
- 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
- 		FOR_ALL_ZONES(PGSCAN_DIRECT),
-+		PGSCAN_DIRECT_THROTTLE,
- #ifdef CONFIG_NUMA
- 		PGSCAN_ZONE_RECLAIM_FAILED,
- #endif
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index e25a46f..5a93858 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2176,6 +2176,9 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	if (pfmemalloc_watermark_ok(pgdat))
- 		return;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index a4549c6..b3d4cd9 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -805,6 +805,17 @@ static inline void *page_rmapping(struct page *page)
+ 	return (void *)((unsigned long)page->mapping & ~PAGE_MAPPING_FLAGS);
+ }
  
-+	/* Account for the throttling */
-+	count_vm_event(PGSCAN_DIRECT_THROTTLE);
++extern struct address_space *__page_file_mapping(struct page *);
 +
- 	/*
- 	 * If the caller cannot enter the filesystem, it's possible that it
- 	 * is due to the caller holding an FS lock or performing a journal
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 35e0cee..fd345cf 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -745,6 +745,7 @@ const char * const vmstat_text[] = {
- 	TEXTS_FOR_ZONES("pgsteal_direct")
- 	TEXTS_FOR_ZONES("pgscan_kswapd")
- 	TEXTS_FOR_ZONES("pgscan_direct")
-+	"pgscan_direct_throttle",
++static inline
++struct address_space *page_file_mapping(struct page *page)
++{
++	if (unlikely(PageSwapCache(page)))
++		return __page_file_mapping(page);
++
++	return page->mapping;
++}
++
+ static inline int PageAnon(struct page *page)
+ {
+ 	return ((unsigned long)page->mapping & PAGE_MAPPING_ANON) != 0;
+@@ -821,6 +832,20 @@ static inline pgoff_t page_index(struct page *page)
+ 	return page->index;
+ }
  
- #ifdef CONFIG_NUMA
- 	"zone_reclaim_failed",
++extern pgoff_t __page_file_index(struct page *page);
++
++/*
++ * Return the file index of the page. Regular pagecache pages use ->index
++ * whereas swapcache pages use swp_offset(->private)
++ */
++static inline pgoff_t page_file_index(struct page *page)
++{
++	if (unlikely(PageSwapCache(page)))
++		return __page_file_index(page);
++
++	return page->index;
++}
++
+ /*
+  * Return true if this page is mapped into pagetables.
+  */
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 7cfad3b..e42c762 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -286,6 +286,11 @@ static inline loff_t page_offset(struct page *page)
+ 	return ((loff_t)page->index) << PAGE_CACHE_SHIFT;
+ }
+ 
++static inline loff_t page_file_offset(struct page *page)
++{
++	return ((loff_t)page_file_index(page)) << PAGE_CACHE_SHIFT;
++}
++
+ extern pgoff_t linear_hugepage_index(struct vm_area_struct *vma,
+ 				     unsigned long address);
+ 
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 64408be..f4e02bd 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -33,6 +33,7 @@
+ #include <linux/oom.h>
+ #include <linux/frontswap.h>
+ #include <linux/swapfile.h>
++#include <linux/export.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+@@ -2299,6 +2300,24 @@ int swapcache_prepare(swp_entry_t entry)
+ }
+ 
+ /*
++ * out-of-line __page_file_ methods to avoid include hell.
++ */
++struct address_space *__page_file_mapping(struct page *page)
++{
++	VM_BUG_ON(!PageSwapCache(page));
++	return page_swap_info(page)->swap_file->f_mapping;
++}
++EXPORT_SYMBOL_GPL(__page_file_mapping);
++
++pgoff_t __page_file_index(struct page *page)
++{
++	swp_entry_t swap = { .val = page_private(page) };
++	VM_BUG_ON(!PageSwapCache(page));
++	return swp_offset(swap);
++}
++EXPORT_SYMBOL_GPL(__page_file_index);
++
++/*
+  * add_swap_count_continuation - called when a swap count is duplicated
+  * beyond SWAP_MAP_MAX, it allocates a new page and links that to the entry's
+  * page of the original vmalloc'ed swap_map, to hold the continuation count
 -- 
 1.7.9.2
 
