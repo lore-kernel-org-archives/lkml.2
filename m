@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762226Ab2FVOaz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:30:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33421 "EHLO mx2.suse.de"
+	id S1762251Ab2FVObA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:31:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33443 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758296Ab2FVOaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:30:52 -0400
+	id S1762227Ab2FVOa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:30:56 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 05/16] mm: Only set page->pfmemalloc when ALLOC_NO_WATERMARKS was used
-Date: Fri, 22 Jun 2012 15:30:32 +0100
-Message-Id: <1340375443-22455-6-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/16] netvm: Allow the use of __GFP_MEMALLOC by specific sockets
+Date: Fri, 22 Jun 2012 15:30:35 +0100
+Message-Id: <1340375443-22455-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1340375443-22455-1-git-send-email-mgorman@suse.de>
 References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
@@ -27,81 +27,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__alloc_pages_slowpath() is called when the number of free pages is below
-the low watermark. If the caller is entitled to use ALLOC_NO_WATERMARKS
-then the page will be marked page->pfmemalloc.  This protects more pages
-than are strictly necessary as we only need to protect pages allocated
-below the min watermark (the pfmemalloc reserves).
+Allow specific sockets to be tagged SOCK_MEMALLOC and use
+__GFP_MEMALLOC for their allocations. These sockets will be able to go
+below watermarks and allocate from the emergency reserve. Such sockets
+are to be used to service the VM (iow. to swap over). They must be
+handled kernel side, exposing such a socket to user-space is a bug.
 
-This patch only sets page->pfmemalloc when ALLOC_NO_WATERMARKS was
-required to allocate the page.
+There is a risk that the reserves be depleted so for now, the
+administrator is responsible for increasing min_free_kbytes as
+necessary to prevent deadlock for their workloads.
 
-[rientjes@google.com: David noticed the problem during review]
+[a.p.zijlstra@chello.nl: Original patches]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David S. Miller <davem@davemloft.net>
 ---
- mm/page_alloc.c |   27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
+ include/net/sock.h |    5 ++++-
+ net/core/sock.c    |   22 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5c6d9c6..9883cf7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2085,8 +2085,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+diff --git a/include/net/sock.h b/include/net/sock.h
+index bc71d3c..c3c0252 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -620,6 +620,7 @@ enum sock_flags {
+ 	SOCK_RCVTSTAMPNS, /* %SO_TIMESTAMPNS setting */
+ 	SOCK_LOCALROUTE, /* route locally only, %SO_DONTROUTE setting */
+ 	SOCK_QUEUE_SHRUNK, /* write queue has been shrunk recently */
++	SOCK_MEMALLOC, /* VM depends on this socket for swapping */
+ 	SOCK_TIMESTAMPING_TX_HARDWARE,  /* %SOF_TIMESTAMPING_TX_HARDWARE */
+ 	SOCK_TIMESTAMPING_TX_SOFTWARE,  /* %SOF_TIMESTAMPING_TX_SOFTWARE */
+ 	SOCK_TIMESTAMPING_RX_HARDWARE,  /* %SOF_TIMESTAMPING_RX_HARDWARE */
+@@ -659,7 +660,7 @@ static inline bool sock_flag(const struct sock *sk, enum sock_flags flag)
  
- 		page = get_page_from_freelist(gfp_mask, nodemask,
- 				order, zonelist, high_zoneidx,
--				alloc_flags, preferred_zone,
--				migratetype);
-+				alloc_flags & ~ALLOC_NO_WATERMARKS,
-+				preferred_zone, migratetype);
- 		if (page) {
- 			preferred_zone->compact_considered = 0;
- 			preferred_zone->compact_defer_shift = 0;
-@@ -2178,8 +2178,8 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- retry:
- 	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
--					alloc_flags, preferred_zone,
--					migratetype);
-+					alloc_flags & ~ALLOC_NO_WATERMARKS,
-+					preferred_zone, migratetype);
+ static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
+ {
+-	return GFP_ATOMIC;
++	return GFP_ATOMIC | (sk->sk_allocation & __GFP_MEMALLOC);
+ }
  
- 	/*
- 	 * If an allocation failed after direct reclaim, it could be because
-@@ -2350,8 +2350,17 @@ rebalance:
- 		page = __alloc_pages_high_priority(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
- 				preferred_zone, migratetype);
--		if (page)
-+		if (page) {
-+			/*
-+			 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
-+			 * necessary to allocate the page. The expectation is
-+			 * that the caller is taking steps that will free more
-+			 * memory. The caller should avoid the page being used
-+			 * for !PFMEMALLOC purposes.
-+			 */
-+			page->pfmemalloc = true;
- 			goto got_pg;
-+		}
- 	}
+ static inline void sk_acceptq_removed(struct sock *sk)
+@@ -802,6 +803,8 @@ extern int sk_stream_wait_memory(struct sock *sk, long *timeo_p);
+ extern void sk_stream_wait_close(struct sock *sk, long timeo_p);
+ extern int sk_stream_error(struct sock *sk, int flags, int err);
+ extern void sk_stream_kill_queues(struct sock *sk);
++extern void sk_set_memalloc(struct sock *sk);
++extern void sk_clear_memalloc(struct sock *sk);
  
- 	/* Atomic allocations - we can't balance anything */
-@@ -2468,14 +2477,6 @@ nopage:
- 	warn_alloc_failed(gfp_mask, order, NULL);
- 	return page;
- got_pg:
--	/*
--	 * page->pfmemalloc is set when the caller had PFMEMALLOC set, is
--	 * been OOM killed or specified __GFP_MEMALLOC. The expectation is
--	 * that the caller is taking steps that will free more memory. The
--	 * caller should avoid the page being used for !PFMEMALLOC purposes.
--	 */
--	page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
--
- 	if (kmemcheck_enabled)
- 		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
+ extern int sk_wait_data(struct sock *sk, long *timeo);
  
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 929bdcc..5c9ca2b 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -271,6 +271,28 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
+ int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
+ EXPORT_SYMBOL(sysctl_optmem_max);
+ 
++/**
++ * sk_set_memalloc - sets %SOCK_MEMALLOC
++ * @sk: socket to set it on
++ *
++ * Set %SOCK_MEMALLOC on a socket for access to emergency reserves.
++ * It's the responsibility of the admin to adjust min_free_kbytes
++ * to meet the requirements
++ */
++void sk_set_memalloc(struct sock *sk)
++{
++	sock_set_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation |= __GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_set_memalloc);
++
++void sk_clear_memalloc(struct sock *sk)
++{
++	sock_reset_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation &= ~__GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_clear_memalloc);
++
+ #if defined(CONFIG_CGROUPS)
+ #if !defined(CONFIG_NET_CLS_CGROUP)
+ int net_cls_subsys_id = -1;
 -- 
 1.7.9.2
 
