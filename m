@@ -1,171 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761422Ab2FVGba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 02:31:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53120 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761331Ab2FVGaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 02:30:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="161108547"
-Subject: [set5 PATCH 4/6] scsi: cleanup usages of scsi_complete_async_scans
-To: linux-scsi@vger.kernel.org
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <JBottomley@parallels.com>
-Date: Thu, 21 Jun 2012 23:47:17 -0700
-Message-ID: <20120622064717.21538.83362.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120622064657.21538.61711.stgit@dwillia2-linux.jf.intel.com>
-References: <20120622064657.21538.61711.stgit@dwillia2-linux.jf.intel.com>
-User-Agent: StGit/0.16-1-g7004
+	id S1761398Ab2FVGlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 02:41:06 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:39262 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab2FVGlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 02:41:04 -0400
+Date: Fri, 22 Jun 2012 08:41:00 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+Message-ID: <20120622064100.GA286@x4>
+References: <1340121811-4477-3-git-send-email-bp@amd64.org>
+ <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
+ <20120619232857.GH5996@aftab.osrc.amd.com>
+ <4FE26155.8030207@zytor.com>
+ <20120621100721.GB6437@aftab.osrc.amd.com>
+ <4FE3ADDF.2060908@zytor.com>
+ <20120622025631.GD29505@aftab.osrc.amd.com>
+ <4FE3E428.8080207@zytor.com>
+ <20120622033634.GG29505@aftab.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120622033634.GG29505@aftab.osrc.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that scsi registers its async scan work with the async subsystem,
-wait_for_device_probe() is sufficient for ensuring all scanning is
-complete.
+On 2012.06.22 at 05:36 +0200, Borislav Petkov wrote:
+> On Thu, Jun 21, 2012 at 08:19:04PM -0700, H. Peter Anvin wrote:
+> > On 06/21/2012 07:56 PM, Borislav Petkov wrote:
+> > >>
+> > >> That is orthogonal.  Anyway, my only concern about the request_firmware
+> > >> interface is that the timing will be inherently wrong.
+> > > 
+> > > Timing? Please elaborate.
+> > > 
+> > 
+> > The request_firmware will happen as soon as the driver is loaded; with
+> > the early microcode blob scheme the driver will need to be built in and
+> > so the request_firmware will happen, redundantly, immediately...
+> 
+> What if BIOS has patch version 1 (numbers are only for showing what I
+> mean), then early scheme applies patch v2 but there is a newer patch
+> version 3 in /lib/firmware?
+> 
+> If the ucode driver is built in, we don't get to update to v3
+> automatically. User has to do it.
+> 
+> The current fix for this situation is have the microcode.ko as module
+> (and only allow it as M) which then automatically does request_firmware
+> at module init time and loads v3.
+> 
+> Which doesn't help people who don't build modules...
 
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- drivers/scsi/scsi_scan.c      |   12 ------------
- drivers/scsi/scsi_wait_scan.c |   15 +++++----------
- include/scsi/scsi_scan.h      |   11 -----------
- kernel/power/hibernate.c      |    8 --------
- kernel/power/user.c           |    2 --
- 5 files changed, 5 insertions(+), 43 deletions(-)
- delete mode 100644 include/scsi/scsi_scan.h
+People who don't use modules have:
+ echo -n 1 > /sys/devices/system/cpu/cpu0/microcode/reload
+ ...
+in their init script already.
 
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index a381fa2..2731c81 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -187,18 +187,6 @@ int scsi_complete_async_scans(void)
- 	return 0;
- }
- 
--/* Only exported for the benefit of scsi_wait_scan */
--EXPORT_SYMBOL_GPL(scsi_complete_async_scans);
--
--#ifndef MODULE
--/*
-- * For async scanning we need to wait for all the scans to complete before
-- * trying to mount the root fs.  Otherwise non-modular drivers may not be ready
-- * yet.
-- */
--late_initcall(scsi_complete_async_scans);
--#endif
--
- /**
-  * scsi_unlock_floptical - unlock device via a special MODE SENSE command
-  * @sdev:	scsi device to send command to
-diff --git a/drivers/scsi/scsi_wait_scan.c b/drivers/scsi/scsi_wait_scan.c
-index ae78148..57de24a 100644
---- a/drivers/scsi/scsi_wait_scan.c
-+++ b/drivers/scsi/scsi_wait_scan.c
-@@ -12,21 +12,16 @@
- 
- #include <linux/module.h>
- #include <linux/device.h>
--#include "scsi_priv.h"
- 
- static int __init wait_scan_init(void)
- {
- 	/*
--	 * First we need to wait for device probing to finish;
--	 * the drivers we just loaded might just still be probing
--	 * and might not yet have reached the scsi async scanning
-+	 * This will not return until all async work (system wide) is
-+	 * quiesced.  Probing queues host-scanning work to the async
-+	 * queue which is why we don't need a separate call to
-+	 * scsi_complete_async_scans()
- 	 */
- 	wait_for_device_probe();
--	/*
--	 * and then we wait for the actual asynchronous scsi scan
--	 * to finish.
--	 */
--	scsi_complete_async_scans();
- 	return 0;
- }
- 
-@@ -38,5 +33,5 @@ MODULE_DESCRIPTION("SCSI wait for scans");
- MODULE_AUTHOR("James Bottomley");
- MODULE_LICENSE("GPL");
- 
--late_initcall(wait_scan_init);
-+module_init(wait_scan_init);
- module_exit(wait_scan_exit);
-diff --git a/include/scsi/scsi_scan.h b/include/scsi/scsi_scan.h
-deleted file mode 100644
-index 7889888..0000000
---- a/include/scsi/scsi_scan.h
-+++ /dev/null
-@@ -1,11 +0,0 @@
--#ifndef _SCSI_SCSI_SCAN_H
--#define _SCSI_SCSI_SCAN_H
--
--#ifdef CONFIG_SCSI
--/* drivers/scsi/scsi_scan.c */
--extern int scsi_complete_async_scans(void);
--#else
--static inline int scsi_complete_async_scans(void) { return 0; }
--#endif
--
--#endif /* _SCSI_SCSI_SCAN_H */
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 8b53db3..238025f 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -27,7 +27,6 @@
- #include <linux/syscore_ops.h>
- #include <linux/ctype.h>
- #include <linux/genhd.h>
--#include <scsi/scsi_scan.h>
- 
- #include "power.h"
- 
-@@ -748,13 +747,6 @@ static int software_resume(void)
- 			async_synchronize_full();
- 		}
- 
--		/*
--		 * We can't depend on SCSI devices being available after loading
--		 * one of their modules until scsi_complete_async_scans() is
--		 * called and the resume device usually is a SCSI one.
--		 */
--		scsi_complete_async_scans();
--
- 		swsusp_resume_device = name_to_dev_t(resume_file);
- 		if (!swsusp_resume_device) {
- 			error = -ENODEV;
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 91b0fd0..4ed81e7 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -24,7 +24,6 @@
- #include <linux/console.h>
- #include <linux/cpu.h>
- #include <linux/freezer.h>
--#include <scsi/scsi_scan.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -84,7 +83,6 @@ static int snapshot_open(struct inode *inode, struct file *filp)
- 		 * appear.
- 		 */
- 		wait_for_device_probe();
--		scsi_complete_async_scans();
- 
- 		data->swap = -1;
- 		data->mode = O_WRONLY;
+That will have to change to a single:
+ echo -n 1 >| /sys/devices/system/cpu/microcode/reload
+in your new scheme.
 
+Of course the best solution would be to get rid of that manual reload
+altogether and to automatically load the firmware during boot (even
+without modules)...
+
+-- 
+Markus
