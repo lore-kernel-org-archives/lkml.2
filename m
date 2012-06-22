@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761474Ab2FVL7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 07:59:11 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:37320 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760258Ab2FVL7J (ORCPT
+	id S1760567Ab2FVMAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:00:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51818 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760269Ab2FVMAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 07:59:09 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k: remove never used asm/shm.h
-References: <1340361221.1773.78.camel@x61.thuisdomein>
-X-Yow: Where do your SOCKS go when you lose them in th' WASHER?
-Date: Fri, 22 Jun 2012 13:59:03 +0200
-In-Reply-To: <1340361221.1773.78.camel@x61.thuisdomein> (Paul Bolle's message
-	of "Fri, 22 Jun 2012 12:33:41 +0200")
-Message-ID: <m2txy3imm0.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 22 Jun 2012 08:00:08 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH 1/2] memcg: use existing function to judge root mem cgroup
+Date: Fri, 22 Jun 2012 19:57:22 +0800
+Message-Id: <1340366243-28104-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle <pebolle@tiscali.nl> writes:
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-> m68k's asm/shm.h header has been part of the tree ever since m68k
-> support got added in v1.3.94. (It started as /include/asm-m68k/shm.h and
-> moved to its current location a few years ago.) It seems it was never
-> used: no file ever included it and nothing used the macros it defines.
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+---
+ mm/memcontrol.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Apparently this was a precursor to what is now <asm/shmparam.h> (which
-was introduced in 1.3.2).
-
-Andreas.
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f72b5e5..776fc57 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4873,7 +4873,7 @@ mem_cgroup_create(struct cgroup *cont)
+ 			goto free_out;
+ 
+ 	/* root ? */
+-	if (cont->parent == NULL) {
++	if (!(mem_cgroup_is_root(cont))) {
+ 		int cpu;
+ 		enable_swap_cgroup();
+ 		parent = NULL;
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.7.9.5
+
