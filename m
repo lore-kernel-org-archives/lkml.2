@@ -1,130 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab2FVKjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 06:39:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56618 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753208Ab2FVKju (ORCPT
+	id S1757887Ab2FVKkK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 06:40:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63185 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757786Ab2FVKkG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 06:39:50 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: core: Allow multiple requests of a single supply mapping
-Date: Fri, 22 Jun 2012 11:39:44 +0100
-Message-Id: <1340361584-12314-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Fri, 22 Jun 2012 06:40:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="161194864"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: "Raj, Ashok" <ashok.raj@intel.com>,
+        "Dugger, Donald D" <donald.d.dugger@intel.com>,
+        "Shan, Haitao" <haitao.shan@intel.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>, "Auld, Will" <will.auld@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keir Fraser <keir@xen.org>, "Li, Susie" <susie.li@intel.com>
+Subject: RE: [vMCE design RFC] Xen vMCE design
+Thread-Topic: [vMCE design RFC] Xen vMCE design
+Thread-Index: AQHNT8fhexbUH0BVTLGVMLMLWAtaJ5cGIWPg
+Date: Fri, 22 Jun 2012 10:40:01 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923352542BD@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
+ <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
+In-Reply-To: <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes it may be useful to allow a device to request a supply multiple
-times, for example in order to allow framework management of some uses of
-the supply with some additional driver specific management or in order to
-allow multiple children of an MFD to work with the supply. Currently this
-is not possible due to the creation of
+Jan Beulich wrote:
+>>>> On 20.06.12 at 18:13, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
+>> Recently we design xen vMCE as attached.
+>> Please kindly help me to review it, any comments/suggestions are
+>> appreciated.
+> 
+> The concept looks quite okay, provided no OS has a problem with
+> the limitations imposed (most notably the restriction to a single
+> reporting bank, particularly in the context of e.g. Linux partly
+> ignoring the first bank under some conditions iirc).
 
-Solve this by removing the requested_uA entry (we have no current users
-of this feature anyway) and ignoring errors creating the symlink to the
-consumer. We should do something nicer than this as this causes sysfs to
-spew enormous warnings but it allows users to run for now.
+'bank0 skipping' quirks is only for older model cpus, I think we have 2 options:
+1). still use 1 bank and simply ignore this issue. I mean, even if guest runs at bank0 quirks platform, when hypervisor inject vMCE# to guest, guest skip bank0, then guest MCE logic would think it detect a spurious mce, then kill itself. Considering bank0 quirks is only for old cpus, this is acceptable;
+2). use 32 banks
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c |   49 +++++-----------------------------------------
- 1 file changed, 5 insertions(+), 44 deletions(-)
+In fact, a third option is, use 1 bank, but hypervisor kill guest when it detect bank0 quirks. This would be same effect as option 1, so I prefer let guest kill itself.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index bda74fd..531441a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -303,18 +303,6 @@ static int regulator_check_drms(struct regulator_dev *rdev)
- 	return 0;
- }
- 
--static ssize_t device_requested_uA_show(struct device *dev,
--			     struct device_attribute *attr, char *buf)
--{
--	struct regulator *regulator;
--
--	regulator = get_device_regulator(dev);
--	if (regulator == NULL)
--		return 0;
--
--	return sprintf(buf, "%d\n", regulator->uA_load);
--}
--
- static ssize_t regulator_uV_show(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
-@@ -1105,48 +1093,27 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
- 	list_add(&regulator->list, &rdev->consumer_list);
- 
- 	if (dev) {
--		/* create a 'requested_microamps_name' sysfs entry */
--		size = scnprintf(buf, REG_STR_SIZE,
--				 "microamps_requested_%s-%s",
--				 dev_name(dev), supply_name);
--		if (size >= REG_STR_SIZE)
--			goto overflow_err;
--
--		regulator->dev = dev;
--		sysfs_attr_init(&regulator->dev_attr.attr);
--		regulator->dev_attr.attr.name = kstrdup(buf, GFP_KERNEL);
--		if (regulator->dev_attr.attr.name == NULL)
--			goto attr_name_err;
--
--		regulator->dev_attr.attr.mode = 0444;
--		regulator->dev_attr.show = device_requested_uA_show;
--		err = device_create_file(dev, &regulator->dev_attr);
--		if (err < 0) {
--			rdev_warn(rdev, "could not add regulator_dev requested microamps sysfs entry\n");
--			goto attr_name_err;
--		}
--
--		/* also add a link to the device sysfs entry */
-+		/* Add a link to the device sysfs entry */
- 		size = scnprintf(buf, REG_STR_SIZE, "%s-%s",
- 				 dev->kobj.name, supply_name);
- 		if (size >= REG_STR_SIZE)
--			goto attr_err;
-+			goto overflow_err;
- 
- 		regulator->supply_name = kstrdup(buf, GFP_KERNEL);
- 		if (regulator->supply_name == NULL)
--			goto attr_err;
-+			goto overflow_err;
- 
- 		err = sysfs_create_link(&rdev->dev.kobj, &dev->kobj,
- 					buf);
- 		if (err) {
- 			rdev_warn(rdev, "could not add device link %s err %d\n",
- 				  dev->kobj.name, err);
--			goto link_name_err;
-+			/* non-fatal */
- 		}
- 	} else {
- 		regulator->supply_name = kstrdup(supply_name, GFP_KERNEL);
- 		if (regulator->supply_name == NULL)
--			goto attr_err;
-+			goto overflow_err;
- 	}
- 
- 	regulator->debugfs = debugfs_create_dir(regulator->supply_name,
-@@ -1173,12 +1140,6 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
- 
- 	mutex_unlock(&rdev->mutex);
- 	return regulator;
--link_name_err:
--	kfree(regulator->supply_name);
--attr_err:
--	device_remove_file(regulator->dev, &regulator->dev_attr);
--attr_name_err:
--	kfree(regulator->dev_attr.attr.name);
- overflow_err:
- 	list_del(&regulator->list);
- 	kfree(regulator);
--- 
-1.7.10
+> 
+> As to not needing any migration specific adjustments - what if
+> a migration is in progress when an event needs to be delivered?
+> 
+> Jan
 
+If a migration is in progress while an event delivered, we abort the migration.
+
+Thanks,
+Jinsong
