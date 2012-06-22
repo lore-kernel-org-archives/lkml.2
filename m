@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761264Ab2FVFld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 01:41:33 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47475 "EHLO
+	id S1761275Ab2FVFlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 01:41:46 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43654 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761226Ab2FVFla (ORCPT
+	with ESMTP id S1761252Ab2FVFla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Jun 2012 01:41:30 -0400
-X-AuditID: 9c93016f-b7cbdae0000024ac-7e-4fe405844d9a
+X-AuditID: 9c93016f-b7cbdae0000024ac-77-4fe40583e1bf
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 8/8] perf symbols: Implement poor man's ELF parser
-Date: Fri, 22 Jun 2012 14:37:42 +0900
-Message-Id: <1340343462-15556-9-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 5/8] perf symbols: Do not use ELF's symbol binding constants
+Date: Fri, 22 Jun 2012 14:37:39 +0900
+Message-Id: <1340343462-15556-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
 References: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
@@ -27,286 +27,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Implement a minimal elf parser for getting build-id.
-It assumes that required elf.h header is provided
-by libc header on the system and the parser only
-looks for PT_NOTE program header to check build-id.
+There's no need to use the ELF's internal value directly.
+Define and use our own - it's required to eliminated the
+dependency of libelf.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/symbol-minimal.c |  242 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 235 insertions(+), 7 deletions(-)
+ tools/perf/builtin-top.c     |    5 ++---
+ tools/perf/ui/browsers/map.c |    5 ++---
+ tools/perf/util/symbol.c     |   40 ++++++++++++++++++++++++++--------------
+ tools/perf/util/symbol.h     |    4 ++++
+ 4 files changed, 34 insertions(+), 20 deletions(-)
 
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index fa37f3bb88d1..9f3c681ca008 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -1,18 +1,240 @@
- #include "symbol.h"
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e3cab5f088f8..e0977175f689 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -42,7 +42,6 @@
+ #include "util/debug.h"
  
-+#include <elf.h>
-+#include <stdio.h>
-+#include <fcntl.h>
-+#include <string.h>
-+#include <byteswap.h>
-+#include <sys/stat.h>
+ #include <assert.h>
+-#include <elf.h>
+ #include <fcntl.h>
  
--int filename__read_build_id(const char *filename __used, void *bf __used,
--			    size_t size __used)
-+
-+static bool check_need_swap(int file_endian)
+ #include <stdio.h>
+@@ -181,8 +180,8 @@ static void ui__warn_map_erange(struct map *map, struct symbol *sym, u64 ip)
+ 		    "Please report to linux-kernel@vger.kernel.org\n",
+ 		    ip, map->dso->long_name, dso__symtab_origin(map->dso),
+ 		    map->start, map->end, sym->start, sym->end,
+-		    sym->binding == STB_GLOBAL ? 'g' :
+-		    sym->binding == STB_LOCAL  ? 'l' : 'w', sym->name,
++		    sym->binding == SYMBIND_GLOBAL ? 'g' :
++		    sym->binding == SYMBIND_LOCAL  ? 'l' : 'w', sym->name,
+ 		    err ? "[unknown]" : uts.machine,
+ 		    err ? "[unknown]" : uts.release, perf_version_string);
+ 	if (use_browser <= 0)
+diff --git a/tools/perf/ui/browsers/map.c b/tools/perf/ui/browsers/map.c
+index 98851d55a53e..f2059664b23f 100644
+--- a/tools/perf/ui/browsers/map.c
++++ b/tools/perf/ui/browsers/map.c
+@@ -1,5 +1,4 @@
+ #include "../libslang.h"
+-#include <elf.h>
+ #include <newt.h>
+ #include <inttypes.h>
+ #include <sys/ttydefaults.h>
+@@ -61,8 +60,8 @@ static void map_browser__write(struct ui_browser *self, void *nd, int row)
+ 	ui_browser__set_percent_color(self, 0, current_entry);
+ 	slsmg_printf("%*" PRIx64 " %*" PRIx64 " %c ",
+ 		     mb->addrlen, sym->start, mb->addrlen, sym->end,
+-		     sym->binding == STB_GLOBAL ? 'g' :
+-		     sym->binding == STB_LOCAL  ? 'l' : 'w');
++		     sym->binding == SYMBIND_GLOBAL ? 'g' :
++		     sym->binding == SYMBIND_LOCAL  ? 'l' : 'w');
+ 	width = self->width - ((mb->addrlen * 2) + 4);
+ 	if (width > 0)
+ 		slsmg_write_nstring(sym->name, width);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 38447ad42ad1..db807a8535d1 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -114,16 +114,16 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
+ 		return SYMBOL_B;
+ 
+ 	/* Prefer a non weak symbol over a weak one */
+-	a = syma->binding == STB_WEAK;
+-	b = symb->binding == STB_WEAK;
++	a = syma->binding == SYMBIND_WEAK;
++	b = symb->binding == SYMBIND_WEAK;
+ 	if (b && !a)
+ 		return SYMBOL_A;
+ 	if (a && !b)
+ 		return SYMBOL_B;
+ 
+ 	/* Prefer a global symbol over a non global one */
+-	a = syma->binding == STB_GLOBAL;
+-	b = symb->binding == STB_GLOBAL;
++	a = syma->binding == SYMBIND_GLOBAL;
++	b = symb->binding == SYMBIND_GLOBAL;
+ 	if (a && !b)
+ 		return SYMBOL_A;
+ 	if (b && !a)
+@@ -259,8 +259,8 @@ static size_t symbol__fprintf(struct symbol *sym, FILE *fp)
  {
--	return -1;
-+	const int data = 1;
-+	u8 *check = (u8 *)&data;
-+	int host_endian;
-+
-+	if (check[0] == 1)
-+		host_endian = ELFDATA2LSB;
-+	else
-+		host_endian = ELFDATA2MSB;
-+
-+	return host_endian != file_endian;
+ 	return fprintf(fp, " %" PRIx64 "-%" PRIx64 " %c %s\n",
+ 		       sym->start, sym->end,
+-		       sym->binding == STB_GLOBAL ? 'g' :
+-		       sym->binding == STB_LOCAL  ? 'l' : 'w',
++		       sym->binding == SYMBIND_GLOBAL ? 'g' :
++		       sym->binding == SYMBIND_LOCAL  ? 'l' : 'w',
+ 		       sym->name);
  }
  
--int sysfs__read_build_id(const char *filename __used, void *build_id __used,
--			 size_t size __used)
-+#define NOTE_ALIGN(sz) (((sz) + 3) & ~3)
-+
-+#define NT_GNU_BUILD_ID	3
-+
-+static int read_build_id(void *note_data, size_t note_len, void *bf,
-+			 size_t size, bool need_swap)
+@@ -609,12 +609,12 @@ struct process_kallsyms_args {
+ 	struct dso *dso;
+ };
+ 
+-static u8 kallsyms2elf_type(char type)
++static u8 kallsyms_binding(char type)
  {
-+	struct {
-+		u32 n_namesz;
-+		u32 n_descsz;
-+		u32 n_type;
-+	} *nhdr;
-+	void *ptr;
-+
-+	ptr = note_data;
-+	while (ptr < (note_data + note_len)) {
-+		const char *name;
-+		size_t namesz, descsz;
-+
-+		nhdr = ptr;
-+		if (need_swap) {
-+			nhdr->n_namesz = bswap_32(nhdr->n_namesz);
-+			nhdr->n_descsz = bswap_32(nhdr->n_descsz);
-+			nhdr->n_type = bswap_32(nhdr->n_type);
-+		}
-+
-+		namesz = NOTE_ALIGN(nhdr->n_namesz);
-+		descsz = NOTE_ALIGN(nhdr->n_descsz);
-+
-+		ptr += sizeof(*nhdr);
-+		name = ptr;
-+		ptr += namesz;
-+		if (nhdr->n_type == NT_GNU_BUILD_ID &&
-+		    nhdr->n_namesz == sizeof("GNU")) {
-+			if (memcmp(name, "GNU", sizeof("GNU")) == 0) {
-+				size_t sz = min(size, descsz);
-+				memcpy(bf, ptr, sz);
-+				memset(bf + sz, 0, size - sz);
-+				return 0;
-+			}
-+		}
-+		ptr += descsz;
-+	}
-+
+ 	if (type == 'W')
+-		return STB_WEAK;
++		return SYMBIND_WEAK;
+ 
+-	return isupper(type) ? STB_GLOBAL : STB_LOCAL;
++	return isupper(type) ? SYMBIND_GLOBAL : SYMBIND_LOCAL;
+ }
+ 
+ static int map__process_kallsym_symbol(void *arg, const char *name,
+@@ -628,7 +628,7 @@ static int map__process_kallsym_symbol(void *arg, const char *name,
+ 		return 0;
+ 
+ 	sym = symbol__new(start, end - start + 1,
+-			  kallsyms2elf_type(type), name);
++			  kallsyms_binding(type), name);
+ 	if (sym == NULL)
+ 		return -ENOMEM;
+ 	/*
+@@ -851,7 +851,7 @@ static int dso__load_perf_map(struct dso *dso, struct map *map,
+ 		if (len + 2 >= line_len)
+ 			continue;
+ 
+-		sym = symbol__new(start, size, STB_GLOBAL, line + len);
++		sym = symbol__new(start, size, SYMBIND_GLOBAL, line + len);
+ 
+ 		if (sym == NULL)
+ 			goto out_delete_line;
+@@ -1064,7 +1064,7 @@ dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
+ 				 "%s@plt", elf_sym__name(&sym, symstrs));
+ 
+ 			f = symbol__new(plt_offset, shdr_plt.sh_entsize,
+-					STB_GLOBAL, sympltname);
++					SYMBIND_GLOBAL, sympltname);
+ 			if (!f)
+ 				goto out_elf_end;
+ 
+@@ -1086,7 +1086,7 @@ dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
+ 				 "%s@plt", elf_sym__name(&sym, symstrs));
+ 
+ 			f = symbol__new(plt_offset, shdr_plt.sh_entsize,
+-					STB_GLOBAL, sympltname);
++					SYMBIND_GLOBAL, sympltname);
+ 			if (!f)
+ 				goto out_elf_end;
+ 
+@@ -1157,6 +1157,18 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
  	return -1;
  }
  
-+/*
-+ * Just try PT_NOTE header otherwise fails
-+ */
-+int filename__read_build_id(const char *filename, void *bf, size_t size)
++static int elf_sym__binding(const GElf_Sym *sym)
 +{
-+	FILE *fp;
-+	int ret = -1;
-+	bool need_swap = false;
-+	u8 e_ident[EI_NIDENT];
-+	size_t buf_size;
-+	void *buf;
-+	int i;
-+
-+	fp = fopen(filename, "r");
-+	if (fp == NULL)
-+		return -1;
-+
-+	if (fread(e_ident, sizeof(e_ident), 1, fp) != 1)
-+		goto out;
-+
-+	if (memcmp(e_ident, ELFMAG, SELFMAG) ||
-+	    e_ident[EI_VERSION] != EV_CURRENT)
-+		goto out;
-+
-+	need_swap = check_need_swap(e_ident[EI_DATA]);
-+
-+	/* for simplicity */
-+	fseek(fp, 0, SEEK_SET);
-+
-+	if (e_ident[EI_CLASS] == ELFCLASS32) {
-+		Elf32_Ehdr ehdr;
-+		Elf32_Phdr *phdr;
-+
-+		if (fread(&ehdr, sizeof(ehdr), 1, fp) != 1)
-+			goto out;
-+
-+		if (need_swap) {
-+			ehdr.e_phoff = bswap_32(ehdr.e_phoff);
-+			ehdr.e_phentsize = bswap_16(ehdr.e_phentsize);
-+			ehdr.e_phnum = bswap_16(ehdr.e_phnum);
-+		}
-+
-+		buf_size = ehdr.e_phentsize * ehdr.e_phnum;
-+		buf = malloc(buf_size);
-+		if (buf == NULL)
-+			goto out;
-+
-+		fseek(fp, ehdr.e_phoff, SEEK_SET);
-+		if (fread(buf, buf_size, 1, fp) != 1)
-+			goto out_free;
-+
-+		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
-+			void *tmp;
-+
-+			if (need_swap) {
-+				phdr->p_type = bswap_32(phdr->p_type);
-+				phdr->p_offset = bswap_32(phdr->p_offset);
-+				phdr->p_filesz = bswap_32(phdr->p_filesz);
-+			}
-+
-+			if (phdr->p_type != PT_NOTE)
-+				continue;
-+
-+			buf_size = phdr->p_filesz;
-+			tmp = realloc(buf, buf_size);
-+			if (tmp == NULL)
-+				goto out_free;
-+
-+			buf = tmp;
-+			fseek(fp, phdr->p_offset, SEEK_SET);
-+			if (fread(buf, buf_size, 1, fp) != 1)
-+				goto out_free;
-+
-+			ret = read_build_id(buf, buf_size, bf, size, need_swap);
-+			if (ret == 0)
-+				ret = size;
-+			break;
-+		}
-+	} else {
-+		Elf64_Ehdr ehdr;
-+		Elf64_Phdr *phdr;
-+
-+		if (fread(&ehdr, sizeof(ehdr), 1, fp) != 1)
-+			goto out;
-+
-+		if (need_swap) {
-+			ehdr.e_phoff = bswap_64(ehdr.e_phoff);
-+			ehdr.e_phentsize = bswap_16(ehdr.e_phentsize);
-+			ehdr.e_phnum = bswap_16(ehdr.e_phnum);
-+		}
-+
-+		buf_size = ehdr.e_phentsize * ehdr.e_phnum;
-+		buf = malloc(buf_size);
-+		if (buf == NULL)
-+			goto out;
-+
-+		fseek(fp, ehdr.e_phoff, SEEK_SET);
-+		if (fread(buf, buf_size, 1, fp) != 1)
-+			goto out_free;
-+
-+		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
-+			void *tmp;
-+
-+			if (need_swap) {
-+				phdr->p_type = bswap_32(phdr->p_type);
-+				phdr->p_offset = bswap_64(phdr->p_offset);
-+				phdr->p_filesz = bswap_64(phdr->p_filesz);
-+			}
-+
-+			if (phdr->p_type != PT_NOTE)
-+				continue;
-+
-+			buf_size = phdr->p_filesz;
-+			tmp = realloc(buf, buf_size);
-+			if (tmp == NULL)
-+				goto out_free;
-+
-+			buf = tmp;
-+			fseek(fp, phdr->p_offset, SEEK_SET);
-+			if (fread(buf, buf_size, 1, fp) != 1)
-+				goto out_free;
-+
-+			ret = read_build_id(buf, buf_size, bf, size, need_swap);
-+			if (ret == 0)
-+				ret = size;
-+			break;
-+		}
++	switch (GELF_ST_BIND(sym->st_info)) {
++	case STB_GLOBAL:
++		return SYMBIND_GLOBAL;
++	case STB_WEAK:
++		return SYMBIND_WEAK;
++	default:
++		return SYMBIND_LOCAL;
 +	}
-+out_free:
-+	free(buf);
-+out:
-+	fclose(fp);
-+	return ret;
 +}
 +
-+int sysfs__read_build_id(const char *filename, void *build_id, size_t size)
-+{
-+	int fd;
-+	int ret = -1;
-+	struct stat stbuf;
-+	size_t buf_size;
-+	void *buf;
-+
-+	fd = open(filename, O_RDONLY);
-+	if (fd < 0)
-+		return -1;
-+
-+	if (fstat(fd, &stbuf) < 0)
-+		goto out;
-+
-+	buf_size = stbuf.st_size;
-+	buf = malloc(buf_size);
-+	if (buf == NULL)
-+		goto out;
-+
-+	if (read(fd, buf, buf_size) != (ssize_t) buf_size)
-+		goto out_free;
-+
-+	ret = read_build_id(buf, buf_size, build_id, size, false);
-+out_free:
-+	free(buf);
-+out:
-+	close(fd);
-+	return ret;
-+}
-+
- int dso__synthesize_plt_symbols(struct dso *dso __used, char *name __used,
- 				struct map *map __used,
- 				symbol_filter_t filter __used)
-@@ -20,11 +242,17 @@ int dso__synthesize_plt_symbols(struct dso *dso __used, char *name __used,
- 	return 0;
- }
- 
--int dso__load_sym(struct dso *dso __used, struct map *map __used,
--		  const char *name __used, int fd __used,
-+int dso__load_sym(struct dso *dso, struct map *map __used,
-+		  const char *name, int fd __used,
- 		  symbol_filter_t filter __used, int kmodule __used,
- 		  int want_symtab __used)
+ static int dso__swap_init(struct dso *dso, unsigned char eidata)
  {
-+	unsigned char *build_id[BUILD_ID_SIZE];
-+
-+	if (filename__read_build_id(name, build_id, BUILD_ID_SIZE) > 0) {
-+		dso__set_build_id(dso, build_id);
-+		return 1;
-+	}
- 	return 0;
- }
+ 	static unsigned int const endian = 1;
+@@ -1390,7 +1402,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			elf_name = demangled;
+ new_symbol:
+ 		f = symbol__new(sym.st_value, sym.st_size,
+-				GELF_ST_BIND(sym.st_info), elf_name);
++				elf_sym__binding(&sym), elf_name);
+ 		free(demangled);
+ 		if (!f)
+ 			goto out_elf_end;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 295a9aa1cc78..bd91d2aa8262 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -50,6 +50,10 @@ char *strxfrchar(char *s, char from, char to);
  
+ #define BUILD_ID_SIZE 20
+ 
++#define SYMBIND_LOCAL	0
++#define SYMBIND_GLOBAL	1
++#define SYMBIND_WEAK	2
++
+ /** struct symbol - symtab entry
+  *
+  * @ignore - resolvable but tools ignore it (e.g. idle routines)
 -- 
 1.7.10.2
 
