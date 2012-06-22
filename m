@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761089Ab2FVDdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 23:33:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:2481 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753603Ab2FVDdo convert rfc822-to-8bit (ORCPT
+	id S1761112Ab2FVDeD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 23:34:03 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:33756 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761125Ab2FVDeB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 23:33:44 -0400
-X-IronPort-AV: E=Sophos;i="4.77,455,1336320000"; 
-   d="scan'208";a="5245833"
-Message-ID: <4FE3E7B0.3020802@cn.fujitsu.com>
-Date: Fri, 22 Jun 2012 11:34:08 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 21 Jun 2012 23:34:01 -0400
 MIME-Version: 1.0
-To: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Josh Hunt <johunt@akamai.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        Debabrata Banerjee <dbavatar@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "yoshfuji@linux-ipv6.org" <yoshfuji@linux-ipv6.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "pekkas@netcore.fi" <pekkas@netcore.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
-References: <CAATkVEzTxT6d5nzt_qwCuFWM-WcN8hdhjGxFRPXJ4=L35wKbGw@mail.gmail.com> <4FE37783.9000409@akamai.com> <1340310469.4604.6702.camel@edumazet-glaptop> <20120621215056.GA24908@ms2.inr.ac.ru>
-In-Reply-To: <20120621215056.GA24908@ms2.inr.ac.ru>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/22 11:34:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/22 11:34:03
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120621184536.6dd97746.akpm@linux-foundation.org>
+References: <alpine.DEB.2.00.1206201758500.3068@chino.kir.corp.google.com>
+ <20120621164606.4ae1a71d.akpm@linux-foundation.org> <CA+55aFzPXMD3N3Oy-om6utDCQYmrBDnDgdqpVC5cgKe-v6uZ3w@mail.gmail.com>
+ <20120621184536.6dd97746.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 21 Jun 2012 20:33:38 -0700
+X-Google-Sender-Auth: 28fTovb06lPiJQK5_GGJVmq5oYY
+Message-ID: <CA+55aFwBc=OxwU=qNYQs0rg4dPGBQObqg-EGnDDS-TWWpy0G2A@mail.gmail.com>
+Subject: Re: [patch 3.5-rc3] mm, mempolicy: fix mbind() to do synchronous migration
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年06月22日 05:50, Alexey Kuznetsov 写道:
-> On Thu, Jun 21, 2012 at 10:27:49PM +0200, Eric Dumazet wrote:
->> Looking at this code, it lacks proper synchronization
->> between tree updaters and tree walkers.
->>
->> fib6_walker_lock rwlock is not enough to prevent races.
-> 
-> Hmm. As author of this weird code, I must say I honestly believed it was correct.
-> At least I tried. :-)
-> 
-> 
-> What's about 2bec5a336.., it does not look reasonable.
-> The idea was that when you change tree, you fixup sleeping walkers, moving
-> their location in tree to correct point. So, walkers must not have any stale pointers
-> at any times (except when you under table write lock) and no skips/counts are required.
-> I remember how damn difficult was it to make this right (well, sorry, if it is not yet :-)),
-> so that understand that if some update is forgotten or done incorrectly, it is not so easy to find,
-> but it is definitely worth of efforts.
+On Thu, Jun 21, 2012 at 6:45 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>
+>> I wonder if I should make sparse warn about any casts to/from enums.
+>> They tend to always be wrong.
+>
+> I think it would be worth trying, see how much fallout there is. �Also
+> casts from "enum a" to "enum b". �We've had a few of those,
+> unintentionally.
 
+Ugh. We have this all over. Well, at least in multiple places.
 
-Actually, I spent two months to try to reproduce this crash four months ago,
-But finally I give up, I don't think there was any stale pointers,
-we already correct it when we change the tree.
+Like <linux/personality.h>, which does things like
+
+        PER_LINUX_32BIT =       0x0000 | ADDR_LIMIT_32BIT,
+
+where PER_LINUX_32BIT is one enum, and ADDR_LIMIT_32BIT is a different one.
+
+And things like
+
+        WORK_STRUCT_PENDING     = 1 << WORK_STRUCT_PENDING_BIT,
+
+in <linux/workqueue.h> is similar.
+
+Sure, my quick warning generator gives lots of extraneous warnings,
+and it complains about the above kind of "mixing enum with int"
+behavior, but the above is a very real example of casting an enum to
+an integer. And we *want* it to happen in the above cases.
+
+I'll see what it looks like if I only warn about casting *to* an enum.
+
+             Linus
