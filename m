@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762234Ab2FVQ0c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 12:26:32 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:45046 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab2FVQ0a (ORCPT
+	id S1762386Ab2FVQbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 12:31:08 -0400
+Received: from sypressi.dnainternet.net ([83.102.40.135]:46438 "EHLO
+	sypressi.dnainternet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2FVQbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 12:26:30 -0400
-X-IronPort-AV: E=Sophos;i="4.77,459,1336348800"; 
-   d="scan'208";a="13175139"
-Date: Fri, 22 Jun 2012 17:26:07 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/events: fix unmask_evtchn for PV on HVM guests
-In-Reply-To: <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
-Message-ID: <alpine.DEB.2.02.1206221722040.27860@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 22 Jun 2012 12:31:06 -0400
+X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Jun 2012 12:31:06 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -0.999
+Date: Fri, 22 Jun 2012 19:21:27 +0300
+From: Touko Korpela <touko.korpela@iki.fi>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: Re: [PATCH] dm thin: reinstate missing mempool_free in
+ cell_release_singleton
+Message-ID: <20120622162127.GA19624@lisko>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120622151650.GA5785@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When unmask_evtchn is called, if we already have an event pending, we
-just set evtchn_pending_sel waiting for local_irq_enable to be called.
-That is because PV guests set the irq_enable pvops to
-xen_irq_enable_direct that also handles pending events.
+Greg KH wrote:
+> On Fri, Jun 22, 2012 at 10:59:48AM -0400, Mike Snitzer wrote:
+> > Hi Greg,
+> > 
+> > 3.3-stable pulled in upstream commit
+> > 6f94a4c45a6f744383f9f695dde019998db3df55 (dm thin: fix stacked bi_next
+> > usage)
+> > 
+> > But later in the 3.4 development window it was determined that that
+> > commit introduced a significant leak.  The following upstream commit
+> > fixes it (but unfortunately didn't cc: stable).
+>
+> 3.3 is end-of-life, so there's not much I can do with the 3.3-stable
+> tree anymore, sorry.  If there's any other tree I should apply this to
+> that is active (i.e. 3.0 or 3.4), please let me know.
 
-However HVM guests (and ARM guests) do not change or do not have the
-irq_enable pvop, so evtchn_unmask cannot work properly for them.
-
-Considering that having the pending_irq bit set when unmask_evtchn is
-called is not very common, and it is simpler to keep the
-native_irq_enable implementation for HVM guests (and ARM guests), the
-best thing to do is just use the EVTCHNOP_unmask hypercall (Xen
-re-injects pending events in response).
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/xen/events.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index eae0d0b..0132505 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -372,8 +372,11 @@ static void unmask_evtchn(int port)
- 
- 	BUG_ON(!irqs_disabled());
- 
--	/* Slow path (hypercall) if this is a non-local port. */
--	if (unlikely(cpu != cpu_from_evtchn(port))) {
-+	/* Slow path (hypercall) if this is a non-local port or if this is
-+	 * an hvm domain and an event is pending (hvm domains don't have
-+	 * their own implementation of irq_enable). */
-+	if (unlikely((cpu != cpu_from_evtchn(port)) ||
-+			(xen_hvm_domain() && sync_test_bit(port, &s->evtchn_pending[0])))) {
- 		struct evtchn_unmask unmask = { .port = port };
- 		(void)HYPERVISOR_event_channel_op(EVTCHNOP_unmask, &unmask);
- 	} else {
+Looks like you forgot 3.2 that is affected (since 3.2.14).
