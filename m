@@ -1,185 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762490Ab2FVQMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 12:12:15 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:24416
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758348Ab2FVQMN (ORCPT
+	id S1762480Ab2FVQNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 12:13:36 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:55745 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2FVQNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 12:12:13 -0400
-X-IronPort-AV: E=Sophos;i="4.77,459,1336341600"; 
-   d="scan'208";a="148488983"
-Date: Fri, 22 Jun 2012 18:12:10 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Emil Goode <emilgoode@gmail.com>
-cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] grvga: Fix error handling issues
-In-Reply-To: <1340381479-6371-1-git-send-email-emilgoode@gmail.com>
-Message-ID: <alpine.DEB.2.02.1206221811150.1901@hadrien>
-References: <1340381479-6371-1-git-send-email-emilgoode@gmail.com>
+	Fri, 22 Jun 2012 12:13:35 -0400
+X-IronPort-AV: E=Sophos;i="4.77,459,1336348800"; 
+   d="scan'208";a="13174817"
+Date: Fri, 22 Jun 2012 17:13:12 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, Tim Deegan <tim@xen.org>
+Subject: [PATCH WIP 0/6] xen/arm: PV console support
+Message-ID: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maybe you could used the devm_ functions for request_mem_region and
-ioremap so that the error handling can just be dropped?
+Hi all,
+this patch series fixes few Xen on ARM bugs as well as one generic Xen PV
+on HVM bug (I'll send out that patch separately).
+It also implements a better way to initialize Xen on ARM and find out
+whether we are a privileged or an unprivileged guest.
 
-julia
+With this patch series applied to Linux and the corresponding Xen patch series
+applied to Xen, I can boot a Linux guest up to userspace and connect to
+it using a PV console in dom0.
 
-On Fri, 22 Jun 2012, Emil Goode wrote:
+The patch series is based on Ian's Linux for Xen on ARM tree
+(git://xenbits.xen.org/people/ianc/linux-2.6.git devel/arm-hacks).
 
-> This patch fixes two problems with the error handling in the
-> grvga_probe function.
->
-> - If the call to grvga_parse_custom on line 370 fails we use
->   the wrong label so that release_mem_region will be called
->   without a call to request_mem_region being made.
->
-> - If the call to ioremap on line 436 fails we should not try
->   to call iounmap. I added an if statement to check whether or
->   not a call to iounmap should be made.
->
-> - I also changed the names of the labels to make the code
->   easier to read.
->
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> ---
->  drivers/video/grvga.c |   34 ++++++++++++++++++----------------
->  1 file changed, 18 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/video/grvga.c b/drivers/video/grvga.c
-> index da066c2..d9d688a 100644
-> --- a/drivers/video/grvga.c
-> +++ b/drivers/video/grvga.c
-> @@ -354,7 +354,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  	 */
->  	if (fb_get_options("grvga", &options)) {
->  		retval = -ENODEV;
-> -		goto err;
-> +		goto free_fb;
->  	}
->
->  	if (!options || !*options)
-> @@ -370,7 +370,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  			if (grvga_parse_custom(this_opt, &info->var) < 0) {
->  				dev_err(&dev->dev, "Failed to parse custom mode (%s).\n", this_opt);
->  				retval = -EINVAL;
-> -				goto err1;
-> +				goto free_fb;
->  			}
->  		} else if (!strncmp(this_opt, "addr", 4))
->  			grvga_fix_addr = simple_strtoul(this_opt + 5, NULL, 16);
-> @@ -390,7 +390,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  	if (!request_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]), "grlib-svgactrl regs")) {
->  		dev_err(&dev->dev, "registers already mapped\n");
->  		retval = -EBUSY;
-> -		goto err;
-> +		goto free_fb;
->  	}
->
->  	par->regs = of_ioremap(&dev->resource[0], 0,
-> @@ -400,14 +400,14 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  	if (!par->regs) {
->  		dev_err(&dev->dev, "failed to map registers\n");
->  		retval = -ENOMEM;
-> -		goto err1;
-> +		goto release_regs;
->  	}
->
->  	retval = fb_alloc_cmap(&info->cmap, 256, 0);
->  	if (retval < 0) {
->  		dev_err(&dev->dev, "failed to allocate mem with fb_alloc_cmap\n");
->  		retval = -ENOMEM;
-> -		goto err2;
-> +		goto unmap_regs;
->  	}
->
->  	if (mode_opt) {
-> @@ -415,7 +415,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  				      grvga_modedb, sizeof(grvga_modedb), &grvga_modedb[0], 8);
->  		if (!retval || retval == 4) {
->  			retval = -EINVAL;
-> -			goto err3;
-> +			goto dealloc_cmap;
->  		}
->  	}
->
-> @@ -430,7 +430,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  		if (!request_mem_region(physical_start, grvga_mem_size, dev->name)) {
->  			dev_err(&dev->dev, "failed to request memory region\n");
->  			retval = -ENOMEM;
-> -			goto err3;
-> +			goto dealloc_cmap;
->  		}
->
->  		virtual_start = (unsigned long) ioremap(physical_start, grvga_mem_size);
-> @@ -438,7 +438,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  		if (!virtual_start) {
->  			dev_err(&dev->dev, "error mapping framebuffer memory\n");
->  			retval = -ENOMEM;
-> -			goto err4;
-> +			goto free_mem;
->  		}
->  	} else {	/* Allocate frambuffer memory */
->
-> @@ -451,7 +451,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  				"unable to allocate framebuffer memory (%lu bytes)\n",
->  				grvga_mem_size);
->  			retval = -ENOMEM;
-> -			goto err3;
-> +			goto dealloc_cmap;
->  		}
->
->  		physical_start = dma_map_single(&dev->dev, (void *)virtual_start, grvga_mem_size, DMA_TO_DEVICE);
-> @@ -484,7 +484,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  	retval = register_framebuffer(info);
->  	if (retval < 0) {
->  		dev_err(&dev->dev, "failed to register framebuffer\n");
-> -		goto err4;
-> +		goto free_mem;
->  	}
->
->  	__raw_writel(physical_start, &par->regs->fb_pos);
-> @@ -493,21 +493,23 @@ static int __devinit grvga_probe(struct platform_device *dev)
->
->  	return 0;
->
-> -err4:
-> +free_mem:
->  	dev_set_drvdata(&dev->dev, NULL);
->  	if (grvga_fix_addr) {
->  		release_mem_region(physical_start, grvga_mem_size);
-> -		iounmap((void *)virtual_start);
-> +		if (virtual_start)
-> +			iounmap((void *)virtual_start);
->  	} else
->  		kfree((void *)virtual_start);
-> -err3:
-> +
-> +dealloc_cmap:
->  	fb_dealloc_cmap(&info->cmap);
-> -err2:
-> +unmap_regs:
->  	of_iounmap(&dev->resource[0], par->regs,
->  		   resource_size(&dev->resource[0]));
-> -err1:
-> +release_regs:
->  	release_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]));
-> -err:
-> +free_fb:
->  	framebuffer_release(info);
->
->  	return retval;
-> --
-> 1.7.10
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+
+Stefano Stabellini (6):
+      xen/arm: fix the shared_info and vcpu_info structs
+      xen/arm: Introduce xen_guest_init
+      xen/arm: get privilege status
+      xen/arm: implement hvm_op
+      xen: fix unmask_evtchn for HVM guests
+      xen/arm: enable evtchn irqs
+
+ arch/arm/include/asm/xen/hypercall.h |    2 +-
+ arch/arm/include/asm/xen/interface.h |   15 +++------------
+ arch/arm/xen/enlighten.c             |   21 ++++++++++++++++-----
+ arch/x86/xen/enlighten.c             |    8 ++++++++
+ drivers/tty/hvc/hvc_xen.c            |    3 +++
+ drivers/xen/events.c                 |   10 ++++++++--
+ include/xen/interface/features.h     |    3 +++
+ include/xen/xen.h                    |    2 ++
+ 8 files changed, 44 insertions(+), 20 deletions(-)
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git xenarmv7-2
+
+Cheers,
+
+Stefano
