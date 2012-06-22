@@ -1,66 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab2FVXxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:53:36 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:59338 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406Ab2FVXxf (ORCPT
+	id S1762898Ab2FVXzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:55:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38825 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255Ab2FVXze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:53:35 -0400
-From: Bryan Freed <bfreed@chromium.org>
-To: spi-devel-general@lists.sourceforge.net
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        Bryan Freed <bfreed@chromium.org>
-Subject: [PATCH] spi: Unlock a spinlock before calling into the controller driver.
-Date: Fri, 22 Jun 2012 16:53:25 -0700
-Message-Id: <1340409205-23606-1-git-send-email-bfreed@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 22 Jun 2012 19:55:34 -0400
+Date: Fri, 22 Jun 2012 16:55:31 -0700 (PDT)
+Message-Id: <20120622.165531.386085974835484549.davem@davemloft.net>
+To: c_manoha@qca.qualcomm.com
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-06-22
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20452.64701.760819.559191@gargle.gargle.HOWL>
+References: <20120622201716.GB13918@tuxdriver.com>
+	<20452.64701.760819.559191@gargle.gargle.HOWL>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-spi_pump_messages() calls into a controller driver with
-unprepare_transfer_hardware() which is documented as "This may sleep".
-As in the prepare_transfer_hardware() call below, we should release the
-queue_lock spinlock before making the call.
-Rework the logic a bit to hold queue_lock to protect the 'busy' flag,
-then release it to call unprepare_transfer_hardware().
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Date: Sat, 23 Jun 2012 04:46:13 +0530
 
-Signed-off-by: Bryan Freed <bfreed@chromium.org>
+> John W. Linville wrote:
+>> Mohammed Shafi Shajakhan (1):
+>>       ath9k_hw: avoid possible infinite loop in ar9003_get_pll_sqsum_dvc
+> 
+> Um, this commit doesn't really fix anything - the timeout is also
+> arbitrary. Can you remove this from the 3.5 queue ? Thanks.
 
----
- drivers/spi/spi.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index fc0da39..f7f9df9 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -532,17 +532,16 @@ static void spi_pump_messages(struct kthread_work *work)
- 	/* Lock queue and check for queue work */
- 	spin_lock_irqsave(&master->queue_lock, flags);
- 	if (list_empty(&master->queue) || !master->running) {
--		if (master->busy && master->unprepare_transfer_hardware) {
--			ret = master->unprepare_transfer_hardware(master);
--			if (ret) {
--				spin_unlock_irqrestore(&master->queue_lock, flags);
--				dev_err(&master->dev,
--					"failed to unprepare transfer hardware\n");
--				return;
--			}
-+		if (!master->busy) {
-+			spin_unlock_irqrestore(&master->queue_lock, flags);
-+			return;
- 		}
- 		master->busy = false;
- 		spin_unlock_irqrestore(&master->queue_lock, flags);
-+		if (master->unprepare_transfer_hardware &&
-+		    master->unprepare_transfer_hardware(master))
-+			dev_err(&master->dev,
-+				"failed to unprepare transfer hardware\n");
- 		return;
- 	}
- 
--- 
-1.7.7.3
-
+Not possible, already pushed out.
