@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758546Ab2FVSvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 14:51:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64088 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab2FVSvS (ORCPT
+	id S1762572Ab2FVSvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 14:51:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39707 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab2FVSvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 14:51:18 -0400
-Date: Fri, 22 Jun 2012 11:51:13 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Early boot panic on machine with lots of memory
-Message-ID: <20120622185113.GK4642@google.com>
-References: <20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
- <1339667440.3321.7.camel@lappy>
- <20120618223203.GE32733@google.com>
- <1340059850.3416.3.camel@lappy>
- <20120619041154.GA28651@shangw>
- <20120619212059.GJ32733@google.com>
- <20120619212618.GK32733@google.com>
- <CAE9FiQVECyRBie-kgBETmqxPaMx24kUt1W07qAqoGD4vNus5xQ@mail.gmail.com>
- <20120621201728.GB4642@google.com>
- <CAE9FiQXubmnKHjnqOxVeoJknJZFNuStCcW=1XC6jLE7eznkTmg@mail.gmail.com>
+	Fri, 22 Jun 2012 14:51:45 -0400
+Date: Fri, 22 Jun 2012 19:51:42 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+        Alex Lyashkov <umka@cloudlinux.com>
+Subject: Re: [PATCH] Taint kernel when lve module is loaded
+Message-ID: <20120622185142.GA13225@srcf.ucam.org>
+References: <1340387371-32292-1-git-send-email-mjg59@srcf.ucam.org>
+ <20120622184359.GA25552@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQXubmnKHjnqOxVeoJknJZFNuStCcW=1XC6jLE7eznkTmg@mail.gmail.com>
+In-Reply-To: <20120622184359.GA25552@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Yinghai.
+On Fri, Jun 22, 2012 at 11:43:59AM -0700, Greg KH wrote:
 
-On Thu, Jun 21, 2012 at 06:47:24PM -0700, Yinghai Lu wrote:
-> > I'm afraid this is too early.  We don't want the region to be unmapped
-> > yet.  This should only happen after all memblock usages are finished
-> > which I don't think is the case yet.
-> 
-> No, it is not early. at that time memblock usage is done.
-> 
-> Also I tested one system with huge memory, duplicated the problem on
-> KVM that Sasha met.
-> my patch fixes the problem.
-> 
-> please check attached patch.
-> 
-> Also I add another patch to double check if there is any reference
-> with reserved.region.
-> so far there is no reference found.
+> Do you have a pointer to this code anywhere?  Lying about the license to
+> the kernel is a pretty blatent thing to do and I'd like to have some
+> people follow up on that issue.
 
-Thanks for checking it.  I was worried because of the re-reservation
-of reserved.regions after giving memory to the page allocator -
-ie. memblock_reserve_reserved_regions() call.  If memblock is done at
-that point, there's no reason to have that call at all.  It could be
-that that's just dead code.  If so, why aren't we freeing
-memory.regions?  Also, shouldn't we be clearing
-memblock.cnt/max/total_size/regions so that we know for sure that it's
-never used again?  What am I missing?
-
-Thanks.
+http://repo.cloudlinux.com/cloudlinux/5.8/updates-testing/x86_64/RPMS/kmod-lve-2.6.18-408.el5.lve1.1.64.2-1.1-10.7.3.el5.x86_64.rpm 
+- there's no corresponding SRPM in 
+http://repo.cloudlinux.com/cloudlinux/5.8/updates-testing/SRPMS/ and 
+upstream apparently refuse to provide source. Alex Lyashkov (Cc:ed) is 
+listed as module author in the metadata.
 
 -- 
-tejun
+Matthew Garrett | mjg59@srcf.ucam.org
