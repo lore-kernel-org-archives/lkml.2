@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142Ab2FVOij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:38:39 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40659 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932522Ab2FVOig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:38:36 -0400
-Date: Fri, 22 Jun 2012 15:42:19 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: gregkh <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: New tty ldisc lockup on 3.5-rc3
-Message-ID: <20120622154219.779965bb@pyramind.ukuu.org.uk>
-In-Reply-To: <1340373489.27031.40.camel@lappy>
-References: <1340373489.27031.40.camel@lappy>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1762294Ab2FVObI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:31:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33520 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762258Ab2FVObD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:31:03 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 14/16] nbd: Set SOCK_MEMALLOC for access to PFMEMALLOC reserves
+Date: Fri, 22 Jun 2012 15:30:41 +0100
+Message-Id: <1340375443-22455-15-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340375443-22455-1-git-send-email-mgorman@suse.de>
+References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [  242.702289]  [<ffffffff83696d15>] schedule+0x55/0x60
-> [  242.702921]  [<ffffffff81b2a026>] tty_ldisc_ref_wait+0x76/0xa0
-> [  242.703685]  [<ffffffff81b22624>] ? redirected_tty_write+0x84/0xc0
+Set SOCK_MEMALLOC on the NBD socket to allow access to PFMEMALLOC
+reserves so pages backed by NBD, particularly if swap related, can
+be cleaned to prevent the machine being deadlocked. It is still
+possible that the PFMEMALLOC reserves get depleted resulting in
+deadlock but this can be resolved by the administrator by increasing
+min_free_kbytes.
 
-These are all what I'd expect - the tty write is waiting to get access to
-the ldisc
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ drivers/block/nbd.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-> [  242.735143]  [<ffffffff81107d52>] ? prepare_to_wait+0x72/0x80
-> [  242.737060]  [<ffffffff81b29c50>] tty_ldisc_wait_idle+0x80/0xd0
-
-And the hangup is waiting for the line discipline to idle so it can
-complete a hangup triggered by vhangup in its syscall path. All seems
-sane so far. The ldisc code is behaving as I'd expect, you may also have
-a printk indicating who was waiting too long as we will log that, loop
-and retry if it fails in wait fo idle for too long
-
-The real question is "who has the reference" and none of your threads
-show anyone who does. That would suggest you are looking for something
-like a faulty error handling path in a driver or a buggy ldisc.
-
-What ldisc is attached to the line when it fails ?
-
-Alan
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 061427a75d..76bc96f 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -154,6 +154,7 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
+ 	struct msghdr msg;
+ 	struct kvec iov;
+ 	sigset_t blocked, oldset;
++	unsigned long pflags = current->flags;
+ 
+ 	if (unlikely(!sock)) {
+ 		dev_err(disk_to_dev(nbd->disk),
+@@ -167,8 +168,9 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
+ 	siginitsetinv(&blocked, sigmask(SIGKILL));
+ 	sigprocmask(SIG_SETMASK, &blocked, &oldset);
+ 
++	current->flags |= PF_MEMALLOC;
+ 	do {
+-		sock->sk->sk_allocation = GFP_NOIO;
++		sock->sk->sk_allocation = GFP_NOIO | __GFP_MEMALLOC;
+ 		iov.iov_base = buf;
+ 		iov.iov_len = size;
+ 		msg.msg_name = NULL;
+@@ -214,6 +216,7 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
+ 	} while (size > 0);
+ 
+ 	sigprocmask(SIG_SETMASK, &oldset, NULL);
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
+ 
+ 	return result;
+ }
+@@ -405,6 +408,7 @@ static int nbd_do_it(struct nbd_device *nbd)
+ 
+ 	BUG_ON(nbd->magic != NBD_MAGIC);
+ 
++	sk_set_memalloc(nbd->sock->sk);
+ 	nbd->pid = task_pid_nr(current);
+ 	ret = device_create_file(disk_to_dev(nbd->disk), &pid_attr);
+ 	if (ret) {
+-- 
+1.7.9.2
 
