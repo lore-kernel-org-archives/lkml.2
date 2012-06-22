@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab2FVWLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 18:11:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51428 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339Ab2FVWLX (ORCPT
+	id S932105Ab2FVWNa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 18:13:30 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52790 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab2FVWN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 18:11:23 -0400
-Date: Fri, 22 Jun 2012 15:11:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <dhillf@gmail.com>,
-        <rientjes@google.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
-        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH -V9 11/15] hugetlb/cgroup: Add charge/uncharge routines
- for hugetlb cgroup
-Message-Id: <20120622151121.917178eb.akpm@linux-foundation.org>
-In-Reply-To: <4FD9A79D.9030303@huawei.com>
-References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1339583254-895-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<4FD9A79D.9030303@huawei.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Jun 2012 18:13:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1340083249-16266-1-git-send-email-ying.huang@intel.com>
+References: <1340083249-16266-1-git-send-email-ying.huang@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 22 Jun 2012 16:13:05 -0600
+Message-ID: <CAErSpo4Hd7__n=Ffxk5be1SwVbPZ5PdkaeX4sbAV886PCjSJtg@mail.gmail.com>
+Subject: Re: [PATCH -v6 0/4] PCIe, PM, Add PCIe runtime D3cold support
+To: Huang Ying <ying.huang@intel.com>
+Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Zheng Yan <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jun 2012 16:58:05 +0800
-Li Zefan <lizefan@huawei.com> wrote:
+On Mon, Jun 18, 2012 at 11:20 PM, Huang Ying <ying.huang@intel.com> wrote:
+> Changelog:
+>
+> v6:
+>
+> - Disable device D3cold during system suspend/hibernate with a new method per Rafeal's comments
+>
+> v5:
+>
+> - Disable device D3cold during system suspend/hibernate per Rafael's comments
+>
+> v4:
+>
+> - Minors fixes based on comments from Rafael
+>
+> v3:
+>
+> - Drop device.power.power_must_be_on, use pci_dev.no_d3cold instead
+> - Drop device.power.power_off_user, use pci_dev.d3cold_allowed instead
+> - Use black list instead of white list in pcie port runtime support per request from Bjorn
+> - Various fixes based on comments from Rafael
+>
+> v2:
+>
+> - Refreshed based on comments from Rafael
+>
+> [PATCH -v6 1/4] ACPI, PM, Specify lowest allowed state for device sleep
+> [PATCH -v6 2/4] PCIe, PM, Add runtime PM support to PCIe port
+> [PATCH -v6 3/4] PCI, PM, Do not call pci_set_power_state with PCI_D3cold
+> [PATCH -v6 4/4] PCIe, PM, Add PCIe runtime D3cold support
 
-> > +int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
-> 
-> > +				 struct hugetlb_cgroup **ptr)
-> > +{
-> > +	int ret = 0;
-> > +	struct res_counter *fail_res;
-> > +	struct hugetlb_cgroup *h_cg = NULL;
-> > +	unsigned long csize = nr_pages * PAGE_SIZE;
-> > +
-> > +	if (hugetlb_cgroup_disabled())
-> > +		goto done;
-> > +	/*
-> > +	 * We don't charge any cgroup if the compound page have less
-> > +	 * than 3 pages.
-> > +	 */
-> > +	if (huge_page_order(&hstates[idx]) < HUGETLB_CGROUP_MIN_ORDER)
-> > +		goto done;
-> > +again:
-> > +	rcu_read_lock();
-> > +	h_cg = hugetlb_cgroup_from_task(current);
-> > +	if (!h_cg)
-> 
-> 
-> In no circumstances should h_cg be NULL.
-> 
+What kernel is this series based on?  Patch 4/4 doesn't apply to my
+tree.  This hunk fails because I don't have the "Some devices mustn't
+be in D3 ..." context:
 
-Aneesh?
+@@ -1754,6 +1841,10 @@ int pci_prepare_to_sleep(struct pci_dev
+        if (target_state == PCI_POWER_ERROR)
+                return -EIO;
+
++       /* D3cold during system suspend/hibernate is not supported */
++       if (target_state > PCI_D3hot)
++               target_state = PCI_D3hot;
++
+        /* Some devices mustn't be in D3 during system sleep */
+        if (target_state == PCI_D3hot &&
+                        (dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP))
