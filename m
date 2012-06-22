@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760762Ab2FVAMf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 20:12:35 -0400
-Received: from warthog.procyon.org.uk ([90.155.74.18]:53165 "EHLO
-	warthog.procyon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760721Ab2FVAMd (ORCPT
+	id S1760754Ab2FVAPf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 20:15:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47045 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760722Ab2FVAPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 20:12:33 -0400
-X-Greylist: delayed 3845 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Jun 2012 20:12:29 EDT
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1340306406.1773.59.camel@x61.thuisdomein>
-References: <1340306406.1773.59.camel@x61.thuisdomein>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: dhowells@redhat.com, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org, Richard Kuo <rkuo@codeaurora.org>,
-        linux-hexagon@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net, Chris Zankel <chris@zankel.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] Remove useless wrappers of asm-generic/cpumask.h
-X-Mailer: MH-E 8.3.1; nmh 1.3; GNU Emacs 24.1.50
-Date: Fri, 22 Jun 2012 00:06:52 +0100
-Message-ID: <32429.1340320012@redhat.com>
+	Thu, 21 Jun 2012 20:15:33 -0400
+From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+To: Rob Landley <rob@landley.net>, Bryan Wu <bryan.wu@canonical.com>,
+        Richard Purdie <rpurdie@rpsys.net>
+Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
+        milo kim <milo.kim@ti.com>, <linux-doc@vger.kernel.org>,
+        "G.Shark Jeong" <gshark.jeong@gmail.com>
+Subject: [PATCH 0/1 v4] leds: Add LED driver for lm3556 chip
+Date: Fri, 22 Jun 2012 09:12:05 +0900
+Message-Id: <1340323926-6826-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle <pebolle@tiscali.nl> wrote:
+From: "G.Shark Jeong" <gshark.jeong@gmail.com>
 
-> frv and xtensa both have a header (in their include/asm directories)
-> that are thin wrappers around asm-generic/cpumask.h. These wrappers are
-> useless, since that header doesn't exist. They are also unused (all
-> files including asm/cpumask.h are x86 specific).
-> 
-> hexagon and openrisc generate similar headers at build time (using a
-> generic-y entry in include/asm/Kbuild). These generated headers are
-> useless and unused too.
-> 
-> Remove these headers and generic-y entries.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+LM3556 :
+The LM3556 is a 4 MHz fixed-frequency synchronous boost
+converter plus 1.5A constant current driver for a high-current white LED.
+Datasheet: www.national.com/ds/LM/LM3556.pdf
 
-Acked-by: David Howells <dhowells@redhat.com> [FRV]
+Tested on OMAP4430
+
+G.Shark Jeong (1):
+  leds: Add LED driver for lm3556 chip
+
+ Documentation/leds/00-INDEX               |    2 +
+ Documentation/leds/leds-lm3556.txt        |   85 +++++
+ drivers/leds/Kconfig                      |    8 +
+ drivers/leds/Makefile                     |    1 +
+ drivers/leds/leds-lm3556.c                |  523 +++++++++++++++++++++++++++++
+ include/linux/platform_data/leds-lm3556.h |   50 +++
+ 6 files changed, 669 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/leds/leds-lm3556.txt
+ create mode 100644 drivers/leds/leds-lm3556.c
+ create mode 100644 include/linux/platform_data/leds-lm3556.h
+
+-- 
+1.7.5.4
+
