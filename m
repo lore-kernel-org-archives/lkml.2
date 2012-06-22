@@ -1,234 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761794Ab2FVMng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:43:36 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37112 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760241Ab2FVMne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:43:34 -0400
-Date: Fri, 22 Jun 2012 09:43:29 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 5/8] perf symbols: Do not use ELF's symbol binding
- constants
-Message-ID: <20120622124329.GG17747@infradead.org>
-References: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
- <1340343462-15556-6-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340343462-15556-6-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761934Ab2FVMrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:47:08 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:37783 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761543Ab2FVMrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 08:47:06 -0400
+Message-ID: <1340369098.2464.20.camel@falcor>
+Subject: deferring __fput()
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 22 Jun 2012 08:44:58 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062212-3534-0000-0000-000009A972CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jun 22, 2012 at 02:37:39PM +0900, Namhyung Kim escreveu:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> There's no need to use the ELF's internal value directly.
-> Define and use our own - it's required to eliminated the
-> dependency of libelf.
+Al,
 
-Why don't you set STB_GLOBAL, etc to the expected values when libelf is
-not present? That way no changes need to be made to symbol.c
+I really appreciate all of the work that has gone into making __fput()
+lockless - making the syscalls use get/put_light(), signal changes, and
+using Oleg's task_work_add() to defer processes. 
 
-Ditto for GELF_ST_BIND.
+Currently, when unmapping a file after closing it, I'm not getting the
+mmap_sem/i_mutex lockdep any more.  This seems due to Tyler Hick's
+commit 978d6d8 "vfs: Correctly set the dir i_mutex lockdep class",
+rather than the above changes.
 
-I.e. keep the subset of libelf.h that we use, providing those
-definitions on the poor man's libelf.h we should use when the "real
-thing" is not available.
+Although the mmap_sem/i_mutex lockdep doesn't exist anymore, before
+upstreaming IMA-appraisal, the issue with __fput() should probably be
+resolved. :)   What else needs to be done to make __fput() lockless?
+How can I help?
 
-- Arnaldo
- 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-top.c     |    5 ++---
->  tools/perf/ui/browsers/map.c |    5 ++---
->  tools/perf/util/symbol.c     |   40 ++++++++++++++++++++++++++--------------
->  tools/perf/util/symbol.h     |    4 ++++
->  4 files changed, 34 insertions(+), 20 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index e3cab5f088f8..e0977175f689 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -42,7 +42,6 @@
->  #include "util/debug.h"
->  
->  #include <assert.h>
-> -#include <elf.h>
->  #include <fcntl.h>
->  
->  #include <stdio.h>
-> @@ -181,8 +180,8 @@ static void ui__warn_map_erange(struct map *map, struct symbol *sym, u64 ip)
->  		    "Please report to linux-kernel@vger.kernel.org\n",
->  		    ip, map->dso->long_name, dso__symtab_origin(map->dso),
->  		    map->start, map->end, sym->start, sym->end,
-> -		    sym->binding == STB_GLOBAL ? 'g' :
-> -		    sym->binding == STB_LOCAL  ? 'l' : 'w', sym->name,
-> +		    sym->binding == SYMBIND_GLOBAL ? 'g' :
-> +		    sym->binding == SYMBIND_LOCAL  ? 'l' : 'w', sym->name,
->  		    err ? "[unknown]" : uts.machine,
->  		    err ? "[unknown]" : uts.release, perf_version_string);
->  	if (use_browser <= 0)
-> diff --git a/tools/perf/ui/browsers/map.c b/tools/perf/ui/browsers/map.c
-> index 98851d55a53e..f2059664b23f 100644
-> --- a/tools/perf/ui/browsers/map.c
-> +++ b/tools/perf/ui/browsers/map.c
-> @@ -1,5 +1,4 @@
->  #include "../libslang.h"
-> -#include <elf.h>
->  #include <newt.h>
->  #include <inttypes.h>
->  #include <sys/ttydefaults.h>
-> @@ -61,8 +60,8 @@ static void map_browser__write(struct ui_browser *self, void *nd, int row)
->  	ui_browser__set_percent_color(self, 0, current_entry);
->  	slsmg_printf("%*" PRIx64 " %*" PRIx64 " %c ",
->  		     mb->addrlen, sym->start, mb->addrlen, sym->end,
-> -		     sym->binding == STB_GLOBAL ? 'g' :
-> -		     sym->binding == STB_LOCAL  ? 'l' : 'w');
-> +		     sym->binding == SYMBIND_GLOBAL ? 'g' :
-> +		     sym->binding == SYMBIND_LOCAL  ? 'l' : 'w');
->  	width = self->width - ((mb->addrlen * 2) + 4);
->  	if (width > 0)
->  		slsmg_write_nstring(sym->name, width);
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index 38447ad42ad1..db807a8535d1 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -114,16 +114,16 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
->  		return SYMBOL_B;
->  
->  	/* Prefer a non weak symbol over a weak one */
-> -	a = syma->binding == STB_WEAK;
-> -	b = symb->binding == STB_WEAK;
-> +	a = syma->binding == SYMBIND_WEAK;
-> +	b = symb->binding == SYMBIND_WEAK;
->  	if (b && !a)
->  		return SYMBOL_A;
->  	if (a && !b)
->  		return SYMBOL_B;
->  
->  	/* Prefer a global symbol over a non global one */
-> -	a = syma->binding == STB_GLOBAL;
-> -	b = symb->binding == STB_GLOBAL;
-> +	a = syma->binding == SYMBIND_GLOBAL;
-> +	b = symb->binding == SYMBIND_GLOBAL;
->  	if (a && !b)
->  		return SYMBOL_A;
->  	if (b && !a)
-> @@ -259,8 +259,8 @@ static size_t symbol__fprintf(struct symbol *sym, FILE *fp)
->  {
->  	return fprintf(fp, " %" PRIx64 "-%" PRIx64 " %c %s\n",
->  		       sym->start, sym->end,
-> -		       sym->binding == STB_GLOBAL ? 'g' :
-> -		       sym->binding == STB_LOCAL  ? 'l' : 'w',
-> +		       sym->binding == SYMBIND_GLOBAL ? 'g' :
-> +		       sym->binding == SYMBIND_LOCAL  ? 'l' : 'w',
->  		       sym->name);
->  }
->  
-> @@ -609,12 +609,12 @@ struct process_kallsyms_args {
->  	struct dso *dso;
->  };
->  
-> -static u8 kallsyms2elf_type(char type)
-> +static u8 kallsyms_binding(char type)
->  {
->  	if (type == 'W')
-> -		return STB_WEAK;
-> +		return SYMBIND_WEAK;
->  
-> -	return isupper(type) ? STB_GLOBAL : STB_LOCAL;
-> +	return isupper(type) ? SYMBIND_GLOBAL : SYMBIND_LOCAL;
->  }
->  
->  static int map__process_kallsym_symbol(void *arg, const char *name,
-> @@ -628,7 +628,7 @@ static int map__process_kallsym_symbol(void *arg, const char *name,
->  		return 0;
->  
->  	sym = symbol__new(start, end - start + 1,
-> -			  kallsyms2elf_type(type), name);
-> +			  kallsyms_binding(type), name);
->  	if (sym == NULL)
->  		return -ENOMEM;
->  	/*
-> @@ -851,7 +851,7 @@ static int dso__load_perf_map(struct dso *dso, struct map *map,
->  		if (len + 2 >= line_len)
->  			continue;
->  
-> -		sym = symbol__new(start, size, STB_GLOBAL, line + len);
-> +		sym = symbol__new(start, size, SYMBIND_GLOBAL, line + len);
->  
->  		if (sym == NULL)
->  			goto out_delete_line;
-> @@ -1064,7 +1064,7 @@ dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
->  				 "%s@plt", elf_sym__name(&sym, symstrs));
->  
->  			f = symbol__new(plt_offset, shdr_plt.sh_entsize,
-> -					STB_GLOBAL, sympltname);
-> +					SYMBIND_GLOBAL, sympltname);
->  			if (!f)
->  				goto out_elf_end;
->  
-> @@ -1086,7 +1086,7 @@ dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
->  				 "%s@plt", elf_sym__name(&sym, symstrs));
->  
->  			f = symbol__new(plt_offset, shdr_plt.sh_entsize,
-> -					STB_GLOBAL, sympltname);
-> +					SYMBIND_GLOBAL, sympltname);
->  			if (!f)
->  				goto out_elf_end;
->  
-> @@ -1157,6 +1157,18 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
->  	return -1;
->  }
->  
-> +static int elf_sym__binding(const GElf_Sym *sym)
-> +{
-> +	switch (GELF_ST_BIND(sym->st_info)) {
-> +	case STB_GLOBAL:
-> +		return SYMBIND_GLOBAL;
-> +	case STB_WEAK:
-> +		return SYMBIND_WEAK;
-> +	default:
-> +		return SYMBIND_LOCAL;
-> +	}
-> +}
-> +
->  static int dso__swap_init(struct dso *dso, unsigned char eidata)
->  {
->  	static unsigned int const endian = 1;
-> @@ -1390,7 +1402,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
->  			elf_name = demangled;
->  new_symbol:
->  		f = symbol__new(sym.st_value, sym.st_size,
-> -				GELF_ST_BIND(sym.st_info), elf_name);
-> +				elf_sym__binding(&sym), elf_name);
->  		free(demangled);
->  		if (!f)
->  			goto out_elf_end;
-> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> index 295a9aa1cc78..bd91d2aa8262 100644
-> --- a/tools/perf/util/symbol.h
-> +++ b/tools/perf/util/symbol.h
-> @@ -50,6 +50,10 @@ char *strxfrchar(char *s, char from, char to);
->  
->  #define BUILD_ID_SIZE 20
->  
-> +#define SYMBIND_LOCAL	0
-> +#define SYMBIND_GLOBAL	1
-> +#define SYMBIND_WEAK	2
-> +
->  /** struct symbol - symtab entry
->   *
->   * @ignore - resolvable but tools ignore it (e.g. idle routines)
-> -- 
-> 1.7.10.2
+thanks,
+
+Mimi
+
+
+
+
+
+
