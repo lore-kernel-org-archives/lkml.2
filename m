@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762039Ab2FVMr2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:47:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60066 "EHLO
+	id S1762050Ab2FVNAd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 09:00:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40487 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761687Ab2FVMr0 (ORCPT
+	with ESMTP id S1761946Ab2FVNAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:47:26 -0400
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: [PATCH V2] memcg: cleanup typos in mem cgroup
-Date: Fri, 22 Jun 2012 20:46:39 +0800
-Message-Id: <1340369199-29535-1-git-send-email-liwp.linux@gmail.com>
+	Fri, 22 Jun 2012 09:00:32 -0400
+From: Daniel Lawrence <daniel@danielscottlawrence.com>
+To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        gregkh@linuxfoundation.org
+Cc: hsweeten@visionengravers.com, daniel@danielscottlawrence.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: comedi: fixed print_k coding style issue in acl7225b.c
+Date: Fri, 22 Jun 2012 23:00:20 +1000
+Message-Id: <1340370020-9662-1-git-send-email-daniel@danielscottlawrence.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+This is a patch to the acl7225b.c file that fixes up 2 print_k warnings
+found by the checkpatch.pl tool.
 
-Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+Signed-off-by: Daniel Lawrence <daniel@danielscottlawrence.com>
 ---
- mm/memcontrol.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/acl7225b.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 776fc57..503ddd0 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -115,8 +115,8 @@ static const char * const mem_cgroup_events_names[] = {
+diff --git a/drivers/staging/comedi/drivers/acl7225b.c b/drivers/staging/comedi/drivers/acl7225b.c
+index 4e4fc41..5392358 100644
+--- a/drivers/staging/comedi/drivers/acl7225b.c
++++ b/drivers/staging/comedi/drivers/acl7225b.c
+@@ -72,10 +72,10 @@ static int acl7225b_attach(struct comedi_device *dev,
  
- /*
-  * Per memcg event counter is incremented at every pagein/pageout. With THP,
-- * it will be incremated by the number of pages. This counter is used for
-- * for trigger some periodic events. This is straightforward and better
-+ * it will be incremented by the number of pages. This counter is used to
-+ * trigger some periodic events. This is straightforward and better
-  * than using jiffies etc. to handle periodic memcg event.
-  */
- enum mem_cgroup_events_target {
-@@ -678,7 +678,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
-  *
-  * If there are kernel internal actions which can make use of some not-exact
-  * value, and reading all cpu value can be performance bottleneck in some
-- * common workload, threashold and synchonization as vmstat[] should be
-+ * common workload, threshold and synchonization as vmstat[] should be
-  * implemented.
-  */
- static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
-@@ -2213,7 +2213,6 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 	if (mem_cgroup_wait_acct_move(mem_over_limit))
- 		return CHARGE_RETRY;
- 
--	/* If we don't need to call oom-killer at el, return immediately */
- 	if (!oom_check)
- 		return CHARGE_NOMEM;
- 	/* check OOM */
-@@ -2291,7 +2290,7 @@ again:
- 		 * In that case, "memcg" can point to root or p can be NULL with
- 		 * race with swapoff. Then, we have small risk of mis-accouning.
- 		 * But such kind of mis-account by race always happens because
--		 * we don't have cgroup_mutex(). It's overkill and we allo that
-+		 * we don't have cgroup_mutex(). It's overkill and we allow that
- 		 * small race, here.
- 		 * (*) swapoff at el will charge against mm-struct not against
- 		 * task-struct. So, mm->owner can be NULL.
-@@ -2396,7 +2395,7 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
- }
- 
- /*
-- * Cancel chrages in this cgroup....doesn't propagate to parent cgroup.
-+ * Cancel charges in this cgroup....doesn't propagate to parent cgroup.
-  * This is useful when moving usage to parent cgroup.
-  */
- static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
+ 	iobase = it->options[0];
+ 	iorange = this_board->io_range;
+-	printk(KERN_INFO "comedi%d: acl7225b: board=%s 0x%04x\n", dev->minor,
++	pr_info("comedi%d: acl7225b: board=%s 0x%04x\n", dev->minor,
+ 	       this_board->name, iobase);
+ 	if (!request_region(iobase, iorange, "acl7225b")) {
+-		printk(KERN_ERR "comedi%d: request_region failed - I/O port conflict\n",
++		pr_err("comedi%d: request_region failed - I/O port conflict\n",
+ 			dev->minor);
+ 		return -EIO;
+ 	}
 -- 
 1.7.9.5
 
