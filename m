@@ -1,488 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab2FVODS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 10:03:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39089 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762196Ab2FVODR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 10:03:17 -0400
-Message-ID: <1340373782.18025.74.camel@twins>
-Subject: RE: [PATCH] sched: Folding nohz load accounting more accurate
-From: Peter Zijlstra <peterz@infradead.org>
-To: Doug Smythies <dsmythies@telus.net>
-Cc: "'Yong Zhang'" <yong.zhang0@gmail.com>,
-        "'Charles Wang'" <muming.wq@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Ingo Molnar'" <mingo@redhat.com>, "'Tao Ma'" <tm@tao.ma>,
-        =?UTF-8?Q?=27=E5=90=AB=E9=BB=9B=27?= <handai.szj@taobao.com>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>
-Date: Fri, 22 Jun 2012 16:03:02 +0200
-In-Reply-To: <002301cd4f64$17a055c0$46e10140$@net>
-References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
-			 <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>
-			 <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com>
-			 <1340035417.15222.95.camel@twins> <20120619060824.GA31684@zhy>
-		 <1340097532.21745.19.camel@twins> <000001cd4e33$496f6c30$dc4e4490$@net>
-	 <1340185528.21745.86.camel@twins> <002301cd4f64$17a055c0$46e10140$@net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932971Ab2FVOMS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 10:12:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762216Ab2FVOMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 10:12:17 -0400
+Date: Fri, 22 Jun 2012 10:12:11 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Josh Hunt <joshhunt00@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, tj@kernel.org
+Subject: Re: multi-second application stall in open()
+Message-ID: <20120622141211.GB18409@redhat.com>
+References: <CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
+ <20120307162851.GC13430@redhat.com>
+ <4F57AF4A.6080703@kernel.dk>
+ <CAKA=qzak6N-6oHVjDozJ6KLMSWXEgzZf1xaC_1cgnoaUCyw8Ag@mail.gmail.com>
+ <CAKA=qzaHJ0OcbvtT-mwKBUBvzPkxE4r-bW6gDvicKhoQeyFWEg@mail.gmail.com>
+ <20120308234016.GA925@redhat.com>
+ <CAKA=qzbsL9UVYLZ3=hoT-1jfp=v=_Sr=h+YeHu0qAA=Ko_7P6w@mail.gmail.com>
+ <CAKA=qzbqoK5_3GXM8DZhbQ5cTU=DTg5DFFJ+46OrD7y=XrMLTg@mail.gmail.com>
+ <20120621203217.GC14095@redhat.com>
+ <CAKA=qzYmh8DD7J__WWDyX_2fFQbSx+M=k4ttqRTD3M8nao-WVg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKA=qzYmh8DD7J__WWDyX_2fFQbSx+M=k4ttqRTD3M8nao-WVg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug, Charles,
+On Thu, Jun 21, 2012 at 04:11:18PM -0500, Josh Hunt wrote:
 
-Can you both confirm that the below patch is what you tested and we
-should finally be able to close this issue?
+[..]
+> > say put some logs in select_queue() and see where did it bail out. That
+> 
+> Well I did add some instrumentation in select_queue, the "keep_queue
+> st->count:%d, dispatch:%u" line I mentioned above, but I will add more
+> and retest.
 
+Actually before the stall we expired the current queue. That means there
+is no active queue in cfq now. So keep_queue trace will help only if there
+is an active queue and we decide to keep that queue. 
 
----
-Subject: sched, nohz: Rewrite load-avg computation -- again
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri Jun 22 15:52:09 CEST 2012
+  8,0    0        0  4466.139959742     0  m   N cfq20720 del_from_rr
+  8,0    0        0  4466.139963653     0  m   N cfq schedule dispatch
+  8,0    1  1499521  4466.791207736  7570  A   R 7258191 + 8 <- (8,1)
+7258128
 
-Thanks to Charles Wang for spotting the defects in the current code:
+Thing to figure out here is that why cfq is not picking a new queue
+despite the fact there are pending requests and there is no active
+queue (hence cfq is not obiviously not seeing that queue).
 
- - If we go idle during the sample window -- after sampling, we get a
-   negative bias because we can negate our own sample.
+> 
+> I'm attaching a similar run with no stalls when I set slice_idle to 0.
 
- - If we wake up during the sample window we get a positive bias
-   because we push the sample to a known active period.
+At this point I am not sure why slice_idle=0 is not seeing this issue. It
+does not see to be directly related to idling. Because when stall happens
+CFQ is not idling on anything. It has expired active queue and for some
+reason it thinks that I have no more requests to dispatch, so I have
+nothing to do until a new request comes in.
 
-So rewrite the entire nohz load-avg muck once again, now adding
-copious documentation to the code.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Reported-and-tested-by: Doug Smythies <dsmythies@telus.net>
-Reported-and-tested-by: Charles Wang <muming.wq@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-gf8b3sh96a50dken51axdjdk@git.kernel.org
----
- include/linux/sched.h    |    8 +
- kernel/sched/core.c      |  275 ++++++++++++++++++++++++++++++++++-------------
- kernel/sched/idle_task.c |    1 
- kernel/sched/sched.h     |    2 
- kernel/time/tick-sched.c |    2 
- 5 files changed, 213 insertions(+), 75 deletions(-)
-
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1928,6 +1928,14 @@ static inline int set_cpus_allowed_ptr(s
- }
- #endif
- 
-+#ifdef CONFIG_NO_HZ
-+void calc_load_enter_idle(void);
-+void calc_load_exit_idle(void);
-+#else
-+static inline void calc_load_enter_idle(void) { }
-+static inline void calc_load_exit_idle(void) { }
-+#endif /* CONFIG_NO_HZ */
-+
- #ifndef CONFIG_CPUMASK_OFFSTACK
- static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
- {
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2162,11 +2162,73 @@ unsigned long this_cpu_load(void)
- }
- 
- 
-+/*
-+ * Global load-average calculations
-+ *
-+ * We take a distributed and async approach to calculating the global load-avg
-+ * in order to minimize overhead.
-+ *
-+ * The global load average is an exponentially decaying average of nr_running +
-+ * nr_uninterruptible.
-+ *
-+ * Once every LOAD_FREQ:
-+ *
-+ *   nr_active = 0;
-+ *   for_each_possible_cpu(cpu)
-+ *   	nr_active += cpu_of(cpu)->nr_running + cpu_of(cpu)->nr_uninterruptible;
-+ *
-+ *   avenrun[n] = avenrun[0] * exp_n + nr_active * (1 - exp_n)
-+ *
-+ * Due to a number of reasons the above turns in the mess below:
-+ *
-+ *  - for_each_possible_cpu() is prohibitively expensive on machines with
-+ *    serious number of cpus, therefore we need to take a distributed approach
-+ *    to calculating nr_active.
-+ *
-+ *        \Sum_i x_i(t) = \Sum_i x_i(t) - x_i(t_0) | x_i(t_0) := 0
-+ *                      = \Sum_i { \Sum_j=1 x_i(t_j) - x_i(t_j-1) }
-+ *
-+ *    So assuming nr_active := 0 when we start out -- true per definition, we
-+ *    can simply take per-cpu deltas and fold those into a global accumulate
-+ *    to obtain the same result. See calc_load_fold_active().
-+ *
-+ *    Furthermore, in order to avoid synchronizing all per-cpu delta folding
-+ *    across the machine, we assume 10 ticks is sufficient time for every
-+ *    cpu to have completed this task.
-+ *
-+ *    This places an upper-bound on the IRQ-off latency of the machine. Then
-+ *    again, being late doesn't loose the delta, just wrecks the sample.
-+ *
-+ *  - cpu_rq()->nr_uninterruptible isn't accurately tracked per-cpu because
-+ *    this would add another cross-cpu cacheline miss and atomic operation
-+ *    to the wakeup path. Instead we increment on whatever cpu the task ran
-+ *    when it went into uninterruptible state and decrement on whatever cpu
-+ *    did the wakeup. This means that only the sum of nr_uninterruptible over
-+ *    all cpus yields the correct result.
-+ *
-+ *  This covers the NO_HZ=n code, for extra head-aches, see the comment below.
-+ */
-+
- /* Variables and functions for calc_load */
- static atomic_long_t calc_load_tasks;
- static unsigned long calc_load_update;
- unsigned long avenrun[3];
--EXPORT_SYMBOL(avenrun);
-+EXPORT_SYMBOL(avenrun); /* should be removed */
-+
-+/**
-+ * get_avenrun - get the load average array
-+ * @loads:	pointer to dest load array
-+ * @offset:	offset to add
-+ * @shift:	shift count to shift the result left
-+ *
-+ * These values are estimates at best, so no need for locking.
-+ */
-+void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
-+{
-+	loads[0] = (avenrun[0] + offset) << shift;
-+	loads[1] = (avenrun[1] + offset) << shift;
-+	loads[2] = (avenrun[2] + offset) << shift;
-+}
- 
- static long calc_load_fold_active(struct rq *this_rq)
- {
-@@ -2183,6 +2245,9 @@ static long calc_load_fold_active(struct
- 	return delta;
- }
- 
-+/*
-+ * a1 = a0 * e + a * (1 - e)
-+ */
- static unsigned long
- calc_load(unsigned long load, unsigned long exp, unsigned long active)
- {
-@@ -2194,30 +2259,118 @@ calc_load(unsigned long load, unsigned l
- 
- #ifdef CONFIG_NO_HZ
- /*
-- * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
-+ * Handle NO_HZ for the global load-average.
-+ *
-+ * Since the above described distributed algorithm to compute the global
-+ * load-average relies on per-cpu sampling from the tick, it is affected by
-+ * NO_HZ.
-+ *
-+ * The basic idea is to fold the nr_active delta into a global idle-delta upon
-+ * entering NO_HZ state such that we can include this as an 'extra' cpu delta
-+ * when we read the global state.
-+ *
-+ * Obviously reality has to ruin such a delightfully simple scheme:
-+ *
-+ *  - When we go NO_HZ idle during the window, we can negate our sample
-+ *    contribution, causing under-accounting.
-+ *
-+ *    We avoid this by keeping two idle-delta counters and flipping them
-+ *    when the window starts, thus separating old and new NO_HZ load.
-+ *
-+ *    The only trick is the slight shift in index flip for read vs write.
-+ *
-+ *        0s            5s            10s           15s
-+ *          +10           +10           +10           +10
-+ *        |-|-----------|-|-----------|-|-----------|-|
-+ *    r:0 0 1           1 0           0 1           1 0
-+ *    w:0 1 1           0 0           1 1           0 0
-+ *
-+ *    This ensures we'll fold the old idle contribution in this window while
-+ *    accumlating the new one.
-+ *
-+ *  - When we wake up from NO_HZ idle during the window, we push up our
-+ *    contribution, since we effectively move our sample point to a known
-+ *    busy state.
-+ *
-+ *    This is solved by pushing the window forward, and thus skipping the
-+ *    sample, for this cpu (effectively using the idle-delta for this cpu which
-+ *    was in effect at the time the window opened). This also solves the issue
-+ *    of having to deal with a cpu having been in NOHZ idle for multiple
-+ *    LOAD_FREQ intervals.
-  *
-  * When making the ILB scale, we should try to pull this in as well.
-  */
--static atomic_long_t calc_load_tasks_idle;
-+static atomic_long_t calc_load_idle[2];
-+static int calc_load_idx;
-+
-+static inline int calc_load_write_idx(void)
-+{
-+	int idx = calc_load_idx;
- 
--void calc_load_account_idle(struct rq *this_rq)
-+	/*
-+	 * See calc_global_nohz(), if we observe the new index, we also
-+	 * need to observe the new update time.
-+	 */
-+	smp_rmb();
-+
-+	/*
-+	 * If the folding window started, make sure we start writing in the
-+	 * next idle-delta.
-+	 */
-+	if (!time_before(jiffies, calc_load_update))
-+		idx++;
-+
-+	return idx & 1;
-+}
-+
-+static inline int calc_load_read_idx(void)
- {
-+	return calc_load_idx & 1;
-+}
-+
-+void calc_load_enter_idle(void)
-+{
-+	struct rq *this_rq = this_rq();
- 	long delta;
- 
-+	/*
-+	 * We're going into NOHZ mode, if there's any pending delta, fold it
-+	 * into the pending idle delta.
-+	 */
- 	delta = calc_load_fold_active(this_rq);
--	if (delta)
--		atomic_long_add(delta, &calc_load_tasks_idle);
-+	if (delta) {
-+		int idx = calc_load_write_idx();
-+		atomic_long_add(delta, &calc_load_idle[idx]);
-+	}
- }
- 
--static long calc_load_fold_idle(void)
-+void calc_load_exit_idle(void)
- {
--	long delta = 0;
-+	struct rq *this_rq = this_rq();
-+
-+	/*
-+	 * If we're still before the sample window, we're done.
-+	 */
-+	if (time_before(jiffies, this_rq->calc_load_update))
-+		return;
- 
- 	/*
--	 * Its got a race, we don't care...
-+	 * We woke inside or after the sample window, this means we're already
-+	 * accounted through the nohz accounting, so skip the entire deal and
-+	 * sync up for the next window.
- 	 */
--	if (atomic_long_read(&calc_load_tasks_idle))
--		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
-+	this_rq->calc_load_update = calc_load_update;
-+       	if (time_before(jiffies, this_rq->calc_load_update + 10))
-+		this_rq->calc_load_update += LOAD_FREQ;
-+}
-+
-+static long calc_load_fold_idle(void)
-+{
-+	int idx = calc_load_read_idx();
-+	long delta = 0;
-+
-+	if (atomic_long_read(&calc_load_idle[idx]))
-+		delta = atomic_long_xchg(&calc_load_idle[idx], 0);
- 
- 	return delta;
- }
-@@ -2303,66 +2456,39 @@ static void calc_global_nohz(void)
- {
- 	long delta, active, n;
- 
--	/*
--	 * If we crossed a calc_load_update boundary, make sure to fold
--	 * any pending idle changes, the respective CPUs might have
--	 * missed the tick driven calc_load_account_active() update
--	 * due to NO_HZ.
--	 */
--	delta = calc_load_fold_idle();
--	if (delta)
--		atomic_long_add(delta, &calc_load_tasks);
-+	if (!time_before(jiffies, calc_load_update + 10)) {
-+		/*
-+		 * Catch-up, fold however many we are behind still
-+		 */
-+		delta = jiffies - calc_load_update - 10;
-+		n = 1 + (delta / LOAD_FREQ);
-+
-+		active = atomic_long_read(&calc_load_tasks);
-+		active = active > 0 ? active * FIXED_1 : 0;
-+
-+		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
-+		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
-+		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
- 
--	/*
--	 * It could be the one fold was all it took, we done!
--	 */
--	if (time_before(jiffies, calc_load_update + 10))
--		return;
-+		calc_load_update += n * LOAD_FREQ;
-+	}
- 
- 	/*
--	 * Catch-up, fold however many we are behind still
-+	 * Flip the idle index...
-+	 *
-+	 * Make sure we first write the new time then flip the index, so that
-+	 * calc_load_write_idx() will see the new time when it reads the new
-+	 * index, this avoids a double flip messing things up.
- 	 */
--	delta = jiffies - calc_load_update - 10;
--	n = 1 + (delta / LOAD_FREQ);
--
--	active = atomic_long_read(&calc_load_tasks);
--	active = active > 0 ? active * FIXED_1 : 0;
--
--	avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
--	avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
--	avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
--
--	calc_load_update += n * LOAD_FREQ;
--}
--#else
--void calc_load_account_idle(struct rq *this_rq)
--{
-+	smp_wmb();
-+	calc_load_idx++;
- }
-+#else /* !CONFIG_NO_HZ */
- 
--static inline long calc_load_fold_idle(void)
--{
--	return 0;
--}
--
--static void calc_global_nohz(void)
--{
--}
--#endif
-+static inline long calc_load_fold_idle(void) { return 0; }
-+static inline void calc_global_nohz(void) { }
- 
--/**
-- * get_avenrun - get the load average array
-- * @loads:	pointer to dest load array
-- * @offset:	offset to add
-- * @shift:	shift count to shift the result left
-- *
-- * These values are estimates at best, so no need for locking.
-- */
--void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
--{
--	loads[0] = (avenrun[0] + offset) << shift;
--	loads[1] = (avenrun[1] + offset) << shift;
--	loads[2] = (avenrun[2] + offset) << shift;
--}
-+#endif /* CONFIG_NO_HZ */
- 
- /*
-  * calc_load - update the avenrun load estimates 10 ticks after the
-@@ -2370,11 +2496,18 @@ void get_avenrun(unsigned long *loads, u
-  */
- void calc_global_load(void)
- {
--	long active;
-+	long active, delta;
- 
- 	if (time_before(jiffies, calc_load_update + 10))
- 		return;
- 
-+	/*
-+	 * Fold the 'old' idle-delta to include all NO_HZ cpus.
-+	 */
-+	delta = calc_load_fold_idle();
-+	if (delta)
-+		atomic_long_add(delta, &calc_load_tasks);
-+
- 	active = atomic_long_read(&calc_load_tasks);
- 	active = active > 0 ? active * FIXED_1 : 0;
- 
-@@ -2385,12 +2518,7 @@ void calc_global_load(void)
- 	calc_load_update += LOAD_FREQ;
- 
- 	/*
--	 * Account one period with whatever state we found before
--	 * folding in the nohz state and ageing the entire idle period.
--	 *
--	 * This avoids loosing a sample when we go idle between 
--	 * calc_load_account_active() (10 ticks ago) and now and thus
--	 * under-accounting.
-+	 * In case we idled for multiple LOAD_FREQ intervals, catch up in bulk.
- 	 */
- 	calc_global_nohz();
- }
-@@ -2407,7 +2535,6 @@ static void calc_load_account_active(str
- 		return;
- 
- 	delta  = calc_load_fold_active(this_rq);
--	delta += calc_load_fold_idle();
- 	if (delta)
- 		atomic_long_add(delta, &calc_load_tasks);
- 
-@@ -2415,6 +2542,10 @@ static void calc_load_account_active(str
- }
- 
- /*
-+ * End of global load-average stuff
-+ */
-+
-+/*
-  * The exact cpuload at various idx values, calculated at every tick would be
-  * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
-  *
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -25,7 +25,6 @@ static void check_preempt_curr_idle(stru
- static struct task_struct *pick_next_task_idle(struct rq *rq)
- {
- 	schedstat_inc(rq, sched_goidle);
--	calc_load_account_idle(rq);
- 	return rq->idle;
- }
- 
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -961,8 +961,6 @@ static inline u64 sched_avg_period(void)
- 	return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2;
- }
- 
--void calc_load_account_idle(struct rq *this_rq);
--
- #ifdef CONFIG_SCHED_HRTICK
- 
- /*
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -373,6 +373,7 @@ static ktime_t tick_nohz_stop_sched_tick
- 		 */
- 		if (!ts->tick_stopped) {
- 			select_nohz_load_balancer(1);
-+			calc_load_enter_idle();
- 
- 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
- 			ts->tick_stopped = 1;
-@@ -572,6 +573,7 @@ static void tick_nohz_restart_sched_tick
- 	tick_do_update_jiffies64(now);
- 	update_cpu_load_nohz();
- 
-+	calc_load_exit_idle();
- 	touch_softlockup_watchdog();
- 	/*
- 	 * Cancel the scheduled timer and restore the tick
-
+Thanks
+Vivek
