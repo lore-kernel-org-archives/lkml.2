@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760919Ab2FVBlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 21:41:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64222 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab2FVBlD (ORCPT
+	id S1760931Ab2FVBpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 21:45:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39704 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760911Ab2FVBo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 21:41:03 -0400
-Date: Thu, 21 Jun 2012 18:40:58 -0700
-From: "'Greg KH'" <gregkh@linuxfoundation.org>
-To: Alexis Cortes <alexis.cortes@ti.com>
-Cc: "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "'Quach, Brian'" <brian.quach@ti.com>,
-        "'Llamas, Jorge'" <jorge.llamas@ti.com>
-Subject: Re: [PATCH] usb: host: xhci: Compliance Mode port recovery
-Message-ID: <20120622014058.GA3220@kroah.com>
-References: <002801cd4e68$a4b4f3a0$ee1edae0$@cortes@ti.com>
- <20120619223928.GD21104@xanatos>
- <004101cd4f33$755e8eb0$601bac10$@cortes@ti.com>
- <20120621000734.GB32743@xanatos>
- <20120621003232.GD3255@kroah.com>
- <4fe35a44.82143c0a.4e83.62a8SMTPIN_ADDED@mx.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4fe35a44.82143c0a.4e83.62a8SMTPIN_ADDED@mx.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Jun 2012 21:44:59 -0400
+Date: Thu, 21 Jun 2012 18:45:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patch 3.5-rc3] mm, mempolicy: fix mbind() to do synchronous
+ migration
+Message-Id: <20120621184536.6dd97746.akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFzPXMD3N3Oy-om6utDCQYmrBDnDgdqpVC5cgKe-v6uZ3w@mail.gmail.com>
+References: <alpine.DEB.2.00.1206201758500.3068@chino.kir.corp.google.com>
+	<20120621164606.4ae1a71d.akpm@linux-foundation.org>
+	<CA+55aFzPXMD3N3Oy-om6utDCQYmrBDnDgdqpVC5cgKe-v6uZ3w@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A: No.
-Q: Should I include quotations after my reply?
+On Thu, 21 Jun 2012 17:46:52 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-http://daringfireball.net/2007/07/on_top
+> On Thu, Jun 21, 2012 at 4:46 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> >
+> > I can't really do anything with this patch - it's a bug added by
+> > Peter's "mm/mpol: Simplify do_mbind()" and added to linux-next via one
+> > of Ingo's trees.
+> >
+> > And I can't cleanly take the patch over as it's all bound up with the
+> > other changes for sched/numa balancing.
+> 
+> I took the patch, it looked obviously correct (passing in a boolean
+> was clearly crap).
 
-On Thu, Jun 21, 2012 at 12:31:12PM -0500, Alexis Cortes wrote:
-> As Sarah proposed, we certainly can apply this patch as a module parameter
-> disabled by default and let know our clients that we know are using this
-> re-driver to enable the feature to avoid the issue.
+Ah, OK, the bug was actually "retained" by "mm/mpol: Simplify do_mbind()".
 
-Who is a "client"?  And who is going to modify the installer of their
-distro in order to automatically enable this option?
+I do still ask what the plans are for that patchset..
 
-That's the problem with options, you never know if you need to turn it
-on or not, so I _really_ don't ever want to add any more, the kernel
-should "just know" if it needs to be enabled or not.  Surely there is
-some way for the kernel to determine if this is your code/hardware
-running on the platform or not, right?  No signature in the system
-anywhere?  PCI id? DMI table?  ACPI table?  BIOS signature?  Something
-else?
+> I wonder if I should make sparse warn about any casts to/from enums.
+> They tend to always be wrong.
 
-You really don't want to be responsible for dealing with 10+ distros in
-telling them when they should, or should not, enable this option.  So
-please don't create it in the first place.
+I think it would be worth trying, see how much fallout there is.  Also
+casts from "enum a" to "enum b".  We've had a few of those,
+unintentionally.
 
-greg k-h
+And casts to/from bool, perhaps.  To squish the warning we'd do things
+like a_bool = !!a_int.  That generates extra code, but gcc internally
+generates extra code for a_bool = a_int anyway, and a quick test here
+indicates that the generated code is identical (testl/setne).
+
+It would be nice to find a way of converting an integer which is known
+to be 1 or 0 into a bool without generating any code, but I haven't
+found a way of tricking the compiler into doing that.  It's all a bit
+of a downside to using bool at all.
