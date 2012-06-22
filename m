@@ -1,161 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761542Ab2FVHmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 03:42:04 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:52009 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab2FVHmC (ORCPT
+	id S1761572Ab2FVHxD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 03:53:03 -0400
+Received: from protonic.xs4all.nl ([213.84.116.84]:20075 "EHLO
+	protonic.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761557Ab2FVHxA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 03:42:02 -0400
-Date: Fri, 22 Jun 2012 09:41:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [patch 3.5-rc3] mm, mempolicy: fix mbind() to do synchronous
- migration
-Message-ID: <20120622074156.GA23682@gmail.com>
-References: <alpine.DEB.2.00.1206201758500.3068@chino.kir.corp.google.com>
- <20120621164606.4ae1a71d.akpm@linux-foundation.org>
- <CA+55aFzPXMD3N3Oy-om6utDCQYmrBDnDgdqpVC5cgKe-v6uZ3w@mail.gmail.com>
- <20120621184536.6dd97746.akpm@linux-foundation.org>
- <20120622071243.GB22167@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120622071243.GB22167@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Jun 2012 03:53:00 -0400
+Date: Fri, 22 Jun 2012 09:53:12 +0200
+From: David Jander <david.jander@protonic.nl>
+To: =?UTF-8?B?SmVhbi1GcmFuw6dvaXM=?= Dagenais 
+	<jeff.dagenais@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: gpio: pca953x: interrupt feature unreliable
+Message-ID: <20120622095312.6fda6ae1@archvile>
+In-Reply-To: <D58154AE-36F8-45BD-BBB3-CF1AC3F4E610@gmail.com>
+References: <8495990E-0B78-4B47-A00D-36D45DC3450F@gmail.com>
+	<CACRpkdZZmxqus6jujtq43qD_d_dHxi2wORmC18kGsD3aB1jjAQ@mail.gmail.com>
+	<20120604091127.0f95a85c@archvile>
+	<73B37CBF-9E2A-49F5-9CA9-8CFBEF3666D6@gmail.com>
+	<20120620170126.311b8eef@archvile>
+	<9C01B236-B051-40D2-9805-F8B8F308827D@gmail.com>
+	<20120621091054.57a69b8c@archvile>
+	<D58154AE-36F8-45BD-BBB3-CF1AC3F4E610@gmail.com>
+Organization: Protonic Holland
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+Dear Jean-François,
 
-> > I do still ask what the plans are for that patchset..
+On Thu, 21 Jun 2012 15:34:07 -0400
+Jean-François Dagenais <jeff.dagenais@gmail.com> wrote:
+> Uuuh, I'm good myself thanks ;) but the problem is this is not a reliable
+> interrupt controller (in the general sense), especially the way the current
+> driver works with it.
+
+I still think that the real problem is with the chip itself. The driver should
+just do it's best, and if the problem can't be worked around in the driver,
+the driver should stay neutral IMHO.
+In theory the PCA953x is still an edge triggered interrupt controller, but its
+own interrupt output is level.
+
+> > ...
+> > Easy: Just release the button and push it again ;-)
+> > (I mentioned our application was a gpio_keys keyboard in my previous e-mail.)
 > 
-> Somewhat off topic, but the main sched/numa objections were 
-> over the mbind/etc. syscalls and the extra configuration space 
-> - we dropped those bits and just turned it all into an 
-> improved NUMA scheduling feature, as suggested by Peter and me 
-> in the original discussion.
+> Yeah I had missed that you were doing one key per GPIO... But that's indeed why
+> you are fine with it. You are using it more like a keyboard driver with an
+> interrupt controller. If you use the 953x as an actual interrupt "controller"
+> for a client that has a hardware-logic controlled INT signal, it won't be
+> reliable for such an application (with the current driver state), contrary to
+> what the driver initially suggests.
+
+I insist. The driver can't really do much about it.
+
+> > That's the kind of applications you can use the PCA953x as interrupt
+> > controller for. My patches incorporated support for device-tree bindings and a
+> > few fixes for both gpio-pca953x.c and gpio_keys.c, so it became possible to do
+> > just this in a device-tree:
+> > 		...
+> > 
+> > Get the idea? There is no other code involved, and it "just works"! I am
+> > absolutely amazed by this marvel ;-)
 > 
-> There were no objections to that approach so the reworked NUMA 
-> scheduling/balancing scheme is now in the scheduler tree 
-> (tip:sched/core).
+> I wasn't familiar with device-tree, thanks for this intro, I will look into
+
+Be prepared, a device-tree is coming to a SoC near you any day... unless you
+are stuck in the x86 world, where such marvel is not likely to appear anytime
+soon ;-)
+
+> it more. Not being familiar, I couldn't make this part out properly: are each
+> of your keys using their own nested IRQ?
+
+Yes!
+Unfortunately gpio_keys.c requests edge-based IRQ's, so if you eliminate edge
+functionality from the pca953x driver, my setup will stop working.
+And the pca953x really _is_ an edge based interrupt controller (if one really
+uses it as such), although a fairly limited (broken if you must) one.
+
+> >> Since the timings of the slave and the OS are factors here, it's quite hard to
+> >> reproduce. Even with the best intention and diligence at design, a race is
+> >> possible.
+> > 
+> > Yes, of course. But that is a shortcoming of the extremely simple design of
+> > PCA953x gpio expanders. There is not much we can do about this in the driver.
 > 
-> The mbind/etc. syscall changes and all the related cleanups, 
-> speedups and reorganization of the MM code are still in limbo.
+> Well, what about my original suggestion? I know you said you agree with serving
+> on only LEVEL, but it had a few other specifics... I guess at this point, my
+
+Sorry. I was wrong. It is not a LEVEL interrupt controller. It doesn't work as
+such. Besides, as I said above, this would break my setup, although the
+decice-tree where we use this functionality is not mainlined, so I am probably
+not allowed to complain about that :-(
+
+> idea would have to be backed by tests and a patch. (Hearing you tell me: Yeah
+> JF, why don't you put your money where your mouth is!? ;)
+
+I wasn't about to say that.
+
+> > Maybe we could place a warning in the documentation about the shortcomings of
+> > these chips...?
 > 
-> I dropped them with the rest of tip:sched/numa as nobody from 
-> the MM side expressed much interest in them and I wanted to 
-> keep things simple and not carry objected-to commits.
+> Ok, now we are starting to agree! ;-) Short of an actual mod patch to the
+> driver with results, I think this is a minimum. It could save a lot of people
+> a lot of time, and perhaps save some aggravation too.
+> 
+> > Never mind. I am a hardware designer myself and we all make such mistakes.
+> > Just try not to blame someone or something else for it publicly ;-)
+> 
+> I'm sorry if you felt my interventions here had anything to do with blame,
+> to you or anyone. I was merely acting on the behalf of helping others avoid
 
->From your mail it appears that you weren't aware that this was 
-all queued up (clearly our fault) - so here's a quick status 
-dump, please let us know what you think and whether we can keep 
-them.
+Well, to me it looked like you wanted to blame the pca953x driver for your
+problem with the chip....
 
-The ones with mm/ effect that we kept are these, which are 
-needed for scheduler directed opportunistic/lazy memory 
-migration between nodes:
+> encountering issues with this, and saving other engineers some time from my
+> own experiences. And in the spirit of giving back since I take so much from
+> the open source community. I know it sounds corny, but it's still true.
+> 
+> > 
+> > Feel free to improve the driver... but please do not remove features that work
+> > for others.
+> 
+> Indeed. Hence why I try to get feedback about my improvement idea. It has
+> effects on current users since the interrupt clients would have to adjust
+> since instead of providing EDGE based, it would provide only LEVEL, plus, in
+> existing designs, the pca953x would now ask that it's own interrupt be
+> EDGE(RISING|FALLING) instead of LEVEL_LOW. These changes are important for my
+> theory to work correctly. The only remaining trap at this point would be in
+> the chip, which says it cannot catch edges that happen too quickly, but the
+> minimum length of the edges it detects is sufficiently small not to be of
+> anyone's concern.
 
- e9941dae8708 mm/mpol: Lazy migrate a process/vma
- a9ea2f1e496e mm/mpol: Make mempolicy home-node aware
- 5dca4a911980 mm/mpol: Split and explose some mempolicy functions
- f1b39afe3e55 mm/mpol: Introduce vma_put_policy()
- 9fc52f506a4e mm/mpol: Introduce vma_dup_policy()
- 6494a5f2cb89 mm/mpol: Simplify do_mbind()
- 65699050e8aa mm: Handle misplaced anon pages
- 4783af477d3d mm: Migrate misplaced page
- 147c5c460202 mm/mpol: Check for misplaced page
- 84f1e3478238 mm/mpol: Add MPOL_MF_NOOP
- 68d9661d42bf mm/mpol: Add MPOL_MF_LAZY ...
- 03ed7b538ca0 mm/mpol: Make MPOL_LOCAL a real policy
- e975d6ac08f3 mm/mpol: Remove NUMA_INTERLEAVE_HIT
- 8c41549ed1b3 mm/mpol: Re-implement check_*_range() using walk_page_range()
- 2ab41dd59922 mm: Optimize put_mems_allowed() usage
+You are proposing to change the PCA953x's input sensitivity artificially to
+LEVEL, and its output sensitivity to EDGE(RISING|FALLING)?
+Weird. Quickly sketching a scenario where you have just one level-based
+acknowledged interrupt on a PCA953x input, it would generate no less than 4
+interrupts to the primary controller (2 for each edge of the input signal)!!
+I don't think this will be accepted.... besides it will break my setup and be
+pretty much counter-intuitive to anyone else trying to use this chip as
+advertised (talking about pitfalls).
+And it will generate quite a significant amount of downstream interrupts,
+triggering a lot if I2C traffic.
 
-Or with diffstats:
+> > I hope my explanation was clear enough this time. As I said, we may put some
+> > warnings in the documentation of the driver.
 
-e9941dae8708 mm/mpol: Lazy migrate a process/vma
- mm/mempolicy.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 84 insertions(+)
+I still think that would be the best option... specially since you are not
+going to use your proposed setup anyway.
 
-a9ea2f1e496e mm/mpol: Make mempolicy home-node aware
- mm/mempolicy.c |   29 +++++++++++++++++++++++++++--
- 1 file changed, 27 insertions(+), 2 deletions(-)
+> Thanks for your participation and work on this driver! ;)
 
-5dca4a911980 mm/mpol: Split and explose some mempolicy functions
- mm/mempolicy.c |  111 ++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 63 insertions(+), 48 deletions(-)
+You are welcome. Thanks for the discussion.
 
-f1b39afe3e55 mm/mpol: Introduce vma_put_policy()
- mm/mempolicy.c |    5 +++++
- mm/mmap.c      |    8 ++++----
- 2 files changed, 9 insertions(+), 4 deletions(-)
+Best regards,
 
-9fc52f506a4e mm/mpol: Introduce vma_dup_policy()
- mm/mempolicy.c |   11 +++++++++++
- mm/mmap.c      |   17 +++++------------
- 2 files changed, 16 insertions(+), 12 deletions(-)
-
-6494a5f2cb89 mm/mpol: Simplify do_mbind()
- mm/mempolicy.c |   73 +++++++++++++++++++++++++++++---------------------------
- 1 file changed, 38 insertions(+), 35 deletions(-)
-
-65699050e8aa mm: Handle misplaced anon pages
- mm/memory.c   |   17 +++++++++++++++++
- mm/swapfile.c |   13 +++++++++++++
- 2 files changed, 30 insertions(+)
-
-4783af477d3d mm: Migrate misplaced page
- mm/mempolicy.c |   19 +++++++++
- mm/migrate.c   |  130 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 148 insertions(+), 1 deletion(-)
-
-147c5c460202 mm/mpol: Check for misplaced page
- mm/mempolicy.c |   79 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 79 insertions(+)
-
-84f1e3478238 mm/mpol: Add MPOL_MF_NOOP
- mm/mempolicy.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-68d9661d42bf mm/mpol: Add MPOL_MF_LAZY ...
- mm/mempolicy.c |   20 +++++++-----
- mm/migrate.c   |   96 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- mm/rmap.c      |    6 ++--
- 3 files changed, 109 insertions(+), 13 deletions(-)
-
-03ed7b538ca0 mm/mpol: Make MPOL_LOCAL a real policy
- mm/mempolicy.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-e975d6ac08f3 mm/mpol: Remove NUMA_INTERLEAVE_HIT
- mm/mempolicy.c |   68 +++++++++++++++++---------------------------------------
- 1 file changed, 21 insertions(+), 47 deletions(-)
-
-8c41549ed1b3 mm/mpol: Re-implement check_*_range() using walk_page_range()
- mm/mempolicy.c |  141 ++++++++++++++++++--------------------------------------
- 1 file changed, 45 insertions(+), 96 deletions(-)
-
-2ab41dd59922 mm: Optimize put_mems_allowed() usage
- mm/filemap.c    |    4 ++--
- mm/hugetlb.c    |    4 ++--
- mm/mempolicy.c  |   14 +++++++-------
- mm/page_alloc.c |    8 ++++----
- mm/slab.c       |    4 ++--
- mm/slub.c       |   16 +++-------------
- 6 files changed, 20 insertions(+), 30 deletions(-)
-
-These are mostly lazy migration facility enablers. On a second 
-note, should we internalize MPOL_MF_LAZY as well, to not expose 
-it to user-space?
-
-Thanks,
-
-	Ingo
+-- 
+David Jander
+Protonic Holland.
