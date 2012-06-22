@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762783Ab2FVXZm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 19:25:42 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:10009 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756473Ab2FVXZl (ORCPT
+	id S1762800Ab2FVX0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 19:26:54 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:64867 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2FVX0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 19:25:41 -0400
+	Fri, 22 Jun 2012 19:26:53 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-160.messagelabs.com!1340407538!7544540!4
-X-Originating-IP: [216.166.12.72]
+X-Msg-Ref: server-9.tower-132.messagelabs.com!1340407612!12233057!1
+X-Originating-IP: [216.166.12.178]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 16/31] staging: comedi: ni_daq_700: remove thisboard macro
-Date: Fri, 22 Jun 2012 16:25:26 -0700
+Subject: [PATCH 17/31] staging: comedi: ni_daq_700: remove unused private data variable
+Date: Fri, 22 Jun 2012 16:26:46 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,48 +23,48 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201206221625.26675.hartleys@visionengravers.com>
+Message-ID: <201206221626.47010.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'thisboard' macro relies on a local variable having a specific
-name and yields a pointer derived from that local variable.
-Replace the macro with local variables and use the comedi_board()
-helper to get the pointer.
+The 'have_irq' variable is not needed since this driver doesn't
+use interrupts. Remove it.
+
+The kfree(s->private) needs to remain to free the memory allocated
+in subdev_700_init().
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
 Cc: Greg Kroah-hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/ni_daq_700.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/staging/comedi/drivers/ni_daq_700.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
-index 864bef7..2f84934 100644
+index 2f84934..525f076 100644
 --- a/drivers/staging/comedi/drivers/ni_daq_700.c
 +++ b/drivers/staging/comedi/drivers/ni_daq_700.c
-@@ -59,11 +59,6 @@ struct dio700_board {
- 	const char *name;
+@@ -69,7 +69,6 @@ struct dio700_board {
+ struct subdev_700_struct {
+ 	unsigned long cb_arg;
+ 	int (*cb_func) (int, int, int, unsigned long);
+-	int have_irq;
  };
  
--/*
-- * Useful for shorthand access to the particular board structure
-- */
--#define thisboard ((const struct dio700_board *)dev->board_ptr)
+ #define CALLBACK_ARG	(((struct subdev_700_struct *)s->private)->cb_arg)
+@@ -166,9 +165,7 @@ static void subdev_700_cleanup(struct comedi_device *dev,
+ 			       struct comedi_subdevice *s)
+ {
+ 	if (s->private)
+-		if (subdevpriv->have_irq)
 -
- #define _700_SIZE 8
- 
- #define _700_DATA 0
-@@ -178,6 +173,7 @@ static void subdev_700_cleanup(struct comedi_device *dev,
+-			kfree(s->private);
++		kfree(s->private);
+ }
  
  static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
-+	const struct dio700_board *thisboard = comedi_board(dev);
- 	struct comedi_subdevice *s;
- 	unsigned long iobase = 0;
- #ifdef incomplete
 -- 
 1.7.11
 
