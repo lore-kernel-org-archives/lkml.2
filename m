@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762591Ab2FVQPM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 12:15:12 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:57722 "EHLO
+	id S1762568Ab2FVQPK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 12:15:10 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:20975 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762512Ab2FVQPI (ORCPT
+	with ESMTP id S1762509Ab2FVQPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Jun 2012 12:15:08 -0400
 X-IronPort-AV: E=Sophos;i="4.77,459,1336363200"; 
-   d="scan'208";a="199722624"
+   d="scan'208";a="199722616"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <xen-devel@lists.xensource.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>, <tim@xen.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH WIP 6/6] xen/arm: enable evtchn irqs
-Date: Fri, 22 Jun 2012 17:14:45 +0100
-Message-ID: <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH WIP 5/6] xen: fix unmask_evtchn for HVM guests
+Date: Fri, 22 Jun 2012 17:14:44 +0100
+Message-ID: <1340381685-22529-5-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
 References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
@@ -27,47 +28,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM irqs are not enabled by default:
+When unmask_evtchn is called, if we already have an event pending, we
+just set evtchn_pending_sel waiting for irq to be re-enabled. That is
+because x86 pv guests overwrite the irq_enable pvops with
+xen_irq_enable_direct that also handles pending events.
 
-- call enable_percpu_irq for IRQ_EVTCHN_CALLBACK;
+However x86 HVM guests and ARM guests do not change or do not have the
+irq_enable pvop, so this scheme doesn't work properly for them.
+Considering that having a pending irq when unmask_evtchn is called is
+not very common, and it is better to keep the native_irq_enable
+implementation for HVM guests and ARM guests, the best thing to do is
+just using the EVTCHNOP_unmask callback (Xen re-injects pending
+events in response).
 
-- set the IRQF_VALID flag for the other irqs bound to evtchns. It causes
-IRQ_NOAUTOEN to be set and as a consequence irq_unmask is going to be
-called when a xenbus driver calls request_irq.
+Considering that this patch fixes a bug on x86 for current PV on HVM
+guests, I'll resend it separately.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/events.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/xen/events.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 0132505..ca92755 100644
+index eae0d0b..0132505 100644
 --- a/drivers/xen/events.c
 +++ b/drivers/xen/events.c
-@@ -53,6 +53,7 @@
- #include <xen/interface/hvm/params.h>
- #include <xen/interface/physdev.h>
- #include <xen/interface/sched.h>
-+#include <asm/hw_irq.h>
+@@ -372,8 +372,11 @@ static void unmask_evtchn(int port)
  
- /*
-  * This lock protects updates to the following mapping and reference-count
-@@ -827,6 +828,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+ 	BUG_ON(!irqs_disabled());
  
- 		xen_irq_info_evtchn_init(irq, evtchn);
- 	}
-+	set_irq_flags(irq, IRQF_VALID);
- 
- out:
- 	mutex_unlock(&irq_mapping_update_lock);
-@@ -1751,6 +1753,7 @@ int __init xen_init_IRQ_arm(void)
- 	if (rc) {
- 		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
- 	}
-+	enable_percpu_irq(IRQ_EVTCHN_CALLBACK, 0);
- 	return rc;
- }
- core_initcall(xen_init_IRQ_arm);
+-	/* Slow path (hypercall) if this is a non-local port. */
+-	if (unlikely(cpu != cpu_from_evtchn(port))) {
++	/* Slow path (hypercall) if this is a non-local port or if this is
++	 * an hvm domain and an event is pending (hvm domains don't have
++	 * their own implementation of irq_enable). */
++	if (unlikely((cpu != cpu_from_evtchn(port)) ||
++			(xen_hvm_domain() && sync_test_bit(port, &s->evtchn_pending[0])))) {
+ 		struct evtchn_unmask unmask = { .port = port };
+ 		(void)HYPERVISOR_event_channel_op(EVTCHNOP_unmask, &unmask);
+ 	} else {
 -- 
 1.7.2.5
 
