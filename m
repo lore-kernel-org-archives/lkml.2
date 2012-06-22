@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762480Ab2FVQNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 12:13:36 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:55745 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab2FVQNf (ORCPT
+	id S1762484Ab2FVQOz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 12:14:55 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33413 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2FVQOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 12:13:35 -0400
-X-IronPort-AV: E=Sophos;i="4.77,459,1336348800"; 
-   d="scan'208";a="13174817"
-Date: Fri, 22 Jun 2012 17:13:12 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <linux-kernel@vger.kernel.org>
-CC: <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, Tim Deegan <tim@xen.org>
-Subject: [PATCH WIP 0/6] xen/arm: PV console support
-Message-ID: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 22 Jun 2012 12:14:53 -0400
+Date: Fri, 22 Jun 2012 13:14:49 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC/PATCHSET 0/8] perf tools: Minimal build without libelf
+ dependency (v2)
+Message-ID: <20120622161449.GL17747@infradead.org>
+References: <1340343462-15556-1-git-send-email-namhyung@kernel.org>
+ <1340358478.18025.51.camel@twins>
+ <1340377510.1478.10.camel@leonhard>
+ <4FE48CCA.2050506@gmail.com>
+ <1340379000.1478.34.camel@leonhard>
+ <4FE490C9.1020903@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE490C9.1020903@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series fixes few Xen on ARM bugs as well as one generic Xen PV
-on HVM bug (I'll send out that patch separately).
-It also implements a better way to initialize Xen on ARM and find out
-whether we are a privileged or an unprivileged guest.
+Em Fri, Jun 22, 2012 at 09:35:37AM -0600, David Ahern escreveu:
+> On 6/22/12 9:30 AM, Namhyung Kim wrote:
+> >>And build-id's are not required for report (-B option for record).
 
-With this patch series applied to Linux and the corresponding Xen patch series
-applied to Xen, I can boot a Linux guest up to userspace and connect to
-it using a PV console in dom0.
+> >>Also, the intent is for a small footprint binary for embedded systems.
+> >>On such a system I would expect binaries and libraries to be stripped,
+> >>so no point in running perf-archive.
 
-The patch series is based on Ian's Linux for Xen on ARM tree
-(git://xenbits.xen.org/people/ianc/linux-2.6.git devel/arm-hacks).
+> >But is there a chance that binaries on host still contains symbol (and
+> >debug) information even for those cases?
+> 
+> AFAIK embedded systems do not have the luxury of symbols; the goal
+> is as small as possible. All debugging information is left on the
+> build servers for off line analysis. That's certainly true for the
+> product I work on.
 
+I think at least the .dymsym symbol table is present in DSOs, aka
+libraries, otherwise how will they dynamicly link?
 
-Stefano Stabellini (6):
-      xen/arm: fix the shared_info and vcpu_info structs
-      xen/arm: Introduce xen_guest_init
-      xen/arm: get privilege status
-      xen/arm: implement hvm_op
-      xen: fix unmask_evtchn for HVM guests
-      xen/arm: enable evtchn irqs
-
- arch/arm/include/asm/xen/hypercall.h |    2 +-
- arch/arm/include/asm/xen/interface.h |   15 +++------------
- arch/arm/xen/enlighten.c             |   21 ++++++++++++++++-----
- arch/x86/xen/enlighten.c             |    8 ++++++++
- drivers/tty/hvc/hvc_xen.c            |    3 +++
- drivers/xen/events.c                 |   10 ++++++++--
- include/xen/interface/features.h     |    3 +++
- include/xen/xen.h                    |    2 ++
- 8 files changed, 44 insertions(+), 20 deletions(-)
-
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git xenarmv7-2
-
-Cheers,
-
-Stefano
+- Arnaldo
