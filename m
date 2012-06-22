@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758165Ab2FVKtG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 06:49:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6403 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757844Ab2FVKtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 06:49:03 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=-v9zWHfhjGwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=_gxSTfL8AAAA:8 a=t_bC-9rGgjebfDGWIZAA:9 a=PUjeQqilurYA:10 a=Sya1ZFHK3KgA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340362141.27036.228.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH][RT] spinlock: Add include for BUG() in spinlock_rt.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        leroy christophe <christophe.leroy@c-s.fr>,
-        Iratxo Pichel Ortiz <ipichel@albentia.com>,
-        David Garcia <dgarcia@albentia.com>
-Date: Fri, 22 Jun 2012 06:49:01 -0400
-In-Reply-To: <alpine.LFD.2.02.1206221108180.2853@ionos>
-References: <1340285878.27036.138.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.02.1206221108180.2853@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932412Ab2FVKy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 06:54:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48718 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755505Ab2FVKy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 06:54:56 -0400
+Date: Fri, 22 Jun 2012 11:54:51 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 10/17] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20120622105451.GC8271@suse.de>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+ <1340192652-31658-11-git-send-email-mgorman@suse.de>
+ <20120621163029.GB6045@breakpoint.cc>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120621163029.GB6045@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-22 at 11:08 +0200, Thomas Gleixner wrote:
-> On Thu, 21 Jun 2012, Steven Rostedt wrote:
+On Thu, Jun 21, 2012 at 06:30:29PM +0200, Sebastian Andrzej Siewior wrote:
+> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> > index 1d6ecc8..9a58dcc 100644
+> > --- a/net/core/skbuff.c
+> > +++ b/net/core/skbuff.c
+> > @@ -167,14 +206,19 @@ static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
+> >   *	%GFP_ATOMIC.
+> >   */
+> >  struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+> > -			    int fclone, int node)
+> > +			    int flags, int node)
+> >  {
+> >  	struct kmem_cache *cache;
+> >  	struct skb_shared_info *shinfo;
+> >  	struct sk_buff *skb;
+> >  	u8 *data;
+> > +	bool pfmemalloc;
+> >  
+> > -	cache = fclone ? skbuff_fclone_cache : skbuff_head_cache;
+> > +	cache = (flags & SKB_ALLOC_FCLONE)
+> > +		? skbuff_fclone_cache : skbuff_head_cache;
+> > +
+> > +	if (sk_memalloc_socks() && (flags & SKB_ALLOC_RX))
+> > +		gfp_mask |= __GFP_MEMALLOC;
+> >  
+> >  	/* Get the HEAD */
+> >  	skb = kmem_cache_alloc_node(cache, gfp_mask & ~__GFP_DMA, node);
 > 
-> > spinlock_rt.h references BUG(), but it does not include bug.h, and on
-> > some architectures (powerpc) this can cause a build failure.
-> > 
-> > Reported-by: Iratxo Pichel Ortiz <ipichel@albentia.com>
-> > Reported-by: leroy christophe <christophe.leroy@c-s.fr>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ----
-> > [ Thomas, can you add this patch to your queue so that I can add it to
-> > stable. Please, let me know when you have. Thanks! ]
-> 
-> Picked it up, thanks. Please take it right away w/o waiting for my
-> release.
+> This is mostly used by nic to refil their RX skb pool. You add the
+> __GFP_MEMALLOC to the allocation to rise the change of a successfull refill
+> for the swap case.
+> A few drivers use build_skb() to create the skb. __netdev_alloc_skb()
+> shouldn't be affected since the allocation happens with GFP_ATOMIC. Looking at
+> TG3 it uses build_skb() and get_pages() / kmalloc(). Shouldn't this be some
+> considered?
 > 
 
-I'll make a release today.
+While TG3 is not exactly as you describe after rebasing build_skb should
+make a similar check to __alloc_skb. As it is always used for RX allocation
+from the skbuff_head_cache cache the following should be suitable. Thanks.
 
--- Steve
-
-
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 9832001..063830c 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -310,8 +310,12 @@ struct sk_buff *build_skb(void *data, unsigned int frag_size)
+ 	struct skb_shared_info *shinfo;
+ 	struct sk_buff *skb;
+ 	unsigned int size = frag_size ? : ksize(data);
++	gfp_t gfp_mask = GFP_ATOMIC;
+ 
+-	skb = kmem_cache_alloc(skbuff_head_cache, GFP_ATOMIC);
++	if (sk_memalloc_socks())
++		gfp_mask |= __GFP_MEMALLOC;
++
++	skb = kmem_cache_alloc(skbuff_head_cache, gfp_mask);
+ 	if (!skb)
+ 		return NULL;
+ 
