@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887Ab2FVKkK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 06:40:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63185 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757786Ab2FVKkG convert rfc822-to-8bit (ORCPT
+	id S1757916Ab2FVKpn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 06:45:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5172 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755044Ab2FVKpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 06:40:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="161194864"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: "Raj, Ashok" <ashok.raj@intel.com>,
-        "Dugger, Donald D" <donald.d.dugger@intel.com>,
-        "Shan, Haitao" <haitao.shan@intel.com>,
-        "Nakajima, Jun" <jun.nakajima@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>, "Auld, Will" <will.auld@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Keir Fraser <keir@xen.org>, "Li, Susie" <susie.li@intel.com>
-Subject: RE: [vMCE design RFC] Xen vMCE design
-Thread-Topic: [vMCE design RFC] Xen vMCE design
-Thread-Index: AQHNT8fhexbUH0BVTLGVMLMLWAtaJ5cGIWPg
-Date: Fri, 22 Jun 2012 10:40:01 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923352542BD@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
- <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
-In-Reply-To: <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 22 Jun 2012 06:45:42 -0400
+X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=FlAZEPfbBygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=ek13JImSwrPhBqvSRdYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340361939.27036.224.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
+ console
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        AndrewMorton <akpm@linux-foundation.org>
+Date: Fri, 22 Jun 2012 06:45:39 -0400
+In-Reply-To: <20120622071718.GC22167@gmail.com>
+References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
+	 <20120622071718.GC22167@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Beulich wrote:
->>>> On 20.06.12 at 18:13, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
->> Recently we design xen vMCE as attached.
->> Please kindly help me to review it, any comments/suggestions are
->> appreciated.
-> 
-> The concept looks quite okay, provided no OS has a problem with
-> the limitations imposed (most notably the restriction to a single
-> reporting bank, particularly in the context of e.g. Linux partly
-> ignoring the first bank under some conditions iirc).
+On Fri, 2012-06-22 at 09:17 +0200, Ingo Molnar wrote:
 
-'bank0 skipping' quirks is only for older model cpus, I think we have 2 options:
-1). still use 1 bank and simply ignore this issue. I mean, even if guest runs at bank0 quirks platform, when hypervisor inject vMCE# to guest, guest skip bank0, then guest MCE logic would think it detect a spurious mce, then kill itself. Considering bank0 quirks is only for old cpus, this is acceptable;
-2). use 32 banks
+> Maybe also add the actual usage sites, to demonstrate how it's 
+> going to be used?
 
-In fact, a third option is, use 1 bank, but hypervisor kill guest when it detect bank0 quirks. This would be same effect as option 1, so I prefer let guest kill itself.
+Here's the places that I added (and tested) the pr_flush().
 
-> 
-> As to not needing any migration specific adjustments - what if
-> a migration is in progress when an event needs to be delivered?
-> 
-> Jan
+I even added 'set_current_task(TASK_UNINTERRUPTIBLE);
+schedule_timeout(5*HZ);' to see if it does flush, and it worked fine.
 
-If a migration is in progress while an event delivered, we abort the migration.
+-- Steve
 
-Thanks,
-Jinsong
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 49249c2..f7f2cd0 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -825,6 +825,7 @@ int register_tracer(struct tracer *type)
+ 
+ 		/* the test is responsible for initializing and enabling */
+ 		pr_info("Testing tracer %s: ", type->name);
++		pr_flush();
+ 		ret = type->selftest(type, tr);
+ 		/* the test is responsible for resetting too */
+ 		current_trace = saved_tracer;
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da..84b674e 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1606,6 +1606,7 @@ static __init void event_trace_self_tests(void)
+ #endif
+ 
+ 		pr_info("Testing event %s: ", call->name);
++		pr_flush();
+ 
+ 		/*
+ 		 * If an event is already enabled, someone is using
+@@ -1635,6 +1636,7 @@ static __init void event_trace_self_tests(void)
+ 			continue;
+ 
+ 		pr_info("Testing event system %s: ", system->name);
++		pr_flush();
+ 
+ 		ret = __ftrace_set_clr_event(NULL, system->name, NULL, 1);
+ 		if (WARN_ON_ONCE(ret)) {
+@@ -1657,6 +1659,7 @@ static __init void event_trace_self_tests(void)
+ 
+ 	pr_info("Running tests on all trace events:\n");
+ 	pr_info("Testing all events: ");
++	pr_flush();
+ 
+ 	ret = __ftrace_set_clr_event(NULL, NULL, NULL, 1);
+ 	if (WARN_ON_ONCE(ret)) {
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 288541f..9638639 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -161,6 +161,7 @@ static void print_counts(void)
+ 	       trace_selftest_test_probe3_cnt,
+ 	       trace_selftest_test_global_cnt,
+ 	       trace_selftest_test_dyn_cnt);
++	pr_flush();
+ }
+ 
+ static void reset_counts(void)
+@@ -184,6 +185,7 @@ static int trace_selftest_ops(int cnt)
+ 
+ 	printk(KERN_CONT "PASSED\n");
+ 	pr_info("Testing dynamic ftrace ops #%d: ", cnt);
++	pr_flush();
+ 
+ 	ftrace_enabled = 1;
+ 	reset_counts();
+@@ -315,6 +317,7 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
+ 	/* The ftrace test PASSED */
+ 	printk(KERN_CONT "PASSED\n");
+ 	pr_info("Testing dynamic ftrace: ");
++	pr_flush();
+ 
+ 	/* enable tracing, and record the filter function */
+ 	ftrace_enabled = 1;
+
+
