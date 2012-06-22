@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079Ab2FVUMU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 16:12:20 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:45282 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab2FVUMT (ORCPT
+	id S933112Ab2FVUM5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 16:12:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50467 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932456Ab2FVUM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 16:12:19 -0400
-Date: Fri, 22 Jun 2012 13:12:14 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for -rc4
-Message-ID: <Pine.LNX.4.64.1206221303480.4806@cobra.newdream.net>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 22 Jun 2012 16:12:56 -0400
+Date: Fri, 22 Jun 2012 13:12:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Dave Jones <davej@redhat.com>, Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/2] mm: compaction: add /proc/vmstat entry for rescued
+ MIGRATE_UNMOVABLE pageblocks
+Message-Id: <20120622131254.cc606c00.akpm@linux-foundation.org>
+In-Reply-To: <4FDA0F82.2030708@gmail.com>
+References: <201206141802.50075.b.zolnierkie@samsung.com>
+	<4FDA0F82.2030708@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 14 Jun 2012 12:21:22 -0400
+KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
 
-Please pull the following Ceph fixes from
+> (6/14/12 12:02 PM), Bartlomiej Zolnierkiewicz wrote:
+> > From: Bartlomiej Zolnierkiewicz<b.zolnierkie@samsung.com>
+> > Subject: [PATCH] mm: compaction: add /proc/vmstat entry for rescued MIGRATE_UNMOVABLE pageblocks
+> >
+> > compact_rescued_unmovable_blocks shows the number of MIGRATE_UNMOVABLE
+> > pageblocks converted back to MIGRATE_MOVABLE type by the memory compaction
+> > code.  Non-zero values indicate that large kernel-originated allocations
+> > of MIGRATE_UNMOVABLE type happen in the system and need special handling
+> > from the memory compaction code.
+> >
+> > This new vmstat entry is optional but useful for development and understanding
+> > the system.
+> 
+> This description don't describe why admin need this stat and how to use it.
+> 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+Was there a response to this?
 
-There are a couple of fixes from Yan for bad pointer dereferences in the 
-messenger code and when fiddling with page->private after page migration, 
-a fix from Alex for a use-after-free in the osd client code, and a couple 
-fixes for the message refcounting and shutdown ordering.
-
-Thanks!
-sage
-
-
-----------------------------------------------------------------
-Alex Elder (1):
-      libceph: osd_client: don't drop reply reference too early
-
-Sage Weil (2):
-      libceph: use con get/put ops from osd_client
-      libceph: flush msgr queue during mon_client shutdown
-
-Yan, Zheng (2):
-      ceph: check PG_Private flag before accessing page->private
-      rbd: Clear ceph_msg->bio_iter for retransmitted message
-
- fs/ceph/addr.c         |   21 ++++++++++++---------
- net/ceph/ceph_common.c |    7 -------
- net/ceph/messenger.c   |    4 ++++
- net/ceph/mon_client.c  |    8 ++++++++
- net/ceph/osd_client.c  |   12 ++++++------
- 5 files changed, 30 insertions(+), 22 deletions(-)
+patch [1/2] doesn't apply.  Refresh and resend the series, please?
