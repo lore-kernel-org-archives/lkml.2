@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab2FVJ7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 05:59:32 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:49270 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761953Ab2FVJ7b convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 05:59:31 -0400
+	id S932610Ab2FVKAi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 06:00:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45917 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761956Ab2FVKAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 06:00:36 -0400
+Date: Fri, 22 Jun 2012 11:00:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 10/17] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20120622100032.GB8271@suse.de>
+References: <1340192652-31658-1-git-send-email-mgorman@suse.de>
+ <1340192652-31658-11-git-send-email-mgorman@suse.de>
+ <20120621160902.GA6045@breakpoint.cc>
 MIME-Version: 1.0
-In-Reply-To: <20120622094702.GD14083@ZenIV.linux.org.uk>
-References: <CAFub=KRdM2Mc1RXa_HfYO8gSxpyCpsP9Z1YHRULCLwNDnXQyEg@mail.gmail.com>
-	<20120622094702.GD14083@ZenIV.linux.org.uk>
-Date: Fri, 22 Jun 2012 12:59:29 +0300
-Message-ID: <CAFub=KSth0q6VJ+adQmvXVjcVT0-XuyRzfN00+U9DWEHPi-aVw@mail.gmail.com>
-Subject: Re: get_unused_fd and get_unused_fd_flags
-From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, mcgrof@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120621160902.GA6045@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Details of that "have to", please.  Note that existing modular uses of
-> get_unused_fd() tend to be rather fishy; if anything, I'd expect
-> get_unused_fd() eventually becoming internal-only, if we manage to
-> pull that off.
+On Thu, Jun 21, 2012 at 06:09:02PM +0200, Sebastian Andrzej Siewior wrote:
+> > <SNIP>
+> >
+> If merge this chunk
+> 
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index 6510a5d..2acfec9 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -510,7 +510,7 @@ struct sk_buff {
+>  #define SKB_ALLOC_RX		0x02
+>  
+>  /* Returns true if the skb was allocated from PFMEMALLOC reserves */
+> -static inline bool skb_pfmemalloc(struct sk_buff *skb)
+> +static inline bool skb_pfmemalloc(const struct sk_buff *skb)
+>  {
+>  	return unlikely(skb->pfmemalloc);
+>  }
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index c44ab68..6ce94b5 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -852,7 +852,7 @@ static void copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
+>  
+>  static inline int skb_alloc_rx_flag(const struct sk_buff *skb)
+>  {
+> -	if (skb_pfmemalloc((struct sk_buff *)skb))
+> +	if (skb_pfmemalloc(skb))
+>  		return SKB_ALLOC_RX;
+>  	return 0;
+>  }
+> 
+> 
+> Then you should be able to drop the case in skb_alloc_rx_flag() without adding
+> a warning.
+> 
 
-I've got it. I'm backporting the dma-buf (drivers/base/dma-buf.c)
-feature to kernels < 3.3. It is actually pretty straightforward except
-a single call to get_unused_fd_flags() from dma_buf_fd(). Then
-get_unused_fd_flags() macro resolves to alloc_fd() which is not
-exported.
-
-Maybe I should backport alloc_fd and rename it to sth like
-compat_alloc_fd and use that instead of alloc_fd in compat. What I was
-trying to understand was the reason behind exporting/not-exporting
-those similar wrappers. I don't try to justify that it should be
-exported for me :)
-
-Thanks!
-
-
+You're right. Thanks.
 
 -- 
-Ozan Çağlayan
+Mel Gorman
+SUSE Labs
