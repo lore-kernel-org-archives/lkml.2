@@ -1,76 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762177Ab2FVNoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 09:44:16 -0400
-Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:40195 "EHLO
-	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762150Ab2FVNoO (ORCPT
+	id S1762172Ab2FVNqe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 09:46:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33764 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762129Ab2FVNqc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 09:44:14 -0400
-Message-ID: <4FE476A6.1050209@akamai.com>
-Date: Fri, 22 Jun 2012 08:44:06 -0500
-From: Josh Hunt <johunt@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 22 Jun 2012 09:46:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="161254570"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: "Raj, Ashok" <ashok.raj@intel.com>,
+        "Dugger, Donald D" <donald.d.dugger@intel.com>,
+        "Shan, Haitao" <haitao.shan@intel.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "Li, Susie" <susie.li@intel.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "Auld, Will" <will.auld@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keir Fraser <keir@xen.org>
+Subject: RE: [vMCE design RFC] Xen vMCE design
+Thread-Topic: [vMCE design RFC] Xen vMCE design
+Thread-Index: AQHNUGvJexbUH0BVTLGVMLMLWAtaJ5cGOLAg
+Date: Fri, 22 Jun 2012 13:46:17 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC8292335254989@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233524C532@SHSMSX101.ccr.corp.intel.com>
+ <4FE362C0020000780008B2CD@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923352542BD@SHSMSX101.ccr.corp.intel.com>
+ <4FE475BE020000780008B624@nat28.tlf.novell.com>
+In-Reply-To: <4FE475BE020000780008B624@nat28.tlf.novell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        Debabrata Banerjee <dbavatar@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "yoshfuji@linux-ipv6.org" <yoshfuji@linux-ipv6.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "pekkas@netcore.fi" <pekkas@netcore.fi>,
-        "kuznet@ms2.inr.ac.ru" <kuznet@ms2.inr.ac.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
-References: <CAATkVEzTxT6d5nzt_qwCuFWM-WcN8hdhjGxFRPXJ4=L35wKbGw@mail.gmail.com>  <4FE37783.9000409@akamai.com> <1340310469.4604.6702.camel@edumazet-glaptop>  <4FE41570.4090803@akamai.com> <1340353746.4604.9502.camel@edumazet-glaptop>
-In-Reply-To: <1340353746.4604.9502.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2012 03:29 AM, Eric Dumazet wrote:
-> On Fri, 2012-06-22 at 01:49 -0500, Josh Hunt wrote:
->> On 06/21/2012 03:27 PM, Eric Dumazet wrote:
->>> On Thu, 2012-06-21 at 14:35 -0500, Josh Hunt wrote:
->>>
->>>> Can anyone provide details of the crash which was intended to be fixed
->>>> by 2bec5a369ee79576a3eea2c23863325089785a2c? With this patch in and
->>>> doing concurrent adds/deletes and dumping the table via netlink causes
->>>> duplicate entries to be reported. Reverting this patch causes those
->>>> problems to go away. We can provide a more detailed test if that is
->>>> needed, but so far our testing has been unable to reproduce the crash
->>>> mentioned in the above commit with it reverted.
->>>
->>> A mere revert wont be enough.
->>>
->>> Looking at this code, it lacks proper synchronization
->>> between tree updaters and tree walkers.
->>>
->>> fib6_walker_lock rwlock is not enough to prevent races.
->>>
->>> Are you willing to fix this yourself ?
->>>
->>
->> Looking through the code a bit more it seems like we would need to have
->> a lock in fib6_walker_t to protect its contents. Mainly for when we
->> update the pointers in fib6_del_route and fib6_repair_tree. Right now
->> there is the fib6_walker_lock, but that appears to only be protecting
->> the elements of the list, not their contents. Is this what you had in
->> mind? I just coded up something along these lines and it works for the
->> most part, but I also got a message about unsafe lock ordering when I
->> stressed it so I am messing something up. If this sounds like it's on
->> the right track I can work out the kinks in the morning.
+Jan Beulich wrote:
+>>>> On 22.06.12 at 12:40, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
+>> Jan Beulich wrote:
+>>>>>> On 20.06.12 at 18:13, "Liu, Jinsong" <jinsong.liu@intel.com>
+>>>>>> wrote: 
+>>>> Recently we design xen vMCE as attached.
+>>>> Please kindly help me to review it, any comments/suggestions are
+>>>> appreciated.
+>>> 
+>>> The concept looks quite okay, provided no OS has a problem with
+>>> the limitations imposed (most notably the restriction to a single
+>>> reporting bank, particularly in the context of e.g. Linux partly
+>>> ignoring the first bank under some conditions iirc).
+>> 
+>> 'bank0 skipping' quirks is only for older model cpus, I think we
+>> have 2 options: 1). still use 1 bank and simply ignore this issue. I
+>> mean, even if guest runs at bank0 quirks platform, when hypervisor
+>> inject vMCE# to guest, guest skip bank0, then guest MCE logic would
+>> think it detect a spurious mce, then kill itself. Considering bank0
+>> quirks is only for old cpus, this is acceptable; 2). use 32 banks
+>> 
+>> In fact, a third option is, use 1 bank, but hypervisor kill guest
+>> when it detect bank0 quirks. This would be same effect as option 1,
+>> so I prefer let guest kill itself.
 > 
-> Hmm, it seems tb6_lock is held by a writer, so its safe :
+> Out of these, I'd actually favor using 32 banks. Using 2 banks
+> instead of 1 might be another option.
+
+Yes, 2 or 32 are both OK. Let's use 32.
+(or, 2 is better for some other reasons, let me confirm inside Intel first).
+
 > 
-> a tree walker can run only holding a read_lock on tb6_lock
+>>> As to not needing any migration specific adjustments - what if
+>>> a migration is in progress when an event needs to be delivered?
+>> 
+>> If a migration is in progress while an event delivered, we abort the
+>> migration.
+> 
+> Is there a way the hypervisor can tell the tools to abort a
+> migration? Or are you meaning to say such functionality would
+> need to be added?
 
-Ahh. That makes sense and is what Alexey said before I just didn't put
-it all together. So we are OK reverting this patch? I cannot find a path
-where the walker's pointers are updated without the tb6_lock write_lock.
+I didn't check migration code, but I think it could be done by
+1). set a flag indecating the case 'migration is in progress while event delivered'.
+2). at the last shakehand stage of migration (i.e. A to B), checking the flag and if yes, abort migration.
+So guest will continue run at A, and quit at B after timeout.
 
-Josh
+> 
+> One other concern that occurred to me after long having sent
+> the original response: Your proposal aims at a fixed,
+> unmodifiable vMCE interface. How is that going to be forward
+> compatible? I.e. consider you had made that proposal before
+> the SRAO/SRAR changes went in - would the same interface (with
+> the same set of capability bits set/clear) still be suitable?
+
+Yes, since it's pure s/w emulated interface. At the case when SRAO or SRAR not supported by h/w platform, it's still OK, since under such case hypervisor don't need deliver SRAO or SRAR to guest at all. The emulated vMCE interface just tell the guest that it runs at a virtual platform with those well-defined capabilities.
+
+> 
+> I think that we minimally need to retain the MCG_CAP register
+> as being of potentially variable content (and hence needing
+> saving/restoring on migration). To support this in a forward
+> compatible manner, we may have to have a way to tell the
+> hypervisor e.g. via command line option which extra MSRs
+> have to be treated read-as-zero/writes-ignored upon guest
+> accesses.
+> 
+> Jan
+
+Seems unnecessary, reason as above.
+
+Thanks,
+Jinsong
+
+
