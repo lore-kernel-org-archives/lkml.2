@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761934Ab2FVMrI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 08:47:08 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:37783 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761543Ab2FVMrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 08:47:06 -0400
-Message-ID: <1340369098.2464.20.camel@falcor>
-Subject: deferring __fput()
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 22 Jun 2012 08:44:58 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062212-3534-0000-0000-000009A972CF
+	id S1762039Ab2FVMr2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 08:47:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60066 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761687Ab2FVMr0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 08:47:26 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH V2] memcg: cleanup typos in mem cgroup
+Date: Fri, 22 Jun 2012 20:46:39 +0800
+Message-Id: <1340369199-29535-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al,
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-I really appreciate all of the work that has gone into making __fput()
-lockless - making the syscalls use get/put_light(), signal changes, and
-using Oleg's task_work_add() to defer processes. 
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+---
+ mm/memcontrol.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-Currently, when unmapping a file after closing it, I'm not getting the
-mmap_sem/i_mutex lockdep any more.  This seems due to Tyler Hick's
-commit 978d6d8 "vfs: Correctly set the dir i_mutex lockdep class",
-rather than the above changes.
-
-Although the mmap_sem/i_mutex lockdep doesn't exist anymore, before
-upstreaming IMA-appraisal, the issue with __fput() should probably be
-resolved. :)   What else needs to be done to make __fput() lockless?
-How can I help?
-
-thanks,
-
-Mimi
-
-
-
-
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 776fc57..503ddd0 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -115,8 +115,8 @@ static const char * const mem_cgroup_events_names[] = {
+ 
+ /*
+  * Per memcg event counter is incremented at every pagein/pageout. With THP,
+- * it will be incremated by the number of pages. This counter is used for
+- * for trigger some periodic events. This is straightforward and better
++ * it will be incremented by the number of pages. This counter is used to
++ * trigger some periodic events. This is straightforward and better
+  * than using jiffies etc. to handle periodic memcg event.
+  */
+ enum mem_cgroup_events_target {
+@@ -678,7 +678,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
+  *
+  * If there are kernel internal actions which can make use of some not-exact
+  * value, and reading all cpu value can be performance bottleneck in some
+- * common workload, threashold and synchonization as vmstat[] should be
++ * common workload, threshold and synchonization as vmstat[] should be
+  * implemented.
+  */
+ static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
+@@ -2213,7 +2213,6 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	if (mem_cgroup_wait_acct_move(mem_over_limit))
+ 		return CHARGE_RETRY;
+ 
+-	/* If we don't need to call oom-killer at el, return immediately */
+ 	if (!oom_check)
+ 		return CHARGE_NOMEM;
+ 	/* check OOM */
+@@ -2291,7 +2290,7 @@ again:
+ 		 * In that case, "memcg" can point to root or p can be NULL with
+ 		 * race with swapoff. Then, we have small risk of mis-accouning.
+ 		 * But such kind of mis-account by race always happens because
+-		 * we don't have cgroup_mutex(). It's overkill and we allo that
++		 * we don't have cgroup_mutex(). It's overkill and we allow that
+ 		 * small race, here.
+ 		 * (*) swapoff at el will charge against mm-struct not against
+ 		 * task-struct. So, mm->owner can be NULL.
+@@ -2396,7 +2395,7 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
+ }
+ 
+ /*
+- * Cancel chrages in this cgroup....doesn't propagate to parent cgroup.
++ * Cancel charges in this cgroup....doesn't propagate to parent cgroup.
+  * This is useful when moving usage to parent cgroup.
+  */
+ static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
+-- 
+1.7.9.5
 
