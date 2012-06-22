@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab2FVP13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 11:27:29 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40759 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933181Ab2FVP10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 11:27:26 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 05/12] kobil_sct: Fix some bogus tty handling
-To: greg@kroah.com, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Date: Fri, 22 Jun 2012 16:43:22 +0100
-Message-ID: <20120622154251.1405.12270.stgit@localhost.localdomain>
-In-Reply-To: <20120622153600.1405.15575.stgit@localhost.localdomain>
-References: <20120622153600.1405.15575.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S933276Ab2FVP1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 11:27:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933181Ab2FVP1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 11:27:37 -0400
+Date: Fri, 22 Jun 2012 11:27:27 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Joe Thornber <ejt@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: dm thin: reinstate missing mempool_free in cell_release_singleton
+Message-ID: <20120622152727.GA4196@redhat.com>
+References: <20120330195801.GA31806@kroah.com>
+ <20120330194856.784259750@linuxfoundation.org>
+ <20120622145947.GA4089@redhat.com>
+ <20120622151650.GA5785@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120622151650.GA5785@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stuff noticed while doing the termios conversion.
+On Fri, Jun 22 2012 at 11:16am -0400,
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+> On Fri, Jun 22, 2012 at 10:59:48AM -0400, Mike Snitzer wrote:
+> > Hi Greg,
+> > 
+> > 3.3-stable pulled in upstream commit
+> > 6f94a4c45a6f744383f9f695dde019998db3df55 (dm thin: fix stacked bi_next usage)
+> > 
+> > But later in the 3.4 development window it was determined that that
+> > commit introduced a significant leak.  The following upstream commit
+> > fixes it (but unfortunately didn't cc: stable).
+> 
+> 3.3 is end-of-life, so there's not much I can do with the 3.3-stable
+> tree anymore, sorry.  If there's any other tree I should apply this to
+> that is active (i.e. 3.0 or 3.4), please let me know.
 
- drivers/usb/serial/kobil_sct.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/usb/serial/kobil_sct.c b/drivers/usb/serial/kobil_sct.c
-index fafeabb..0852472 100644
---- a/drivers/usb/serial/kobil_sct.c
-+++ b/drivers/usb/serial/kobil_sct.c
-@@ -192,8 +192,8 @@ static void kobil_init_termios(struct tty_struct *tty)
- {
- 	/* Default to echo off and other sane device settings */
- 	tty->termios->c_lflag = 0;
--	tty->termios->c_lflag &= ~(ISIG | ICANON | ECHO | IEXTEN | XCASE);
--	tty->termios->c_iflag = IGNBRK | IGNPAR | IXOFF;
-+	tty->termios->c_iflag &= ~(ISIG | ICANON | ECHO | IEXTEN | XCASE);
-+	tty->termios->c_iflag |= IGNBRK | IGNPAR | IXOFF;
- 	/* do NOT translate CR to CR-NL (0x0A -> 0x0A 0x0D) */
- 	tty->termios->c_oflag &= ~ONLCR;
- }
-@@ -588,7 +588,7 @@ static void kobil_set_termios(struct tty_struct *tty,
- 	if (priv->device_type == KOBIL_USBTWIN_PRODUCT_ID ||
- 			priv->device_type == KOBIL_KAAN_SIM_PRODUCT_ID) {
- 		/* This device doesn't support ioctl calls */
--		*tty->termios = *old;
-+		tty_termios_copy_hw(tty->termios, old_termios);
- 		return;
- 	}
- 
-
+OK, no other active stable tree is affected, thanks.
