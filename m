@@ -1,130 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762548Ab2FVSFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 14:05:24 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37292 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab2FVSFW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 14:05:22 -0400
+	id S1762659Ab2FVSHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 14:07:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33710 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751561Ab2FVSHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 14:07:12 -0400
+Message-ID: <4FE4B2F7.9070302@zytor.com>
+Date: Fri, 22 Jun 2012 11:01:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FE41CC6.4010406@acm.org>
-References: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
-	<4FD345DC.6020405@acm.org>
-	<CAFR8ueca-MQWRipE+3OQSpqmJ40HKJEY7jWt6PQ+zTCQ9Bh=5Q@mail.gmail.com>
-	<4FD4DC26.5080902@acm.org>
-	<CAFR8uecF0LwbV8FvYob5m34sVbKqafrNoYOrcRUQCEOymGnYRA@mail.gmail.com>
-	<CAFR8uefK+nByiJ8tw5_KF1qEJs4du2mDdU36gg1_2nRNZXN5Fw@mail.gmail.com>
-	<20120618224253.GH32733@google.com>
-	<4FE21C15.6040409@acm.org>
-	<CAFR8ueeFcnMCqG=A1im09crBNckgfPixsCz9oceQCpPeJ3wiNw@mail.gmail.com>
-	<4FE2B3D1.6070504@acm.org>
-	<CAFR8uecUUVD3Ra4ajNxMi=37LKWd7T46_xLR6C2=47MWZ6K=9Q@mail.gmail.com>
-	<4FE41CC6.4010406@acm.org>
-Date: Fri, 22 Jun 2012 11:05:20 -0700
-Message-ID: <CAFR8ueckaeN4WjehTn4yON0c5MkcdcXj-mXDOhD_ALdVpvMWOw@mail.gmail.com>
-Subject: Re: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
- before checking for dead queue.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@kernel.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Jean Delvare <khali@linux-fr.org>, x86@kernel.org,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: Re: [PATCH] x86, cpufeature: Fix duplicate feature name "dts"
+References: <20120621162807.3c621d46@endymion.delvare> <4FE34BCB.5050305@linux.intel.com> <20120621190743.2e6601f6@endymion.delvare> <4FE3628C.6000604@zytor.com> <20120621184403.GC15472@liondog.tnic> <4FE37FE9.6000107@linux.intel.com> <20120622065937.GA22167@gmail.com>
+In-Reply-To: <20120622065937.GA22167@gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 12:20 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> On 06/21/12 21:40, Muthu Kumar wrote:
->
->> On Wed, Jun 20, 2012 at 10:40 PM, Bart Van Assche <bvanassche@acm.org> wrote:
->>> On 06/21/12 00:53, Muthu Kumar wrote:
->>>> This part already went in, its here only for testing - So in the final
->>>> patch, before applying this should be removed.
->>>
->>> When did it go in ? As far as I can see that patch is not yet present in
->>> Linus' tree nor in James' tree.
->>
->> My bad. I thought Jens/James took it already... may be not.
->
->
-> Do you agree with combining both patches into one (see below) ?
+On 06/21/2012 11:59 PM, Ingo Molnar wrote:
+> 
+> Plus add a kernel build time check to avoid such string clashes 
+> in the future? These acronyms tend to be short and hard to read, 
+> I'd not be surprised if this repeated in the future.
+> 
 
+Another *MASSIVE* fail is that an x86 cpufeature was added by a patch
+that went through the hwmon tree without any x86 maintainer ACK, and
+with a subject line that would not have made anyone aware of it:
 
-Perfect. Thanks.
+a4659053 x86/hwmon: fix initialization of coretemp
 
-Regards,
-Muthu.
+We maintain x86/cpufeature as a separate -tip branch for a reason:
+changes to that stuff mucks with *everything* as it is.
 
-
-
-
-
-
-
-
-
->
-> From: Muthukumar Ratty <muthur@gmail.com>
-> Subject: [PATCH] block: Fix blk_execute_rq_nowait() dead queue handling
->
-> If the queue is dead blk_execute_rq_nowait() doesn't invoke the done()
-> callback function. That will result in blk_execute_rq() being stuck
-> in wait_for_completion(). Avoid this by initializing rq->end_io to the
-> done() callback before we check the queue state. Also, make sure the
-> queue lock is held around the invocation of the done() callback. Found
-> this through source code review.
->
-> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: James Bottomley <James.Bottomley@hansenpartnership.com>
-> ---
->  block/blk-exec.c |   11 ++++++++---
->  1 files changed, 8 insertions(+), 3 deletions(-)
->
-> diff --git a/block/blk-exec.c b/block/blk-exec.c
-> index fb2cbd5..8b6dc5b 100644
-> --- a/block/blk-exec.c
-> +++ b/block/blk-exec.c
-> @@ -43,6 +43,9 @@ static void blk_end_sync_rq(struct request *rq, int error)
->  * Description:
->  *    Insert a fully prepared request at the back of the I/O scheduler queue
->  *    for execution.  Don't wait for completion.
-> + *
-> + * Note:
-> + *    This function will invoke @done directly if the queue is dead.
->  */
->  void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
->                           struct request *rq, int at_head,
-> @@ -51,18 +54,20 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gendisk *bd_disk,
->        int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
->
->        WARN_ON(irqs_disabled());
-> +
-> +       rq->rq_disk = bd_disk;
-> +       rq->end_io = done;
-> +
->        spin_lock_irq(q->queue_lock);
->
->        if (unlikely(blk_queue_dead(q))) {
-> -               spin_unlock_irq(q->queue_lock);
->                rq->errors = -ENXIO;
->                if (rq->end_io)
->                        rq->end_io(rq, rq->errors);
-> +               spin_unlock_irq(q->queue_lock);
->                return;
->        }
->
-> -       rq->rq_disk = bd_disk;
-> -       rq->end_io = done;
->        __elv_add_request(q, rq, where);
->        __blk_run_queue(q);
->        /* the queue is stopped so it won't be run */
-> --
-> 1.7.7
->
->
+	-hpa
