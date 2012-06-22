@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762639Ab2FVR6R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 13:58:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39527 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab2FVR6Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 13:58:16 -0400
-Date: Fri, 22 Jun 2012 10:58:09 -0700
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] eCryptfs: Gracefully refuse miscdev file ops on
- inherited/passed files
-Message-ID: <20120622175808.GA24984@boyd>
-References: <1338061161.4284.16.camel@lappy>
- <1339545940-11736-1-git-send-email-tyhicks@canonical.com>
- <1339545940-11736-2-git-send-email-tyhicks@canonical.com>
- <CA+1xoqeJ8j5Dp1C6QtEvHhQVcVUKsCVCGhXVcceH9b669nEYAw@mail.gmail.com>
+	id S1762669Ab2FVR6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 13:58:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755838Ab2FVR6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 13:58:22 -0400
+Date: Fri, 22 Jun 2012 19:57:46 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, srikar@linux.vnet.ibm.com,
+        mjw@linux.vnet.ibm.com
+Subject: Re: [PATCH 00/35] AutoNUMA alpha14
+Message-ID: <20120622175746.GS4954@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <4FC94505.3090506@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+1xoqeJ8j5Dp1C6QtEvHhQVcVUKsCVCGhXVcceH9b669nEYAw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FC94505.3090506@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mauricio and everyone,
 
---VbJkn9YxBvnuCH5J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 01, 2012 at 07:41:09PM -0300, Mauricio Faria de Oliveira wrote:
+> I got SPECjbb2005 results for 3.4-rc2 mainline, numasched, 
+> autonuma-alpha10, and autonuma-alpha13. If you judge the data is OK it 
+> may suit a comparison between autonuma-alpha13/14 to verify NUMA 
+> affinity regressions.
+> 
+> The system is an Intel 2-socket Blade. Each NUMA node has 6 cores (+6 
+> hyperthreads) and 12 GB RAM. Different permutations of THP, KSM, and VM 
+> memory size were tested for each kernel.
+> 
+> I'll have to leave the analysis of each variable for you, as I'm not 
+> familiar w/ the code and expected impacts; but I'm perfectly fine with 
+> providing more details about the tests, environment and procedures, and 
+> even some reruns, if needed.
 
-On 2012-06-22 19:47:35, Sasha Levin wrote:
-> On Wed, Jun 13, 2012 at 2:05 AM, Tyler Hicks <tyhicks@canonical.com> wrot=
-e:
-> > File operations on /dev/ecryptfs would BUG() when the operations were
-> > performed by processes other than the process that originally opened the
-> > file. This could happen with open files inherited after fork() or file
-> > descriptors passed through IPC mechanisms. Rather than calling BUG(), an
-> > error code can be safely returned in most situations.
-> >
-> > In ecryptfs_miscdev_release(), eCryptfs still needs to handle the
-> > release even if the last file reference is being held by a process that
-> > didn't originally open the file. ecryptfs_find_daemon_by_euid() will not
-> > be successful, so a pointer to the daemon is stored in the file's
-> > private_data. The private_data pointer is initialized when the miscdev
-> > file is opened and only used when the file is released.
-> >
-> > https://launchpad.net/bugs/994247
-> >
-> > Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-> > Reported-by: Sasha Levin <levinsasha928@gmail.com>
-> > Cc: Sasha Levin <levinsasha928@gmail.com>
-> > ---
->=20
-> I've been running it a while now and haven't seen the problem I've
-> reported reproducing.
+So autonuma10 didn't have a fully working idle balancing yet, that's
+why it's under-performing. My initial regression test didn't verify the
+idle balancing, that got fixed in autonuma11 (notably: it also fixes
+multi instance streams)
 
-Thanks for the testing!
+Your testing methodology was perfect, because you tested with THP off
+too, on the host. This rules out the possibility that different
+khugepaged default settings could skew the results (AutoNUMA when
+engaging boosts khugepaged to offset for the fact THP native migration
+isn't available yet so THP gets splitted across memory migrations and
+so we need to collapse them more aggressively).
 
->=20
-> Is it possible to merge this fix into 3.5?
+Another thing I noticed is the THP off, KSM off, and VM1 < node, on
+autonuma13 the VM1 gets slightly less priority and scores only 87%
+(but VM2/3 scores higher than on mainline). It may be a not
+reproducible hyperthreading effect that happens once in a while (the
+active balancing probably isn't as fast as it should and I'm seeing
+some effect of that even on upstream without patches when half of the
+hyperthreads are idle), but more likely it's one of the bugs that I've
+been fixing lately.
 
-That's my plan. I'll target this bug fix and the 2nd patch that removes
-unused code for 3.5. I'll wait for 3.6 to merge the third patch.
+If you have time. you may consider running this again on
+autonuma18. Lots of changes and improvements happened since
+autonuma13. The amount of memory used in page_autonuma (per-page) has
+also been significantly reduced from 24 (or 32 since autonuma14) bytes
+to 12, the scheduler should be much faster if overscheduling.
 
-Tyler
+git clone --reference linux -b autonuma18 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git autonuma18
 
---VbJkn9YxBvnuCH5J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Other two tweaks to test (only if you have time):
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+echo 15000 >/sys/kernel/mm/autonuma/knuma_scand/scan_sleep_pass_millisecs
 
-iQIcBAEBCgAGBQJP5LIwAAoJENaSAD2qAscKdPgP/RKsLw6qzT3TNBGYbtsqAM/k
-bDViFcLvHS1ZdcPRh5XFFadFBuoZtqdNrpWhQfTDvQUDadzgUQLbPUiXGgspvXS5
-F1Nderj+nG/uvXDMaUXm9E5CW/kF5gMJ5Vs7Y1mvypkT01VNdfeSvFUROT097Vot
-RopVNU/zxyM+MUzs20Iyvdy6h7H0GeiKfaCLHxA5T+4XR1Y1IUjuxfqpdhWF+KsQ
-SudbrfrKT/eNhNOlBb07xsotTn4PxXUuIMQKROs78twP1dJnvPIog2hThR8HRbPD
-ewbn8jDHudEpKherzPmUSOVf+FxWkQmyyZMO1LBAdoHQ3EgEKaoc9vSsPvJtXMdz
-xVJoAtMDJyRWqs/2gE5TiKjlwlJQqBCYCZ4GiJmoXZNmdKfX4Cr61X+FzOXpo6C2
-9kRfy7umw1nkTEJGQ0ZcRDdif45MOijElda+EsQFy6AL+LnJy/08qKMTecIE7/T7
-JsWCJoF0Zs/H557UYf01cNYtUIgPtVrZIaQtFwEU6PWqJmJkWfypCRkQwcV4WHN6
-u+RkDbNdWFU7aU+pAMtawHZ+HnuyoHb2XeUU07s3BCqfhSMel/4QE9iBPGVs5QKP
-VFSxTJMZbaI9lbect1us5plNsk9cIJnyTUgP1qT/cpkanj/iDPsEmDYsLx20v+As
-kHNy8UH+4mxB7ymDHkSF
-=XSiX
------END PGP SIGNATURE-----
-
---VbJkn9YxBvnuCH5J--
+Thanks a lot for your great effort, this was very useful!
+Andrea
