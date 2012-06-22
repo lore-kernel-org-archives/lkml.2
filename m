@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761046Ab2FVDBD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Jun 2012 23:01:03 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45002 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761028Ab2FVDBB (ORCPT
+	id S1761063Ab2FVDBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Jun 2012 23:01:06 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:54343 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761028Ab2FVDBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Jun 2012 23:01:01 -0400
-Date: Fri, 22 Jun 2012 13:00:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhangfei Gao <zhangfei.gao@marvell.com>, Leo Yan <leoy@marvell.com>,
-        Qiao Zhou <zhouqiao@marvell.com>
-Subject: linux-next: build failure after merge of the slave-dma tree
-Message-Id: <20120622130049.05d18e86de1256aa980566b0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__22_Jun_2012_13_00_49_+1000_eJnG3snz1Po/U6gj"
+	Thu, 21 Jun 2012 23:01:04 -0400
+Date: Fri, 22 Jun 2012 05:01:01 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@amd64.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, X86-ML <x86@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Make reload interface per system
+Message-ID: <20120622030101.GE29505@aftab.osrc.amd.com>
+References: <1340121811-4477-1-git-send-email-bp@amd64.org>
+ <1340121811-4477-3-git-send-email-bp@amd64.org>
+ <CANDHA0jf2fLOtg1E6CbyNM=omn=kj=YoRJ3VTkNA0AhkS-MLtg@mail.gmail.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007737623@ORSMSX105.amr.corp.intel.com>
+ <20120619232857.GH5996@aftab.osrc.amd.com>
+ <1340182778.21745.75.camel@twins>
+ <20120620230856.GA4223@khazad-dum.debian.net>
+ <1340267075.21745.155.camel@twins>
+ <20120621230059.GA27178@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120621230059.GA27178@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__22_Jun_2012_13_00_49_+1000_eJnG3snz1Po/U6gj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 21, 2012 at 08:00:59PM -0300, Henrique de Moraes Holschuh wrote:
+> Meh.  I uploaded the first public version of the thing a whole two weeks
+> ago!  It should have been all over the Internet by now ;-)
+> 
+> It is in Debian Wheezy (soon-to-be-stable) as of yesterday, I think.  It
+> will eventually end up in Ubuntu.  And if you guys think it is worthwhile to
+> maintain it upstream either in git.k.o, or as part of tools/, I have nothing
+> against it.
+> 
+> I posted the URL earlier, I think, but here it is:
+> http://cdn.debian.net/debian/pool/contrib/i/iucode-tool/iucode-tool_0.8.orig.tar.bz2
+> 
+> But it really exists to help distros do Intel microcode management and
+> release install-and-forget packages for end users.  End-users should get to
+> either ignore its existence entirely and get automated updates of microcode
+> as distro binary packages, or run an "update-intel-microcode" script (not
+> written yet, but there is one on Debian and Ubuntu's microcode.ctl package)
+> that downloads the blob from Intel, and does whatever is needed to install
+> it to /lib/firmware and apply it to the running system (and kernel image,
+> initramfs, whatever).
 
-Hi Vinod,
+Yeah, this is all very helpful but let's see whether we are even going
+to need a tool, at all. If we are tool-less, we don't depend on any
+userspace stuff and ucode application just works like ftrace - no need
+for a specific tool but the shell and debugfs (sysfs in our case).
 
-After merging the slave-dma tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Thanks.
 
-drivers/dma/mmp_tdma.c:21:27: fatal error: mach/regs-icu.h: No such file or=
- directory
+-- 
+Regards/Gruss,
+Boris.
 
-Caused by commit c6da0ba8dfc8 ("dmaengine: mmp_tdma: add mmp tdma
-support").
-
-I have used the slave-dma tree from next-20120621 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__22_Jun_2012_13_00_49_+1000_eJnG3snz1Po/U6gj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP49/hAAoJEECxmPOUX5FEyswP/j+eEexXZaNXwY+q+Ii3RJKf
-iAs3vS6rzbY3LNA0amMbaLMMO2M3JymvCtoBmYeI+gkaFo0xeZtYCQCcUEjG2ygo
-X4dkNFGFlVbIIILvr0sf/Uua3v2s0mHXWtPm3XR6Kg7kXPAVYNLTcJaPDSoscQQC
-NZgjvjGUNb68HyLu75wrXi30A3gk4DkgJ5jkLu+f2z6j02Fumx1nJJmjrYq5J8f8
-a3iPmXweLZBxQbVrZwZM5PrETgsA6DI+JgdmFTwpkpeIA9TTOmkbCtrZ/l2+RSkg
-EKyD6IL80kne9+Y4z5p8f/wpXWiZ12XtTBbuixUA9petpXbCUdNO+Nnp1f50kuYz
-5ICWJDIs/VcLKgXCbX8uQsd3lEOxBAjv8wzPnPY2OeTdNtAPlJjf5mdU9sTnuX9l
-B4eUWUOMLiwlY7cKlyYr9H9p9NDZ/qlSuWLMcgJdbJYshrgIbeYXqIiVY/s91J80
-lnGHEzZq/sw9ofG55PFgVZZiIopB8oTZBcoa6tXIR4i6++U9h7Q0yo4g3BXkIn0M
-pUP58l9IQxPeG7ph55q+KaykM9sc4zhVinmQThXZp5YST5aYO3ZnGhkTfuf4zPfF
-j6kpXAihA06B44mt1hu/rGybRCvq+b78xZ85Lefs74WU/HH5775vILjDeOrSbwRq
-UXCWrGNQmIBAG+rvQYjs
-=XDM9
------END PGP SIGNATURE-----
-
---Signature=_Fri__22_Jun_2012_13_00_49_+1000_eJnG3snz1Po/U6gj--
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
