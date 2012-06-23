@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2FWJSQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 05:18:16 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:52356 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab2FWJSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 05:18:15 -0400
-Date: Sat, 23 Jun 2012 11:17:52 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        davem@davemloft.net, shangw@linux.vnet.ibm.com, tj@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 046/181] mm: remove sparsemem allocation details from the
- bootmem allocator
-Message-ID: <20120623091752.GK27816@cmpxchg.org>
-References: <20120529220636.AAA66A0308@akpm.mtv.corp.google.com>
- <CAE9FiQVEq5j1zoKS31fgfG_3xZSyfqsjdDorDku-Sgj6BTShEg@mail.gmail.com>
- <CAE9FiQXR+3k4QmOJe59xom+JW5JZAP3znRXQwdyqV5LMEPCw2g@mail.gmail.com>
+	id S1753692Ab2FWJU7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 05:20:59 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56188 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab2FWJUz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 05:20:55 -0400
+Date: Sat, 23 Jun 2012 10:20:49 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: deferring __fput()
+Message-ID: <20120623092049.GH14083@ZenIV.linux.org.uk>
+References: <1340369098.2464.20.camel@falcor>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQXR+3k4QmOJe59xom+JW5JZAP3znRXQwdyqV5LMEPCw2g@mail.gmail.com>
+In-Reply-To: <1340369098.2464.20.camel@falcor>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 07:05:45PM -0700, Yinghai Lu wrote:
-> On Fri, Jun 22, 2012 at 6:11 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Tue, May 29, 2012 at 3:06 PM,  <akpm@linux-foundation.org> wrote:
-> >> From: Johannes Weiner <hannes@cmpxchg.org>
-> >> Subject: mm: remove sparsemem allocation details from the bootmem allocator
-> >>
-> >> alloc_bootmem_section() derives allocation area constraints from the
-> >> specified sparsemem section.  This is a bit specific for a generic memory
-> >> allocator like bootmem, though, so move it over to sparsemem.
-> >>
-> >> As __alloc_bootmem_node_nopanic() already retries failed allocations with
-> >> relaxed area constraints, the fallback code in sparsemem.c can be removed
-> >> and the code becomes a bit more compact overall.
-> >>
-> >> [akpm@linux-foundation.org: fix build]
-> >> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> >> Acked-by: Tejun Heo <tj@kernel.org>
-> >> Acked-by: David S. Miller <davem@davemloft.net>
-> >> Cc: Yinghai Lu <yinghai@kernel.org>
-> >> Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
-> >> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> >
-> > hi, this one cause regression, will put usemap to last node's memory
-> > instead of each node.
+On Fri, Jun 22, 2012 at 08:44:58AM -0400, Mimi Zohar wrote:
+> Al,
 > 
-> attached patch fixes the problem.
-
-Sorry for the trouble and thanks for the patch!  The number of bugs in
-these three lines is too damn high...
-
-> Subject: [PATCH] mm: fix goal calculating with usemap
+> I really appreciate all of the work that has gone into making __fput()
+> lockless - making the syscalls use get/put_light(), signal changes, and
+> using Oleg's task_work_add() to defer processes. 
 > 
-> PAGE_SECTION_MASK should be used with pfn instead of pa.
+> Currently, when unmapping a file after closing it, I'm not getting the
+> mmap_sem/i_mutex lockdep any more.  This seems due to Tyler Hick's
+> commit 978d6d8 "vfs: Correctly set the dir i_mutex lockdep class",
+> rather than the above changes.
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> diff --git a/mm/sparse.c b/mm/sparse.c
-> index 6a4bf91..fd00928 100644
-> --- a/mm/sparse.c
-> +++ b/mm/sparse.c
-> @@ -287,7 +287,7 @@ sparse_early_usemaps_alloc_pgdat_section(struct pglist_data *pgdat,
->  	 * from the same section as the pgdat where possible to avoid
->  	 * this problem.
->  	 */
-> -	goal = __pa(pgdat) & PAGE_SECTION_MASK;
-> +	goal = ((__pa(pgdat) >> PAGE_SHIFT) & PAGE_SECTION_MASK) << PAGE_SHIFT;
+> Although the mmap_sem/i_mutex lockdep doesn't exist anymore, before
+> upstreaming IMA-appraisal, the issue with __fput() should probably be
+> resolved. :)   What else needs to be done to make __fput() lockless?
+> How can I help?
 
-How about
+Deadlock is still there.  I'll resurrect the patch switching the final fput()
+to task_work_add() and throw it into #for-next tomorrow; the main question is
+what to do with fput() from kernel threads and whether we want to allow it
+from interrupts - solution for the former (definitely needed) would cover
+the latter as well.  I suspect that we want to go for "just use
+schedule_work()" for these cases; among other things, that would allow
+to simplify aio.c quite a bit.
 
-	goal = __pa(pgdat) & (PAGE_SECTION_MASK << PAGE_SHIFT);
+Somewhat curious part is what to do with daemonize() - by the time we do
+(potentially) piles of fput() in there, we *are* a kernel thread.  We won't
+be doing any task_work() handling anymore.  So it's "do the final fput()
+ourselves" or "have them done asynchronously".  OTOH, daemonize()
+probably needs to be killed anyway - it had all callers in mainline
+removed, only to get one more in drivers/staging.  Which caller looks like
+it ought to be switched to kthread_create(), along with other callers
+of kernel_thread() in there...
 
-instead?
-
->  	host_pgdat = NODE_DATA(early_pfn_to_nid(goal >> PAGE_SHIFT));
->  	return __alloc_bootmem_node_nopanic(host_pgdat, size,
->  					    SMP_CACHE_BYTES, goal);
+What I have in mind is something like
+	if (unlikely(in_atomic() || current->flags & PF_KTHREAD))
+		move file to global list, use schedul_work() to have it dealt with
+	else
+		move to per-task list, do task_work_add() if it was empty (i.e.
+		if we hadn't scheduled its emptying already).
+The latter is completely thread-synchronous, so we shouldn't need any locking
+whatsoever.  The former... I'd probably go for a single list, protected by
+spin_lock_irq(), keeping the possibility to switch to per-CPU lists if we
+find a load that gets serious contention on that list.  In any case, worker will
+start with taking the list contents, emptying the list and then killing the
+suckers off one by one.
