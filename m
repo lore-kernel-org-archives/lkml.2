@@ -1,138 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab2FWLrp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 07:47:45 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41221 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab2FWLro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 07:47:44 -0400
-Message-ID: <1340452052.1784.40.camel@mop>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-From: Kay Sievers <kay@vrfy.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+	id S1753634Ab2FWMEk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 08:04:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20291 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751808Ab2FWMEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 08:04:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="169228900"
+Date: Sat, 23 Jun 2012 20:04:33 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
-Date: Sat, 23 Jun 2012 13:47:32 +0200
-In-Reply-To: <20120623061313.GA21895@gmail.com>
+        "kay.sievers" <kay.sievers@vrfy.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
+ console
+Message-ID: <20120623120433.GA10789@localhost>
 References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
-	 <20120622145402.8047a669.akpm@linux-foundation.org>
-	 <20120623061313.GA21895@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.5.2 (3.5.2-2.fc18)
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <20120622145402.8047a669.akpm@linux-foundation.org>
+ <20120623061313.GA21895@gmail.com>
+ <1340452052.1784.40.camel@mop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340452052.1784.40.camel@mop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-06-23 at 08:13 +0200, Ingo Molnar wrote:
-> * Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Thu, 21 Jun 2012 19:52:03 -0400
-> > Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > But with the new printk() changes, text without a newline 
-> > > gets buffered and does not print out to the console at the 
-> > > location of the printk.
-> > 
-> > uh, how about we fix that?  The old behaviour was good, the 
-> > new behaviour is noxious.
-> 
-> Absolutely.
-> 
-> pr_flush() really seems to be a workaround.
-> 
-> > Please idenfity these "new printk() changes".  Was the new 
-> > noxiousness an unavoidable effect of them?
-> 
-> Fundamentally:
-> 
-> e2ae715d66bf kmsg - kmsg_dump() use iterator to receive log buffer content
-> c313af145b9b printk() - isolate KERN_CONT users from ordinary complete lines
-> 3ce9a7c0ac28 printk() - restore prefix/timestamp printing for multi-newline strings
-> 649e6ee33f73 printk() - restore timestamp printing at console output
-> 5c5d5ca51abd printk() - do not merge continuation lines of different threads
-> 7f3a781d6fd8 printk - fix compilation for CONFIG_PRINTK=n
-> 5fc3249068c1 kmsg: use do_div() to divide 64bit integer
-> e11fea92e13f kmsg: export printk records to the /dev/kmsg interface
-> 7ff9554bb578 printk: convert byte-buffer to variable-length record buffer
-> 
-> Should we revert them or can they be fixed sanely? Kay seems to 
-> be busy with other things so I guess a revert is the best we can 
-> do. Greg, Kay?
+> - printing one full line, and suppress the later OK entirely. The OK
+>   might not be needed at all; we will find out that the machine
+>   has not crashed at that point and a message in case of an error
+>   could be sufficient in most cases.
 
-I just don't have a better idea than Joe or Steven.
+That looks neat and feasible.  We not only get less output, but also
+eliminate the problem of flushing:
 
-The conversion from the unreliable byte-buffer to records changes the
-behavior a little in some areas. We are atomic at the line level now and
-not at an sometimes unpredictable byte stream position which can just be
-moved forward by adding another few bytes.
+        [   16.309109] Testing tracer irqsoff: PASSED
+        [   17.184240] Testing tracer wakeup: PASSED
+        [   18.060218] Testing tracer wakeup_rt: PASSED
+        [   18.729222] Testing tracer function_graph: PASSED
+        ...thousands more lines
+=>
+        [   16.309109] Testing tracer irqsoff
+        [   17.184240] Testing tracer wakeup
+        [   18.060218] Testing tracer wakeup_rt
+        [   18.729222] Testing tracer function_graph
+        ...thousands more lines
 
-The usual continuation line user should all be buffered to make things
-generally more reliable and less racy. And we really had these problems
-in the past, and substantially improved the common use-cases now.
+However these two special lines will have to be broken up into more lines:
 
-But yes, it seems to come into our way with the current output format of
-the kernel self-tests, and we need to do something about it. But I don't
-think it should be going back to the much-too-simple and unreliable
-byte-stream buffer.
-
-We need make some sort of a compromise for the self-tests here, I guess.
-I think the trade of using one of these options for the self-tests to
-cope with the new model is justified:
-- flush explicitly when it is needed, by a global flag or with a
-  message prefix
-- printing a second full line that says: test foo OK, instead
-  of appending the OK to the former line
-- printing one full line, and suppress the later OK entirely. The OK
-  might not be needed at all; we will find out that the machine
-  has not crashed at that point and a message in case of an error
-  could be sufficient in most cases.
-
-Reverting the changes now would remove:
-- proper device identifiers attached to a message, which allows
-  tools for the first time to know the contexts of the kernel messages
-- 100% message integrity of structured messages, and single line
-  prints, and if only one continuation line user prints at a time.
-  We never mix continuation users with full line users, like the
-  old buffer did.
-- very reliable continuation line prints, because of the buffering.
-  The only race that can still happen is several cont users racing
-  against each other, which is not too likely
-- 100% granularity at line level during userspace buffer access,
-  crash dumping; we never copy around half or overwritten lines,
-  like the old buffer
-- the ring buffer prunes only entire messages not just the half
-  of a line like the old byte buffer
-- sequence numbers allow us to track the state of the read and write
-  position in the buffer, so we never copy in-the-meantime already
-  overwritten messages around
-- sequence numbers which allow userspace to reconnect to the old reading
-  position and process only new messages, and find if messages got
-  overwritten
-- support for multiple concurrent readers with live update of the kernel
-  log stream
-
-This seems like a trade of a rather cosmetic output-format issue for
-kernel self-tests, against general reliability, integrity and usefulness
-of the rest of the kernel message users.
-
-The record buffer is a huge step forward for the system logging, and it
-allows us for the first time to make the kernel log useful to consumers
-other than humans, and is key part of providing important information to
-the system management.
-
-An explicit flush for the self-test like users is unfortunate, and
-inconvenient, and surely not nice, but I think it's still the better
-overall deal.
+        [   14.947553] Testing dynamic ftrace ops #1: (1 0 1 1 0) (1 1 2 1 0) (2 1 3 1 26) (2 2 4 1 43) PASSED
+        [   15.740993] Testing dynamic ftrace ops #2: (1 0 1 26 0) (1 1 2 43 0) (2 1 3 1 15) (2 2 4 18 32) PASSED
 
 Thanks,
-Kay
-
+Fengguang
