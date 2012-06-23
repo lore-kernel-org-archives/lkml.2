@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab2FWEow (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 00:44:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59972 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab2FWEov (ORCPT
+	id S1757226Ab2FWErr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 00:47:47 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60568 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755455Ab2FWErq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 00:44:51 -0400
-Date: Fri, 22 Jun 2012 21:44:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, arnd@arndb.de, b-cousson@ti.com, rnayak@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com
-Subject: Re: [RFC PATCH v2 1/2] drivers: misc: omap: add a new driver for
- ocp2scp
-Message-ID: <20120623044445.GA2993@kroah.com>
-References: <1340370942-23201-1-git-send-email-kishon@ti.com>
- <1340370942-23201-2-git-send-email-kishon@ti.com>
+	Sat, 23 Jun 2012 00:47:46 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FE549E8.2050905@jp.fujitsu.com>
+Date: Sat, 23 Jun 2012 13:45:28 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340370942-23201-2-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: John Stultz <john.stultz@linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: RFC:  Easy-Reclaimable LRU list
+References: <4FE012CD.6010605@kernel.org> <4FE37434.808@linaro.org> <4FE41752.8050305@kernel.org>
+In-Reply-To: <4FE41752.8050305@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 06:45:41PM +0530, Kishon Vijay Abraham I wrote:
-> Adds a new driver _ocp2scp_.
+(2012/06/22 15:57), Minchan Kim wrote:
+> Hi John,
+>
+> On 06/22/2012 04:21 AM, John Stultz wrote:
+>
+>> On 06/18/2012 10:49 PM, Minchan Kim wrote:
+>>> Hi everybody!
+>>>
+>>> Recently, there are some efforts to handle system memory pressure.
+>>>
+>>> 1) low memory notification - [1]
+>>> 2) fallocate(VOLATILE) - [2]
+>>> 3) fadvise(NOREUSE) - [3]
+>>>
+>>> For them, I would like to add new LRU list, aka "Ereclaimable" which
+>>> is opposite of "unevictable".
+>>> Reclaimable LRU list includes _easy_ reclaimable pages.
+>>> For example, easy reclaimable pages are following as.
+>>>
+>>> 1. invalidated but remained LRU list.
+>>> 2. pageout pages for reclaim(PG_reclaim pages)
+>>> 3. fadvise(NOREUSE)
+>>> 4. fallocate(VOLATILE)
+>>>
+>>> Their pages shouldn't stir normal LRU list and compaction might not
+>>> migrate them, even.
+>>> Reclaimer can reclaim Ereclaimable pages before normal lru list and
+>>> will avoid unnecessary
+>>> swapout in anon pages in easy-reclaimable LRU list.
+>>
+>> I was hoping there would be further comment on this by more core VM
+>> devs, but so far things have been quiet (is everyone on vacation?).
+>
+>
+> At least, there are no dissent comment until now.
+> Let be a positive. :)
 
-That's not what you called this driver in the patch below :(
+I think this is interesting approach. Major concern is how to guarantee EReclaimable
+pages are really EReclaimable...Do you have any idea ? madviced pages are really
+EReclaimable ?
 
-> This driver takes the responsibility of creating
-> all the devices that is connected to OCP2SCP. In the case of OMAP4, USB2PHY
-> is connected to ocp2scp.
-> 
-> This also includes device tree support for ocp2scp driver and
-> the documentation with device tree binding information is updated.
+A (very) small concern is will you use one more page-flags for this ? ;)
 
-Can't this live where the scp drivers live?  Actually, where is that at?
-Do we have scp drivers?
+Thanks,
+-Kame
 
-thanks,
 
-greg k-h
+
+
+
