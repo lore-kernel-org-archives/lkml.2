@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2FWMSm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 08:18:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53302 "EHLO
+	id S1754126Ab2FWM34 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 08:29:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41147 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751808Ab2FWMSl (ORCPT
+	by vger.kernel.org with ESMTP id S1753201Ab2FWM33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 08:18:41 -0400
+	Sat, 23 Jun 2012 08:29:29 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Add driver for Arizona LDO1
-Date: Sat, 23 Jun 2012 13:18:35 +0100
-Message-Id: <1340453915-6417-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] gpiolib: Add support for Wolfson Microelectronics Arizona class devices
+Date: Sat, 23 Jun 2012 13:29:25 +0100
+Message-Id: <1340454566-7206-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arizona class devices feature an integrated LDO which is intended to
-supply the digital core for the device. Provide a driver offering
-minimal control of this regulator.
+The Arizona class devices provide some GPIOs for use in the system. This
+driver provides support for these via gpiolib. Currently interrupts are
+not supported, normally the GPIOs are outputs only.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/Makefile       |    2 +-
- drivers/regulator/arizona-ldo1.c |  134 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 135 insertions(+), 1 deletion(-)
- create mode 100644 drivers/regulator/arizona-ldo1.c
+ drivers/gpio/Kconfig        |    6 ++
+ drivers/gpio/Makefile       |    1 +
+ drivers/gpio/gpio-arizona.c |  162 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 169 insertions(+)
+ create mode 100644 drivers/gpio/gpio-arizona.c
 
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index ec4a0cf..c746088 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -15,7 +15,7 @@ obj-$(CONFIG_REGULATOR_AB3100) += ab3100.o
- obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
- obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
- obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
--obj-$(CONFIG_REGULATOR_ARIZONA) += arizona-micsupp.o
-+obj-$(CONFIG_REGULATOR_ARIZONA) += arizona-micsupp.o arizona-ldo1.o
- obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
- obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
- obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
-diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index c4067d0..9c713e9 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -253,6 +253,12 @@ config GPIO_GE_FPGA
+ 
+ comment "I2C GPIO expanders:"
+ 
++config GPIO_ARIZONA
++	tristate "Wolfson Microelectronics Arizona class devices"
++	depends on MFD_ARIZONA
++	help
++	  Support for GPIOs on Wolfson Arizona class devices.
++
+ config GPIO_MAX7300
+ 	tristate "Maxim MAX7300 GPIO expander"
+ 	depends on I2C
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 0f55662..e173970 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_GPIO_74X164)	+= gpio-74x164.o
+ obj-$(CONFIG_GPIO_AB8500)	+= gpio-ab8500.o
+ obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp5520.o
+ obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
++obj-$(CONFIG_GPIO_ARIZONA)	+= gpio-arizona.o
+ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
+ obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
+ obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
+diff --git a/drivers/gpio/gpio-arizona.c b/drivers/gpio/gpio-arizona.c
 new file mode 100644
-index 0000000..51f02ca
+index 0000000..0c1becf
 --- /dev/null
-+++ b/drivers/regulator/arizona-ldo1.c
-@@ -0,0 +1,134 @@
++++ b/drivers/gpio/gpio-arizona.c
+@@ -0,0 +1,162 @@
 +/*
-+ * arizona-ldo1.c  --  LDO1 supply for Arizona devices
++ * gpiolib support for Wolfson Arizona class devices
 + *
 + * Copyright 2012 Wolfson Microelectronics PLC.
 + *
@@ -60,129 +78,157 @@ index 0000000..51f02ca
 + *  under  the terms of  the GNU General  Public License as published by the
 + *  Free Software Foundation;  either version 2 of the  License, or (at your
 + *  option) any later version.
++ *
 + */
 +
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/init.h>
-+#include <linux/bitops.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/gpio.h>
++#include <linux/kernel.h>
 +#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/gpio.h>
++#include <linux/platform_device.h>
++#include <linux/seq_file.h>
 +
 +#include <linux/mfd/arizona/core.h>
 +#include <linux/mfd/arizona/pdata.h>
 +#include <linux/mfd/arizona/registers.h>
 +
-+struct arizona_ldo1 {
-+	struct regulator_dev *regulator;
++struct arizona_gpio {
 +	struct arizona *arizona;
-+
-+	struct regulator_consumer_supply supply;
-+	struct regulator_init_data init_data;
++	struct gpio_chip gpio_chip;
 +};
 +
-+static struct regulator_ops arizona_ldo1_ops = {
-+	.list_voltage = regulator_list_voltage_linear,
-+	.map_voltage = regulator_map_voltage_linear,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+};
-+
-+static const struct regulator_desc arizona_ldo1 = {
-+	.name = "LDO1",
-+	.supply_name = "LDOVDD",
-+	.type = REGULATOR_VOLTAGE,
-+	.ops = &arizona_ldo1_ops,
-+
-+	.vsel_reg = ARIZONA_LDO1_CONTROL_1,
-+	.vsel_mask = ARIZONA_LDO1_VSEL_MASK,
-+	.min_uV = 900000,
-+	.uV_step = 50000,
-+	.n_voltages = 7,
-+
-+	.owner = THIS_MODULE,
-+};
-+
-+static const struct regulator_init_data arizona_ldo1_default = {
-+	.num_consumer_supplies = 1,
-+};
-+
-+static __devinit int arizona_ldo1_probe(struct platform_device *pdev)
++static inline struct arizona_gpio *to_arizona_gpio(struct gpio_chip *chip)
 +{
-+	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
-+	struct regulator_config config = { };
-+	struct arizona_ldo1 *ldo1;
++	return container_of(chip, struct arizona_gpio, gpio_chip);
++}
++
++static int arizona_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
++{
++	struct arizona_gpio *arizona_gpio = to_arizona_gpio(chip);
++	struct arizona *arizona = arizona_gpio->arizona;
++
++	return regmap_update_bits(arizona->regmap, ARIZONA_GPIO1_CTRL + offset,
++				  ARIZONA_GPN_DIR, ARIZONA_GPN_DIR);
++}
++
++static int arizona_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct arizona_gpio *arizona_gpio = to_arizona_gpio(chip);
++	struct arizona *arizona = arizona_gpio->arizona;
++	unsigned int val;
 +	int ret;
 +
-+	ldo1 = devm_kzalloc(&pdev->dev, sizeof(*ldo1), GFP_KERNEL);
-+	if (ldo1 == NULL) {
-+		dev_err(&pdev->dev, "Unable to allocate private data\n");
-+		return -ENOMEM;
-+	}
-+
-+	ldo1->arizona = arizona;
-+
-+	/*
-+	 * Since the chip usually supplies itself we provide some
-+	 * default init_data for it.  This will be overridden with
-+	 * platform data if provided.
-+	 */
-+	ldo1->init_data = arizona_ldo1_default;
-+	ldo1->init_data.consumer_supplies = &ldo1->supply;
-+	ldo1->supply.supply = "DCVDD";
-+	ldo1->supply.dev_name = dev_name(arizona->dev);
-+
-+	config.dev = arizona->dev;
-+	config.driver_data = ldo1;
-+	config.regmap = arizona->regmap;
-+
-+	if (arizona->pdata.ldo1)
-+		config.init_data = arizona->pdata.ldo1;
-+	else
-+		config.init_data = &ldo1->init_data;
-+
-+	ldo1->regulator = regulator_register(&arizona_ldo1, &config);
-+	if (IS_ERR(ldo1->regulator)) {
-+		ret = PTR_ERR(ldo1->regulator);
-+		dev_err(arizona->dev, "Failed to register LDO1 supply: %d\n",
-+			ret);
++	ret = regmap_read(arizona->regmap, ARIZONA_GPIO1_CTRL + offset, &val);
++	if (ret < 0)
 +		return ret;
-+	}
 +
-+	platform_set_drvdata(pdev, ldo1);
-+
-+	return 0;
++	if (val & ARIZONA_GPN_LVL)
++		return 1;
++	else
++		return 0;
 +}
 +
-+static __devexit int arizona_ldo1_remove(struct platform_device *pdev)
++static int arizona_gpio_direction_out(struct gpio_chip *chip,
++				     unsigned offset, int value)
 +{
-+	struct arizona_ldo1 *ldo1 = platform_get_drvdata(pdev);
++	struct arizona_gpio *arizona_gpio = to_arizona_gpio(chip);
++	struct arizona *arizona = arizona_gpio->arizona;
 +
-+	regulator_unregister(ldo1->regulator);
++	if (value)
++		value = ARIZONA_GPN_LVL;
 +
-+	return 0;
++	return regmap_update_bits(arizona->regmap, ARIZONA_GPIO1_CTRL + offset,
++				  ARIZONA_GPN_DIR | ARIZONA_GPN_LVL, value);
 +}
 +
-+static struct platform_driver arizona_ldo1_driver = {
-+	.probe = arizona_ldo1_probe,
-+	.remove = __devexit_p(arizona_ldo1_remove),
-+	.driver		= {
-+		.name	= "arizona-ldo1",
-+		.owner	= THIS_MODULE,
-+	},
++static void arizona_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct arizona_gpio *arizona_gpio = to_arizona_gpio(chip);
++	struct arizona *arizona = arizona_gpio->arizona;
++
++	if (value)
++		value = ARIZONA_GPN_LVL;
++
++	regmap_update_bits(arizona->regmap, ARIZONA_GPIO1_CTRL + offset,
++			   ARIZONA_GPN_LVL, value);
++}
++
++static struct gpio_chip template_chip = {
++	.label			= "arizona",
++	.owner			= THIS_MODULE,
++	.direction_input	= arizona_gpio_direction_in,
++	.get			= arizona_gpio_get,
++	.direction_output	= arizona_gpio_direction_out,
++	.set			= arizona_gpio_set,
++	.can_sleep		= 1,
 +};
 +
-+module_platform_driver(arizona_ldo1_driver);
++static int __devinit arizona_gpio_probe(struct platform_device *pdev)
++{
++	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
++	struct arizona_pdata *pdata = arizona->dev->platform_data;
++	struct arizona_gpio *arizona_gpio;
++	int ret;
 +
-+/* Module information */
++	arizona_gpio = devm_kzalloc(&pdev->dev, sizeof(*arizona_gpio),
++				    GFP_KERNEL);
++	if (arizona_gpio == NULL)
++		return -ENOMEM;
++
++	arizona_gpio->arizona = arizona;
++	arizona_gpio->gpio_chip = template_chip;
++	arizona_gpio->gpio_chip.dev = &pdev->dev;
++
++	switch (arizona->type) {
++	case WM5102:
++		arizona_gpio->gpio_chip.ngpio = 5;
++		break;
++	default:
++		dev_err(&pdev->dev, "Unknown chip variant %d\n",
++			arizona->type);
++		return -EINVAL;
++	}
++
++	if (pdata && pdata->gpio_base)
++		arizona_gpio->gpio_chip.base = pdata->gpio_base;
++	else
++		arizona_gpio->gpio_chip.base = -1;
++
++	ret = gpiochip_add(&arizona_gpio->gpio_chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Could not register gpiochip, %d\n",
++			ret);
++		goto err;
++	}
++
++	platform_set_drvdata(pdev, arizona_gpio);
++
++	return ret;
++
++err:
++	return ret;
++}
++
++static int __devexit arizona_gpio_remove(struct platform_device *pdev)
++{
++	struct arizona_gpio *arizona_gpio = platform_get_drvdata(pdev);
++
++	return gpiochip_remove(&arizona_gpio->gpio_chip);
++}
++
++static struct platform_driver arizona_gpio_driver = {
++	.driver.name	= "arizona-gpio",
++	.driver.owner	= THIS_MODULE,
++	.probe		= arizona_gpio_probe,
++	.remove		= __devexit_p(arizona_gpio_remove),
++};
++
++module_platform_driver(arizona_gpio_driver);
++
 +MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");
-+MODULE_DESCRIPTION("Arizona LDO1 driver");
++MODULE_DESCRIPTION("GPIO interface for Arizona devices");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:arizona-ldo1");
++MODULE_ALIAS("platform:arizona-gpio");
 -- 
 1.7.10
 
