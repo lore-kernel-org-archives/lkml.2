@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab2FWN6a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 09:58:30 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59369 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab2FWN63 (ORCPT
+	id S1754743Ab2FWO64 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 10:58:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54163 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355Ab2FWO6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 09:58:29 -0400
+	Sat, 23 Jun 2012 10:58:54 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+        Greg KH <greg@kroah.com>, linux-mm@kvack.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        =?UTF-8?q?Am=C3=A9rico=20Wang?= <xiyou.wangcong@gmail.com>,
+        Michael Ellerman <michael@ellerman.id.au>
+Subject: [PATCH -v4 0/6] notifier error injection
+Date: Sat, 23 Jun 2012 23:58:16 +0900
+Message-Id: <1340463502-15341-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.10.2
 MIME-Version: 1.0
-In-Reply-To: <CAM_iQpVyJq2BzQ6anviJrWcRqNAP1EU-ngCMA267utc2B2soVQ@mail.gmail.com>
-References: <CAN_1RdvqJRig8vZW_gcvNVKYNo7ROmEKxAs7qu1N6XE4+Pspjg@mail.gmail.com>
-	<20120623040633.GA16278@kroah.com>
-	<CAN_1RdtfiWtuqV=vBkagZfmvstket499QdCK3zZrrS8xKTZwPA@mail.gmail.com>
-	<20120623044105.GA32663@kroah.com>
-	<CAN_1RduD=yh0vjVdb3RwQn9ivxcBEGgJ3aTXuGgj4=FEznYmXg@mail.gmail.com>
-	<CAM_iQpVyJq2BzQ6anviJrWcRqNAP1EU-ngCMA267utc2B2soVQ@mail.gmail.com>
-Date: Sat, 23 Jun 2012 21:58:27 +0800
-Message-ID: <CAN_1RdujZ6ZFEecP26cKp0xvnSrXWOXgJnbcm6E3wCYPTSz4Dg@mail.gmail.com>
-Subject: Re: [PATCH] Implement uhook(call kernel func from userspace) driver
-From: Peiyong Feng <peiyong.feng.kernel@gmail.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/23 Cong Wang <xiyou.wangcong@gmail.com>:
-> On Sat, Jun 23, 2012 at 2:01 PM, Peiyong Feng
-> <peiyong.feng.kernel@gmail.com> wrote:
->>
->> I mean that although the main line kernel cannot accept this patch, and
->> uhook is very useful to play a rule as a debug tool.
->
-> It depends, we already have kprobe, tracepoint, kgdb, kdump...
+This provides kernel modules that can be used to test the error handling
+of notifier call chain failures by injecting artifical errors to the
+following notifier chain callbacks.
 
-May be I am not make myself understood. The uhook is not like kgdb, kprobe or
-some other debug tools. As I mentioned in previous mail that we can
-run the kernel
-ksymbal while kernel is running, not like the kgdb that need some
-hardware driver support
-(lots of problems occurred when I try kgdb),
+ * CPU notifier
+ * PM notifier
+ * memory hotplug notifier
+ * powerpc pSeries reconfig notifier
 
-uhook is more "soft", it just provide a way that can call kernel
-routine or ksymbals Asynchronously.
+Example: Inject CPU offline error (-1 == -EPERM)
 
-Easy but efficent. I have used it to develop device drivers, very
-nice, and not every platform or board support
-kgdb.
->
->> Is there some where else
->> that can hold this tool, and let more people use the uhook?
->
-> You have github, don't you?
+	# cd /sys/kernel/debug/notifier-error-inject/cpu
+	# echo -1 > actions/CPU_DOWN_PREPARE/error
+	# echo 0 > /sys/devices/system/cpu/cpu1/online
+	bash: echo: write error: Operation not permitted
+
+There are also handy shell scripts to test CPU and memory hotplug notifier.
+Note that these tests didn't detect error handling bugs on my machine but
+I still think this feature is usefull to test the code path which is rarely
+executed.
+
+Changelog:
+
+* v4 (It is about 11 months since v3)
+- prefix all APIs with notifier_err_inject_*
+- rearrange debugfs interface
+  (e.g. $DEBUGFS/cpu-notifier-error-inject/CPU_DOWN_PREPARE -->
+        $DEBUGFS/notifier-error-inject/cpu/actions/CPU_DOWN_PREPARE/error)
+- update modules to follow new interface
+- add -r option for memory-notifier.sh to specify percent of offlining
+  memory blocks
+
+* v3
+- rewrite to be kernel modules instead of initializing at late_initcall()s
+  (it makes the diffstat look different but most code remains unchanged)
+- export err_inject_notifier_block_{init,cleanup} for modules
+- export pSeries_reconfig_notifier_{,un}register symbols for a module
+- notifier priority can be specified as a module parameter
+- add testing scripts in tools/testing/fault-injection
+
+* v2
+- "PM: Improve error code of pm_notifier_call_chain()" is now in -next
+- "debugfs: add debugfs_create_int" is dropped
+- put a comment in err_inject_notifier_block_init()
+- only allow valid errno to be injected (-MAX_ERRNO <= errno <= 0)
+- improve Kconfig help text
+- make CONFIG_PM_NOTIFIER_ERROR_INJECTION visible even if PM_DEBUG is disabled
+- make CONFIG_PM_NOTIFIER_ERROR_INJECTION default if PM_DEBUG is enabled
+
+Akinobu Mita (6):
+  fault-injection: notifier error injection
+  cpu: rewrite cpu-notifier-error-inject module
+  PM: PM notifier error injection module
+  memory: memory notifier error injection module
+  powerpc: pSeries reconfig notifier error injection module
+  fault-injection: add notifier error injection testing scripts
+
+ lib/Kconfig.debug                                |   91 ++++++++++-
+ lib/Makefile                                     |    5 +
+ lib/cpu-notifier-error-inject.c                  |   63 +++-----
+ lib/memory-notifier-error-inject.c               |   48 ++++++
+ lib/notifier-error-inject.c                      |  112 ++++++++++++++
+ lib/notifier-error-inject.h                      |   24 +++
+ lib/pSeries-reconfig-notifier-error-inject.c     |   51 +++++++
+ lib/pm-notifier-error-inject.c                   |   49 ++++++
+ tools/testing/fault-injection/cpu-notifier.sh    |  169 +++++++++++++++++++++
+ tools/testing/fault-injection/memory-notifier.sh |  176 ++++++++++++++++++++++
+ 10 files changed, 748 insertions(+), 40 deletions(-)
+ create mode 100644 lib/memory-notifier-error-inject.c
+ create mode 100644 lib/notifier-error-inject.c
+ create mode 100644 lib/notifier-error-inject.h
+ create mode 100644 lib/pSeries-reconfig-notifier-error-inject.c
+ create mode 100644 lib/pm-notifier-error-inject.c
+ create mode 100755 tools/testing/fault-injection/cpu-notifier.sh
+ create mode 100755 tools/testing/fault-injection/memory-notifier.sh
+
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org
+Cc: Greg KH <greg@kroah.com>
+Cc: linux-mm@kvack.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Américo Wang <xiyou.wangcong@gmail.com>
+Cc: Michael Ellerman <michael@ellerman.id.au>
+
+-- 
+1.7.10.2
+
