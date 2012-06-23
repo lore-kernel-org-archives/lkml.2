@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab2FWECQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 00:02:16 -0400
-Received: from nm6-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.158]:29195
-	"HELO nm6-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751221Ab2FWEBc (ORCPT
+	id S1751885Ab2FWECO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 00:02:14 -0400
+Received: from nm15.access.bullet.mail.mud.yahoo.com ([66.94.237.216]:43335
+	"HELO nm15.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751188Ab2FWEBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 00:01:32 -0400
-X-Yahoo-Newman-Id: 299917.55476.bm@smtp103.sbc.mail.bf1.yahoo.com
+	Sat, 23 Jun 2012 00:01:30 -0400
+X-Yahoo-Newman-Id: 962917.55476.bm@smtp103.sbc.mail.bf1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: mYnq_OMVM1nIwrX5jA6tB5aqLg4ITirMZpXVQayA4jM7rc1
- qSVWgXiyGAB2XVu5ZapsWfbUKh4.BDnFlruGURrG_Ge09wdfC187THZrfVRm
- sDQqufyikfc3UfzoVV_4JzF74_rTrqNAoe15lMbbxO8hzXYnEkENvBXbvs5A
- 0i2jUMbSHBFZrsSyaXw5fvkwfIk3n8NU37jnGadbTu_ZDOGQDOv2_15vf5n4
- YuCv5cb80sa2AuG2ud9tJkrrqFtR_UpfAChq8WFhMdZzsSyhZo1AxXb4rAyP
- AMaI8.gIpkUeVm0PpNCGuKKPG23Opxjpvjh4ebNdxK5Edxznd1WXP7PIVMjB
- cRdVT0xUpTYOJlPCE6aWFdi.OBn7u9nlqmNiVV2OpfPtFKZmZwxv4.ZRNnmG
- NTvEzNovCNYDDpYbioHj8idNcFN1SW5LGNb7.
+X-YMail-OSG: lEbX3ZEVM1kz1k2fH2tcicuPiWeEa2IPe64kTjXYVSpRSiX
+ hhLMnI9II8uniXE6qDX4nfZJkyjnZd.vGbQ9DVWgpFdNG4BX0afuza5AMBef
+ B9qOXAM1Dn.n5FJc_cOoh3Y.zX60s4Om614IN82usTxtlWViufXDA3qliJUS
+ CczxPOQCpmeZYnH85ih1YoGJYn0akCHpkPUgw4EAz_fVURvXfqLveEIXHrLk
+ lCOqkxvlFwROT2YHF_zDhNzsajp8vZAL4mSYJpz_jBeFl6iSKcAkd3SCxYgZ
+ npn6c6GpAnukrZ_10ypiGqmyv1JcwmvaQzSbHFCcWikAZS2cnP6Yiv_YWrel
+ eTnTeMHtNlnhmfigPWC_1CnDTsVvUdHdGrYbXnj11SUY7zsduUX1A9vSbuuA
+ GgnZ5eA14bvCdyfMsfegQvWW3KDmUoDzhhtOVJuI6MhtHdNLxAv3pY2R03bC
+ H7Xso6SXCGDjbaYEjIHbzWu0nuhLmGIiAPYYTRMGW66EBbV4T
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: Daniel Santos <daniel.santos@pobox.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
@@ -37,9 +38,9 @@ To: Andrew Morton <akpm@linux-foundation.org>,
         Richard Weinberger <richard@nod.at>, Rob Landley <rob@landley.net>,
         Steven Rostedt <rostedt@goodmis.org>,
         Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH v4 5/13] compiler{,-gcc4}.h: Remove duplicate macros
-Date: Fri, 22 Jun 2012 23:00:40 -0500
-Message-Id: <1340424048-7759-6-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v4 4/13] compiler-gcc{3,4}.h: Use GCC_VERSION macro
+Date: Fri, 22 Jun 2012 23:00:39 -0500
+Message-Id: <1340424048-7759-5-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com>
 References: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com>
@@ -47,45 +48,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__linktime_error() does the same thing as __compiletime_error() and is
-only used in bug.h.  Since the macro defines a function attribute that
-will cause a failure at compile-time (not link-time), it makes more
-sense to keep __compiletime_error(), which is also neatly mated with
-__compiletime_warning().
+Using GCC_VERSION reduces complexity, is easier to read and is GCC's
+recommended mechanism for doing version checks. (Just don't ask me why
+they didn't define it in the first place.)  This also makes it easy to
+merge compiler-gcc{3,4}.h should somebody want to.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/compiler-gcc4.h |    2 --
- include/linux/compiler.h      |    3 ---
- 2 files changed, 0 insertions(+), 5 deletions(-)
+ include/linux/compiler-gcc3.h |    8 ++++----
+ include/linux/compiler-gcc4.h |   12 ++++++------
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
+diff --git a/include/linux/compiler-gcc3.h b/include/linux/compiler-gcc3.h
+index 37d4124..7d89feb 100644
+--- a/include/linux/compiler-gcc3.h
++++ b/include/linux/compiler-gcc3.h
+@@ -2,22 +2,22 @@
+ #error "Please don't include <linux/compiler-gcc3.h> directly, include <linux/compiler.h> instead."
+ #endif
+ 
+-#if __GNUC_MINOR__ < 2
++#if GCC_VERSION < 30200
+ # error Sorry, your compiler is too old - please upgrade it.
+ #endif
+ 
+-#if __GNUC_MINOR__ >= 3
++#if GCC_VERSION >= 30300
+ # define __used			__attribute__((__used__))
+ #else
+ # define __used			__attribute__((__unused__))
+ #endif
+ 
+-#if __GNUC_MINOR__ >= 4
++#if GCC_VERSION >= 30400
+ #define __must_check		__attribute__((warn_unused_result))
+ #endif
+ 
+ #ifdef CONFIG_GCOV_KERNEL
+-# if __GNUC_MINOR__ < 4
++# if GCC_VERSION < 30400
+ #   error "GCOV profiling support for gcc versions below 3.4 not included"
+ # endif /* __GNUC_MINOR__ */
+ #endif /* CONFIG_GCOV_KERNEL */
 diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 7ad60cd..5755e23 100644
+index a334107..7ad60cd 100644
 --- a/include/linux/compiler-gcc4.h
 +++ b/include/linux/compiler-gcc4.h
-@@ -33,8 +33,6 @@
-    the kernel context */
- #define __cold			__attribute__((__cold__))
+@@ -4,7 +4,7 @@
  
--#define __linktime_error(message) __attribute__((__error__(message)))
--
- #ifndef __CHECKER__
+ /* GCC 4.1.[01] miscompiles __weak */
+ #ifdef __KERNEL__
+-# if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
++# if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
+ #  error Your version of gcc miscompiles the __weak directive
+ # endif
+ #endif
+@@ -13,11 +13,11 @@
+ #define __must_check 		__attribute__((warn_unused_result))
+ #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
+ 
+-#if __GNUC_MINOR__ > 0
++#if GCC_VERSION >= 40102
+ # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+ #endif
+ 
+-#if __GNUC_MINOR__ >= 3
++#if GCC_VERSION >= 40300
+ /* Mark functions as cold. gcc will assume any path leading to a call
+    to them will be unlikely.  This means a lot of manual unlikely()s
+    are unnecessary now for any paths leading to the usual suspects
+@@ -39,9 +39,9 @@
  # define __compiletime_warning(message) __attribute__((warning(message)))
  # define __compiletime_error(message) __attribute__((error(message)))
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 923d093..4d9f353 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -293,9 +293,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- #ifndef __compiletime_error
- # define __compiletime_error(message)
- #endif
--#ifndef __linktime_error
--# define __linktime_error(message)
--#endif
+ #endif /* __CHECKER__ */
+-#endif /* __GNUC_MINOR__ >= 3 */
++#endif /* GCC_VERSION >= 40300 */
+ 
+-#if __GNUC_MINOR__ >= 5
++#if GCC_VERSION >= 40500
  /*
-  * Prevent the compiler from merging or refetching accesses.  The compiler
-  * is also forbidden from reordering successive instances of ACCESS_ONCE(),
+  * Mark a position in code as unreachable.  This can be used to
+  * suppress control flow warnings after asm blocks that transfer
+@@ -56,5 +56,5 @@
+ /* Mark a function definition as prohibited from being cloned. */
+ #define __noclone	__attribute__((__noclone__))
+ 
+-#endif /* __GNUC_MINOR__ >= 5 */
++#endif /* GCC_VERSION >= 40500 */
+ 
 -- 
 1.7.3.4
 
