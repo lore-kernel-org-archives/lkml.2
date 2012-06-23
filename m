@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab2FWVM2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 17:12:28 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36427 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755725Ab2FWVLn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 17:11:43 -0400
-Date: Sat, 23 Jun 2012 22:11:39 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: deferring __fput()
-Message-ID: <20120623211139.GL14083@ZenIV.linux.org.uk>
-References: <1340369098.2464.20.camel@falcor>
- <20120623092049.GH14083@ZenIV.linux.org.uk>
- <20120623194505.GI14083@ZenIV.linux.org.uk>
- <20120623203800.GA10306@redhat.com>
- <20120623210141.GK14083@ZenIV.linux.org.uk>
+	id S1756073Ab2FWVRI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 17:17:08 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36855 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755902Ab2FWVRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 17:17:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 0/21] ACPI / PM: Switch ACPI bus type and drivers to dev_pm_ops
+Date: Sat, 23 Jun 2012 23:06:06 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Mattia Dongili <malattia@linux.it>,
+        Harald Welte <laforge@gnumonks.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120623210141.GK14083@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206232306.06602.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 23, 2012 at 10:01:41PM +0100, Al Viro wrote:
-> On Sat, Jun 23, 2012 at 10:38:00PM +0200, Oleg Nesterov wrote:
-> 
-> > > Matter of fact, it would become identical to struct rcu_head
-> > > after that...
-> > 
-> > This is not clear to me... Why this is good?
-> 
-> Occam's Razor.
-> 
-> > I understand that sizeof(task_work) == sizeof(rcu_head) would be
-> > nice, probably you meant just this?
-> 
-> More than that - the callback type is also the same (pointer to such
-> struct -> void).  IOW, they both look like two instances of the
-> same thing ("list of callbacks"), differing only in what and
-> when does calling.
+Hi all,
 
-BTW, scratch that "task_work + cred" - cred has rcu_head in it.
-So we can put a union in there and slap the trimmed task_work into 
-it.  Voila - there goes separate allocation and *any* need for ->data.
-It's just container_of(), in that case as well.
+The following patchset converts the ACPI bus type and all of the ACPI drivers
+to the power management handling based on struct dev_pm_ops.  It does that in
+the following way:
+
+(1) The (unused) pm_message_t argument is dropped from the ACPI driver suspend
+    callback throughout the tree (patch [1/21]).
+
+(2) A struct dev_pm_ops object is defined for the ACPI bus type (patches
+    [2-3/21]) in such a way that
+    (a) driver callbacks from struct acpi_device_ops are executed for drivers
+        that provide them,
+    (b) driver callbacks from struct dev_pm_ops are executed for drivers that
+        provide them,
+    (c) 0 is returned for the remaining drivers.
+    Only suspend/resume, freeze/thaw, poweroff/restore bus type callbacks are
+    defined, because they are sufficient for the transition (they are removed
+    later on anyway).
+
+(3) All ACPI drivers that use PM callbacks are converted to the PM handling
+    based on struct dev_pm_ops (patches [4-18/21]).
+
+(4) The ACPI bus type is modified not to execute driver callbacks from
+    struct acpi_device_ops any more (patch [19/21]).  This affects several
+    x86 platform drivers and the ACPI power meter driver too.
+
+(5) The driver PM callbacks in struct acpi_device_ops are removed
+    (patch [20/21]).
+
+(6) The ACPI bus type PM callbacks added in step (2) are dropped, because they
+    aren't necessary any more (the PM core will execute the driver callbacks
+    directly now).
+
+As a result, the redundant bus type level of PM handling between ACPI drivers
+and the PM core is eliminated and the ACPI drivers are now able to define
+runtime PM callbacks, proper hibernation callbacks and late/early callbacks
+for system suspend/resume.
+
+The patchset has been tested on Toshiba Portege R500 and more testing is in
+the works.  If there are no objections, I'd like to push if for 3.6 through
+the linux-pm tree.
+
+If you want to give it a go, it's available from the pm-acpi branch of the
+linux-pm tree.  Please note, however, that this branch will be rebased, because
+it is based on the linux-pm tree's linux-next branch at the moment.
+
+Thanks,
+Rafael
+
