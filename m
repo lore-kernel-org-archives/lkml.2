@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab2FWVTp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 17:19:45 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:36995 "EHLO ogre.sisk.pl"
+	id S1756657Ab2FWVSS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 17:18:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36937 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756662Ab2FWVSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 17:18:20 -0400
+	id S1756103Ab2FWVRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 17:17:49 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 19/21] ACPI / PM: Do not execute legacy driver PM callbacks
-Date: Sat, 23 Jun 2012 23:20:28 +0200
+Subject: [PATCH 7/21] ACPI: Use struct dev_pm_ops for power management in the AC driver
+Date: Sat, 23 Jun 2012 23:12:31 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
@@ -24,87 +24,75 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206232320.29124.rjw@sisk.pl>
+Message-Id: <201206232312.31395.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Since all ACPI drivers in the tree should have been switched
-to power management handling based on struct dev_pm_ops,
-modify the ACPI bus type driver so that is doesn't execute
-legacy driver power management callbacks from the functions
-pointed to by the members of the acpi_bus_pm structure.
+Make the ACPI AC adapter driver define its PM callbacks through
+a struct dev_pm_ops object rather than by using legacy PM hooks
+in struct acpi_device_ops.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/scan.c |   24 +++++++++---------------
- 1 file changed, 9 insertions(+), 15 deletions(-)
+ drivers/acpi/ac.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-Index: linux/drivers/acpi/scan.c
+Index: linux/drivers/acpi/ac.c
 ===================================================================
---- linux.orig/drivers/acpi/scan.c
-+++ linux/drivers/acpi/scan.c
-@@ -290,51 +290,45 @@ static void acpi_device_release(struct d
- 	kfree(acpi_dev);
+--- linux.orig/drivers/acpi/ac.c
++++ linux/drivers/acpi/ac.c
+@@ -61,7 +61,6 @@ static int acpi_ac_open_fs(struct inode
+ 
+ static int acpi_ac_add(struct acpi_device *device);
+ static int acpi_ac_remove(struct acpi_device *device, int type);
+-static int acpi_ac_resume(struct acpi_device *device);
+ static void acpi_ac_notify(struct acpi_device *device, u32 event);
+ 
+ static const struct acpi_device_id ac_device_ids[] = {
+@@ -70,6 +69,9 @@ static const struct acpi_device_id ac_de
+ };
+ MODULE_DEVICE_TABLE(acpi, ac_device_ids);
+ 
++static int acpi_ac_resume(struct device *dev);
++static SIMPLE_DEV_PM_OPS(acpi_ac_pm, NULL, acpi_ac_resume);
++
+ static struct acpi_driver acpi_ac_driver = {
+ 	.name = "ac",
+ 	.class = ACPI_AC_CLASS,
+@@ -78,9 +80,9 @@ static struct acpi_driver acpi_ac_driver
+ 	.ops = {
+ 		.add = acpi_ac_add,
+ 		.remove = acpi_ac_remove,
+-		.resume = acpi_ac_resume,
+ 		.notify = acpi_ac_notify,
+ 		},
++	.drv.pm = &acpi_ac_pm,
+ };
+ 
+ struct acpi_ac {
+@@ -309,13 +311,18 @@ static int acpi_ac_add(struct acpi_devic
+ 	return result;
  }
  
--#define ACPI_DEV_PM_CALLBACK(dev, callback, legacy_cb)		\
-+#define ACPI_DEV_PM_CALLBACK(dev, callback)		\
- ({								\
--	struct acpi_device *__acpi_dev = to_acpi_device(dev);	\
--	struct acpi_driver *__acpi_drv = __acpi_dev->driver;	\
- 	struct device_driver *__drv = dev->driver;		\
--	int __ret;						\
-+	int __ret = 0;						\
- 								\
--	if (__acpi_drv && __acpi_drv->ops.legacy_cb)		\
--		__ret = __acpi_drv->ops.legacy_cb(__acpi_dev);	\
--	else if (__drv && __drv->pm && __drv->pm->callback)	\
-+	if (__drv && __drv->pm && __drv->pm->callback)		\
- 		__ret = __drv->pm->callback(dev);		\
--	else							\
--		__ret = 0;					\
- 								\
- 	__ret;							\
- })
- 
- static int acpi_pm_suspend(struct device *dev)
+-static int acpi_ac_resume(struct acpi_device *device)
++static int acpi_ac_resume(struct device *dev)
  {
--	return ACPI_DEV_PM_CALLBACK(dev, suspend, suspend);
-+	return ACPI_DEV_PM_CALLBACK(dev, suspend);
- }
- 
- static int acpi_pm_resume(struct device *dev)
- {
--	return ACPI_DEV_PM_CALLBACK(dev, resume, resume);
-+	return ACPI_DEV_PM_CALLBACK(dev, resume);
- }
- 
- static int acpi_pm_freeze(struct device *dev)
- {
--	return ACPI_DEV_PM_CALLBACK(dev, freeze, suspend);
-+	return ACPI_DEV_PM_CALLBACK(dev, freeze);
- }
- 
- static int acpi_pm_thaw(struct device *dev)
- {
--	return ACPI_DEV_PM_CALLBACK(dev, thaw, resume);
-+	return ACPI_DEV_PM_CALLBACK(dev, thaw);
- }
- 
- static int acpi_pm_poweroff(struct device *dev)
- {
--	return ACPI_DEV_PM_CALLBACK(dev, poweroff, suspend);
-+	return ACPI_DEV_PM_CALLBACK(dev, poweroff);
- }
- 
- static int acpi_pm_restore(struct device *dev)
- {
--	return ACPI_DEV_PM_CALLBACK(dev, restore, resume);
-+	return ACPI_DEV_PM_CALLBACK(dev, restore);
- }
- 
- static const struct dev_pm_ops acpi_bus_pm = {
+ 	struct acpi_ac *ac;
+ 	unsigned old_state;
+-	if (!device || !acpi_driver_data(device))
++
++	if (!dev)
++		return -EINVAL;
++
++	ac = acpi_driver_data(to_acpi_device(dev));
++	if (!ac)
+ 		return -EINVAL;
+-	ac = acpi_driver_data(device);
++
+ 	old_state = ac->state;
+ 	if (acpi_ac_get_state(ac))
+ 		return 0;
 
