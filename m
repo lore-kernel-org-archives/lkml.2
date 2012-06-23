@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab2FWSQG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 14:16:06 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62277 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046Ab2FWSQC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 14:16:02 -0400
+	id S1755731Ab2FWSZp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 14:25:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36818 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755057Ab2FWSZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 14:25:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="157470058"
+Message-ID: <4FE60A26.30109@linux.intel.com>
+Date: Sat, 23 Jun 2012 11:25:42 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1340322477.56127.2.camel@localhost.localdomain>
-References: <1340222160.77018.19.camel@localhost.localdomain> <1340322477.56127.2.camel@localhost.localdomain>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sat, 23 Jun 2012 12:15:39 -0600
-Message-ID: <CAErSpo7AWQCofnTRhtMKVP3pm_BDq9v+axGpide0RbmignsV9A@mail.gmail.com>
-Subject: Re: [PATCH] pci: support alignments upto 8Gb in pbus_size_mem()
-To: Nikhil P Rao <nikhil.rao@intel.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+References: <20120622133650.GA24136@gmail.com>  <CA+55aFySaZ4huXgPM0yGPezAhnE9zT81tucC9WnDs5Ps+7+hGA@mail.gmail.com>  <20120622183827.GA8014@virgo.local>  <CA+55aFzpNtLSQvcOOut--2UkkMyqSb9e0_VO3JAxvZRTv7YT1g@mail.gmail.com>  <20120622190632.GB8014@virgo.local>  <1340394896.27036.258.camel@gandalf.stny.rr.com>  <86448d73-2e19-416f-8104-ce72aa5d76eb@email.android.com> <1340407123.27036.265.camel@gandalf.stny.rr.com> <4FE51325.8090408@linux.intel.com>
+In-Reply-To: <4FE51325.8090408@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 5:47 PM, Nikhil P Rao <nikhil.rao@intel.com> wrote:
-> I ran into the "disabling BAR .." error message when
-> trying to use a 8Gb PCIe card on a system with a BIOS
-> that didnt have support for BAR size > 2Gb.
+On 06/22/2012 05:51 PM, Arjan van de Ven wrote:
+> 
+> if it's truely an official nop, it will take decoder bandwidth obviously
+> (which can decode 3 to 4 instructions per cycle, depending on the
+> brand/model of CPU and the total size in bytes of these instructions).
+> likewise, at the end of the out of order pipeline, NOPs may take a
+> retirement slot (again 3 to 4 instructions per cycle)
+> 
+> icache is there as well, and if the NOP actually changes cpu flags (some
+> of the less fortunate ones do) that can create a false data dependency.
+> 
 
-So the BIOS left the 8Gb BAR unassigned, and you got the "disabling
-BAR ... (bad alignment)" message when Linux tried to enable it?
+If it changes CPU flags it's most definitely not a NOP.
 
-How do we know 8Gb is the correct new limit?  Are we going to be
-fixing this again when we see a 16Gb or a 32Gb BAR?  Do we need a
-better algorithm that doesn't have a limit like this?
+Either way, the 0F 1F ops are official, and listed in the SDM.
 
- This patch fixed
-> the problem, but I also see the code reading the IORESOURCE_MEM_64
-> flag so I am not sure what the right solution is
->
-> Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
-> ---
->  drivers/pci/setup-bus.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-> index 8fa2d4b..3b3601f 100644
-> --- a/drivers/pci/setup-bus.c
-> +++ b/drivers/pci/setup-bus.c
-> @@ -780,7 +780,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
->  {
->        struct pci_dev *dev;
->        resource_size_t min_align, align, size, size0, size1;
-> -       resource_size_t aligns[12];     /* Alignments from 1Mb to 2Gb */
-> +       resource_size_t aligns[14];     /* Alignments from 1Mb to 8Gb */
->        int order, max_order;
->        struct resource *b_res = find_free_bus_resource(bus, type);
->        unsigned int mem64_mask = 0;
-> @@ -819,7 +819,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
->                        /* For bridges size != alignment */
->                        align = pci_resource_alignment(dev, r);
->                        order = __ffs(align) - 20;
-> -                       if (order > 11) {
-> +                       if (order >= ARRAY_SIZE(aligns)) {
->                                dev_warn(&dev->dev, "disabling BAR %d: %pR "
->                                         "(bad alignment %#llx)\n", i, r,
->                                         (unsigned long long) align);
-> --
-> 1.7.1
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	-hpa
+
