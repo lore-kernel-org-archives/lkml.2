@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab2FWTqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 15:46:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44311 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755775Ab2FWTqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 15:46:16 -0400
-References: <CAMe9rOqPfy3JcZRLaUeCjBe9BVY-P6e0uaSbMi5hvS-6WwQueg@mail.gmail.com> <20120623161324.GS11413@one.firstfloor.org> <24bd04a1-1702-4d57-af64-af2381992789@email.android.com> <20120623192704.GT11413@one.firstfloor.org>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120623192704.GT11413@one.firstfloor.org>
+	id S1755839Ab2FWULL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 16:11:11 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52266 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754554Ab2FWULJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 16:11:09 -0400
+Date: Sat, 23 Jun 2012 13:11:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: tracer_alloc_buffers returned with preemption imbalance
+Message-ID: <20120623201103.GK2516@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120623101251.GA10162@localhost>
+ <20120623170147.GI2516@linux.vnet.ibm.com>
+ <20120623174830.GA5617@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: PATCH] Use -mpreferred-stack-boundary=3 on x86-64 if supported
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 23 Jun 2012 12:45:57 -0700
-To: Andi Kleen <andi@firstfloor.org>
-CC: "H.J. Lu" <hjl.tools@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <7d9b7b08-77e8-4757-b8fb-f42ba53bded4@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120623174830.GA5617@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062320-7282-0000-0000-00000A3CAD5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, it didn't work on 64 bits until now.
+On Sun, Jun 24, 2012 at 01:48:30AM +0800, Fengguang Wu wrote:
+> > >  static inline int rcu_blocking_is_gp(void)
+> > >  {
+> > >         might_sleep();  /* Check for RCU read-side critical section. */
+> > > +       preempt_disable();
+> > >         return num_online_cpus() <= 1;
+> > > +       preempt_enable();
+> > >  }
+> > 
+> > Thank you!  I have no idea how a preempt_disable() causes that badness
+> > to happen, but this commit is not yet critically important, so I will
+> > drop it.
+> 
+> preempt_enable() becomes dead code because of the return statement?
+> I wonder why gcc didn't issue a warning (or I failed to catch it)...
 
-Andi Kleen <andi@firstfloor.org> wrote:
+Color me blind and stupid!!!  Thank you, will fix.
 
->On Sat, Jun 23, 2012 at 09:17:06AM -0700, H. Peter Anvin wrote:
->> To keep gcc from paddong the stack to maintain a nonexistent
->alignment.
->
->
->Ah ok. 3 instead of 4.
->
->I thought i had done that a long time ago, but now it somehow
->only seems to be there for 32bit.
->
->Makes sense.
->
->-Andi
+							Thanx, Paul
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
