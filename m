@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab2FWNDl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 09:03:41 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	id S1754892Ab2FWNFl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 09:05:41 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47837 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613Ab2FWNDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 09:03:39 -0400
+	id S1753526Ab2FWNDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 09:03:40 -0400
 From: Richard Weinberger <richard@nod.at>
 To: linux-mtd@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
         shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
         Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
         nyoushchenko@mvista.com, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 1/7] UBI: Fastmap: Modify the WL sub-system to prodcue a free anchor PEB
-Date: Sat, 23 Jun 2012 15:03:16 +0200
-Message-Id: <1340456602-46050-2-git-send-email-richard@nod.at>
+Subject: [PATCH 3/7] UBI: Fastmap: Ensure that not all anchor PEBs go into a pool.
+Date: Sat, 23 Jun 2012 15:03:18 +0200
+Message-Id: <1340456602-46050-4-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1340456602-46050-1-git-send-email-richard@nod.at>
 References: <1340456602-46050-1-git-send-email-richard@nod.at>
@@ -23,160 +23,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If we have no fastmap on flash make sure that not all anchor
+PEBs go into a WL pool such that at least one can be used
+by fastmap.
+
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/ubi/fastmap.c |    6 ++++
- drivers/mtd/ubi/ubi.h     |    3 ++
- drivers/mtd/ubi/wl.c      |   60 +++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 67 insertions(+), 2 deletions(-)
+ drivers/mtd/ubi/wl.c |   36 +++++++++++++++++++++++++++---------
+ 1 files changed, 27 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index 582f5ee..4793ba8 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -1374,6 +1374,12 @@ int ubi_update_fastmap(struct ubi_device *ubi)
- 		return 0;
- 	}
- 
-+	ret = ubi_ensure_anchor_pebs(ubi);
-+	if (ret) {
-+		mutex_unlock(&ubi->fm_mutex);
-+		return ret;
-+	}
-+
- 	new_fm = kzalloc(sizeof(*new_fm), GFP_KERNEL);
- 	if (!new_fm) {
- 		mutex_unlock(&ubi->fm_mutex);
-diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-index 534e851..56b1c5c 100644
---- a/drivers/mtd/ubi/ubi.h
-+++ b/drivers/mtd/ubi/ubi.h
-@@ -663,6 +663,7 @@ struct ubi_attach_info {
-  * @func: worker function
-  * @e: physical eraseblock to erase
-  * @torture: if the physical eraseblock has to be tortured
-+ * @anchor: produce a anchor PEB to by used by fastmap
-  *
-  * The @func pointer points to the worker function. If the @cancel argument is
-  * not zero, the worker has to free the resources and exit immediately. The
-@@ -675,6 +676,7 @@ struct ubi_work {
- 	/* The below fields are only relevant to erasure works */
- 	struct ubi_wl_entry *e;
- 	int torture;
-+	int anchor;
- };
- 
- #include "debug.h"
-@@ -759,6 +761,7 @@ struct ubi_wl_entry *ubi_wl_get_fm_peb(struct ubi_device *ubi, int max_pnum);
- int ubi_wl_put_fm_peb(struct ubi_device *ubi, struct ubi_wl_entry *used_e, int torture);
- int ubi_is_erase_work(struct ubi_work *wrk);
- void ubi_refill_pools(struct ubi_device *ubi);
-+int ubi_ensure_anchor_pebs(struct ubi_device *ubi);
- 
- /* io.c */
- int ubi_io_read(const struct ubi_device *ubi, void *buf, int pnum, int offset,
 diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 6771f30..b4d4358 100644
+index b4d4358..8b2af8f4 100644
 --- a/drivers/mtd/ubi/wl.c
 +++ b/drivers/mtd/ubi/wl.c
-@@ -419,6 +419,18 @@ static struct ubi_wl_entry *find_anchor_wl_entry(struct rb_root *root,
- 	return victim;
- }
+@@ -342,16 +342,18 @@ static void prot_queue_add(struct ubi_device *ubi, struct ubi_wl_entry *e)
  
-+static int anchor_pebs_avalible(struct rb_root *root, int max_pnum)
-+{
-+	struct rb_node *p;
-+	struct ubi_wl_entry *e;
-+
-+	ubi_rb_for_each_entry(p, e, root, u.rb)
-+		if (e->pnum < max_pnum)
-+			return 1;
-+
-+	return 0;
-+}
-+
  /**
-  * ubi_wl_get_fm_peb - find a physical erase block with a given maximal number.
-  * @ubi: UBI device description object
-@@ -901,10 +913,11 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
- 				int cancel)
+  * find_wl_entry - find wear-leveling entry closest to certain erase counter.
++ * @ubi: UBI device description object
+  * @root: the RB-tree where to look for
+  * @diff: maximum possible difference from the smallest erase counter
+  *
+  * This function looks for a wear leveling entry with erase counter closest to
+  * min + @diff, where min is the smallest erase counter.
+  */
+-static struct ubi_wl_entry *find_wl_entry(struct rb_root *root, int diff)
++static struct ubi_wl_entry *find_wl_entry(struct ubi_device *ubi, struct rb_root *root,
++					  int diff)
  {
- 	int err, scrubbing = 0, torture = 0, protect = 0, erroneous = 0;
--	int vol_id = -1, uninitialized_var(lnum);
-+	int anchor, vol_id = -1, uninitialized_var(lnum);
- 	struct ubi_wl_entry *e1, *e2;
- 	struct ubi_vid_hdr *vid_hdr;
+ 	struct rb_node *p;
+-	struct ubi_wl_entry *e;
++	struct ubi_wl_entry *e, *prev_e = NULL;
+ 	int max;
  
-+	anchor = wrk->anchor;
- 	kfree(wrk);
- 	if (cancel)
- 		return 0;
-@@ -935,7 +948,23 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
- 		goto out_cancel;
+ 	e = rb_entry(rb_first(root), struct ubi_wl_entry, u.rb);
+@@ -366,32 +368,48 @@ static struct ubi_wl_entry *find_wl_entry(struct rb_root *root, int diff)
+ 			p = p->rb_left;
+ 		else {
+ 			p = p->rb_right;
++			prev_e = e;
+ 			e = e1;
+ 		}
  	}
  
--	if (!ubi->scrub.rb_node) {
-+	/* Check whether we need to produce an anchor PEB */
-+	if (!anchor)
-+		anchor = !anchor_pebs_avalible(&ubi->free, UBI_FM_MAX_START);
++	/* If no fastmap has been written and this WL entry can be used
++	 * as anchor PEB, hold it back and return the second best WL entry
++	 * such that fastmap can use the anchor PEB later. */
++	if (!ubi->fm && e->pnum < UBI_FM_MAX_START)
++		return prev_e;
 +
-+	if (anchor) {
-+		e1 = find_anchor_wl_entry(&ubi->used, UBI_FM_MAX_START);
-+		if (!e1)
-+			goto out_cancel;
-+		e2 = get_peb_for_wl(ubi);
-+		if (!e2)
-+			goto out_cancel;
-+
-+		self_check_in_wl_tree(ubi, e1, &ubi->used);
-+		rb_erase(&e1->u.rb, &ubi->used);
-+		dbg_wl("anchor-move PEB %d to PEB %d", e1->pnum, e2->pnum);
-+	}
-+	else if (!ubi->scrub.rb_node) {
- 		/*
- 		 * Now pick the least worn-out used physical eraseblock and a
- 		 * highly worn-out free physical eraseblock. If the erase
-@@ -1229,6 +1258,7 @@ static int ensure_wear_leveling(struct ubi_device *ubi, int nested)
- 		goto out_cancel;
- 	}
- 
-+	wrk->anchor = 0;
- 	wrk->func = &wear_leveling_worker;
- 	if (nested)
- 		__schedule_ubi_work(ubi, wrk);
-@@ -1244,6 +1274,32 @@ out_unlock:
- 	return err;
+ 	return e;
  }
  
-+int ubi_ensure_anchor_pebs(struct ubi_device *ubi)
-+{
-+	struct ubi_work *wrk;
-+
-+	spin_lock(&ubi->wl_lock);
-+	if (ubi->wl_scheduled) {
-+		spin_unlock(&ubi->wl_lock);
-+		return 0;
-+	}
-+	ubi->wl_scheduled = 1;
-+	spin_unlock(&ubi->wl_lock);
-+
-+	wrk = kmalloc(sizeof(struct ubi_work), GFP_NOFS);
-+	if (!wrk) {
-+		spin_lock(&ubi->wl_lock);
-+		ubi->wl_scheduled = 0;
-+		spin_unlock(&ubi->wl_lock);
-+		return -ENOMEM;
-+	}
-+
-+	wrk->anchor = 1;
-+	wrk->func = &wear_leveling_worker;
-+	schedule_ubi_work(ubi, wrk);
-+	return 0;
-+}
-+
  /**
-  * erase_worker - physical eraseblock erase worker function.
-  * @ubi: UBI device description object
+  * find_mean_wl_entry - find wear-leveling entry with medium erase counter.
++ * @ubi: UBI device description object
+  * @root: the RB-tree where to look for
+  *
+  * This function looks for a wear leveling entry with medium erase counter,
+  * but not greater or equivalent than the lowest erase counter plus
+  * %WL_FREE_MAX_DIFF/2.
+  */
+-static struct ubi_wl_entry *find_mean_wl_entry(struct rb_root *root)
++static struct ubi_wl_entry *find_mean_wl_entry(struct ubi_device *ubi,
++					       struct rb_root *root)
+ {
+ 	struct ubi_wl_entry *e, *first, *last;
+ 
+ 	first = rb_entry(rb_first(root), struct ubi_wl_entry, u.rb);
+ 	last = rb_entry(rb_last(root), struct ubi_wl_entry, u.rb);
+ 
+-	if (last->ec - first->ec < WL_FREE_MAX_DIFF)
++	if (last->ec - first->ec < WL_FREE_MAX_DIFF) {
+ 		e = rb_entry(root->rb_node, struct ubi_wl_entry, u.rb);
++
++		/* If no fastmap has been written and this WL entry can be used
++		 * as anchor PEB, hold it back and return the second best WL entry
++		 * such that fastmap can use the anchor PEB later. */
++		if (e && !ubi->fm && e->pnum < UBI_FM_MAX_START)
++			e = rb_entry(rb_next(root->rb_node), struct ubi_wl_entry, u.rb);
++	}
+ 	else
+-		e = find_wl_entry(root, WL_FREE_MAX_DIFF/2);
++		e = find_wl_entry(ubi, root, WL_FREE_MAX_DIFF/2);
+ 
+ 	return e;
+ }
+@@ -452,7 +470,7 @@ struct ubi_wl_entry *ubi_wl_get_fm_peb(struct ubi_device *ubi, int max_pnum)
+ 	}
+ 
+ 	if (max_pnum < 0)
+-		e = find_mean_wl_entry(&ubi->free);
++		e = find_mean_wl_entry(ubi, &ubi->free);
+ 	else
+ 		e = find_anchor_wl_entry(&ubi->free, max_pnum);
+ 
+@@ -494,7 +512,7 @@ retry:
+ 		goto retry;
+ 	}
+ 
+-	e = find_mean_wl_entry(&ubi->free);
++	e = find_mean_wl_entry(ubi, &ubi->free);
+ 
+ 	self_check_in_wl_tree(ubi, e, &ubi->free);
+ 
+@@ -547,7 +565,7 @@ static void refill_wl_pool(struct ubi_device *ubi)
+ 		if (!ubi->free.rb_node)
+ 			break;
+ 
+-		e = find_wl_entry(&ubi->free, WL_FREE_MAX_DIFF);
++		e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
+ 		self_check_in_wl_tree(ubi, e, &ubi->free);
+ 		rb_erase(&e->u.rb, &ubi->free);
+ 
+@@ -1241,7 +1259,7 @@ static int ensure_wear_leveling(struct ubi_device *ubi, int nested)
+ 		 * %UBI_WL_THRESHOLD.
+ 		 */
+ 		e1 = rb_entry(rb_first(&ubi->used), struct ubi_wl_entry, u.rb);
+-		e2 = find_wl_entry(&ubi->free, WL_FREE_MAX_DIFF);
++		e2 = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
+ 
+ 		if (!(e2->ec - e1->ec >= UBI_WL_THRESHOLD))
+ 			goto out_unlock;
 -- 
 1.7.6.5
 
