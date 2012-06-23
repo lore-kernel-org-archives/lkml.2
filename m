@@ -1,123 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab2FWCQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 22:16:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44749 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab2FWCQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 22:16:23 -0400
-Date: Sat, 23 Jun 2012 10:16:01 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH V2] memcg: cleanup typos in mem cgroup
-Message-ID: <20120623021547.GA2227@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1340369199-29535-1-git-send-email-liwp.linux@gmail.com>
- <20120622150358.GB16628@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120622150358.GB16628@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754278Ab2FWCX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 22:23:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:11162 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751907Ab2FWCXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 22:23:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="169147090"
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        Zheng Yan <zheng.z.yan@intel.com>
+Subject: [PATCH -v7 0/4] PCIe, PM, Add PCIe runtime D3cold support
+Date: Sat, 23 Jun 2012 10:23:47 +0800
+Message-Id: <1340418231-10134-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 05:03:59PM +0200, Michal Hocko wrote:
->Have you used any tool to find those typos? Have you gone through the
->whole memcontrol.c file?
->I am not agains fixes like this but I would much prefer if it was one
->batch of all fixes. I bet there are more typose ;)
+Changelog:
 
-OK, I will figure out them and resend the patch.
+v7:
 
-Regards,
-Wanpeng Li
+- Rebased on pci.git next branch
 
->
->On Fri 22-06-12 20:46:39, Wanpeng Li wrote:
->> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->> 
->> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->> ---
->>  mm/memcontrol.c |   11 +++++------
->>  1 file changed, 5 insertions(+), 6 deletions(-)
->> 
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 776fc57..503ddd0 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -115,8 +115,8 @@ static const char * const mem_cgroup_events_names[] = {
->>  
->>  /*
->>   * Per memcg event counter is incremented at every pagein/pageout. With THP,
->> - * it will be incremated by the number of pages. This counter is used for
->> - * for trigger some periodic events. This is straightforward and better
->> + * it will be incremented by the number of pages. This counter is used to
->> + * trigger some periodic events. This is straightforward and better
->>   * than using jiffies etc. to handle periodic memcg event.
->>   */
->>  enum mem_cgroup_events_target {
->> @@ -678,7 +678,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
->>   *
->>   * If there are kernel internal actions which can make use of some not-exact
->>   * value, and reading all cpu value can be performance bottleneck in some
->> - * common workload, threashold and synchonization as vmstat[] should be
->> + * common workload, threshold and synchonization as vmstat[] should be
->>   * implemented.
->>   */
->>  static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
->> @@ -2213,7 +2213,6 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->>  	if (mem_cgroup_wait_acct_move(mem_over_limit))
->>  		return CHARGE_RETRY;
->>  
->> -	/* If we don't need to call oom-killer at el, return immediately */
->>  	if (!oom_check)
->>  		return CHARGE_NOMEM;
->>  	/* check OOM */
->> @@ -2291,7 +2290,7 @@ again:
->>  		 * In that case, "memcg" can point to root or p can be NULL with
->>  		 * race with swapoff. Then, we have small risk of mis-accouning.
->>  		 * But such kind of mis-account by race always happens because
->> -		 * we don't have cgroup_mutex(). It's overkill and we allo that
->> +		 * we don't have cgroup_mutex(). It's overkill and we allow that
->>  		 * small race, here.
->>  		 * (*) swapoff at el will charge against mm-struct not against
->>  		 * task-struct. So, mm->owner can be NULL.
->> @@ -2396,7 +2395,7 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
->>  }
->>  
->>  /*
->> - * Cancel chrages in this cgroup....doesn't propagate to parent cgroup.
->> + * Cancel charges in this cgroup....doesn't propagate to parent cgroup.
->>   * This is useful when moving usage to parent cgroup.
->>   */
->>  static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
->> -- 
->> 1.7.9.5
->> 
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
->-- 
->Michal Hocko
->SUSE Labs
->SUSE LINUX s.r.o.
->Lihovarska 1060/12
->190 00 Praha 9    
->Czech Republic
+v6:
+
+- Disable device D3cold during system suspend/hibernate with a new method per Rafeal's comments
+
+v5:
+
+- Disable device D3cold during system suspend/hibernate per Rafael's comments
+
+v4:
+
+- Minors fixes based on comments from Rafael
+
+v3:
+
+- Drop device.power.power_must_be_on, use pci_dev.no_d3cold instead
+- Drop device.power.power_off_user, use pci_dev.d3cold_allowed instead
+- Use black list instead of white list in pcie port runtime support per request from Bjorn
+- Various fixes based on comments from Rafael
+
+v2:
+
+- Refreshed based on comments from Rafael
+
+[PATCH -v7 1/4] ACPI, PM, Specify lowest allowed state for device sleep
+[PATCH -v7 2/4] PCIe, PM, Add runtime PM support to PCIe port
+[PATCH -v7 3/4] PCI, do not call pci_set_power_state with PCI_D3cold
+[PATCH -v7 4/4] PCIe, PM, Add PCIe runtime D3cold support
+
+Best Regards,
+Huang Ying
