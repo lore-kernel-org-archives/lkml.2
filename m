@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab2FWVSb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 17:18:31 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:37019 "EHLO ogre.sisk.pl"
+	id S1756746Ab2FWVSW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 17:18:22 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36953 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756114Ab2FWVS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 17:18:27 -0400
+	id S1756112Ab2FWVRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 17:17:50 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 21/21] ACPI / PM: Drop PM callbacks from the ACPI bus type
-Date: Sat, 23 Jun 2012 23:22:01 +0200
+Subject: [PATCH 10/21] ACPI: Use struct dev_pm_ops for power management in the power driver
+Date: Sat, 23 Jun 2012 23:14:13 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
@@ -24,90 +24,71 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206232322.02032.rjw@sisk.pl>
+Message-Id: <201206232314.14303.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Since the ACPI bus type's PM callbacks only execute the driver ones
-without doing anything else, they can be dropped, because the driver
-callbacks will be executed by the PM core directly if bus type
-(or other subsystem) callbacks are not present.
+Make the ACPI power resource driver define its PM callbacks through
+a struct dev_pm_ops object rather than by using legacy PM hooks
+in struct acpi_device_ops.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/scan.c |   51 ---------------------------------------------------
- 1 file changed, 51 deletions(-)
+ drivers/acpi/power.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-Index: linux/drivers/acpi/scan.c
+Index: linux/drivers/acpi/power.c
 ===================================================================
---- linux.orig/drivers/acpi/scan.c
-+++ linux/drivers/acpi/scan.c
-@@ -290,56 +290,6 @@ static void acpi_device_release(struct d
- 	kfree(acpi_dev);
- }
+--- linux.orig/drivers/acpi/power.c
++++ linux/drivers/acpi/power.c
+@@ -60,7 +60,6 @@ ACPI_MODULE_NAME("power");
  
--#define ACPI_DEV_PM_CALLBACK(dev, callback)		\
--({								\
--	struct device_driver *__drv = dev->driver;		\
--	int __ret = 0;						\
--								\
--	if (__drv && __drv->pm && __drv->pm->callback)		\
--		__ret = __drv->pm->callback(dev);		\
--								\
--	__ret;							\
--})
--
--static int acpi_pm_suspend(struct device *dev)
--{
--	return ACPI_DEV_PM_CALLBACK(dev, suspend);
--}
--
--static int acpi_pm_resume(struct device *dev)
--{
--	return ACPI_DEV_PM_CALLBACK(dev, resume);
--}
--
--static int acpi_pm_freeze(struct device *dev)
--{
--	return ACPI_DEV_PM_CALLBACK(dev, freeze);
--}
--
--static int acpi_pm_thaw(struct device *dev)
--{
--	return ACPI_DEV_PM_CALLBACK(dev, thaw);
--}
--
--static int acpi_pm_poweroff(struct device *dev)
--{
--	return ACPI_DEV_PM_CALLBACK(dev, poweroff);
--}
--
--static int acpi_pm_restore(struct device *dev)
--{
--	return ACPI_DEV_PM_CALLBACK(dev, restore);
--}
--
--static const struct dev_pm_ops acpi_bus_pm = {
--	.suspend = acpi_pm_suspend,
--	.resume = acpi_pm_resume,
--	.freeze = acpi_pm_freeze,
--	.thaw = acpi_pm_thaw,
--	.poweroff = acpi_pm_poweroff,
--	.restore = acpi_pm_restore,
--};
--
- static int acpi_bus_match(struct device *dev, struct device_driver *drv)
- {
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
-@@ -475,7 +425,6 @@ struct bus_type acpi_bus_type = {
- 	.probe		= acpi_device_probe,
- 	.remove		= acpi_device_remove,
- 	.uevent		= acpi_device_uevent,
--	.pm		= &acpi_bus_pm,
+ static int acpi_power_add(struct acpi_device *device);
+ static int acpi_power_remove(struct acpi_device *device, int type);
+-static int acpi_power_resume(struct acpi_device *device);
+ 
+ static const struct acpi_device_id power_device_ids[] = {
+ 	{ACPI_POWER_HID, 0},
+@@ -68,6 +67,9 @@ static const struct acpi_device_id power
+ };
+ MODULE_DEVICE_TABLE(acpi, power_device_ids);
+ 
++static int acpi_power_resume(struct device *dev);
++static SIMPLE_DEV_PM_OPS(acpi_power_pm, NULL, acpi_power_resume);
++
+ static struct acpi_driver acpi_power_driver = {
+ 	.name = "power",
+ 	.class = ACPI_POWER_CLASS,
+@@ -75,8 +77,8 @@ static struct acpi_driver acpi_power_dri
+ 	.ops = {
+ 		.add = acpi_power_add,
+ 		.remove = acpi_power_remove,
+-		.resume = acpi_power_resume,
+ 		},
++	.drv.pm = &acpi_power_pm,
  };
  
- static int acpi_device_register(struct acpi_device *device)
+ /*
+@@ -771,14 +773,16 @@ static int acpi_power_remove(struct acpi
+ 	return 0;
+ }
+ 
+-static int acpi_power_resume(struct acpi_device *device)
++static int acpi_power_resume(struct device *dev)
+ {
+ 	int result = 0, state;
++	struct acpi_device *device;
+ 	struct acpi_power_resource *resource;
+ 
+-	if (!device)
++	if (!dev)
+ 		return -EINVAL;
+ 
++	device = to_acpi_device(dev);
+ 	resource = acpi_driver_data(device);
+ 	if (!resource)
+ 		return -EINVAL;
 
