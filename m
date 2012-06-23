@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab2FWJwB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 05:52:01 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:52399 "EHLO zene.cmpxchg.org"
+	id S1753289Ab2FWKEm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 06:04:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55784 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab2FWJv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 05:51:59 -0400
-Date: Sat, 23 Jun 2012 11:51:13 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/6] memcg: move recent_rotated and recent_scanned
- informations
-Message-ID: <20120623095112.GO27816@cmpxchg.org>
-References: <1340432259-5317-1-git-send-email-liwp.linux@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340432259-5317-1-git-send-email-liwp.linux@gmail.com>
+	id S1752000Ab2FWKEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 06:04:41 -0400
+From: Cong Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>
+Subject: [PATCH 00/12] kmap_atomic cleanup for 3.6
+Date: Sat, 23 Jun 2012 18:04:11 +0800
+Message-Id: <1340445863-16111-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 23, 2012 at 02:17:39PM +0800, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> 
-> Move recent_rotated and recent_scanned prints next to inactive_anon,
-> ative_anon, inactive_file, active_file, and unevictable prints to
-> save developers' time. Since they have to go a long way(when cat memory.stat)
-> to find recent_rotated and recent_scanned prints which has relationship
-> with the memory cgroup we care. These prints are behind total_* which
-> not just focus on the memory cgroup we care currently.
+After few releases, it seems there are no more callers
+using the deprecated form of kmap_atomic(), the one
+with two parameters. So we can remove it now and remove
+the KM_* definition except KM_TYPE_NR together.
 
-The hierarchical stats are about that memcg, too.  And I don't want to
-turn on debugging and then look for the extra information hiding in
-the middle of regular stats.
+All the patches are available at:
+
+	git://github.com/congwang/linux.git #kmap_atomic
+
+Signed-off-by: Cong Wang <amwang@redhat.com>
+
+-------------------
+
+Cong Wang (12):
+  jbd2: remove the second argument of kmap_atomic
+  arm: remove km_type definitions
+  powerpc: remove km_type definitions
+  frv: remove km_type definitions
+  avr32: remove km_type definitions
+  asm-generic: remove km_type definitions
+  um: remove km_type definitions
+  tile: remove km_type definitions
+  highmem: remove the deprecated form of kmap_atomic
+  feature-removal-schedule.txt: remove kmap_atomic(page, km_type)
+  vmalloc: remove KM_USER0 from comments
+  pipe: remove KM_USER0 from comments
+
+ Documentation/feature-removal-schedule.txt |    8 -----
+ arch/arm/include/asm/kmap_types.h          |   26 +-----------------
+ arch/avr32/include/asm/kmap_types.h        |   24 +---------------
+ arch/frv/include/asm/kmap_types.h          |   24 +---------------
+ arch/powerpc/include/asm/kmap_types.h      |   31 +--------------------
+ arch/tile/include/asm/kmap_types.h         |   26 -----------------
+ arch/um/include/asm/kmap_types.h           |   18 +-----------
+ fs/jbd2/commit.c                           |    4 +-
+ fs/pipe.c                                  |    2 +-
+ include/asm-generic/kmap_types.h           |   34 +---------------------
+ include/linux/highmem.h                    |   41 +---------------------------
+ include/linux/pipe_fs_i.h                  |    8 ++---
+ mm/vmalloc.c                               |    8 +----
+ 13 files changed, 17 insertions(+), 237 deletions(-)
+
+-- 
+1.7.7.6
+
