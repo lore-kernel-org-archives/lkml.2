@@ -1,110 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab2FWAfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 20:35:24 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:42718 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756603Ab2FWAfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 20:35:22 -0400
-Message-ID: <4FE50F42.6010401@gmail.com>
-Date: Fri, 22 Jun 2012 20:35:14 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756807Ab2FWAlI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 20:41:08 -0400
+Received: from mail.us.es ([193.147.175.20]:51757 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756648Ab2FWAlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 20:41:06 -0400
+Date: Sat, 23 Jun 2012 02:41:03 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [net-next:master 49/50]
+ net/netfilter/nfnetlink_queue_ct.c:23:18: sparse: incompatible types in
+ comparison expression (different address spaces)
+Message-ID: <20120623004103.GA21550@1984>
+References: <20120619060050.GA14867@localhost>
+ <20120619112823.GB445@1984>
+ <20120619114113.GA19526@localhost>
 MIME-Version: 1.0
-To: Nathan Zimmer <nzimmer@sgi.com>
-CC: Christoph Lameter <cl@linux.com>, Nick Piggin <npiggin@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH v3] tmpfs not interleaving properly
-References: <20120622143512.GA18468@gulag1.americas.sgi.com>
-In-Reply-To: <20120622143512.GA18468@gulag1.americas.sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120619114113.GA19526@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/22/12 10:35 AM), Nathan Zimmer wrote:
-> When tmpfs has the memory policy interleaved it always starts allocating at each
-> file at node 0.  When there are many small files the lower nodes fill up
-> disproportionately.
-> This patch attempts to spread out node usage by starting files at nodes other
-> then 0.  I disturbed the addr parameter since alloc_pages_vma will only use it
-> when the policy is MPOL_INTERLEAVE.  A files preferred node is selected by 
-> the cpu_mem_spread_node rotor.
+On Tue, Jun 19, 2012 at 02:00:50PM +0800, wfg@linux.intel.com wrote:
+> Hi Pablo,
 > 
-> v2: passed preferred node via addr
-> v3: using current->cpuset_mem_spread_rotor instead of random_node
+> There are new sparse warnings show up in
 > 
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Nick Piggin <npiggin@gmail.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Nathan T Zimmer <nzimmer@sgi.com>
-> ---
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git master
+> head:   6bdc5f49e365a5403b9fdef01ceb37241ab00f9b
+> commit: 7c62234547255ce4c385a218915965bc2f14fe45 [49/50] netfilter: nfnetlink_queue: fix compilation with NF_CONNTRACK disabled
 > 
->  include/linux/shmem_fs.h |    1 +
->  mm/shmem.c               |    9 +++++++--
->  2 files changed, 8 insertions(+), 2 deletions(-)
+> All sparse warnings:
 > 
-> diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-> index bef2cf0..cfe8a34 100644
-> --- a/include/linux/shmem_fs.h
-> +++ b/include/linux/shmem_fs.h
-> @@ -17,6 +17,7 @@ struct shmem_inode_info {
->  		char		*symlink;	/* unswappable short symlink */
->  	};
->  	struct shared_policy	policy;		/* NUMA memory alloc policy */
-> +	unsigned long           node_offset;	/* bias for interleaved nodes */
->  	struct list_head	swaplist;	/* chain of maybes on swap */
->  	struct list_head	xattr_list;	/* list of shmem_xattr */
->  	struct inode		vfs_inode;
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index a15a466..93801b3 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -64,6 +64,7 @@ static struct vfsmount *shm_mnt;
->  #include <linux/highmem.h>
->  #include <linux/seq_file.h>
->  #include <linux/magic.h>
-> +#include <linux/cpuset.h>
->  
->  #include <asm/uaccess.h>
->  #include <asm/pgtable.h>
-> @@ -938,9 +939,12 @@ static struct page *shmem_alloc_page(gfp_t gfp,
->  	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
->  
->  	/*
-> -	 * alloc_page_vma() will drop the shared policy reference
-> +	 * alloc_page_vma() will drop the shared policy reference.
-> +	 *
-> +	 * To avoid allocating all tmpfs pages on node 0, we fake up a virtual
-> +	 * address based on this file's predetermined preferred node.
->  	 */
-> -	return alloc_page_vma(gfp, &pvma, 0);
-> +	return alloc_page_vma(gfp, &pvma, info->node_offset << PAGE_SHIFT);
+> net/netfilter/nfnetlink_queue_ct.c:23:18: sparse: incompatible types in comparison expression (different address spaces)
+> net/netfilter/nfnetlink_queue_ct.c:45:18: sparse: incompatible types in comparison expression (different address spaces)
+> net/netfilter/nfnetlink_queue_ct.c:63:18: sparse: incompatible types in comparison expression (different address spaces)
+> net/netfilter/nfnetlink_queue_ct.c:91:18: sparse: incompatible types in comparison expression (different address spaces)
+> net/netfilter/nf_conntrack_netlink.c:1100:27: sparse: incompatible types in comparison expression (different address spaces)
+> net/netfilter/nf_conntrack_netlink.c:1222:34: sparse: incompatible types in comparison expression (different address spaces)
+> net/netfilter/nf_conntrack_netlink.c:1222:34: sparse: incompatible types in comparison expression (different address spaces)
+> 
+> net/netfilter/nfnetlink_queue_ct.c:23:
+>     20		struct nf_conn *ct;
+>     21	
+>     22		/* rcu_read_lock()ed by __nf_queue already. */
+>   > 23		nfq_ct = rcu_dereference(nfq_ct_hook);
+>     24		if (nfq_ct == NULL)
+>     25			return NULL;
+>     26	
 
-Still unacceptable. Please stop to pass hacky fake address.
+JFYI: I've enqueued the following patch to fix this sparse warning:
 
-
-
->  }
->  #else /* !CONFIG_NUMA */
->  #ifdef CONFIG_TMPFS
-> @@ -1374,6 +1378,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
->  			inode->i_fop = &shmem_file_operations;
->  			mpol_shared_policy_init(&info->policy,
->  						 shmem_get_sbmpol(sbinfo));
-> +			info->node_offset = cpuset_mem_spread_node();
-
-cpuset_mem_spread_node is designed for using allocation time.
-
-
-
-
+http://1984.lsi.us.es/git/nf-next/commit/?id=5a05fae5ca7cd5279567747fc34d60413b504cd6
