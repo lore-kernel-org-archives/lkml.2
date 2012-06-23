@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab2FWPWq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 11:22:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54397 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754157Ab2FWPWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 11:22:45 -0400
-Message-ID: <4FE5DF1E.1030208@redhat.com>
-Date: Sat, 23 Jun 2012 11:22:06 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Zheng Liu <gnehzuil.liu@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz> <20120517195342.GB1800@cmpxchg.org> <20120521025149.GA32375@gmail.com> <20120521073632.GL1406@cmpxchg.org> <20120521085951.GA4687@gmail.com> <20120521093705.GM1406@cmpxchg.org> <20120521110659.GA7143@gmail.com> <20120623110450.GP27816@cmpxchg.org>
-In-Reply-To: <20120623110450.GP27816@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755124Ab2FWP2N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 11:28:13 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51616 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754688Ab2FWP2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 11:28:12 -0400
+Message-ID: <1340465290.2274.26.camel@joe2Laptop>
+Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
+ console
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
+Date: Sat, 23 Jun 2012 08:28:10 -0700
+In-Reply-To: <1340452052.1784.40.camel@mop>
+References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
+	 <20120622145402.8047a669.akpm@linux-foundation.org>
+	 <20120623061313.GA21895@gmail.com> <1340452052.1784.40.camel@mop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2012 07:04 AM, Johannes Weiner wrote:
+On Sat, 2012-06-23 at 13:47 +0200, Kay Sievers wrote:
+[]
+> We need make some sort of a compromise for the self-tests here, I guess.
+> I think the trade of using one of these options for the self-tests to
+> cope with the new model is justified:
+> - flush explicitly when it is needed, by a global flag or with a
+>   message prefix
 
-> I think we need to go back to protecting mapped pages based on how
-> much of reclaimable memory they make up, one way or another.
->
-> Minchan suggested recently to have a separate LRU list for easily
-> reclaimable pages.  If we balance the lists according to relative
-> size, we have pressure on mapped pages dictated by availability of
-> clean cache that is easier to reclaim.
->
-> Rik, Minchan, what do you think?
+> - printing a second full line that says: test foo OK, instead
+>   of appending the OK to the former line
 
-I believe the main reclaim balancings should probably be
-"cgroup vs cgroup", "anon vs file" and "active vs inactive".
+This is probably the easiest actual fix.
 
-However, there is some room for sorting within the inactive
-file list, to ensure we actually have a bunch of easily
-reclaimable pages available at all times.
+> - printing one full line, and suppress the later OK entirely. The OK
+>   might not be needed at all; we will find out that the machine
+>   has not crashed at that point and a message in case of an error
+>   could be sufficient in most cases.
 
-This would not work on the anon side, because there are
-workloads that fill up 95% of memory with working set,
-but on the file side it could actually solve some real
-issues.
+I think the added timing information useful.
 
--- 
-All rights reversed
+> Reverting the changes now would remove:
+> - proper device identifiers attached to a message, which allows
+>   tools for the first time to know the contexts of the kernel messages
+
+I think this is not particularly true nor really useful at
+present and the [v]printk_emit parts should be removed
+until a the benefit of such a capability more proven.
+
+I'm still concerned someone is going to say that the
+because you say these things, someone else is going to
+declare that the content of the [v]printk_emit bits is
+effectively an ABI (inviolate and immutable) like the
+seq_ functions.  I think that'd make changing any of the
+logging much more difficult and should be avoided.
+
+> - 100% message integrity of structured messages, and single line
+>   prints, and if only one continuation line user prints at a time.
+>   We never mix continuation users with full line users, like the
+>   old buffer did.
+> - very reliable continuation line prints, because of the buffering.
+>   The only race that can still happen is several cont users racing
+>   against each other, which is not too likely
+
+It's hard to say that it's not too likely.  I think it
+depends on cpu count.  More cpus, more likely.
+
+Still, it's decidedly better than it was.
+
+> - 100% granularity at line level during userspace buffer access,
+>   crash dumping; we never copy around half or overwritten lines,
+>   like the old buffer
+> - the ring buffer prunes only entire messages not just the half
+>   of a line like the old byte buffer
+> - sequence numbers allow us to track the state of the read and write
+>   position in the buffer, so we never copy in-the-meantime already
+>   overwritten messages around
+> - sequence numbers which allow userspace to reconnect to the old reading
+>   position and process only new messages, and find if messages got
+>   overwritten
+> - support for multiple concurrent readers with live update of the kernel
+>   log stream
+
+Good features list and it was well implemented too.
+
+I think the uses of the direct emit model should simply
+be updated to full lines as you suggested.  There are not
+too many files that need touching.
+
