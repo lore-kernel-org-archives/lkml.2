@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab2FWQOu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 12:14:50 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:39754 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab2FWQOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 12:14:49 -0400
-X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Jun 2012 12:14:49 EDT
+	id S1755675Ab2FWQRY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 12:17:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43094 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755467Ab2FWQRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 12:17:23 -0400
+References: <CAMe9rOqPfy3JcZRLaUeCjBe9BVY-P6e0uaSbMi5hvS-6WwQueg@mail.gmail.com> <20120623161324.GS11413@one.firstfloor.org>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120623161324.GS11413@one.firstfloor.org>
 MIME-Version: 1.0
-Date: Sat, 23 Jun 2012 09:06:38 -0700
-Message-ID: <CAMe9rOqPfy3JcZRLaUeCjBe9BVY-P6e0uaSbMi5hvS-6WwQueg@mail.gmail.com>
-Subject: PATCH] Use -mpreferred-stack-boundary=3 on x86-64 if supported
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: multipart/mixed; boundary=00248c768dc604985a04c325eff9
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: PATCH] Use -mpreferred-stack-boundary=3 on x86-64 if supported
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 23 Jun 2012 09:17:06 -0700
+To: Andi Kleen <andi@firstfloor.org>, "H.J. Lu" <hjl.tools@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Message-ID: <24bd04a1-1702-4d57-af64-af2381992789@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00248c768dc604985a04c325eff9
-Content-Type: text/plain; charset=ISO-8859-1
+To keep gcc from paddong the stack to maintain a nonexistent alignment.
 
-Hi,
+Andi Kleen <andi@firstfloor.org> wrote:
 
--mpreferred-stack-boundary=3 can be used on x86-64 with GCC 4.8.0:
+>> This patch uses -mpreferred-stack-boundary=3 on x86-64 if it is
+>supported.
+>> I have been running 3.4 kernel compiled with this option for weeks.
+>
+>But why? 
+>
+>All the SSE code in the kernel should adjust manually. And the other
+>code doesn't need it.
+>
+>Besides the entry points do not guarantee alignment.
+>
+>For the kernel it would be probably more useful to have a attribute
+>per function that forces alignment.
+>
+>-Andi
+>-- 
+>ak@linux.intel.com -- Speaking for myself only.
 
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=53383
-
-I backported it to hjl/x32/gcc-4_7-branch branch at
-
-http://gcc.gnu.org/git/?p=gcc.git;a=summary
-
-http://gcc.gnu.org/git/?p=gcc.git;a=commit;h=96828b1f869a31e3a1227afa420b8f28e71
-e006c
-
-This patch uses -mpreferred-stack-boundary=3 on x86-64 if it is supported.
-I have been running 3.4 kernel compiled with this option for weeks.
-
-
-H.J.
-
---00248c768dc604985a04c325eff9
-Content-Type: application/octet-stream; 
-	name="0001-Use-mpreferred-stack-boundary-3-if-supported.patch"
-Content-Disposition: attachment; 
-	filename="0001-Use-mpreferred-stack-boundary-3-if-supported.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3svse7i0
-
-RnJvbSA1ZTA2NzM3NmU3M2ZlM2JmODZiNzFjMjU2MGUwM2M1ZDM1YTdiNTM3IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiAiSC5KLiBMdSIgPGhqbC50b29sc0BnbWFpbC5jb20+CkRhdGU6
-IFR1ZSwgMjkgTWF5IDIwMTIgMTQ6MzE6MjMgLTA3MDAKU3ViamVjdDogW1BBVENIXSBVc2UgLW1w
-cmVmZXJyZWQtc3RhY2stYm91bmRhcnk9MyBpZiBzdXBwb3J0ZWQKCgpTaWduZWQtb2ZmLWJ5OiBI
-LkouIEx1IDxoamwudG9vbHNAZ21haWwuY29tPgotLS0KIGFyY2gveDg2L01ha2VmaWxlIHwgICAg
-MyArKysKIDEgZmlsZSBjaGFuZ2VkLCAzIGluc2VydGlvbnMoKykKCmRpZmYgLS1naXQgYS9hcmNo
-L3g4Ni9NYWtlZmlsZSBiL2FyY2gveDg2L01ha2VmaWxlCmluZGV4IDk0ZTkxZTQuLmNkNGE0Zjcg
-MTAwNjQ0Ci0tLSBhL2FyY2gveDg2L01ha2VmaWxlCisrKyBiL2FyY2gveDg2L01ha2VmaWxlCkBA
-IC00OSw2ICs0OSw5IEBAIGVsc2UKICAgICAgICAgS0JVSUxEX0FGTEFHUyArPSAtbTY0CiAgICAg
-ICAgIEtCVUlMRF9DRkxBR1MgKz0gLW02NAogCisJIyBVc2UgLW1wcmVmZXJyZWQtc3RhY2stYm91
-bmRhcnk9MyBpZiBzdXBwb3J0ZWQuCisJS0JVSUxEX0NGTEFHUyArPSAkKGNhbGwgY2Mtb3B0aW9u
-LC1tbm8tc3NlIC1tcHJlZmVycmVkLXN0YWNrLWJvdW5kYXJ5PTMpCisKICAgICAgICAgIyBGSVhN
-RSAtIHNob3VsZCBiZSBpbnRlZ3JhdGVkIGluIE1ha2VmaWxlLmNwdSAoTWFrZWZpbGVfMzIuY3B1
-KQogICAgICAgICBjZmxhZ3MtJChDT05GSUdfTUs4KSArPSAkKGNhbGwgY2Mtb3B0aW9uLC1tYXJj
-aD1rOCkKICAgICAgICAgY2ZsYWdzLSQoQ09ORklHX01QU0MpICs9ICQoY2FsbCBjYy1vcHRpb24s
-LW1hcmNoPW5vY29uYSkKLS0gCjEuNy4xMC4yCgo=
---00248c768dc604985a04c325eff9--
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
