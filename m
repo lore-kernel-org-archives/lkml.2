@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab2FWBA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 21:00:27 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:4717 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756846Ab2FWBAZ (ORCPT
+	id S932621Ab2FWBFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 21:05:24 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:62867 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756848Ab2FWBFW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 21:00:25 -0400
-Message-ID: <1340413223.1773.146.camel@x61.thuisdomein>
-Subject: cris: odd include in arch/cris/boot/compressed/misc.c
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org
-Date: Sat, 23 Jun 2012 03:00:23 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 23 Jun 2012 01:00:23.0773 (UTC) FILETIME=[91CBE0D0:01CD50DB]
-X-RcptDomain: vger.kernel.org
+	Fri, 22 Jun 2012 21:05:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo4Hd7__n=Ffxk5be1SwVbPZ5PdkaeX4sbAV886PCjSJtg@mail.gmail.com>
+References: <1340083249-16266-1-git-send-email-ying.huang@intel.com>
+	<CAErSpo4Hd7__n=Ffxk5be1SwVbPZ5PdkaeX4sbAV886PCjSJtg@mail.gmail.com>
+Date: Sat, 23 Jun 2012 09:05:21 +0800
+Message-ID: <CAC=cRTMBNPUc2eqK5r0hF6grLbOph6j51bAdLxcnZ3KYw4ifdg@mail.gmail.com>
+Subject: Re: [PATCH -v6 0/4] PCIe, PM, Add PCIe runtime D3cold support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Zheng Yan <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mikael, Jesper,
+Hi, Bjorn,
 
-0) Currently line 123 of arch/cris/boot/compressed/misc.c reads:
-    #include "../../../../../lib/inflate.c"
+On Sat, Jun 23, 2012 at 6:13 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Jun 18, 2012 at 11:20 PM, Huang Ying <ying.huang@intel.com> wrote:
+>> Changelog:
+>>
+>> v6:
+>>
+>> - Disable device D3cold during system suspend/hibernate with a new method per Rafeal's comments
+>>
+>> v5:
+>>
+>> - Disable device D3cold during system suspend/hibernate per Rafael's comments
+>>
+>> v4:
+>>
+>> - Minors fixes based on comments from Rafael
+>>
+>> v3:
+>>
+>> - Drop device.power.power_must_be_on, use pci_dev.no_d3cold instead
+>> - Drop device.power.power_off_user, use pci_dev.d3cold_allowed instead
+>> - Use black list instead of white list in pcie port runtime support per request from Bjorn
+>> - Various fixes based on comments from Rafael
+>>
+>> v2:
+>>
+>> - Refreshed based on comments from Rafael
+>>
+>> [PATCH -v6 1/4] ACPI, PM, Specify lowest allowed state for device sleep
+>> [PATCH -v6 2/4] PCIe, PM, Add runtime PM support to PCIe port
+>> [PATCH -v6 3/4] PCI, PM, Do not call pci_set_power_state with PCI_D3cold
+>> [PATCH -v6 4/4] PCIe, PM, Add PCIe runtime D3cold support
+>
+> What kernel is this series based on?  Patch 4/4 doesn't apply to my
+> tree.  This hunk fails because I don't have the "Some devices mustn't
+> be in D3 ..." context:
 
-git blame tells me that line has read that way since commit
-51533b615e605d86154ec1b4e585c8ca1b0b15b7 ("[...] CRIS update: new
-subarchitecture v32"), which predates release v2.6.13.
+This patchset is based on Linus' tree 3.5-rc3.  I will check with your tree.
 
-1) When I try to jump to lib/inflate.c via that line in my $EDITOR, I
-see an error and nothing happens. When I check the depth, in
-directories, at which misc.c lives, I can't blame my $EDITOR.
-
-2) And indeed, when I edit that line to read:
-    #include "../../../../lib/inflate.c"
-
-my $EDITOR does correctly jump to lib/inflate.c. 
-
-3) This can be trivially fixed, and I'm happy to submit that trivial
-patch. But I do wonder what the compilers for cris know that my $EDITOR
-and x86 compiler doesn't. (I don't have a compiler for cris at hand.)
-Because, if I edit the comparable file for x86 to have a similar include
-look that way and try to build a kernel I get:
-
-[...]
-  CC      arch/x86/boot/compressed/misc.o
-arch/x86/boot/compressed/misc.c:131:51: fatal error: ../../../../../lib/decompress_inflate.c: No such file or directory
-compilation terminated.
-make[2]: *** [arch/x86/boot/compressed/misc.o] Error 1
-make[1]: *** [arch/x86/boot/compressed/vmlinux] Error 2
-make: *** [bzImage] Error 2
-
-4) What's going on here?
-
-
-Paul Bolle
-
+Best Regards,
+Huang Ying
