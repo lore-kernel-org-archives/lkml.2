@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2FWKrO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 06:47:14 -0400
+	id S1754562Ab2FWKrl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 06:47:41 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:59314 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000Ab2FWKrM (ORCPT
+	with ESMTP id S1754135Ab2FWKrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 06:47:12 -0400
+	Sat, 23 Jun 2012 06:47:39 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com,
         akpm@linux-foundation.org, bharrosh@panasas.com
@@ -15,9 +15,9 @@ Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Vivek Trivedi <t.vivek@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [RFC PATCH] nfs: Add NFS3PROC_UMOUNT procedure.
-Date: Sat, 23 Jun 2012 06:46:46 -0400
-Message-Id: <1340448406-10161-1-git-send-email-linkinjeon@gmail.com>
+Subject: [RFC PATCH] nfs: Support posix_fadvise(POSIX_FADV_RANDOM) on nfs server.
+Date: Sat, 23 Jun 2012 06:47:26 -0400
+Message-Id: <1340448446-10198-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,469 +25,358 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
+This patch disable readahead for a file on NFS Server when
+posix_fadvise(fd..., POSIX_FADV_RANDOM) is called on NFS
+Client.
+
+Readahead on the file can be enabled again with
+posix_fadvise(fd..., POSIX_FADV_NORMAL)
+
+This patch is provides performance boost in a scenario like
+traversing a directory with large number of files(e.g. ~5000 files),
+showing thumbnail view for an image directory, file attributes of
+various music files, preview dialog for video files etc.
+
+To simulate the scenario we performed a traverse test on a directory
+containing 5000 files. When OPEN/READDIR/STAT/READ(4k)
+is called on all 5000 files, total time is reduced by 19.6 %.
+
 Without this patch:
-
-On NFS Client:
-$ mount -t nfs <NFS_SERVER>:/mnt /mnt
-$ umount /mnt
-
-On NFS Server:
-$ umount /mnt
-umount: can't umount /mnt: Device or resource busy
-
-If user has to remove storage device user needs to unplug the
-device.
-This may result in file system corruption on attached media.
-
-This patch tries to add a NFS UMOUNT procedure for NFSv3 for safe
-removal of attached media at NFS Server.
+#> ./traverse_time huge_test_dir 4096
+ Traversed Path : huge_test_dir/ read_size = 4096
+ Total Time Taken : 22326 msec   <--------
+IMPORTANT TIMINGS
+OPEN DIR TIME (15915 usec)
+READ DIR TIME (8092117 usec)
+STAT TIME (118791 usec)
+OPEN TIME (1361520 usec)
+CLOSE TIME (27134 usec)
+READ TIME(12647454 usec)
+ADVISE TIME(9066 usec)
+MEMSET TIME(7 usec)
+READ DATA : 20480000
+READ SPEED:     1.54MB/sec
 
 With this patch:
-
-On NFS Client:
-$ mount -t nfs <NFS_SERVER>:/mnt /mnt
-$ umount /mnt
-
-On NFS Server:
-$ umount /mnt --> umount successful
+#> ./traverse_time huge_test_dir 4096
+ Traversed Path : huge_test_dir/ read_size = 4096
+ Total Time Taken : 17949 msec   <--------
+IMPORTANT TIMINGS
+OPEN DIR TIME (15868 usec)
+READ DIR TIME (7982147 usec)
+STAT TIME (118780 usec)
+OPEN TIME (1369376 usec)
+CLOSE TIME (28216 usec)
+READ TIME(8372115 usec)
+ADVISE TIME(8923 usec)
+MEMSET TIME(7 usec)
+READ DATA : 20480000
+READ SPEED(only read):     2.33MB/sec
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/nfs/nfs3proc.c       |   29 +++++++++++++++++++++++++++++
- fs/nfs/nfs3xdr.c        |   39 +++++++++++++++++++++++++++++++++++++++
- fs/nfs/super.c          |   10 ++++++++++
- fs/nfsd/nfs3proc.c      |   28 +++++++++++++++++++++++++++-
- fs/nfsd/nfs3xdr.c       |   19 +++++++++++++++++++
- fs/nfsd/nfsctl.c        |   22 ++++++++++++++++++++++
- fs/nfsd/nfsd.h          |    3 +++
- fs/nfsd/nfssvc.c        |    3 +++
- fs/nfsd/xdr3.h          |   14 +++++++++++++-
- include/linux/nfs3.h    |    1 +
- include/linux/nfs_xdr.h |    9 +++++++++
- 11 files changed, 175 insertions(+), 2 deletions(-)
+ fs/nfs/file.c      |    3 +++
+ fs/nfs/nfs2xdr.c   |    5 +++--
+ fs/nfs/nfs3xdr.c   |    5 +++--
+ fs/nfs/nfs4xdr.c   |    5 +++--
+ fs/nfsd/nfs3proc.c |    2 +-
+ fs/nfsd/nfs3xdr.c  |    1 +
+ fs/nfsd/nfs4xdr.c  |    5 +++--
+ fs/nfsd/nfsproc.c  |    2 +-
+ fs/nfsd/nfsxdr.c   |    1 +
+ fs/nfsd/vfs.c      |   24 +++++++++++++++++++++---
+ fs/nfsd/vfs.h      |    6 ++++--
+ fs/nfsd/xdr.h      |    1 +
+ fs/nfsd/xdr3.h     |    1 +
+ fs/nfsd/xdr4.h     |    1 +
+ 14 files changed, 47 insertions(+), 15 deletions(-)
 
-diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
-index 2292a0f..726227f 100644
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -877,6 +877,34 @@ nfs3_proc_lock(struct file *filp, int cmd, struct file_lock *fl)
- 	return nlmclnt_proc(NFS_SERVER(inode)->nlm_host, cmd, fl);
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index a6708e6b..89fdc43 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -192,6 +192,7 @@ nfs_file_read(struct kiocb *iocb, const struct iovec *iov,
+ 	struct dentry * dentry = iocb->ki_filp->f_path.dentry;
+ 	struct inode * inode = dentry->d_inode;
+ 	ssize_t result;
++	struct nfs_open_context *ctx = nfs_file_open_context(iocb->ki_filp);
+ 
+ 	if (iocb->ki_filp->f_flags & O_DIRECT)
+ 		return nfs_file_direct_read(iocb, iov, nr_segs, pos);
+@@ -200,6 +201,8 @@ nfs_file_read(struct kiocb *iocb, const struct iovec *iov,
+ 		dentry->d_parent->d_name.name, dentry->d_name.name,
+ 		(unsigned long) iov_length(iov, nr_segs), (unsigned long) pos);
+ 
++	ctx->mode = iocb->ki_filp->f_mode;
++
+ 	result = nfs_revalidate_mapping(inode, iocb->ki_filp->f_mapping);
+ 	if (!result) {
+ 		result = generic_file_aio_read(iocb, iov, nr_segs, pos);
+diff --git a/fs/nfs/nfs2xdr.c b/fs/nfs/nfs2xdr.c
+index d04f0df..76b3e48 100644
+--- a/fs/nfs/nfs2xdr.c
++++ b/fs/nfs/nfs2xdr.c
+@@ -44,7 +44,7 @@
+ #define NFS_removeargs_sz	(NFS_fhandle_sz+NFS_filename_sz)
+ #define NFS_sattrargs_sz	(NFS_fhandle_sz+NFS_sattr_sz)
+ #define NFS_readlinkargs_sz	(NFS_fhandle_sz)
+-#define NFS_readargs_sz		(NFS_fhandle_sz+3)
++#define NFS_readargs_sz		(NFS_fhandle_sz+4)
+ #define NFS_writeargs_sz	(NFS_fhandle_sz+4)
+ #define NFS_createargs_sz	(NFS_diropargs_sz+NFS_sattr_sz)
+ #define NFS_renameargs_sz	(NFS_diropargs_sz+NFS_diropargs_sz)
+@@ -612,10 +612,11 @@ static void encode_readargs(struct xdr_stream *xdr,
+ 
+ 	encode_fhandle(xdr, args->fh);
+ 
+-	p = xdr_reserve_space(xdr, 4 + 4 + 4);
++	p = xdr_reserve_space(xdr, 4 + 4 + 4 + 4);
+ 	*p++ = cpu_to_be32(offset);
+ 	*p++ = cpu_to_be32(count);
+ 	*p = cpu_to_be32(count);
++	*++p = cpu_to_be32(args->context->mode);
  }
  
-+static int nfs3_proc_umount(struct nfs_server *server)
-+{
-+	/*
-+	 * dummy argument and response are assigned to UMOUNT request
-+	 * to avoid BUG_ON(proc->p_arglen == 0); in net/sunrpc/clnt.c
-+	 */
-+	struct nfs3_umountargs  arg = {
-+		.dummy          = 0,
-+	};
-+	struct nfs3_umountres   res;
-+
-+	struct rpc_message msg = {
-+		.rpc_proc       = &nfs3_procedures[NFS3PROC_UMOUNT],
-+		.rpc_argp       = &arg,
-+		.rpc_resp       = &res,
-+
-+	};
-+	int err;
-+
-+	msg.rpc_cred = authnull_ops.lookup_cred(NULL, NULL, 0);
-+	dprintk("NFS call  umount\n");
-+	err = rpc_call_sync(server->client, &msg,
-+			RPC_TASK_SOFT | RPC_TASK_SOFTCONN);
-+	put_rpccred(msg.rpc_cred);
-+	dprintk("NFS reply umount: %d\n", err);
-+	return err;
-+}
-+
- const struct nfs_rpc_ops nfs_v3_clientops = {
- 	.version	= 3,			/* protocol version */
- 	.dentry_ops	= &nfs_dentry_operations,
-@@ -922,4 +950,5 @@ const struct nfs_rpc_ops nfs_v3_clientops = {
- 	.clear_acl_cache = nfs3_forget_cached_acls,
- 	.close_context	= nfs_close_context,
- 	.init_client	= nfs_init_client,
-+	.umount			= nfs3_proc_umount,
- };
+ static void nfs2_xdr_enc_readargs(struct rpc_rqst *req,
 diff --git a/fs/nfs/nfs3xdr.c b/fs/nfs/nfs3xdr.c
-index 6cbe894..874b8b2 100644
+index 6cbe894..d0876cb 100644
 --- a/fs/nfs/nfs3xdr.c
 +++ b/fs/nfs/nfs3xdr.c
-@@ -61,6 +61,7 @@
- #define NFS3_readdirargs_sz	(NFS3_fh_sz+NFS3_cookieverf_sz+3)
- #define NFS3_readdirplusargs_sz	(NFS3_fh_sz+NFS3_cookieverf_sz+4)
- #define NFS3_commitargs_sz	(NFS3_fh_sz+3)
-+#define NFS3_umountargs_sz	(1)
+@@ -49,7 +49,7 @@
+ #define NFS3_lookupargs_sz	(NFS3_fh_sz+NFS3_filename_sz)
+ #define NFS3_accessargs_sz	(NFS3_fh_sz+1)
+ #define NFS3_readlinkargs_sz	(NFS3_fh_sz)
+-#define NFS3_readargs_sz	(NFS3_fh_sz+3)
++#define NFS3_readargs_sz	(NFS3_fh_sz+4)
+ #define NFS3_writeargs_sz	(NFS3_fh_sz+5)
+ #define NFS3_createargs_sz	(NFS3_diropargs_sz+NFS3_sattr_sz)
+ #define NFS3_mkdirargs_sz	(NFS3_diropargs_sz+NFS3_sattr_sz)
+@@ -951,9 +951,10 @@ static void encode_read3args(struct xdr_stream *xdr,
  
- #define NFS3_getattrres_sz	(1+NFS3_fattr_sz)
- #define NFS3_setattrres_sz	(1+NFS3_wcc_data_sz)
-@@ -78,6 +79,7 @@
- #define NFS3_fsinfores_sz	(1+NFS3_post_op_attr_sz+12)
- #define NFS3_pathconfres_sz	(1+NFS3_post_op_attr_sz+6)
- #define NFS3_commitres_sz	(1+NFS3_wcc_data_sz+2)
-+#define NFS3_umountres_sz	(1 + 1)
+ 	encode_nfs_fh3(xdr, args->fh);
  
- #define ACL3_getaclargs_sz	(NFS3_fh_sz+1)
- #define ACL3_setaclargs_sz	(NFS3_fh_sz+1+ \
-@@ -1306,6 +1308,22 @@ static void nfs3_xdr_enc_commit3args(struct rpc_rqst *req,
- 	encode_commit3args(xdr, args);
+-	p = xdr_reserve_space(xdr, 8 + 4);
++	p = xdr_reserve_space(xdr, 8 + 4 + 4);
+ 	p = xdr_encode_hyper(p, args->offset);
+ 	*p = cpu_to_be32(args->count);
++	*++p = cpu_to_be32(args->context->mode);
  }
  
-+/*
-+ *   UMOUNT3args
-+ */
-+static void encode_umount3args(struct xdr_stream *xdr,
-+		const struct nfs3_umountargs *args)
-+{
-+	encode_uint32(xdr, args->dummy);
-+}
-+
-+static void nfs3_xdr_enc_umount3args(struct rpc_rqst *req,
-+		struct xdr_stream *xdr,
-+		const struct nfs3_umountargs *args)
-+{
-+	encode_umount3args(xdr, args);
-+}
-+
- #ifdef CONFIG_NFS_V3_ACL
+ static void nfs3_xdr_enc_read3args(struct rpc_rqst *req,
+diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+index 610ebcc..fbdd8ce 100644
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -188,7 +188,7 @@ static int nfs4_stat_to_errno(int);
+ #define decode_setattr_maxsz	(op_decode_hdr_maxsz + \
+ 				 nfs4_fattr_bitmap_maxsz)
+ #define encode_read_maxsz	(op_encode_hdr_maxsz + \
+-				 encode_stateid_maxsz + 3)
++				 encode_stateid_maxsz + 4)
+ #define decode_read_maxsz	(op_decode_hdr_maxsz + 2)
+ #define encode_readdir_maxsz	(op_encode_hdr_maxsz + \
+ 				 2 + encode_verifier_maxsz + 5)
+@@ -1532,9 +1532,10 @@ static void encode_read(struct xdr_stream *xdr, const struct nfs_readargs *args,
+ 	encode_open_stateid(xdr, args->context, args->lock_context,
+ 			FMODE_READ, hdr->minorversion);
  
- static void nfs3_xdr_enc_getacl3args(struct rpc_rqst *req,
-@@ -1429,6 +1447,26 @@ out_status:
+-	p = reserve_space(xdr, 12);
++	p = reserve_space(xdr, 16);
+ 	p = xdr_encode_hyper(p, args->offset);
+ 	*p = cpu_to_be32(args->count);
++	*++p = cpu_to_be32(args->context->mode);
  }
  
- /*
-+ *   UMOUNT3res
-+ */
-+static int nfs3_xdr_dec_umount3res(struct rpc_rqst *req,
-+		struct xdr_stream *xdr,
-+		struct nfs3_umountres *result)
-+{
-+	enum nfs_stat status;
-+	int error;
-+
-+	error = decode_nfsstat3(xdr, &status);
-+	if (unlikely(error))
-+		goto out;
-+	if (status != NFS3_OK)
-+		return nfs3_stat_to_errno(status);
-+	error = decode_uint32(xdr, &result->dummy);
-+out:
-+	return error;
-+}
-+
-+/*
-  * 3.3.3  LOOKUP3res
-  *
-  *	struct LOOKUP3resok {
-@@ -2508,6 +2546,7 @@ struct rpc_procinfo	nfs3_procedures[] = {
- 	PROC(FSINFO,		getattr,	fsinfo,		0),
- 	PROC(PATHCONF,		getattr,	pathconf,	0),
- 	PROC(COMMIT,		commit,		commit,		5),
-+	PROC(UMOUNT,		umount,		umount,		0),
- };
- 
- const struct rpc_version nfs_version3 = {
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 906f09c..9fa295b 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2525,6 +2525,16 @@ static void nfs_kill_super(struct super_block *s)
- {
- 	struct nfs_server *server = NFS_SB(s);
- 
-+	int err;
-+
-+	if (server->nfs_client->rpc_ops->umount) {
-+		err = server->nfs_client->rpc_ops->umount(server);
-+		if (err < 0) {
-+			printk(KERN_ERR "%s: nfs_proc3_umount() failed err = %d\n",
-+					__func__, err);
-+		}
-+	}
-+
- 	kill_anon_super(s);
- 	nfs_fscache_release_super_cookie(s);
- 	nfs_free_server(server);
+ static void encode_readdir(struct xdr_stream *xdr, const struct nfs4_readdir_arg *readdir, struct rpc_rqst *req, struct compound_hdr *hdr)
 diff --git a/fs/nfsd/nfs3proc.c b/fs/nfsd/nfs3proc.c
-index 9095f3c..12ca821 100644
+index 9095f3c..d599629 100644
 --- a/fs/nfsd/nfs3proc.c
 +++ b/fs/nfsd/nfs3proc.c
-@@ -8,6 +8,7 @@
- #include <linux/ext2_fs.h>
- #include <linux/magic.h>
+@@ -171,7 +171,7 @@ nfsd3_proc_read(struct svc_rqst *rqstp, struct nfsd3_readargs *argp,
+ 	nfserr = nfsd_read(rqstp, &resp->fh,
+ 				  argp->offset,
+ 			   	  rqstp->rq_vec, argp->vlen,
+-				  &resp->count);
++				  &resp->count, argp->f_mode);
+ 	if (nfserr == 0) {
+ 		struct inode	*inode = resp->fh.fh_dentry->d_inode;
  
-+#include "nfsd.h"
- #include "cache.h"
- #include "xdr3.h"
- #include "vfs.h"
-@@ -63,6 +64,21 @@ nfsd3_proc_getattr(struct svc_rqst *rqstp, struct nfsd_fhandle  *argp,
- }
- 
- /*
-+ * UMOUNT call.
-+ */
-+static __be32
-+nfsd3_proc_umount(struct svc_rqst *rqstp, struct nfsd3_umountargs *argp,
-+		struct nfsd3_umountres *resp)
-+{
-+	dprintk("nfsd: UMOUNT(3)\n");
-+
-+	if (nfs_umountd_workqueue)
-+		queue_work(nfs_umountd_workqueue, &nfs_umount_work);
-+
-+	return nfs_ok;
-+}
-+
-+/*
-  * Set a file's attributes
-  */
- static __be32
-@@ -671,7 +687,7 @@ struct nfsd3_voidargs { int dummy; };
- #define pAT (1+AT)	/* post attributes - conditional */
- #define WC (7+pAT)	/* WCC attributes */
- 
--static struct svc_procedure		nfsd_procedures3[22] = {
-+static struct svc_procedure		nfsd_procedures3[23] = {
- 	[NFS3PROC_NULL] = {
- 		.pc_func = (svc_procfunc) nfsd3_proc_null,
- 		.pc_encode = (kxdrproc_t) nfs3svc_encode_voidres,
-@@ -885,11 +901,21 @@ static struct svc_procedure		nfsd_procedures3[22] = {
- 		.pc_cachetype = RC_NOCACHE,
- 		.pc_xdrressize = ST+WC+2,
- 	},
-+	[NFS3PROC_UMOUNT] = {
-+		.pc_func = (svc_procfunc) nfsd3_proc_umount,
-+		.pc_decode = (kxdrproc_t) nfs3svc_decode_umountargs,
-+		.pc_encode = (kxdrproc_t) nfs3svc_encode_umountres,
-+		.pc_argsize = sizeof(struct nfsd3_umountargs),
-+		.pc_ressize = sizeof(struct nfsd3_umountres),
-+		.pc_cachetype = RC_NOCACHE,
-+		.pc_xdrressize = ST+1,
-+	},
- };
- 
- struct svc_version	nfsd_version3 = {
- 		.vs_vers	= 3,
- 		.vs_nproc	= 22,
-+		.vs_nproc	= 23,
- 		.vs_proc	= nfsd_procedures3,
- 		.vs_dispatch	= nfsd_dispatch,
- 		.vs_xdrsize	= NFS3_SVC_XDRSIZE,
 diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-index 43f46cd..8610282 100644
+index 43f46cd..d940bc9 100644
 --- a/fs/nfsd/nfs3xdr.c
 +++ b/fs/nfsd/nfs3xdr.c
-@@ -611,6 +611,15 @@ nfs3svc_decode_commitargs(struct svc_rqst *rqstp, __be32 *p,
+@@ -345,6 +345,7 @@ nfs3svc_decode_readargs(struct svc_rqst *rqstp, __be32 *p,
+ 		v++;
+ 	}
+ 	args->vlen = v;
++	args->f_mode = ntohl(*p++);
  	return xdr_argsize_check(rqstp, p);
  }
  
-+int
-+nfs3svc_decode_umountargs(struct svc_rqst *rqstp, __be32 *p,
-+		struct nfsd3_umountargs *args)
-+{
-+	args->dummy = ntohl(*p++);
-+
-+	return xdr_argsize_check(rqstp, p);
-+}
-+
- /*
-  * XDR encode functions
-  */
-@@ -1091,6 +1100,16 @@ nfs3svc_encode_commitres(struct svc_rqst *rqstp, __be32 *p,
- 	return xdr_ressize_check(rqstp, p);
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 4949667..34cb726 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -875,9 +875,10 @@ nfsd4_decode_read(struct nfsd4_compoundargs *argp, struct nfsd4_read *read)
+ 	status = nfsd4_decode_stateid(argp, &read->rd_stateid);
+ 	if (status)
+ 		return status;
+-	READ_BUF(12);
++	READ_BUF(16);
+ 	READ64(read->rd_offset);
+ 	READ32(read->rd_length);
++	READ32(read->rd_f_mode);
+ 
+ 	DECODE_TAIL;
+ }
+@@ -2958,7 +2959,7 @@ nfsd4_encode_read(struct nfsd4_compoundres *resp, __be32 nfserr,
+ 
+ 	nfserr = nfsd_read_file(read->rd_rqstp, read->rd_fhp, read->rd_filp,
+ 			read->rd_offset, resp->rqstp->rq_vec, read->rd_vlen,
+-			&maxcount);
++			&maxcount, read->rd_f_mode);
+ 
+ 	if (nfserr)
+ 		return nfserr;
+diff --git a/fs/nfsd/nfsproc.c b/fs/nfsd/nfsproc.c
+index e15dc45..8903975 100644
+--- a/fs/nfsd/nfsproc.c
++++ b/fs/nfsd/nfsproc.c
+@@ -147,7 +147,7 @@ nfsd_proc_read(struct svc_rqst *rqstp, struct nfsd_readargs *argp,
+ 	nfserr = nfsd_read(rqstp, fh_copy(&resp->fh, &argp->fh),
+ 				  argp->offset,
+ 			   	  rqstp->rq_vec, argp->vlen,
+-				  &resp->count);
++				  &resp->count, argp->f_mode);
+ 
+ 	if (nfserr) return nfserr;
+ 	return nfserrno(vfs_getattr(resp->fh.fh_export->ex_path.mnt,
+diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
+index 65ec595..3d76274 100644
+--- a/fs/nfsd/nfsxdr.c
++++ b/fs/nfsd/nfsxdr.c
+@@ -269,6 +269,7 @@ nfssvc_decode_readargs(struct svc_rqst *rqstp, __be32 *p,
+ 		v++;
+ 	}
+ 	args->vlen = v;
++	args->f_mode = ntohl(*p++);
+ 	return xdr_argsize_check(rqstp, p);
  }
  
-+/* UMOUNT */
-+int
-+nfs3svc_encode_umountres(struct svc_rqst *rqstp, __be32 *p,
-+		struct nfsd3_umountres *resp)
-+{
-+	if (resp->status == 0)
-+		*p++ = htonl(resp->dummy);
-+	return xdr_ressize_check(rqstp, p);
-+}
-+
- /*
-  * XDR release functions
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index c8bd9c3..8fc82d7 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -1067,7 +1067,8 @@ out_nfserr:
+  * N.B. After this call fhp needs an fh_put
   */
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index c55298e..53748ac 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -50,6 +50,9 @@ enum {
- #endif
+ __be32 nfsd_read(struct svc_rqst *rqstp, struct svc_fh *fhp,
+-	loff_t offset, struct kvec *vec, int vlen, unsigned long *count)
++	loff_t offset, struct kvec *vec, int vlen, unsigned long *count,
++	unsigned long f_mode)
+ {
+ 	struct file *file;
+ 	struct inode *inode;
+@@ -1078,6 +1079,12 @@ __be32 nfsd_read(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	if (err)
+ 		return err;
+ 
++	if (f_mode & FMODE_RANDOM) {
++		spin_lock(&file->f_lock);
++		file->f_mode |= FMODE_RANDOM;
++		spin_unlock(&file->f_lock);
++	}
++
+ 	inode = file->f_path.dentry->d_inode;
+ 
+ 	/* Get readahead parameters */
+@@ -1106,7 +1113,7 @@ __be32 nfsd_read(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ __be32
+ nfsd_read_file(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+ 		loff_t offset, struct kvec *vec, int vlen,
+-		unsigned long *count)
++		unsigned long *count, unsigned long f_mode)
+ {
+ 	__be32		err;
+ 
+@@ -1115,9 +1122,20 @@ nfsd_read_file(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+ 				NFSD_MAY_READ|NFSD_MAY_OWNER_OVERRIDE);
+ 		if (err)
+ 			goto out;
++
++		if (f_mode & FMODE_RANDOM) {
++			spin_lock(&file->f_lock);
++			file->f_mode |= FMODE_RANDOM;
++			spin_unlock(&file->f_lock);
++		} else {
++			spin_lock(&file->f_lock);
++			file->f_mode &= ~FMODE_RANDOM;
++			spin_unlock(&file->f_lock);
++		}
++
+ 		err = nfsd_vfs_read(rqstp, fhp, file, offset, vec, vlen, count);
+ 	} else /* Note file may still be NULL in NFSv4 special stateid case: */
+-		err = nfsd_read(rqstp, fhp, offset, vec, vlen, count);
++		err = nfsd_read(rqstp, fhp, offset, vec, vlen, count, f_mode);
+ out:
+ 	return err;
+ }
+diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
+index ec0611b..c181cdb 100644
+--- a/fs/nfsd/vfs.h
++++ b/fs/nfsd/vfs.h
+@@ -72,9 +72,11 @@ __be32		nfsd_open(struct svc_rqst *, struct svc_fh *, umode_t,
+ 				int, struct file **);
+ void		nfsd_close(struct file *);
+ __be32 		nfsd_read(struct svc_rqst *, struct svc_fh *,
+-				loff_t, struct kvec *, int, unsigned long *);
++				loff_t, struct kvec *, int, unsigned long *,
++				unsigned long);
+ __be32 		nfsd_read_file(struct svc_rqst *, struct svc_fh *, struct file *,
+-				loff_t, struct kvec *, int, unsigned long *);
++				loff_t, struct kvec *, int, unsigned long *,
++				unsigned long);
+ __be32 		nfsd_write(struct svc_rqst *, struct svc_fh *,struct file *,
+ 				loff_t, struct kvec *,int, unsigned long *, int *);
+ __be32		nfsd_readlink(struct svc_rqst *, struct svc_fh *,
+diff --git a/fs/nfsd/xdr.h b/fs/nfsd/xdr.h
+index 53b1863..520d5e6 100644
+--- a/fs/nfsd/xdr.h
++++ b/fs/nfsd/xdr.h
+@@ -27,6 +27,7 @@ struct nfsd_readargs {
+ 	__u32			offset;
+ 	__u32			count;
+ 	int			vlen;
++	__u32			f_mode;
  };
  
-+struct workqueue_struct *nfs_umountd_workqueue;
-+struct work_struct nfs_umount_work;
-+
- /*
-  * write() for these nodes.
-  */
-@@ -1175,6 +1178,17 @@ static struct pernet_operations nfsd_net_ops = {
- 	.size = sizeof(struct nfsd_net),
- };
- 
-+static void nfs_umountd_fn(struct work_struct *unused)
-+{
-+	nfsd_export_flush(&init_net);
-+}
-+
-+static void nfsd_umount_destroy(void)
-+{
-+	if (nfs_umountd_workqueue)
-+		destroy_workqueue(nfs_umountd_workqueue);
-+}
-+
- static int __init init_nfsd(void)
- {
- 	int retval;
-@@ -1204,6 +1218,13 @@ static int __init init_nfsd(void)
- 	retval = register_filesystem(&nfsd_fs_type);
- 	if (retval)
- 		goto out_free_all;
-+
-+	nfs_umountd_workqueue = create_singlethread_workqueue("nfs.umountd");
-+	if (!nfs_umountd_workqueue)
-+		printk(KERN_ERR "nfsd: Failed to create nfs.umountd workqueue\n");
-+	else
-+		INIT_WORK(&nfs_umount_work, nfs_umountd_fn);
-+
- 	return 0;
- out_free_all:
- 	remove_proc_entry("fs/nfs/exports", NULL);
-@@ -1225,6 +1246,7 @@ out_unregister_notifier:
- 
- static void __exit exit_nfsd(void)
- {
-+	nfsd_umount_destroy();
- 	nfsd_reply_cache_shutdown();
- 	remove_proc_entry("fs/nfs/exports", NULL);
- 	remove_proc_entry("fs/nfs", NULL);
-diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
-index 1671429..691450a 100644
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -20,6 +20,7 @@
- #include <linux/nfsd/debug.h>
- #include <linux/nfsd/export.h>
- #include <linux/nfsd/stats.h>
-+#include <linux/workqueue.h>
- 
- /*
-  * nfsd version
-@@ -61,6 +62,8 @@ extern unsigned int		nfsd_drc_max_mem;
- extern unsigned int		nfsd_drc_mem_used;
- 
- extern const struct seq_operations nfs_exports_op;
-+extern struct workqueue_struct *nfs_umountd_workqueue;
-+extern struct work_struct nfs_umount_work;
- 
- /*
-  * Function prototypes.
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index ee709fc..1fb3598 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -256,6 +256,9 @@ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
- {
- 	/* When last nfsd thread exits we need to do some clean-up */
- 	nfsd_serv = NULL;
-+	if (nfs_umountd_workqueue)
-+		flush_workqueue(nfs_umountd_workqueue);
-+
- 	nfsd_shutdown();
- 
- 	svc_rpcb_cleanup(serv, net);
+ struct nfsd_writeargs {
 diff --git a/fs/nfsd/xdr3.h b/fs/nfsd/xdr3.h
-index 7df980e..b542c92 100644
+index 7df980e..15fdff4 100644
 --- a/fs/nfsd/xdr3.h
 +++ b/fs/nfsd/xdr3.h
-@@ -106,6 +106,10 @@ struct nfsd3_commitargs {
+@@ -32,6 +32,7 @@ struct nfsd3_readargs {
+ 	__u64			offset;
  	__u32			count;
+ 	int			vlen;
++	__u32			f_mode;
  };
  
-+struct nfsd3_umountargs {
-+	__u32	dummy;
-+};
-+
- struct nfsd3_getaclargs {
- 	struct svc_fh		fh;
- 	int			mask;
-@@ -219,6 +223,11 @@ struct nfsd3_commitres {
- 	struct svc_fh		fh;
- };
- 
-+struct nfsd3_umountres {
-+	__be32	status;
-+	__u32	dummy;
-+};
-+
- struct nfsd3_getaclres {
- 	__be32			status;
- 	struct svc_fh		fh;
-@@ -295,6 +304,8 @@ int nfs3svc_decode_readdirplusargs(struct svc_rqst *, __be32 *,
- 				struct nfsd3_readdirargs *);
- int nfs3svc_decode_commitargs(struct svc_rqst *, __be32 *,
- 				struct nfsd3_commitargs *);
-+int nfs3svc_decode_umountargs(struct svc_rqst *, __be32 *,
-+				struct nfsd3_umountargs *);
- int nfs3svc_encode_voidres(struct svc_rqst *, __be32 *, void *);
- int nfs3svc_encode_attrstat(struct svc_rqst *, __be32 *,
- 				struct nfsd3_attrstat *);
-@@ -324,7 +335,8 @@ int nfs3svc_encode_pathconfres(struct svc_rqst *, __be32 *,
- 				struct nfsd3_pathconfres *);
- int nfs3svc_encode_commitres(struct svc_rqst *, __be32 *,
- 				struct nfsd3_commitres *);
--
-+int nfs3svc_encode_umountres(struct svc_rqst *, __be32 *,
-+				struct nfsd3_umountres *);
- int nfs3svc_release_fhandle(struct svc_rqst *, __be32 *,
- 				struct nfsd3_attrstat *);
- int nfs3svc_release_fhandle2(struct svc_rqst *, __be32 *,
-diff --git a/include/linux/nfs3.h b/include/linux/nfs3.h
-index 6ccfe3b..968e2e0 100644
---- a/include/linux/nfs3.h
-+++ b/include/linux/nfs3.h
-@@ -90,6 +90,7 @@ struct nfs3_fh {
- #define NFS3PROC_FSINFO		19
- #define NFS3PROC_PATHCONF	20
- #define NFS3PROC_COMMIT		21
-+#define NFS3PROC_UMOUNT		22
- 
- #define NFS_MNT3_VERSION	3
-  
-diff --git a/include/linux/nfs_xdr.h b/include/linux/nfs_xdr.h
-index 5c0014d..da53bd8 100644
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -786,6 +786,14 @@ struct nfs3_readdirargs {
- 	struct page **		pages;
- };
- 
-+struct nfs3_umountargs {
-+	__u32			dummy;
-+};
-+
-+struct nfs3_umountres {
-+	__u32			dummy;
-+};
-+
- struct nfs3_diropres {
- 	struct nfs_fattr *	dir_attr;
- 	struct nfs_fh *		fh;
-@@ -1425,6 +1433,7 @@ struct nfs_rpc_ops {
- 	struct nfs_client *
- 		(*init_client) (struct nfs_client *, const struct rpc_timeout *,
- 				const char *, rpc_authflavor_t);
-+	int	(*umount)(struct nfs_server *);
- };
- 
- /*
+ struct nfsd3_writeargs {
+diff --git a/fs/nfsd/xdr4.h b/fs/nfsd/xdr4.h
+index acd127d..49d6ce3 100644
+--- a/fs/nfsd/xdr4.h
++++ b/fs/nfsd/xdr4.h
+@@ -270,6 +270,7 @@ struct nfsd4_read {
+ 	u32		rd_length;          /* request */
+ 	int		rd_vlen;
+ 	struct file     *rd_filp;
++	u32		rd_f_mode;			/* request */
+ 	
+ 	struct svc_rqst *rd_rqstp;          /* response */
+ 	struct svc_fh * rd_fhp;             /* response */
 -- 
 1.7.9.5
 
