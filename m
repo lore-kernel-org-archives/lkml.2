@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab2FWC7O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 22:59:14 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:57728 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab2FWC7N (ORCPT
+	id S1754472Ab2FWDA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 23:00:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54567 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711Ab2FWDA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 22:59:13 -0400
-Message-ID: <4FE530F7.1060108@gmail.com>
-Date: Fri, 22 Jun 2012 22:59:03 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 22 Jun 2012 23:00:57 -0400
+Date: Fri, 22 Jun 2012 20:00:52 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 01/10] zcache: fix preemptable memory allocation in
+ atomic context
+Message-ID: <20120623030052.GA18440@kroah.com>
+References: <4FE0392E.3090300@linux.vnet.ibm.com>
+ <4FE36D32.3030408@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: undisclosed-recipients:";
-	Kamezawa Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	undisclosed-recipients:;Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-						^-missing end of address
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com> <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com> <4FE26470.90401@kernel.org> <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com> <4FE27F15.8050102@kernel.org> <CAHGf_=pDw4axwG2tQ+B5hPks-sz2S5+G1Kk-=HSDmo=DSXOkEw@mail.gmail.com> <4FE2A937.6040701@kernel.org> <4FE2FCFB.4040808@jp.fujitsu.com> <4FE3C4E4.2050107@kernel.org> <4FE414A2.3000700@kernel.org>
-In-Reply-To: <4FE414A2.3000700@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE36D32.3030408@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 21, 2012 at 01:51:30PM -0500, Seth Jennings wrote:
+> I just noticed you sent this patchset to Andrew, but the
+> staging tree is maintained by Greg.  You're going to want to
+> send these patches to him.
+> 
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-One more.
+After this series is redone, right?  As it is, this submission didn't
+look ok, so I'm hoping a second round is forthcoming...
 
+thanks,
 
-> +/*
-> + * NOTE:
-> + * Don't use set_pageblock_migratetype(page, MIGRATE_ISOLATE) direclty.
-> + * Instead, use {un}set_pageblock_isolate.
-> + */
->  void set_pageblock_migratetype(struct page *page, int migratetype)
->  {
->         if (unlikely(page_group_by_mobility_disabled))
-
-I don't think we need this comment. please just add BUG_ON.
-
+greg k-h
