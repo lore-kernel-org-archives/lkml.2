@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab2FWT05 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 15:26:57 -0400
-Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:12447 "EHLO
+	id S1755965Ab2FWT1E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 15:27:04 -0400
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:12475 "EHLO
 	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752802Ab2FWT0m (ORCPT
+	by vger.kernel.org with ESMTP id S1755832Ab2FWT06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 15:26:42 -0400
+	Sat, 23 Jun 2012 15:26:58 -0400
 From: Maya Erez <merez@codeaurora.org>
 To: linux-mmc@vger.kernel.org
 Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        Lee Susman <lsusman@codeaurora.org>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 2/3] block: Add test-iosched scheduler
-Date: Sat, 23 Jun 2012 22:24:52 +0300
-Message-Id: <1340479493-28470-3-git-send-email-merez@codeaurora.org>
+Subject: [PATCH v2 3/3] block: Add eMMC4.5 write packed commands unit-tests
+Date: Sat, 23 Jun 2012 22:24:53 +0300
+Message-Id: <1340479493-28470-4-git-send-email-merez@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3
 In-Reply-To: <n>
 References: <n>
@@ -22,118 +22,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The test scheduler allows testing a block device by dispatching
-specific requests according to the test case and declare PASS/FAIL
-according to the requests completion error code
+Expose the following packed commands tests:
+- Test the write packed commands list preparation
+- Simulate a returned error code
+- Send an invalid packed command to the card
 
+Signed-off-by: Lee Susman <lsusman@codeaurora.org>
 Signed-off-by: Maya Erez <merez@codeaurora.org>
 
-diff --git a/Documentation/block/test-iosched.txt b/Documentation/block/test-iosched.txt
-new file mode 100644
-index 0000000..75d8134
---- /dev/null
-+++ b/Documentation/block/test-iosched.txt
-@@ -0,0 +1,39 @@
-+Test IO scheduler
-+==================
-+
-+The test scheduler allows testing a block device by dispatching
-+specific requests according to the test case and declare PASS/FAIL
-+according to the requests completion error code.
-+
-+The test IO scheduler implements the no-op scheduler operations, and uses
-+them in order to dispatch the non-test requests when no test is running.
-+This will allow to keep a normal FS operation in parallel to the test
-+capability.
-+The test IO scheduler keeps two different queues, one for real-world requests
-+(inserted by the FS) and the other for the test requests.
-+The test IO scheduler chooses the queue for dispatch requests according to the
-+test state (IDLE/RUNNING).
-+
-+the test IO scheduler is compiled by default as a dynamic module and enabled
-+only if CONFIG_DEBUG_FS is defined.
-+
-+Each block device test utility that would like to use the test-iosched test
-+services, should register as a blk_dev_test_type and supply an init and exit
-+callbacks. Those callback are called upon selection (or removal) of the
-+test-iosched as the active scheduler. From that point the block device test
-+can start a test and supply its own callbacks for preparing, running, result
-+checking and cleanup of the test.
-+
-+Each test is exposed via debugfs and can be triggered by writing to
-+the debugfs file. In order to add a new test one should expose a new debugfs
-+file for the new test.
-+
-+Selecting IO schedulers
-+-----------------------
-+Refer to Documentation/block/switching-sched.txt for information on
-+selecting an io scheduler on a per-device basis.
-+
-+
-+May 10 2012, maya Erez <merez@codeaurora.org>
-+
-+
-diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
-index 421bef9..af3d6a3 100644
---- a/block/Kconfig.iosched
-+++ b/block/Kconfig.iosched
-@@ -12,6 +12,17 @@ config IOSCHED_NOOP
- 	  that do their own scheduling and require only minimal assistance from
- 	  the kernel.
+diff --git a/drivers/mmc/card/Kconfig b/drivers/mmc/card/Kconfig
+index 3b1f783..bbe8cac 100644
+--- a/drivers/mmc/card/Kconfig
++++ b/drivers/mmc/card/Kconfig
+@@ -67,3 +67,14 @@ config MMC_TEST
  
-+config IOSCHED_TEST
-+	tristate "Test I/O scheduler"
-+	depends on DEBUG_FS
+ 	  This driver is only of interest to those developing or
+ 	  testing a host driver. Most people should say N here.
++
++config MMC_BLOCK_TEST
++	tristate "MMC block test"
++	depends on MMC_BLOCK && IOSCHED_TEST
 +	default m
-+	---help---
-+	  The test I/O scheduler is a duplicate of the noop scheduler with
-+	  addition of test utlity.
-+	  It allows testing a block device by dispatching specific requests
-+	  according to the test case and declare PASS/FAIL according to the
-+	  requests completion error code.
++	help
++	  MMC block test can be used with test iosched to test the MMC block
++	  device.
++	  Currently used to test eMMC 4.5 features (packed commands, sanitize,
++	  BKOPs).
 +
- config IOSCHED_DEADLINE
- 	tristate "Deadline I/O scheduler"
- 	default y
-diff --git a/block/Makefile b/block/Makefile
-index 39b76ba..436b220 100644
---- a/block/Makefile
-+++ b/block/Makefile
-@@ -15,6 +15,7 @@ obj-$(CONFIG_BLK_DEV_THROTTLING)	+= blk-throttle.o
- obj-$(CONFIG_IOSCHED_NOOP)	+= noop-iosched.o
- obj-$(CONFIG_IOSCHED_DEADLINE)	+= deadline-iosched.o
- obj-$(CONFIG_IOSCHED_CFQ)	+= cfq-iosched.o
-+obj-$(CONFIG_IOSCHED_TEST)	+= test-iosched.o
+diff --git a/drivers/mmc/card/Makefile b/drivers/mmc/card/Makefile
+index c73b406..d55107f 100644
+--- a/drivers/mmc/card/Makefile
++++ b/drivers/mmc/card/Makefile
+@@ -8,3 +8,4 @@ obj-$(CONFIG_MMC_TEST)		+= mmc_test.o
  
- obj-$(CONFIG_BLOCK_COMPAT)	+= compat_ioctl.o
- obj-$(CONFIG_BLK_DEV_INTEGRITY)	+= blk-integrity.o
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 93eb3e4..619abbe 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1085,8 +1085,6 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
- {
- 	struct request *rq;
+ obj-$(CONFIG_SDIO_UART)		+= sdio_uart.o
  
--	BUG_ON(rw != READ && rw != WRITE);
++obj-$(CONFIG_MMC_BLOCK_TEST)		+= mmc_block_test.o
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 10b77fd..4a24530 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -123,17 +123,6 @@ struct mmc_blk_data {
+ 
+ static DEFINE_MUTEX(open_lock);
+ 
+-enum mmc_blk_status {
+-	MMC_BLK_SUCCESS = 0,
+-	MMC_BLK_PARTIAL,
+-	MMC_BLK_CMD_ERR,
+-	MMC_BLK_RETRY,
+-	MMC_BLK_ABORT,
+-	MMC_BLK_DATA_ERR,
+-	MMC_BLK_ECC_ERR,
+-	MMC_BLK_NOMEDIUM,
+-};
 -
- 	spin_lock_irq(q->queue_lock);
- 	if (gfp_mask & __GFP_WAIT)
- 		rq = get_request_wait(q, rw, NULL);
-@@ -1419,6 +1417,7 @@ void init_request_from_bio(struct request *req, struct bio *bio)
- 	req->ioprio = bio_prio(bio);
- 	blk_rq_bio_prep(req->q, req, bio);
+ enum {
+ 	MMC_PACKED_N_IDX = -1,
+ 	MMC_PACKED_N_ZERO,
+@@ -1330,6 +1319,64 @@ void mmc_blk_init_packed_statistics(struct mmc_card *card)
  }
-+EXPORT_SYMBOL(init_request_from_bio);
+ EXPORT_SYMBOL(mmc_blk_init_packed_statistics);
  
- void blk_queue_bio(struct request_queue *q, struct bio *bio)
++void print_mmc_packing_stats(struct mmc_card *card)
++{
++	int i;
++	int max_num_of_packed_reqs = 0;
++
++	if ((!card) || (!card->wr_pack_stats.packing_events))
++		return;
++
++	max_num_of_packed_reqs = card->ext_csd.max_packed_writes;
++
++	spin_lock(&card->wr_pack_stats.lock);
++
++	pr_info("%s: write packing statistics:\n",
++		mmc_hostname(card->host));
++
++	for (i = 1 ; i <= max_num_of_packed_reqs ; ++i) {
++		if (card->wr_pack_stats.packing_events[i] != 0)
++			pr_info("%s: Packed %d reqs - %d times\n",
++				mmc_hostname(card->host), i,
++				card->wr_pack_stats.packing_events[i]);
++	}
++
++	pr_info("%s: stopped packing due to the following reasons:\n",
++		mmc_hostname(card->host));
++
++	if (card->wr_pack_stats.pack_stop_reason[EXCEEDS_SEGMENTS])
++		pr_info("%s: %d times: exceedmax num of segments\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[EXCEEDS_SEGMENTS]);
++	if (card->wr_pack_stats.pack_stop_reason[EXCEEDS_SECTORS])
++		pr_info("%s: %d times: exceeding the max num of sectors\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[EXCEEDS_SECTORS]);
++	if (card->wr_pack_stats.pack_stop_reason[WRONG_DATA_DIR])
++		pr_info("%s: %d times: wrong data direction\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[WRONG_DATA_DIR]);
++	if (card->wr_pack_stats.pack_stop_reason[FLUSH_OR_DISCARD])
++		pr_info("%s: %d times: flush or discard\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[FLUSH_OR_DISCARD]);
++	if (card->wr_pack_stats.pack_stop_reason[EMPTY_QUEUE])
++		pr_info("%s: %d times: empty queue\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[EMPTY_QUEUE]);
++	if (card->wr_pack_stats.pack_stop_reason[REL_WRITE])
++		pr_info("%s: %d times: rel write\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[REL_WRITE]);
++	if (card->wr_pack_stats.pack_stop_reason[THRESHOLD])
++		pr_info("%s: %d times: Threshold\n",
++			mmc_hostname(card->host),
++			card->wr_pack_stats.pack_stop_reason[THRESHOLD]);
++
++	spin_unlock(&card->wr_pack_stats.lock);
++}
++EXPORT_SYMBOL(print_mmc_packing_stats);
++
+ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
  {
-diff --git a/block/test-iosched.c b/block/test-iosched.c
+ 	struct request_queue *q = mq->queue;
+@@ -1529,7 +1576,18 @@ static void mmc_blk_packed_hdr_wrq_prep(struct mmc_queue_req *mqrq,
+ 	brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
+ 
+ 	mqrq->mmc_active.mrq = &brq->mrq;
+-	mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
++
++	/*
++	 * This is intended for packed commands tests usage - in case these
++	 * functions are not in use the respective pointers are NULL
++	 */
++	if (mq->err_check_fn)
++		mqrq->mmc_active.err_check = mq->err_check_fn;
++	else
++		mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
++
++	if (mq->packed_test_fn)
++		mq->packed_test_fn(mq->queue, mqrq);
+ 
+ 	mmc_queue_bounce_pre(mqrq);
+ }
+diff --git a/drivers/mmc/card/mmc_block_test.c b/drivers/mmc/card/mmc_block_test.c
 new file mode 100644
-index 0000000..e79ef5f
+index 0000000..48719fb
 --- /dev/null
-+++ b/block/test-iosched.c
-@@ -0,0 +1,1005 @@
++++ b/drivers/mmc/card/mmc_block_test.c
+@@ -0,0 +1,1456 @@
 +
 +/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
 + *
@@ -146,1223 +183,1488 @@ index 0000000..e79ef5f
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + *
-+ * The test scheduler allows to test the block device by dispatching
-+ * specific requests according to the test case and declare PASS/FAIL
-+ * according to the requests completion error code.
-+ * Each test is exposed via debugfs and can be triggered by writing to
-+ * the debugfs file.
-+ *
 + */
 +
-+/* elevator test iosched */
-+#include <linux/blkdev.h>
-+#include <linux/elevator.h>
-+#include <linux/bio.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/init.h>
-+#include <linux/debugfs.h>
-+#include <linux/test-iosched.h>
-+#include <linux/delay.h>
-+#include "blk.h"
++/* MMC block test */
 +
-+#define MODULE_NAME "test-iosched"
-+#define WR_RD_START_REQ_ID 1234
-+#define UNIQUE_START_REQ_ID 5678
-+#define TIMEOUT_TIMER_MS 40000
-+#define TEST_MAX_TESTCASE_ROUNDS 15
++#include <linux/module.h>
++#include <linux/blkdev.h>
++#include <linux/debugfs.h>
++#include <linux/mmc/card.h>
++#include <linux/mmc/host.h>
++#include <linux/delay.h>
++#include <linux/test-iosched.h>
++#include "queue.h"
++
++#define MODULE_NAME "mmc_block_test"
++#define TEST_MAX_SECTOR_RANGE		(600*1024*1024) /* 600 MB */
++#define TEST_MAX_BIOS_PER_REQ		120
++#define CMD23_PACKED_BIT	(1 << 30)
++#define LARGE_PRIME_1	1103515367
++#define LARGE_PRIME_2	35757
++#define PACKED_HDR_VER_MASK 0x000000FF
++#define PACKED_HDR_RW_MASK 0x0000FF00
++#define PACKED_HDR_NUM_REQS_MASK 0x00FF0000
++#define PACKED_HDR_BITS_16_TO_29_SET 0x3FFF0000
 +
 +#define test_pr_debug(fmt, args...) pr_debug("%s: "fmt"\n", MODULE_NAME, args)
 +#define test_pr_info(fmt, args...) pr_info("%s: "fmt"\n", MODULE_NAME, args)
 +#define test_pr_err(fmt, args...) pr_err("%s: "fmt"\n", MODULE_NAME, args)
 +
-+static DEFINE_SPINLOCK(blk_dev_test_list_lock);
-+static LIST_HEAD(blk_dev_test_list);
-+static struct test_data *ptd;
++enum is_random {
++	NON_RANDOM_TEST,
++	RANDOM_TEST,
++};
 +
-+/* Get the request after `test_rq' in the test requests list */
-+static struct test_request *
-+latter_test_request(struct request_queue *q,
-+				 struct test_request *test_rq)
-+{
-+	struct test_data *td = q->elevator->elevator_data;
++enum mmc_block_test_testcases {
++	/* Start of send write packing test group */
++	SEND_WRITE_PACKING_MIN_TESTCASE,
++	TEST_STOP_DUE_TO_READ = SEND_WRITE_PACKING_MIN_TESTCASE,
++	TEST_STOP_DUE_TO_READ_AFTER_MAX_REQS,
++	TEST_STOP_DUE_TO_FLUSH,
++	TEST_STOP_DUE_TO_FLUSH_AFTER_MAX_REQS,
++	TEST_STOP_DUE_TO_EMPTY_QUEUE,
++	TEST_STOP_DUE_TO_MAX_REQ_NUM,
++	TEST_STOP_DUE_TO_THRESHOLD,
++	SEND_WRITE_PACKING_MAX_TESTCASE = TEST_STOP_DUE_TO_THRESHOLD,
 +
-+	if (test_rq->queuelist.next == &td->test_queue)
-+		return NULL;
-+	return list_entry(test_rq->queuelist.next, struct test_request,
-+			  queuelist);
-+}
++	/* Start of err check test group */
++	ERR_CHECK_MIN_TESTCASE,
++	TEST_RET_ABORT = ERR_CHECK_MIN_TESTCASE,
++	TEST_RET_PARTIAL_FOLLOWED_BY_SUCCESS,
++	TEST_RET_PARTIAL_FOLLOWED_BY_ABORT,
++	TEST_RET_PARTIAL_MULTIPLE_UNTIL_SUCCESS,
++	TEST_RET_PARTIAL_MAX_FAIL_IDX,
++	TEST_RET_RETRY,
++	TEST_RET_CMD_ERR,
++	TEST_RET_DATA_ERR,
++	ERR_CHECK_MAX_TESTCASE = TEST_RET_DATA_ERR,
 +
-+/**
-+ * test_iosched_get_req_queue() - returns the request queue
-+ * served by the scheduler
++	/* Start of send invalid test group */
++	INVALID_CMD_MIN_TESTCASE,
++	TEST_HDR_INVALID_VERSION = INVALID_CMD_MIN_TESTCASE,
++	TEST_HDR_WRONG_WRITE_CODE,
++	TEST_HDR_INVALID_RW_CODE,
++	TEST_HDR_DIFFERENT_ADDRESSES,
++	TEST_HDR_REQ_NUM_SMALLER_THAN_ACTUAL,
++	TEST_HDR_REQ_NUM_LARGER_THAN_ACTUAL,
++	TEST_HDR_CMD23_PACKED_BIT_SET,
++	TEST_CMD23_MAX_PACKED_WRITES,
++	TEST_CMD23_ZERO_PACKED_WRITES,
++	TEST_CMD23_PACKED_BIT_UNSET,
++	TEST_CMD23_REL_WR_BIT_SET,
++	TEST_CMD23_BITS_16TO29_SET,
++	TEST_CMD23_HDR_BLK_NOT_IN_COUNT,
++	INVALID_CMD_MAX_TESTCASE = TEST_CMD23_HDR_BLK_NOT_IN_COUNT,
++};
++
++enum mmc_block_test_group {
++	TEST_NO_GROUP,
++	TEST_GENERAL_GROUP,
++	TEST_SEND_WRITE_PACKING_GROUP,
++	TEST_ERR_CHECK_GROUP,
++	TEST_SEND_INVALID_GROUP,
++};
++
++struct mmc_block_test_debug {
++	struct dentry *send_write_packing_test;
++	struct dentry *err_check_test;
++	struct dentry *send_invalid_packed_test;
++	struct dentry *random_test_seed;
++};
++
++struct mmc_block_test_data {
++	/* The number of write requests that the test will issue */
++	int num_requests;
++	/* The expected write packing statistics for the current test */
++	struct mmc_wr_pack_stats exp_packed_stats;
++	/*
++	 * A user-defined seed for random choices of number of bios written in
++	 * a request, and of number of requests issued in a test
++	 * This field is randomly updated after each use
++	 */
++	unsigned int random_test_seed;
++	/* A retry counter used in err_check tests */
++	int err_check_counter;
++	/* Can be one of the values of enum test_group */
++	enum mmc_block_test_group test_group;
++	/*
++	 * Indicates if the current testcase is running with random values of
++	 * num_requests and num_bios (in each request)
++	 */
++	int is_random;
++	/* Data structure for debugfs dentrys */
++	struct mmc_block_test_debug debug;
++	/*
++	 * Data structure containing individual test information, including
++	 * self-defined specific data
++	 */
++	struct test_info test_info;
++	/* mmc block device test */
++	struct blk_dev_test_type bdt;
++};
++
++static struct mmc_block_test_data *mbtd;
++
++/*
++ * A callback assigned to the packed_test_fn field.
++ * Called from block layer in mmc_blk_packed_hdr_wrq_prep.
++ * Here we alter the packed header or CMD23 in order to send an invalid
++ * packed command to the card.
 + */
-+struct request_queue *test_iosched_get_req_queue(void)
++static void test_invalid_packed_cmd(struct request_queue *q,
++				    struct mmc_queue_req *mqrq)
 +{
-+	if (!ptd)
-+		return NULL;
++	struct mmc_queue *mq = q->queuedata;
++	u32 *packed_cmd_hdr = mqrq->packed_cmd_hdr;
++	struct request *req = mqrq->req;
++	struct request *second_rq;
++	struct test_request *test_rq;
++	struct mmc_blk_request *brq = &mqrq->brq;
++	int num_requests;
++	int max_packed_reqs = mq->card->ext_csd.max_packed_writes;
 +
-+	return ptd->req_q;
-+}
-+EXPORT_SYMBOL(test_iosched_get_req_queue);
-+
-+/**
-+ * test_iosched_mark_test_completion() - Wakeup the debugfs
-+ * thread, waiting on the test completion
-+ */
-+void test_iosched_mark_test_completion(void)
-+{
-+	if (!ptd)
++	test_rq = (struct test_request *)req->elv.priv[0];
++	if (!test_rq) {
++		test_pr_err("%s: NULL test_rq", __func__);
 +		return;
-+
-+	ptd->test_state = TEST_COMPLETED;
-+	wake_up(&ptd->wait_q);
-+}
-+EXPORT_SYMBOL(test_iosched_mark_test_completion);
-+
-+/* Check if all the queued test requests were completed */
-+static void check_test_completion(void)
-+{
-+	struct test_request *test_rq;
-+	struct request *rq;
-+
-+	list_for_each_entry(test_rq, &ptd->test_queue, queuelist) {
-+		rq = test_rq->rq;
-+		if (!test_rq->req_completed)
-+			return;
 +	}
 +
-+	test_pr_info("%s: Test is completed", __func__);
-+
-+	test_iosched_mark_test_completion();
-+}
-+
-+/*
-+ * A callback to be called per bio completion.
-+ * Frees the bio memory.
-+ */
-+static void end_test_bio(struct bio *bio, int err)
-+{
-+	if (err)
-+		clear_bit(BIO_UPTODATE, &bio->bi_flags);
-+
-+	bio_put(bio);
-+}
-+
-+/*
-+ * A callback to be called per request completion.
-+ * the request memory is not freed here, will be freed later after the test
-+ * results checking.
-+ */
-+static void end_test_req(struct request *rq, int err)
-+{
-+	struct test_request *test_rq;
-+
-+	test_rq = (struct test_request *)rq->elv.priv[0];
-+	BUG_ON(!test_rq);
-+
-+	test_pr_info("%s: request %d completed, err=%d",
-+	       __func__, test_rq->req_id, err);
-+
-+	test_rq->req_completed = 1;
-+	test_rq->req_result = err;
-+
-+	check_test_completion();
-+}
-+
-+/**
-+ * test_iosched_add_unique_test_req() - Create and queue a non
-+ * read/write request (such as FLUSH/DISCRAD/SANITIZE).
-+ * @is_err_expcted:	A flag to indicate if this request
-+ *			should succeed or not
-+ * @req_unique:		The type of request to add
-+ * @start_sec:		start address of the first bio
-+ * @nr_sects:		number of sectors in the request
-+ * @end_req_io:		specific completion callback. When not
-+ *			set, the defaulcallback will be used
-+ */
-+int test_iosched_add_unique_test_req(int is_err_expcted,
-+			enum req_unique_type req_unique,
-+			int start_sec, int nr_sects, rq_end_io_fn *end_req_io)
-+{
-+	struct bio *bio;
-+	struct request *rq;
-+	int rw_flags;
-+	struct test_request *test_rq;
-+
-+	if (!ptd)
-+		return -ENODEV;
-+
-+	bio = bio_alloc(GFP_KERNEL, 0);
-+	if (!bio) {
-+		test_pr_err("%s: Failed to allocate a bio", __func__);
-+		return -ENODEV;
-+	}
-+	bio_get(bio);
-+	bio->bi_end_io = end_test_bio;
-+
-+	switch (req_unique) {
-+	case REQ_UNIQUE_FLUSH:
-+		bio->bi_rw = WRITE_FLUSH;
++	switch (mbtd->test_info.testcase) {
++	case TEST_HDR_INVALID_VERSION:
++		test_pr_info("%s: set invalid header version", __func__);
++		/* Put 0 in header version field (1 byte, offset 0 in header) */
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] & ~PACKED_HDR_VER_MASK;
 +		break;
-+	case REQ_UNIQUE_DISCARD:
-+		bio->bi_rw = REQ_WRITE | REQ_DISCARD;
-+		bio->bi_size = nr_sects << 9;
-+		bio->bi_sector = start_sec;
++	case TEST_HDR_WRONG_WRITE_CODE:
++		test_pr_info("%s: wrong write code", __func__);
++		/* Set R/W field with R value (1 byte, offset 1 in header) */
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] & ~PACKED_HDR_RW_MASK;
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] | 0x00000100;
++		break;
++	case TEST_HDR_INVALID_RW_CODE:
++		test_pr_info("%s: invalid r/w code", __func__);
++		/* Set R/W field with invalid value */
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] & ~PACKED_HDR_RW_MASK;
++		packed_cmd_hdr[0] = packed_cmd_hdr[0] | 0x00000400;
++		break;
++	case TEST_HDR_DIFFERENT_ADDRESSES:
++		test_pr_info("%s: different addresses", __func__);
++		second_rq = list_entry(req->queuelist.next, struct request,
++				queuelist);
++		test_pr_info("%s: test_rq->sector=%ld, second_rq->sector=%ld",
++			      __func__, (long)req->__sector,
++			     (long)second_rq->__sector);
++		/*
++		 * Put start sector of second write request in the first write
++		 * request's cmd25 argument in the packed header
++		 */
++		packed_cmd_hdr[3] = second_rq->__sector;
++		break;
++	case TEST_HDR_REQ_NUM_SMALLER_THAN_ACTUAL:
++		test_pr_info("%s: request num smaller than actual" , __func__);
++		num_requests = (packed_cmd_hdr[0] & PACKED_HDR_NUM_REQS_MASK)
++									>> 16;
++		/* num of entries is decremented by 1 */
++		num_requests = (num_requests - 1) << 16;
++		/*
++		 * Set number of requests field in packed write header to be
++		 * smaller than the actual number (1 byte, offset 2 in header)
++		 */
++		packed_cmd_hdr[0] = (packed_cmd_hdr[0] &
++				     ~PACKED_HDR_NUM_REQS_MASK) + num_requests;
++		break;
++	case TEST_HDR_REQ_NUM_LARGER_THAN_ACTUAL:
++		test_pr_info("%s: request num larger than actual" , __func__);
++		num_requests = (packed_cmd_hdr[0] & PACKED_HDR_NUM_REQS_MASK)
++									>> 16;
++		/* num of entries is incremented by 1 */
++		num_requests = (num_requests + 1) << 16;
++		/*
++		 * Set number of requests field in packed write header to be
++		 * larger than the actual number (1 byte, offset 2 in header).
++		 */
++		packed_cmd_hdr[0] = (packed_cmd_hdr[0] &
++				     ~PACKED_HDR_NUM_REQS_MASK) + num_requests;
++		break;
++	case TEST_HDR_CMD23_PACKED_BIT_SET:
++		test_pr_info("%s: header CMD23 packed bit set" , __func__);
++		/*
++		 * Set packed bit (bit 30) in cmd23 argument of first and second
++		 * write requests in packed write header.
++		 * These are located at bytes 2 and 4 in packed write header
++		 */
++		packed_cmd_hdr[2] = packed_cmd_hdr[2] | CMD23_PACKED_BIT;
++		packed_cmd_hdr[4] = packed_cmd_hdr[4] | CMD23_PACKED_BIT;
++		break;
++	case TEST_CMD23_MAX_PACKED_WRITES:
++		test_pr_info("%s: CMD23 request num > max_packed_reqs",
++			      __func__);
++		/*
++		 * Set the individual packed cmd23 request num to
++		 * max_packed_reqs + 1
++		 */
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED | (max_packed_reqs + 1);
++		break;
++	case TEST_CMD23_ZERO_PACKED_WRITES:
++		test_pr_info("%s: CMD23 request num = 0", __func__);
++		/* Set the individual packed cmd23 request num to zero */
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED;
++		break;
++	case TEST_CMD23_PACKED_BIT_UNSET:
++		test_pr_info("%s: CMD23 packed bit unset", __func__);
++		/*
++		 * Set the individual packed cmd23 packed bit to 0,
++		 *  although there is a packed write request
++		 */
++		brq->sbc.arg &= ~CMD23_PACKED_BIT;
++		break;
++	case TEST_CMD23_REL_WR_BIT_SET:
++		test_pr_info("%s: CMD23 REL WR bit set", __func__);
++		/* Set the individual packed cmd23 reliable write bit */
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED | MMC_CMD23_ARG_REL_WR;
++		break;
++	case TEST_CMD23_BITS_16TO29_SET:
++		test_pr_info("%s: CMD23 bits [16-29] set", __func__);
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED |
++			PACKED_HDR_BITS_16_TO_29_SET;
++		break;
++	case TEST_CMD23_HDR_BLK_NOT_IN_COUNT:
++		test_pr_info("%s: CMD23 hdr not in block count", __func__);
++		brq->sbc.arg = MMC_CMD23_ARG_PACKED |
++		((rq_data_dir(req) == READ) ? 0 : mqrq->packed_blocks);
 +		break;
 +	default:
-+		test_pr_err("%s: Invalid request type %d", __func__,
-+			    req_unique);
-+		bio_put(bio);
-+		return -ENODEV;
++		test_pr_err("%s: unexpected testcase %d",
++			__func__, mbtd->test_info.testcase);
++		break;
 +	}
-+
-+	rw_flags = bio_data_dir(bio);
-+	if (bio->bi_rw & REQ_SYNC)
-+		rw_flags |= REQ_SYNC;
-+
-+	rq = blk_get_request(ptd->req_q, rw_flags, GFP_KERNEL);
-+	if (!rq) {
-+		test_pr_err("%s: Failed to allocate a request", __func__);
-+		bio_put(bio);
-+		return -ENODEV;
-+	}
-+
-+	init_request_from_bio(rq, bio);
-+	if (end_req_io)
-+		rq->end_io = end_req_io;
-+	else
-+		rq->end_io = end_test_req;
-+
-+	test_rq = kzalloc(sizeof(struct test_request), GFP_KERNEL);
-+	if (!test_rq) {
-+		test_pr_err("%s: Failed to allocate a test request", __func__);
-+		bio_put(bio);
-+		blk_put_request(rq);
-+		return -ENODEV;
-+	}
-+	test_rq->req_completed = 0;
-+	test_rq->req_result = -1;
-+	test_rq->rq = rq;
-+	test_rq->is_err_expected = is_err_expcted;
-+	rq->elv.priv[0] = (void *)test_rq;
-+	test_rq->req_id = ptd->unique_next_req_id++;
-+
-+	test_pr_debug(
-+		"%s: added request %d to the test requests list, type = %d",
-+		__func__, test_rq->req_id, req_unique);
-+
-+	list_add_tail(&test_rq->queuelist, &ptd->test_queue);
-+
-+	return 0;
 +}
-+EXPORT_SYMBOL(test_iosched_add_unique_test_req);
 +
 +/*
-+ * Get a pattern to be filled in the request data buffer.
-+ * If the pattern used is (-1) the buffer will be filled with sequential
-+ * numbers
++ * A callback assigned to the err_check_fn field of the mmc_request by the
++ * MMC/card/block layer.
++ * Called upon request completion by the MMC/core layer.
++ * Here we emulate an error return value from the card.
 + */
-+static void fill_buf_with_pattern(int *buf, int num_bytes, int pattern)
++static int test_err_check(struct mmc_card *card,
++			     struct mmc_async_req *areq)
 +{
-+	int i = 0;
-+	int num_of_dwords = num_bytes/sizeof(int);
++	struct mmc_queue_req *mq_rq = container_of(areq, struct mmc_queue_req,
++			mmc_active);
++	struct request_queue *req_q = test_iosched_get_req_queue();
++	struct mmc_queue *mq;
++	int max_packed_reqs;
++	int ret = 0;
 +
-+	if (pattern == TEST_NO_PATTERN)
-+		return;
-+
-+	/* num_bytes should be aligned to sizeof(int) */
-+	BUG_ON((num_bytes % sizeof(int)) != 0);
-+
-+	if (pattern == TEST_PATTERN_SEQUENTIAL) {
-+		for (i = 0; i < num_of_dwords; i++)
-+			buf[i] = i;
-+	} else {
-+		for (i = 0; i < num_of_dwords; i++)
-+			buf[i] = pattern;
-+	}
-+}
-+
-+/**
-+ * test_iosched_add_wr_rd_test_req() - Create and queue a
-+ * read/write request.
-+ * @is_err_expcted:	A flag to indicate if this request
-+ *			should succeed or not
-+ * @direction:		READ/WRITE
-+ * @start_sec:		start address of the first bio
-+ * @num_bios:		number of BIOs to be allocated for the
-+ *			request
-+ * @pattern:		A pattern, to be written into the write
-+ *			requests data buffer. In case of READ
-+ *			request, the given pattern is kept as
-+ *			the expected pattern. The expected
-+ *			pattern will be compared in the test
-+ *			check result function. If no comparisson
-+ *			is required, set pattern to
-+ *			TEST_NO_PATTERN.
-+ * @end_req_io:		specific completion callback. When not
-+ *			set,the default callback will be used
-+ *
-+ * This function allocates the test request and the block
-+ * request and calls blk_rq_map_kern which allocates the
-+ * required BIO. The allocated test request and the block
-+ * request memory is freed at the end of the test and the
-+ * allocated BIO memory is freed by end_test_bio.
-+ */
-+int test_iosched_add_wr_rd_test_req(int is_err_expcted,
-+		      int direction, int start_sec,
-+		      int num_bios, int pattern, rq_end_io_fn *end_req_io)
-+{
-+	struct request *rq = NULL;
-+	struct test_request *test_rq = NULL;
-+	int rw_flags = 0;
-+	int buf_size = 0;
-+	int ret = 0, i = 0;
-+	unsigned int *bio_ptr = NULL;
-+	struct bio *bio = NULL;
-+
-+	if (!ptd)
-+		return -ENODEV;
-+
-+	rw_flags = direction;
-+
-+	rq = blk_get_request(ptd->req_q, rw_flags, GFP_KERNEL);
-+	if (!rq) {
-+		test_pr_err("%s: Failed to allocate a request", __func__);
-+		return -ENODEV;
++	if (req_q)
++		mq = req_q->queuedata;
++	else {
++		test_pr_err("%s: NULL request_queue", __func__);
++		return 0;
 +	}
 +
-+	test_rq = kzalloc(sizeof(struct test_request), GFP_KERNEL);
-+	if (!test_rq) {
-+		test_pr_err("%s: Failed to allocate test request", __func__);
-+		blk_put_request(rq);
-+		return -ENODEV;
++	max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++
++	if (!mq_rq) {
++		test_pr_err("%s: %s: NULL mq_rq", __func__,
++			mmc_hostname(card->host));
++		return 0;
 +	}
 +
-+	buf_size = sizeof(unsigned int) * BIO_U32_SIZE * num_bios;
-+	test_rq->bios_buffer = kzalloc(buf_size, GFP_KERNEL);
-+	if (!test_rq->bios_buffer) {
-+		test_pr_err("%s: Failed to allocate the data buf", __func__);
-+		goto err;
-+	}
-+	test_rq->buf_size = buf_size;
-+
-+	if (direction == WRITE)
-+		fill_buf_with_pattern(test_rq->bios_buffer,
-+						   buf_size, pattern);
-+	test_rq->wr_rd_data_pattern = pattern;
-+
-+	bio_ptr = test_rq->bios_buffer;
-+	for (i = 0; i < num_bios; ++i) {
-+		ret = blk_rq_map_kern(ptd->req_q, rq,
-+				      (void *)bio_ptr,
-+				      sizeof(unsigned int)*BIO_U32_SIZE,
-+				      GFP_KERNEL);
-+		if (ret) {
-+			test_pr_err("%s: blk_rq_map_kern returned error %d",
-+				    __func__, ret);
-+			goto err;
++	switch (mbtd->test_info.testcase) {
++	case TEST_RET_ABORT:
++		test_pr_info("%s: return abort", __func__);
++		ret = MMC_BLK_ABORT;
++		break;
++	case TEST_RET_PARTIAL_FOLLOWED_BY_SUCCESS:
++		test_pr_info("%s: return partial followed by success",
++			      __func__);
++		/*
++		 * Since in this testcase num_requests is always >= 2,
++		 * we can be sure that packed_fail_idx is always >= 1
++		 */
++		mq_rq->packed_fail_idx = (mbtd->num_requests / 2);
++		test_pr_info("%s: packed_fail_idx = %d"
++			, __func__, mq_rq->packed_fail_idx);
++		mq->err_check_fn = NULL;
++		ret = MMC_BLK_PARTIAL;
++		break;
++	case TEST_RET_PARTIAL_FOLLOWED_BY_ABORT:
++		if (!mbtd->err_check_counter) {
++			test_pr_info("%s: return partial followed by abort",
++				      __func__);
++			mbtd->err_check_counter++;
++			/*
++			 * Since in this testcase num_requests is always >= 3,
++			 * we have that packed_fail_idx is always >= 1
++			 */
++			mq_rq->packed_fail_idx = (mbtd->num_requests / 2);
++			test_pr_info("%s: packed_fail_idx = %d"
++				, __func__, mq_rq->packed_fail_idx);
++			ret = MMC_BLK_PARTIAL;
++			break;
 +		}
-+		bio_ptr += BIO_U32_SIZE;
++		mbtd->err_check_counter = 0;
++		mq->err_check_fn = NULL;
++		ret = MMC_BLK_ABORT;
++		break;
++	case TEST_RET_PARTIAL_MULTIPLE_UNTIL_SUCCESS:
++		test_pr_info("%s: return partial multiple until success",
++			     __func__);
++		if (++mbtd->err_check_counter >= (mbtd->num_requests)) {
++			mq->err_check_fn = NULL;
++			mbtd->err_check_counter = 0;
++			ret = MMC_BLK_PARTIAL;
++			break;
++		}
++		mq_rq->packed_fail_idx = 1;
++		ret = MMC_BLK_PARTIAL;
++		break;
++	case TEST_RET_PARTIAL_MAX_FAIL_IDX:
++		test_pr_info("%s: return partial max fail_idx", __func__);
++		mq_rq->packed_fail_idx = max_packed_reqs - 1;
++		mq->err_check_fn = NULL;
++		ret = MMC_BLK_PARTIAL;
++		break;
++	case TEST_RET_RETRY:
++		test_pr_info("%s: return retry", __func__);
++		ret = MMC_BLK_RETRY;
++		break;
++	case TEST_RET_CMD_ERR:
++		test_pr_info("%s: return cmd err", __func__);
++		ret = MMC_BLK_CMD_ERR;
++		break;
++	case TEST_RET_DATA_ERR:
++		test_pr_info("%s: return data err", __func__);
++		ret = MMC_BLK_DATA_ERR;
++		break;
++	default:
++		test_pr_err("%s: unexpected testcase %d",
++			__func__, mbtd->test_info.testcase);
 +	}
 +
-+	if (end_req_io)
-+		rq->end_io = end_req_io;
-+	else
-+		rq->end_io = end_test_req;
-+	rq->__sector = start_sec;
-+	rq->cmd_type |= REQ_TYPE_FS;
-+
-+	if (rq->bio) {
-+		rq->bio->bi_sector = start_sec;
-+		rq->bio->bi_end_io = end_test_bio;
-+		bio = rq->bio;
-+		while ((bio = bio->bi_next) != NULL)
-+			bio->bi_end_io = end_test_bio;
-+	}
-+
-+	ptd->num_of_write_bios += num_bios;
-+	test_rq->req_id = ptd->wr_rd_next_req_id++;
-+
-+	test_rq->req_completed = 0;
-+	test_rq->req_result = -1;
-+	test_rq->rq = rq;
-+	test_rq->is_err_expected = is_err_expcted;
-+	rq->elv.priv[0] = (void *)test_rq;
-+
-+	test_pr_debug(
-+		"%s: added request %d to the test requests list, buf_size=%d",
-+		__func__, test_rq->req_id, buf_size);
-+
-+	list_add_tail(&test_rq->queuelist, &ptd->test_queue);
-+
-+	return 0;
-+err:
-+	blk_put_request(rq);
-+	kfree(test_rq->bios_buffer);
-+	return -ENODEV;
++	return ret;
 +}
-+EXPORT_SYMBOL(test_iosched_add_wr_rd_test_req);
 +
-+/* Converts the testcase number into a string */
++/*
++ * This is a specific implementation for the get_test_case_str_fn function
++ * pointer in the test_info data structure. Given a valid test_data instance,
++ * the function returns a string resembling the test name, based on the testcase
++ */
 +static char *get_test_case_str(struct test_data *td)
 +{
-+	if (td->test_info.get_test_case_str_fn)
-+		return td->test_info.get_test_case_str_fn(td);
++	if (!td) {
++		test_pr_err("%s: NULL td", __func__);
++		return NULL;
++	}
 +
-+	return "Unknown testcase";
++	switch (td->test_info.testcase) {
++	case TEST_STOP_DUE_TO_FLUSH:
++		return "Test stop due to flush";
++	case TEST_STOP_DUE_TO_FLUSH_AFTER_MAX_REQS:
++		return "Test stop due to flush after max-1 reqs";
++	case TEST_STOP_DUE_TO_READ:
++		return "Test stop due to read";
++	case TEST_STOP_DUE_TO_READ_AFTER_MAX_REQS:
++		return "Test stop due to read after max-1 reqs";
++	case TEST_STOP_DUE_TO_EMPTY_QUEUE:
++		return "Test stop due to empty queue";
++	case TEST_STOP_DUE_TO_MAX_REQ_NUM:
++		return "Test stop due to max req num";
++	case TEST_STOP_DUE_TO_THRESHOLD:
++		return "Test stop due to exceeding threshold";
++	case TEST_RET_ABORT:
++		return "Test err_check return abort";
++	case TEST_RET_PARTIAL_FOLLOWED_BY_SUCCESS:
++		return "Test err_check return partial followed by success";
++	case TEST_RET_PARTIAL_FOLLOWED_BY_ABORT:
++		return "Test err_check return partial followed by abort";
++	case TEST_RET_PARTIAL_MULTIPLE_UNTIL_SUCCESS:
++		return "Test err_check return partial multiple until success";
++	case TEST_RET_PARTIAL_MAX_FAIL_IDX:
++		return "Test err_check return partial max fail index";
++	case TEST_RET_RETRY:
++		return "Test err_check return retry";
++	case TEST_RET_CMD_ERR:
++		return "Test err_check return cmd error";
++	case TEST_RET_DATA_ERR:
++		return "Test err_check return data error";
++	case TEST_HDR_INVALID_VERSION:
++		return "Test invalid - wrong header version";
++	case TEST_HDR_WRONG_WRITE_CODE:
++		return "Test invalid - wrong write code";
++	case TEST_HDR_INVALID_RW_CODE:
++		return "Test invalid - wrong R/W code";
++	case TEST_HDR_DIFFERENT_ADDRESSES:
++		return "Test invalid - header different addresses";
++	case TEST_HDR_REQ_NUM_SMALLER_THAN_ACTUAL:
++		return "Test invalid - header req num smaller than actual";
++	case TEST_HDR_REQ_NUM_LARGER_THAN_ACTUAL:
++		return "Test invalid - header req num larger than actual";
++	case TEST_HDR_CMD23_PACKED_BIT_SET:
++		return "Test invalid - header cmd23 packed bit set";
++	case TEST_CMD23_MAX_PACKED_WRITES:
++		return "Test invalid - cmd23 max packed writes";
++	case TEST_CMD23_ZERO_PACKED_WRITES:
++		return "Test invalid - cmd23 zero packed writes";
++	case TEST_CMD23_PACKED_BIT_UNSET:
++		return "Test invalid - cmd23 packed bit unset";
++	case TEST_CMD23_REL_WR_BIT_SET:
++		return "Test invalid - cmd23 rel wr bit set";
++	case TEST_CMD23_BITS_16TO29_SET:
++		return "Test invalid - cmd23 bits [16-29] set";
++	case TEST_CMD23_HDR_BLK_NOT_IN_COUNT:
++		return "Test invalid - cmd23 header block not in count";
++	default:
++		 return "Unknown testcase";
++	}
++
++	return NULL;
 +}
 +
 +/*
-+ * Verify that the test request data buffer includes the expected
-+ * pattern
++ * Compare individual testcase's statistics to the expected statistics:
++ * Compare stop reason and number of packing events
 + */
-+static int compare_buffer_to_pattern(struct test_request *test_rq)
++static int check_wr_packing_statistics(struct test_data *td)
 +{
-+	int i = 0;
-+	int num_of_dwords = test_rq->buf_size/sizeof(int);
++	struct mmc_wr_pack_stats *mmc_packed_stats;
++	struct mmc_queue *mq = td->req_q->queuedata;
++	int max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++	int i;
++	struct mmc_card *card = mq->card;
++	struct mmc_wr_pack_stats expected_stats;
++	int *stop_reason;
++	int ret = 0;
 +
-+	/* num_bytes should be aligned to sizeof(int) */
-+	BUG_ON((test_rq->buf_size % sizeof(int)) != 0);
-+	BUG_ON(test_rq->bios_buffer == NULL);
++	expected_stats = mbtd->exp_packed_stats;
 +
-+	if (test_rq->wr_rd_data_pattern == TEST_NO_PATTERN)
++	mmc_packed_stats = mmc_blk_get_packed_statistics(card);
++	if (!mmc_packed_stats) {
++		test_pr_err("%s: NULL mmc_packed_stats", __func__);
++		return -EINVAL;
++	}
++
++	if (!mmc_packed_stats->packing_events) {
++		test_pr_err("%s: NULL packing_events", __func__);
++		return -EINVAL;
++	}
++
++	spin_lock(&mmc_packed_stats->lock);
++
++	if (!mmc_packed_stats->enabled) {
++		test_pr_err("%s write packing statistics are not enabled",
++			     __func__);
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	stop_reason = mmc_packed_stats->pack_stop_reason;
++
++	for (i = 1 ; i <= max_packed_reqs ; ++i) {
++		if (mmc_packed_stats->packing_events[i] !=
++		    expected_stats.packing_events[i]) {
++			test_pr_err(
++			"%s: Wrong pack stats in index %d, got %d, expected %d",
++			__func__, i, mmc_packed_stats->packing_events[i],
++			       expected_stats.packing_events[i]);
++			print_mmc_packing_stats(card);
++			ret = -EINVAL;
++			goto exit;
++		}
++	}
++
++	if (mmc_packed_stats->pack_stop_reason[EXCEEDS_SEGMENTS] !=
++	    expected_stats.pack_stop_reason[EXCEEDS_SEGMENTS]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason EXCEEDS_SEGMENTS %d, expected %d",
++			__func__, stop_reason[EXCEEDS_SEGMENTS],
++		       expected_stats.pack_stop_reason[EXCEEDS_SEGMENTS]);
++		print_mmc_packing_stats(card);
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	if (mmc_packed_stats->pack_stop_reason[EXCEEDS_SECTORS] !=
++	    expected_stats.pack_stop_reason[EXCEEDS_SECTORS]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason EXCEEDS_SECTORS %d, expected %d",
++			__func__, stop_reason[EXCEEDS_SECTORS],
++		       expected_stats.pack_stop_reason[EXCEEDS_SECTORS]);
++		print_mmc_packing_stats(card);
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	if (mmc_packed_stats->pack_stop_reason[WRONG_DATA_DIR] !=
++	    expected_stats.pack_stop_reason[WRONG_DATA_DIR]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason WRONG_DATA_DIR %d, expected %d",
++		       __func__, stop_reason[WRONG_DATA_DIR],
++		       expected_stats.pack_stop_reason[WRONG_DATA_DIR]);
++		print_mmc_packing_stats(card);
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	if (mmc_packed_stats->pack_stop_reason[FLUSH_OR_DISCARD] !=
++	    expected_stats.pack_stop_reason[FLUSH_OR_DISCARD]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason FLUSH_OR_DISCARD %d, expected %d",
++		       __func__, stop_reason[FLUSH_OR_DISCARD],
++		       expected_stats.pack_stop_reason[FLUSH_OR_DISCARD]);
++		print_mmc_packing_stats(card);
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	if (mmc_packed_stats->pack_stop_reason[EMPTY_QUEUE] !=
++	    expected_stats.pack_stop_reason[EMPTY_QUEUE]) {
++		test_pr_err(
++		"%s: Wrong pack stop reason EMPTY_QUEUE %d, expected %d",
++		       __func__, stop_reason[EMPTY_QUEUE],
++		       expected_stats.pack_stop_reason[EMPTY_QUEUE]);
++		print_mmc_packing_stats(card);
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	if (mmc_packed_stats->pack_stop_reason[REL_WRITE] !=
++	    expected_stats.pack_stop_reason[REL_WRITE]) {
++		test_pr_err(
++			"%s: Wrong pack stop reason REL_WRITE %d, expected %d",
++		       __func__, stop_reason[REL_WRITE],
++		       expected_stats.pack_stop_reason[REL_WRITE]);
++		print_mmc_packing_stats(card);
++		ret = -EINVAL;
++		goto exit;
++	}
++
++exit:
++	spin_unlock(&mmc_packed_stats->lock);
++	return ret;
++}
++
++/*
++ * Pseudo-randomly choose a seed based on the last seed, and update it in
++ * seed_number. then return seed_number (mod max_val), or min_val.
++ */
++static unsigned int pseudo_random_seed(unsigned int *seed_number,
++				       unsigned int min_val,
++				       unsigned int max_val)
++{
++	int ret = 0;
++
++	if (!seed_number)
 +		return 0;
 +
-+	if (test_rq->wr_rd_data_pattern == TEST_PATTERN_SEQUENTIAL) {
-+		for (i = 0; i < num_of_dwords; i++) {
-+			if (test_rq->bios_buffer[i] != i) {
-+				test_pr_err(
-+					"%s: wrong pattern 0x%x in index %d",
-+					__func__, test_rq->bios_buffer[i], i);
-+				return -EINVAL;
-+			}
-+		}
-+	} else {
-+		for (i = 0; i < num_of_dwords; i++) {
-+			if (test_rq->bios_buffer[i] !=
-+			    test_rq->wr_rd_data_pattern) {
-+				test_pr_err(
-+					"%s: wrong pattern 0x%x in index %d",
-+					__func__, test_rq->bios_buffer[i], i);
-+				return -EINVAL;
-+			}
++	*seed_number = ((unsigned int)(((unsigned long)*seed_number *
++				(unsigned long)LARGE_PRIME_1) + LARGE_PRIME_2));
++	ret = (unsigned int)((*seed_number) % max_val);
++
++	return (ret > min_val ? ret : min_val);
++}
++
++/*
++ * Given a pseudo-random seed, find a pseudo-random num_of_bios.
++ * Make sure that num_of_bios is not larger than TEST_MAX_SECTOR_RANGE
++ */
++static void pseudo_rnd_num_of_bios(unsigned int *num_bios_seed,
++				   unsigned int *num_of_bios)
++{
++	do {
++		*num_of_bios = pseudo_random_seed(num_bios_seed, 1,
++						  TEST_MAX_BIOS_PER_REQ);
++		if (!(*num_of_bios))
++			*num_of_bios = 1;
++	} while ((*num_of_bios) * BIO_U32_SIZE * 4 > TEST_MAX_SECTOR_RANGE);
++}
++
++/* Add a single read request to the given td's request queue */
++static int prepare_request_add_read(struct test_data *td)
++{
++	int ret;
++	int start_sec;
++
++	if (td)
++		start_sec = td->start_sector;
++	else {
++		test_pr_err("%s: NULL td", __func__);
++		return 0;
++	}
++
++	test_pr_info("%s: Adding a read request, first req_id=%d", __func__,
++		     td->wr_rd_next_req_id);
++
++	ret = test_iosched_add_wr_rd_test_req(0, READ, start_sec, 2,
++					      TEST_PATTERN_5A, NULL);
++	if (ret) {
++		test_pr_err("%s: failed to add a read request", __func__);
++		return ret;
++	}
++
++	return 0;
++}
++
++/* Add a single flush request to the given td's request queue */
++static int prepare_request_add_flush(struct test_data *td)
++{
++	int ret;
++
++	if (!td) {
++		test_pr_err("%s: NULL td", __func__);
++		return 0;
++	}
++
++	test_pr_info("%s: Adding a flush request, first req_id=%d", __func__,
++		     td->unique_next_req_id);
++	ret = test_iosched_add_unique_test_req(0, REQ_UNIQUE_FLUSH,
++				  0, 0, NULL);
++	if (ret) {
++		test_pr_err("%s: failed to add a flush request", __func__);
++		return ret;
++	}
++
++	return ret;
++}
++
++/*
++ * Add num_requets amount of write requests to the given td's request queue.
++ * If random test mode is chosen we pseudo-randomly choose the number of bios
++ * for each write request, otherwise add between 1 to 5 bio per request.
++ */
++static int prepare_request_add_write_reqs(struct test_data *td,
++					  int num_requests, int is_err_expected,
++					  int is_random)
++{
++	int i;
++	unsigned int start_sec;
++	int num_bios;
++	int ret = 0;
++	unsigned int *bio_seed = &mbtd->random_test_seed;
++
++	if (td)
++		start_sec = td->start_sector;
++	else {
++		test_pr_err("%s: NULL td", __func__);
++		return ret;
++	}
++
++	test_pr_info("%s: Adding %d write requests, first req_id=%d", __func__,
++		     num_requests, td->wr_rd_next_req_id);
++
++	for (i = 1 ; i <= num_requests ; i++) {
++		start_sec = td->start_sector + 4096 * td->num_of_write_bios;
++		if (is_random)
++			pseudo_rnd_num_of_bios(bio_seed, &num_bios);
++		else
++			/*
++			 * For the non-random case, give num_bios a value
++			 * between 1 and 5, to keep a small number of BIOs
++			 */
++			num_bios = (i%5)+1;
++
++		ret = test_iosched_add_wr_rd_test_req(is_err_expected, WRITE,
++				start_sec, num_bios, TEST_PATTERN_5A, NULL);
++
++		if (ret) {
++			test_pr_err("%s: failed to add a write request",
++				    __func__);
++			return ret;
 +		}
 +	}
++	return 0;
++}
++
++/*
++ * Prepare the write, read and flush requests for a generic packed commands
++ * testcase
++ */
++static int prepare_packed_requests(struct test_data *td, int is_err_expected,
++				   int num_requests, int is_random)
++{
++	int *num_events = mbtd->exp_packed_stats.packing_events;
++	int *stop_reason = mbtd->exp_packed_stats.pack_stop_reason;
++	int ret = 0;
++	struct mmc_queue *mq;
++	int max_packed_reqs;
++	struct request_queue *req_q;
++
++	if (!td) {
++		pr_err("%s: NULL td", __func__);
++		return -EINVAL;
++	}
++
++	req_q = td->req_q;
++
++	if (!req_q) {
++		pr_err("%s: NULL request queue", __func__);
++		return -EINVAL;
++	}
++
++	mq = req_q->queuedata;
++	max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++
++	if (mbtd->random_test_seed <= 0) {
++		mbtd->random_test_seed =
++			(unsigned int)(get_jiffies_64() & 0xFFFF);
++		test_pr_info("%s: got seed from jiffies %d",
++			     __func__, mbtd->random_test_seed);
++	}
++
++	mmc_blk_init_packed_statistics(mq->card);
++
++	ret = prepare_request_add_write_reqs(td, num_requests, is_err_expected,
++					     is_random);
++	if (ret)
++		return ret;
++
++	/* Avoid memory corruption in upcoming stats set */
++	if (td->test_info.testcase == TEST_STOP_DUE_TO_THRESHOLD)
++		num_requests--;
++
++	memset((void *)mbtd->exp_packed_stats.pack_stop_reason, 0,
++		sizeof(mbtd->exp_packed_stats.pack_stop_reason));
++	memset(mbtd->exp_packed_stats.packing_events, 0,
++		(max_packed_reqs + 1) * sizeof(u32));
++	if (num_requests <= max_packed_reqs)
++		mbtd->exp_packed_stats.packing_events[num_requests] = 1;
++
++	switch (td->test_info.testcase) {
++	case TEST_STOP_DUE_TO_FLUSH:
++	case TEST_STOP_DUE_TO_FLUSH_AFTER_MAX_REQS:
++		ret = prepare_request_add_flush(td);
++		if (ret)
++			return ret;
++
++		stop_reason[FLUSH_OR_DISCARD] = 1;
++		break;
++	case TEST_STOP_DUE_TO_READ:
++	case TEST_STOP_DUE_TO_READ_AFTER_MAX_REQS:
++		ret = prepare_request_add_read(td);
++		if (ret)
++			return ret;
++
++		mbtd->exp_packed_stats.pack_stop_reason[WRONG_DATA_DIR] = 1;
++		break;
++	case TEST_STOP_DUE_TO_THRESHOLD:
++		num_events[num_requests] = 1;
++		num_events[1] = 1;
++		mbtd->exp_packed_stats.pack_stop_reason[THRESHOLD] = 1;
++		mbtd->exp_packed_stats.pack_stop_reason[EMPTY_QUEUE] = 1;
++		break;
++	case TEST_STOP_DUE_TO_MAX_REQ_NUM:
++	case TEST_RET_PARTIAL_MAX_FAIL_IDX:
++		mbtd->exp_packed_stats.pack_stop_reason[THRESHOLD] = 1;
++		break;
++	default:
++		mbtd->exp_packed_stats.pack_stop_reason[EMPTY_QUEUE] = 1;
++	}
++	mbtd->num_requests = num_requests;
 +
 +	return 0;
 +}
 +
 +/*
-+ * Determine if the test passed or failed.
-+ * The function checks the test request completion value and calls
-+ * check_testcase_result for result checking that are specific
-+ * to a test case.
++ * Prepare requests for the TEST_RET_PARTIAL_FOLLOWED_BY_ABORT testcase.
++ * In this testcase we have mixed error expectations from different
++ * write requests, hence the special prepare function.
 + */
-+static int check_test_result(struct test_data *td)
++static int prepare_partial_followed_by_abort(struct test_data *td,
++					      int num_requests)
 +{
-+	struct test_request *test_rq;
-+	struct request *rq;
-+	int res = 0;
-+	static int run;
++	int i, start_address;
++	int is_err_expected = 0;
++	int ret = 0;
++	struct mmc_queue *mq = test_iosched_get_req_queue()->queuedata;
++	int max_packed_reqs = mq->card->ext_csd.max_packed_writes;
 +
-+	list_for_each_entry(test_rq, &ptd->test_queue, queuelist) {
-+		rq = test_rq->rq;
-+		if (!test_rq->req_completed) {
-+			test_pr_err("%s: rq %d not completed", __func__,
-+				    test_rq->req_id);
-+			res = -EINVAL;
-+			goto err;
-+		}
++	mmc_blk_init_packed_statistics(mq->card);
 +
-+		if ((test_rq->req_result < 0) && !test_rq->is_err_expected) {
-+			test_pr_err(
-+				"%s: rq %d completed with err, not as expected",
-+				__func__, test_rq->req_id);
-+			res = -EINVAL;
-+			goto err;
-+		}
-+		if ((test_rq->req_result == 0) && test_rq->is_err_expected) {
-+			test_pr_err("%s: rq %d succeeded, not as expected",
-+				    __func__, test_rq->req_id);
-+			res = -EINVAL;
-+			goto err;
-+		}
-+		if (rq_data_dir(test_rq->rq) == READ) {
-+			res = compare_buffer_to_pattern(test_rq);
-+			if (res) {
-+				test_pr_err("%s: read pattern not as expected",
-+					    __func__);
-+				res = -EINVAL;
-+				goto err;
-+			}
++	for (i = 1 ; i <= num_requests ; i++) {
++		if (i > (num_requests / 2))
++			is_err_expected = 1;
++
++		start_address = td->start_sector + 4096*td->num_of_write_bios;
++		ret = test_iosched_add_wr_rd_test_req(is_err_expected, WRITE,
++				start_address, (i%5)+1, TEST_PATTERN_5A, NULL);
++		if (ret) {
++			test_pr_err("%s: failed to add a write request",
++				    __func__);
++			return ret;
 +		}
 +	}
 +
-+	if (td->test_info.check_test_result_fn) {
-+		res = td->test_info.check_test_result_fn(td);
-+		if (res)
-+			goto err;
-+	}
++	memset((void *)&mbtd->exp_packed_stats.pack_stop_reason, 0,
++		sizeof(mbtd->exp_packed_stats.pack_stop_reason));
++	memset(mbtd->exp_packed_stats.packing_events, 0,
++		(max_packed_reqs + 1) * sizeof(u32));
++	mbtd->exp_packed_stats.packing_events[num_requests] = 1;
++	mbtd->exp_packed_stats.pack_stop_reason[EMPTY_QUEUE] = 1;
 +
-+	test_pr_info("%s: %s, run# %03d, PASSED",
-+			    __func__, get_test_case_str(td), ++run);
-+	td->test_result = TEST_PASSED;
++	mbtd->num_requests = num_requests;
 +
-+	return 0;
-+err:
-+	test_pr_err("%s: %s, run# %03d, FAILED",
-+		    __func__, get_test_case_str(td), ++run);
-+	td->test_result = TEST_FAILED;
-+	return res;
++	return ret;
 +}
 +
-+/* Create and queue the required requests according to the test case */
++/*
++ * Get number of write requests for current testcase. If random test mode was
++ * chosen, pseudo-randomly choose the number of requests, otherwise set to
++ * two less than the packing threshold.
++ */
++static int get_num_requests(struct test_data *td)
++{
++	int *seed = &mbtd->random_test_seed;
++	struct request_queue *req_q;
++	struct mmc_queue *mq;
++	int max_num_requests;
++	int num_requests;
++	int min_num_requests = 2;
++	int is_random = mbtd->is_random;
++
++	req_q = test_iosched_get_req_queue();
++	if (req_q)
++		mq = req_q->queuedata;
++	else {
++		test_pr_err("%s: NULL request queue", __func__);
++		return 0;
++	}
++
++	max_num_requests = mq->card->ext_csd.max_packed_writes;
++	num_requests = max_num_requests - 2;
++
++	if (is_random) {
++		if (td->test_info.testcase ==
++		    TEST_RET_PARTIAL_FOLLOWED_BY_ABORT)
++			min_num_requests = 3;
++
++		num_requests = pseudo_random_seed(seed, min_num_requests,
++						  max_num_requests - 1);
++	}
++
++	return num_requests;
++}
++
++/*
++ * An implementation for the prepare_test_fn pointer in the test_info
++ * data structure. According to the testcase we add the right number of requests
++ * and decide if an error is expected or not.
++ */
 +static int prepare_test(struct test_data *td)
 +{
++	struct mmc_queue *mq = test_iosched_get_req_queue()->queuedata;
++	int max_num_requests = mq->card->ext_csd.max_packed_writes;
++	int num_requests = 0;
 +	int ret = 0;
++	int is_random = mbtd->is_random;
 +
-+	if (td->test_info.prepare_test_fn) {
-+		ret = td->test_info.prepare_test_fn(td);
-+		return ret;
++	if (is_random && mbtd->random_test_seed <= 0) {
++		mbtd->random_test_seed =
++			(unsigned int)(get_jiffies_64() & 0xFFFF);
++		test_pr_info("%s: got seed from jiffies %d",
++			__func__, mbtd->random_test_seed);
 +	}
 +
-+	return 0;
-+}
++	num_requests = get_num_requests(td);
 +
-+/* Run the test */
-+static int run_test(struct test_data *td)
-+{
-+	int ret = 0;
++	if (mbtd->test_group == TEST_SEND_INVALID_GROUP)
++		mq->packed_test_fn =
++				test_invalid_packed_cmd;
 +
-+	if (td->test_info.run_test_fn) {
-+		ret = td->test_info.run_test_fn(td);
-+		return ret;
++	if (mbtd->test_group == TEST_ERR_CHECK_GROUP)
++		mq->err_check_fn = test_err_check;
++
++	switch (td->test_info.testcase) {
++	case TEST_STOP_DUE_TO_FLUSH:
++	case TEST_STOP_DUE_TO_READ:
++	case TEST_RET_PARTIAL_FOLLOWED_BY_SUCCESS:
++	case TEST_RET_PARTIAL_MULTIPLE_UNTIL_SUCCESS:
++	case TEST_STOP_DUE_TO_EMPTY_QUEUE:
++	case TEST_CMD23_PACKED_BIT_UNSET:
++		ret = prepare_packed_requests(td, 0, num_requests, is_random);
++		break;
++	case TEST_STOP_DUE_TO_FLUSH_AFTER_MAX_REQS:
++	case TEST_STOP_DUE_TO_READ_AFTER_MAX_REQS:
++		ret = prepare_packed_requests(td, 0, max_num_requests - 1,
++					      is_random);
++		break;
++	case TEST_RET_PARTIAL_FOLLOWED_BY_ABORT:
++		ret = prepare_partial_followed_by_abort(td, num_requests);
++		break;
++	case TEST_STOP_DUE_TO_MAX_REQ_NUM:
++	case TEST_RET_PARTIAL_MAX_FAIL_IDX:
++		ret = prepare_packed_requests(td, 0, max_num_requests,
++					      is_random);
++		break;
++	case TEST_STOP_DUE_TO_THRESHOLD:
++		ret = prepare_packed_requests(td, 0, max_num_requests + 1,
++					      is_random);
++		break;
++	case TEST_RET_ABORT:
++	case TEST_RET_RETRY:
++	case TEST_RET_CMD_ERR:
++	case TEST_RET_DATA_ERR:
++	case TEST_HDR_INVALID_VERSION:
++	case TEST_HDR_WRONG_WRITE_CODE:
++	case TEST_HDR_INVALID_RW_CODE:
++	case TEST_HDR_DIFFERENT_ADDRESSES:
++	case TEST_HDR_REQ_NUM_SMALLER_THAN_ACTUAL:
++	case TEST_HDR_REQ_NUM_LARGER_THAN_ACTUAL:
++	case TEST_CMD23_MAX_PACKED_WRITES:
++	case TEST_CMD23_ZERO_PACKED_WRITES:
++	case TEST_CMD23_REL_WR_BIT_SET:
++	case TEST_CMD23_BITS_16TO29_SET:
++	case TEST_CMD23_HDR_BLK_NOT_IN_COUNT:
++	case TEST_HDR_CMD23_PACKED_BIT_SET:
++		ret = prepare_packed_requests(td, 1, num_requests, is_random);
++		break;
++	default:
++		test_pr_info("%s: Invalid test case...", __func__);
++		return -EINVAL;
 +	}
 +
-+	/*
-+	 * Set the next_req pointer to the first request in the test requests
-+	 * list
-+	 */
-+	if (!list_empty(&td->test_queue))
-+		td->next_req = list_entry(td->test_queue.next,
-+					  struct test_request, queuelist);
-+	__blk_run_queue(td->req_q);
-+
-+	return 0;
-+}
-+
-+/* Free the allocated test requests, their requests and BIOs buffer */
-+static void free_test_requests(struct test_data *td)
-+{
-+	struct test_request *test_rq;
-+	while (!list_empty(&td->test_queue)) {
-+		test_rq = list_entry(td->test_queue.next, struct test_request,
-+				     queuelist);
-+		list_del_init(&test_rq->queuelist);
-+		blk_put_request(test_rq->rq);
-+		kfree(test_rq->bios_buffer);
-+		kfree(test_rq);
-+	}
++	return ret;
 +}
 +
 +/*
-+ * Do post test operations.
-+ * Free the allocated test requests, their requests and BIOs buffer.
++ * An implementation for the post_test_fn in the test_info data structure.
++ * In our case we just reset the function pointers in the mmc_queue in order for
++ * the FS to be able to dispatch it's requests correctly after the test is
++ * finished.
 + */
 +static int post_test(struct test_data *td)
 +{
-+	int ret = 0;
++	struct mmc_queue *mq;
 +
-+	if (td->test_info.post_test_fn)
-+		ret = td->test_info.post_test_fn(td);
++	if (!td)
++		return -EINVAL;
 +
-+	ptd->test_info.testcase = 0;
-+	ptd->test_state = TEST_IDLE;
++	mq = td->req_q->queuedata;
 +
-+	free_test_requests(td);
++	mq->packed_test_fn = NULL;
++	mq->err_check_fn = NULL;
 +
-+	return ret;
++	return 0;
 +}
 +
 +/*
-+ * The timer verifies that the test will be completed even if we don't get
-+ * the completion callback for all the requests.
++ * This function checks, based on the current test's test_group, that the
++ * packed commands capability and control are set right. In addition, we check
++ * if the card supports the packed command feature.
 + */
-+static void test_timeout_handler(unsigned long data)
++static int validate_packed_commands_settings(void)
 +{
-+	struct test_data *td = (struct test_data *)data;
++	struct request_queue *req_q;
++	struct mmc_queue *mq;
++	int max_num_requests;
++	struct mmc_host *host;
 +
-+	test_pr_info("%s: TIMEOUT timer expired", __func__);
-+	td->test_state = TEST_COMPLETED;
-+	wake_up(&td->wait_q);
-+	return;
++	req_q = test_iosched_get_req_queue();
++	if (!req_q) {
++		test_pr_err("%s: test_iosched_get_req_queue failed", __func__);
++		test_iosched_set_test_result(TEST_FAILED);
++		return -EINVAL;
++	}
++
++	mq = req_q->queuedata;
++	max_num_requests = mq->card->ext_csd.max_packed_writes;
++	host = mq->card->host;
++
++	if (!(host->caps2 && MMC_CAP2_PACKED_WR)) {
++		test_pr_err("%s: Packed Write capability disabled, exit test",
++			    __func__);
++		test_iosched_set_test_result(TEST_NOT_SUPPORTED);
++		return -EINVAL;
++	}
++
++	if (max_num_requests == 0) {
++		test_pr_err(
++		"%s: no write packing support, ext_csd.max_packed_writes=%d",
++		__func__, mq->card->ext_csd.max_packed_writes);
++		test_iosched_set_test_result(TEST_NOT_SUPPORTED);
++		return -EINVAL;
++	}
++
++	test_pr_info("%s: max number of packed requests supported is %d ",
++		     __func__, max_num_requests);
++
++	return 0;
 +}
 +
-+static unsigned int get_timeout_msec(struct test_data *td)
++static bool message_repeat;
++static int test_open(struct inode *inode, struct file *file)
 +{
-+	if (td->test_info.timeout_msec)
-+		return td->test_info.timeout_msec;
-+	else
-+		return TIMEOUT_TIMER_MS;
++	file->private_data = inode->i_private;
++	message_repeat = 1;
++	return 0;
 +}
 +
-+/**
-+ * test_iosched_start_test() - Prepares and runs the test.
-+ * @t_info:	the current test testcase and callbacks
-+ *		functions
-+ *
-+ * The function also checks the test result upon test completion
-+ */
-+int test_iosched_start_test(struct test_info *t_info)
++/* send_packing TEST */
++static ssize_t send_write_packing_test_write(struct file *file,
++				const char __user *buf,
++				size_t count,
++				loff_t *ppos)
 +{
 +	int ret = 0;
-+	unsigned timeout_msec;
-+	int counter = 0;
-+	char *test_name = NULL;
++	int i = 0;
++	int number = -1;
++	int j = 0;
 +
-+	if (!ptd)
-+		return -ENODEV;
++	test_pr_info("%s: -- send_write_packing TEST --", __func__);
 +
-+	if (!t_info) {
-+		ptd->test_result = TEST_FAILED;
-+		return -EINVAL;
-+	}
++	sscanf(buf, "%d", &number);
 +
-+	do {
-+		if (ptd->ignore_round)
-+			/*
-+			 * We ignored the last run due to FS write requests.
-+			 * Sleep to allow those requests to be issued
-+			 */
-+			msleep(2000);
++	if (number <= 0)
++		number = 1;
 +
-+		spin_lock(&ptd->lock);
 +
-+		if (ptd->test_state != TEST_IDLE) {
-+			test_pr_info(
-+				"%s: Another test is running, try again later",
-+				__func__);
-+			return -EINVAL;
-+		}
++	mbtd->test_group = TEST_SEND_WRITE_PACKING_GROUP;
 +
-+		if (ptd->start_sector == 0) {
-+			test_pr_err("%s: Invalid start sector", __func__);
-+			ptd->test_result = TEST_FAILED;
-+			spin_unlock(&ptd->lock);
-+			return -EINVAL;
-+		}
++	if (validate_packed_commands_settings())
++		return count;
 +
-+		memcpy(&ptd->test_info, t_info, sizeof(struct test_info));
++	if (mbtd->random_test_seed > 0)
++		test_pr_info("%s: Test seed: %d", __func__,
++			      mbtd->random_test_seed);
 +
-+		ptd->next_req = NULL;
-+		ptd->test_result = TEST_NO_RESULT;
-+		ptd->num_of_write_bios = 0;
++	memset(&mbtd->test_info, 0, sizeof(struct test_info));
 +
-+		ptd->unique_next_req_id = UNIQUE_START_REQ_ID;
-+		ptd->wr_rd_next_req_id = WR_RD_START_REQ_ID;
++	mbtd->test_info.data = mbtd;
++	mbtd->test_info.prepare_test_fn = prepare_test;
++	mbtd->test_info.check_test_result_fn = check_wr_packing_statistics;
++	mbtd->test_info.get_test_case_str_fn = get_test_case_str;
++	mbtd->test_info.post_test_fn = post_test;
 +
-+		ptd->test_state = TEST_RUNNING;
++	for (i = 0 ; i < number ; ++i) {
++		test_pr_info("%s: Cycle # %d / %d", __func__, i+1, number);
++		test_pr_info("%s: ====================", __func__);
 +
-+		spin_unlock(&ptd->lock);
++		for (j = SEND_WRITE_PACKING_MIN_TESTCASE ;
++		      j <= SEND_WRITE_PACKING_MAX_TESTCASE ; j++) {
 +
-+		timeout_msec = get_timeout_msec(ptd);
-+		mod_timer(&ptd->timeout_timer, jiffies +
-+			  msecs_to_jiffies(timeout_msec));
-+
-+		if (ptd->test_info.get_test_case_str_fn)
-+			test_name = ptd->test_info.get_test_case_str_fn(ptd);
-+		else
-+			test_name = "Unknown testcase";
-+		test_pr_info("%s: Starting test %s\n", __func__, test_name);
-+
-+		ret = prepare_test(ptd);
-+		if (ret) {
-+			test_pr_err("%s: failed to prepare the test\n",
-+				    __func__);
-+			goto error;
-+		}
-+
-+		ret = run_test(ptd);
-+		if (ret) {
-+			test_pr_err("%s: failed to run the test\n", __func__);
-+			goto error;
-+		}
-+
-+		test_pr_info("%s: Waiting for the test completion", __func__);
-+
-+		wait_event(ptd->wait_q, ptd->test_state == TEST_COMPLETED);
-+		del_timer_sync(&ptd->timeout_timer);
-+
-+		if (!ptd->ignore_round) {
-+			ret = check_test_result(ptd);
-+			if (ret) {
-+				test_pr_err("%s: check_test_result failed\n",
-+					    __func__);
-+				goto error;
-+			}
-+		} else {
-+			test_pr_info(
-+			"%s: Round canceled (Got wr reqs in the middle)",
-+			__func__);
-+		}
-+
-+		ret = post_test(ptd);
-+		if (ret) {
-+			test_pr_err("%s: post_test failed\n", __func__);
-+			goto error;
-+		}
-+
-+		/*
-+		 * Wakeup the queue thread to fetch FS requests that might got
-+		 * postponded due to the test
-+		 */
-+		__blk_run_queue(ptd->req_q);
-+
-+		if (counter == TEST_MAX_TESTCASE_ROUNDS) {
-+			test_pr_info("%s: Too many rounds did not succeed...",
-+			     __func__);
-+			ptd->test_result = TEST_FAILED;
-+		}
-+
-+	} while ((ptd->ignore_round) && (counter < TEST_MAX_TESTCASE_ROUNDS));
-+
-+	if (ptd->test_result == TEST_PASSED)
-+		return 0;
-+	else
-+		return -EINVAL;
-+
-+error:
-+	ptd->test_result = TEST_FAILED;
-+	ptd->test_info.testcase = 0;
-+	post_test(ptd);
-+	return ret;
-+}
-+EXPORT_SYMBOL(test_iosched_start_test);
-+
-+/**
-+ * test_iosched_register() - register a block device test
-+ * utility.
-+ * @bdt:	the block device test type to register
-+ */
-+void test_iosched_register(struct blk_dev_test_type *bdt)
-+{
-+	spin_lock(&blk_dev_test_list_lock);
-+	list_add_tail(&bdt->list, &blk_dev_test_list);
-+	spin_unlock(&blk_dev_test_list_lock);
-+}
-+EXPORT_SYMBOL_GPL(test_iosched_register);
-+
-+/**
-+ * test_iosched_unregister() - unregister a block device test
-+ * utility.
-+ * @bdt:	the block device test type to unregister
-+ */
-+void test_iosched_unregister(struct blk_dev_test_type *bdt)
-+{
-+	spin_lock(&blk_dev_test_list_lock);
-+	list_del_init(&bdt->list);
-+	spin_unlock(&blk_dev_test_list_lock);
-+}
-+EXPORT_SYMBOL_GPL(test_iosched_unregister);
-+
-+/**
-+ * test_iosched_set_test_result() - Set the test
-+ * result(PASS/FAIL)
-+ * @test_result:	the test result
-+ */
-+void test_iosched_set_test_result(int test_result)
-+{
-+	if (!ptd)
-+		return;
-+
-+	ptd->test_result = test_result;
-+}
-+EXPORT_SYMBOL(test_iosched_set_test_result);
-+
-+/**
-+ * test_iosched_get_debugfs_tests_root() - returns the root
-+ * debugfs directory for the test_iosched tests
-+ */
-+struct dentry *test_iosched_get_debugfs_tests_root(void)
-+{
-+	if (!ptd)
-+		return NULL;
-+
-+	return ptd->debug.debug_tests_root;
-+}
-+EXPORT_SYMBOL(test_iosched_get_debugfs_tests_root);
-+
-+/**
-+ * test_iosched_get_debugfs_utils_root() - returns the root
-+ * debugfs directory for the test_iosched utils
-+ */
-+struct dentry *test_iosched_get_debugfs_utils_root(void)
-+{
-+	if (!ptd)
-+		return NULL;
-+
-+	return ptd->debug.debug_utils_root;
-+}
-+EXPORT_SYMBOL(test_iosched_get_debugfs_utils_root);
-+
-+static int test_debugfs_init(struct test_data *td)
-+{
-+	td->debug.debug_root = debugfs_create_dir("test-iosched", NULL);
-+	if (!td->debug.debug_root)
-+		return -ENOENT;
-+
-+	td->debug.debug_tests_root = debugfs_create_dir("tests",
-+							td->debug.debug_root);
-+	if (!td->debug.debug_tests_root)
-+		goto err;
-+
-+	td->debug.debug_utils_root = debugfs_create_dir("utils",
-+							td->debug.debug_root);
-+	if (!td->debug.debug_utils_root)
-+		goto err;
-+
-+	td->debug.debug_test_result = debugfs_create_u32(
-+					"test_result",
-+					S_IRUGO | S_IWUGO,
-+					td->debug.debug_utils_root,
-+					&td->test_result);
-+	if (!td->debug.debug_test_result)
-+		goto err;
-+
-+	td->debug.start_sector = debugfs_create_u32(
-+					"start_sector",
-+					S_IRUGO | S_IWUGO,
-+					td->debug.debug_utils_root,
-+					&td->start_sector);
-+	if (!td->debug.start_sector)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	debugfs_remove_recursive(td->debug.debug_root);
-+	return -ENOENT;
-+}
-+
-+static void test_debugfs_cleanup(struct test_data *td)
-+{
-+	debugfs_remove_recursive(td->debug.debug_root);
-+}
-+
-+static void print_req(struct request *req)
-+{
-+	struct bio *bio;
-+	struct test_request *test_rq;
-+
-+	if (!req)
-+		return;
-+
-+	test_rq = (struct test_request *)req->elv.priv[0];
-+
-+	if (test_rq) {
-+		test_pr_debug("%s: Dispatch request %d: __sector=0x%lx",
-+		       __func__, test_rq->req_id, (unsigned long)req->__sector);
-+		test_pr_debug("%s: nr_phys_segments=%d, num_of_sectors=%d",
-+		       __func__, req->nr_phys_segments, blk_rq_sectors(req));
-+		bio = req->bio;
-+		test_pr_debug("%s: bio: bi_size=%d, bi_sector=0x%lx",
-+			      __func__, bio->bi_size,
-+			      (unsigned long)bio->bi_sector);
-+		while ((bio = bio->bi_next) != NULL) {
-+			test_pr_debug("%s: bio: bi_size=%d, bi_sector=0x%lx",
-+				      __func__, bio->bi_size,
-+				      (unsigned long)bio->bi_sector);
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				break;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = NON_RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				break;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
 +		}
 +	}
++
++	test_pr_info("%s: Completed all the test cases.", __func__);
++
++	return count;
 +}
 +
-+static void test_merged_requests(struct request_queue *q,
-+			 struct request *rq, struct request *next)
++static ssize_t send_write_packing_test_read(struct file *file,
++			       char __user *buffer,
++			       size_t count,
++			       loff_t *offset)
 +{
-+	list_del_init(&next->queuelist);
-+}
++	memset((void *)buffer, 0, count);
 +
-+/*
-+ * Dispatch a test request in case there is a running test Otherwise, dispatch
-+ * a request that was queued by the FS to keep the card functional.
-+ */
-+static int test_dispatch_requests(struct request_queue *q, int force)
-+{
-+	struct test_data *td = q->elevator->elevator_data;
-+	struct request *rq = NULL;
++	snprintf(buffer, count,
++		 "\nsend_write_packing_test\n"
++		 "=========\n"
++		 "Description:\n"
++		 "This test checks the following scenarios\n"
++		 "- Pack due to FLUSH message\n"
++		 "- Pack due to FLUSH after threshold writes\n"
++		 "- Pack due to READ message\n"
++		 "- Pack due to READ after threshold writes\n"
++		 "- Pack due to empty queue\n"
++		 "- Pack due to threshold writes\n"
++		 "- Pack due to one over threshold writes\n");
 +
-+	switch (td->test_state) {
-+	case TEST_IDLE:
-+		if (!list_empty(&td->queue)) {
-+			rq = list_entry(td->queue.next, struct request,
-+					queuelist);
-+			list_del_init(&rq->queuelist);
-+			elv_dispatch_sort(q, rq);
-+			return 1;
-+		}
-+		break;
-+	case TEST_RUNNING:
-+		if (td->next_req) {
-+			rq = td->next_req->rq;
-+			td->next_req =
-+				latter_test_request(td->req_q, td->next_req);
-+			if (!rq)
-+				return 0;
-+			print_req(rq);
-+			elv_dispatch_sort(q, rq);
-+			return 1;
-+		}
-+		break;
-+	case TEST_COMPLETED:
-+	default:
++	if (message_repeat == 1) {
++		message_repeat = 0;
++		return strnlen(buffer, count);
++	} else {
 +		return 0;
 +	}
-+
-+	return 0;
 +}
 +
-+static void test_add_request(struct request_queue *q,
-+				     struct request *rq)
-+{
-+	struct test_data *td = q->elevator->elevator_data;
-+
-+	list_add_tail(&rq->queuelist, &td->queue);
-+
-+	if (ptd->test_info.ignore_run_due_to_fs_wr_reqs) {
-+		if ((rq_data_dir(rq) == WRITE) &&
-+		    (td->test_state == TEST_RUNNING)) {
-+			test_pr_info(
-+				"%s: got WRITE req in the middle of the test",
-+				__func__);
-+			td->ignore_round = 1;
-+		}
-+	}
-+}
-+
-+static struct request *
-+test_former_request(struct request_queue *q, struct request *rq)
-+{
-+	struct test_data *td = q->elevator->elevator_data;
-+
-+	if (rq->queuelist.prev == &td->queue)
-+		return NULL;
-+	return list_entry(rq->queuelist.prev, struct request, queuelist);
-+}
-+
-+static struct request *
-+test_latter_request(struct request_queue *q, struct request *rq)
-+{
-+	struct test_data *td = q->elevator->elevator_data;
-+
-+	if (rq->queuelist.next == &td->queue)
-+		return NULL;
-+	return list_entry(rq->queuelist.next, struct request, queuelist);
-+}
-+
-+static int test_init_queue(struct request_queue *q)
-+{
-+	struct blk_dev_test_type *__bdt;
-+
-+	ptd = kmalloc_node(sizeof(struct test_data), GFP_KERNEL,
-+			     q->node);
-+	if (!ptd) {
-+		test_pr_err("%s: failed to allocate test data", __func__);
-+		return -ENODEV;
-+	}
-+	memset((void *)ptd, 0, sizeof(struct test_data));
-+	INIT_LIST_HEAD(&ptd->queue);
-+	INIT_LIST_HEAD(&ptd->test_queue);
-+	init_waitqueue_head(&ptd->wait_q);
-+	ptd->req_q = q;
-+	q->elevator->elevator_data = ptd;
-+
-+	setup_timer(&ptd->timeout_timer, test_timeout_handler,
-+		    (unsigned long)ptd);
-+
-+	spin_lock_init(&ptd->lock);
-+
-+	if (test_debugfs_init(ptd)) {
-+		test_pr_err("%s: Failed to create debugfs files", __func__);
-+		return -ENODEV;
-+	}
-+
-+	list_for_each_entry(__bdt, &blk_dev_test_list, list)
-+		__bdt->init_fn();
-+
-+	return 0;
-+}
-+
-+static void test_exit_queue(struct elevator_queue *e)
-+{
-+	struct test_data *td = e->elevator_data;
-+	struct blk_dev_test_type *__bdt;
-+
-+	BUG_ON(!list_empty(&td->queue));
-+
-+	list_for_each_entry(__bdt, &blk_dev_test_list, list)
-+		__bdt->exit_fn();
-+
-+	test_debugfs_cleanup(td);
-+
-+	kfree(td);
-+}
-+
-+static struct elevator_type elevator_test_iosched = {
-+	.ops = {
-+		.elevator_merge_req_fn = test_merged_requests,
-+		.elevator_dispatch_fn = test_dispatch_requests,
-+		.elevator_add_req_fn = test_add_request,
-+		.elevator_former_req_fn = test_former_request,
-+		.elevator_latter_req_fn = test_latter_request,
-+		.elevator_init_fn = test_init_queue,
-+		.elevator_exit_fn = test_exit_queue,
-+	},
-+	.elevator_name = "test-iosched",
-+	.elevator_owner = THIS_MODULE,
++const struct file_operations send_write_packing_test_ops = {
++	.open = test_open,
++	.write = send_write_packing_test_write,
++	.read = send_write_packing_test_read,
 +};
 +
-+static int __init test_init(void)
++/* err_check TEST */
++static ssize_t err_check_test_write(struct file *file,
++				const char __user *buf,
++				size_t count,
++				loff_t *ppos)
 +{
-+	elv_register(&elevator_test_iosched);
++	int ret = 0;
++	int i = 0;
++	int number = -1;
++	int j = 0;
++
++	test_pr_info("%s: -- err_check TEST --", __func__);
++
++	sscanf(buf, "%d", &number);
++
++	if (number <= 0)
++		number = 1;
++
++	mbtd->test_group = TEST_ERR_CHECK_GROUP;
++
++	if (validate_packed_commands_settings())
++		return count;
++
++	if (mbtd->random_test_seed > 0)
++		test_pr_info("%s: Test seed: %d", __func__,
++			      mbtd->random_test_seed);
++
++	memset(&mbtd->test_info, 0, sizeof(struct test_info));
++
++	mbtd->test_info.data = mbtd;
++	mbtd->test_info.prepare_test_fn = prepare_test;
++	mbtd->test_info.check_test_result_fn = check_wr_packing_statistics;
++	mbtd->test_info.get_test_case_str_fn = get_test_case_str;
++	mbtd->test_info.post_test_fn = post_test;
++
++	for (i = 0 ; i < number ; ++i) {
++		test_pr_info("%s: Cycle # %d / %d", __func__, i+1, number);
++		test_pr_info("%s: ====================", __func__);
++
++		for (j = ERR_CHECK_MIN_TESTCASE;
++					j <= ERR_CHECK_MAX_TESTCASE ; j++) {
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				break;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = NON_RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				break;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++		}
++	}
++
++	test_pr_info("%s: Completed all the test cases.", __func__);
++
++	return count;
++}
++
++static ssize_t err_check_test_read(struct file *file,
++			       char __user *buffer,
++			       size_t count,
++			       loff_t *offset)
++{
++	memset((void *)buffer, 0, count);
++
++	snprintf(buffer, count,
++		 "\nerr_check_TEST\n"
++		 "=========\n"
++		 "Description:\n"
++		 "This test checks the following scenarios\n"
++		 "- Return ABORT\n"
++		 "- Return PARTIAL followed by success\n"
++		 "- Return PARTIAL followed by abort\n"
++		 "- Return PARTIAL multiple times until success\n"
++		 "- Return PARTIAL with fail index = threshold\n"
++		 "- Return RETRY\n"
++		 "- Return CMD_ERR\n"
++		 "- Return DATA_ERR\n");
++
++	if (message_repeat == 1) {
++		message_repeat = 0;
++		return strnlen(buffer, count);
++	} else {
++		return 0;
++	}
++}
++
++const struct file_operations err_check_test_ops = {
++	.open = test_open,
++	.write = err_check_test_write,
++	.read = err_check_test_read,
++};
++
++/* send_invalid_packed TEST */
++static ssize_t send_invalid_packed_test_write(struct file *file,
++				const char __user *buf,
++				size_t count,
++				loff_t *ppos)
++{
++	int ret = 0;
++	int i = 0;
++	int number = -1;
++	int j = 0;
++	int num_of_failures = 0;
++
++	test_pr_info("%s: -- send_invalid_packed TEST --", __func__);
++
++	sscanf(buf, "%d", &number);
++
++	if (number <= 0)
++		number = 1;
++
++	mbtd->test_group = TEST_SEND_INVALID_GROUP;
++
++	if (validate_packed_commands_settings())
++		return count;
++
++	if (mbtd->random_test_seed > 0)
++		test_pr_info("%s: Test seed: %d", __func__,
++			      mbtd->random_test_seed);
++
++	memset(&mbtd->test_info, 0, sizeof(struct test_info));
++
++	mbtd->test_info.data = mbtd;
++	mbtd->test_info.prepare_test_fn = prepare_test;
++	mbtd->test_info.check_test_result_fn = check_wr_packing_statistics;
++	mbtd->test_info.get_test_case_str_fn = get_test_case_str;
++	mbtd->test_info.post_test_fn = post_test;
++
++	for (i = 0 ; i < number ; ++i) {
++		test_pr_info("%s: Cycle # %d / %d", __func__, i+1, number);
++		test_pr_info("%s: ====================", __func__);
++
++		for (j = INVALID_CMD_MIN_TESTCASE;
++				j <= INVALID_CMD_MAX_TESTCASE ; j++) {
++
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				num_of_failures++;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++
++			mbtd->test_info.testcase = j;
++			mbtd->is_random = NON_RANDOM_TEST;
++			ret = test_iosched_start_test(&mbtd->test_info);
++			if (ret)
++				num_of_failures++;
++			/* Allow FS requests to be dispatched */
++			msleep(1000);
++		}
++	}
++
++	test_pr_info("%s: Completed all the test cases.", __func__);
++
++	if (num_of_failures > 0) {
++		test_iosched_set_test_result(TEST_FAILED);
++		test_pr_err(
++			"There were %d failures during the test, TEST FAILED",
++			num_of_failures);
++	}
++	return count;
++}
++
++static ssize_t send_invalid_packed_test_read(struct file *file,
++			       char __user *buffer,
++			       size_t count,
++			       loff_t *offset)
++{
++	memset((void *)buffer, 0, count);
++
++	snprintf(buffer, count,
++		 "\nsend_invalid_packed_TEST\n"
++		 "=========\n"
++		 "Description:\n"
++		 "This test checks the following scenarios\n"
++		 "- Send an invalid header version\n"
++		 "- Send the wrong write code\n"
++		 "- Send an invalid R/W code\n"
++		 "- Send wrong start address in header\n"
++		 "- Send header with block_count smaller than actual\n"
++		 "- Send header with block_count larger than actual\n"
++		 "- Send header CMD23 packed bit set\n"
++		 "- Send CMD23 with block count over threshold\n"
++		 "- Send CMD23 with block_count equals zero\n"
++		 "- Send CMD23 packed bit unset\n"
++		 "- Send CMD23 reliable write bit set\n"
++		 "- Send CMD23 bits [16-29] set\n"
++		 "- Send CMD23 header block not in block_count\n");
++
++	if (message_repeat == 1) {
++		message_repeat = 0;
++		return strnlen(buffer, count);
++	} else {
++		return 0;
++	}
++}
++
++const struct file_operations send_invalid_packed_test_ops = {
++	.open = test_open,
++	.write = send_invalid_packed_test_write,
++	.read = send_invalid_packed_test_read,
++};
++
++static void mmc_block_test_debugfs_cleanup(void)
++{
++	debugfs_remove(mbtd->debug.random_test_seed);
++	debugfs_remove(mbtd->debug.send_write_packing_test);
++	debugfs_remove(mbtd->debug.err_check_test);
++	debugfs_remove(mbtd->debug.send_invalid_packed_test);
++}
++
++static int mmc_block_test_debugfs_init(void)
++{
++	struct dentry *utils_root, *tests_root;
++
++	utils_root = test_iosched_get_debugfs_utils_root();
++	tests_root = test_iosched_get_debugfs_tests_root();
++
++	if (!utils_root || !tests_root)
++		return -EINVAL;
++
++	mbtd->debug.random_test_seed = debugfs_create_u32(
++					"random_test_seed",
++					S_IRUGO | S_IWUGO,
++					utils_root,
++					&mbtd->random_test_seed);
++
++	if (!mbtd->debug.random_test_seed)
++		goto err_nomem;
++
++	mbtd->debug.send_write_packing_test =
++		debugfs_create_file("send_write_packing_test",
++				    S_IRUGO | S_IWUGO,
++				    tests_root,
++				    NULL,
++				    &send_write_packing_test_ops);
++
++	if (!mbtd->debug.send_write_packing_test)
++		goto err_nomem;
++
++	mbtd->debug.err_check_test =
++		debugfs_create_file("err_check_test",
++				    S_IRUGO | S_IWUGO,
++				    tests_root,
++				    NULL,
++				    &err_check_test_ops);
++
++	if (!mbtd->debug.err_check_test)
++		goto err_nomem;
++
++	mbtd->debug.send_invalid_packed_test =
++		debugfs_create_file("send_invalid_packed_test",
++				    S_IRUGO | S_IWUGO,
++				    tests_root,
++				    NULL,
++				    &send_invalid_packed_test_ops);
++
++	if (!mbtd->debug.send_invalid_packed_test)
++		goto err_nomem;
++
++	return 0;
++
++err_nomem:
++	mmc_block_test_debugfs_cleanup();
++	return -ENOMEM;
++}
++
++static void mmc_block_test_probe(void)
++{
++	struct request_queue *q = test_iosched_get_req_queue();
++	struct mmc_queue *mq;
++	int max_packed_reqs;
++
++	if (!q) {
++		test_pr_err("%s: NULL request queue", __func__);
++		return;
++	}
++
++	mq = q->queuedata;
++	max_packed_reqs = mq->card->ext_csd.max_packed_writes;
++	mbtd->exp_packed_stats.packing_events =
++			kzalloc((max_packed_reqs + 1) *
++				sizeof(*mbtd->exp_packed_stats.packing_events),
++				GFP_KERNEL);
++
++	mmc_block_test_debugfs_init();
++}
++
++static void mmc_block_test_remove(void)
++{
++	mmc_block_test_debugfs_cleanup();
++}
++
++static int __init mmc_block_test_init(void)
++{
++	mbtd = kzalloc(sizeof(struct mmc_block_test_data), GFP_KERNEL);
++	if (!mbtd) {
++		test_pr_err("%s: failed to allocate mmc_block_test_data",
++			    __func__);
++		return -ENODEV;
++	}
++
++	mbtd->bdt.init_fn = mmc_block_test_probe;
++	mbtd->bdt.exit_fn = mmc_block_test_remove;
++	INIT_LIST_HEAD(&mbtd->bdt.list);
++	test_iosched_register(&mbtd->bdt);
 +
 +	return 0;
 +}
 +
-+static void __exit test_exit(void)
++static void __exit mmc_block_test_exit(void)
 +{
-+	elv_unregister(&elevator_test_iosched);
++	test_iosched_unregister(&mbtd->bdt);
++	kfree(mbtd);
 +}
 +
-+module_init(test_init);
-+module_exit(test_exit);
++module_init(mmc_block_test_init);
++module_exit(mmc_block_test_exit);
 +
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Test IO scheduler");
-diff --git a/include/linux/test-iosched.h b/include/linux/test-iosched.h
-new file mode 100644
-index 0000000..c2db5a9
---- /dev/null
-+++ b/include/linux/test-iosched.h
-@@ -0,0 +1,218 @@
-+#ifndef _LINUX_TEST_IOSCHED_H
-+#define _LINUX_TEST_IOSCHED_H
-+
-+/*
-+ * Patterns definitions for read/write requests data
-+ */
-+#define TEST_PATTERN_SEQUENTIAL	-1
-+#define TEST_PATTERN_5A		0x5A5A5A5A
-+#define TEST_PATTERN_FF		0xFFFFFFFF
-+#define TEST_NO_PATTERN		0xDEADBEEF
-+#define BIO_U32_SIZE 1024
-+
-+struct test_data;
-+
-+typedef int (prepare_test_fn) (struct test_data *);
-+typedef int (run_test_fn) (struct test_data *);
-+typedef int (check_test_result_fn) (struct test_data *);
-+typedef int (post_test_fn) (struct test_data *);
-+typedef char* (get_test_case_str_fn) (struct test_data *);
-+typedef void (blk_dev_test_init_fn) (void);
-+typedef void (blk_dev_test_exit_fn) (void);
-+
-+/**
-+ * enum test_state - defines the state of the test
-+ */
-+enum test_state {
-+	TEST_IDLE,
-+	TEST_RUNNING,
-+	TEST_COMPLETED,
++MODULE_DESCRIPTION("MMC block test");
+diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
+index 5e04938..4214f69 100644
+--- a/drivers/mmc/card/queue.h
++++ b/drivers/mmc/card/queue.h
+@@ -12,6 +12,17 @@ struct mmc_blk_request {
+ 	struct mmc_data		data;
+ };
+ 
++enum mmc_blk_status {
++	MMC_BLK_SUCCESS = 0,
++	MMC_BLK_PARTIAL,
++	MMC_BLK_CMD_ERR,
++	MMC_BLK_RETRY,
++	MMC_BLK_ABORT,
++	MMC_BLK_DATA_ERR,
++	MMC_BLK_ECC_ERR,
++	MMC_BLK_NOMEDIUM,
 +};
 +
-+/**
-+ * enum test_results - defines the success orfailure of the test
-+ */
-+enum test_results {
-+	TEST_NO_RESULT,
-+	TEST_FAILED,
-+	TEST_PASSED,
-+	TEST_NOT_SUPPORTED,
-+};
+ enum mmc_packed_cmd {
+ 	MMC_PACKED_NONE = 0,
+ 	MMC_PACKED_WRITE,
+@@ -45,6 +56,8 @@ struct mmc_queue {
+ 	struct mmc_queue_req	mqrq[2];
+ 	struct mmc_queue_req	*mqrq_cur;
+ 	struct mmc_queue_req	*mqrq_prev;
++	int (*err_check_fn) (struct mmc_card *, struct mmc_async_req *);
++	void (*packed_test_fn) (struct request_queue *, struct mmc_queue_req *);
+ };
+ 
+ extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *, spinlock_t *,
+@@ -58,4 +71,6 @@ extern unsigned int mmc_queue_map_sg(struct mmc_queue *,
+ extern void mmc_queue_bounce_pre(struct mmc_queue_req *);
+ extern void mmc_queue_bounce_post(struct mmc_queue_req *);
+ 
++extern void print_mmc_packing_stats(struct mmc_card *card);
 +
-+/**
-+ * enum req_unique_type - defines a unique request type
-+ */
-+enum req_unique_type {
-+	REQ_UNIQUE_NONE,
-+	REQ_UNIQUE_DISCARD,
-+	REQ_UNIQUE_FLUSH,
-+};
-+
-+/**
-+ * struct test_debug - debugfs directories
-+ * @debug_root:		The test-iosched debugfs root directory
-+ * @debug_utils_root:	test-iosched debugfs utils root
-+ *			directory
-+ * @debug_tests_root:	test-iosched debugfs tests root
-+ *			directory
-+ * @debug_test_result:	Exposes the test result to the user
-+ *			space
-+ * @start_sector:	The start sector for read/write requests
-+ */
-+struct test_debug {
-+	struct dentry *debug_root;
-+	struct dentry *debug_utils_root;
-+	struct dentry *debug_tests_root;
-+	struct dentry *debug_test_result;
-+	struct dentry *start_sector;
-+};
-+
-+/**
-+ * struct test_request - defines a test request
-+ * @queuelist:		The test requests list
-+ * @bios_buffer:	Write/read requests data buffer
-+ * @buf_size:		Write/read requests data buffer size (in
-+ *			bytes)
-+ * @rq:			A block request, to be dispatched
-+ * @req_completed:	A flag to indicate if the request was
-+ *			completed
-+ * @req_result:		Keeps the error code received in the
-+ *			request completion callback
-+ * @is_err_expected:	A flag to indicate if the request should
-+ *			fail
-+ * @wr_rd_data_pattern:	A pattern written to the write data
-+ *			buffer. Can be used in read requests to
-+ *			verify the data
-+ * @req_id:		A unique ID to identify a test request
-+ *			to ease the debugging of the test cases
-+ */
-+struct test_request {
-+	struct list_head queuelist;
-+	unsigned int *bios_buffer;
-+	int buf_size;
-+	struct request *rq;
-+	bool req_completed;
-+	int req_result;
-+	int is_err_expected;
-+	int wr_rd_data_pattern;
-+	int req_id;
-+};
-+
-+/**
-+ * struct test_info - specific test information
-+ * @testcase:		The current running test case
-+ * @timeout_msec:	Test specific test timeout
-+ * @buf_size:		Write/read requests data buffer size (in
-+ *			bytes)
-+ * @ignore_run_due_to_fs_wr_reqs: A flag to indicate if the test
-+ *			should be re-run in case we get FS write
-+ *			requests in theh middle of the test. The
-+ *			write requests can be followed by a
-+ *			FLUSH request that might cause
-+ *			unexpected results of the test.
-+ * @prepare_test_fn:	Test specific test preparation callback
-+ * @run_test_fn:	Test specific test running callback
-+ * @check_test_result_fn: Test specific test result checking
-+ *			callback
-+ * @get_test_case_str_fn: Test specific function to get the test name
-+ * @data:		Test specific private data
-+ */
-+struct test_info {
-+	int testcase;
-+	unsigned timeout_msec;
-+	bool ignore_run_due_to_fs_wr_reqs;
-+	prepare_test_fn *prepare_test_fn;
-+	run_test_fn *run_test_fn;
-+	check_test_result_fn *check_test_result_fn;
-+	post_test_fn *post_test_fn;
-+	get_test_case_str_fn *get_test_case_str_fn;
-+	void *data;
-+};
-+
-+/**
-+ * struct blk_dev_test_type - identifies block device test
-+ * @list:	list head pointer
-+ * @init_fn:	block device test init callback
-+ * @exit_fn:	block device test exit callback
-+ */
-+struct blk_dev_test_type {
-+	struct list_head list;
-+	blk_dev_test_init_fn *init_fn;
-+	blk_dev_test_exit_fn *exit_fn;
-+};
-+
-+/**
-+ * struct test_data - global test iosched data
-+ * @queue:		The test IO scheduler requests list
-+ * @test_queue:		The test requests list
-+ * @next_req:		Points to the next request to be
-+ *			dispatched from the test requests list
-+ * @wait_q:		A wait queue for waiting for the test
-+ *			requests completion
-+ * @test_state:		Indicates if there is a running test.
-+ *			Used for dispatch function
-+ * @test_result:	Indicates if the test passed or failed
-+ * @debug:		The test debugfs entries
-+ * @req_q:		The block layer request queue
-+ * @num_of_write_bios:	The number of write BIOs added to the test requests.
-+ *			Used to calcualte the sector number of
-+ *			new BIOs.
-+ * @start_sector:	The address of the first sector that can
-+ *			be accessed by the test
-+ * @timeout_timer:	A timer to verify test completion in
-+ *			case of non-completed requests
-+ * @wr_rd_next_req_id:	A unique ID to identify WRITE/READ
-+ *			request to ease the debugging of the
-+ *			test cases
-+ * @unique_next_req_id:	A unique ID to identify
-+ *			FLUSH/DISCARD/SANITIZE request to ease
-+ *			the debugging of the test cases
-+ * @lock:		A lock to verify running a single test
-+ *			at a time
-+ * @test_info:		A specific test data to be set by the
-+ *			test invokation function
-+ * @ignore_round:	A boolean variable indicating that a
-+ *			test round was disturbed by an external
-+ *			flush request, therefore disqualifying
-+ *			the results
-+ */
-+struct test_data {
-+	struct list_head queue;
-+	struct list_head test_queue;
-+	struct test_request *next_req;
-+	wait_queue_head_t wait_q;
-+	enum test_state test_state;
-+	enum test_results test_result;
-+	struct test_debug debug;
-+	struct request_queue *req_q;
-+	int num_of_write_bios;
-+	u32 start_sector;
-+	struct timer_list timeout_timer;
-+	int wr_rd_next_req_id;
-+	int unique_next_req_id;
-+	spinlock_t lock;
-+	struct test_info test_info;
-+	int ignore_round;
-+};
-+
-+extern int test_iosched_start_test(struct test_info *t_info);
-+extern void test_iosched_mark_test_completion(void);
-+extern int test_iosched_add_unique_test_req(int is_err_expcted,
-+		enum req_unique_type req_unique,
-+		int start_sec, int nr_sects, rq_end_io_fn *end_req_io);
-+extern int test_iosched_add_wr_rd_test_req(int is_err_expcted,
-+	      int direction, int start_sec,
-+	      int num_bios, int pattern, rq_end_io_fn *end_req_io);
-+
-+extern struct dentry *test_iosched_get_debugfs_tests_root(void);
-+extern struct dentry *test_iosched_get_debugfs_utils_root(void);
-+
-+extern struct request_queue *test_iosched_get_req_queue(void);
-+
-+extern void test_iosched_set_test_result(int);
-+
-+void test_iosched_register(struct blk_dev_test_type *bdt);
-+
-+void test_iosched_unregister(struct blk_dev_test_type *bdt);
-+
-+#endif /* _LINUX_TEST_IOSCHED_H */
+ #endif
 -- 
 1.7.3.3
 -- 
