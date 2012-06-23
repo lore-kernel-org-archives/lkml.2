@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab2FWEkP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 00:40:15 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60459 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab2FWEkN (ORCPT
+	id S1757151Ab2FWElL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 00:41:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44265 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab2FWElJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 00:40:13 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE5482C.3010501@jp.fujitsu.com>
-Date: Sat, 23 Jun 2012 13:38:04 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sat, 23 Jun 2012 00:41:09 -0400
+Date: Fri, 22 Jun 2012 21:41:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peiyong Feng <peiyong.feng.kernel@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Implement uhook(call kernel func from userspace) driver
+Message-ID: <20120623044105.GA32663@kroah.com>
+References: <CAN_1RdvqJRig8vZW_gcvNVKYNo7ROmEKxAs7qu1N6XE4+Pspjg@mail.gmail.com>
+ <20120623040633.GA16278@kroah.com>
+ <CAN_1RdtfiWtuqV=vBkagZfmvstket499QdCK3zZrrS8xKTZwPA@mail.gmail.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: undisclosed-recipients:";
-	KOSAKI Motohiro" <kosaki.motohiro@gmail.com>,
-        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	undisclosed-recipients:;KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-						^-missing end of address
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com> <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com> <4FE26470.90401@kernel.org> <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com> <4FE27F15.8050102@kernel.org> <CAHGf_=pDw4axwG2tQ+B5hPks-sz2S5+G1Kk-=HSDmo=DSXOkEw@mail.gmail.com> <4FE2A937.6040701@kernel.org> <4FE2FCFB.4040808@jp.fujitsu.com> <4FE3C4E4.2050107@kernel.org> <4FE414A2.3000700@kernel.org>
-In-Reply-To: <4FE414A2.3000700@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAN_1RdtfiWtuqV=vBkagZfmvstket499QdCK3zZrrS8xKTZwPA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/22 15:45), Minchan Kim wrote:
-> On 06/22/2012 10:05 AM, Minchan Kim wrote:
->
->> Second approach which is suggested by KOSAKI is what you mentioned.
->> But the concern about second approach is how to make sure matched count increase/decrease of nr_isolated_areas.
->> I mean how to make sure nr_isolated_areas would be zero when isolation is done.
->> Of course, we can investigate all of current caller and make sure they don't make mistake
->> now. But it's very error-prone if we consider future's user.
->> So we might need test_set_pageblock_migratetype(page, MIGRATE_ISOLATE);
->
->
-> It's an implementation about above approach.
->
+On Sat, Jun 23, 2012 at 12:18:29PM +0800, Peiyong Feng wrote:
+> 2012/6/23 Greg KH <gregkh@linuxfoundation.org>:
+> > On Sat, Jun 23, 2012 at 11:20:35AM +0800, Peiyong Feng wrote:
+> >> Hi all,
+> >>
+> >> This patch implement the uhook kernel driver. Here are some ideals and
+> >> explanations:
+> >>
+> >> 1. What is uhook
+> >>
+> >> uhook(userspace kernel hook) means call kernel function from
+> >> userspace. That is to say, we can
+> >>
+> >> write a function in kernel space and call it in userspace while the
+> >> kernel Image is running. For example:
+> >
+> > That's, um, "interesting", but is of course, nothing we can accept into
+> > the main kernel tree, as I'm sure you can understand.  Otherwise, you
+> > just created a few thousand undocumented system calls whose behavior
+> > changes every release which is not something we can accept.
+> >
+> > But it is a great hack, very nicely done.  I'm sure that some people
+> > will like it for debugging, although I'm not quite sure you got all of
+> 
+> Well, is there some other tree I can commit the patch?
 
-I like this approach.
+What do you mean by this?
 
+> > the user/kernel boundry conditions correct, and I know the 32/64bit
+> > issues aren't handled, which you might want to clean up sometime in the
+> 
+> I am still working on it. The ultimate aim is that the uhook module can process
+> any funciton and any data type
 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index bf3404e..3e9a9e1 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -474,6 +474,11 @@ struct zone {
->           * rarely used fields:
->           */
->          const char              *name;
-> +       /*
-> +        * the number of MIGRATE_ISOLATE pageblock
-> +        * We need this for accurate free page counting.
-> +        */
-> +       atomic_t                nr_migrate_isolate;
->   } ____cacheline_internodealigned_in_smp;
-
-Isn't this counter modified only under zone->lock ?
-
-
->
->   typedef enum {
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 2c29b1c..6cb1f9f 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -219,6 +219,11 @@ EXPORT_SYMBOL(nr_online_nodes);
->
->   int page_group_by_mobility_disabled __read_mostly;
->
-> +/*
-> + * NOTE:
-> + * Don't use set_pageblock_migratetype(page, MIGRATE_ISOLATE) direclty.
-> + * Instead, use {un}set_pageblock_isolate.
-> + */
->   void set_pageblock_migratetype(struct page *page, int migratetype)
->   {
->          if (unlikely(page_group_by_mobility_disabled))
-> @@ -1622,6 +1627,28 @@ bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
->                                          zone_page_state(z, NR_FREE_PAGES));
->   }
-
-I'm glad if this function can be static...Hm. With easy grep, I think it can be...
-
-Thanks,
--Kame
+Good luck :)
 
