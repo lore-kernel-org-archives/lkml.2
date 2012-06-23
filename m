@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab2FWSZp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 14:25:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36818 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755057Ab2FWSZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 14:25:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="157470058"
-Message-ID: <4FE60A26.30109@linux.intel.com>
-Date: Sat, 23 Jun 2012 11:25:42 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755776Ab2FWS0R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 14:26:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52563 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305Ab2FWS0Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 14:26:16 -0400
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, Hagen Paul Pfeifer <hagen@jauu.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fixes
-References: <20120622133650.GA24136@gmail.com>  <CA+55aFySaZ4huXgPM0yGPezAhnE9zT81tucC9WnDs5Ps+7+hGA@mail.gmail.com>  <20120622183827.GA8014@virgo.local>  <CA+55aFzpNtLSQvcOOut--2UkkMyqSb9e0_VO3JAxvZRTv7YT1g@mail.gmail.com>  <20120622190632.GB8014@virgo.local>  <1340394896.27036.258.camel@gandalf.stny.rr.com>  <86448d73-2e19-416f-8104-ce72aa5d76eb@email.android.com> <1340407123.27036.265.camel@gandalf.stny.rr.com> <4FE51325.8090408@linux.intel.com>
-In-Reply-To: <4FE51325.8090408@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120621143950.GA1818@kroah.com>
+References: <1339949879-26085-1-git-send-email-devendra.aaru@gmail.com>
+	<20120620235503.GA31520@kroah.com>
+	<CAHdPZaMfVz82_Rk1ywtX+Y95a3JsvjHGxUA1YJovQmmAQxn-OA@mail.gmail.com>
+	<20120621143950.GA1818@kroah.com>
+Date: Sat, 23 Jun 2012 23:56:15 +0530
+Message-ID: <CAHdPZaPM1mY6axH47WUjmkTKsSRSn+YpT8R7DmL9_r4rfPqUFg@mail.gmail.com>
+Subject: Re: [PATCH] drivers/w1: free the w1_master at w1_free_dev and return
+ a correct return value
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2012 05:51 PM, Arjan van de Ven wrote:
-> 
-> if it's truely an official nop, it will take decoder bandwidth obviously
-> (which can decode 3 to 4 instructions per cycle, depending on the
-> brand/model of CPU and the total size in bytes of these instructions).
-> likewise, at the end of the out of order pipeline, NOPs may take a
-> retirement slot (again 3 to 4 instructions per cycle)
-> 
-> icache is there as well, and if the NOP actually changes cpu flags (some
-> of the less fortunate ones do) that can create a false data dependency.
-> 
+Hi Greg,
+On Thu, Jun 21, 2012 at 8:09 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Jun 21, 2012 at 10:14:53AM +0530, devendra.aaru wrote:
+>> Hi Greg,
+>>
+>> Yeah, correct but the following change is correct no?
+>>
+>>  int w1_add_master_device(struct w1_bus_master *master)
+>> @@ -148,7 +149,7 @@ int w1_add_master_device(struct w1_bus_master *master)
+>>                &w1_master_driver, &w1_master_device);
+>>        if (!dev) {
+>>                mutex_unlock(&w1_mlock);
+>> -               return -ENOMEM;
+>> +               return -ENODEV;
+>
+> Possibly, care to resend it in a format that explains it and allows it
+> to be applied?
+>
+I think i need to go through the kernel doc, and figure out what
+should be returned and why.
+I think we need to send -EINVAL as most of the drivers does if their
+registration fails.
 
-If it changes CPU flags it's most definitely not a NOP.
+It may take more time to send the patch out :(. sorry.
+> thanks,
+>
+> greg k-h
 
-Either way, the 0F 1F ops are official, and listed in the SDM.
-
-	-hpa
-
+Thanks,
+Devendra.
