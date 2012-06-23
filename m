@@ -1,97 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab2FWXB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 19:01:26 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48265 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756107Ab2FWXBX (ORCPT
+	id S1756567Ab2FWXC2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 19:02:28 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43699 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab2FWXC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 19:01:23 -0400
-Message-ID: <4FE64AB4.1010904@landley.net>
-Date: Sat, 23 Jun 2012 18:01:08 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Daniel Santos <daniel.santos@pobox.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@kernel.org>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-doc@vger.kernel.org, linux-sparse@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Paul Turner <pjt@google.com>, Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Weinberger <richard@nod.at>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH v4 0/13] Generic Red-Black Trees
-References: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com>
-In-Reply-To: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 23 Jun 2012 19:02:27 -0400
+Date: Sat, 23 Jun 2012 16:02:23 -0700 (PDT)
+Message-Id: <20120623.160223.2001034730073626964.davem@davemloft.net>
+To: kuznet@ms2.inr.ac.ru
+Cc: eric.dumazet@gmail.com, johunt@akamai.com, kaber@trash.net,
+        dbavatar@gmail.com, netdev@vger.kernel.org, yoshfuji@linux-ipv6.org,
+        jmorris@namei.org, pekkas@netcore.fi, linux-kernel@vger.kernel.org,
+        greearb@candelatech.com
+Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120623205546.GA15964@ms2.inr.ac.ru>
+References: <20120622.170237.1504103690155447356.davem@davemloft.net>
+	<1340429851.4604.11942.camel@edumazet-glaptop>
+	<20120623205546.GA15964@ms2.inr.ac.ru>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2012 11:00 PM, Daniel Santos wrote:
-> Theory of Operation
-> ===================
-> Historically, genericity in C meant function pointers, the overhead of a
-> function call and the inability of the compiler to optimize code across
-> the function call boundary.  GCC has been getting better and better at
-> optimization and determining when a value is a compile-time constant and
-> compiling it out.  As of gcc 4.6, it has finally reached a point where
-> it's possible to have generic search & insert cores that optimize
-> exactly as well as if they were hand-coded. (see also gcc man page:
-> -findirect-inlining)
+From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Date: Sun, 24 Jun 2012 00:55:46 +0400
 
-For those of us who stopped upgrading gcc when it went to a non-open
-license, and the people trying to escape to llvm/pcc/open64/tcc/qcc/etc
-and build the kernel with that, this will simply be "less optimized"
-rather than "you're SOL, hail stallman"?
+> IPv6 routing table has a capital management drawback: core policy
+> rules are mixed with dynamic cache and addrconf routes in one
+> structure.  (BTW it is one of reasons why I did not want to
+> integrate routing cache to fib for IPv4)
 
-> Layer 2: Type-Safety
-> --------------------
-> In order to achieve type-safety of a generic interface in C, we must
-> delve deep into the darkened Swamps of The Preprocessor and confront the
-> Prince of Darkness himself: Big Ugly Macro.  To be fair, there is an
-> alternative solution (discussed in History & Design Goals), the
-> so-called "x-macro" or "supermacro" where you #define some pre-processor
-> values and include an unguarded header file.  With 17 parameters, I
-> choose this solution for its ease of use and brevity, but it's an area
-> worth debate.
+Yes, and this causes other problems too.  Recently I had to make the
+dst cache not count pure ipv6 routes otherwise cache size limited how
+many actual routes administrator could add.
 
-Because this is just _filling_ me with confidence about portability and
-c99 compliance.
+I would like to eventually make ipv4 and ipv6 more similar rather than
+more different.  BTW, decision to use different host models (weak vs.
+strong) in the two stacks was another idiotic move which makes
+consolidation and code auditing harder.
 
-(Or I suppose C11!!one! compliance. The new thing that puts asserts in
-the base language and makes u8 a keyword since _that_ won't break
-existing code and putting utf8 string constants within quotes wasn't
-previously possible.)
+I think once my long work to kill the ipv4 routing cache is complete
+and successful we can model ipv6 after the results.
 
-I'm not saying the standard's perfect, I'm saying a web page that ties
-itself to mozilla at the expense of working on firefox, let alone
-chrome, might be a bit short-sighted these days. XFree86 begat x.org,
-OpenOffice begat libre, etc. The FSF went nuts again and this time
-around EGCS is called LLVM, so talking about gcc 4.6-only features
-thrills some of us less than you might expect.
+Major blockers are in two areas, reliance upon rt->rt_dst and...
+performance :-)
 
-I suppose sparse has to be able to cope with this, so that's something...
+Main reliance upon rt->rt_dst are:
 
-> To avoid needing multiple versions of the macro, we use a paradigm
+1) Neighbours, which I plan to move to a model where lookups are
+   done on demand using RCU and lack of refcounts.
 
-Indeed.
+   There are a few stragglers in infiniband and elsewhere that still
+   want to get a neighbour from a dst and I haven't converted over to
+   a lookup-on-demand model.  I'm slowly working through those but it
+   is painful and thankless work.
 
-I still have trouble remembering how trampolines work when I wander away
-for a while. Oh well...
+   It also involved trying to figure out reliable replacements for
+   magic tests like:
 
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+	if (!dst_get_neighbour_noref_raw(&rt->dst) && !(rt->rt6i_flags & RTF_NONEXTHOP))
+
+   in ipv6.  Really, the set of ipv6 dsts which have a neighbour
+   pre-attached is non-trivial to describe via other means.
+
+   dst_confirm() is left, which I'll handle by setting a "neigh
+   confirm pending bit", and next packet output when we have the neigh
+   looked up we'll update it's state and clear the bit in the dst.  Or
+   something like this.  Maybe a u8 or an int instead of a flag so we
+   don't need atomic ops.
+
+   Divorcing neigh from dst can have another huge benefit, no more
+   neighbour table overflow because small prefixed route for very
+   active subnets with improperly adjusted neighbour cache sizing.
+   We'll have more freedom to toss neighs because they'll be largely
+   ref-less unlike now where every route to external place holds onto
+   neigh.
+
+2) Metrics, which really must be done differently.
+
+   Currently the scheme I have in mind is:
+
+   a) Pure TCP metrics move into RCU ref-count-free table and are
+      accessed on-demand.  When TCP connection starts up, TCP fetches
+      metrics block from table.  When TCP connection closes, TCP
+      pushes new metrics values into table.
+
+   b) PMTU and redirect information is moved back into route.
+
+      We clone new routes in FIB trie when PMTU or redirects are
+      received.
+
+   Metric table will be rooted in FIB table like inetpeer is now.
+
+   Inetpeer will become nearly orphan once more, only used for IP ID
+   generation and IPv4 fragment ID wrap detection.
+
+Then we have no more need for rt->rt_dst to point to a specific IP
+address once the routing cache is removed.  It means we can use
+routes constructed completely inside of FIB trie entries.
+
+Next is worse area, performance.  I can easily make output route
+lookups fast without the routing cache, but input... mama mia!
+
+Problems are two-fold:
+
+1) Separation of local and main table, I plan to combine them.  Well,
+   this applies to output and input routes.
+
+   This was really a terrible design decision.  Only the most obscure
+   critters take advantage of this separation, yet everyone pays the
+   price.  What's more their goals can be achieved by other means.
+
+   It means that every fib_lookup() is essentially two FIB trie
+   traversals instead of just one.
+
+2) fib_validate_source(), really it is the most painful monster and
+   should never have been put into the FIB.  It is really a netfilter
+   service, at best.
+
+   It means that, for forwarding global routes, we currently make 4
+   FIB trie traversals.  FOUR.  So no matter how fast Robert Olsson
+   made fib_trie, it still needs to be consulted 4 times.
+
+   I've tried to come up with algorithms that do this validation
+   cheaply.  Especially for default typical configuration where this
+   kind of check is especially stupid and pointless.  I have not had
+   any major breakthroughs.
+
+   For a workstation or typical one-interface server, it we eliminate
+   loopback anomalies earlier in the path, it can be a simple check I
+   suppose.
+
+   I plan to facilitate this also by making non-unicast specific
+   destination determination on-demand.  Then there is class ID
+   determination, another huge hardship on everyone created by a
+   feature with a tiny class of users.
+
+Anyways, that is brain dump.
