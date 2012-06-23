@@ -1,63 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab2FWUkL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 16:40:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58696 "EHLO mx1.redhat.com"
+	id S1755824Ab2FWUqX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 16:46:23 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:35351 "EHLO ra.se.axis.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754600Ab2FWUkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 16:40:09 -0400
-Date: Sat, 23 Jun 2012 22:38:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: deferring __fput()
-Message-ID: <20120623203800.GA10306@redhat.com>
-References: <1340369098.2464.20.camel@falcor> <20120623092049.GH14083@ZenIV.linux.org.uk> <20120623194505.GI14083@ZenIV.linux.org.uk>
+	id S1752508Ab2FWUqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 16:46:22 -0400
+Date: Sat, 23 Jun 2012 22:46:18 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mikael Starvik <starvik@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cris: odd include in arch/cris/boot/compressed/misc.c
+Message-ID: <20120623204618.GA9348@axis.com>
+References: <1340413223.1773.146.camel@x61.thuisdomein>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120623194505.GI14083@ZenIV.linux.org.uk>
+In-Reply-To: <1340413223.1773.146.camel@x61.thuisdomein>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23, Al Viro wrote:
+On Sat, Jun 23, 2012 at 03:00:23AM +0200, Paul Bolle wrote:
+> Mikael, Jesper,
+
+Hi!
+
+> 0) Currently line 123 of arch/cris/boot/compressed/misc.c reads:
+>     #include "../../../../../lib/inflate.c"
+> 
+> git blame tells me that line has read that way since commit
+> 51533b615e605d86154ec1b4e585c8ca1b0b15b7 ("[...] CRIS update: new
+> subarchitecture v32"), which predates release v2.6.13.
+> 
+> 1) When I try to jump to lib/inflate.c via that line in my $EDITOR, I
+> see an error and nothing happens. When I check the depth, in
+> directories, at which misc.c lives, I can't blame my $EDITOR.
 >
-> BTW, I really wonder why do we need to have that void *data in task_work; we can
-> always embed the sucker into a bigger struct (if nothing else, task_work +
-> void *data) and get to it via container_of().  And in quite a few cases we don't
-> want that data thing at all.
+> 2) And indeed, when I edit that line to read:
+>     #include "../../../../lib/inflate.c"
+> 
+> my $EDITOR does correctly jump to lib/inflate.c. 
+> 
+> 3) This can be trivially fixed, and I'm happy to submit that trivial
+> patch. But I do wonder what the compilers for cris know that my $EDITOR
+> and x86 compiler doesn't. (I don't have a compiler for cris at hand.)
+> Because, if I edit the comparable file for x86 to have a similar include
+> look that way and try to build a kernel I get:
+>
+> [...]
+>
+>   CC      arch/x86/boot/compressed/misc.o
+> arch/x86/boot/compressed/misc.c:131:51: fatal error: ../../../../../lib/decompress_inflate.c: No such file or directory
+> compilation terminated.
+> make[2]: *** [arch/x86/boot/compressed/misc.o] Error 1
+> make[1]: *** [arch/x86/boot/compressed/vmlinux] Error 2
+> make: *** [bzImage] Error 2
+> 
+> 4) What's going on here?
 
-Yes, it is not strictly needed. From the changelog:
+Heh, you're quite right, the path has been the same for a long time,
+and the file has moved into this directory from one directory deeper,
+so logically, we should get a compile error here.
 
-	"struct task_work" can be embedded in another struct, still it has "void
-	*data" to handle the most common/simple case.
+However, the CRIS-port has a bunch of include paths, at different depths,
+and it seems that one of them is used to pick up the relative path to
+"lib/inflate.c".
 
-Namely, for keyctl_session_to_parent(). Probably it has ->data just because
-I failed to invent the good name for the struct with task_work + cred.
+I'll add the following to the CRIS-tree:
 
-> Moreover, the reasons to use hlist_head instead of
-> a single forward pointer are very thin on the ground:
 
-Oh, yes, there is no any reason. Except the code looks a bit simpler.
+Correct include path for "lib/inflate.c"
 
-> Oleg, do you see any reasons why trimming it down to forward pointer + callback
-> pointer wouldn't work?
+The include path was one too deep to pick up the file from ".",
+but some other include path obviously matched so there was no
+compile error.
 
-OK. will do.
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+---
+ arch/cris/boot/compressed/misc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Matter of fact, it would become identical to struct rcu_head
-> after that...
+diff --git a/arch/cris/boot/compressed/misc.c b/arch/cris/boot/compressed/misc.c
+index 548d886..5833d9f 100644
+--- a/arch/cris/boot/compressed/misc.c
++++ b/arch/cris/boot/compressed/misc.c
+@@ -120,7 +120,7 @@ extern int _end;
+ static long free_mem_ptr = (long)&_end;
+ static long free_mem_end_ptr;
+ 
+-#include "../../../../../lib/inflate.c"
++#include "../../../../lib/inflate.c"
+ 
+ /* decompressor info and error messages to serial console */
+ 
+-- 
+1.7.10
 
-This is not clear to me... Why this is good?
 
-I understand that sizeof(task_work) == sizeof(rcu_head) would be
-nice, probably you meant just this?
+> Paul Bolle
 
-Oleg.
-
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
