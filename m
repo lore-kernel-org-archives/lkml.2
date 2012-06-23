@@ -1,86 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab2FWErr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 00:47:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60568 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab2FWErq (ORCPT
+	id S1757286Ab2FWFhj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 01:37:39 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36223 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab2FWFhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 00:47:46 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE549E8.2050905@jp.fujitsu.com>
-Date: Sat, 23 Jun 2012 13:45:28 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: John Stultz <john.stultz@linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: RFC:  Easy-Reclaimable LRU list
-References: <4FE012CD.6010605@kernel.org> <4FE37434.808@linaro.org> <4FE41752.8050305@kernel.org>
-In-Reply-To: <4FE41752.8050305@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 23 Jun 2012 01:37:37 -0400
+Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: johunt@akamai.com, kaber@trash.net, dbavatar@gmail.com,
+        netdev@vger.kernel.org, yoshfuji@linux-ipv6.org, jmorris@namei.org,
+        pekkas@netcore.fi, kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org,
+        Ben Greear <greearb@candelatech.com>
+In-Reply-To: <20120622.170237.1504103690155447356.davem@davemloft.net>
+References: <1340353746.4604.9502.camel@edumazet-glaptop>
+	 <4FE476A6.1050209@akamai.com>
+	 <1340388785.4604.11442.camel@edumazet-glaptop>
+	 <20120622.170237.1504103690155447356.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 23 Jun 2012 07:37:31 +0200
+Message-ID: <1340429851.4604.11942.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/22 15:57), Minchan Kim wrote:
-> Hi John,
->
-> On 06/22/2012 04:21 AM, John Stultz wrote:
->
->> On 06/18/2012 10:49 PM, Minchan Kim wrote:
->>> Hi everybody!
->>>
->>> Recently, there are some efforts to handle system memory pressure.
->>>
->>> 1) low memory notification - [1]
->>> 2) fallocate(VOLATILE) - [2]
->>> 3) fadvise(NOREUSE) - [3]
->>>
->>> For them, I would like to add new LRU list, aka "Ereclaimable" which
->>> is opposite of "unevictable".
->>> Reclaimable LRU list includes _easy_ reclaimable pages.
->>> For example, easy reclaimable pages are following as.
->>>
->>> 1. invalidated but remained LRU list.
->>> 2. pageout pages for reclaim(PG_reclaim pages)
->>> 3. fadvise(NOREUSE)
->>> 4. fallocate(VOLATILE)
->>>
->>> Their pages shouldn't stir normal LRU list and compaction might not
->>> migrate them, even.
->>> Reclaimer can reclaim Ereclaimable pages before normal lru list and
->>> will avoid unnecessary
->>> swapout in anon pages in easy-reclaimable LRU list.
->>
->> I was hoping there would be further comment on this by more core VM
->> devs, but so far things have been quiet (is everyone on vacation?).
->
->
-> At least, there are no dissent comment until now.
-> Let be a positive. :)
-
-I think this is interesting approach. Major concern is how to guarantee EReclaimable
-pages are really EReclaimable...Do you have any idea ? madviced pages are really
-EReclaimable ?
-
-A (very) small concern is will you use one more page-flags for this ? ;)
-
-Thanks,
--Kame
+From: Eric Dumazet <edumazet@google.com>
 
 
+> 1) Patrick McHardy has been inactive for a while, so do not expect
+>    any insight from him.
+> 
+> 2) Ben Greear isn't even on the CC: list of this discussion yet he
+>    appears to be the person who reproduced the crash way back then
+>    and is listed in the Tested-by tag of the commit.
+> 
+>    As a result we aren't likely to get any insight from the one person
+>    who actually could hit the crash.
+> 
+> I'm inclined to just revert simply because we have people active who
+> can reproduce regressions introduced by this change and nobody can
+> understand why the change is even necessary.
 
+Well, except that :
+
+I spent 3 hours trying to understand Alexey code and failed.
+
+All other /proc/net files don't have a such sophisticated walkers aware
+mechanism (easily DOSable by the way, if some guy opens 10.000 handles
+and suspend in the middle the dumps).
+
+cat /proc/net/tcp for example can display same socket twice or miss a
+socket, because a 'suspend/restart' remembers offsets/counts in a hash
+chain, not a pointer to 'next socket'
+
+The fix I submitted is a real one, based on my analysis and tests.
+ 
+Patrick patch was restarting the dump at the root of the tree, and
+setting skip = count was doing nothing at all, since all entries were
+dumped again.
+
+This is more a stable candidate fix.
+
+If someones smarter than me can find the real bug, then we certainly can
+revert Patrick patch ?
+
+[PATCH] ipv6: fib: fix fib dump restart
+
+Commit 2bec5a369ee79576a3 (ipv6: fib: fix crash when changing large fib
+while dumping it) introduced ability to restart the dump at tree root,
+but failed to skip correctly a count of already dumped entries. Code
+didn't match Patrick intent.
+
+We must skip exactly the number of already dumped entries.
+
+Note that like other /proc/net files or netlink producers, we could
+still dump some duplicates entries.
+
+Reported-by: Debabrata Banerjee <dbavatar@gmail.com>
+Reported-by: Josh Hunt <johunt@akamai.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Ben Greear <greearb@candelatech.com>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+---
+ net/ipv6/ip6_fib.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
+index 74c21b9..6083276 100644
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -1349,8 +1349,8 @@ static int fib6_walk_continue(struct fib6_walker_t *w)
+ 			if (w->leaf && fn->fn_flags & RTN_RTINFO) {
+ 				int err;
+ 
+-				if (w->count < w->skip) {
+-					w->count++;
++				if (w->skip) {
++					w->skip--;
+ 					continue;
+ 				}
+ 
 
 
