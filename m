@@ -1,110 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286Ab2FWFhj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 01:37:39 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36223 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab2FWFhh (ORCPT
+	id S1755545Ab2FWFnL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 01:43:11 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50548 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab2FWFnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 01:37:37 -0400
-Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: johunt@akamai.com, kaber@trash.net, dbavatar@gmail.com,
-        netdev@vger.kernel.org, yoshfuji@linux-ipv6.org, jmorris@namei.org,
-        pekkas@netcore.fi, kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org,
-        Ben Greear <greearb@candelatech.com>
-In-Reply-To: <20120622.170237.1504103690155447356.davem@davemloft.net>
-References: <1340353746.4604.9502.camel@edumazet-glaptop>
-	 <4FE476A6.1050209@akamai.com>
-	 <1340388785.4604.11442.camel@edumazet-glaptop>
-	 <20120622.170237.1504103690155447356.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 23 Jun 2012 07:37:31 +0200
-Message-ID: <1340429851.4604.11942.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 23 Jun 2012 01:43:09 -0400
+Message-ID: <4FE55768.3040407@wybc.com>
+Date: Sat, 23 Jun 2012 01:43:04 -0400
+From: Sherwin Soltani <sherwin@wybc.com>
+User-Agent: Mozilla/5.0 (compatible; MSIE5.5; Windows 98)
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: swetland@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: android: logger.c: fixed some printk macros
+References: <1340343886-311-1-git-send-email-sherwin@wybc.com> <20120623040329.GA14690@kroah.com>
+In-Reply-To: <20120623040329.GA14690@kroah.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
-
-
-> 1) Patrick McHardy has been inactive for a while, so do not expect
->    any insight from him.
+On 06/23/2012 12:03 AM, Greg KH wrote:
+> This patch does not apply, did you make it against Linus's tree or
+> linux-next?  You need to always work off of linux-next please.
 > 
-> 2) Ben Greear isn't even on the CC: list of this discussion yet he
->    appears to be the person who reproduced the crash way back then
->    and is listed in the Tested-by tag of the commit.
+> thanks,
 > 
->    As a result we aren't likely to get any insight from the one person
->    who actually could hit the crash.
-> 
-> I'm inclined to just revert simply because we have people active who
-> can reproduce regressions introduced by this change and nobody can
-> understand why the change is even necessary.
+> greg k-h
 
-Well, except that :
+Sorry, my mistake. I'll rewrite the patch working off of linux-next and
+resubmit.
 
-I spent 3 hours trying to understand Alexey code and failed.
-
-All other /proc/net files don't have a such sophisticated walkers aware
-mechanism (easily DOSable by the way, if some guy opens 10.000 handles
-and suspend in the middle the dumps).
-
-cat /proc/net/tcp for example can display same socket twice or miss a
-socket, because a 'suspend/restart' remembers offsets/counts in a hash
-chain, not a pointer to 'next socket'
-
-The fix I submitted is a real one, based on my analysis and tests.
- 
-Patrick patch was restarting the dump at the root of the tree, and
-setting skip = count was doing nothing at all, since all entries were
-dumped again.
-
-This is more a stable candidate fix.
-
-If someones smarter than me can find the real bug, then we certainly can
-revert Patrick patch ?
-
-[PATCH] ipv6: fib: fix fib dump restart
-
-Commit 2bec5a369ee79576a3 (ipv6: fib: fix crash when changing large fib
-while dumping it) introduced ability to restart the dump at tree root,
-but failed to skip correctly a count of already dumped entries. Code
-didn't match Patrick intent.
-
-We must skip exactly the number of already dumped entries.
-
-Note that like other /proc/net files or netlink producers, we could
-still dump some duplicates entries.
-
-Reported-by: Debabrata Banerjee <dbavatar@gmail.com>
-Reported-by: Josh Hunt <johunt@akamai.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Ben Greear <greearb@candelatech.com>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
----
- net/ipv6/ip6_fib.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
-index 74c21b9..6083276 100644
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -1349,8 +1349,8 @@ static int fib6_walk_continue(struct fib6_walker_t *w)
- 			if (w->leaf && fn->fn_flags & RTN_RTINFO) {
- 				int err;
- 
--				if (w->count < w->skip) {
--					w->count++;
-+				if (w->skip) {
-+					w->skip--;
- 					continue;
- 				}
- 
-
-
+Sherwin
