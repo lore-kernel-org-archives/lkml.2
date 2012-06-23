@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762904Ab2FWAZP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 20:25:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46013 "EHLO
+	id S933217Ab2FWAZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 20:25:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57830 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090Ab2FWAYY (ORCPT
+	with ESMTP id S1756724Ab2FWAYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Jun 2012 20:24:24 -0400
 From: David Daney <ddaney.cavm@gmail.com>
@@ -14,9 +14,9 @@ To: Grant Likely <grant.likely@secretlab.ca>,
         "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
         afleming@gmail.com, David Daney <david.daney@cavium.com>
-Subject: [PATCH 3/4] netdev/phy/of: Add more methods for binding PHY devices to drivers.
-Date: Fri, 22 Jun 2012 17:24:15 -0700
-Message-Id: <1340411056-18988-4-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 2/4] netdev/phy/of: Handle IEEE802.3 clause 45 Ethernet PHYs in of_mdiobus_register()
+Date: Fri, 22 Jun 2012 17:24:14 -0700
+Message-Id: <1340411056-18988-3-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1340411056-18988-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1340411056-18988-1-git-send-email-ddaney.cavm@gmail.com>
@@ -26,71 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Allow PHY drivers to supply their own device matching function
-(match_phy_device()), or to be matched OF compatible properties.
+Define two new "compatible" values for Ethernet
+PHYs. "ethernet-phy-ieee802.3-c22" and "ethernet-phy-ieee802.3-c45"
+are used to indicate a PHY uses the corresponding protocol.
 
-PHYs following IEEE802.3 clause 45 have more than one device
-identifier constants, which breaks the default device matching code.
-Other 10G PHYs don't follow the standard manufacturer/device
-identifier register layout standards, but they do use the standard
-MDIO bus protocols for register access.  Both of these require
-adjustments to the PHY driver to device matching code.
+If a PHY is "compatible" with "ethernet-phy-ieee802.3-c45", we
+indicate this so that get_phy_device() can properly probe the device.
 
-If the there is an of_node associated with such a PHY, we can match it
-to its driver using the "compatible" properties, just as we do with
-certain platform devices.  If the "compatible" property match fails,
-first check if there is a driver supplied matching function, and if
-not fall back to the existing identifier matching rules.
+If get_phy_device() fails, it was probably due to failing the probe of
+the PHY identifier registers.  Since we have the device tree telling
+us the PHY exists, go ahead and add it anyhow with a phy_id of zero.
+There may be a driver match based on the "compatible" property.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- drivers/net/phy/mdio_bus.c |    7 +++++++
- include/linux/phy.h        |    7 +++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+ Documentation/devicetree/bindings/net/phy.txt |   12 +++++++++++-
+ drivers/of/of_mdio.c                          |   14 +++++++++++---
+ 2 files changed, 22 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index 31470b0..9a283b4 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -25,6 +25,7 @@
- #include <linux/init.h>
- #include <linux/delay.h>
- #include <linux/device.h>
-+#include <linux/of_device.h>
- #include <linux/netdevice.h>
- #include <linux/etherdevice.h>
- #include <linux/skbuff.h>
-@@ -308,6 +309,12 @@ static int mdio_bus_match(struct device *dev, struct device_driver *drv)
- 	struct phy_device *phydev = to_phy_device(dev);
- 	struct phy_driver *phydrv = to_phy_driver(drv);
+diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
+index bb8c742..7cd18fb 100644
+--- a/Documentation/devicetree/bindings/net/phy.txt
++++ b/Documentation/devicetree/bindings/net/phy.txt
+@@ -14,10 +14,20 @@ Required properties:
+  - linux,phandle :  phandle for this node; likely referenced by an
+    ethernet controller node.
  
-+	if (of_driver_match_device(dev, drv))
-+		return 1;
++Optional Properties:
 +
-+	if (phydrv->match_phy_device)
-+		return phydrv->match_phy_device(phydev);
++- compatible: Compatible list, may contain
++  "ethernet-phy-ieee802.3-c22" or "ethernet-phy-ieee802.3-c45" for
++  PHYs that implement IEEE802.3 clause 22 or IEEE802.3 clause 45
++  specifications. If neither of these are specified, the default is to
++  assume clause 22. The compatible list may also contain other
++  elements.
 +
- 	return ((phydrv->phy_id & phydrv->phy_id_mask) ==
- 		(phydev->phy_id & phydrv->phy_id_mask));
- }
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 92d53ee..bbd9e7f 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -434,6 +434,13 @@ struct phy_driver {
- 	/* Handles ethtool queries for hardware time stamping. */
- 	int (*ts_info)(struct phy_device *phydev, struct ethtool_ts_info *ti);
+ Example:
  
-+	/*
-+	 * Returns true if this is a suitable driver for the given
-+	 * phydev.  If NULL, matching is based on phy_id and
-+	 * phy_id_mask.
-+	 */
-+	int (*match_phy_device)(struct phy_device *phydev);
-+
- 	/* Handles SIOCSHWTSTAMP ioctl for hardware time stamping. */
- 	int  (*hwtstamp)(struct phy_device *phydev, struct ifreq *ifr);
+ ethernet-phy@0 {
+-	linux,phandle = <2452000>
++	compatible = "ethernet-phy-ieee802.3-c22";
++	linux,phandle = <2452000>;
+ 	interrupt-parent = <40000>;
+ 	interrupts = <35 1>;
+ 	reg = <0>;
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 2574abd..0f08aaf 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -79,11 +79,19 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 				mdio->irq[addr] = PHY_POLL;
+ 		}
  
++		if (of_device_is_compatible(child,
++					    "ethernet-phy-ieee802.3-c45"))
++			addr |= MII_ADDR_C45;
++
+ 		phy = get_phy_device(mdio, addr);
+ 		if (!phy || IS_ERR(phy)) {
+-			dev_err(&mdio->dev, "error probing PHY at address %i\n",
+-				addr);
+-			continue;
++			phy = phy_device_create(mdio, addr, 0, NULL);
++			if (!phy || IS_ERR(phy)) {
++				dev_err(&mdio->dev,
++					"error creating PHY at address %i\n",
++					addr);
++				continue;
++			}
+ 		}
+ 
+ 		/* Associate the OF node with the device structure so it
 -- 
 1.7.2.3
 
