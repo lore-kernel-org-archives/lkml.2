@@ -1,63 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249Ab2FWAvz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 20:51:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1198 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933196Ab2FWAvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 20:51:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="183913974"
-Message-ID: <4FE51325.8090408@linux.intel.com>
-Date: Fri, 22 Jun 2012 17:51:49 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S933268Ab2FWAxS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 20:53:18 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57098 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933197Ab2FWAxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 20:53:17 -0400
+From: Sadasivan Shaiju <sshaiju@mvista.com>
+References: <797b2bac7e6fb198ea25433e302856b9@mail.gmail.com> <20120622142936.a6e6b4d8.akpm@linux-foundation.org>
+In-Reply-To: <20120622142936.a6e6b4d8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Hagen Paul Pfeifer <hagen@jauu.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [GIT PULL] perf fixes
-References: <20120622133650.GA24136@gmail.com>  <CA+55aFySaZ4huXgPM0yGPezAhnE9zT81tucC9WnDs5Ps+7+hGA@mail.gmail.com>  <20120622183827.GA8014@virgo.local>  <CA+55aFzpNtLSQvcOOut--2UkkMyqSb9e0_VO3JAxvZRTv7YT1g@mail.gmail.com>  <20120622190632.GB8014@virgo.local>  <1340394896.27036.258.camel@gandalf.stny.rr.com>  <86448d73-2e19-416f-8104-ce72aa5d76eb@email.android.com> <1340407123.27036.265.camel@gandalf.stny.rr.com>
-In-Reply-To: <1340407123.27036.265.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQJQg4vj5B9HX+tRPErgvKS2U5x0eQKlOHwYlet/MFA=
+Date: Fri, 22 Jun 2012 17:53:14 -0700
+Message-ID: <c0c9b98df2e80bfb63be37ee9f1be7b4@mail.gmail.com>
+Subject: RE: crash in filesytem during reboot . (and proposed patch)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/22/2012 4:18 PM, Steven Rostedt wrote:
-> How so? It's not a C function call (like the -finstrument-functions
-> produces). It's an assembly function call. The only differences between
-> having ftrace enabled and ftrace disabled with -mfentry is that you get
-> a 5 byte nop at the start of each traceable function. Sure, it might put
-> a little pressure on the icache, but from the benchmarks I've run, the
-> impact has all been within the noise.
-> 
-> I've been told that it doesn't even hurt the pipeline. But I've Cc'd hpa
-> and Arjan for their comments. How much impact does a 5 byte nop at the
-> start of each function really have on the normal operations of the
-> kernel?
-> 
+Hi Andrew,
 
-if it's truely an official nop, it will take decoder bandwidth obviously
-(which can decode 3 to 4 instructions per cycle, depending on the
-brand/model of CPU and the total size in bytes of these instructions).
-likewise, at the end of the out of order pipeline, NOPs may take a
-retirement slot (again 3 to 4 instructions per cycle)
+Please see inline .
+-----Original Message-----
+From: Andrew Morton [mailto:akpm@linux-foundation.org]
+Sent: Friday, June 22, 2012 2:30 PM
+To: Sadasivan Shaiju
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: crash in filesytem during reboot . (and proposed patch)
 
-icache is there as well, and if the NOP actually changes cpu flags (some
-of the less fortunate ones do) that can create a false data dependency.
+On Fri, 15 Jun 2012 11:12:09 -0700
+Sadasivan Shaiju <sshaiju@mvista.com> wrote:
+
+> Hi
+>
+>
+>
+
+Your email is quadruple-spaced.  Please, fix that.
+
+Sure I will fix this .
+
+> I  am  getting  the  following  crashes during  a  reboot of   the
+system
+> .  It  looks  like  a  race  condition   during  unmount .
+>
+> <4>Call Trace:
+> <4>[] clear_inode+0x28/0xe8
+> <4>[] generic_drop_inode+0x3c/0xa8
+> <4>[] d_kill+0x4c/0x78
+> <4>[] __shrink_dcache_sb+0x258/0x360
+> <4>[] shrink_dcache_parent+0x140/0x190 <4>[]
+> proc_flush_task+0xac/0x2e8 <4>[] release_task+0x80/0x4c0 <4>[]
+> wait_consider_task+0x608/0xa80 <4>[] do_wait+0x10c/0x2b8 <4>[]
+> SyS_wait4+0x88/0x120 <4>[] compat_sys_wait4+0xc8/0xd0 <4>[]
+> handle_sysn32+0x44/0x84
+>
+> Call Trace:
+> [] file_ra_state_init+0x0/0x20
+> [] __dentry_open+0x26c/0x3d0
+> [] do_filp_open+0x70c/0xbc8
+> [] do_sys_open+0x78/0x1e0
+> [] handle_sysn32+0x44/0x84
+>
+> Call Trace:
+> [<ffffffff812ae3e4>] iput+0x3c/0x88
+> [<ffffffff812aaa84>] d_kill+0x4c/0x78
+> [<ffffffff812aad08>] __shrink_dcache_sb+0x258/0x360
+> [<ffffffff812ab300>] shrink_dcache_parent+0x140/0x190
+> [<ffffffff812eea14>] proc_flush_task+0xac/0x2e8 [<ffffffff811e6538>]
+> release_task+0x80/0x4c0 [<ffffffff811e80c8>] do_exit+0x6f8/0x908
+> [<ffffffff8121dee8>] unregister_module_notifier+0x0/0x10
+>
+> Call Trace:
+> [<ffffffff812ae3e4>] iput+0x3c/0x88
+> [<ffffffff812aaa84>] d_kill+0x4c/0x78
+> [<ffffffff812ab6b8>] dput+0x120/0x220
+> [<ffffffff812a0f1c>] do_lookup+0xdc/0x210 [<ffffffff812a33e8>]
+> __link_path_walk+0x910/0x1408 [<ffffffff812a4194>]
+> path_walk+0x64/0x108 [<ffffffff812a4350>] do_path_lookup+0x60/0x68
+> [<ffffffff812a519c>]
+> do_filp_open+0xdc/0xbc8 [<ffffffff81293768>] do_sys_open+0x78/0x1e0
+> [<ffffffff81103844>] handle_sysn32+0x44/0x84
+>
+> ...
+>
+> I  am  thinking  of  putting  the  following  fix  in
+>  shrink_dcache_parent() .   Please  let  me  know  is  there  any
+problem
+> with  this  fix .
+>
+> ...
+>
+> --- linux-2.6.32.orig/fs/dcache.c       2012-05-30 15:59:18.000000000
+-0700
+> +++ linux-2.6.32/fs/dcache.c    2012-06-11 17:10:33.000000000 -0700
+> @@ -881,8 +881,14 @@
+>         struct super_block *sb = parent->d_sb;
+>         int found;
+>
+> -       while ((found = select_parent(parent)) != 0)
+> -               __shrink_dcache_sb(sb, &found, 0);
+> +       while ((found = select_parent(parent)) != 0) {
+> +               if (down_read_trylock(&sb->s_umount)) {
+> +                        if ((sb->s_root != NULL)) {
+> +                               __shrink_dcache_sb(sb, &found, 0);
+> +                }
+> +                  up_read(&sb->s_umount);
+> +             }
+> +        }
+>  }
+
+Please fully describe the race which you believe you have found.  What
+races against what?
+
+The race is between generic_shutdown_super()  and  __shrink_dcache_sb  ()
+.  Under high memory pressure one
+Of our user process crashed  and the  parent was trying to do a clean up
+with the following  stack flow
+
+<4>[] clear_inode+0x28/0xe8
+
+<4>[] generic_drop_inode+0x3c/0xa8
+
+<4>[] d_kill+0x4c/0x78
+
+<4>[] __shrink_dcache_sb+0x258/0x360
+
+<4>[] shrink_dcache_parent+0x140/0x190
+
+<4>[] proc_flush_task+0xac/0x2e8
+
+<4>[] release_task+0x80/0x4c0
+
+<4>[] wait_consider_task+0x608/0xa80
+
+<4>[] do_wait+0x10c/0x2b8
+
+<4>[] SyS_wait4+0x88/0x120
+
+<4>[] compat_sys_wait4+0xc8/0xd0
+
+<4>[] handle_sysn32+0x44/0x84
+
+During that time the system get rebooted and unmounting starts .
+Meanwhile the parent process is trying to clean up
+The child' dentry's  and clear_inode  will reference to a stale inode and
+it will crash .  So I try to grab the s_umount lock
+So that __shrink_dcache_sb() won't be called during unmounts .  This
+prevents accessing the stale inode in clear_inode .
+
+A similar race condition  is  already  prevented in prune_dcache()
+(between generic_shutdown_super ()and  __shrink_dcache_sb () ) .
 
 
-I would also worry about the compiler being able to inline a function
-containing one of these, but that's a compiler thing, not a CPU type of
-thing.
+Please also confirm that the bug is still present in current kernels -
+2.6.32 is rather old.
 
+I am not sure whether the bug is still present in current kernels.
+But I do see some rcu locks in this  area in the current kernel .
+
+We are moving to 3.4  kernel . But the current product is still  based on
+2.6.32 .
+So we need to fix this issue in 2.6.32 .
+
+
+Regards,
+Shaiju.
+
+Thanks.
