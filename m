@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab2FWVLe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 17:11:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50298 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755725Ab2FWVLd (ORCPT
+	id S1756059Ab2FWVM2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 17:12:28 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36427 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755725Ab2FWVLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 17:11:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Cong Wang <amwang@redhat.com>
-Subject: Re: [PATCH 00/12] kmap_atomic cleanup for 3.6
-Date: Sat, 23 Jun 2012 21:11:25 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-References: <1340445863-16111-1-git-send-email-amwang@redhat.com>
-In-Reply-To: <1340445863-16111-1-git-send-email-amwang@redhat.com>
+	Sat, 23 Jun 2012 17:11:43 -0400
+Date: Sat, 23 Jun 2012 22:11:39 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: deferring __fput()
+Message-ID: <20120623211139.GL14083@ZenIV.linux.org.uk>
+References: <1340369098.2464.20.camel@falcor>
+ <20120623092049.GH14083@ZenIV.linux.org.uk>
+ <20120623194505.GI14083@ZenIV.linux.org.uk>
+ <20120623203800.GA10306@redhat.com>
+ <20120623210141.GK14083@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206232111.25411.arnd@arndb.de>
-X-Provags-ID: V02:K0:FKuxp5DReIAdSfsxwoczTcbXflXqw0yiZTD+SurYZuB
- P/ZrVMkpA3ZTOPjR5V5aKgcrP4J1x8R0yPijKzQZWZmbzgm5/K
- yzpioNBxdk0p2C1grh6Y+PaPgR426C9XOPbdODvRG4VYAbP26y
- VTdlxgAccbYUNcZDHvE5R92itlDr7fXiPeIqViSXxD1nUPLoT1
- QRBb3dRuR+VJ4PLEttZjajK/hpp4BsmLslWA+71SI3tMymupyc
- /RmL2tLxwJraDqUVZMosGuexIJNFKAPBITQFhChPCQPFVOcmWb
- eJRB4vvOvuunLEXQCS0QVEgfqRno//wZVIaX9k/Bbme5pTsgBh
- gJI14kelCFQr7MWX/oPU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120623210141.GK14083@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 23 June 2012, Cong Wang wrote:
-> After few releases, it seems there are no more callers
-> using the deprecated form of kmap_atomic(), the one
-> with two parameters. So we can remove it now and remove
-> the KM_* definition except KM_TYPE_NR together.
+On Sat, Jun 23, 2012 at 10:01:41PM +0100, Al Viro wrote:
+> On Sat, Jun 23, 2012 at 10:38:00PM +0200, Oleg Nesterov wrote:
 > 
-> All the patches are available at:
+> > > Matter of fact, it would become identical to struct rcu_head
+> > > after that...
+> > 
+> > This is not clear to me... Why this is good?
 > 
->         git://github.com/congwang/linux.git #kmap_atomic
+> Occam's Razor.
 > 
+> > I understand that sizeof(task_work) == sizeof(rcu_head) would be
+> > nice, probably you meant just this?
+> 
+> More than that - the callback type is also the same (pointer to such
+> struct -> void).  IOW, they both look like two instances of the
+> same thing ("list of callbacks"), differing only in what and
+> when does calling.
 
-What is the significance of having an architecture-specific
-definition for KM_TYPE_NR now? Should that be replaced
-with a fixed value in include/linux/highmem.h so we can
-remove the asm/kmap_types.h files entirely?
-
-	Arnd
+BTW, scratch that "task_work + cred" - cred has rcu_head in it.
+So we can put a union in there and slap the trimmed task_work into 
+it.  Voila - there goes separate allocation and *any* need for ->data.
+It's just container_of(), in that case as well.
