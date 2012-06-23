@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2FWATL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Jun 2012 20:19:11 -0400
-Received: from mail.us.es ([193.147.175.20]:51137 "EHLO mail.us.es"
+	id S1756749Ab2FWAUo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Jun 2012 20:20:44 -0400
+Received: from mail.us.es ([193.147.175.20]:51193 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756664Ab2FWATI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Jun 2012 20:19:08 -0400
-Date: Sat, 23 Jun 2012 02:19:04 +0200
+	id S1756380Ab2FWAUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Jun 2012 20:20:43 -0400
+Date: Sat, 23 Jun 2012 02:20:35 +0200
 From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Jun 21 (netfilter)
-Message-ID: <20120623001904.GA21360@1984>
-References: <20120621161200.9f42414a528897bb016869e2@canb.auug.org.au>
- <4FE4AB02.9020100@xenotime.net>
+To: valdis.kletnieks@vt.edu
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: next-20120620 build error in netfilter
+Message-ID: <20120623002035.GB21360@1984>
+References: <32596.1340212473@turing-police.cc.vt.edu>
+ <20120620172801.GA9385@1984>
+ <55558.1340217472@turing-police.cc.vt.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FE4AB02.9020100@xenotime.net>
+In-Reply-To: <55558.1340217472@turing-police.cc.vt.edu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 10:27:30AM -0700, Randy Dunlap wrote:
-> On 06/20/2012 11:12 PM, Stephen Rothwell wrote:
+On Wed, Jun 20, 2012 at 02:37:52PM -0400, valdis.kletnieks@vt.edu wrote:
+> On Wed, 20 Jun 2012 19:28:01 +0200, Pablo Neira Ayuso said:
+> > On Wed, Jun 20, 2012 at 01:14:33PM -0400, Valdis Kletnieks wrote:
+> > > Today's linux-next fails to build with CONFIG_NF_NAT_NEEDED=y and CONFIG_NF_NAT=m
+> > >
+> > >   LD      init/built-in.o
+> > > net/built-in.o:(.data+0x4408): undefined reference to `nf_nat_tcp_seq_adjust'
+> > > make: *** [vmlinux] Error 1
+> >
+> > I guess you have NF_CT_NETLINK=y, right?
 > 
-> > Hi all,
-> > 
-> > Uploads to ra/geb.kernel.org are broken right now, so the tree will not
-> > be available until that is fixed and I have uploaded it.
-> > 
-> > News: All my builds are now done with gcc 4.6.3 and binutils 2.22.
-> > 
-> > Changes since 20120620:
+> Yes.
 > 
-> on x86_64:
-> 
-> net/netfilter/nf_conntrack_netlink.c:1644:9: error: implicit declaration of function 'ctnetlink_secctx_size'
-> net/netfilter/nf_conntrack_netlink.c:1652:9: error: implicit declaration of function 'ctnetlink_proto_size'
+> Temporary workaround was setting NF_NAT=n (I don't use NAT, I just usually
+> build all the netfilter modules as =m even if I don't use them, just to provide
+> build coverage and trip over stuff like this).
 
-I'll pass this patch to David to fix this issue:
+Probably NF_CT_NETLINK=m is a better workaround.
 
-http://1984.lsi.us.es/git/nf-next/commit/?id=8e36c4b5b673edc6081599b8bd461e062e4910f4
+Anyway, I've enqueued the following patch to fix this:
 
-thanks for the report Randy.
+http://1984.lsi.us.es/git/nf-next/commit/?id=d584a61a931e6cbfef0dd811c4ae0250ec5987f4
+
+So you can use your previous config.
+
+Thanks.
