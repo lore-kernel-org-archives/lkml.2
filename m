@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab2FXVwy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 17:52:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55767 "EHLO mx1.redhat.com"
+	id S1754319Ab2FXV7d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 17:59:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31634 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752908Ab2FXVww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 17:52:52 -0400
-Message-ID: <1340574767.5076.160.camel@bling.home>
+	id S1750811Ab2FXV7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 17:59:32 -0400
+Message-ID: <1340575167.5076.165.camel@bling.home>
 Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
 From: Alex Williamson <alex.williamson@redhat.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Date: Sun, 24 Jun 2012 15:52:47 -0600
-In-Reply-To: <20120624154555.GC2851@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Sun, 24 Jun 2012 15:59:27 -0600
+In-Reply-To: <20120624154938.GE2851@redhat.com>
 References: <20120622220040.9858.43665.stgit@bling.home>
-	 <20120622221559.9858.59593.stgit@bling.home>
-	 <20120624082856.GB1712@redhat.com> <1340549456.14120.45.camel@bling.home>
-	 <20120624154555.GC2851@redhat.com>
+	 <20120622221559.9858.59593.stgit@bling.home> <4FE6EC20.5030502@redhat.com>
+	 <1340551118.14120.66.camel@bling.home> <20120624154938.GE2851@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -25,99 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-06-24 at 18:45 +0300, Michael S. Tsirkin wrote:
-> On Sun, Jun 24, 2012 at 08:50:56AM -0600, Alex Williamson wrote:
-> > On Sun, 2012-06-24 at 11:28 +0300, Michael S. Tsirkin wrote:
-> > > On Fri, Jun 22, 2012 at 04:16:17PM -0600, Alex Williamson wrote:
-> > > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> > > > index 2ce09aa..a916186 100644
-> > > > --- a/include/linux/kvm.h
-> > > > +++ b/include/linux/kvm.h
-> > > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
-> > > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
-> > > >  #define KVM_CAP_S390_COW 79
-> > > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> > > > +#define KVM_CAP_IRQFD_LEVEL_EOI 81
+On Sun, 2012-06-24 at 18:49 +0300, Michael S. Tsirkin wrote:
+> On Sun, Jun 24, 2012 at 09:18:38AM -0600, Alex Williamson wrote:
+> > > > @@ -242,7 +299,8 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
 > > > >  
-> > > >  #ifdef KVM_CAP_IRQ_ROUTING
-> > > >  
-> > > > @@ -683,12 +684,15 @@ struct kvm_xen_hvm_config {
-> > > >  #endif
-> > > >  
-> > > >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-> > > > +/* Available with KVM_CAP_IRQFD_LEVEL_EOI */
-> > > > +#define KVM_IRQFD_FLAG_LEVEL_EOI (1 << 1)
-> > > >  
-> > > >  struct kvm_irqfd {
-> > > >  	__u32 fd;
-> > > >  	__u32 gsi;
-> > > >  	__u32 flags;
-> > > > -	__u8  pad[20];
-> > > > +	__u32 fd2;
-> > > > +	__u8 pad[16];
-> > > >  };
-> > > >  
-> > > >  struct kvm_clock_data {
-> > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > > > index c307c24..2bc7275 100644
-> > > > --- a/virt/kvm/eventfd.c
-> > > > +++ b/virt/kvm/eventfd.c
-> > > > @@ -49,9 +49,13 @@ struct _irqfd {
-> > > >  	wait_queue_t wait;
-> > > >  	/* Update side is protected by irqfds.lock */
-> > > >  	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
-> > > > -	/* Used for level IRQ fast-path */
-> > > > +	/* Used for IRQ fast-path */
-> > > >  	int gsi;
-> > > >  	struct work_struct inject;
-> > > > +	/* Used for level EOI path */
-> > > > +	int irq_source_id;
-> > > > +	struct eventfd_ctx *eoi_eventfd;
-> > > > +	struct kvm_irq_ack_notifier notifier;
-> > > >  	/* Used for setup/shutdown */
-> > > >  	struct eventfd_ctx *eventfd;
-> > > >  	struct list_head list;
-> > > > @@ -62,7 +66,7 @@ struct _irqfd {
-> > > >  static struct workqueue_struct *irqfd_cleanup_wq;
-> > > >  
-> > > >  static void
-> > > > -irqfd_inject(struct work_struct *work)
-> > > > +irqfd_inject_edge(struct work_struct *work)
-> > > >  {
-> > > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> > > >  	struct kvm *kvm = irqfd->kvm;
-> > > > @@ -71,6 +75,23 @@ irqfd_inject(struct work_struct *work)
-> > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > >  }
-> > > >  
-> > > > +static void
-> > > > +irqfd_inject_level(struct work_struct *work)
-> > > > +{
-> > > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> > > > +
-> > > > +	kvm_set_irq(irqfd->kvm, irqfd->irq_source_id, irqfd->gsi, 1);
-> > > > +}
-> > > > +
+> > > >  	ret = 0;
+> > > >  	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
+> > > > -		if (irqfd->eventfd != tmp->eventfd)
+> > > > +		if (irqfd->eventfd != tmp->eventfd &&
+> > > > +		    irqfd->eventfd != tmp->eoi_eventfd)
+> > > >  			continue;
 > > > 
-> > > I think that we can actually do this for all interrupts
-> > > unconditionally. We used to need to clear level for edge, but nomore.
-> > > Once you do this, can't this patch be replaced with 4/4 completely?
+> > > So we allow duplicate irqfd with differing eoifd (or edge-triggered and
+> > > level-triggered irqfd on the same context).
+> > > 
+> > > (why the check in the first place? just so we can have a reliable
+> > > deassign or is it avoiding a deeper problem?)
 > > 
-> > Nope, as described in my reply there, we can't mix IRQFD and IRQ_LINE
-> > for a level interrupt because we need a separate source id and have no
-> > way to specify it with IRQ_LINE.  Thanks,
-> > 
-> > Alex
+> > I really wasn't sure to what extent we wanted to prevent duplicates.  My
+> > guess was that we don't want to have an irqfd trigger more than one
+> > thing.  That seems to be what the current code does.  I don't see any
+> > problems with multiple irqfds triggering the same eventfd though.  I
+> > only added a test that a new irqfd can't be triggered by an existing
+> > eoi_eventfd as that could make a nasty loop.
 > 
-> OK, so the reason to set a new flag here is to assign
-> a unique source ID to it? OK, so just store the source
-> id in irqfd, rest of the code can be shared.
-> Maybe we can make all irqfds use unique source IDs?
-> Or is that too expensive for some reason?
+> How would that make a loop? You can have the same thing
+> with e.g. ioeventfd - why isn't it a problem there?
 
-It adds a lot of complexity when irqfd is the only interface that needs
-a new source id.  We've split the discussion into two threads though,
-please let's continue it in 4/4 where we're further along.  Thanks,
+eoi_eventfd1 -> irqfd2 [eoi] eoi_eventfd2 -> irqfd1 [eoi] eoi_eventfd1 ->...
+
+Yes, in reality we'd need to search fds from all the interfaces and come
+up with some grossly complicated truth table of what's allowed and
+what's not.  The original code didn't go to that kind of extreme, so I
+just added something that seemed like a reasonable case
+we'd want to prevent.  Thanks,
 
 Alex
 
