@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab2FXXKE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 19:10:04 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:2429 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab2FXXKD (ORCPT
+	id S1752288Ab2FXX3g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 19:29:36 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53067 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab2FXX3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 19:10:03 -0400
-Message-ID: <4FE79E27.3070302@spin.net.au>
-Date: Mon, 25 Jun 2012 09:09:27 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
+	Sun, 24 Jun 2012 19:29:34 -0400
+Message-ID: <4FE7A2D9.1090001@landley.net>
+Date: Sun, 24 Jun 2012 18:29:29 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Solaris kernel. Compile in Linux
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Pavel Pisa <pisa@cmp.felk.cvut.cz>
+CC: daniel.santos@pobox.com, Daniel Santos <danielfsantos@att.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-doc@vger.kernel.org, linux-sparse@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Weinberger <richard@nod.at>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH v4 0/13] Generic Red-Black Trees
+References: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com> <4FE661F8.3000109@att.net> <4FE69A14.6040904@landley.net> <201206240957.09136.pisa@cmp.felk.cvut.cz>
+In-Reply-To: <201206240957.09136.pisa@cmp.felk.cvut.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.17, required 4, AWL 0.33, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is it possible to compile the Solaris kernel using Linux based tools? I 
-suspect not. And if not, why can't this be done?
+On 06/24/2012 02:57 AM, Pavel Pisa wrote:
+> So again, please, test LLVM or other your beloved
+> compilers and report if there is a problem.
 
+He already addressed my concerns.
 
-Regards
-
+Rob
 -- 
-		Chris Jones @ kernel.devproject@gmail.com
-                           and oracle.kerneldev@gmail.com
-
-OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
-Kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
-
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
