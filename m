@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab2FXUkG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 16:40:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45907 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab2FXUkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 16:40:04 -0400
-Message-ID: <4FE77B11.1000808@zytor.com>
-Date: Sun, 24 Jun 2012 13:39:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752709Ab2FXUrb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 16:47:31 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:28292 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab2FXUra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 16:47:30 -0400
+Date: Sun, 24 Jun 2012 23:47:11 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Forest Bond <forest@alittletooquiet.net>,
+        Marcos Paulo de Souza <marcos.mage@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: vt6656: Style cleanup of iwctl
+Message-ID: <20120624204711.GK5390@mwanda>
+References: <alpine.LNX.2.00.1206242131040.30361@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org, JBeulich@suse.com,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, cpufeature:   Rename X86_FEATURE_DTS to
- X86_FEATURE_DTHERM
-References: <4FE34BCB.5050305@linux.intel.com> <tip-3bac8715443fc83413e221a5cd9d5cf3d82b79b4@git.kernel.org> <20120624214908.4177fc4a@endymion.delvare>
-In-Reply-To: <20120624214908.4177fc4a@endymion.delvare>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1206242131040.30361@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2012 12:49 PM, Jean Delvare wrote:
->
->> This conflict went into mainline via the hwmon tree without any x86
->> maintainer ack, and without any kind of hint in the subject.
->>
->>      a4659053 x86/hwmon: fix initialization of coretemp
->
-> All 3 x86 maintainers were Cc'd, none commented. And you know fairly
-> well why the patch went through the hwmon tree. So please stop the
-> finger-pointing. It's unfortunate that it happened, but it did, and we
-> try to fix it now, period.
->
+On Sun, Jun 24, 2012 at 09:45:58PM +0200, Jesper Juhl wrote:
+> Clean up the files iwctl.c and iwctl.h to match the official
+> CodingStyle a bit more closely.
+> 
+> This is *not* a complete cleanup, but it brings the files quite close
+> to the accepted style compared to the state they were originally in
+> (which was a complete mess IMHO).
+> 
+> It's mostly just whitespace changes, but there are also a few
+> pointless casts that were removed, a few tiny reshuffelings of code to
+> reduce indentation etc, but nothing major. There are no functional
+> changes.
+> 
+> I could have split this in multiple patches, I guess, but then I'd
+> probably have ended up with a bunch of patches all touching the same
+> lines multiple times in order to make multiple different changes and
+> that didn't seem worth it.  I opted to just do the whole thing in one
+> big patch, then we at least have a sane base upon which to apply
+> future smaller cleanups.
 
-It isn't about finger-pointing, it is about a failure of process; we had 
-a process that would have caught this problem and the process failed. 
-There are certainly blame enough to go around, but I think one of the 
-things here is that lack of response isn't necessary an ACK - it may 
-actually be that the patch looked at first glance like it had no impact 
-on our area (incorrectly as it turned out.)
+Nope.  It is worth it.  Broken out patches are a million times
+easier to review.
 
-	-hpa
+It frustrates me that you would do things like this when you know
+the rules.  Which part is difficult to understand?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
-
+regards,
+dan carpenter
 
