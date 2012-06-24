@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab2FXI27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 04:28:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24352 "EHLO mx1.redhat.com"
+	id S1754805Ab2FXIee (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 04:34:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36833 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753516Ab2FXI2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 04:28:54 -0400
-Date: Sun, 24 Jun 2012 11:28:56 +0300
+	id S1753907Ab2FXIed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 04:34:33 -0400
+Date: Sun, 24 Jun 2012 11:34:34 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Alex Williamson <alex.williamson@redhat.com>
 Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         jan.kiszka@siemens.com
-Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120624082856.GB1712@redhat.com>
+Subject: Re: [PATCH 2/4] kvm: Add missing KVM_IRQFD API documentation
+Message-ID: <20120624083434.GC1712@redhat.com>
 References: <20120622220040.9858.43665.stgit@bling.home>
- <20120622221559.9858.59593.stgit@bling.home>
+ <20120622221541.9858.37619.stgit@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120622221559.9858.59593.stgit@bling.home>
+In-Reply-To: <20120622221541.9858.37619.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 04:16:17PM -0600, Alex Williamson wrote:
-> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> index 2ce09aa..a916186 100644
-> --- a/include/linux/kvm.h
-> +++ b/include/linux/kvm.h
-> @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
->  #define KVM_CAP_PPC_GET_SMMU_INFO 78
->  #define KVM_CAP_S390_COW 79
->  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> +#define KVM_CAP_IRQFD_LEVEL_EOI 81
+On Fri, Jun 22, 2012 at 04:15:50PM -0600, Alex Williamson wrote:
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+> 
+>  Documentation/virtual/kvm/api.txt |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> index 310fe50..9b4cb2b 100644
+> --- a/Documentation/virtual/kvm/api.txt
+> +++ b/Documentation/virtual/kvm/api.txt
+> @@ -1965,6 +1965,23 @@ return the hash table order in the parameter.  (If the guest is using
+>  the virtualized real-mode area (VRMA) facility, the kernel will
+>  re-create the VMRA HPTEs on the next KVM_RUN of any vcpu.)
 >  
->  #ifdef KVM_CAP_IRQ_ROUTING
->  
-> @@ -683,12 +684,15 @@ struct kvm_xen_hvm_config {
->  #endif
->  
->  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-> +/* Available with KVM_CAP_IRQFD_LEVEL_EOI */
-> +#define KVM_IRQFD_FLAG_LEVEL_EOI (1 << 1)
->  
->  struct kvm_irqfd {
->  	__u32 fd;
->  	__u32 gsi;
->  	__u32 flags;
-> -	__u8  pad[20];
-> +	__u32 fd2;
-> +	__u8 pad[16];
->  };
->  
->  struct kvm_clock_data {
-> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> index c307c24..2bc7275 100644
-> --- a/virt/kvm/eventfd.c
-> +++ b/virt/kvm/eventfd.c
-> @@ -49,9 +49,13 @@ struct _irqfd {
->  	wait_queue_t wait;
->  	/* Update side is protected by irqfds.lock */
->  	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
-> -	/* Used for level IRQ fast-path */
-> +	/* Used for IRQ fast-path */
->  	int gsi;
->  	struct work_struct inject;
-> +	/* Used for level EOI path */
-> +	int irq_source_id;
-> +	struct eventfd_ctx *eoi_eventfd;
-> +	struct kvm_irq_ack_notifier notifier;
->  	/* Used for setup/shutdown */
->  	struct eventfd_ctx *eventfd;
->  	struct list_head list;
-> @@ -62,7 +66,7 @@ struct _irqfd {
->  static struct workqueue_struct *irqfd_cleanup_wq;
->  
->  static void
-> -irqfd_inject(struct work_struct *work)
-> +irqfd_inject_edge(struct work_struct *work)
->  {
->  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
->  	struct kvm *kvm = irqfd->kvm;
-> @@ -71,6 +75,23 @@ irqfd_inject(struct work_struct *work)
->  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
->  }
->  
-> +static void
-> +irqfd_inject_level(struct work_struct *work)
-> +{
-> +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> +4.76 KVM_IRQFD
 > +
-> +	kvm_set_irq(irqfd->kvm, irqfd->irq_source_id, irqfd->gsi, 1);
-> +}
+> +Capability: KVM_CAP_IRQFD
+> +Architectures: x86
+> +Type: vm ioctl
+> +Parameters: struct kvm_irqfd (in)
+> +Returns: 0 on success, -1 on error
 > +
+> +Allows setting an eventfd to directly trigger a guest interrupt
+> +kvm_irqfd.fd specifies the file descriptor to use as the eventfd and
+> +kvm_irqfd.gsi specifies the irqchip pin toggled by this event.  By
+> +default this interface only supports edge triggered interrupts,
+> +meaning the specified gsi is asserted and immediately de-asserted
+> +when the eventfd is triggered.
 
-I think that we can actually do this for all interrupts
-unconditionally. We used to need to clear level for edge, but nomore.
-Once you do this, can't this patch be replaced with 4/4 completely?
+That's a bit confusing. This assert/deassert only has effect for level.
+Do we or do we not want to maintain this assert/deassert behaviour
+for level irqfds? If yes we shouldn't say it's unsupported if
+no we should not document it.
 
--- 
-MST
+Gleb, Avi, any thoughts?
+
+>  Specifying KVM_IRQFD_FLAG_DEASSIGN
+> +removes the previously set irqfd matching both kvm_irqfd.fd and
+> +kvm_irqfd.gsi.
+> +
+>  
+>  5. The kvm_run structure
+>  ------------------------
