@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab2FXCrh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 22:47:37 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57119 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab2FXCre convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 22:47:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo7DxKLJC4p1n1YS3HNpjdeXvYTLL-_tkWqu_2yWokLttw@mail.gmail.com>
-References: <1340418231-10134-1-git-send-email-ying.huang@intel.com>
-	<CAErSpo7DxKLJC4p1n1YS3HNpjdeXvYTLL-_tkWqu_2yWokLttw@mail.gmail.com>
-Date: Sun, 24 Jun 2012 10:47:33 +0800
-Message-ID: <CAC=cRTO1LFzWWCXLGXvtLdwWKUjV9Z4r=shE6UN8UAW1PnZHag@mail.gmail.com>
-Subject: Re: [PATCH -v7 0/4] PCIe, PM, Add PCIe runtime D3cold support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zheng Yan <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757032Ab2FXDGs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 23:06:48 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59586 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753432Ab2FXDGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Jun 2012 23:06:47 -0400
+Message-ID: <1340507206.7758.30.camel@joe2Laptop>
+Subject: Re: [PATCH 5/5] thinkpad_acpi: Convert dbg_printk to tp_dbg and
+ tp_vdbg
+From: Joe Perches <joe@perches.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <mjg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 23 Jun 2012 20:06:46 -0700
+In-Reply-To: <20120624004051.GC20885@khazad-dum.debian.net>
+References: <cover.1339985626.git.joe@perches.com>
+	 <d8ab2f07efe50ddd9d3db8612c1cc333cb7e5813.1339985627.git.joe@perches.com>
+	 <20120624004051.GC20885@khazad-dum.debian.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 5:26 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Jun 22, 2012 at 8:23 PM, Huang Ying <ying.huang@intel.com> wrote:
->> Changelog:
->>
->> v7:
->>
->> - Rebased on pci.git next branch
->>
->> v6:
->>
->> - Disable device D3cold during system suspend/hibernate with a new method per Rafeal's comments
->>
->> v5:
->>
->> - Disable device D3cold during system suspend/hibernate per Rafael's comments
->>
->> v4:
->>
->> - Minors fixes based on comments from Rafael
->>
->> v3:
->>
->> - Drop device.power.power_must_be_on, use pci_dev.no_d3cold instead
->> - Drop device.power.power_off_user, use pci_dev.d3cold_allowed instead
->> - Use black list instead of white list in pcie port runtime support per request from Bjorn
->> - Various fixes based on comments from Rafael
->>
->> v2:
->>
->> - Refreshed based on comments from Rafael
->>
->> [PATCH -v7 1/4] ACPI, PM, Specify lowest allowed state for device sleep
->> [PATCH -v7 2/4] PCIe, PM, Add runtime PM support to PCIe port
->> [PATCH -v7 3/4] PCI, do not call pci_set_power_state with PCI_D3cold
->> [PATCH -v7 4/4] PCIe, PM, Add PCIe runtime D3cold support
->
-> I merged this to my "next" branch and pushed it.  Thanks!
->
-> I reworded some of the [4/4] changelog -- check it over and make sure
-> it still makes sense:
->
-> http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=commit;h=448bd857d48e69b33ef323739dc6d8ca20d4cda7
+On Sat, 2012-06-23 at 21:40 -0300, Henrique de Moraes Holschuh wrote:
+> On Sun, 17 Jun 2012, Joe Perches wrote:
+> > Use a more current logging style.
+> > 
+> > Add #define DEBUG and use pr_debug to enable dynamic debugging.
+> > Coalesce formats and align arguments.
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> 
+> Joe, are there any extra procedures required from the user to get the debug
+> messages with this patch applied?
 
-Thanks.  Your version is much better than my original one.
+No.
 
-Best Regards,
-Huang Ying
+The added #define DEBUG makes dynamic_debug emit those
+messages automatically.  Without the #define DEBUG, then
+these tp_[v]dbg calls might not be compiled in at all.
+
+These to_[v]dbg calls can be turned off via the normal
+dyn_debug mechanisms.
+
+see: Documentation/dynamic-debug-howto.txt
+
+cheers, Joe
+
