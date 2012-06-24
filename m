@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab2FXWo1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 18:44:27 -0400
-Received: from server.irh.it ([109.74.199.9]:57560 "EHLO server.irh.it"
+	id S1752936Ab2FXXCy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 19:02:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24752 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab2FXWoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 18:44:25 -0400
-X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Jun 2012 18:44:24 EDT
-From: rainbow <rainbow@irh.it>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rainbow <rainbow@irh.it>
-Subject: [PATCH 1/1] ipheth: add support for iPad
-Date: Mon, 25 Jun 2012 00:37:48 +0200
-Message-Id: <1340577468-3298-1-git-send-email-rainbow@irh.it>
-X-Mailer: git-send-email 1.7.10.2
+	id S1751841Ab2FXXCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 19:02:53 -0400
+Date: Mon, 25 Jun 2012 02:02:51 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120624230251.GE17046@redhat.com>
+References: <20120622220040.9858.43665.stgit@bling.home>
+ <20120622221559.9858.59593.stgit@bling.home>
+ <4FE6EC20.5030502@redhat.com>
+ <1340551118.14120.66.camel@bling.home>
+ <20120624154938.GE2851@redhat.com>
+ <1340575167.5076.165.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340575167.5076.165.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the iPad to the ipheth driver.
-(product id = 0x129a)
+On Sun, Jun 24, 2012 at 03:59:27PM -0600, Alex Williamson wrote:
+> On Sun, 2012-06-24 at 18:49 +0300, Michael S. Tsirkin wrote:
+> > On Sun, Jun 24, 2012 at 09:18:38AM -0600, Alex Williamson wrote:
+> > > > > @@ -242,7 +299,8 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+> > > > >  
+> > > > >  	ret = 0;
+> > > > >  	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
+> > > > > -		if (irqfd->eventfd != tmp->eventfd)
+> > > > > +		if (irqfd->eventfd != tmp->eventfd &&
+> > > > > +		    irqfd->eventfd != tmp->eoi_eventfd)
+> > > > >  			continue;
+> > > > 
+> > > > So we allow duplicate irqfd with differing eoifd (or edge-triggered and
+> > > > level-triggered irqfd on the same context).
+> > > > 
+> > > > (why the check in the first place? just so we can have a reliable
+> > > > deassign or is it avoiding a deeper problem?)
+> > > 
+> > > I really wasn't sure to what extent we wanted to prevent duplicates.  My
+> > > guess was that we don't want to have an irqfd trigger more than one
+> > > thing.  That seems to be what the current code does.  I don't see any
+> > > problems with multiple irqfds triggering the same eventfd though.  I
+> > > only added a test that a new irqfd can't be triggered by an existing
+> > > eoi_eventfd as that could make a nasty loop.
+> > 
+> > How would that make a loop? You can have the same thing
+> > with e.g. ioeventfd - why isn't it a problem there?
+> 
+> eoi_eventfd1 -> irqfd2 [eoi] eoi_eventfd2 -> irqfd1 [eoi] eoi_eventfd1 ->...
 
-Signed-off-by: rainbow <rainbow@irh.it>
----
- drivers/net/usb/ipheth.c |    5 +++++
- 1 file changed, 5 insertions(+)
+Sorry I don't understand.
+What does this [eoi] mean? How is eoi eventfd different from ioeventfd?
 
-diff --git a/drivers/net/usb/ipheth.c b/drivers/net/usb/ipheth.c
-index 964031e..9c98449 100644
---- a/drivers/net/usb/ipheth.c
-+++ b/drivers/net/usb/ipheth.c
-@@ -59,6 +59,7 @@
- #define USB_PRODUCT_IPHONE_3G   0x1292
- #define USB_PRODUCT_IPHONE_3GS  0x1294
- #define USB_PRODUCT_IPHONE_4	0x1297
-+#define USB_PRODUCT_IPAD 0x129a
- #define USB_PRODUCT_IPHONE_4_VZW 0x129c
- #define USB_PRODUCT_IPHONE_4S	0x12a0
- 
-@@ -101,6 +102,10 @@ static struct usb_device_id ipheth_table[] = {
- 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
- 		IPHETH_USBINTF_PROTO) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(
-+		USB_VENDOR_APPLE, USB_PRODUCT_IPAD,
-+		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
-+		IPHETH_USBINTF_PROTO) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(
- 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4_VZW,
- 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
- 		IPHETH_USBINTF_PROTO) },
--- 
-1.7.10.2
-
+> 
+> Yes, in reality we'd need to search fds from all the interfaces and come
+> up with some grossly complicated truth table of what's allowed and
+> what's not.  The original code didn't go to that kind of extreme, so I
+> just added something that seemed like a reasonable case
+> we'd want to prevent.  Thanks,
+> 
+> Alex
