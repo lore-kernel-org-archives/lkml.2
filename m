@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab2FXLPH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 07:15:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55954 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753923Ab2FXLPF (ORCPT
+	id S1755878Ab2FXMJZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 08:09:25 -0400
+Received: from na3sys010aog102.obsmtp.com ([74.125.245.72]:51222 "HELO
+	na3sys010aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754160Ab2FXMJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 07:15:05 -0400
-Date: Sun, 24 Jun 2012 12:14:59 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: rc5t583: Use regulator_set_voltage_time_sel()
-Message-ID: <20120624111458.GY4037@opensource.wolfsonmicro.com>
-References: <1340069212.7937.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kgkihKxW3Un7xdgA"
-Content-Disposition: inline
-In-Reply-To: <1340069212.7937.1.camel@phoenix>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 24 Jun 2012 08:09:23 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Sun, 24 Jun 2012 05:09:13 -0700
+Message-Id: <1340539753-19165-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---kgkihKxW3Un7xdgA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please pull from
 
-On Tue, Jun 19, 2012 at 09:26:52AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-fixes
 
-Applied, thanks.
+----------------------------------------------------------------
 
---kgkihKxW3Un7xdgA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+InfiniBand/RDMA fixes for 3.5-rc:
+ - Fixes to new ocrdma driver
+ - Typo in test in CMA
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+----------------------------------------------------------------
+Dan Carpenter (1):
+      RDMA/ocrdma: Fix off by one in ocrdma_query_gid()
 
-iQIcBAEBAgAGBQJP5vaqAAoJEBus8iNuMP3dqIUQAI0j/cPjrUjeeI4f4eN/EG4B
-1kO7hxJ7UGEg3eNjA5WwIPLF1GMGbjhYpatzOKz8aOTXCXGkwV3z4tIuekdpdigL
-bwGbyCRfobfw9se24DHKzQxxBPCeEl5quP7Dz4valdfpf7+3oElTpzg5byiax9ZZ
-vBELUNq2dk7r3CfHfHJooXkAzXbe+vbT/9gBFhqDK6z/8XxS2Jn9izEiuA5sErnZ
-T/wDyb3Ls2FoObz0nYZZmrF7hyNMIgHkwjUu0EdVMU6F9jRCr4XcnYITYAJXrkOC
-Q25edZLB3qFPIdxbxzDtrErO4COWJ+ZaXUvU/3P9YO3HoO1Ml6jdJdIbvxg9Ka8H
-Pe7HBpuRJxIsm0I7hbDnl4wwzr+PXZRFUkC2/I66uudCe83U22LBxQx0Z+UcHL78
-+IkFFW4hmLpK2pRArm7LGZhEINKXF8q2hrZpGIaXAU8+h52etJSbIp+XosAclQEm
-9JXDPCh+Ox7zo8Zo4Js9CR3V9wPqaeYFPqS1ZKWUWvQctU2lMLRy5SFUjvNHRIUC
-z5pSc5Y1CnXgbvnGFJdI1JevTWdb75nW3CFol1DNF/niTB2wXFk1K2HlB++HDqKB
-8ZcyTtqdwuTIMGtZAyLm7szlM73pTubH1tkyt6tO3fC4umCv49T1owPffFpCvsxt
-P31FF6eRgubuB7ESwCmv
-=asOs
------END PGP SIGNATURE-----
+Mahesh Vardhamanaiah (2):
+      RDMA/ocrdma: Correct reported max queue sizes
+      RDMA/ocrdma: Correct queue SGE calculation
 
---kgkihKxW3Un7xdgA--
+Parav Pandit (2):
+      RDMA/ocrdma: Fixed GID table for vlan and events
+      RDMA/ocrdma: Fixed RQ error CQE polling
+
+Roland Dreier (1):
+      Merge branches 'cma' and 'ocrdma' into for-linus
+
+Sean Hefty (1):
+      RDMA/cma: QP type check on received REQs should be AND not OR
+
+ drivers/infiniband/core/cma.c               |    2 +-
+ drivers/infiniband/hw/ocrdma/ocrdma.h       |    1 +
+ drivers/infiniband/hw/ocrdma/ocrdma_hw.c    |   18 ++++----
+ drivers/infiniband/hw/ocrdma/ocrdma_main.c  |   63 +++++++++++++++------------
+ drivers/infiniband/hw/ocrdma/ocrdma_sli.h   |    5 ++-
+ drivers/infiniband/hw/ocrdma/ocrdma_verbs.c |   12 ++---
+ 6 files changed, 55 insertions(+), 46 deletions(-)
