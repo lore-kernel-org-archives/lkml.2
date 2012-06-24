@@ -1,42 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab2FXM5F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 08:57:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754129Ab2FXM5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 08:57:03 -0400
-Message-ID: <4FE70E99.90609@redhat.com>
-Date: Sun, 24 Jun 2012 15:56:57 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755881Ab2FXNJg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 09:09:36 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:40492 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298Ab2FXNJf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 09:09:35 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
-        mst@redhat.com
-Subject: Re: [PATCH 4/4][RFC] kvm: eoi_eventfd
-References: <20120622220040.9858.43665.stgit@bling.home> <20120622221626.9858.33817.stgit@bling.home>
-In-Reply-To: <20120622221626.9858.33817.stgit@bling.home>
+In-Reply-To: <1340492074-13664-2-git-send-email-anatol.pomozov@gmail.com>
+References: <1340492074-13664-1-git-send-email-anatol.pomozov@gmail.com> <1340492074-13664-2-git-send-email-anatol.pomozov@gmail.com>
+From: Jimmy Pan <dspjmt@gmail.com>
+Date: Sun, 24 Jun 2012 21:09:13 +0800
+Message-ID: <CAGTyHCpSa8hSuiBS53t9GuXfv6v_AYbCv8Wn=snHqiG1HHtbRA@mail.gmail.com>
+Subject: Re: [PATCH] Fix typo in printed messages
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2012 01:16 AM, Alex Williamson wrote:
-> I think we're probably also going to need something like this.
-> When running in non-accelerated qemu, we're going to have to
-> create some kind of EOI notifier for drivers.  VFIO can make
-> additional improvements when running on KVM so it will probably
-> make use of the KVM_IRQFD_LEVEL_EOI interface, but we don't
-> want to have a generic EOI notifier in qemu that just stops
-> working when kvm-ioapic is enabled.
+On Sun, Jun 24, 2012 at 6:54 AM, Anatol Pomozov
+<anatol.pomozov@gmail.com> wrote:
+> Coult -> Could
+> ---
+>  arch/sparc/kernel/vio.c               |    2 +-
+>  drivers/net/wireless/b43/main.c       |    2 +-
+>  drivers/net/wireless/b43legacy/main.c |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/sparc/kernel/vio.c b/arch/sparc/kernel/vio.c
+> index 5cffdc5..3e244f3 100644
+> --- a/arch/sparc/kernel/vio.c
+> +++ b/arch/sparc/kernel/vio.c
+> @@ -443,7 +443,7 @@ static int __init vio_init(void)
+>        root_vdev = vio_create_one(hp, root, NULL);
+>        err = -ENODEV;
+>        if (!root_vdev) {
+> -               printk(KERN_ERR "VIO: Coult not create root device.\n");
+> +               printk(KERN_ERR "VIO: Could not create root device.\n");
+>                goto out_release;
+>        }
+>
+> diff --git a/drivers/net/wireless/b43/main.c
+> b/drivers/net/wireless/b43/main.c
+> index acd03a4..1b988f2 100644
+> --- a/drivers/net/wireless/b43/main.c
+> +++ b/drivers/net/wireless/b43/main.c
+> @@ -3767,7 +3767,7 @@ static int b43_switch_band(struct b43_wl *wl, struct
+> ieee80211_channel *chan)
+>        if (prev_status >= B43_STAT_STARTED) {
+>                err = b43_wireless_core_start(up_dev);
+>                if (err) {
+> -                       b43err(wl, "Fatal: Coult not start device for "
+> +                       b43err(wl, "Fatal: Could not start device for "
+>                               "selected %s-GHz band\n",
+>                               band_to_string(chan->band));
+>                        b43_wireless_core_exit(up_dev);
+> diff --git a/drivers/net/wireless/b43legacy/main.c
+> b/drivers/net/wireless/b43legacy/main.c
+> index cd9c9bc..eae691e 100644
+> --- a/drivers/net/wireless/b43legacy/main.c
+> +++ b/drivers/net/wireless/b43legacy/main.c
+> @@ -2633,7 +2633,7 @@ static int b43legacy_switch_phymode(struct
+> b43legacy_wl *wl,
+>        if (prev_status >= B43legacy_STAT_STARTED) {
+>                err = b43legacy_wireless_core_start(up_dev);
+>                if (err) {
+> -                       b43legacyerr(wl, "Fatal: Coult not start device
+> for "
+> +                       b43legacyerr(wl, "Fatal: Could not start device
+> for "
+>                               "newly selected %s-PHY mode\n",
+>                               phymode_to_string(new_mode));
+>                        b43legacy_wireless_core_exit(up_dev);
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Why?
 
-
-
--- 
-error compiling committee.c: too many arguments to function
-
-
+With no offense, I am a newbie too. I wonder if we need such kind of refinement.
