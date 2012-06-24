@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab2FXAlA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 20:41:00 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59903 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756537Ab2FXAk6 (ORCPT
+	id S1756559Ab2FXCQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 22:16:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61038 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753130Ab2FXCQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 20:40:58 -0400
-X-Sasl-enc: MsFuO4JzcwR9Lm4WXDNttcsHdFbzDCFziSTGMoGP4wMQ 1340498457
-Date: Sat, 23 Jun 2012 21:40:51 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Joe Perches <joe@perches.com>
-Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] thinkpad_acpi: Convert dbg_printk to tp_dbg and
- tp_vdbg
-Message-ID: <20120624004051.GC20885@khazad-dum.debian.net>
-References: <cover.1339985626.git.joe@perches.com>
- <d8ab2f07efe50ddd9d3db8612c1cc333cb7e5813.1339985627.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d8ab2f07efe50ddd9d3db8612c1cc333cb7e5813.1339985627.git.joe@perches.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 23 Jun 2012 22:16:54 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: linux-mm@kvack.org
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH] mm/memcg: add MAX_CHARGE_BATCH to limit unnecessary charge overhead
+Date: Sun, 24 Jun 2012 10:16:09 +0800
+Message-Id: <1340504169-5344-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Jun 2012, Joe Perches wrote:
-> Use a more current logging style.
-> 
-> Add #define DEBUG and use pr_debug to enable dynamic debugging.
-> Coalesce formats and align arguments.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-Joe, are there any extra procedures required from the user to get the debug
-messages with this patch applied?
+Since exceeded unused cached charges would add pressure to
+mem_cgroup_do_charge, more overhead would burn cpu cycles when
+mem_cgroup_do_charge cause page reclaim or even OOM be triggered
+just for such exceeded unused cached charges. Add MAX_CHARGE_BATCH
+to limit max cached charges.
 
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+---
+ mm/memcontrol.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 0e092eb..1ff317a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1954,6 +1954,14 @@ void mem_cgroup_update_page_stat(struct page *page,
+  * TODO: maybe necessary to use big numbers in big irons.
+  */
+ #define CHARGE_BATCH	32U
++
++/*
++ * Max size of charge stock. Since exceeded unused cached charges would
++ * add pressure to mem_cgroup_do_charge which will cause page reclaim or
++ * even oom be triggered.
++ */
++#define MAX_CHARGE_BATCH 1024U
++
+ struct memcg_stock_pcp {
+ 	struct mem_cgroup *cached; /* this never be root cgroup */
+ 	unsigned int nr_pages;
+@@ -2250,6 +2258,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+ 	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+ 	struct mem_cgroup *memcg = NULL;
++	struct memcg_stock_pcp *stock;
+ 	int ret;
+ 
+ 	/*
+@@ -2320,6 +2329,13 @@ again:
+ 		rcu_read_unlock();
+ 	}
+ 
++	stock = &get_cpu_var(memcg_stock);
++	if (memcg == stock->cached && stock->nr_pages) {
++		if (stock->nr_pages > MAX_CHARGE_BATCH)
++			batch = nr_pages;
++	}
++	put_cpu_var(memcg_stock);
++
+ 	do {
+ 		bool oom_check;
+ 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.7.9.5
+
