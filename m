@@ -1,115 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab2FXQYX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 12:24:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1706 "EHLO mx1.redhat.com"
+	id S1753386Ab2FXQZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 12:25:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24324 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab2FXQYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 12:24:22 -0400
-Date: Sun, 24 Jun 2012 19:24:12 +0300
+	id S1753274Ab2FXQYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 12:24:33 -0400
+Date: Sun, 24 Jun 2012 19:24:26 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: x86@kernel.org, kvm@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv9 0/8] kvm: eoi optimization support
-Message-ID: <cover.1340554550.git.mst@robin.redhat.com>
+Subject: [PATCHv9 2/8] kvm: optimize ISR lookups
+Message-ID: <c2a43b50227e19d86c5805e832f121b1a579c74b.1340554550.git.mst@robin.redhat.com>
+References: <cover.1340554550.git.mst@robin.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1340554550.git.mst@robin.redhat.com>
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm looking at reducing the interrupt overhead for virtualized guests:
-some workloads spend a large part of their time processing interrupts.
+We perform ISR lookups twice: during interrupt
+injection and on EOI. Typical workloads only have
+a single bit set there. So we can avoid ISR scans by
+1. counting bits as we set/clear them in ISR
+2. on set, caching the injected vector number
+3. on clear, invalidating the cache
 
-On kvm, an EOI write from the guest causes an expensive exit to host; we
-avoid this using shared memory.
+The real purpose of this is enabling PV EOI
+which needs to quickly validate the vector.
+But non PV guests also benefit: with this patch,
+and without interrupt nesting, apic_find_highest_isr
+will always return immediately without scanning ISR.
 
-The patches work fine on my boxes. See individual patches
-for perf tests. You need to patch qemu to whitelist the kvm feature.
-qemu patch was sent separately.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ arch/x86/kvm/lapic.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/lapic.h |    4 +++
+ 2 files changed, 55 insertions(+), 2 deletions(-)
 
-The patches are against Linus's master and apply to kvm.git
-cleanly.  The last patch in the series, supplying the host
-part, also depends on the ISR optimization patch that I
-have for convenience included in the series (patch 2),
-I also included a documentation patch (patch 1) - it is
-here since it clarifies patch 2.  This revision does not yet address
-Thomas's idea of reworking the APIC page handling.  Changes to this
-optimization would require reworking this last patch in the series.
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 93c1574..805d887 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -107,6 +107,16 @@ static inline void apic_clear_vector(int vec, void *bitmap)
+ 	clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
+ }
+ 
++static inline int __apic_test_and_set_vector(int vec, void *bitmap)
++{
++	return __test_and_set_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
++}
++
++static inline int __apic_test_and_clear_vector(int vec, void *bitmap)
++{
++	return __test_and_clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
++}
++
+ static inline int apic_hw_enabled(struct kvm_lapic *apic)
+ {
+ 	return (apic)->vcpu->arch.apic_base & MSR_IA32_APICBASE_ENABLE;
+@@ -210,6 +220,16 @@ static int find_highest_vector(void *bitmap)
+ 		return fls(word[word_offset << 2]) - 1 + (word_offset << 5);
+ }
+ 
++static u8 count_vectors(void *bitmap)
++{
++	u32 *word = bitmap;
++	int word_offset;
++	u8 count = 0;
++	for (word_offset = 0; word_offset < MAX_APIC_VECTOR >> 5; ++word_offset)
++		count += hweight32(word[word_offset << 2]);
++	return count;
++}
++
+ static inline int apic_test_and_set_irr(int vec, struct kvm_lapic *apic)
+ {
+ 	apic->irr_pending = true;
+@@ -242,6 +262,27 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+ 		apic->irr_pending = true;
+ }
+ 
++static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
++{
++	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
++		++apic->isr_count;
++	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
++	/*
++	 * ISR (in service register) bit is set when injecting an interrupt.
++	 * The highest vector is injected. Thus the latest bit set matches
++	 * the highest bit in ISR.
++	 */
++	apic->highest_isr_cache = vec;
++}
++
++static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
++{
++	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++		--apic->isr_count;
++	BUG_ON(apic->isr_count < 0);
++	apic->highest_isr_cache = -1;
++}
++
+ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+@@ -273,6 +314,10 @@ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq)
+ static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+ {
+ 	int result;
++	if (!apic->isr_count)
++		return -1;
++	if (likely(apic->highest_isr_cache != -1))
++		return apic->highest_isr_cache;
+ 
+ 	result = find_highest_vector(apic->regs + APIC_ISR);
+ 	ASSERT(result == -1 || result >= 16);
+@@ -492,7 +537,7 @@ static void apic_set_eoi(struct kvm_lapic *apic)
+ 	if (vector == -1)
+ 		return;
+ 
+-	apic_clear_vector(vector, apic->regs + APIC_ISR);
++	apic_clear_isr(vector, apic);
+ 	apic_update_ppr(apic);
+ 
+ 	if (!(apic_get_reg(apic, APIC_SPIV) & APIC_SPIV_DIRECTED_EOI) &&
+@@ -1081,6 +1126,8 @@ void kvm_lapic_reset(struct kvm_vcpu *vcpu)
+ 		apic_set_reg(apic, APIC_TMR + 0x10 * i, 0);
+ 	}
+ 	apic->irr_pending = false;
++	apic->isr_count = 0;
++	apic->highest_isr_cache = -1;
+ 	update_divide_count(apic);
+ 	atomic_set(&apic->lapic_timer.pending, 0);
+ 	if (kvm_vcpu_is_bsp(vcpu))
+@@ -1248,7 +1295,7 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+ 	if (vector == -1)
+ 		return -1;
+ 
+-	apic_set_vector(vector, apic->regs + APIC_ISR);
++	apic_set_isr(vector, apic);
+ 	apic_update_ppr(apic);
+ 	apic_clear_irr(vector, apic);
+ 	return vector;
+@@ -1267,6 +1314,8 @@ void kvm_apic_post_state_restore(struct kvm_vcpu *vcpu)
+ 	update_divide_count(apic);
+ 	start_apic_timer(apic);
+ 	apic->irr_pending = true;
++	apic->isr_count = count_vectors(apic->regs + APIC_ISR);
++	apic->highest_isr_cache = -1;
+ 	kvm_make_request(KVM_REQ_EVENT, vcpu);
+ }
+ 
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index d29da25..5ac9e5e 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -13,6 +13,10 @@ struct kvm_lapic {
+ 	u32 divide_count;
+ 	struct kvm_vcpu *vcpu;
+ 	bool irr_pending;
++	/* Number of bits set in ISR. */
++	s16 isr_count;
++	/* The highest vector set in ISR; if -1 - invalid, must scan ISR. */
++	int highest_isr_cache;
+ 	/**
+ 	 * APIC register page.  The layout matches the register layout seen by
+ 	 * the guest 1:1, because it is accessed by the vmx microcode.
+-- 
+1.6.3.2.307.gdf0b
 
-The rest of the patchset has not changed significantly since v2.
-
-Thanks,
-MST
-
-changes from v8:
-	Document the use of reboot notifier:
-	it is used to make sure kexec works correctly
-
-changes from v7:
-	Address Avi's comments:
-		make bit 1 in the new MSR reserved, require an aligned address
-		remove unused macros from header
-		replace __align by BUILD_BUG_ON and a comment
-	Whitespace fix
-
-changes from v6:
-	Address Marcelo's comments:
-		marcelo's comments for isr optimization: isr_cache -> highest_*
-		marcelo's comments for host side eoi: rename isr_cache->highest_*
-		kvm eoi msr doc: fix typo pointed out by marcelo
-		isr optimization: add comment to address marcelo's request
-		kvm: don't make lapic attention check unlikely. at marcelo's request
-		eoi host side: remove unlikely annotations
-
-Changes from v5:
-	Clear PV EOI when we cancel interrupts.
-		Pointed out by Gleb.
-	Always set ISR cache when we inject an interrupt.
-		Suggested by Ronen Hod.
-
-Changes from v4:
-	Turn off PV EOI on each exit. Turn it back on when safe.
-		Suggested by Avi.
-	Address bug with nested interrupts pointed out by Marcelo.
-
-Changes from v3:
-	Address review comments by Marcelo:
-		Multiple cosmetic changes eoi -> pv_eoi
-		Added multiple comments
-Changes from v2:
-	Kill guest with GP on an illegal MSR value
-	Add documentation
-
-Changes from v1:
-	Add host side patch to series
-	Remove kvm-specific __test_and_clear_bit, document
-	that x86 one does what we want already
-	Clear msr on cpu unplug
-
-Michael S. Tsirkin (8):
-  kvm: document lapic regs field
-  kvm: optimize ISR lookups
-  kvm_para: guest side for eoi avoidance
-  x86/bitops: note on __test_and_clear_bit atomicity
-  kvm: eoi msi documentation
-  kvm: only sync when attention bits set
-  kvm: rearrange injection cancelling code
-  kvm: host side for eoi optimization
-
- Documentation/virtual/kvm/msr.txt |   34 +++++++
- arch/x86/include/asm/bitops.h     |    7 ++
- arch/x86/include/asm/kvm_host.h   |   12 +++
- arch/x86/include/asm/kvm_para.h   |    7 ++
- arch/x86/kernel/kvm.c             |   57 ++++++++++-
- arch/x86/kvm/cpuid.c              |    1 +
- arch/x86/kvm/lapic.c              |  194 +++++++++++++++++++++++++++++++++++-
- arch/x86/kvm/lapic.h              |   11 ++
- arch/x86/kvm/trace.h              |   34 +++++++
- arch/x86/kvm/x86.c                |   20 +++-
- 10 files changed, 363 insertions(+), 14 deletions(-)
