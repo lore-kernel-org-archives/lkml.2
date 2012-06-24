@@ -1,118 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab2FXPpy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 11:45:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab2FXPpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 11:45:53 -0400
-Date: Sun, 24 Jun 2012 18:45:55 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120624154555.GC2851@redhat.com>
-References: <20120622220040.9858.43665.stgit@bling.home>
- <20120622221559.9858.59593.stgit@bling.home>
- <20120624082856.GB1712@redhat.com>
- <1340549456.14120.45.camel@bling.home>
+	id S1756079Ab2FXPqQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 11:46:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56527 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab2FXPqN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 11:46:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340549456.14120.45.camel@bling.home>
+In-Reply-To: <1340172486-17805-1-git-send-email-namhyung@kernel.org>
+References: <1340172486-17805-1-git-send-email-namhyung@kernel.org>
+Date: Mon, 25 Jun 2012 00:46:12 +0900
+X-Google-Sender-Auth: iSKU1lsIKh6SMxhMnxG9Nbqgb1M
+Message-ID: <CAMO-S2gfK2dMzLX-jO5LqjTPos7YjtHAbN_oQiw2LQfGBfLMsQ@mail.gmail.com>
+Subject: Re: [PATCH v2] perf bench: Documentation update
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 08:50:56AM -0600, Alex Williamson wrote:
-> On Sun, 2012-06-24 at 11:28 +0300, Michael S. Tsirkin wrote:
-> > On Fri, Jun 22, 2012 at 04:16:17PM -0600, Alex Williamson wrote:
-> > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> > > index 2ce09aa..a916186 100644
-> > > --- a/include/linux/kvm.h
-> > > +++ b/include/linux/kvm.h
-> > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
-> > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
-> > >  #define KVM_CAP_S390_COW 79
-> > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> > > +#define KVM_CAP_IRQFD_LEVEL_EOI 81
-> > >  
-> > >  #ifdef KVM_CAP_IRQ_ROUTING
-> > >  
-> > > @@ -683,12 +684,15 @@ struct kvm_xen_hvm_config {
-> > >  #endif
-> > >  
-> > >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-> > > +/* Available with KVM_CAP_IRQFD_LEVEL_EOI */
-> > > +#define KVM_IRQFD_FLAG_LEVEL_EOI (1 << 1)
-> > >  
-> > >  struct kvm_irqfd {
-> > >  	__u32 fd;
-> > >  	__u32 gsi;
-> > >  	__u32 flags;
-> > > -	__u8  pad[20];
-> > > +	__u32 fd2;
-> > > +	__u8 pad[16];
-> > >  };
-> > >  
-> > >  struct kvm_clock_data {
-> > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > > index c307c24..2bc7275 100644
-> > > --- a/virt/kvm/eventfd.c
-> > > +++ b/virt/kvm/eventfd.c
-> > > @@ -49,9 +49,13 @@ struct _irqfd {
-> > >  	wait_queue_t wait;
-> > >  	/* Update side is protected by irqfds.lock */
-> > >  	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
-> > > -	/* Used for level IRQ fast-path */
-> > > +	/* Used for IRQ fast-path */
-> > >  	int gsi;
-> > >  	struct work_struct inject;
-> > > +	/* Used for level EOI path */
-> > > +	int irq_source_id;
-> > > +	struct eventfd_ctx *eoi_eventfd;
-> > > +	struct kvm_irq_ack_notifier notifier;
-> > >  	/* Used for setup/shutdown */
-> > >  	struct eventfd_ctx *eventfd;
-> > >  	struct list_head list;
-> > > @@ -62,7 +66,7 @@ struct _irqfd {
-> > >  static struct workqueue_struct *irqfd_cleanup_wq;
-> > >  
-> > >  static void
-> > > -irqfd_inject(struct work_struct *work)
-> > > +irqfd_inject_edge(struct work_struct *work)
-> > >  {
-> > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> > >  	struct kvm *kvm = irqfd->kvm;
-> > > @@ -71,6 +75,23 @@ irqfd_inject(struct work_struct *work)
-> > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > >  }
-> > >  
-> > > +static void
-> > > +irqfd_inject_level(struct work_struct *work)
-> > > +{
-> > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> > > +
-> > > +	kvm_set_irq(irqfd->kvm, irqfd->irq_source_id, irqfd->gsi, 1);
-> > > +}
-> > > +
-> > 
-> > I think that we can actually do this for all interrupts
-> > unconditionally. We used to need to clear level for edge, but nomore.
-> > Once you do this, can't this patch be replaced with 4/4 completely?
-> 
-> Nope, as described in my reply there, we can't mix IRQFD and IRQ_LINE
-> for a level interrupt because we need a separate source id and have no
-> way to specify it with IRQ_LINE.  Thanks,
-> 
-> Alex
+On Wed, Jun 20, 2012 at 3:08 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+>
+> The current perf-bench documentation has a couple
+> of typos and even lacks entire description of mem
+> subsystem. Fix it.
 
-OK, so the reason to set a new flag here is to assign
-a unique source ID to it? OK, so just store the source
-id in irqfd, rest of the code can be shared.
-Maybe we can make all irqfds use unique source IDs?
-Or is that too expensive for some reason?
+Really sorry for my bad English... and thanks for your fix!
+Acked-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
 
--- 
-MST
+>
+> Reported-by: Ingo Molnar <mingo@kernel.org>
+> Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+> Link: http://lkml.kernel.org/n/tip-exnzkah7sfzevvtsiw1s904e@git.kernel.org
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/Documentation/perf-bench.txt |   78 +++++++++++++++++++++++++++++--
+>  tools/perf/bench/mem-memcpy.c           |    4 +-
+>  tools/perf/bench/mem-memset.c           |    8 ++--
+>  tools/perf/builtin-bench.c              |    4 +-
+>  4 files changed, 83 insertions(+), 11 deletions(-)
+>
+> diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
+> index a3dbadb26ef5..f3c716a4cad3 100644
+> --- a/tools/perf/Documentation/perf-bench.txt
+> +++ b/tools/perf/Documentation/perf-bench.txt
+> @@ -12,7 +12,7 @@ SYNOPSIS
+>
+>  DESCRIPTION
+>  -----------
+> -This 'perf bench' command is general framework for benchmark suites.
+> +This 'perf bench' command is a general framework for benchmark suites.
+>
+>  COMMON OPTIONS
+>  --------------
+> @@ -45,14 +45,20 @@ SUBSYSTEM
+>  'sched'::
+>        Scheduler and IPC mechanisms.
+>
+> +'mem'::
+> +       Memory access performance.
+> +
+> +'all'::
+> +       All benchmark subsystems.
+> +
+>  SUITES FOR 'sched'
+>  ~~~~~~~~~~~~~~~~~~
+>  *messaging*::
+>  Suite for evaluating performance of scheduler and IPC mechanisms.
+>  Based on hackbench by Rusty Russell.
+>
+> -Options of *pipe*
+> -^^^^^^^^^^^^^^^^^
+> +Options of *messaging*
+> +^^^^^^^^^^^^^^^^^^^^^^
+>  -p::
+>  --pipe::
+>  Use pipe() instead of socketpair()
+> @@ -115,6 +121,72 @@ Example of *pipe*
+>                 59004 ops/sec
+>  ---------------------
+>
+> +SUITES FOR 'mem'
+> +~~~~~~~~~~~~~~~~
+> +*memcpy*::
+> +Suite for evaluating performance of simple memory copy in various ways.
+> +
+> +Options of *memcpy*
+> +^^^^^^^^^^^^^^^^^^^
+> +-l::
+> +--length::
+> +Specify length of memory to copy (default: 1MB).
+> +Available units are B, KB, MB, GB and TB (case insensitive).
+> +
+> +-r::
+> +--routine::
+> +Specify routine to copy (default: default).
+> +Available routines are depend on the architecture.
+> +On x86-64, x86-64-unrolled, x86-64-movsq and x86-64-movsb are supported.
+> +
+> +-i::
+> +--iterations::
+> +Repeat memcpy invocation this number of times.
+> +
+> +-c::
+> +--clock::
+> +Use perf's cpu-cycles event instead of gettimeofday syscall.
+> +
+> +-o::
+> +--only-prefault::
+> +Show only the result with page faults before memcpy.
+> +
+> +-n::
+> +--no-prefault::
+> +Show only the result without page faults before memcpy.
+> +
+> +*memset*::
+> +Suite for evaluating performance of simple memory set in various ways.
+> +
+> +Options of *memset*
+> +^^^^^^^^^^^^^^^^^^^
+> +-l::
+> +--length::
+> +Specify length of memory to set (default: 1MB).
+> +Available units are B, KB, MB, GB and TB (case insensitive).
+> +
+> +-r::
+> +--routine::
+> +Specify routine to set (default: default).
+> +Available routines are depend on the architecture.
+> +On x86-64, x86-64-unrolled, x86-64-stosq and x86-64-stosb are supported.
+> +
+> +-i::
+> +--iterations::
+> +Repeat memset invocation this number of times.
+> +
+> +-c::
+> +--clock::
+> +Use perf's cpu-cycles event instead of gettimeofday syscall.
+> +
+> +-o::
+> +--only-prefault::
+> +Show only the result with page faults before memset.
+> +
+> +-n::
+> +--no-prefault::
+> +Show only the result without page faults before memset.
+> +
+>  SEE ALSO
+>  --------
+>  linkperf:perf[1]
+> diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+> index 71557225bf92..d990365cafa0 100644
+> --- a/tools/perf/bench/mem-memcpy.c
+> +++ b/tools/perf/bench/mem-memcpy.c
+> @@ -32,13 +32,13 @@ static bool         no_prefault;
+>  static const struct option options[] = {
+>        OPT_STRING('l', "length", &length_str, "1MB",
+>                    "Specify length of memory to copy. "
+> -                   "available unit: B, MB, GB (upper and lower)"),
+> +                   "Available units: B, KB, MB, GB and TB (upper and lower)"),
+>        OPT_STRING('r', "routine", &routine, "default",
+>                    "Specify routine to copy"),
+>        OPT_INTEGER('i', "iterations", &iterations,
+>                    "repeat memcpy() invocation this number of times"),
+>        OPT_BOOLEAN('c', "clock", &use_clock,
+> -                   "Use CPU clock for measuring"),
+> +                   "Use cycles event instead of gettimeofday() for measuring"),
+>        OPT_BOOLEAN('o', "only-prefault", &only_prefault,
+>                    "Show only the result with page faults before memcpy()"),
+>        OPT_BOOLEAN('n', "no-prefault", &no_prefault,
+> diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
+> index e9079185bd72..bf0d5f552017 100644
+> --- a/tools/perf/bench/mem-memset.c
+> +++ b/tools/perf/bench/mem-memset.c
+> @@ -31,14 +31,14 @@ static bool         no_prefault;
+>
+>  static const struct option options[] = {
+>        OPT_STRING('l', "length", &length_str, "1MB",
+> -                   "Specify length of memory to copy. "
+> -                   "available unit: B, MB, GB (upper and lower)"),
+> +                   "Specify length of memory to set. "
+> +                   "Available units: B, KB, MB, GB and TB (upper and lower)"),
+>        OPT_STRING('r', "routine", &routine, "default",
+> -                   "Specify routine to copy"),
+> +                   "Specify routine to set"),
+>        OPT_INTEGER('i', "iterations", &iterations,
+>                    "repeat memset() invocation this number of times"),
+>        OPT_BOOLEAN('c', "clock", &use_clock,
+> -                   "Use CPU clock for measuring"),
+> +                   "Use cycles event instead of gettimeofday() for measuring"),
+>        OPT_BOOLEAN('o', "only-prefault", &only_prefault,
+>                    "Show only the result with page faults before memset()"),
+>        OPT_BOOLEAN('n', "no-prefault", &no_prefault,
+> diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+> index b0e74ab2d7a2..1f3100216448 100644
+> --- a/tools/perf/builtin-bench.c
+> +++ b/tools/perf/builtin-bench.c
+> @@ -33,7 +33,7 @@ struct bench_suite {
+>  };
+>                                                \
+>  /* sentinel: easy for help */
+> -#define suite_all { "all", "test all suite (pseudo suite)", NULL }
+> +#define suite_all { "all", "Test all benchmark suites", NULL }
+>
+>  static struct bench_suite sched_suites[] = {
+>        { "messaging",
+> @@ -75,7 +75,7 @@ static struct bench_subsys subsystems[] = {
+>          "memory access performance",
+>          mem_suites },
+>        { "all",                /* sentinel: easy for help */
+> -         "test all subsystem (pseudo subsystem)",
+> +         "all benchmark subsystem",
+>          NULL },
+>        { NULL,
+>          NULL,
+> --
+> 1.7.10.2
+>
+>
