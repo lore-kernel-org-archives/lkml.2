@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2FXPdD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 11:33:03 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54226 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab2FXPdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 11:33:00 -0400
+	id S1754040Ab2FXPfV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 11:35:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15058 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab2FXPfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 11:35:19 -0400
+Date: Sun, 24 Jun 2012 17:33:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: deferring __fput()
+Message-ID: <20120624153310.GB24596@redhat.com>
+References: <1340369098.2464.20.camel@falcor> <20120623092049.GH14083@ZenIV.linux.org.uk> <20120623194505.GI14083@ZenIV.linux.org.uk> <20120623203800.GA10306@redhat.com> <20120623210141.GK14083@ZenIV.linux.org.uk> <20120624041652.GN14083@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-From: Eric Miao <eric.miao@canonical.com>
-Date: Sun, 24 Jun 2012 23:32:38 +0800
-X-Google-Sender-Auth: gGfxFizbDAnSyVVYZeHwALo9lk4
-Message-ID: <CAMPhdO92C=t8hDYAkk5rG0ZNHnLiZQ2WY3SP+LGJ=VNJL=Unaw@mail.gmail.com>
-Subject: [PATCH RFC] input: fix weird issue of synaptics psmouse sync lost
- after resume
-To: linux-kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ayan George <ayan.george@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120624041652.GN14083@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All,
+On 06/24, Al Viro wrote:
+>
+> BTW, I suspect that we really want to move exit_task_work() down past the
+> calls of exit_mm()/exit_files()
 
-BugLink: https://bugs.launchpad.net/bugs/717970
+Yes, probably. But I do not know how far we should move it.
 
-So in summary, the symptom is intermittent key events lost after resume
-on some machines with synaptics touchpad (seems this is synaptics _only_),
-and key events loss is due to serio port reconnect after psmouse sync lost.
-Removing psmouse and inserting it back during the suspend/resume process
-is able to work around the issue, so the difference between psmouse_connect()
-and psmouse_reconnect() is the key to the root cause of this problem.
+> (and lose the PF_EXITING check in
+> task_work_add(), making that ordering responsibility of callers).
 
-After comparing the two different paths, synaptics driver has its own
-implementation of synaptics_reconnect(), and the missing psmouse_probe()
-seems significant, the patch below added psmouse_probe() to the reconnect
-process, and has been verified many times that the issue could not be reliably
-reproduced.
+No, we can't do this?
 
-There are two PS/2 commands in psmouse_probe():
+OK, perhaps we can check something else instead of PF_EXITING.
+But somehow we should ensuree that if task_work_add(twork) succeeds,
+then twork->func() will be called. IOW, if task_work_add() races with
+the exiting task, it should not succeed after exit_task_work().
 
-  1. PSMOUSE_CMD_GETID
-  2. PSMOUSE_CMD_RESET_DIS
+> I'm not 100% sure about that one - if you have planned task_work users
+> relying on e.g. task->mm still being there when callback runs,
 
-The weird thing is, the PSMOUSE_CMD_GETID seems to be significant, and the
-PSMOUSE_CMD_RESET_DIS is irrelevant to this issue after trying several times.
-Now it's rather difficult to form a sane theory. So this patch is
-really for RFC.
-Note it does fix a real problem though.
+No, I didn't.
 
-========= >8 =========
+Oleg.
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 8eac3b7..7a72d82 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1218,6 +1218,7 @@ static int synaptics_reconnect(struct psmouse *psmouse)
- {
-        struct synaptics_data *priv = psmouse->private;
-        struct synaptics_data old_priv = *priv;
-+       unsigned char param[2];
-        int retry = 0;
-        int error;
-
-@@ -1233,6 +1234,7 @@ static int synaptics_reconnect(struct psmouse *psmouse)
-                         */
-                        ssleep(1);
-                }
-+               ps2_command(&psmouse->ps2dev, param, PSMOUSE_CMD_GETID);
-                error = synaptics_detect(psmouse, 0);
-        } while (error && ++retry < 3);
