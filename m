@@ -1,142 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2FXKdR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 06:33:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42669 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755710Ab2FXKdQ (ORCPT
+	id S1755959Ab2FXKeb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 06:34:31 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45130 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755749Ab2FXKe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 06:33:16 -0400
-Date: Sun, 24 Jun 2012 18:32:58 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org
-Subject: Re: [PATCH] mm/memcg: add MAX_CHARGE_BATCH to limit unnecessary
- charge overhead
-Message-ID: <20120624103258.GB10915@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1340504169-5344-1-git-send-email-liwp.linux@gmail.com>
- <20120624094614.GT27816@cmpxchg.org>
- <20120624100812.GA7095@kernel>
- <20120624101948.GU27816@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120624101948.GU27816@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 24 Jun 2012 06:34:27 -0400
+Message-ID: <1340534180.4696.14.camel@localhost>
+Subject: Re: [PATCH] grvga: Fix error handling issues
+From: Emil Goode <emilgoode@gmail.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        w.sang@pengutronix.de
+Date: Sun, 24 Jun 2012 12:36:20 +0200
+In-Reply-To: <alpine.DEB.2.02.1206240711580.2178@localhost6.localdomain6>
+References: <1340381479-6371-1-git-send-email-emilgoode@gmail.com>
+	   <alpine.DEB.2.02.1206221811150.1901@hadrien>
+	  <1340382044.3963.2.camel@localhost>
+	  <alpine.DEB.2.02.1206221820340.1901@hadrien>
+	 <1340488911.5321.10.camel@localhost>
+	 <alpine.DEB.2.02.1206240711580.2178@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 12:19:48PM +0200, Johannes Weiner wrote:
->On Sun, Jun 24, 2012 at 06:08:26PM +0800, Wanpeng Li wrote:
->> On Sun, Jun 24, 2012 at 11:46:14AM +0200, Johannes Weiner wrote:
->> >On Sun, Jun 24, 2012 at 10:16:09AM +0800, Wanpeng Li wrote:
->> >> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->> >> 
->> >> Since exceeded unused cached charges would add pressure to
->> >> mem_cgroup_do_charge, more overhead would burn cpu cycles when
->> >> mem_cgroup_do_charge cause page reclaim or even OOM be triggered
->> >> just for such exceeded unused cached charges. Add MAX_CHARGE_BATCH
->> >> to limit max cached charges.
->> >> 
->> >> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->> >> ---
->> >>  mm/memcontrol.c |   16 ++++++++++++++++
->> >>  1 file changed, 16 insertions(+)
->> >> 
->> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> >> index 0e092eb..1ff317a 100644
->> >> --- a/mm/memcontrol.c
->> >> +++ b/mm/memcontrol.c
->> >> @@ -1954,6 +1954,14 @@ void mem_cgroup_update_page_stat(struct page *page,
->> >>   * TODO: maybe necessary to use big numbers in big irons.
->> >>   */
->> >>  #define CHARGE_BATCH	32U
->> >> +
->> >> +/*
->> >> + * Max size of charge stock. Since exceeded unused cached charges would
->> >> + * add pressure to mem_cgroup_do_charge which will cause page reclaim or
->> >> + * even oom be triggered.
->> >> + */
->> >> +#define MAX_CHARGE_BATCH 1024U
->> >> +
->> >>  struct memcg_stock_pcp {
->> >>  	struct mem_cgroup *cached; /* this never be root cgroup */
->> >>  	unsigned int nr_pages;
->> >> @@ -2250,6 +2258,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
->> >>  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
->> >>  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
->> >>  	struct mem_cgroup *memcg = NULL;
->> >> +	struct memcg_stock_pcp *stock;
->> >>  	int ret;
->> >>  
->> >>  	/*
->> >> @@ -2320,6 +2329,13 @@ again:
->> >>  		rcu_read_unlock();
->> >>  	}
->> >>  
->> >> +	stock = &get_cpu_var(memcg_stock);
->> >> +	if (memcg == stock->cached && stock->nr_pages) {
->> >> +		if (stock->nr_pages > MAX_CHARGE_BATCH)
->> >> +			batch = nr_pages;
->> >> +	}
->> >> +	put_cpu_var(memcg_stock);
->> >
->> >The only way excessive stock can build up is if the charging task gets
->> >rescheduled, after trying to consume stock a few lines above, to a cpu
->> >it was running on when it built up stock in the past.
->> >
->> >    consume_stock()
->> >      memcg != stock->cached:
->> >        return false
->> >    do_charge()
->> >    <reschedule>
->> >    refill_stock()
->> >      memcg == stock->cached:
->> >        stock->nr_pages += nr_pages
->> 
->> __mem_cgroup_try_charge() {
->> 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
->> 	[...]
->> 	mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
->> 	[...]
->> 	if(batch > nr_pages)
->> 		refill_stock(memcg, batch - nr_pages);
->> }
->> 
->> Consider this scenario, If one task wants to charge nr_pages = 1,
->> then batch = max(32,1) = 32, this time 31 excess charges 
->> will be charged in mem_cgroup_do_charge and then add to stock by
->> refill_stock. Generally there are many tasks in one memory cgroup and 
->> maybe charges frequency. In this situation, limit will reach soon, 
->> and cause mem_cgroup_reclaim to call try_to_free_mem_cgroup_pages.
->
->But the stock is not a black hole that gets built up for giggles!  The
->next time the processes want to charge a page on this cpu, they will
->consume it from the stock.  Not add more pages to it.  Look at where
->consume_stock() is called.
+Yes I considered converting to devm_ and keeping the of_iounmap in.
+But I just feel like I'm mixing two api's. If converting to devm_ really
+is the right thing to do, tell me and I will send another patch :)
 
-if(nr_pages == 1 && consume_stock(memcg))
-	goto done;
+Thanks,
 
-Only when charge one page will call consume_stock. You can see the codes
-in mem_cgroup_charge_common() which also call __mem_cgroup_try_charge, 
-when both transparent huge and hugetlbfs pages, nr_pages will larger than 1.
+Emil
 
-
-
-
-
-
-
-
-
-
-
+On Sun, 2012-06-24 at 07:15 +0200, Julia Lawall wrote:
+> I see.  You could still use a devm_ function for request_mem_region.
+> Also I noticed that the remove function uses iounmap directly, not 
+> io_iounmap.  The latter is just a wrapper for the former, but it could be 
+> good to use the right name.
+> 
+> julia
+> 
+> On Sun, 24 Jun 2012, Emil Goode wrote:
+> 
+> > The of_ioremap function is used in this code as well and I don't know of
+> > a devm_ equivalent for it. For consistency I think it is better to leave
+> > it as it is in this case. So I stick with v1 of this patch.
+> >
+> > Thanks,
+> >
+> > Emil
+> >
+> > On Fri, 2012-06-22 at 18:21 +0200, Julia Lawall wrote:
+> >> On Fri, 22 Jun 2012, Emil Goode wrote:
+> >>
+> >>> Good idea, I will take another look at it tomorrow.
+> >>
+> >> There is a devm_ function that combines request_mem_region and ioremap
+> >> that could be useful.
+> >>
+> >> julia
+> >>
+> >>>
+> >>> Thanks,
+> >>>
+> >>> Emil
+> >>>
+> >>> On Fri, 2012-06-22 at 18:12 +0200, Julia Lawall wrote:
+> >>>> Maybe you could used the devm_ functions for request_mem_region and
+> >>>> ioremap so that the error handling can just be dropped?
+> >>>>
+> >>>> julia
+> >>>>
+> >>>> On Fri, 22 Jun 2012, Emil Goode wrote:
+> >>>>
+> >>>>> This patch fixes two problems with the error handling in the
+> >>>>> grvga_probe function.
+> >>>>>
+> >>>>> - If the call to grvga_parse_custom on line 370 fails we use
+> >>>>>   the wrong label so that release_mem_region will be called
+> >>>>>   without a call to request_mem_region being made.
+> >>>>>
+> >>>>> - If the call to ioremap on line 436 fails we should not try
+> >>>>>   to call iounmap. I added an if statement to check whether or
+> >>>>>   not a call to iounmap should be made.
+> >>>>>
+> >>>>> - I also changed the names of the labels to make the code
+> >>>>>   easier to read.
+> >>>>>
+> >>>>> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> >>>>> ---
+> >>>>>  drivers/video/grvga.c |   34 ++++++++++++++++++----------------
+> >>>>>  1 file changed, 18 insertions(+), 16 deletions(-)
+> >>>>>
+> >>>>> diff --git a/drivers/video/grvga.c b/drivers/video/grvga.c
+> >>>>> index da066c2..d9d688a 100644
+> >>>>> --- a/drivers/video/grvga.c
+> >>>>> +++ b/drivers/video/grvga.c
+> >>>>> @@ -354,7 +354,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  	 */
+> >>>>>  	if (fb_get_options("grvga", &options)) {
+> >>>>>  		retval = -ENODEV;
+> >>>>> -		goto err;
+> >>>>> +		goto free_fb;
+> >>>>>  	}
+> >>>>>
+> >>>>>  	if (!options || !*options)
+> >>>>> @@ -370,7 +370,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  			if (grvga_parse_custom(this_opt, &info->var) < 0) {
+> >>>>>  				dev_err(&dev->dev, "Failed to parse custom mode (%s).\n", this_opt);
+> >>>>>  				retval = -EINVAL;
+> >>>>> -				goto err1;
+> >>>>> +				goto free_fb;
+> >>>>>  			}
+> >>>>>  		} else if (!strncmp(this_opt, "addr", 4))
+> >>>>>  			grvga_fix_addr = simple_strtoul(this_opt + 5, NULL, 16);
+> >>>>> @@ -390,7 +390,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  	if (!request_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]), "grlib-svgactrl regs")) {
+> >>>>>  		dev_err(&dev->dev, "registers already mapped\n");
+> >>>>>  		retval = -EBUSY;
+> >>>>> -		goto err;
+> >>>>> +		goto free_fb;
+> >>>>>  	}
+> >>>>>
+> >>>>>  	par->regs = of_ioremap(&dev->resource[0], 0,
+> >>>>> @@ -400,14 +400,14 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  	if (!par->regs) {
+> >>>>>  		dev_err(&dev->dev, "failed to map registers\n");
+> >>>>>  		retval = -ENOMEM;
+> >>>>> -		goto err1;
+> >>>>> +		goto release_regs;
+> >>>>>  	}
+> >>>>>
+> >>>>>  	retval = fb_alloc_cmap(&info->cmap, 256, 0);
+> >>>>>  	if (retval < 0) {
+> >>>>>  		dev_err(&dev->dev, "failed to allocate mem with fb_alloc_cmap\n");
+> >>>>>  		retval = -ENOMEM;
+> >>>>> -		goto err2;
+> >>>>> +		goto unmap_regs;
+> >>>>>  	}
+> >>>>>
+> >>>>>  	if (mode_opt) {
+> >>>>> @@ -415,7 +415,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  				      grvga_modedb, sizeof(grvga_modedb), &grvga_modedb[0], 8);
+> >>>>>  		if (!retval || retval == 4) {
+> >>>>>  			retval = -EINVAL;
+> >>>>> -			goto err3;
+> >>>>> +			goto dealloc_cmap;
+> >>>>>  		}
+> >>>>>  	}
+> >>>>>
+> >>>>> @@ -430,7 +430,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  		if (!request_mem_region(physical_start, grvga_mem_size, dev->name)) {
+> >>>>>  			dev_err(&dev->dev, "failed to request memory region\n");
+> >>>>>  			retval = -ENOMEM;
+> >>>>> -			goto err3;
+> >>>>> +			goto dealloc_cmap;
+> >>>>>  		}
+> >>>>>
+> >>>>>  		virtual_start = (unsigned long) ioremap(physical_start, grvga_mem_size);
+> >>>>> @@ -438,7 +438,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  		if (!virtual_start) {
+> >>>>>  			dev_err(&dev->dev, "error mapping framebuffer memory\n");
+> >>>>>  			retval = -ENOMEM;
+> >>>>> -			goto err4;
+> >>>>> +			goto free_mem;
+> >>>>>  		}
+> >>>>>  	} else {	/* Allocate frambuffer memory */
+> >>>>>
+> >>>>> @@ -451,7 +451,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  				"unable to allocate framebuffer memory (%lu bytes)\n",
+> >>>>>  				grvga_mem_size);
+> >>>>>  			retval = -ENOMEM;
+> >>>>> -			goto err3;
+> >>>>> +			goto dealloc_cmap;
+> >>>>>  		}
+> >>>>>
+> >>>>>  		physical_start = dma_map_single(&dev->dev, (void *)virtual_start, grvga_mem_size, DMA_TO_DEVICE);
+> >>>>> @@ -484,7 +484,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>  	retval = register_framebuffer(info);
+> >>>>>  	if (retval < 0) {
+> >>>>>  		dev_err(&dev->dev, "failed to register framebuffer\n");
+> >>>>> -		goto err4;
+> >>>>> +		goto free_mem;
+> >>>>>  	}
+> >>>>>
+> >>>>>  	__raw_writel(physical_start, &par->regs->fb_pos);
+> >>>>> @@ -493,21 +493,23 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> >>>>>
+> >>>>>  	return 0;
+> >>>>>
+> >>>>> -err4:
+> >>>>> +free_mem:
+> >>>>>  	dev_set_drvdata(&dev->dev, NULL);
+> >>>>>  	if (grvga_fix_addr) {
+> >>>>>  		release_mem_region(physical_start, grvga_mem_size);
+> >>>>> -		iounmap((void *)virtual_start);
+> >>>>> +		if (virtual_start)
+> >>>>> +			iounmap((void *)virtual_start);
+> >>>>>  	} else
+> >>>>>  		kfree((void *)virtual_start);
+> >>>>> -err3:
+> >>>>> +
+> >>>>> +dealloc_cmap:
+> >>>>>  	fb_dealloc_cmap(&info->cmap);
+> >>>>> -err2:
+> >>>>> +unmap_regs:
+> >>>>>  	of_iounmap(&dev->resource[0], par->regs,
+> >>>>>  		   resource_size(&dev->resource[0]));
+> >>>>> -err1:
+> >>>>> +release_regs:
+> >>>>>  	release_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]));
+> >>>>> -err:
+> >>>>> +free_fb:
+> >>>>>  	framebuffer_release(info);
+> >>>>>
+> >>>>>  	return retval;
+> >>>>> --
+> >>>>> 1.7.10
+> >>>>>
+> >>>>> --
+> >>>>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> >>>>> the body of a message to majordomo@vger.kernel.org
+> >>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>>>
+> >>>
+> >>>
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
 
 
