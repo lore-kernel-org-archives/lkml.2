@@ -1,123 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab2FXXwo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 19:52:44 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52110 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab2FXXwm (ORCPT
+	id S1751907Ab2FXXy4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 19:54:56 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57355 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab2FXXyz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 19:52:42 -0400
-X-AuditID: 9c930197-b7b87ae000000e4d-e1-4fe7a8488717
-Message-ID: <4FE7A867.70207@kernel.org>
-Date: Mon, 25 Jun 2012 08:53:11 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 24 Jun 2012 19:54:55 -0400
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Zheng Liu <gnehzuil.liu@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz> <20120517195342.GB1800@cmpxchg.org> <20120521025149.GA32375@gmail.com> <20120521073632.GL1406@cmpxchg.org> <20120521085951.GA4687@gmail.com> <20120521093705.GM1406@cmpxchg.org> <20120521110659.GA7143@gmail.com> <20120623110450.GP27816@cmpxchg.org>
-In-Reply-To: <20120623110450.GP27816@cmpxchg.org>
+X-Originating-IP: [2620:0:1000:3801:a800:1ff:fe00:df]
+In-Reply-To: <1340409205-23606-1-git-send-email-bfreed@chromium.org>
+References: <1340409205-23606-1-git-send-email-bfreed@chromium.org>
+Date: Sun, 24 Jun 2012 16:54:55 -0700
+Message-ID: <CAOesGMgq5HRz+pDFQtED5GPN0RUrON=_k_y4YHHzKrMkHnVk4A@mail.gmail.com>
+Subject: Re: [PATCH] spi: Unlock a spinlock before calling into the controller driver.
+From: Olof Johansson <olof@lixom.net>
+To: Bryan Freed <bfreed@chromium.org>
+Cc: spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, LinusW <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
+Hi,
 
-On 06/23/2012 08:04 PM, Johannes Weiner wrote:
+(Adding Linus Walleij and Mark Brown since they were the ones doing
+the queue changes).
 
-> On Mon, May 21, 2012 at 07:07:00PM +0800, Zheng Liu wrote:
->> On Mon, May 21, 2012 at 11:37:05AM +0200, Johannes Weiner wrote:
->> [snip]
->>>>> Is it because the read()/write() IO is high throughput and pushes
->>>>> pages through the LRU lists faster than the mmap pages are referenced?
->>>>
->>>> Yes, in this application, one query needs to access mapped file page
->>>> twice and file page cache twice.  Namely, one query needs to do 4 disk
->>>> I/Os.  We have used fadvise(2) to reduce file page cache accessing to
->>>> only once.  For mapped file page, in fact them are accessed only once
->>>> because in one query the same data is accessed twice.  Thus, one query
->>>> causes 2 disk I/Os now.  The size of read/write is quite larger than
->>>> mmap/munmap.  So, as you see, if we can keep mmap/munmap file in memory
->>>> as much as possible, we will gain the better performance.
->>>
->>> You access the same unmapped cache twice, i.e. repeated reads or
->>> writes against the same file offset?
->>
->> No.  We access the same mapped file twice.
->>
->>>
->>> How do you use fadvise?
->>
->> We access the header and content of the file respectively using read/write.
->> The header and content are sequentially.  So we use fadivse(2) with
->> FADV_WILLNEED flag to do a readahead.
->>
->>>> In addition, another factor also has some impacts for this application.
->>>> In inactive_file_is_low_global(), it is different between 2.6.18 and
->>>> upstream kernel.  IMHO, it causes that mapped file pages in active list
->>>> are moved into inactive list frequently.
->>>>
->>>> Currently, we add a parameter in inactive_file_is_low_global() to adjust
->>>> this ratio.  Meanwhile we activate every mapped file pages for the first
->>>> time.  Then the performance gets better, but it still doesn't reach the
->>>> performance of 2.6.18.
->>>
->>> 2.6.18 didn't have the active list protection at all and always
->>> forcibly deactivated pages during reclaim.  Have you tried fully
->>> reverting to this by making inactive_file_is_low_global() return true
->>> unconditionally?
->>
->> No, I don't try it.  AFAIK, 2.6.18 didn't protect the active list.  But
->> it doesn't always forcibly deactivate the pages.  I remember that in
->> 2.6.18 kernel we calculate 'mapped_ratio' in shrink_active_list(), and
->> then we get 'swap_tendency' according to 'mapped_ratio', 'distress', and
->> 'sc->swappiness'.  If 'swap_tendency' is not greater than 100.  It
->> doesn't reclaim mapped file pages.  By this equation, if the sum of the
->> anonymous pages and mapped file pages is not greater than the 50% of
->> total pages, we don't deactivate these pages.  Am I missing something?
-> 
-> I think we need to go back to protecting mapped pages based on how
-> much of reclaimable memory they make up, one way or another.
+On Fri, Jun 22, 2012 at 4:53 PM, Bryan Freed <bfreed@chromium.org> wrote:
+> spi_pump_messages() calls into a controller driver with
+> unprepare_transfer_hardware() which is documented as "This may sleep".
+> As in the prepare_transfer_hardware() call below, we should release the
+> queue_lock spinlock before making the call.
+> Rework the logic a bit to hold queue_lock to protect the 'busy' flag,
+> then release it to call unprepare_transfer_hardware().
+>
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+>
+> ---
+>  drivers/spi/spi.c |   15 +++++++--------
+>  1 files changed, 7 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> index fc0da39..f7f9df9 100644
+> --- a/drivers/spi/spi.c
+> +++ b/drivers/spi/spi.c
+> @@ -532,17 +532,16 @@ static void spi_pump_messages(struct kthread_work *work)
+>        /* Lock queue and check for queue work */
+>        spin_lock_irqsave(&master->queue_lock, flags);
+>        if (list_empty(&master->queue) || !master->running) {
+> -               if (master->busy && master->unprepare_transfer_hardware) {
+> -                       ret = master->unprepare_transfer_hardware(master);
+> -                       if (ret) {
+> -                               spin_unlock_irqrestore(&master->queue_lock, flags);
+> -                               dev_err(&master->dev,
+> -                                       "failed to unprepare transfer hardware\n");
+> -                               return;
+> -                       }
+> +               if (!master->busy) {
+> +                       spin_unlock_irqrestore(&master->queue_lock, flags);
+> +                       return;
+>                }
+>                master->busy = false;
+>                spin_unlock_irqrestore(&master->queue_lock, flags);
+> +               if (master->unprepare_transfer_hardware &&
+> +                   master->unprepare_transfer_hardware(master))
+> +                       dev_err(&master->dev,
+> +                               "failed to unprepare transfer hardware\n");
 
 
-I partly agreed it with POV regression.
-But I would like to understand rationale of "Why we should handle specially mmapped page".
-In case of code pages(VM_EXEC), we already have handled it specially and
-I understand why we did. At least, my opinion was that our LRU algorithm doesn't consider
-_frequency_ fully while it does _recency_ well. I thought code page would be high frequency of access
-compared to other pages.
-But in case of mapped data pages, why we should handle specially?
-I guess mapped data pages would have higher access chance than unmapped page because
-unmapped page doesn't have any owner(it's just for caching for reducing I/O) while mapped page
-has a owner above.
+I'm not sure this is safe to do. The lock is dropped for the prepare
+side, but in that case we can be sure that the above code can't come
+in and unprepare at the same time since there is per definition a
+request on the queue at that time.
 
-Doesn't it make sense?
+On the other hand, between the lock drop and the call to unprepare
+above, another code path can come in and queue up a request and either
+not do prepare properly, or there will be a prepare that races with
+the unprepare.
 
-If we don't have any rationale, I would like to add new explicit API(ex, madvise(WORING_SET))
-rather than depending VM internal implementation.
-
-> 
-> Minchan suggested recently to have a separate LRU list for easily
-> reclaimable pages.  If we balance the lists according to relative
-> size, we have pressure on mapped pages dictated by availability of
-> clean cache that is easier to reclaim.
-
-> 
-
-> Rik, Minchan, what do you think?
+It might make more sense to use a workqueue here and schedule a
+unprepare call that way instead (and cancelling appropriately before
+the prepare call if needed). I'm open for other suggestions as well.
 
 
-Yes. with Ereclaimable LRU list, we could do it. :)
-
--- 
-Kind regards,
-Minchan Kim
+-Olof
