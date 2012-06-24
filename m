@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab2FXNrp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 09:47:45 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:34465 "EHLO
+	id S1756227Ab2FXNtB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 09:49:01 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:50872 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755763Ab2FXNrm (ORCPT
+	with ESMTP id S1755973Ab2FXNrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 09:47:42 -0400
+	Sun, 24 Jun 2012 09:47:43 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         rinivas.bakki@nxp.com, aletes.xgr@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 1/7] ARM: LPC32xx: Init MMC via clock
-Date: Sun, 24 Jun 2012 15:47:11 +0200
-Message-Id: <1340545637-5449-2-git-send-email-stigge@antcom.de>
+Subject: [PATCH 4/7] ARM: LPC32xx: Update DTS file for EA3250 board
+Date: Sun, 24 Jun 2012 15:47:14 +0200
+Message-Id: <1340545637-5449-5-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1340545637-5449-1-git-send-email-stigge@antcom.de>
 References: <1340545637-5449-1-git-send-email-stigge@antcom.de>
@@ -23,46 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves MMC/SD controller initialization from the board specific file
-phy3250.c to clock.c.
+This DTS file update adds:
+* 3-channel ADC (for AD-IN on AD2, or 3-axis-accelerometer)
+* Interrupt key
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-
 ---
- arch/arm/mach-lpc32xx/clock.c   |    6 ++++--
- arch/arm/mach-lpc32xx/phy3250.c |    5 -----
- 2 files changed, 4 insertions(+), 7 deletions(-)
+ arch/arm/boot/dts/ea3250.dts |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
-+++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
-@@ -812,11 +812,13 @@ static int mmc_onoff_enable(struct clk *
- 	u32 tmp;
- 
- 	tmp = __raw_readl(LPC32XX_CLKPWR_MS_CTRL) &
--		~LPC32XX_CLKPWR_MSCARD_SDCARD_EN;
-+		~(LPC32XX_CLKPWR_MSCARD_SDCARD_EN |
-+		  LPC32XX_CLKPWR_MSCARD_MSDIO_PU_EN);
- 
- 	/* If rate is 0, disable clock */
- 	if (enable != 0)
--		tmp |= LPC32XX_CLKPWR_MSCARD_SDCARD_EN;
-+		tmp |= LPC32XX_CLKPWR_MSCARD_SDCARD_EN |
-+			LPC32XX_CLKPWR_MSCARD_MSDIO_PU_EN;
- 
- 	__raw_writel(tmp, LPC32XX_CLKPWR_MS_CTRL);
- 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
-+++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
-@@ -262,11 +262,6 @@ static void __init lpc3250_machine_init(
- 
- 	lpc32xx_serial_init();
- 
--	tmp = __raw_readl(LPC32XX_CLKPWR_MS_CTRL);
--	tmp |= LPC32XX_CLKPWR_MSCARD_SDCARD_EN |
--		LPC32XX_CLKPWR_MSCARD_MSDIO_PU_EN;
--	__raw_writel(tmp, LPC32XX_CLKPWR_MS_CTRL);
--
- 	/* Test clock needed for UDA1380 initial init */
- 	__raw_writel(LPC32XX_CLKPWR_TESTCLK2_SEL_MOSC |
- 		LPC32XX_CLKPWR_TESTCLK_TESTCLK2_EN,
+--- linux-2.6.orig/arch/arm/boot/dts/ea3250.dts
++++ linux-2.6/arch/arm/boot/dts/ea3250.dts
+@@ -152,6 +152,23 @@
+ 			uart1: serial@40014000 {
+ 				status = "okay";
+ 			};
++
++			/* 3-axis accelerometer X,Y,Z (or AD-IN instead of Z) */
++			adc@40048000 {
++				status = "okay";
++			};
++		};
++	};
++
++	gpio_keys {
++		compatible = "gpio-keys";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		autorepeat;
++		button@21 {
++			label = "GPIO Key UP";
++			linux,code = <103>;
++			gpios = <&gpio 4 1 0>; /* GPI_P3 1 */
+ 		};
+ 	};
+ };
