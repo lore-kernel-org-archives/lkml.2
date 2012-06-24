@@ -1,84 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab2FXS2P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 14:28:15 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:29139 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab2FXS2O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 14:28:14 -0400
-Date: Sun, 24 Jun 2012 20:28:12 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-cc: Dave Airlie <airlied@redhat.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mgag200: Fix a memory leak in mgag200fb_create()
-In-Reply-To: <CAHdPZaMCDO2GAyxR_WYxqpwC1Ym307uj3CXFG7r0LybMLH7Pig@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1206242025290.30361@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1206220012470.7671@swampdragon.chaosbits.net> <CAHdPZaMCDO2GAyxR_WYxqpwC1Ym307uj3CXFG7r0LybMLH7Pig@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754030Ab2FXSdf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 14:33:35 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52866 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752375Ab2FXSdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 14:33:33 -0400
+Date: Sun, 24 Jun 2012 20:33:19 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] mm/memcg: add MAX_CHARGE_BATCH to limit unnecessary
+ charge overhead
+Message-ID: <20120624183319.GV27816@cmpxchg.org>
+References: <1340504169-5344-1-git-send-email-liwp.linux@gmail.com>
+ <20120624094614.GT27816@cmpxchg.org>
+ <20120624100812.GA7095@kernel>
+ <20120624101948.GU27816@cmpxchg.org>
+ <20120624103258.GB10915@kernel>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-889122848-1340562492=:30361"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120624103258.GB10915@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-889122848-1340562492=:30361
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 22 Jun 2012, devendra.aaru wrote:
-
-> On Fri, Jun 22, 2012 at 3:43 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > First we allocate memory for 'sysram' with vmalloc() and subsequently
-> > we allocate for 'info' with framebuffer_alloc(). If the second
-> > allocation fails we return -ENOMEM, but neglect to vfree() the memory
-> > we previously allocated for 'sysram', thus leaking it.
+On Sun, Jun 24, 2012 at 06:32:58PM +0800, Wanpeng Li wrote:
+> On Sun, Jun 24, 2012 at 12:19:48PM +0200, Johannes Weiner wrote:
+> >On Sun, Jun 24, 2012 at 06:08:26PM +0800, Wanpeng Li wrote:
+> >> On Sun, Jun 24, 2012 at 11:46:14AM +0200, Johannes Weiner wrote:
+> >> >On Sun, Jun 24, 2012 at 10:16:09AM +0800, Wanpeng Li wrote:
+> >> >> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> >> >> 
+> >> >> Since exceeded unused cached charges would add pressure to
+> >> >> mem_cgroup_do_charge, more overhead would burn cpu cycles when
+> >> >> mem_cgroup_do_charge cause page reclaim or even OOM be triggered
+> >> >> just for such exceeded unused cached charges. Add MAX_CHARGE_BATCH
+> >> >> to limit max cached charges.
+> >> >> 
+> >> >> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> >> >> ---
+> >> >>  mm/memcontrol.c |   16 ++++++++++++++++
+> >> >>  1 file changed, 16 insertions(+)
+> >> >> 
+> >> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> >> index 0e092eb..1ff317a 100644
+> >> >> --- a/mm/memcontrol.c
+> >> >> +++ b/mm/memcontrol.c
+> >> >> @@ -1954,6 +1954,14 @@ void mem_cgroup_update_page_stat(struct page *page,
+> >> >>   * TODO: maybe necessary to use big numbers in big irons.
+> >> >>   */
+> >> >>  #define CHARGE_BATCH	32U
+> >> >> +
+> >> >> +/*
+> >> >> + * Max size of charge stock. Since exceeded unused cached charges would
+> >> >> + * add pressure to mem_cgroup_do_charge which will cause page reclaim or
+> >> >> + * even oom be triggered.
+> >> >> + */
+> >> >> +#define MAX_CHARGE_BATCH 1024U
+> >> >> +
+> >> >>  struct memcg_stock_pcp {
+> >> >>  	struct mem_cgroup *cached; /* this never be root cgroup */
+> >> >>  	unsigned int nr_pages;
+> >> >> @@ -2250,6 +2258,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> >> >>  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+> >> >>  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+> >> >>  	struct mem_cgroup *memcg = NULL;
+> >> >> +	struct memcg_stock_pcp *stock;
+> >> >>  	int ret;
+> >> >>  
+> >> >>  	/*
+> >> >> @@ -2320,6 +2329,13 @@ again:
+> >> >>  		rcu_read_unlock();
+> >> >>  	}
+> >> >>  
+> >> >> +	stock = &get_cpu_var(memcg_stock);
+> >> >> +	if (memcg == stock->cached && stock->nr_pages) {
+> >> >> +		if (stock->nr_pages > MAX_CHARGE_BATCH)
+> >> >> +			batch = nr_pages;
+> >> >> +	}
+> >> >> +	put_cpu_var(memcg_stock);
+> >> >
+> >> >The only way excessive stock can build up is if the charging task gets
+> >> >rescheduled, after trying to consume stock a few lines above, to a cpu
+> >> >it was running on when it built up stock in the past.
+> >> >
+> >> >    consume_stock()
+> >> >      memcg != stock->cached:
+> >> >        return false
+> >> >    do_charge()
+> >> >    <reschedule>
+> >> >    refill_stock()
+> >> >      memcg == stock->cached:
+> >> >        stock->nr_pages += nr_pages
+> >> 
+> >> __mem_cgroup_try_charge() {
+> >> 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+> >> 	[...]
+> >> 	mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
+> >> 	[...]
+> >> 	if(batch > nr_pages)
+> >> 		refill_stock(memcg, batch - nr_pages);
+> >> }
+> >> 
+> >> Consider this scenario, If one task wants to charge nr_pages = 1,
+> >> then batch = max(32,1) = 32, this time 31 excess charges 
+> >> will be charged in mem_cgroup_do_charge and then add to stock by
+> >> refill_stock. Generally there are many tasks in one memory cgroup and 
+> >> maybe charges frequency. In this situation, limit will reach soon, 
+> >> and cause mem_cgroup_reclaim to call try_to_free_mem_cgroup_pages.
 > >
-> Hi Jesper,
+> >But the stock is not a black hole that gets built up for giggles!  The
+> >next time the processes want to charge a page on this cpu, they will
+> >consume it from the stock.  Not add more pages to it.  Look at where
+> >consume_stock() is called.
 > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  drivers/gpu/drm/mgag200/mgag200_fb.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/gpu/drm/mgag200/mgag200_fb.c b/drivers/gpu/drm/mgag200/mgag200_fb.c
-> > index 880d336..3c837e5 100644
-> > --- a/drivers/gpu/drm/mgag200/mgag200_fb.c
-> > +++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
-> > @@ -156,8 +156,10 @@ static int mgag200fb_create(struct mga_fbdev *mfbdev,
-> >                return -ENOMEM;
-> >
-> >        info = framebuffer_alloc(0, device);
-> > -       if (info == NULL)
-> > +       if (info == NULL) {
-> > +               vfree(sysram);
-> >                return -ENOMEM;
-> > +       }
-> >
-> >        info->par = mfbdev;
-> >
-> This looks ok. but what about the error path?
-> there are more leaks at error paths. mgag200_framebuffer_init failcase
-> and the functions below like,
-> fb_alloc_cmap,
-> alloc_apertures,
-> ?
+> if(nr_pages == 1 && consume_stock(memcg))
+> 	goto done;
 > 
-I didn't do a complete review. I just happened to notice this one and 
-wanted to submit a patch.
+> Only when charge one page will call consume_stock. You can see the codes
+> in mem_cgroup_charge_common() which also call __mem_cgroup_try_charge, 
+> when both transparent huge and hugetlbfs pages, nr_pages will larger than 1.
 
-If I can find the time I may look more closely for other problems, but no 
-promises, so for now I'd suggest just merging this patch and then future 
-patches from me, you or someone else, can be added on top of that at a 
-later time.
+In which case, nr_pages will be bigger than CHARGE_BATCH, in which
+case batch equals nr_pages, in which case stock won't be refilled:
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+  unsigned int batch = max(CHARGE_BATCH, nr_pages);
+  ...
+  if (batch > nr_pages)
+    refill_stock(memcg, batch - nr_pages);
 
---8323328-889122848-1340562492=:30361--
+We could maybe make this
+
+  if (nr_pages == 1 && batch > nr_pages)
+    ...
+
+for clarity, but it won't make a behavioural difference.
