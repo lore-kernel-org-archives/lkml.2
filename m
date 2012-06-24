@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab2FXVCB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 17:02:01 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11197 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab2FXVB7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 17:01:59 -0400
-Date: Sun, 24 Jun 2012 23:01:58 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6656: Style cleanup of iwctl
-In-Reply-To: <20120624204711.GK5390@mwanda>
-Message-ID: <alpine.LNX.2.00.1206242258230.30361@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1206242131040.30361@swampdragon.chaosbits.net> <20120624204711.GK5390@mwanda>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753897Ab2FXVCd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 17:02:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46016 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752159Ab2FXVCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 17:02:31 -0400
+Message-ID: <4FE77FB9.8010209@zytor.com>
+Date: Sun, 24 Jun 2012 13:59:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jean Delvare <khali@linux-fr.org>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org, JBeulich@suse.com,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, cpufeature:   Rename X86_FEATURE_DTS to
+ X86_FEATURE_DTHERM
+References: <4FE34BCB.5050305@linux.intel.com> <tip-3bac8715443fc83413e221a5cd9d5cf3d82b79b4@git.kernel.org> <20120624214908.4177fc4a@endymion.delvare> <4FE77B11.1000808@zytor.com>
+In-Reply-To: <4FE77B11.1000808@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Jun 2012, Dan Carpenter wrote:
+On 06/24/2012 01:39 PM, H. Peter Anvin wrote:
+>
+> It isn't about finger-pointing, it is about a failure of process; we had
+> a process that would have caught this problem and the process failed.
+> There are certainly blame enough to go around, but I think one of the
+> things here is that lack of response isn't necessary an ACK - it may
+> actually be that the patch looked at first glance like it had no impact
+> on our area (incorrectly as it turned out.)
+>
 
-> On Sun, Jun 24, 2012 at 09:45:58PM +0200, Jesper Juhl wrote:
-> > Clean up the files iwctl.c and iwctl.h to match the official
-> > CodingStyle a bit more closely.
-> > 
-> > This is *not* a complete cleanup, but it brings the files quite close
-> > to the accepted style compared to the state they were originally in
-> > (which was a complete mess IMHO).
-> > 
-> > It's mostly just whitespace changes, but there are also a few
-> > pointless casts that were removed, a few tiny reshuffelings of code to
-> > reduce indentation etc, but nothing major. There are no functional
-> > changes.
-> > 
-> > I could have split this in multiple patches, I guess, but then I'd
-> > probably have ended up with a bunch of patches all touching the same
-> > lines multiple times in order to make multiple different changes and
-> > that didn't seem worth it.  I opted to just do the whole thing in one
-> > big patch, then we at least have a sane base upon which to apply
-> > future smaller cleanups.
-> 
-> Nope.  It is worth it.  Broken out patches are a million times
-> easier to review.
-> 
-Ok. I'll redo it as a series. It'll take a little while, so I may not 
-finish it tonight, but I'll do it.
+Let me be clear: I'm not blaming you, or anyone else, personally.  Like 
+many other failures, there were a number of steps in the chain here, one 
+of them being not checking this in the script from the beginning, and 
+that one is mine.
 
-> It frustrates me that you would do things like this when you know
-> the rules.  Which part is difficult to understand?
-> 
-Nothing is difficult to understand, but breaking this into (for example) a 
-series that does:
-	1) fix the indentation to use tabs and not spaces and proper depth
-	2) remove space between cast and variable
-	3) add spaces around operators (like "foo && bar" rather than "foo&&bar")
-	4) add {} to all branches of if statement if one needs it (or remove if none need them)
-would, for many lines, result in all 4 patches changing the same lines.
-That just seemed like a little too much churn for a trivial style cleanup 
-patch.
+	-hpa
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
+
 
