@@ -1,247 +1,567 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab2FXKeb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 06:34:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45130 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749Ab2FXKe1 (ORCPT
+	id S1755938Ab2FXLKy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 07:10:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51270 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753923Ab2FXLJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 06:34:27 -0400
-Message-ID: <1340534180.4696.14.camel@localhost>
-Subject: Re: [PATCH] grvga: Fix error handling issues
-From: Emil Goode <emilgoode@gmail.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        w.sang@pengutronix.de
-Date: Sun, 24 Jun 2012 12:36:20 +0200
-In-Reply-To: <alpine.DEB.2.02.1206240711580.2178@localhost6.localdomain6>
-References: <1340381479-6371-1-git-send-email-emilgoode@gmail.com>
-	   <alpine.DEB.2.02.1206221811150.1901@hadrien>
-	  <1340382044.3963.2.camel@localhost>
-	  <alpine.DEB.2.02.1206221820340.1901@hadrien>
-	 <1340488911.5321.10.camel@localhost>
-	 <alpine.DEB.2.02.1206240711580.2178@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 24 Jun 2012 07:09:52 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] Extcon: Arizona: Add driver for Wolfson Arizona class devices
+Date: Sun, 24 Jun 2012 12:09:45 +0100
+Message-Id: <1340536185-27540-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes I considered converting to devm_ and keeping the of_iounmap in.
-But I just feel like I'm mixing two api's. If converting to devm_ really
-is the right thing to do, tell me and I will send another patch :)
+Most Wolfson Arizona class audio hub CODECs include a flexible ultra low
+power accessory detection subsystem. This driver exposes initial support
+for this subsystem via the Extcon framework, implementing support for
+ultra low power detection of headphone and headset with the ability to
+detect the polarity of a headset.
 
-Thanks,
+The functionality of the devices is much richer and more flexible than
+the current driver, future patches will extend the features of the
+driver to more fully exploit this.
 
-Emil
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/Kconfig          |    8 +
+ drivers/extcon/Makefile         |    1 +
+ drivers/extcon/extcon-arizona.c |  491 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 500 insertions(+)
+ create mode 100644 drivers/extcon/extcon-arizona.c
 
-On Sun, 2012-06-24 at 07:15 +0200, Julia Lawall wrote:
-> I see.  You could still use a devm_ function for request_mem_region.
-> Also I noticed that the remove function uses iounmap directly, not 
-> io_iounmap.  The latter is just a wrapper for the former, but it could be 
-> good to use the right name.
-> 
-> julia
-> 
-> On Sun, 24 Jun 2012, Emil Goode wrote:
-> 
-> > The of_ioremap function is used in this code as well and I don't know of
-> > a devm_ equivalent for it. For consistency I think it is better to leave
-> > it as it is in this case. So I stick with v1 of this patch.
-> >
-> > Thanks,
-> >
-> > Emil
-> >
-> > On Fri, 2012-06-22 at 18:21 +0200, Julia Lawall wrote:
-> >> On Fri, 22 Jun 2012, Emil Goode wrote:
-> >>
-> >>> Good idea, I will take another look at it tomorrow.
-> >>
-> >> There is a devm_ function that combines request_mem_region and ioremap
-> >> that could be useful.
-> >>
-> >> julia
-> >>
-> >>>
-> >>> Thanks,
-> >>>
-> >>> Emil
-> >>>
-> >>> On Fri, 2012-06-22 at 18:12 +0200, Julia Lawall wrote:
-> >>>> Maybe you could used the devm_ functions for request_mem_region and
-> >>>> ioremap so that the error handling can just be dropped?
-> >>>>
-> >>>> julia
-> >>>>
-> >>>> On Fri, 22 Jun 2012, Emil Goode wrote:
-> >>>>
-> >>>>> This patch fixes two problems with the error handling in the
-> >>>>> grvga_probe function.
-> >>>>>
-> >>>>> - If the call to grvga_parse_custom on line 370 fails we use
-> >>>>>   the wrong label so that release_mem_region will be called
-> >>>>>   without a call to request_mem_region being made.
-> >>>>>
-> >>>>> - If the call to ioremap on line 436 fails we should not try
-> >>>>>   to call iounmap. I added an if statement to check whether or
-> >>>>>   not a call to iounmap should be made.
-> >>>>>
-> >>>>> - I also changed the names of the labels to make the code
-> >>>>>   easier to read.
-> >>>>>
-> >>>>> Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> >>>>> ---
-> >>>>>  drivers/video/grvga.c |   34 ++++++++++++++++++----------------
-> >>>>>  1 file changed, 18 insertions(+), 16 deletions(-)
-> >>>>>
-> >>>>> diff --git a/drivers/video/grvga.c b/drivers/video/grvga.c
-> >>>>> index da066c2..d9d688a 100644
-> >>>>> --- a/drivers/video/grvga.c
-> >>>>> +++ b/drivers/video/grvga.c
-> >>>>> @@ -354,7 +354,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  	 */
-> >>>>>  	if (fb_get_options("grvga", &options)) {
-> >>>>>  		retval = -ENODEV;
-> >>>>> -		goto err;
-> >>>>> +		goto free_fb;
-> >>>>>  	}
-> >>>>>
-> >>>>>  	if (!options || !*options)
-> >>>>> @@ -370,7 +370,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  			if (grvga_parse_custom(this_opt, &info->var) < 0) {
-> >>>>>  				dev_err(&dev->dev, "Failed to parse custom mode (%s).\n", this_opt);
-> >>>>>  				retval = -EINVAL;
-> >>>>> -				goto err1;
-> >>>>> +				goto free_fb;
-> >>>>>  			}
-> >>>>>  		} else if (!strncmp(this_opt, "addr", 4))
-> >>>>>  			grvga_fix_addr = simple_strtoul(this_opt + 5, NULL, 16);
-> >>>>> @@ -390,7 +390,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  	if (!request_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]), "grlib-svgactrl regs")) {
-> >>>>>  		dev_err(&dev->dev, "registers already mapped\n");
-> >>>>>  		retval = -EBUSY;
-> >>>>> -		goto err;
-> >>>>> +		goto free_fb;
-> >>>>>  	}
-> >>>>>
-> >>>>>  	par->regs = of_ioremap(&dev->resource[0], 0,
-> >>>>> @@ -400,14 +400,14 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  	if (!par->regs) {
-> >>>>>  		dev_err(&dev->dev, "failed to map registers\n");
-> >>>>>  		retval = -ENOMEM;
-> >>>>> -		goto err1;
-> >>>>> +		goto release_regs;
-> >>>>>  	}
-> >>>>>
-> >>>>>  	retval = fb_alloc_cmap(&info->cmap, 256, 0);
-> >>>>>  	if (retval < 0) {
-> >>>>>  		dev_err(&dev->dev, "failed to allocate mem with fb_alloc_cmap\n");
-> >>>>>  		retval = -ENOMEM;
-> >>>>> -		goto err2;
-> >>>>> +		goto unmap_regs;
-> >>>>>  	}
-> >>>>>
-> >>>>>  	if (mode_opt) {
-> >>>>> @@ -415,7 +415,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  				      grvga_modedb, sizeof(grvga_modedb), &grvga_modedb[0], 8);
-> >>>>>  		if (!retval || retval == 4) {
-> >>>>>  			retval = -EINVAL;
-> >>>>> -			goto err3;
-> >>>>> +			goto dealloc_cmap;
-> >>>>>  		}
-> >>>>>  	}
-> >>>>>
-> >>>>> @@ -430,7 +430,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  		if (!request_mem_region(physical_start, grvga_mem_size, dev->name)) {
-> >>>>>  			dev_err(&dev->dev, "failed to request memory region\n");
-> >>>>>  			retval = -ENOMEM;
-> >>>>> -			goto err3;
-> >>>>> +			goto dealloc_cmap;
-> >>>>>  		}
-> >>>>>
-> >>>>>  		virtual_start = (unsigned long) ioremap(physical_start, grvga_mem_size);
-> >>>>> @@ -438,7 +438,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  		if (!virtual_start) {
-> >>>>>  			dev_err(&dev->dev, "error mapping framebuffer memory\n");
-> >>>>>  			retval = -ENOMEM;
-> >>>>> -			goto err4;
-> >>>>> +			goto free_mem;
-> >>>>>  		}
-> >>>>>  	} else {	/* Allocate frambuffer memory */
-> >>>>>
-> >>>>> @@ -451,7 +451,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  				"unable to allocate framebuffer memory (%lu bytes)\n",
-> >>>>>  				grvga_mem_size);
-> >>>>>  			retval = -ENOMEM;
-> >>>>> -			goto err3;
-> >>>>> +			goto dealloc_cmap;
-> >>>>>  		}
-> >>>>>
-> >>>>>  		physical_start = dma_map_single(&dev->dev, (void *)virtual_start, grvga_mem_size, DMA_TO_DEVICE);
-> >>>>> @@ -484,7 +484,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>  	retval = register_framebuffer(info);
-> >>>>>  	if (retval < 0) {
-> >>>>>  		dev_err(&dev->dev, "failed to register framebuffer\n");
-> >>>>> -		goto err4;
-> >>>>> +		goto free_mem;
-> >>>>>  	}
-> >>>>>
-> >>>>>  	__raw_writel(physical_start, &par->regs->fb_pos);
-> >>>>> @@ -493,21 +493,23 @@ static int __devinit grvga_probe(struct platform_device *dev)
-> >>>>>
-> >>>>>  	return 0;
-> >>>>>
-> >>>>> -err4:
-> >>>>> +free_mem:
-> >>>>>  	dev_set_drvdata(&dev->dev, NULL);
-> >>>>>  	if (grvga_fix_addr) {
-> >>>>>  		release_mem_region(physical_start, grvga_mem_size);
-> >>>>> -		iounmap((void *)virtual_start);
-> >>>>> +		if (virtual_start)
-> >>>>> +			iounmap((void *)virtual_start);
-> >>>>>  	} else
-> >>>>>  		kfree((void *)virtual_start);
-> >>>>> -err3:
-> >>>>> +
-> >>>>> +dealloc_cmap:
-> >>>>>  	fb_dealloc_cmap(&info->cmap);
-> >>>>> -err2:
-> >>>>> +unmap_regs:
-> >>>>>  	of_iounmap(&dev->resource[0], par->regs,
-> >>>>>  		   resource_size(&dev->resource[0]));
-> >>>>> -err1:
-> >>>>> +release_regs:
-> >>>>>  	release_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]));
-> >>>>> -err:
-> >>>>> +free_fb:
-> >>>>>  	framebuffer_release(info);
-> >>>>>
-> >>>>>  	return retval;
-> >>>>> --
-> >>>>> 1.7.10
-> >>>>>
-> >>>>> --
-> >>>>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> >>>>> the body of a message to majordomo@vger.kernel.org
-> >>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>>>
-> >>>
-> >>>
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>>
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index 29c5cf8..bb385ac 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -29,4 +29,12 @@ config EXTCON_MAX8997
+ 	  Maxim MAX8997 PMIC. The MAX8997 MUIC is a USB port accessory
+ 	  detector and switch.
+ 
++config EXTCON_ARIZONA
++	tristate "Wolfson Arizona EXTCON support"
++	depends on MFD_ARIZONA
++	help
++	  Say Y here to enable support for external accessory detection
++	  with Wolfson Arizona devices. These are audio CODECs with
++	  advanced audio accessory detection support.
++
+ endif # MULTISTATE_SWITCH
+diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+index 86020bd..e932caa 100644
+--- a/drivers/extcon/Makefile
++++ b/drivers/extcon/Makefile
+@@ -5,3 +5,4 @@
+ obj-$(CONFIG_EXTCON)		+= extcon_class.o
+ obj-$(CONFIG_EXTCON_GPIO)	+= extcon_gpio.o
+ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
++obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+new file mode 100644
+index 0000000..b068bc9
+--- /dev/null
++++ b/drivers/extcon/extcon-arizona.c
+@@ -0,0 +1,491 @@
++/*
++ * extcon-arizona.c - Extcon driver Wolfson Arizona devices
++ *
++ *  Copyright (C) 2012 Wolfson Microelectronics plc
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++#include <linux/interrupt.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
++#include <linux/regulator/consumer.h>
++#include <linux/extcon.h>
++
++#include <linux/mfd/arizona/core.h>
++#include <linux/mfd/arizona/pdata.h>
++#include <linux/mfd/arizona/registers.h>
++
++struct arizona_extcon_info {
++	struct device *dev;
++	struct arizona *arizona;
++	struct mutex lock;
++	struct regulator *micvdd;
++
++	int micd_mode;
++	const struct arizona_micd_config *micd_modes;
++	int micd_num_modes;
++
++	bool micd_reva;
++
++	bool mic;
++	bool detecting;
++	int jack_flips;
++
++	struct extcon_dev edev;
++};
++
++static const struct arizona_micd_config micd_default_modes[] = {
++	{ ARIZONA_ACCDET_SRC, 1 << ARIZONA_MICD_BIAS_SRC_SHIFT, 0 },
++	{ 0,                  2 << ARIZONA_MICD_BIAS_SRC_SHIFT, 1 },
++};
++
++#define ARIZONA_CABLE_MECHANICAL "Mechanical"
++#define ARIZONA_CABLE_HEADPHONE  "Headphone"
++#define ARIZONA_CABLE_HEADSET    "Headset"
++
++static const char *arizona_cable[] = {
++	ARIZONA_CABLE_MECHANICAL,
++	ARIZONA_CABLE_HEADSET,
++	ARIZONA_CABLE_HEADPHONE,
++	NULL,
++};
++
++static const u32 arizona_exclusions[] = {
++	0x6,   /* Headphone and headset */
++	0,
++};
++
++static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
++{
++	struct arizona *arizona = info->arizona;
++
++	gpio_set_value_cansleep(arizona->pdata.micd_pol_gpio,
++				info->micd_modes[mode].gpio);
++	regmap_update_bits(arizona->regmap, ARIZONA_MIC_DETECT_1,
++			   ARIZONA_MICD_BIAS_SRC_MASK,
++			   info->micd_modes[mode].bias);
++	regmap_update_bits(arizona->regmap, ARIZONA_ACCESSORY_DETECT_MODE_1,
++			   ARIZONA_ACCDET_SRC, info->micd_modes[mode].src);
++
++	info->micd_mode = mode;
++
++	dev_dbg(arizona->dev, "Set jack polarity to %d\n", mode);
++}
++
++static void arizona_start_mic(struct arizona_extcon_info *info)
++{
++	struct arizona *arizona = info->arizona;
++	bool change;
++	int ret;
++
++	info->detecting = true;
++	info->mic = false;
++	info->jack_flips = 0;
++
++	/* Microphone detection can't use idle mode */
++	pm_runtime_get(info->dev);
++
++	ret = regulator_enable(info->micvdd);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to enable MICVDD: %d\n",
++			ret);
++	}
++
++	if (info->micd_reva) {
++		regmap_write(arizona->regmap, 0x80, 0x3);
++		regmap_write(arizona->regmap, 0x294, 0);
++		regmap_write(arizona->regmap, 0x80, 0x0);
++	}
++
++	regmap_update_bits_check(arizona->regmap, ARIZONA_MIC_DETECT_1,
++				 ARIZONA_MICD_ENA, ARIZONA_MICD_ENA,
++				 &change);
++	if (!change) {
++		regulator_disable(info->micvdd);
++		pm_runtime_put_autosuspend(info->dev);
++	}
++}
++
++static void arizona_stop_mic(struct arizona_extcon_info *info)
++{
++	struct arizona *arizona = info->arizona;
++	bool change;
++
++	regmap_update_bits_check(arizona->regmap, ARIZONA_MIC_DETECT_1,
++				 ARIZONA_MICD_ENA, 0,
++				 &change);
++
++	if (info->micd_reva) {
++		regmap_write(arizona->regmap, 0x80, 0x3);
++		regmap_write(arizona->regmap, 0x294, 2);
++		regmap_write(arizona->regmap, 0x80, 0x0);
++	}
++
++	if (change) {
++		regulator_disable(info->micvdd);
++		pm_runtime_put_autosuspend(info->dev);
++	}
++}
++
++static irqreturn_t arizona_micdet(int irq, void *data)
++{
++	struct arizona_extcon_info *info = data;
++	struct arizona *arizona = info->arizona;
++	unsigned int val;
++	int ret;
++
++	mutex_lock(&info->lock);
++
++	ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read MICDET: %d\n", ret);
++		return IRQ_NONE;
++	}
++
++	dev_dbg(arizona->dev, "MICDET: %x\n", val);
++
++	if (!(val & ARIZONA_MICD_VALID)) {
++		dev_warn(arizona->dev, "Microphone detection state invalid\n");
++		mutex_unlock(&info->lock);
++		return IRQ_NONE;
++	}
++
++	/* Due to jack detect this should never happen */
++	if (!(val & ARIZONA_MICD_STS)) {
++		dev_warn(arizona->dev, "Detected open circuit\n");
++		info->detecting = false;
++		goto handled;
++	}
++
++	/* If we got a high impedence we should have a headset, report it. */
++	if (info->detecting && (val & 0x400)) {
++		ret = extcon_set_cable_state(&info->edev,
++					     ARIZONA_CABLE_HEADSET, true);
++
++		if (ret != 0)
++			dev_err(arizona->dev, "Headset report failed: %d\n",
++				ret);
++
++		info->mic = true;
++		info->detecting = false;
++		goto handled;
++	}
++
++	/* If we detected a lower impedence during initial startup
++	 * then we probably have the wrong polarity, flip it.  Don't
++	 * do this for the lowest impedences to speed up detection of
++	 * plain headphones.  If both polarities report a low
++	 * impedence then give up and report headphones.
++	 */
++	if (info->detecting && (val & 0x3f8)) {
++		info->jack_flips++;
++
++		if (info->jack_flips >= info->micd_num_modes) {
++			dev_dbg(arizona->dev, "Detected headphone\n");
++			info->detecting = false;
++			ret = extcon_set_cable_state(&info->edev,
++						     ARIZONA_CABLE_HEADPHONE,
++						     true);
++			if (ret != 0)
++				dev_err(arizona->dev,
++					"Headphone report failed: %d\n",
++				ret);
++		} else {
++			info->micd_mode++;
++			if (info->micd_mode == info->micd_num_modes)
++				info->micd_mode = 0;
++			arizona_extcon_set_mode(info, info->micd_mode);
++
++			info->jack_flips++;
++		}
++
++		goto handled;
++	}
++
++	/*
++	 * If we're still detecting and we detect a short then we've
++	 * got a headphone.  Otherwise it's a button press, the
++	 * button reporting is stubbed out for now.
++	 */
++	if (val & 0x3fc) {
++		if (info->mic) {
++			dev_dbg(arizona->dev, "Mic button detected\n");
++
++		} else if (info->detecting) {
++			dev_dbg(arizona->dev, "Headphone detected\n");
++			info->detecting = false;
++			arizona_stop_mic(info);
++
++			ret = extcon_set_cable_state(&info->edev,
++						     ARIZONA_CABLE_HEADPHONE,
++						     true);
++			if (ret != 0)
++				dev_err(arizona->dev,
++					"Headphone report failed: %d\n",
++				ret);
++		} else {
++			dev_warn(arizona->dev, "Button with no mic: %x\n",
++				 val);
++		}
++	} else {
++		dev_dbg(arizona->dev, "Mic button released\n");
++	}
++
++handled:
++	pm_runtime_mark_last_busy(info->dev);
++	mutex_unlock(&info->lock);
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t arizona_jackdet(int irq, void *data)
++{
++	struct arizona_extcon_info *info = data;
++	struct arizona *arizona = info->arizona;
++	unsigned int val;
++	int ret;
++
++	pm_runtime_get_sync(info->dev);
++
++	mutex_lock(&info->lock);
++
++	ret = regmap_read(arizona->regmap, ARIZONA_AOD_IRQ_RAW_STATUS, &val);
++	if (ret != 0) {
++		dev_err(arizona->dev, "Failed to read jackdet status: %d\n",
++			ret);
++		mutex_unlock(&info->lock);
++		pm_runtime_put_autosuspend(info->dev);
++		return IRQ_NONE;
++	}
++
++	if (val & ARIZONA_JD1_STS) {
++		dev_dbg(arizona->dev, "Detected jack\n");
++		ret = extcon_set_cable_state(&info->edev,
++					     ARIZONA_CABLE_MECHANICAL, true);
++
++		if (ret != 0)
++			dev_err(arizona->dev, "Mechanical report failed: %d\n",
++				ret);
++
++		arizona_start_mic(info);
++	} else {
++		dev_dbg(arizona->dev, "Detected jack removal\n");
++
++		arizona_stop_mic(info);
++
++		ret = extcon_update_state(&info->edev, 0xffffffff, 0);
++		if (ret != 0)
++			dev_err(arizona->dev, "Removal report failed: %d\n",
++				ret);
++	}
++
++	mutex_unlock(&info->lock);
++
++	pm_runtime_mark_last_busy(info->dev);
++	pm_runtime_put_autosuspend(info->dev);
++
++	return IRQ_HANDLED;
++}
++
++static int __devinit arizona_extcon_probe(struct platform_device *pdev)
++{
++	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
++	struct arizona_pdata *pdata;
++	struct arizona_extcon_info *info;
++	int ret, mode;
++
++	pdata = dev_get_platdata(arizona->dev);
++
++	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
++	if (!info) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	info->micvdd = devm_regulator_get(arizona->dev, "MICVDD");
++	if (IS_ERR(info->micvdd)) {
++		ret = PTR_ERR(info->micvdd);
++		dev_err(arizona->dev, "Failed to get MICVDD: %d\n", ret);
++		goto err;
++	}
++
++	mutex_init(&info->lock);
++	info->arizona = arizona;
++	info->dev = &pdev->dev;
++	info->detecting = true;
++	platform_set_drvdata(pdev, info);
++
++	switch (arizona->type) {
++	case WM5102:
++		switch (arizona->rev) {
++		case 0:
++			info->micd_reva = true;
++			break;
++		default:
++			break;
++		}
++		break;
++	default:
++		break;
++	}
++
++	info->edev.name = "Headset Jack";
++	info->edev.supported_cable = arizona_cable;
++	info->edev.mutually_exclusive = arizona_exclusions;
++
++	ret = extcon_dev_register(&info->edev, arizona->dev);
++	if (ret < 0) {
++		dev_err(arizona->dev, "extcon_dev_regster() failed: %d\n",
++			ret);
++		goto err;
++	}
++
++	if (pdata->num_micd_configs) {
++		info->micd_modes = pdata->micd_configs;
++		info->micd_num_modes = pdata->num_micd_configs;
++	} else {
++		info->micd_modes = micd_default_modes;
++		info->micd_num_modes = ARRAY_SIZE(micd_default_modes);
++	}
++
++	if (arizona->pdata.micd_pol_gpio > 0) {
++		if (info->micd_modes[0].gpio)
++			mode = GPIOF_OUT_INIT_HIGH;
++		else
++			mode = GPIOF_OUT_INIT_LOW;
++
++		ret = devm_gpio_request_one(&pdev->dev,
++					    arizona->pdata.micd_pol_gpio,
++					    mode,
++					    "MICD polarity");
++		if (ret != 0) {
++			dev_err(arizona->dev, "Failed to request GPIO%d: %d\n",
++				arizona->pdata.micd_pol_gpio, ret);
++			goto err_register;
++		}
++	}
++
++	arizona_extcon_set_mode(info, 0);
++
++	pm_runtime_enable(&pdev->dev);
++	pm_runtime_idle(&pdev->dev);
++	pm_runtime_get_sync(&pdev->dev);
++
++	ret = arizona_request_irq(arizona, ARIZONA_IRQ_JD_RISE,
++				  "JACKDET rise", arizona_jackdet, info);
++	if (ret != 0) {
++		dev_err(&pdev->dev, "Failed to get JACKDET rise IRQ: %d\n",
++			ret);
++		goto err_register;
++	}
++
++	ret = arizona_set_irq_wake(arizona, ARIZONA_IRQ_JD_RISE, 1);
++	if (ret != 0) {
++		dev_err(&pdev->dev, "Failed to set JD rise IRQ wake: %d\n",
++			ret);
++		goto err_rise;
++	}
++
++	ret = arizona_request_irq(arizona, ARIZONA_IRQ_JD_FALL,
++				  "JACKDET fall", arizona_jackdet, info);
++	if (ret != 0) {
++		dev_err(&pdev->dev, "Failed to get JD fall IRQ: %d\n", ret);
++		goto err_rise_wake;
++	}
++
++	ret = arizona_set_irq_wake(arizona, ARIZONA_IRQ_JD_FALL, 1);
++	if (ret != 0) {
++		dev_err(&pdev->dev, "Failed to set JD fall IRQ wake: %d\n",
++			ret);
++		goto err_fall;
++	}
++
++	ret = arizona_request_irq(arizona, ARIZONA_IRQ_MICDET,
++				  "MICDET", arizona_micdet, info);
++	if (ret != 0) {
++		dev_err(&pdev->dev, "Failed to get MICDET IRQ: %d\n", ret);
++		goto err_fall_wake;
++	}
++
++	regmap_update_bits(arizona->regmap, ARIZONA_MIC_DETECT_1,
++			   ARIZONA_MICD_BIAS_STARTTIME_MASK |
++			   ARIZONA_MICD_RATE_MASK,
++			   7 << ARIZONA_MICD_BIAS_STARTTIME_SHIFT |
++			   8 << ARIZONA_MICD_RATE_SHIFT);
++
++	arizona_clk32k_enable(arizona);
++	regmap_update_bits(arizona->regmap, ARIZONA_JACK_DETECT_DEBOUNCE,
++			   ARIZONA_JD1_DB, ARIZONA_JD1_DB);
++	regmap_update_bits(arizona->regmap, ARIZONA_JACK_DETECT_ANALOGUE,
++			   ARIZONA_JD1_ENA, ARIZONA_JD1_ENA);
++
++	pm_runtime_put(&pdev->dev);
++
++	return 0;
++
++err_fall_wake:
++	arizona_set_irq_wake(arizona, ARIZONA_IRQ_JD_FALL, 0);
++err_fall:
++	arizona_free_irq(arizona, ARIZONA_IRQ_JD_FALL, info);
++err_rise_wake:
++	arizona_set_irq_wake(arizona, ARIZONA_IRQ_JD_RISE, 0);
++err_rise:
++	arizona_free_irq(arizona, ARIZONA_IRQ_JD_RISE, info);
++err_register:
++	pm_runtime_disable(&pdev->dev);
++	extcon_dev_unregister(&info->edev);
++err:
++	return ret;
++}
++
++static int __devexit arizona_extcon_remove(struct platform_device *pdev)
++{
++	struct arizona_extcon_info *info = platform_get_drvdata(pdev);
++	struct arizona *arizona = info->arizona;
++
++	pm_runtime_disable(&pdev->dev);
++
++	arizona_set_irq_wake(arizona, ARIZONA_IRQ_JD_RISE, 0);
++	arizona_set_irq_wake(arizona, ARIZONA_IRQ_JD_FALL, 0);
++	arizona_free_irq(arizona, ARIZONA_IRQ_MICDET, info);
++	arizona_free_irq(arizona, ARIZONA_IRQ_JD_RISE, info);
++	arizona_free_irq(arizona, ARIZONA_IRQ_JD_FALL, info);
++	regmap_update_bits(arizona->regmap, ARIZONA_JACK_DETECT_ANALOGUE,
++			   ARIZONA_JD1_ENA, 0);
++	arizona_clk32k_disable(arizona);
++	extcon_dev_unregister(&info->edev);
++
++	return 0;
++}
++
++static struct platform_driver arizona_extcon_driver = {
++	.driver		= {
++		.name	= "arizona-extcon",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= arizona_extcon_probe,
++	.remove		= __devexit_p(arizona_extcon_remove),
++};
++
++module_platform_driver(arizona_extcon_driver);
++
++MODULE_DESCRIPTION("Arizona Extcon driver");
++MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:extcon-arizona");
+-- 
+1.7.10
 
