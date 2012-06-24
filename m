@@ -1,215 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab2FXPSp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 11:18:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59846 "EHLO mx1.redhat.com"
+	id S1755491Ab2FXPXG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 11:23:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46737 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab2FXPSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 11:18:44 -0400
-Message-ID: <1340551118.14120.66.camel@bling.home>
-Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
-        mst@redhat.com
-Date: Sun, 24 Jun 2012 09:18:38 -0600
-In-Reply-To: <4FE6EC20.5030502@redhat.com>
-References: <20120622220040.9858.43665.stgit@bling.home>
-	 <20120622221559.9858.59593.stgit@bling.home> <4FE6EC20.5030502@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750887Ab2FXPXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 11:23:02 -0400
+Date: Sun, 24 Jun 2012 17:20:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>, David Howells <dhowells@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: deferring __fput()
+Message-ID: <20120624152050.GA24596@redhat.com>
+References: <1340369098.2464.20.camel@falcor> <20120623092049.GH14083@ZenIV.linux.org.uk> <20120623194505.GI14083@ZenIV.linux.org.uk> <20120623205755.GJ14083@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120623205755.GJ14083@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-06-24 at 13:29 +0300, Avi Kivity wrote:
-> On 06/23/2012 01:16 AM, Alex Williamson wrote:
-> > KVM_IRQFD currently only supports edge triggered interrupts,
-> > asserting then immediately deasserting an interrupt.  There are a
-> > couple ways we can emulate level triggered interrupts using
-> > discrete events depending on the usage model we expect from drivers.
-> > This patch implements a level emulation model useful for external
-> > assigned device drivers, like VFIO.  The irqfd is used to assert
-> > the interrupt.  When the guest issues an EOI for the interrupt, the
-> > level is automatically deasserted and the irqfd user is notified via
-> > an eventfd.  This is therefore the LEVEL_EOI extension to KVM_IRQFD.
-> > To do this, we need to allocate a new irq source ID for the interrupt
-> > so we don't get interference from userspace.
-> > 
-> >  
-> > +With KVM_CAP_IRQFD_LEVEL_EOI KVM_IRQFD is able to support a level
-> > +triggered interrupt model where the irqchip pin (kvm_irqfd.gsi) is
-> > +asserted from the kvm_irqfd.fd eventfd and remain asserted until the
-> > +guest issues an EOI for the irqchip pin.  The level interrupt is
-> > +then de-asserted and the caller is notified via the eventfd specified
-> > +by kvm_irqfd.fd2.  Note that users of this interface are responsible
-> > +for re-asserting the interrupt if their device still requires service
-> > +after receiving the EOI notification.  Additionally, users must not
-> > +re-assert an interrupt until after receiving an EOI.  
-> 
-> What happens if this is violated?
+On 06/23, Al Viro wrote:
+>
+> You know what...  Let's dump that "reverse the list" thing completely.
 
-Hmm, perhaps nothing.  The only race I see is re-asserting in the gap
-between de-asserting the guest and sending the EOI.  At worst that would
-cause a spurious interrupt, so probably no big deal.
+Yes, it was never really needed for fifo.
 
-> > When available,
-> > +this feature is enabled using the KVM_IRQFD_FLAG_LEVEL_EOI flag.
-> > +De-assigning an irqfd setup using this flag should include both
-> > +KVM_IRQFD_FLAG_DEASSIGN and KVM_IRQFD_FLAG_LEVEL_EOI and will be
-> > +matched using kvm_irqfd.fd, kvm_irqfd.gsi, and kvm_irqfd.fd2.
-> > +De-assigning automatically de-asserts the interrupt line setup through
-> > +this interface.
-> >  
-> > @@ -203,8 +232,8 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
-> >  	struct kvm_irq_routing_table *irq_rt;
-> >  	struct _irqfd *irqfd, *tmp;
-> >  	struct file *file = NULL;
-> > -	struct eventfd_ctx *eventfd = NULL;
-> > -	int ret;
-> > +	struct eventfd_ctx *eventfd = NULL, *eoi_eventfd = NULL;
-> > +	int ret, irq_source_id = -1;
-> >  	unsigned int events;
-> >  
-> >  	irqfd = kzalloc(sizeof(*irqfd), GFP_KERNEL);
-> > @@ -214,7 +243,30 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
-> >  	irqfd->kvm = kvm;
-> >  	irqfd->gsi = args->gsi;
-> >  	INIT_LIST_HEAD(&irqfd->list);
-> > -	INIT_WORK(&irqfd->inject, irqfd_inject);
-> > +
-> > +	if (args->flags & KVM_IRQFD_FLAG_LEVEL_EOI) {
-> > +		irq_source_id = kvm_request_irq_source_id(kvm);
-> > +		if (irq_source_id < 0) {
-> > +			ret = irq_source_id;
-> > +			goto fail;
-> 
-> 'file' is NULL at this point, and fput() doesn't test for NULL.
+> What we ought to
+> do instead of that is honestly keeping both the head of the (single-linked) list and
+> pointer to pointer to its last element.  Sure, that'll eat one more word in task_struct.
+> And it doesn't matter, since we'll be able to kill something else in there - namely,
+> ->scm_work_list.
 
-Good catch.  I was looking for an excuse to move the existing code to
-eventfd_ctx_fdget() and avoid the 2 step process it uses now.
+Still it is better to not add the second pointer, task->task_works can
+point to the last work, and last_work->next points to the first one.
 
-> > +		}
-> > +
-> > +		eoi_eventfd = eventfd_ctx_fdget(args->fd2);
-> > +		if (IS_ERR(eoi_eventfd)) {
-> > +			ret = PTR_ERR(eoi_eventfd);
-> > +			goto fail;
-> 
-> Same.
+> 1) kill task_work->data; the only user that cares will allocate task_work + struct cred * and
+> use container_of() to get to it.
 
-Yep
+OK. See the patch below. I need to cleanup it somehow (and test of course),
+cred.h needs task_work.h but task_work.h needs task_struct.
 
-> > +		}
-> > +
-> > +		irqfd->irq_source_id = irq_source_id;
-> > +		irqfd->eoi_eventfd = eoi_eventfd;
-> > +		irqfd->notifier.gsi = args->gsi;
-> > +		irqfd->notifier.irq_acked = irqfd_ack_level;
-> > +		kvm_register_irq_ack_notifier(kvm, &irqfd->notifier);
-> > +
-> > +		INIT_WORK(&irqfd->inject, irqfd_inject_level);
-> > +	} else
-> > +		INIT_WORK(&irqfd->inject, irqfd_inject_edge);
-> > +
-> >  	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
-> >  
-> >  	file = eventfd_fget(args->fd);
-> 
-> > @@ -242,7 +299,8 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
-> >  
-> >  	ret = 0;
-> >  	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
-> > -		if (irqfd->eventfd != tmp->eventfd)
-> > +		if (irqfd->eventfd != tmp->eventfd &&
-> > +		    irqfd->eventfd != tmp->eoi_eventfd)
-> >  			continue;
-> 
-> So we allow duplicate irqfd with differing eoifd (or edge-triggered and
-> level-triggered irqfd on the same context).
-> 
-> (why the check in the first place? just so we can have a reliable
-> deassign or is it avoiding a deeper problem?)
+And, David, can you suggest the good name for cred->xxx?
 
-I really wasn't sure to what extent we wanted to prevent duplicates.  My
-guess was that we don't want to have an irqfd trigger more than one
-thing.  That seems to be what the current code does.  I don't see any
-problems with multiple irqfds triggering the same eventfd though.  I
-only added a test that a new irqfd can't be triggered by an existing
-eoi_eventfd as that could make a nasty loop.
+> 2) replace current->task_works with struct task_work *task_works, **last_work and replace
+> hlist_node in task_work with struct task_work *next;
 
-> >  		/* This fd is used for another irq already. */
-> >  		ret = -EBUSY;
-> > @@ -282,6 +340,14 @@ fail:
-> >  	if (!IS_ERR(file))
-> >  		fput(file);
-> >  
-> > +	if (eoi_eventfd && !IS_ERR(eoi_eventfd)) {
-> > +		kvm_unregister_irq_ack_notifier(kvm, &irqfd->notifier);
-> > +		eventfd_ctx_put(eoi_eventfd);
-> > +	}
-> > +
-> > +	if (irq_source_id >= 0)
-> > +		kvm_free_irq_source_id(kvm, irq_source_id);
-> > +
-> >  	kfree(irqfd);
-> >  	return ret;
-> >  }
-> > @@ -301,16 +367,26 @@ static int
-> >  kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
-> >  {
-> >  	struct _irqfd *irqfd, *tmp;
-> > -	struct eventfd_ctx *eventfd;
-> > +	struct eventfd_ctx *eventfd, *eoi_eventfd = NULL;
-> >  
-> >  	eventfd = eventfd_ctx_fdget(args->fd);
-> >  	if (IS_ERR(eventfd))
-> >  		return PTR_ERR(eventfd);
-> >  
-> > +	if (args->flags & KVM_IRQFD_FLAG_LEVEL_EOI) {
-> > +		eoi_eventfd = eventfd_ctx_fdget(args->fd2);
-> > +		if (IS_ERR(eoi_eventfd)) {
-> > +			eventfd_ctx_put(eventfd);
-> > +			return PTR_ERR(eoi_eventfd);
-> > +		}
-> > +	}
-> > +
-> >  	spin_lock_irq(&kvm->irqfds.lock);
-> >  
-> >  	list_for_each_entry_safe(irqfd, tmp, &kvm->irqfds.items, list) {
-> > -		if (irqfd->eventfd == eventfd && irqfd->gsi == args->gsi) {
-> > +		if (irqfd->eventfd == eventfd &&
-> > +		    irqfd->gsi == args->gsi &&
-> > +		    irqfd->eoi_eventfd == eoi_eventfd) {
-> >  			/*
-> >  			 * This rcu_assign_pointer is needed for when
-> >  			 * another thread calls kvm_irq_routing_update before
-> > @@ -326,6 +402,8 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
-> >  
-> >  	spin_unlock_irq(&kvm->irqfds.lock);
-> >  	eventfd_ctx_put(eventfd);
-> > +	if (eoi_eventfd)
-> > +		eventfd_ctx_put(eoi_eventfd);
-> >  
-> >  	/*
-> >  	 * Block until we know all outstanding shutdown jobs have completed
-> 
-> I see there is no check on undefined ->flags that you had to relax.
-> This means that there could be buggy code out there that sets LEVEL_EOI
-> and will now get an unexpected error.  I doubt it's the case, but please
-> add a patch (in front of the series) that adds the check.
+Yes, but see above.
 
-Ok.
+> 3) at that point task_work is equal in size (and layout, BTW) to rcu_head.
 
-> Xen had/has a hack for doing this in a different way, based on ioapic
-> polarity.  When the host takes an interrupt, they reverse the polarity
-> on that ioapic pin, so they get interrupts on both assertion and
-> deassertion.  This is more general and more correct, but waaaaaaaaaaay
-> more intrusive and won't play well with shared host interrupts.  But
-> let's at least consider it.
+Yep.
 
-Thanks, I'll look for that code.
+> [... snip ...]
 
-Alex
+I'll try to understand fput/scm issues later ;)
+
+Oleg.
+
+
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index ebbed2c..d364255 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -18,6 +18,7 @@
+ #include <linux/selinux.h>
+ #include <linux/atomic.h>
+ #include <linux/uidgid.h>
++#include <linux/task_work.h>
+ 
+ struct user_struct;
+ struct cred;
+@@ -149,7 +150,10 @@ struct cred {
+ 	struct user_struct *user;	/* real user ID subscription */
+ 	struct user_namespace *user_ns; /* user_ns the caps and keyrings are relative to. */
+ 	struct group_info *group_info;	/* supplementary groups for euid/fsgid */
+-	struct rcu_head	rcu;		/* RCU deletion hook */
++	union {
++		struct rcu_head	rcu;	/* RCU deletion hook */
++		struct task_work xxx; 	/* keyctl_session_to_parent() */
++	};
+ };
+ 
+ extern void __put_cred(struct cred *);
+diff --git a/include/linux/task_work.h b/include/linux/task_work.h
+index 294d5d5..f834e38 100644
+--- a/include/linux/task_work.h
++++ b/include/linux/task_work.h
+@@ -1,9 +1,6 @@
+ #ifndef _LINUX_TASK_WORK_H
+ #define _LINUX_TASK_WORK_H
+ 
+-#include <linux/list.h>
+-#include <linux/sched.h>
+-
+ struct task_work;
+ typedef void (*task_work_func_t)(struct task_work *);
+ 
+@@ -24,10 +21,14 @@ int task_work_add(struct task_struct *task, struct task_work *twork, bool);
+ struct task_work *task_work_cancel(struct task_struct *, task_work_func_t);
+ void task_work_run(void);
+ 
+-static inline void exit_task_work(struct task_struct *task)
+-{
+-	if (unlikely(!hlist_empty(&task->task_works)))
+-		task_work_run();
+-}
++#define exit_task_work(__task)	\
++	do {							\
++		struct task_struct *task = (__task);		\
++		if (unlikely(!hlist_empty(&task->task_works)))	\
++			task_work_run();			\
++	} while (0)
++
++#include <linux/list.h>
++#include <linux/sched.h>
+ 
+ #endif	/* _LINUX_TASK_WORK_H */
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 0f5b3f0..cc428c9 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1456,8 +1456,8 @@ long keyctl_session_to_parent(void)
+ {
+ 	struct task_struct *me, *parent;
+ 	const struct cred *mycred, *pcred;
+-	struct task_work *newwork, *oldwork;
+ 	key_ref_t keyring_r;
++	struct task_work *oldwork;
+ 	struct cred *cred;
+ 	int ret;
+ 
+@@ -1465,20 +1465,16 @@ long keyctl_session_to_parent(void)
+ 	if (IS_ERR(keyring_r))
+ 		return PTR_ERR(keyring_r);
+ 
+-	ret = -ENOMEM;
+-	newwork = kmalloc(sizeof(struct task_work), GFP_KERNEL);
+-	if (!newwork)
+-		goto error_keyring;
+-
+ 	/* our parent is going to need a new cred struct, a new tgcred struct
+ 	 * and new security data, so we allocate them here to prevent ENOMEM in
+ 	 * our parent */
++	ret = -ENOMEM;
+ 	cred = cred_alloc_blank();
+ 	if (!cred)
+-		goto error_newwork;
++		goto error_keyring;
+ 
+ 	cred->tgcred->session_keyring = key_ref_to_ptr(keyring_r);
+-	init_task_work(newwork, key_change_session_keyring, cred);
++	init_task_work(&cred->xxx, key_change_session_keyring, NULL);
+ 
+ 	me = current;
+ 	rcu_read_lock();
+@@ -1527,24 +1523,19 @@ long keyctl_session_to_parent(void)
+ 
+ 	/* the replacement session keyring is applied just prior to userspace
+ 	 * restarting */
+-	ret = task_work_add(parent, newwork, true);
++	ret = task_work_add(parent, &cred->xxx, true);
+ 	if (!ret)
+-		newwork = NULL;
++		cred = NULL;
+ unlock:
+ 	write_unlock_irq(&tasklist_lock);
+ 	rcu_read_unlock();
+-	if (oldwork) {
+-		put_cred(oldwork->data);
+-		kfree(oldwork);
+-	}
+-	if (newwork) {
+-		put_cred(newwork->data);
+-		kfree(newwork);
+-	}
++
++	if (oldwork)
++		put_cred(container_of(oldwork, struct cred, xxx));
++	if (cred)
++		put_cred(cred);
+ 	return ret;
+ 
+-error_newwork:
+-	kfree(newwork);
+ error_keyring:
+ 	key_ref_put(keyring_r);
+ 	return ret;
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 4ad54ee..5596caf 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -837,9 +837,8 @@ error:
+ void key_change_session_keyring(struct task_work *twork)
+ {
+ 	const struct cred *old = current_cred();
+-	struct cred *new = twork->data;
++	struct cred *new = container_of(twork, struct cred, xxx);
+ 
+-	kfree(twork);
+ 	if (unlikely(current->flags & PF_EXITING)) {
+ 		put_cred(new);
+ 		return;
 
