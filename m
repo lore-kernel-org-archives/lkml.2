@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab2FXHdQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 03:33:16 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:40071 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752429Ab2FXHdP (ORCPT
+	id S1754208Ab2FXHvW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 03:51:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52142 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752054Ab2FXHvV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 03:33:15 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+A3LYKrLCAMDqhTnWCu0WsU7EBrFX/VvblWilJXk
-	r9qMQM9CSiTb3o
-Message-ID: <1340523191.7471.159.camel@marge.simpson.net>
-Subject: Re: [PATCH] Taint kernel when lve module is loaded
-From: Mike Galbraith <efault@gmx.de>
-To: iseletsk@cloudlinux.com
-Cc: fa.linux.kernel@googlegroups.com, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Alex Lyashkov <umka@cloudlinux.com>
-Date: Sun, 24 Jun 2012 09:33:11 +0200
-In-Reply-To: <b770341d-e1e3-4d57-b283-3d8ff92b0d36@googlegroups.com>
-References: <fa.WTHIDfGYg3w7zn9rxlDshNfnPtI@ifi.uio.no>
-	 <b770341d-e1e3-4d57-b283-3d8ff92b0d36@googlegroups.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sun, 24 Jun 2012 03:51:21 -0400
+From: "Elias, Ilan" <ilane@ti.com>
+To: Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        "lauro.venancio@openbossa.org" <lauro.venancio@openbossa.org>,
+        "aloisio.almeida@openbossa.org" <aloisio.almeida@openbossa.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        David Miller <davem@davemloft.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "security@kernel.org" <security@kernel.org>,
+        "linux-netdev@vger.kernel.org" <linux-netdev@vger.kernel.org>
+Subject: RE: [PATCH] NFC: prevent multiple buffer overflows in NCI
+Thread-Topic: [PATCH] NFC: prevent multiple buffer overflows in NCI
+Thread-Index: AQHNT+fsxYsi0WT2AUi19pKRQ1D5HpcJG7ZA
+Date: Sun, 24 Jun 2012 07:50:05 +0000
+Message-ID: <B30D1FD582D6484ABF57420512E5803516AC8DC9@DNCE04.ent.ti.com>
+References: <4FE37C5C.4090009@gmail.com>
+In-Reply-To: <4FE37C5C.4090009@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.167.131.83]
+x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-06-23 at 08:07 -0700, iseletsk@cloudlinux.com wrote:
+Hi Dan,  
 
-> Later on we will have new module that is not GPL released.
+> From: Dan Rosenberg [mailto:dan.j.rosenberg@gmail.com] 
+> Sent: Thursday, June 21, 2012 10:56 PM
+> To: lauro.venancio@openbossa.org; 
+> aloisio.almeida@openbossa.org; sameo@linux.intel.com; David 
+> Miller; Elias, Ilan
+> Cc: linux-kernel@vger.kernel.org; security@kernel.org; 
+> linux-netdev@vger.kernel.org
+> Subject: [PATCH] NFC: prevent multiple buffer overflows in NCI
+> 
+> Fix multiple remotely-exploitable stack-based buffer 
+> overflows due to the NCI
+> code pulling length fields directly from incoming frames and 
+> copying too much
+> data into statically-sized arrays. Fortunately, there don't 
+> appear to be any
+> active users of this code (yet).
+> 
+> This patch fixes the overflows, but I suspect the code will need to be
+> completely reworked since this doesn't address the more 
+> systemic problem of
+> failing to check that the values read from incoming frame 
+> data aren't from
+> beyond the end of the pulled skb data. Build tested only.
+> 
+> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+> Cc: stable@kernel.org
+> Cc: security@kernel.org
+> Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+> Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Ilan Elias <ilane@ti.com>
+Acked-by: Ilan Elias <ilane@ti.com>
 
-Too bad refusing to load conceptually alien modules is incompatible with
-pragmatic/practical.  A decision to eradicate the things is highly
-attractive excepting the "cut off your nose to spite your face" bits
-contained therein.
-
-Hohum, live long and prosper (possibly nose free) alien life form.
-
--Mike
-
+Thanks & BR,
+Ilan
+ 
