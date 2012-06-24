@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab2FXOn0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 10:43:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56383 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303Ab2FXOnY (ORCPT
+	id S1756033Ab2FXOor (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 10:44:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39196 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab2FXOop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 10:43:24 -0400
-Date: Sun, 24 Jun 2012 16:43:20 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, kernel@pengutronix.de,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH RESEND] of: add const to struct of_device_id.data
-Message-ID: <20120624144320.GB28001@pengutronix.de>
-References: <1335171381-24869-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20120607102014.GI22191@pengutronix.de>
- <20120622055613.GL5642@pengutronix.de>
- <201206221726.22285.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201206221726.22285.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sun, 24 Jun 2012 10:44:45 -0400
+Date: Mon, 25 Jun 2012 00:44:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-next@vger.kernel.org, Joe Thornber <dm-devel@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: mmotm 2012-06-21-16-20 uploaded (dm-thin)
+Message-Id: <20120625004425.5efce7fbca77b7cfa086922a@canb.auug.org.au>
+In-Reply-To: <4FE4AAAE.3090803@xenotime.net>
+References: <20120621232149.F0286A026A@akpm.mtv.corp.google.com>
+	<4FE4AAAE.3090803@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__25_Jun_2012_00_44_25_+1000_pbz=KyXcAN2ZCXFd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Arnd,
+--Signature=_Mon__25_Jun_2012_00_44_25_+1000_pbz=KyXcAN2ZCXFd
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jun 22, 2012 at 05:26:22PM +0000, Arnd Bergmann wrote:
-> On Friday 22 June 2012, Uwe Kleine-König wrote:
-> > On Thu, Jun 07, 2012 at 12:20:14PM +0200, Uwe Kleine-König wrote:
-> > > Drivers should never need to modify the data of a device id. So it can
-> > > be const which in turn allows more consts in the driver.
-> > > 
-> > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > ---
-> > > (Cc += lkml + Grant)
-> > > 
-> > > Hello,
-> > > 
-> > > this might introduce warnings in drivers that access the data member
-> > > without using const, so this is definitly merge window material if it is
-> > > considered at all.
-> >
-> > ping
-> 
-> Sorry for the delayed response. I think the approach is right, but I
-> am a bit worried about adding warnings for legit code.
-> 
-> A quick test with the defconfigs gave me this error for prima2_defconfig
-> and kzm9g_defconfig:
-> 
-> /home/arnd/linux-arm/arch/arm/mm/cache-l2x0.c: In function 'l2x0_of_init':
-> /home/arnd/linux-arm/arch/arm/mm/cache-l2x0.c:573:7: error: assignment discards 'const' qualifier from pointer target type [-Werror]
-I already sent a patch for that to rmk's patch system:
+Hi Randy,
 
-	http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7429/1
+On Fri, 22 Jun 2012 10:26:06 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
+e:
+>
+> on i386:
+>=20
+> Apparently from linux-next.patch:
+>=20
+> drivers/built-in.o: In function `thin_iterate_devices':
+> dm-thin.c:(.text+0x206f07): undefined reference to `__udivdi3'
+> drivers/built-in.o: In function `pool_preresume':
+> dm-thin.c:(.text+0x207863): undefined reference to `__udivdi3'
 
-Russell commented: 
-Sigh, a gmane.org URL.  Which is difficult to dig the thread out of.
-Eventually you can.  And I see nothing which suggests that the series
-will be applied or, more importantly when it is going to be applied.
-Punting this patch until there's better communication.
+I assume that CONFIG_LDBAF is not set and I think this is caused by
+commit ebf5d9e0425c ("Non power of 2 blocksize support is needed to
+properly align thinp IO") from the device-mapper tree.
 
-Russell, I didn't completely get your problem about gmane here. If you
-follow the link in the Subject: line, you get a thread view. Does this
-address your concerns?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-And even without the of: add const to struct of_device_id.data patch
-patch using more consts is IMHO nice.
+--Signature=_Mon__25_Jun_2012_00_44_25_+1000_pbz=KyXcAN2ZCXFd
+Content-Type: application/pgp-signature
 
-> and this one with at91sam9263_defconfig:
-> /home/arnd/linux-arm/drivers/misc/atmel_tclib.c: In function 'tc_probe':
-> /home/arnd/linux-arm/drivers/misc/atmel_tclib.c:170:19: error: assignment discards 'const' qualifier from pointer target type [-Werror]
-> 
-> I haven't checked all the defconfigs yet, but I think we should at least
-> make sure they build fine before applying your patch.
-Fine for me, I will come up with a series next week.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Best regards
-Uwe
+iQIcBAEBCAAGBQJP5yfKAAoJEECxmPOUX5FE3I4P/ibmOEopwo/Rfu15KGPxhnhN
+T38Umi3Fl19Ess4NlrBRUddVB20uKoBg4GZwnFKaKjzDqgHHIDOiCLcN8VbCYnZn
+Gfav6e0EePIk0qQ8ygAClx3131vPCAcYRbYEj5V7pNc3lt8sLpWgXZ7d+XhXmdfs
+T9zI3ngTyxXs0T1podXVCvlm5lUyJLn9prTS3R/doSYUV1hr2Ah5wxWBQGtb/t2M
+F8EnwkTbr62behU5rhCOJDmyB3e/rTNRJ8X5DfPzb3uMwh9MwUY5Vowj636islEI
+ZMoobBSCp4GoWzkSu8PwYkNNyO2qTmRyREmPD+B5pv8l7ZM295vXN2l17w+bao2R
+FCHk59XBMMyaTmfd8IHAGQfyW8VLyNmtDCBVh83xyeam0f8By7VQ0ru3w0OeTSoU
+D0VapFDlxe2RZSQpUSpp4RSI3ra7LoiPsFHj0ZoohXs6T5oIAqznSVVt2Pt7RS3w
++1hrlZ5m8DclyZ4JhXmlubZA4/sE9Z3zeksaUHs25qZetDg08a+XigGR6NRAVkz3
+U1taqIsvZ//6gRPf8wWlLbXTD07BAAdjpEZbrDbEB1EkKXCyE/fSuI6L0V7Dzpj5
+SNExZ/DA0/BpbWdrBAvBkmd37dkjEYWgYYRohphNTr1gxFZmZIbMKfBz3DkWelCn
+Ys5Vmm/E4b+12wqIOCMq
+=63rF
+-----END PGP SIGNATURE-----
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+--Signature=_Mon__25_Jun_2012_00_44_25_+1000_pbz=KyXcAN2ZCXFd--
