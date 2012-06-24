@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab2FXOcP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 10:32:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43424 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476Ab2FXOcN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 10:32:13 -0400
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] vfs, doc: Remove reference to nonexistent FIEMAP_EXTENT_NO_BYPASS
-Date: Sun, 24 Jun 2012 07:32:05 -0700
-Message-Id: <1340548325-27648-1-git-send-email-hpa@zytor.com>
-X-Mailer: git-send-email 1.7.6.5
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 24 Jun 2012 07:32:13 -0700 (PDT)
+	id S1755973Ab2FXOme (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 10:42:34 -0400
+Received: from antcom.de ([188.40.178.216]:53006 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753210Ab2FXOmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 10:42:32 -0400
+Message-ID: <4FE72754.2000706@antcom.de>
+Date: Sun, 24 Jun 2012 16:42:28 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: axel.lin@gmail.com, riyer@nvidia.com, michael.hennerich@analog.com,
+        grant.likely@secretlab.ca, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com
+Subject: Re: [PATCH RESEND v4] input: keyboard: Add keys driver for the LPC32xx
+ SoC
+References: <1339443891-15197-1-git-send-email-stigge@antcom.de> <20120621085623.GF2193@core.coreip.homeip.net>
+In-Reply-To: <20120621085623.GF2193@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+On 21/06/12 10:56, Dmitry Torokhov wrote:
+> On Mon, Jun 11, 2012 at 09:44:51PM +0200, Roland Stigge wrote:
+>> This patch adds a driver for the key scan interface of the LPC32xx SoC
+>>
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+>> For the DT binding: Acked-by: Rob Herring <rob.herring@calxeda.con>
+> 
+> Not a real review, just a quick question - if th driver is DT-only now
+> do we need to have the platform data or it would make more sense to read
+> DT-bindings and fill the main device structure directly?
 
-Presumably this was a flag that was intended to have been created at
-some point, but never was.  There are no other references to it
-anywhere in the source tree.
+And:
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- include/linux/fiemap.h |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+>> +
+>> +	matrix_keypad_build_keymap(NULL, NULL, kscandat->kscancfg->matrix_sz,
+>> +				   kscandat->kscancfg->matrix_sz,
+>> +				   kscandat->kscancfg->keymap, kscandat->input);
+> 
+> This function may fail now.
 
-diff --git a/include/linux/fiemap.h b/include/linux/fiemap.h
-index d830747..645ef70 100644
---- a/include/linux/fiemap.h
-+++ b/include/linux/fiemap.h
-@@ -49,8 +49,7 @@ struct fiemap {
- 						    * Sets EXTENT_UNKNOWN. */
- #define FIEMAP_EXTENT_ENCODED		0x00000008 /* Data can not be read
- 						    * while fs is unmounted */
--#define FIEMAP_EXTENT_DATA_ENCRYPTED	0x00000080 /* Data is encrypted by fs.
--						    * Sets EXTENT_NO_BYPASS. */
-+#define FIEMAP_EXTENT_DATA_ENCRYPTED	0x00000080 /* Data is encrypted by fs.*/
- #define FIEMAP_EXTENT_NOT_ALIGNED	0x00000100 /* Extent offsets may not be
- 						    * block aligned. */
- #define FIEMAP_EXTENT_DATA_INLINE	0x00000200 /* Data mixed with metadata.
--- 
-1.7.10.2
+I'm addressing both issues in a updated patch.
 
+Thanks for the feedback,
+
+Roland
