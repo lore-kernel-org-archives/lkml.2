@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2FXXCy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 19:02:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24752 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841Ab2FXXCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 19:02:53 -0400
-Date: Mon, 25 Jun 2012 02:02:51 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120624230251.GE17046@redhat.com>
-References: <20120622220040.9858.43665.stgit@bling.home>
- <20120622221559.9858.59593.stgit@bling.home>
- <4FE6EC20.5030502@redhat.com>
- <1340551118.14120.66.camel@bling.home>
- <20120624154938.GE2851@redhat.com>
- <1340575167.5076.165.camel@bling.home>
+	id S1752655Ab2FXXKE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 19:10:04 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:2429 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab2FXXKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 19:10:03 -0400
+Message-ID: <4FE79E27.3070302@spin.net.au>
+Date: Mon, 25 Jun 2012 09:09:27 +1000
+From: Chris Jones <chrisjones@spin.net.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340575167.5076.165.camel@bling.home>
+To: linux-kernel@vger.kernel.org
+Subject: Solaris kernel. Compile in Linux
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.17, required 4, AWL 0.33, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 03:59:27PM -0600, Alex Williamson wrote:
-> On Sun, 2012-06-24 at 18:49 +0300, Michael S. Tsirkin wrote:
-> > On Sun, Jun 24, 2012 at 09:18:38AM -0600, Alex Williamson wrote:
-> > > > > @@ -242,7 +299,8 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
-> > > > >  
-> > > > >  	ret = 0;
-> > > > >  	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
-> > > > > -		if (irqfd->eventfd != tmp->eventfd)
-> > > > > +		if (irqfd->eventfd != tmp->eventfd &&
-> > > > > +		    irqfd->eventfd != tmp->eoi_eventfd)
-> > > > >  			continue;
-> > > > 
-> > > > So we allow duplicate irqfd with differing eoifd (or edge-triggered and
-> > > > level-triggered irqfd on the same context).
-> > > > 
-> > > > (why the check in the first place? just so we can have a reliable
-> > > > deassign or is it avoiding a deeper problem?)
-> > > 
-> > > I really wasn't sure to what extent we wanted to prevent duplicates.  My
-> > > guess was that we don't want to have an irqfd trigger more than one
-> > > thing.  That seems to be what the current code does.  I don't see any
-> > > problems with multiple irqfds triggering the same eventfd though.  I
-> > > only added a test that a new irqfd can't be triggered by an existing
-> > > eoi_eventfd as that could make a nasty loop.
-> > 
-> > How would that make a loop? You can have the same thing
-> > with e.g. ioeventfd - why isn't it a problem there?
-> 
-> eoi_eventfd1 -> irqfd2 [eoi] eoi_eventfd2 -> irqfd1 [eoi] eoi_eventfd1 ->...
+Is it possible to compile the Solaris kernel using Linux based tools? I 
+suspect not. And if not, why can't this be done?
 
-Sorry I don't understand.
-What does this [eoi] mean? How is eoi eventfd different from ioeventfd?
 
-> 
-> Yes, in reality we'd need to search fds from all the interfaces and come
-> up with some grossly complicated truth table of what's allowed and
-> what's not.  The original code didn't go to that kind of extreme, so I
-> just added something that seemed like a reasonable case
-> we'd want to prevent.  Thanks,
-> 
-> Alex
+Regards
+
+-- 
+		Chris Jones @ kernel.devproject@gmail.com
+                           and oracle.kerneldev@gmail.com
+
+OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
+Kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
+Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
+Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
+
