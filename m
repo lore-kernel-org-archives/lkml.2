@@ -1,46 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab2FXQRL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 12:17:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36725 "EHLO mx1.redhat.com"
+	id S1753156Ab2FXQYX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 12:24:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1706 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751838Ab2FXQRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 12:17:09 -0400
-Message-ID: <4FE73D82.4040004@redhat.com>
-Date: Sun, 24 Jun 2012 19:17:06 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1751838Ab2FXQYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 12:24:22 -0400
+Date: Sun, 24 Jun 2012 19:24:12 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: x86@kernel.org, kvm@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCHv9 0/8] kvm: eoi optimization support
+Message-ID: <cover.1340554550.git.mst@robin.redhat.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: [GIT PULL] KVM fixes for 3.5-rc3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+I'm looking at reducing the interrupt overhead for virtualized guests:
+some workloads spend a large part of their time processing interrupts.
 
-Please pull a couple of kvm fixes from
+On kvm, an EOI write from the guest causes an expensive exit to host; we
+avoid this using shared memory.
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
+The patches work fine on my boxes. See individual patches
+for perf tests. You need to patch qemu to whitelist the kvm feature.
+qemu patch was sent separately.
 
-Fixing a scheduling-while-atomic bug in the ppc code, and a bug which allowed
-pci bridges to be assigned to guests.
+The patches are against Linus's master and apply to kvm.git
+cleanly.  The last patch in the series, supplying the host
+part, also depends on the ISR optimization patch that I
+have for convenience included in the series (patch 2),
+I also included a documentation patch (patch 1) - it is
+here since it clarifies patch 2.  This revision does not yet address
+Thomas's idea of reworking the APIC page handling.  Changes to this
+optimization would require reworking this last patch in the series.
 
-----------------------------------------------------------------
-Jan Kiszka (1):
-      KVM: Fix PCI header check on device assignment
+The rest of the patchset has not changed significantly since v2.
 
-Paul Mackerras (1):
-      KVM: PPC: Book3S HV: Drop locks around call to kvmppc_pin_guest_page
+Thanks,
+MST
 
- arch/powerpc/kvm/book3s_hv.c | 96 ++++++++++++++++++++++++++++++--------------
- virt/kvm/assigned-dev.c      |  4 +-
- 2 files changed, 67 insertions(+), 33 deletions(-)
+changes from v8:
+	Document the use of reboot notifier:
+	it is used to make sure kexec works correctly
 
--- 
-error compiling committee.c: too many arguments to function
+changes from v7:
+	Address Avi's comments:
+		make bit 1 in the new MSR reserved, require an aligned address
+		remove unused macros from header
+		replace __align by BUILD_BUG_ON and a comment
+	Whitespace fix
 
+changes from v6:
+	Address Marcelo's comments:
+		marcelo's comments for isr optimization: isr_cache -> highest_*
+		marcelo's comments for host side eoi: rename isr_cache->highest_*
+		kvm eoi msr doc: fix typo pointed out by marcelo
+		isr optimization: add comment to address marcelo's request
+		kvm: don't make lapic attention check unlikely. at marcelo's request
+		eoi host side: remove unlikely annotations
+
+Changes from v5:
+	Clear PV EOI when we cancel interrupts.
+		Pointed out by Gleb.
+	Always set ISR cache when we inject an interrupt.
+		Suggested by Ronen Hod.
+
+Changes from v4:
+	Turn off PV EOI on each exit. Turn it back on when safe.
+		Suggested by Avi.
+	Address bug with nested interrupts pointed out by Marcelo.
+
+Changes from v3:
+	Address review comments by Marcelo:
+		Multiple cosmetic changes eoi -> pv_eoi
+		Added multiple comments
+Changes from v2:
+	Kill guest with GP on an illegal MSR value
+	Add documentation
+
+Changes from v1:
+	Add host side patch to series
+	Remove kvm-specific __test_and_clear_bit, document
+	that x86 one does what we want already
+	Clear msr on cpu unplug
+
+Michael S. Tsirkin (8):
+  kvm: document lapic regs field
+  kvm: optimize ISR lookups
+  kvm_para: guest side for eoi avoidance
+  x86/bitops: note on __test_and_clear_bit atomicity
+  kvm: eoi msi documentation
+  kvm: only sync when attention bits set
+  kvm: rearrange injection cancelling code
+  kvm: host side for eoi optimization
+
+ Documentation/virtual/kvm/msr.txt |   34 +++++++
+ arch/x86/include/asm/bitops.h     |    7 ++
+ arch/x86/include/asm/kvm_host.h   |   12 +++
+ arch/x86/include/asm/kvm_para.h   |    7 ++
+ arch/x86/kernel/kvm.c             |   57 ++++++++++-
+ arch/x86/kvm/cpuid.c              |    1 +
+ arch/x86/kvm/lapic.c              |  194 +++++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/lapic.h              |   11 ++
+ arch/x86/kvm/trace.h              |   34 +++++++
+ arch/x86/kvm/x86.c                |   20 +++-
+ 10 files changed, 363 insertions(+), 14 deletions(-)
