@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab2FXUhY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 16:37:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45882 "EHLO mail.zytor.com"
+	id S1752693Ab2FXUkG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 16:40:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45907 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab2FXUhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 16:37:22 -0400
-Message-ID: <4FE77A6C.3050908@zytor.com>
-Date: Sun, 24 Jun 2012 13:37:00 -0700
+	id S1751329Ab2FXUkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 16:40:04 -0400
+Message-ID: <4FE77B11.1000808@zytor.com>
+Date: Sun, 24 Jun 2012 13:39:45 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
@@ -26,20 +26,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 06/24/2012 12:49 PM, Jean Delvare wrote:
->>
->> Therefore, rename this to "dtherm".
 >
-> I see the rationale for changing the string in /proc/cpuinfo, and
-> "dtherm" is reasonably good. I fail to see the rationale for changing
-> the X86_FEATURE_ name though, this is an API change we don't need. Plus
-> X86_FEATURE_DTS has the merit of naming the feature the way it is
-> commonly done in technical documentation, so readers know exactly what
-> it refers too, which isn't the case of DTHERM. So can we please stick
-> to X86_FEATURE_DTS?
->
-
-Except that *really* seems like begging for similar problems in the future.
-
 >> This conflict went into mainline via the hwmon tree without any x86
 >> maintainer ack, and without any kind of hint in the subject.
 >>
@@ -50,17 +37,13 @@ Except that *really* seems like begging for similar problems in the future.
 > finger-pointing. It's unfortunate that it happened, but it did, and we
 > try to fix it now, period.
 >
->> Reported-by: Jean Delvare <khali@linux-fr.org>
->> Link: http://lkml.kernel.org/r/4FE34BCB.5050305@linux.intel.com
->> Cc: Jan Beulich <JBeulich@suse.com>
->> Cc: <stable@vger.kernel.org> v2.6.36..v3.4
->
-> No Signed-off-by?
->
-> Not sure why you want this to go to stable trees?
->
 
-I think we want to minimize the ABI divergence here.
+It isn't about finger-pointing, it is about a failure of process; we had 
+a process that would have caught this problem and the process failed. 
+There are certainly blame enough to go around, but I think one of the 
+things here is that lack of response isn't necessary an ACK - it may 
+actually be that the patch looked at first glance like it had no impact 
+on our area (incorrectly as it turned out.)
 
 	-hpa
 
