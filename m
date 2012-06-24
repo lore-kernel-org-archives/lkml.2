@@ -1,63 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab2FXKJc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 06:09:32 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43006 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755634Ab2FXKJR (ORCPT
+	id S1755653Ab2FXKNR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 06:13:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61669 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897Ab2FXKNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 06:09:17 -0400
-Date: Sun, 24 Jun 2012 11:09:08 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: deferring __fput()
-Message-ID: <20120624100908.GR14083@ZenIV.linux.org.uk>
-References: <1340369098.2464.20.camel@falcor>
- <20120623092049.GH14083@ZenIV.linux.org.uk>
- <20120623194505.GI14083@ZenIV.linux.org.uk>
- <20120623203800.GA10306@redhat.com>
- <20120623210141.GK14083@ZenIV.linux.org.uk>
- <20120624041652.GN14083@ZenIV.linux.org.uk>
+	Sun, 24 Jun 2012 06:13:15 -0400
+Date: Sun, 24 Jun 2012 18:13:00 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] mm/memcg: add MAX_CHARGE_BATCH to limit unnecessary
+ charge overhead
+Message-ID: <20120624101300.GA10915@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1340504169-5344-1-git-send-email-liwp.linux@gmail.com>
+ <20120624094614.GT27816@cmpxchg.org>
+ <20120624100812.GA7095@kernel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120624041652.GN14083@ZenIV.linux.org.uk>
+In-Reply-To: <20120624100812.GA7095@kernel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 05:16:52AM +0100, Al Viro wrote:
-> We could, in principle, add a "ok_late" argument, allowing to add after
-> PF_EXITING has been set only if it's true and run the list twice, but
-> that's really more convoluted than I would like...
-> 
-> Comments?
-
-OK...  What I had in mind is (modulo really dire need of saner commit messages
-and probably a different ordering/splitup of the first 3 commits) is
-in vfs.git#untested.  WARNING: the branch name is no joke; it builds, but
-I hadn't even tried to boot the resulting kernel yet.
-
-Comments would be very welcome.  It should get us the situation when
-	* __fput() is always called with no locks held by caller and
-can take any locks whatsoever.
-	* fput() is legal to call from any contexts
-	* fput() done by a syscall will be completed before the process
-returns to userland or terminates
-	* no extra context switches, unless we have the final fput() done
-from interrupt (instant death on the current kernel) or from the
-kernel thread.
-	* SCM_RIGHTS datagram destruction should be no worse than it is now;
-probably a bit kinder on stack, even...  Again, no extra context switches.
-	* Neither struct file nor struct task_struct changed size.
-	* task_work and rcu_head are identical at that point; I'd appreciate
-a better name (I ended up calling that sucker callback_head, defined in
-types.h, with #define rcu_head callback_head next to it, to avoid global
-rename from hell).  I can live with two identical structs (and a union
-of those two in a few places), but I really see no point in going that way.
+On Sun, Jun 24, 2012 at 06:08:26PM +0800, Wanpeng Li wrote:
+>On Sun, Jun 24, 2012 at 11:46:14AM +0200, Johannes Weiner wrote:
+>>On Sun, Jun 24, 2012 at 10:16:09AM +0800, Wanpeng Li wrote:
+>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>> 
+>>> Since exceeded unused cached charges would add pressure to
+>>> mem_cgroup_do_charge, more overhead would burn cpu cycles when
+>>> mem_cgroup_do_charge cause page reclaim or even OOM be triggered
+>>> just for such exceeded unused cached charges. Add MAX_CHARGE_BATCH
+>>> to limit max cached charges.
+>>> 
+>>> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+>>> ---
+>>>  mm/memcontrol.c |   16 ++++++++++++++++
+>>>  1 file changed, 16 insertions(+)
+>>> 
+>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>>> index 0e092eb..1ff317a 100644
+>>> --- a/mm/memcontrol.c
+>>> +++ b/mm/memcontrol.c
+>>> @@ -1954,6 +1954,14 @@ void mem_cgroup_update_page_stat(struct page *page,
+>>>   * TODO: maybe necessary to use big numbers in big irons.
+>>>   */
+>>>  #define CHARGE_BATCH	32U
+>>> +
+>>> +/*
+>>> + * Max size of charge stock. Since exceeded unused cached charges would
+>>> + * add pressure to mem_cgroup_do_charge which will cause page reclaim or
+>>> + * even oom be triggered.
+>>> + */
+>>> +#define MAX_CHARGE_BATCH 1024U
+>>> +
+>>>  struct memcg_stock_pcp {
+>>>  	struct mem_cgroup *cached; /* this never be root cgroup */
+>>>  	unsigned int nr_pages;
+>>> @@ -2250,6 +2258,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+>>>  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+>>>  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>>>  	struct mem_cgroup *memcg = NULL;
+>>> +	struct memcg_stock_pcp *stock;
+>>>  	int ret;
+>>>  
+>>>  	/*
+>>> @@ -2320,6 +2329,13 @@ again:
+>>>  		rcu_read_unlock();
+>>>  	}
+>>>  
+>>> +	stock = &get_cpu_var(memcg_stock);
+>>> +	if (memcg == stock->cached && stock->nr_pages) {
+>>> +		if (stock->nr_pages > MAX_CHARGE_BATCH)
+>>> +			batch = nr_pages;
+>>> +	}
+>>> +	put_cpu_var(memcg_stock);
+>>
+>>The only way excessive stock can build up is if the charging task gets
+>>rescheduled, after trying to consume stock a few lines above, to a cpu
+>>it was running on when it built up stock in the past.
+>>
+>>    consume_stock()
+>>      memcg != stock->cached:
+>>        return false
+>>    do_charge()
+>>    <reschedule>
+>>    refill_stock()
+>>      memcg == stock->cached:
+>>        stock->nr_pages += nr_pages
+>
+>__mem_cgroup_try_charge() {
+>	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+>	[...]
+>	mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
+>	[...]
+>	if(batch > nr_pages)
+>		refill_stock(memcg, batch - nr_pages);
+>}
+>
+>Consider this scenario, If one task wants to charge nr_pages = 1,
+>then batch = max(32,1) = 32, this time 31 excess charges
+Sorry, the scenario is charge nr_pages = 2, batch = max(32, 2) = 32,
+this time 30 excess charges will be charged.
+>will be charged in mem_cgroup_do_charge and then add to stock by
+>refill_stock. Generally there are many tasks in one memory cgroup and 
+>maybe charges frequency. In this situation, limit will reach soon, 
+>and cause mem_cgroup_reclaim to call try_to_free_mem_cgroup_pages.
+>
+>Regards,
+>Wanpeng Li
+>>
+>>It's very unlikely and a single call into target reclaim will drain
+>>all stock of the memcg, so this will self-correct quickly.
+>>
+>>And your patch won't change any of that.
+>>
+>>What you /could/ do is stick that check into refill_stock() and invoke
+>>res_counter_uncharge() if it gets excessive.  But I really don't see a
+>>practical problem here...
