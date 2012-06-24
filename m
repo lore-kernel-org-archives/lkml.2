@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab2FXNs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 09:48:59 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:57014 "EHLO
+	id S1756180Ab2FXNs5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 09:48:57 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:57037 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756051Ab2FXNrp (ORCPT
+	with ESMTP id S1756124Ab2FXNrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 09:47:45 -0400
+	Sun, 24 Jun 2012 09:47:46 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         rinivas.bakki@nxp.com, aletes.xgr@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 7/7] ARM: LPC32xx: Remove USB and I2C init from phy3250.c
-Date: Sun, 24 Jun 2012 15:47:17 +0200
-Message-Id: <1340545637-5449-8-git-send-email-stigge@antcom.de>
+Subject: [PATCH 5/7] ARM: LPC32xx: Defconfig update
+Date: Sun, 24 Jun 2012 15:47:15 +0200
+Message-Id: <1340545637-5449-6-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1340545637-5449-1-git-send-email-stigge@antcom.de>
 References: <1340545637-5449-1-git-send-email-stigge@antcom.de>
@@ -23,34 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-USB and I2C initialization can be removed safely from the board specific
-phy3250.c, now that initialization moved to the generalized clock.c.
+This defconfig update for LPC32xx adds interrupt and polled gpio keyboard
+drivers.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
-Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-
 ---
- arch/arm/mach-lpc32xx/phy3250.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ arch/arm/configs/lpc32xx_defconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
-+++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
-@@ -248,18 +248,6 @@ static void __init lpc3250_machine_init(
- 	tmp |= LPC32XX_CLKPWR_LCDCTRL_LCDTYPE_TFT16;
- 	__raw_writel(tmp, LPC32XX_CLKPWR_LCDCLK_CTRL);
- 
--	/* Set up USB power */
--	tmp = __raw_readl(LPC32XX_CLKPWR_USB_CTRL);
--	tmp |= LPC32XX_CLKPWR_USBCTRL_HCLK_EN |
--		LPC32XX_CLKPWR_USBCTRL_USBI2C_EN;
--	__raw_writel(tmp, LPC32XX_CLKPWR_USB_CTRL);
--
--	/* Set up I2C pull levels */
--	tmp = __raw_readl(LPC32XX_CLKPWR_I2C_CLK_CTRL);
--	tmp |= LPC32XX_CLKPWR_I2CCLK_USBI2CHI_DRIVE |
--		LPC32XX_CLKPWR_I2CCLK_I2C2HI_DRIVE;
--	__raw_writel(tmp, LPC32XX_CLKPWR_I2C_CLK_CTRL);
--
- 	lpc32xx_serial_init();
- 
- 	/* Test clock needed for UDA1380 initial init */
+--- linux-2.6.orig/arch/arm/configs/lpc32xx_defconfig
++++ linux-2.6/arch/arm/configs/lpc32xx_defconfig
+@@ -18,6 +18,7 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_LPC32XX=y
++CONFIG_KEYBOARD_GPIO_POLLED=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+@@ -89,6 +90,7 @@ CONFIG_INPUT_MOUSEDEV_SCREEN_X=240
+ CONFIG_INPUT_MOUSEDEV_SCREEN_Y=320
+ CONFIG_INPUT_EVDEV=y
+ # CONFIG_KEYBOARD_ATKBD is not set
++CONFIG_KEYBOARD_GPIO=y
+ CONFIG_KEYBOARD_LPC32XX=y
+ # CONFIG_INPUT_MOUSE is not set
+ CONFIG_INPUT_TOUCHSCREEN=y
