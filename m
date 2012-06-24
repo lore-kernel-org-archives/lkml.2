@@ -1,142 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab2FXSOI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 14:14:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13578 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244Ab2FXSOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 14:14:07 -0400
-Date: Sun, 24 Jun 2012 20:11:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>, David Howells <dhowells@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: deferring __fput()
-Message-ID: <20120624181153.GA26182@redhat.com>
-References: <1340369098.2464.20.camel@falcor> <20120623092049.GH14083@ZenIV.linux.org.uk> <20120623194505.GI14083@ZenIV.linux.org.uk> <20120623205755.GJ14083@ZenIV.linux.org.uk> <20120624152050.GA24596@redhat.com>
+	id S1753846Ab2FXS2P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 14:28:15 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:29139 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244Ab2FXS2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 14:28:14 -0400
+Date: Sun, 24 Jun 2012 20:28:12 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+cc: Dave Airlie <airlied@redhat.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mgag200: Fix a memory leak in mgag200fb_create()
+In-Reply-To: <CAHdPZaMCDO2GAyxR_WYxqpwC1Ym307uj3CXFG7r0LybMLH7Pig@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1206242025290.30361@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1206220012470.7671@swampdragon.chaosbits.net> <CAHdPZaMCDO2GAyxR_WYxqpwC1Ym307uj3CXFG7r0LybMLH7Pig@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120624152050.GA24596@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-889122848-1340562492=:30361"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24, Oleg Nesterov wrote:
->
-> On 06/23, Al Viro wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-889122848-1340562492=:30361
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 22 Jun 2012, devendra.aaru wrote:
+
+> On Fri, Jun 22, 2012 at 3:43 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+> > First we allocate memory for 'sysram' with vmalloc() and subsequently
+> > we allocate for 'info' with framebuffer_alloc(). If the second
+> > allocation fails we return -ENOMEM, but neglect to vfree() the memory
+> > we previously allocated for 'sysram', thus leaking it.
 > >
-> > What we ought to
-> > do instead of that is honestly keeping both the head of the (single-linked) list and
-> > pointer to pointer to its last element.  Sure, that'll eat one more word in task_struct.
-> > And it doesn't matter, since we'll be able to kill something else in there - namely,
-> > ->scm_work_list.
->
-> Still it is better to not add the second pointer, task->task_works can
-> point to the last work, and last_work->next points to the first one.
+> Hi Jesper,
+> 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  drivers/gpu/drm/mgag200/mgag200_fb.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/gpu/drm/mgag200/mgag200_fb.c b/drivers/gpu/drm/mgag200/mgag200_fb.c
+> > index 880d336..3c837e5 100644
+> > --- a/drivers/gpu/drm/mgag200/mgag200_fb.c
+> > +++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
+> > @@ -156,8 +156,10 @@ static int mgag200fb_create(struct mga_fbdev *mfbdev,
+> >                return -ENOMEM;
+> >
+> >        info = framebuffer_alloc(0, device);
+> > -       if (info == NULL)
+> > +       if (info == NULL) {
+> > +               vfree(sysram);
+> >                return -ENOMEM;
+> > +       }
+> >
+> >        info->par = mfbdev;
+> >
+> This looks ok. but what about the error path?
+> there are more leaks at error paths. mgag200_framebuffer_init failcase
+> and the functions below like,
+> fb_alloc_cmap,
+> alloc_apertures,
+> ?
+> 
+I didn't do a complete review. I just happened to notice this one and 
+wanted to submit a patch.
 
-So. task_struct has the single "struct task_work *last_twork" pointer,
-task_work has ->next. I'll try to cleanup task_work_cancel() a bit, but
-this all doesn't look too complicated, see below. (untested, probably
-buggy, but hopefully close to correct).
+If I can find the time I may look more closely for other problems, but no 
+promises, so for now I'd suggest just merging this patch and then future 
+patches from me, you or someone else, can be added on top of that at a 
+later time.
 
-Or do you still think we need the 2nd pointer in task_struct?
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Oleg.
-
-int
-task_work_add(struct task_struct *task, struct task_work *twork, bool notify)
-{
-	unsigned long flags;
-	struct task_work *last;
-	int err = -ESRCH;
-
-#ifndef TIF_NOTIFY_RESUME
-	if (notify)
-		return -ENOTSUPP;
-#endif
-	/*
-	 * We must not insert the new work if the task has already passed
-	 * exit_task_work(). We rely on do_exit()->raw_spin_unlock_wait()
-	 * and check PF_EXITING under pi_lock.
-	 */
-	raw_spin_lock_irqsave(&task->pi_lock, flags);
-	if (likely(!(task->flags & PF_EXITING))) {
-		last = task->last_twork ?: twork;
-		task->last_twork = twork;
-		twork->next = last->next;
-		last->next = twork;
-		err = 0;
-	}
-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-
-	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
-	if (likely(!err) && notify)
-		set_notify_resume(task);
-	return err;
-}
-
-struct task_work *
-task_work_cancel(struct task_struct *task, task_work_func_t func)
-{
-	unsigned long flags;
-	struct task_work *last;
-	struct task_work *twork;
-	struct task_work *prev;
-
-	raw_spin_lock_irqsave(&task->pi_lock, flags);
-	last = twork = task->last_twork;
-	if (!last)
-		goto unlock;
-
-	do {
-		prev = twork;
-		twork = twork->next;
-		if (twork->func != func)
-			continue;
-
-		prev->next = twork->next;
-		if (twork == last) {
-			if (prev == twork)
-				prev = NULL;
-			task->last_twork = prev;
-		}
-		goto unlock;
-
-	} while (twork != last);
-	twork = NULL;
-
- unlock:
-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-
-	return twork;
-}
-
-void task_work_run(void)
-{
-	struct task_struct *task = current;
-	struct task_work *last;
-	struct task_work *twork;
-	struct task_work *next;
-
-	raw_spin_lock_irq(&task->pi_lock);
-	last = task->last_twork;
-	task->last_twork = NULL;
-	raw_spin_unlock_irq(&task->pi_lock);
-
-	if (unlikely(!last))
-		return;
-
-	next = last->next;
-	do {
-		twork = next;
-		next = twork->next;
-		twork->func(twork);
-	} while (twork != last);
-}
-
+--8323328-889122848-1340562492=:30361--
