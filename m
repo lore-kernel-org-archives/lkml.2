@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab2FXAeZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Jun 2012 20:34:25 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45286 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754547Ab2FXAeX (ORCPT
+	id S1756973Ab2FXAgn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Jun 2012 20:36:43 -0400
+Received: from mail.myaccess.ca ([65.87.230.25]:42167 "EHLO
+	mail-relay2.accesscomm.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756269Ab2FXAgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Jun 2012 20:34:23 -0400
-X-Sasl-enc: /bVb0bg0H15lgmClLbog9xn5ufhbhigXV5QaIeHk3lvw 1340498063
-Date: Sat, 23 Jun 2012 21:34:16 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: platform-driver-x86@vger.kernel.org,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Joey Lee <jlee@novell.com>
-Subject: Re: [PATCH 2/5] thinkpad_acpi: Use struct dev_pm_ops instead of
- legacy PM routines
-Message-ID: <20120624003416.GB20885@khazad-dum.debian.net>
-References: <201206172226.42729.rjw@sisk.pl>
- <201206172227.57189.rjw@sisk.pl>
+	Sat, 23 Jun 2012 20:36:42 -0400
+X-Greylist: delayed 614 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Jun 2012 20:36:42 EDT
+Date: Sat, 23 Jun 2012 18:26:18 -0600
+From: Kevin Mack <kevmack@accesscomm.ca>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Add Razer Onza USB ID to xpad
+Message-ID: <20120624002618.GA23646@darkstar.accesscomm.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201206172227.57189.rjw@sisk.pl>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Jun 2012, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Make the thinkpad_acpi driver define its PM callbacks through
-> a struct dev_pm_ops object rather than by using legacy PM hooks
-> in struct platform_driver.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+This adds the ID for the Razer Onza Tournament Edition.
 
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+--- linux-3.4.2/drivers/input/joystick/xpad.c.bak	2012-06-09 09:36:33.000000000 -0600
++++ linux-3.4.2/drivers/input/joystick/xpad.c	2012-06-23 18:07:18.000000000 -0600
+@@ -165,6 +165,7 @@
+ 	{ 0x0f0d, 0x0016, "Hori Real Arcade Pro.EX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x0f0d, 0x000d, "Hori Fighting Stick EX2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0xffff, 0xffff, "Chinese-made Xbox Controller", 0, XTYPE_XBOX },
++	{ 0x1689, 0xfd00, "Razer Onza TE", 0, XTYPE_XBOX360 },
+ 	{ 0x0000, 0x0000, "Generic X-Box pad", 0, XTYPE_UNKNOWN }
+ };
+ 
+@@ -244,6 +245,7 @@
+ 	XPAD_XBOX360_VENDOR(0x146b),		/* BigBen Interactive Controllers */
+ 	XPAD_XBOX360_VENDOR(0x1bad),		/* Harminix Rock Band Guitar and Drums */
+ 	XPAD_XBOX360_VENDOR(0x0f0d),            /* Hori Controllers */
++	XPAD_XBOX360_VENDOR(0x1689),            /* Razer Controllers */
+ 	{ }
+ };
+ 
