@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab2FXMJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 08:09:26 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43893 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726Ab2FXMJY (ORCPT
+	id S1755022Ab2FXMkH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 08:40:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45982 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab2FXMkE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 08:09:24 -0400
-Date: Sun, 24 Jun 2012 15:08:53 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        Forest Bond <forest@alittletooquiet.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6656: Correct a few assignments to be
- compares in iwctl_siwencodeext()
-Message-ID: <20120624120853.GH5333@mwanda>
-References: <alpine.LNX.2.00.1206220225000.7671@swampdragon.chaosbits.net>
+	Sun, 24 Jun 2012 08:40:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1206220225000.7671@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <201206232318.18196.rjw@sisk.pl>
+References: <201206232306.06602.rjw@sisk.pl>
+	<201206232318.18196.rjw@sisk.pl>
+Date: Sun, 24 Jun 2012 08:40:02 -0400
+Message-ID: <CAK7t_7Vfgqps+iavyQmXhj+CwSoBOEkCyFhTo_mXnC3stQtxDw@mail.gmail.com>
+Subject: Re: [PATCH 16/21] toshiba_bluetooth: Use struct dev_pm_ops for power management
+From: Vikram Dhillon <opensolarisdev@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Mattia Dongili <malattia@linux.it>,
+        Harald Welte <laforge@gnumonks.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 02:28:12AM +0200, Jesper Juhl wrote:
-> The result of "foo = bar" is true, so in statements such as
->   ...
->   if((pDevice->bwextstep0 = TRUE)&&(param->u.wpa_key.key_index ==1))
->   ...
-> an assignment  is most likely not what was intended - a comparison was. As in:
->   ...
->   if ((pDevice->bwextstep0 == TRUE) && (param->u.wpa_key.key_index == 1))
->   ...
-> 
-> There are a 3 such mistakes in the iwctl_siwencodeext() function.
-> This patch fixes them all.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+On Sat, Jun 23, 2012 at 5:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> Make the toshiba_bluetooth driver define its PM callbacks through
+> a struct dev_pm_ops object rather than by using legacy PM hooks
+> in struct acpi_device_ops.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 > ---
->  drivers/staging/vt6656/iwctl.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
->   The file could also do with a serious style cleanup, but that's a 
->   different (set of) patches. This one just fixes the bug.
-> 
-> diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
-> index b24e531..5740438 100644
-> --- a/drivers/staging/vt6656/iwctl.c
-> +++ b/drivers/staging/vt6656/iwctl.c
-> @@ -1708,15 +1708,15 @@ if(param->u.wpa_key.alg_name == WPA_ALG_NONE) {
->     if(param->u.wpa_key.key_index ==0) {
->       pDevice->bwextstep0 = TRUE;
->      }
-> -   if((pDevice->bwextstep0 = TRUE)&&(param->u.wpa_key.key_index ==1)) {
-> +   if ((pDevice->bwextstep0 == TRUE) && (param->u.wpa_key.key_index == 1)) {
+>  drivers/platform/x86/toshiba_bluetooth.c |   10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+>
+> Index: linux/drivers/platform/x86/toshiba_bluetooth.c
+> ===================================================================
+> --- linux.orig/drivers/platform/x86/toshiba_bluetooth.c
+> +++ linux/drivers/platform/x86/toshiba_bluetooth.c
+> @@ -34,7 +34,6 @@ MODULE_LICENSE("GPL");
+>  static int toshiba_bt_rfkill_add(struct acpi_device *device);
+>  static int toshiba_bt_rfkill_remove(struct acpi_device *device, int type);
+>  static void toshiba_bt_rfkill_notify(struct acpi_device *device, u32 event);
+> -static int toshiba_bt_resume(struct acpi_device *device);
+>
+>  static const struct acpi_device_id bt_device_ids[] = {
+>        { "TOS6205", 0},
+> @@ -42,6 +41,9 @@ static const struct acpi_device_id bt_de
+>  };
+>  MODULE_DEVICE_TABLE(acpi, bt_device_ids);
+>
+> +static int toshiba_bt_resume(struct device *dev);
+> +static SIMPLE_DEV_PM_OPS(toshiba_bt_pm, NULL, toshiba_bt_resume);
+> +
+>  static struct acpi_driver toshiba_bt_rfkill_driver = {
+>        .name =         "Toshiba BT",
+>        .class =        "Toshiba",
+> @@ -50,9 +52,9 @@ static struct acpi_driver toshiba_bt_rfk
+>                                .add =          toshiba_bt_rfkill_add,
+>                                .remove =       toshiba_bt_rfkill_remove,
+>                                .notify =       toshiba_bt_rfkill_notify,
+> -                               .resume =       toshiba_bt_resume,
+>                        },
+>        .owner =        THIS_MODULE,
+> +       .drv.pm =       &toshiba_bt_pm,
+>  };
+>
+>
+> @@ -88,9 +90,9 @@ static void toshiba_bt_rfkill_notify(str
+>        toshiba_bluetooth_enable(device->handle);
+>  }
+>
+> -static int toshiba_bt_resume(struct acpi_device *device)
+> +static int toshiba_bt_resume(struct device *dev)
+>  {
+> -       return toshiba_bluetooth_enable(device->handle);
+> +       return toshiba_bluetooth_enable(to_acpi_device(dev)->handle);
+>  }
+>
+>  static int toshiba_bt_rfkill_add(struct acpi_device *device)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Good catch.
+Looks good, will look into the other struct patch (#11) tomorrow.
 
-GCC would have warned about this bug except that the author tried to
-program it in lisp and added stupid extra paranthesis through out.
-
-regards,
-dan carpenter
-
-
+Reviewed-by: Vikram Dhillon <opensolarisdev@gmail.com>
