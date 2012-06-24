@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2FXTwp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 15:52:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8136 "EHLO mx1.redhat.com"
+	id S1754213Ab2FXTzL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 15:55:11 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:37644 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506Ab2FXTwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 15:52:44 -0400
-Date: Sun, 24 Jun 2012 15:52:36 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch v2] mm, thp: print useful information when mmap_sem is
- unlocked in zap_pmd_range
-Message-ID: <20120624195236.GA2153@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-	linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-	Sasha Levin <levinsasha928@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20120606165330.GA27744@redhat.com>
- <alpine.DEB.2.00.1206091904030.7832@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1206110214150.6843@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1206221405430.20954@chino.kir.corp.google.com>
+	id S1752506Ab2FXTzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 15:55:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Vikram Dhillon <opensolarisdev@gmail.com>
+Subject: Re: [PATCH 16/21] toshiba_bluetooth: Use struct dev_pm_ops for power management
+Date: Sun, 24 Jun 2012 22:00:35 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Mattia Dongili <malattia@linux.it>,
+        Harald Welte <laforge@gnumonks.org>
+References: <201206232306.06602.rjw@sisk.pl> <201206232318.18196.rjw@sisk.pl> <CAK7t_7Vfgqps+iavyQmXhj+CwSoBOEkCyFhTo_mXnC3stQtxDw@mail.gmail.com>
+In-Reply-To: <CAK7t_7Vfgqps+iavyQmXhj+CwSoBOEkCyFhTo_mXnC3stQtxDw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1206221405430.20954@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206242200.35607.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 02:06:40PM -0700, David Rientjes wrote:
- > On Mon, 11 Jun 2012, David Rientjes wrote:
- > 
- > > diff --git a/mm/memory.c b/mm/memory.c
- > > --- a/mm/memory.c
- > > +++ b/mm/memory.c
- > > @@ -1225,7 +1225,15 @@ static inline unsigned long zap_pmd_range(struct mmu_gather *tlb,
- > >  		next = pmd_addr_end(addr, end);
- > >  		if (pmd_trans_huge(*pmd)) {
- > >  			if (next - addr != HPAGE_PMD_SIZE) {
- > > -				VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
- > > +#ifdef CONFIG_DEBUG_VM
- > > +				if (!rwsem_is_locked(&tlb->mm->mmap_sem)) {
- > > +					pr_err("%s: mmap_sem is unlocked! addr=0x%lx end=0x%lx vma->vm_start=0x%lx vma->vm_end=0x%lx\n",
- > > +						__func__, addr, end,
- > > +						vma->vm_start,
- > > +						vma->vm_end);
- > > +					BUG();
- > > +				}
- > > +#endif
- > >  				split_huge_page_pmd(vma->vm_mm, pmd);
- > >  			} else if (zap_huge_pmd(tlb, vma, pmd, addr))
- > >  				goto next;
- > 
- > This patch is now in Linus' tree so if you are able to hit this issue and 
- > capture it again, we should be able to get much more useful information.
+On Sunday, June 24, 2012, Vikram Dhillon wrote:
+> On Sat, Jun 23, 2012 at 5:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Make the toshiba_bluetooth driver define its PM callbacks through
+> > a struct dev_pm_ops object rather than by using legacy PM hooks
+> > in struct acpi_device_ops.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  drivers/platform/x86/toshiba_bluetooth.c |   10 ++++++----
+> >  1 file changed, 6 insertions(+), 4 deletions(-)
+> >
+> > Index: linux/drivers/platform/x86/toshiba_bluetooth.c
+> > ===================================================================
+> > --- linux.orig/drivers/platform/x86/toshiba_bluetooth.c
+> > +++ linux/drivers/platform/x86/toshiba_bluetooth.c
+> > @@ -34,7 +34,6 @@ MODULE_LICENSE("GPL");
+> >  static int toshiba_bt_rfkill_add(struct acpi_device *device);
+> >  static int toshiba_bt_rfkill_remove(struct acpi_device *device, int type);
+> >  static void toshiba_bt_rfkill_notify(struct acpi_device *device, u32 event);
+> > -static int toshiba_bt_resume(struct acpi_device *device);
+> >
+> >  static const struct acpi_device_id bt_device_ids[] = {
+> >        { "TOS6205", 0},
+> > @@ -42,6 +41,9 @@ static const struct acpi_device_id bt_de
+> >  };
+> >  MODULE_DEVICE_TABLE(acpi, bt_device_ids);
+> >
+> > +static int toshiba_bt_resume(struct device *dev);
+> > +static SIMPLE_DEV_PM_OPS(toshiba_bt_pm, NULL, toshiba_bt_resume);
+> > +
+> >  static struct acpi_driver toshiba_bt_rfkill_driver = {
+> >        .name =         "Toshiba BT",
+> >        .class =        "Toshiba",
+> > @@ -50,9 +52,9 @@ static struct acpi_driver toshiba_bt_rfk
+> >                                .add =          toshiba_bt_rfkill_add,
+> >                                .remove =       toshiba_bt_rfkill_remove,
+> >                                .notify =       toshiba_bt_rfkill_notify,
+> > -                               .resume =       toshiba_bt_resume,
+> >                        },
+> >        .owner =        THIS_MODULE,
+> > +       .drv.pm =       &toshiba_bt_pm,
+> >  };
+> >
+> >
+> > @@ -88,9 +90,9 @@ static void toshiba_bt_rfkill_notify(str
+> >        toshiba_bluetooth_enable(device->handle);
+> >  }
+> >
+> > -static int toshiba_bt_resume(struct acpi_device *device)
+> > +static int toshiba_bt_resume(struct device *dev)
+> >  {
+> > -       return toshiba_bluetooth_enable(device->handle);
+> > +       return toshiba_bluetooth_enable(to_acpi_device(dev)->handle);
+> >  }
+> >
+> >  static int toshiba_bt_rfkill_add(struct acpi_device *device)
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Looks good, will look into the other struct patch (#11) tomorrow.
+> 
+> Reviewed-by: Vikram Dhillon <opensolarisdev@gmail.com>
 
-I've had it applied in my local builds for a while, but haven't managed
-to hit it again recently.  Though I've not been doing as many overnight runs
-this last week or two because temperatures at home have been icky enough
-without computers belching out hot air (no ac)
+Thanks a lot!
 
-	Dave
-
+Rafael
