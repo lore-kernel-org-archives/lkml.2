@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab2FXGqz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 02:46:55 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36112 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab2FXGqw (ORCPT
+	id S1754147Ab2FXHdQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 03:33:16 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:40071 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752429Ab2FXHdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 02:46:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <87mx3twr6g.fsf@xmission.com>
-References: <20120623001206.GA22639@www.outflux.net>
-	<87mx3twr6g.fsf@xmission.com>
-Date: Sat, 23 Jun 2012 23:46:50 -0700
-X-Google-Sender-Auth: VFMnMrnJw2AG379kD2bBrIsYa1Y
-Message-ID: <CAGXu5jKpoiMJWMJ-KwSFExNHCe4iusfJAPkwg5MCo6H7qmnSrg@mail.gmail.com>
-Subject: Re: [PATCH v4] fs: make dumpable=2 only write to a pipe
-From: Kees Cook <keescook@chromium.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Rob Landley <rob@landley.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Doug Ledford <dledford@redhat.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Joe Korty <joe.korty@ccur.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Sun, 24 Jun 2012 03:33:15 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+A3LYKrLCAMDqhTnWCu0WsU7EBrFX/VvblWilJXk
+	r9qMQM9CSiTb3o
+Message-ID: <1340523191.7471.159.camel@marge.simpson.net>
+Subject: Re: [PATCH] Taint kernel when lve module is loaded
+From: Mike Galbraith <efault@gmx.de>
+To: iseletsk@cloudlinux.com
+Cc: fa.linux.kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Alex Lyashkov <umka@cloudlinux.com>
+Date: Sun, 24 Jun 2012 09:33:11 +0200
+In-Reply-To: <b770341d-e1e3-4d57-b283-3d8ff92b0d36@googlegroups.com>
+References: <fa.WTHIDfGYg3w7zn9rxlDshNfnPtI@ifi.uio.no>
+	 <b770341d-e1e3-4d57-b283-3d8ff92b0d36@googlegroups.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 23, 2012 at 4:21 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->
->> When the suid_dumpable sysctl is set to "2", and there is no core
->> dump pipe defined in the core_pattern sysctl, a local user can cause
->> core files to be written to root-writable directories, potentially
->> with user-controlled content. This means an admin can unknowningly
->> reintroduce a variation of CVE-2006-2451, allowing local users to gain
->> root privileges.
->
-> Is there a security exploit possible if a path is defined in the
-> core_pattern?
->
-> From the description of the problem so far I don't think there is.
-> Requiring a program when a simple path will do seems excessive.
+On Sat, 2012-06-23 at 08:07 -0700, iseletsk@cloudlinux.com wrote:
 
-Having a fully qualified path would be sufficient, yes. Looking at how
-%e and %E are handled, I'm satisfied (for example, no additional "/"
-characters can be injected via argv0). In this case, then, I'll adjust
-this to require either a pipe or a fully qualified core_pattern (i.e.
-core_pattern must start with "!" or "/" for mode 2). How does that
-sound?
+> Later on we will have new module that is not GPL released.
 
--Kees
+Too bad refusing to load conceptually alien modules is incompatible with
+pragmatic/practical.  A decision to eradicate the things is highly
+attractive excepting the "cut off your nose to spite your face" bits
+contained therein.
 
--- 
-Kees Cook
-Chrome OS Security
+Hohum, live long and prosper (possibly nose free) alien life form.
+
+-Mike
+
