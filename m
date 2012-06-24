@@ -1,278 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab2FXWMw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 18:12:52 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:37783 "EHLO ogre.sisk.pl"
+	id S1752632Ab2FXWfE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 18:35:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57187 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab2FXWMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 18:12:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Subject: Re: boot hang on commit "PM / ACPI: Fix suspend/resume regression caused by cpuidle cleanup."
-Date: Mon, 25 Jun 2012 00:18:15 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc4-test+; KDE/4.6.0; x86_64; ; )
-Cc: Fengguang Wu <wfg@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Preeti Murthy <preeti@linux.vnet.ibm.com>,
-        Srivatsa S Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-References: <20120622073513.GA15864@localhost> <4FE44163.4060509@linux.vnet.ibm.com> <20120622122453.GA17341@localhost>
-In-Reply-To: <20120622122453.GA17341@localhost>
+	id S1751189Ab2FXWfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 18:35:01 -0400
+Date: Mon, 25 Jun 2012 01:35:02 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH 4/4][RFC] kvm: eoi_eventfd
+Message-ID: <20120624223502.GC17046@redhat.com>
+References: <20120622220040.9858.43665.stgit@bling.home>
+ <20120622221626.9858.33817.stgit@bling.home>
+ <20120624082451.GA1712@redhat.com>
+ <1340549277.14120.42.camel@bling.home>
+ <20120624154050.GB2851@redhat.com>
+ <1340574612.5076.157.camel@bling.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206250018.15384.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340574612.5076.157.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 22, 2012, Fengguang Wu wrote:
-> Hi Deepthi,
+On Sun, Jun 24, 2012 at 03:50:12PM -0600, Alex Williamson wrote:
+> On Sun, 2012-06-24 at 18:40 +0300, Michael S. Tsirkin wrote:
+> > On Sun, Jun 24, 2012 at 08:47:57AM -0600, Alex Williamson wrote:
+> > > On Sun, 2012-06-24 at 11:24 +0300, Michael S. Tsirkin wrote:
+> > > > On Fri, Jun 22, 2012 at 04:16:53PM -0600, Alex Williamson wrote:
+> > > > > I think we're probably also going to need something like this.
+> > > > > When running in non-accelerated qemu, we're going to have to
+> > > > > create some kind of EOI notifier for drivers.  VFIO can make
+> > > > > additional improvements when running on KVM so it will probably
+> > > > > make use of the KVM_IRQFD_LEVEL_EOI interface, but we don't
+> > > > > want to have a generic EOI notifier in qemu that just stops
+> > > > > working when kvm-ioapic is enabled.  This is just a simple way
+> > > > > to register an eventfd using the existing KVM ack notifier.
+> > > > > I tried combining the ack notifier of the LEVEL_EOI interface
+> > > > > into this one, but it didn't work out well.  The code complexity
+> > > > > goes up a lot.
+> > > > > 
+> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > ---
+> > > > > 
+> > > > >  Documentation/virtual/kvm/api.txt |   14 ++++++
+> > > > >  arch/x86/kvm/x86.c                |    1 
+> > > > >  include/linux/kvm.h               |   12 +++++
+> > > > >  include/linux/kvm_host.h          |    7 +++
+> > > > >  virt/kvm/eventfd.c                |   89 +++++++++++++++++++++++++++++++++++++
+> > > > >  virt/kvm/kvm_main.c               |    9 ++++
+> > > > >  6 files changed, 132 insertions(+)
+> > > > > 
+> > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > > > > index 2f8a0aa..69b1747 100644
+> > > > > --- a/Documentation/virtual/kvm/api.txt
+> > > > > +++ b/Documentation/virtual/kvm/api.txt
+> > > > > @@ -1998,6 +1998,20 @@ matched using kvm_irqfd.fd, kvm_irqfd.gsi, and kvm_irqfd.fd2.
+> > > > >  De-assigning automatically de-asserts the interrupt line setup through
+> > > > >  this interface.
+> > > > >  
+> > > > > +4.77 KVM_EOI_EVENTFD
+> > > > > +
+> > > > > +Capability: KVM_CAP_EOI_EVENTFD
+> > > > > +Architectures: x86
+> > > > > +Type: vm ioctl
+> > > > > +Parameters: struct kvm_eoi_eventfd (in)
+> > > > > +Returns: 0 on success, -1 on error
+> > > > > +
+> > > > > +This interface allows userspace to be notified through an eventfd for
+> > > > > +EOI writes to the in-kernel irqchip.  kvm_eoi_eventfd.fd specifies
+> > > > > +the eventfd to signal on EOI to kvm_eoi_eventfd.gsi.  To disable,
+> > > > > +use KVM_EOI_EVENTFD_FLAG_DEASSIGN and specify both the original fd
+> > > > > +and gsi.
+> > > > > +
+> > > > >  5. The kvm_run structure
+> > > > >  ------------------------
+> > > > >  
+> > > > 
+> > > > The patch looks like it only works for ioapic IRQs.  I think it's a good
+> > > > idea to explicitly limit this to level interrupts, straight away:
+> > > > there's no reason for userspace to need an exit on an edge interrupt.
+> > > 
+> > > Are you suggesting documentation or code to prevent users from binding
+> > > to an edge interrupt?
+> > 
+> > Yes.
 > 
-> I can no longer reproduce this issue... Sorry for the noise!
-
-But I do, 100% of the time on real hardware which is Acer Ferrari One.
-
-The symptom is that the new WARN_ON() triggers pretty much on every
-cpuidle transition for me which makes the machine unuseable.
-
-That may be a result of a different bug, but the box evidently works
-without the hunk in arch/x86/kernel/process.c, so I'd prefer to drop it
-for now.
-
-Moreover, I have a couple of questions regarding the implementation.
-
-First, why are we returning -EINVAL if acpi_idle_suspend is set?  Surely,
-something like -EBUSY or -EAGAIN would be better here, wouldn't it?
-
-Second, is the cpu_relax() before returning really necessary?
-
-Finally, the hunk in acpi_idle_enter_bm() still looks ugly.  I'd prefer
-something like this instead:
-
-@@ -907,7 +928,10 @@ static int acpi_idle_enter_bm(struct cpu
- 						drv, drv->safe_state_index);
- 		} else {
- 			local_irq_disable();
--			acpi_safe_halt();
-+
-+			if (!acpi_idle_suspend)
-+				acpi_safe_halt();
-+
- 			local_irq_enable();
- 			return -EINVAL;
- 		}
-@@ -915,6 +939,12 @@ static int acpi_idle_enter_bm(struct cpu
- 
- 	local_irq_disable();
- 
-+	if (acpi_idle_suspend) {
-+		local_irq_enable();
-+		cpu_relax();
-+		return -EBUSY;
-+	}
-+
- 	if (cx->entry_method != ACPI_CSTATE_FFH) {
- 		current_thread_info()->status &= ~TS_POLLING;
- 		/*
-
-Hmm?
-
-The patch has been dropped from the linux-pm tree (hopefully for now).
-
-Thanks,
-Rafael
-
-
-> On Fri, Jun 22, 2012 at 03:26:51PM +0530, Deepthi Dharwar wrote:
-> > Hi,
-> > 
-> > This is interesting .. suspend fix breaking boot on kvm.
-> > 
-> > We complied and booted fine with mainline kernels including 3.5-rc2 with
-> > this fix  on servers and laptops.
-> > So wondering how different is  booting on machines Vs
-> > from kvm ?
-> > 
-> > Also, are you seeing smooth boot on kvm by reverting only this patch ?
-> > 
-> > Cheers
-> > Deepthi
-> > 
-> > On 06/22/2012 01:05 PM, wfg@linux.intel.com wrote:
-> > 
-> > > Hi Deepthi,
-> > > 
-> > > It seems that commit de08622 triggers a boot hang in my kvm boot test.
-> > > 
-> > > kvm -cpu kvm64 -enable-kvm \
-> > >                 -kernel ./gpxelinux.lkrn \
-> > >                 -initrd ./kvm.gpxe \
-> > >                 -m 384M \
-> > >                 -net nic,vlan=0,macaddr=00:00:00:00:00:00,model=e1000  \
-> > >                 -net user,vlan=0,hostfwd=tcp::$port-:22 \
-> > >                 -boot order=nc \
-> > >                 -no-reboot \
-> > >                 -watchdog i6300esb \
-> > >                 $(qemu_drives) \
-> > >                 -pidfile $pidfile \
-> > >                 -serial file:$dmesg 
-> > > 
-> > > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git linux-next
-> > > head:   de08622731417ba429fc470ab8f2d7c260cb5c72
-> > > commit: de08622731417ba429fc470ab8f2d7c260cb5c72 [9/9] PM / ACPI: Fix suspend/resume regression caused by cpuidle cleanup.
-> > > config: x86_64-allyesdebian (attached as .config)
-> > > 
-> > > x86_64-allyesdebian         bbbbbbbbbB
-> > > --
-> > > 8:	b 0eb8c06  2012-06-19 22:23:37 +0200 PM / Sleep: Separate printing suspend times from initcall_debug
-> > > 9:	B de08622  boot hang after [   81.370898] usbcore: registered new interface driver dw2102
-> > > 
-> > > legend: [b] boot fine  [B] boot error
-> > > 
-> > > commit de08622731417ba429fc470ab8f2d7c260cb5c72
-> > > Author: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-> > > Date:   Wed Jun 13 16:28:17 2012 +0530
-> > > 
-> > >     PM / ACPI: Fix suspend/resume regression caused by cpuidle cleanup.
-> > >     
-> > >     Commit e978aa7d7d57d04eb5f88a7507c4fb98577def77 ( cpuidle: Move
-> > >     dev->last_residency update to driver enter routine; remove dev->last_state)
-> > >     was  breaking suspend on laptops, as reported in the below link
-> > >     	- https://lkml.org/lkml/2011/11/11/164
-> > >     
-> > >     This was fixed in commit 3439a8da16bcad6b0982ece938c9f8299bb53584
-> > >     (ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend regression)
-> > >     by removing acpi_idle_suspend flag.
-> > >     	- https://lkml.org/lkml/2011/11/14/74
-> > >     
-> > >     But this fix did not work on all systems
-> > >     as Suspend/resume regression was reported on Lenovo S10-3
-> > >     recently by Dave.
-> > >     	- https://lkml.org/lkml/2012/5/27/115
-> > >     It looked like with commit e978aa7d broke suspend and
-> > >     with commit 3439a8da resume was not working with acpi_idle driver.
-> > >     
-> > >     This patch fixes the regression that caused this issue
-> > >     in the first place. acpi_idle_suspend flag is essential on
-> > >     some x86 systems to prevent the cpus from going to deeper C-states
-> > >     when suspend is triggered ( commit b04e7bdb984 )
-> > >     So reverting the commit 3439a8da is essential.
-> > >     
-> > >     By default, irqs are disabled in cpu_idle arch specific call
-> > >     and re-enabled in idle state return path . As the acpi_idle_suspend
-> > >     flag was being set during suspend, which prevented the cpus
-> > >     going to deeper idle states, it is essential to
-> > >     enabling the irqs in its return path too.
-> > >     
-> > >     To address the suspend issue,
-> > >     we were not re-enabling the interrupts while returning from
-> > >     acpi_idle_enter_bm() routine if acpi_idle_suspend flag is set.
-> > >     and this was causing suspend failure.
-> > >     
-> > >     In addition to the above fix, a sanity check has also been added
-> > >     in x86 arch specific cpu_idle call to ensure that the idle call
-> > >     always returns with IRQs enabled.
-> > >     
-> > >     Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-> > >     Reported-and-Tested-by: Dav Hansen <dave@linux.vnet.ibm.com>
-> > >     Tested-by: Preeti Murthy <preeti@linux.vnet.ibm.com>
-> > >     Reviewed-by: Srivatsa S Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > >     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > 
-> > > diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> > > index 735279e..8ab76ad 100644
-> > > --- a/arch/x86/kernel/process.c
-> > > +++ b/arch/x86/kernel/process.c
-> > > @@ -460,6 +460,12 @@ void cpu_idle(void)
-> > >  				pm_idle();
-> > > 
-> > >  			rcu_idle_exit();
-> > > +
-> > > +			/*
-> > > +			 * Sanity check to ensure that idle call returns
-> > > +			 * with IRQs enabled
-> > > +			 */
-> > > +			WARN_ON(irqs_disabled());
-> > >  			start_critical_timings();
-> > > 
-> > >  			/* In many cases the interrupt that ended idle
-> > > diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> > > index f3decb3..c2ffd84 100644
-> > > --- a/drivers/acpi/processor_idle.c
-> > > +++ b/drivers/acpi/processor_idle.c
-> > > @@ -224,6 +224,7 @@ static void lapic_timer_state_broadcast(struct acpi_processor *pr,
-> > >  /*
-> > >   * Suspend / resume control
-> > >   */
-> > > +static int acpi_idle_suspend;
-> > >  static u32 saved_bm_rld;
-> > > 
-> > >  static void acpi_idle_bm_rld_save(void)
-> > > @@ -242,13 +243,21 @@ static void acpi_idle_bm_rld_restore(void)
-> > > 
-> > >  int acpi_processor_suspend(struct acpi_device * device, pm_message_t state)
-> > >  {
-> > > +	if (acpi_idle_suspend == 1)
-> > > +		return 0;
-> > > +
-> > >  	acpi_idle_bm_rld_save();
-> > > +	acpi_idle_suspend = 1;
-> > >  	return 0;
-> > >  }
-> > > 
-> > >  int acpi_processor_resume(struct acpi_device * device)
-> > >  {
-> > > +	if (acpi_idle_suspend == 0)
-> > > +		return 0;
-> > > +
-> > >  	acpi_idle_bm_rld_restore();
-> > > +	acpi_idle_suspend = 0;
-> > >  	return 0;
-> > >  }
-> > > 
-> > > @@ -754,6 +763,12 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
-> > > 
-> > >  	local_irq_disable();
-> > > 
-> > > +	if (acpi_idle_suspend) {
-> > > +		local_irq_enable();
-> > > +		cpu_relax();
-> > > +		return -EINVAL;
-> > > +	}
-> > > +
-> > >  	lapic_timer_state_broadcast(pr, cx, 1);
-> > >  	kt1 = ktime_get_real();
-> > >  	acpi_idle_do_entry(cx);
-> > > @@ -823,6 +838,12 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
-> > > 
-> > >  	local_irq_disable();
-> > > 
-> > > +	if (acpi_idle_suspend) {
-> > > +		local_irq_enable();
-> > > +		cpu_relax();
-> > > +		return -EINVAL;
-> > > +	}
-> > > +
-> > >  	if (cx->entry_method != ACPI_CSTATE_FFH) {
-> > >  		current_thread_info()->status &= ~TS_POLLING;
-> > >  		/*
-> > > @@ -901,6 +922,13 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
-> > >  	if (unlikely(!pr))
-> > >  		return -EINVAL;
-> > > 
-> > > +	if (acpi_idle_suspend) {
-> > > +		if (irqs_disabled())
-> > > +			local_irq_enable();
-> > > +		cpu_relax();
-> > > +		return -EINVAL;
-> > > +	}
-> > > +
-> > >  	if (!cx->bm_sts_skip && acpi_idle_bm_check()) {
-> > >  		if (drv->safe_state_index >= 0) {
-> > >  			return drv->states[drv->safe_state_index].enter(dev,
-> > 
+> Ok, that was failed attempt at clarification.  I'll assume documentation
+> is sufficient.
 > 
+> > > > I also suggest we put LEVEL somewhere in the name.
+> > > 
+> > > Ok
+> > > 
+> > > > With this eventfd, do we also need the fd2 parameter in the irqfd
+> > > > structure? It seems to be used for the same thing ...
+> > > 
+> > > Yes we still need fd2, this does not replace KVM_IRQFD_LEVEL_EOI.  The
+> > > models we need to support are:
+> > > 
+> > > 1) assert from userspace (IRQ_LINE), eoi to userspace (EOI_EVENTFD),
+> > > de-assert from userspace (IRQ_LINE)
+> > > 
+> > > 2a) assert from vfio (IRQFD.fd), de-assert in kvm, notify vfio
+> > > (IRQFD.fd2)
+> > > or
+> > > 
+> > > 2b) assert from vfio (IRQFD.fd), eoi to vfio (EOI_EVENTFD), de-assert
+> > > from vfio (IRQFD.fd2)
+> > 
+> > Or maybe deassert in kvm, notify vfio using eventfd?
 > 
+> Um, how is that different from 2a?  Are you suggesting EOI_EVENTFD does
+> a de-assert?
 
+Yes.
+
+>  My first implementation of this whole thing looked like
+> this:
+> 
+>         irq_source_id = ioctl(vmfd, KVM_GET_IRQ_SOURCE_ID)
+>         
+>         struct kvm_irqfd irqfd = {
+>             .fd = fd,
+>             .gsi = gsi,
+>             .flags = KVM_IRQFD_FLAG_LEVEL | KVM_IRQFD_FLAG_SOURCE_ID,
+
+FLAG_LEVEL might not be needed.
+
+>             .irq_source_id = irq_source_id,
+>         };
+>         
+>         ioctl(vmfd, KVM_IRQFD, &irqfd);
+>         
+>         struct kvm_eoi_eventfd eoifd = {
+>             .fd = fd2,
+>             .gsi = gsi,
+>             .flags = KVM_EOI_EVENTFD_FLAG_SOURCE_ID,
+>             .irq_source_id = irq_source_id,
+>         };
+>         
+>         ioctl(vmfd, KVM_EOI_EVENTFD, &eoifd);
+> 
+> What I didn't like about this was that the latter two ioctls are too
+> interdependent on each other.  For instance, ordering of de-assignment
+> is potentially important to avoid leaving the interrupt asserted.  The
+> combined KVM_IRQFD_LEVEL_EOI completely manages that.  Also, if qemu
+> wants to make use of this, they do not want the de-assert on EOI
+
+IMO it should not matter.  Most likely level is already 0 by the time
+EOI is invoked.  eventfds are asynchronous so you do not want
+level to stay asserted until some action.
+If qemu does not want the deassert on EOI, it should just
+avoid using the eventfd interface.
+
+
+> and
+> want to make use of the fixed userspace source id, so we end up with a
+> source id flag and a de-assert flag.  Eventually I decided that using a
+> new source id is really only required when using an irqfd, so we could
+> keep the source id internal and simplify the interface by pulling it all
+> into KVM_IRQFD.
+
+
+I see, thanks for the clarification.  But then we end up with
+EOI_EVENTFD for userspace that duplicates some of the functionality.
+I'm not sure how to do it best. How about passing in a special
+fd value to IRQFD so that only fd2 is valid?
+
+> > > This series enables 1) and 2a).  2b) has some pros and cons.  The pro is
+> > > that vfio could test the device to see if an interrupt is pending and
+> > > not de-assert if there is still an interrupt pending.  The con is that a
+> > > standard level interrupt cycle takes 3 transactions instead of 2.
+> > > 
+> > > Any case of triggering the interrupt externally via an irqfd requires
+> > > that the irqfd uses it's own irq_source_id so that it doesn't interfere
+> > > with KVM_USERSPACE_IRQ_SOURCE_ID.  So we can't mix IRQ_LINE and IRQFD
+> > > unless we want to completely expose a new irq source id allocation
+> > > mechanism and include it in all the interfaces (KVM_GET_IRQ_SOURCE_ID,
+> > > KVM_PUT_IRQ_SOURCE_ID, pass a source id to IRQFD and IRQ_LINE, etc).
+> > > Thanks,
+> > > 
+> > > Alex
+> > 
+> > I don't follow this last paragraph. What are you trying to say?
+> > To support IRQ sharing for level irqs, each irqfd for level IRQ
+> > must have a distinct source id. But IRQ_LINE works fine without,
+> > and one source ID for all irq_line users seems enough.
+> 
+> Ok, assume we have irqfd support as implemented in 3/4, but instead of
+> allocating a new irq_source_id, we just use KVM_USERSPACE_IRQ_SOURCE_ID.
+> The irqfd is triggered and asserts the interrupt line.  The guest begins
+> handling the interrupt, first probing an emulated device, but it has
+> nothing to do so moves on to the assigned device on the same interrupt
+> line.  Qemu then decides that emulated device really does have something
+> to do and assert the interrupt line.  Nothing happens because the guest
+> is already handling that interrupt.  Guest finishes and writes an eoi.
+> We're done, so we deassert.  Qemu's assert gets lost.
+> 
+> If we use a new irq_source_id, the guest sees the logical OR of all the
+> source ids for that interrupt line, so even though we de-assert, the
+> guest receives another interrupt because qemu's interrupt line status is
+> still visible.  Qemu is able to share a single irq_source_id for all
+> it's devices because the various components in the set_irq path are able
+> to multiplex multiple emulated interrupt sources themselves.
+> 
+> As above, I argue that the only time you need a new source id is if
+> you're injecting an interrupt from outside of the userspace model, which
+> pretty much means irqfd.
+
+This last paragraph is true IMO.
+
+>  Thanks,
+> 
+> Alex
