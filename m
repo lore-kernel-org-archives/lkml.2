@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab2FXPox (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 11:44:53 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:36493 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752607Ab2FXPow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 11:44:52 -0400
-Message-ID: <4FE735D7.7080102@xenotime.net>
-Date: Sun, 24 Jun 2012 08:44:23 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1754689Ab2FXPpy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 11:45:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48923 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751221Ab2FXPpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 11:45:53 -0400
+Date: Sun, 24 Jun 2012 18:45:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120624154555.GC2851@redhat.com>
+References: <20120622220040.9858.43665.stgit@bling.home>
+ <20120622221559.9858.59593.stgit@bling.home>
+ <20120624082856.GB1712@redhat.com>
+ <1340549456.14120.45.camel@bling.home>
 MIME-Version: 1.0
-To: Jimmy Pan <dspjmt@gmail.com>
-CC: Anatol Pomozov <anatol.pomozov@gmail.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix typo in printed messages
-References: <1340492074-13664-1-git-send-email-anatol.pomozov@gmail.com> <1340492074-13664-2-git-send-email-anatol.pomozov@gmail.com> <CAGTyHCpSa8hSuiBS53t9GuXfv6v_AYbCv8Wn=snHqiG1HHtbRA@mail.gmail.com>
-In-Reply-To: <CAGTyHCpSa8hSuiBS53t9GuXfv6v_AYbCv8Wn=snHqiG1HHtbRA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340549456.14120.45.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2012 06:09 AM, Jimmy Pan wrote:
-
-> On Sun, Jun 24, 2012 at 6:54 AM, Anatol Pomozov
-> <anatol.pomozov@gmail.com> wrote:
->> Coult -> Could
->> ---
->>  arch/sparc/kernel/vio.c               |    2 +-
->>  drivers/net/wireless/b43/main.c       |    2 +-
->>  drivers/net/wireless/b43legacy/main.c |    2 +-
->>  3 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/sparc/kernel/vio.c b/arch/sparc/kernel/vio.c
->> index 5cffdc5..3e244f3 100644
->> --- a/arch/sparc/kernel/vio.c
->> +++ b/arch/sparc/kernel/vio.c
->> @@ -443,7 +443,7 @@ static int __init vio_init(void)
->>        root_vdev = vio_create_one(hp, root, NULL);
->>        err = -ENODEV;
->>        if (!root_vdev) {
->> -               printk(KERN_ERR "VIO: Coult not create root device.\n");
->> +               printk(KERN_ERR "VIO: Could not create root device.\n");
->>                goto out_release;
->>        }
->>
->> diff --git a/drivers/net/wireless/b43/main.c
->> b/drivers/net/wireless/b43/main.c
->> index acd03a4..1b988f2 100644
->> --- a/drivers/net/wireless/b43/main.c
->> +++ b/drivers/net/wireless/b43/main.c
->> @@ -3767,7 +3767,7 @@ static int b43_switch_band(struct b43_wl *wl, struct
->> ieee80211_channel *chan)
->>        if (prev_status >= B43_STAT_STARTED) {
->>                err = b43_wireless_core_start(up_dev);
->>                if (err) {
->> -                       b43err(wl, "Fatal: Coult not start device for "
->> +                       b43err(wl, "Fatal: Could not start device for "
->>                               "selected %s-GHz band\n",
->>                               band_to_string(chan->band));
->>                        b43_wireless_core_exit(up_dev);
->> diff --git a/drivers/net/wireless/b43legacy/main.c
->> b/drivers/net/wireless/b43legacy/main.c
->> index cd9c9bc..eae691e 100644
->> --- a/drivers/net/wireless/b43legacy/main.c
->> +++ b/drivers/net/wireless/b43legacy/main.c
->> @@ -2633,7 +2633,7 @@ static int b43legacy_switch_phymode(struct
->> b43legacy_wl *wl,
->>        if (prev_status >= B43legacy_STAT_STARTED) {
->>                err = b43legacy_wireless_core_start(up_dev);
->>                if (err) {
->> -                       b43legacyerr(wl, "Fatal: Coult not start device
->> for "
->> +                       b43legacyerr(wl, "Fatal: Could not start device
->> for "
->>                               "newly selected %s-PHY mode\n",
->>                               phymode_to_string(new_mode));
->>                        b43legacy_wireless_core_exit(up_dev);
->> --
+On Sun, Jun 24, 2012 at 08:50:56AM -0600, Alex Williamson wrote:
+> On Sun, 2012-06-24 at 11:28 +0300, Michael S. Tsirkin wrote:
+> > On Fri, Jun 22, 2012 at 04:16:17PM -0600, Alex Williamson wrote:
+> > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > > index 2ce09aa..a916186 100644
+> > > --- a/include/linux/kvm.h
+> > > +++ b/include/linux/kvm.h
+> > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+> > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+> > >  #define KVM_CAP_S390_COW 79
+> > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> > > +#define KVM_CAP_IRQFD_LEVEL_EOI 81
+> > >  
+> > >  #ifdef KVM_CAP_IRQ_ROUTING
+> > >  
+> > > @@ -683,12 +684,15 @@ struct kvm_xen_hvm_config {
+> > >  #endif
+> > >  
+> > >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
+> > > +/* Available with KVM_CAP_IRQFD_LEVEL_EOI */
+> > > +#define KVM_IRQFD_FLAG_LEVEL_EOI (1 << 1)
+> > >  
+> > >  struct kvm_irqfd {
+> > >  	__u32 fd;
+> > >  	__u32 gsi;
+> > >  	__u32 flags;
+> > > -	__u8  pad[20];
+> > > +	__u32 fd2;
+> > > +	__u8 pad[16];
+> > >  };
+> > >  
+> > >  struct kvm_clock_data {
+> > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > > index c307c24..2bc7275 100644
+> > > --- a/virt/kvm/eventfd.c
+> > > +++ b/virt/kvm/eventfd.c
+> > > @@ -49,9 +49,13 @@ struct _irqfd {
+> > >  	wait_queue_t wait;
+> > >  	/* Update side is protected by irqfds.lock */
+> > >  	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
+> > > -	/* Used for level IRQ fast-path */
+> > > +	/* Used for IRQ fast-path */
+> > >  	int gsi;
+> > >  	struct work_struct inject;
+> > > +	/* Used for level EOI path */
+> > > +	int irq_source_id;
+> > > +	struct eventfd_ctx *eoi_eventfd;
+> > > +	struct kvm_irq_ack_notifier notifier;
+> > >  	/* Used for setup/shutdown */
+> > >  	struct eventfd_ctx *eventfd;
+> > >  	struct list_head list;
+> > > @@ -62,7 +66,7 @@ struct _irqfd {
+> > >  static struct workqueue_struct *irqfd_cleanup_wq;
+> > >  
+> > >  static void
+> > > -irqfd_inject(struct work_struct *work)
+> > > +irqfd_inject_edge(struct work_struct *work)
+> > >  {
+> > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > >  	struct kvm *kvm = irqfd->kvm;
+> > > @@ -71,6 +75,23 @@ irqfd_inject(struct work_struct *work)
+> > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > >  }
+> > >  
+> > > +static void
+> > > +irqfd_inject_level(struct work_struct *work)
+> > > +{
+> > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > +
+> > > +	kvm_set_irq(irqfd->kvm, irqfd->irq_source_id, irqfd->gsi, 1);
+> > > +}
+> > > +
+> > 
+> > I think that we can actually do this for all interrupts
+> > unconditionally. We used to need to clear level for edge, but nomore.
+> > Once you do this, can't this patch be replaced with 4/4 completely?
 > 
+> Nope, as described in my reply there, we can't mix IRQFD and IRQ_LINE
+> for a level interrupt because we need a separate source id and have no
+> way to specify it with IRQ_LINE.  Thanks,
 > 
-> With no offense, I am a newbie too. I wonder if we need such kind of refinement.
-> --
+> Alex
 
-
-Yes, spelling mistakes in user-visible messages should be fixed.
-
+OK, so the reason to set a new flag here is to assign
+a unique source ID to it? OK, so just store the source
+id in irqfd, rest of the code can be shared.
+Maybe we can make all irqfds use unique source IDs?
+Or is that too expensive for some reason?
 
 -- 
-~Randy
+MST
