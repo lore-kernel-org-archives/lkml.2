@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab2FXOmi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 10:42:38 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59355 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753210Ab2FXOme (ORCPT
+	id S1756064Ab2FXOn0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 10:43:26 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56383 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303Ab2FXOnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 10:42:34 -0400
-X-Sasl-enc: JJpsOB10cIQ5INLRMAyRqf8gNOqX/FFb729kDlhyIabm 1340548953
-Date: Sun, 24 Jun 2012 11:42:30 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Joe Perches <joe@perches.com>
-Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] thinkpad_acpi: Convert dbg_printk to tp_dbg and
- tp_vdbg
-Message-ID: <20120624144230.GB24236@khazad-dum.debian.net>
-References: <cover.1339985626.git.joe@perches.com>
- <d8ab2f07efe50ddd9d3db8612c1cc333cb7e5813.1339985627.git.joe@perches.com>
- <20120624004051.GC20885@khazad-dum.debian.net>
- <1340507206.7758.30.camel@joe2Laptop>
+	Sun, 24 Jun 2012 10:43:24 -0400
+Date: Sun, 24 Jun 2012 16:43:20 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>, kernel@pengutronix.de,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH RESEND] of: add const to struct of_device_id.data
+Message-ID: <20120624144320.GB28001@pengutronix.de>
+References: <1335171381-24869-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20120607102014.GI22191@pengutronix.de>
+ <20120622055613.GL5642@pengutronix.de>
+ <201206221726.22285.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1340507206.7758.30.camel@joe2Laptop>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201206221726.22285.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Jun 2012, Joe Perches wrote:
-> On Sat, 2012-06-23 at 21:40 -0300, Henrique de Moraes Holschuh wrote:
-> > On Sun, 17 Jun 2012, Joe Perches wrote:
-> > > Use a more current logging style.
+Hello Arnd,
+
+On Fri, Jun 22, 2012 at 05:26:22PM +0000, Arnd Bergmann wrote:
+> On Friday 22 June 2012, Uwe Kleine-König wrote:
+> > On Thu, Jun 07, 2012 at 12:20:14PM +0200, Uwe Kleine-König wrote:
+> > > Drivers should never need to modify the data of a device id. So it can
+> > > be const which in turn allows more consts in the driver.
 > > > 
-> > > Add #define DEBUG and use pr_debug to enable dynamic debugging.
-> > > Coalesce formats and align arguments.
+> > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > > ---
+> > > (Cc += lkml + Grant)
 > > > 
-> > > Signed-off-by: Joe Perches <joe@perches.com>
-> > 
-> > Joe, are there any extra procedures required from the user to get the debug
-> > messages with this patch applied?
+> > > Hello,
+> > > 
+> > > this might introduce warnings in drivers that access the data member
+> > > without using const, so this is definitly merge window material if it is
+> > > considered at all.
+> >
+> > ping
 > 
-> No.
+> Sorry for the delayed response. I think the approach is right, but I
+> am a bit worried about adding warnings for legit code.
 > 
-> The added #define DEBUG makes dynamic_debug emit those
-> messages automatically.  Without the #define DEBUG, then
-
-I suspected as much, but I wanted direct confirmation.  That
-#define DEBUG is a relatively recent enhancement to dynamic printk, isn't
-it?  Something I will have to keep in mind if I resume doing backports of
-this driver for 2.6.32, 3.0 and 3.2 ?
-
-> these tp_[v]dbg calls might not be compiled in at all.
+> A quick test with the defconfigs gave me this error for prima2_defconfig
+> and kzm9g_defconfig:
 > 
-> These to_[v]dbg calls can be turned off via the normal
-> dyn_debug mechanisms.
+> /home/arnd/linux-arm/arch/arm/mm/cache-l2x0.c: In function 'l2x0_of_init':
+> /home/arnd/linux-arm/arch/arm/mm/cache-l2x0.c:573:7: error: assignment discards 'const' qualifier from pointer target type [-Werror]
+I already sent a patch for that to rmk's patch system:
+
+	http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7429/1
+
+Russell commented: 
+Sigh, a gmane.org URL.  Which is difficult to dig the thread out of.
+Eventually you can.  And I see nothing which suggests that the series
+will be applied or, more importantly when it is going to be applied.
+Punting this patch until there's better communication.
+
+Russell, I didn't completely get your problem about gmane here. If you
+follow the link in the Subject: line, you get a thread view. Does this
+address your concerns?
+
+And even without the of: add const to struct of_device_id.data patch
+patch using more consts is IMHO nice.
+
+> and this one with at91sam9263_defconfig:
+> /home/arnd/linux-arm/drivers/misc/atmel_tclib.c: In function 'tc_probe':
+> /home/arnd/linux-arm/drivers/misc/atmel_tclib.c:170:19: error: assignment discards 'const' qualifier from pointer target type [-Werror]
 > 
-> see: Documentation/dynamic-debug-howto.txt
+> I haven't checked all the defconfigs yet, but I think we should at least
+> make sure they build fine before applying your patch.
+Fine for me, I will come up with a series next week.
 
-Ok. That's good enough for me.
-
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Best regards
+Uwe
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
