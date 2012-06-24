@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab2FXPqp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 11:46:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7729 "EHLO mx1.redhat.com"
+	id S1756131Ab2FXPti (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 11:49:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017Ab2FXPqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 11:46:44 -0400
-Date: Sun, 24 Jun 2012 18:46:45 +0300
+	id S1751799Ab2FXPth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 11:49:37 -0400
+Date: Sun, 24 Jun 2012 18:49:38 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH 2/4] kvm: Add missing KVM_IRQFD API documentation
-Message-ID: <20120624154645.GD2851@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120624154938.GE2851@redhat.com>
 References: <20120622220040.9858.43665.stgit@bling.home>
- <20120622221541.9858.37619.stgit@bling.home>
- <20120624083434.GC1712@redhat.com>
- <1340549777.14120.48.camel@bling.home>
+ <20120622221559.9858.59593.stgit@bling.home>
+ <4FE6EC20.5030502@redhat.com>
+ <1340551118.14120.66.camel@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340549777.14120.48.camel@bling.home>
+In-Reply-To: <1340551118.14120.66.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 08:56:17AM -0600, Alex Williamson wrote:
-> On Sun, 2012-06-24 at 11:34 +0300, Michael S. Tsirkin wrote:
-> > On Fri, Jun 22, 2012 at 04:15:50PM -0600, Alex Williamson wrote:
-> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > ---
-> > > 
-> > >  Documentation/virtual/kvm/api.txt |   17 +++++++++++++++++
-> > >  1 file changed, 17 insertions(+)
-> > > 
-> > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > > index 310fe50..9b4cb2b 100644
-> > > --- a/Documentation/virtual/kvm/api.txt
-> > > +++ b/Documentation/virtual/kvm/api.txt
-> > > @@ -1965,6 +1965,23 @@ return the hash table order in the parameter.  (If the guest is using
-> > >  the virtualized real-mode area (VRMA) facility, the kernel will
-> > >  re-create the VMRA HPTEs on the next KVM_RUN of any vcpu.)
+On Sun, Jun 24, 2012 at 09:18:38AM -0600, Alex Williamson wrote:
+> > > @@ -242,7 +299,8 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
 > > >  
-> > > +4.76 KVM_IRQFD
-> > > +
-> > > +Capability: KVM_CAP_IRQFD
-> > > +Architectures: x86
-> > > +Type: vm ioctl
-> > > +Parameters: struct kvm_irqfd (in)
-> > > +Returns: 0 on success, -1 on error
-> > > +
-> > > +Allows setting an eventfd to directly trigger a guest interrupt
-> > > +kvm_irqfd.fd specifies the file descriptor to use as the eventfd and
-> > > +kvm_irqfd.gsi specifies the irqchip pin toggled by this event.  By
-> > > +default this interface only supports edge triggered interrupts,
-> > > +meaning the specified gsi is asserted and immediately de-asserted
-> > > +when the eventfd is triggered.
+> > >  	ret = 0;
+> > >  	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
+> > > -		if (irqfd->eventfd != tmp->eventfd)
+> > > +		if (irqfd->eventfd != tmp->eventfd &&
+> > > +		    irqfd->eventfd != tmp->eoi_eventfd)
+> > >  			continue;
 > > 
-> > That's a bit confusing. This assert/deassert only has effect for level.
-> > Do we or do we not want to maintain this assert/deassert behaviour
-> > for level irqfds? If yes we shouldn't say it's unsupported if
-> > no we should not document it.
+> > So we allow duplicate irqfd with differing eoifd (or edge-triggered and
+> > level-triggered irqfd on the same context).
 > > 
-> > Gleb, Avi, any thoughts?
+> > (why the check in the first place? just so we can have a reliable
+> > deassign or is it avoiding a deeper problem?)
 > 
-> AIUI the assert/deassert manages to work for level (I actually had vfio
-> injecting these for a while and it seemed to work), but I don't think it
-> was ever designed for level interrupts and attempting to do that is
-> unsupported.  Thanks,
-> 
-> Alex
+> I really wasn't sure to what extent we wanted to prevent duplicates.  My
+> guess was that we don't want to have an irqfd trigger more than one
+> thing.  That seems to be what the current code does.  I don't see any
+> problems with multiple irqfds triggering the same eventfd though.  I
+> only added a test that a new irqfd can't be triggered by an existing
+> eoi_eventfd as that could make a nasty loop.
 
-So don't document assert/deassert then.
+How would that make a loop? You can have the same thing
+with e.g. ioeventfd - why isn't it a problem there?
 
-> > >  Specifying KVM_IRQFD_FLAG_DEASSIGN
-> > > +removes the previously set irqfd matching both kvm_irqfd.fd and
-> > > +kvm_irqfd.gsi.
-> > > +
-> > >  
-> > >  5. The kvm_run structure
-> > >  ------------------------
-> 
-> 
+-- 
+MST
