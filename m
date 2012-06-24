@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab2FXOsF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 10:48:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23604 "EHLO mx1.redhat.com"
+	id S1756113Ab2FXOvE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 10:51:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65038 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab2FXOsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 10:48:03 -0400
-Message-ID: <1340549277.14120.42.camel@bling.home>
-Subject: Re: [PATCH 4/4][RFC] kvm: eoi_eventfd
+	id S1753210Ab2FXOvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 10:51:02 -0400
+Message-ID: <1340549456.14120.45.camel@bling.home>
+Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
 From: Alex Williamson <alex.williamson@redhat.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         jan.kiszka@siemens.com
-Date: Sun, 24 Jun 2012 08:47:57 -0600
-In-Reply-To: <20120624082451.GA1712@redhat.com>
+Date: Sun, 24 Jun 2012 08:50:56 -0600
+In-Reply-To: <20120624082856.GB1712@redhat.com>
 References: <20120622220040.9858.43665.stgit@bling.home>
-	 <20120622221626.9858.33817.stgit@bling.home>
-	 <20120624082451.GA1712@redhat.com>
+	 <20120622221559.9858.59593.stgit@bling.home>
+	 <20120624082856.GB1712@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -24,97 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-06-24 at 11:24 +0300, Michael S. Tsirkin wrote:
-> On Fri, Jun 22, 2012 at 04:16:53PM -0600, Alex Williamson wrote:
-> > I think we're probably also going to need something like this.
-> > When running in non-accelerated qemu, we're going to have to
-> > create some kind of EOI notifier for drivers.  VFIO can make
-> > additional improvements when running on KVM so it will probably
-> > make use of the KVM_IRQFD_LEVEL_EOI interface, but we don't
-> > want to have a generic EOI notifier in qemu that just stops
-> > working when kvm-ioapic is enabled.  This is just a simple way
-> > to register an eventfd using the existing KVM ack notifier.
-> > I tried combining the ack notifier of the LEVEL_EOI interface
-> > into this one, but it didn't work out well.  The code complexity
-> > goes up a lot.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> >  Documentation/virtual/kvm/api.txt |   14 ++++++
-> >  arch/x86/kvm/x86.c                |    1 
-> >  include/linux/kvm.h               |   12 +++++
-> >  include/linux/kvm_host.h          |    7 +++
-> >  virt/kvm/eventfd.c                |   89 +++++++++++++++++++++++++++++++++++++
-> >  virt/kvm/kvm_main.c               |    9 ++++
-> >  6 files changed, 132 insertions(+)
-> > 
-> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > index 2f8a0aa..69b1747 100644
-> > --- a/Documentation/virtual/kvm/api.txt
-> > +++ b/Documentation/virtual/kvm/api.txt
-> > @@ -1998,6 +1998,20 @@ matched using kvm_irqfd.fd, kvm_irqfd.gsi, and kvm_irqfd.fd2.
-> >  De-assigning automatically de-asserts the interrupt line setup through
-> >  this interface.
+On Sun, 2012-06-24 at 11:28 +0300, Michael S. Tsirkin wrote:
+> On Fri, Jun 22, 2012 at 04:16:17PM -0600, Alex Williamson wrote:
+> > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > index 2ce09aa..a916186 100644
+> > --- a/include/linux/kvm.h
+> > +++ b/include/linux/kvm.h
+> > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+> >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+> >  #define KVM_CAP_S390_COW 79
+> >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> > +#define KVM_CAP_IRQFD_LEVEL_EOI 81
 > >  
-> > +4.77 KVM_EOI_EVENTFD
-> > +
-> > +Capability: KVM_CAP_EOI_EVENTFD
-> > +Architectures: x86
-> > +Type: vm ioctl
-> > +Parameters: struct kvm_eoi_eventfd (in)
-> > +Returns: 0 on success, -1 on error
-> > +
-> > +This interface allows userspace to be notified through an eventfd for
-> > +EOI writes to the in-kernel irqchip.  kvm_eoi_eventfd.fd specifies
-> > +the eventfd to signal on EOI to kvm_eoi_eventfd.gsi.  To disable,
-> > +use KVM_EOI_EVENTFD_FLAG_DEASSIGN and specify both the original fd
-> > +and gsi.
-> > +
-> >  5. The kvm_run structure
-> >  ------------------------
+> >  #ifdef KVM_CAP_IRQ_ROUTING
 > >  
+> > @@ -683,12 +684,15 @@ struct kvm_xen_hvm_config {
+> >  #endif
+> >  
+> >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
+> > +/* Available with KVM_CAP_IRQFD_LEVEL_EOI */
+> > +#define KVM_IRQFD_FLAG_LEVEL_EOI (1 << 1)
+> >  
+> >  struct kvm_irqfd {
+> >  	__u32 fd;
+> >  	__u32 gsi;
+> >  	__u32 flags;
+> > -	__u8  pad[20];
+> > +	__u32 fd2;
+> > +	__u8 pad[16];
+> >  };
+> >  
+> >  struct kvm_clock_data {
+> > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > index c307c24..2bc7275 100644
+> > --- a/virt/kvm/eventfd.c
+> > +++ b/virt/kvm/eventfd.c
+> > @@ -49,9 +49,13 @@ struct _irqfd {
+> >  	wait_queue_t wait;
+> >  	/* Update side is protected by irqfds.lock */
+> >  	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
+> > -	/* Used for level IRQ fast-path */
+> > +	/* Used for IRQ fast-path */
+> >  	int gsi;
+> >  	struct work_struct inject;
+> > +	/* Used for level EOI path */
+> > +	int irq_source_id;
+> > +	struct eventfd_ctx *eoi_eventfd;
+> > +	struct kvm_irq_ack_notifier notifier;
+> >  	/* Used for setup/shutdown */
+> >  	struct eventfd_ctx *eventfd;
+> >  	struct list_head list;
+> > @@ -62,7 +66,7 @@ struct _irqfd {
+> >  static struct workqueue_struct *irqfd_cleanup_wq;
+> >  
+> >  static void
+> > -irqfd_inject(struct work_struct *work)
+> > +irqfd_inject_edge(struct work_struct *work)
+> >  {
+> >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> >  	struct kvm *kvm = irqfd->kvm;
+> > @@ -71,6 +75,23 @@ irqfd_inject(struct work_struct *work)
+> >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> >  }
+> >  
+> > +static void
+> > +irqfd_inject_level(struct work_struct *work)
+> > +{
+> > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > +
+> > +	kvm_set_irq(irqfd->kvm, irqfd->irq_source_id, irqfd->gsi, 1);
+> > +}
+> > +
 > 
-> The patch looks like it only works for ioapic IRQs.  I think it's a good
-> idea to explicitly limit this to level interrupts, straight away:
-> there's no reason for userspace to need an exit on an edge interrupt.
+> I think that we can actually do this for all interrupts
+> unconditionally. We used to need to clear level for edge, but nomore.
+> Once you do this, can't this patch be replaced with 4/4 completely?
 
-Are you suggesting documentation or code to prevent users from binding
-to an edge interrupt?
-
-> I also suggest we put LEVEL somewhere in the name.
-
-Ok
-
-> With this eventfd, do we also need the fd2 parameter in the irqfd
-> structure? It seems to be used for the same thing ...
-
-Yes we still need fd2, this does not replace KVM_IRQFD_LEVEL_EOI.  The
-models we need to support are:
-
-1) assert from userspace (IRQ_LINE), eoi to userspace (EOI_EVENTFD),
-de-assert from userspace (IRQ_LINE)
-
-2a) assert from vfio (IRQFD.fd), de-assert in kvm, notify vfio
-(IRQFD.fd2)
-
-or
-
-2b) assert from vfio (IRQFD.fd), eoi to vfio (EOI_EVENTFD), de-assert
-from vfio (IRQFD.fd2)
-
-This series enables 1) and 2a).  2b) has some pros and cons.  The pro is
-that vfio could test the device to see if an interrupt is pending and
-not de-assert if there is still an interrupt pending.  The con is that a
-standard level interrupt cycle takes 3 transactions instead of 2.
-
-Any case of triggering the interrupt externally via an irqfd requires
-that the irqfd uses it's own irq_source_id so that it doesn't interfere
-with KVM_USERSPACE_IRQ_SOURCE_ID.  So we can't mix IRQ_LINE and IRQFD
-unless we want to completely expose a new irq source id allocation
-mechanism and include it in all the interfaces (KVM_GET_IRQ_SOURCE_ID,
-KVM_PUT_IRQ_SOURCE_ID, pass a source id to IRQFD and IRQ_LINE, etc).
-Thanks,
+Nope, as described in my reply there, we can't mix IRQFD and IRQ_LINE
+for a level interrupt because we need a separate source id and have no
+way to specify it with IRQ_LINE.  Thanks,
 
 Alex
 
