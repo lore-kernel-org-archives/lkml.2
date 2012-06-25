@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab2FYSnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 14:43:12 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:52198 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab2FYSnL (ORCPT
+	id S1756502Ab2FYSo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 14:44:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61646 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753906Ab2FYSo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 14:43:11 -0400
+	Mon, 25 Jun 2012 14:44:56 -0400
+Message-ID: <4FE8B1A4.9050704@gmail.com>
+Date: Mon, 25 Jun 2012 12:44:52 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1340612258.1773.150.camel@x61.thuisdomein>
-References: <1339017960.21725.22.camel@x61.thuisdomein>
-	<CACRpkdbsF-bdXUEctyG8-npqfzFP4uoxE=hRrjgt_TxMWKAD8w@mail.gmail.com>
-	<1339020451.21725.33.camel@x61.thuisdomein>
-	<1340612258.1773.150.camel@x61.thuisdomein>
-Date: Tue, 26 Jun 2012 02:43:10 +0800
-Message-ID: <CACRpkdavrhM+F1i5BDrRy+nTO0khL=FLQDAKiVJBO8mN6ytPrw@mail.gmail.com>
-Subject: Re: [PATCH] u8500_defconfig: delete CONFIG_AB5500_CORE
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Paul Bolle <pebolle@tiscali.nl>, arm@kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org, psuriset@linux.vnet.ibm.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] perf kvm: fix segfault with default guest arguments
+References: <1340599286-89757-1-git-send-email-dsahern@gmail.com> <20120625160847.GE30293@krava.brq.redhat.com>
+In-Reply-To: <20120625160847.GE30293@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 4:17 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+On 6/25/12 10:08 AM, Jiri Olsa wrote:
+>> perf's handling of default kallsyms and guest-modules needs to be reworked.
+> agreed ;) any plans on that?
 
-> I wonder what you actually meant with "the ARM SoC tree". MAINTAINERS
-> seems to have multiple entries related to ARM SoC.
+I am working on it as time allows. After debugging this latest data 
+point (running longer avoid the segfault) I certainly understand the 
+problem better, but the problem keeps expanding too -- like wrong paths 
+on guest side modules. It really suggests that this notion of a 
+'default' guest is just wrong - too little information. We'll see.
 
-The ARM SoC tree is a tree accumulating ARM sub architrecture
-(plat-*, mach-*) before being sent to linux-next and then to
-Torvalds.
-
-They are reached on arm@kernel.org and send out info mails
-like this:
-http://lwn.net/Articles/485753/
-
-Currently on the other side of that mail alias you find mostly
-Arnd Bergmann and Olof Johansson.
-
-ARM SoC people: care to send a MAINTAINERS patch to formalize
-your statement of work?
-
-Yours,
-Linus Walleij
+David
