@@ -1,322 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab2FYUoX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 16:44:23 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:52161 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756024Ab2FYUoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 16:44:20 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tobias Klauser <tklauser@distanz.ch>, David Jander <david@protonic.nl>,
-        JJ Ding <dgdunix@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [PATCH v2] input: gpio_keys_polled: convert to dt
-Date: Mon, 25 Jun 2012 17:44:03 -0300
-Message-Id: <1340657047-8517-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	id S1756511Ab2FYUqk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 16:46:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:63466 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755516Ab2FYUqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 16:46:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="115896943"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 2/2] mei: revamp host buffer interface function
+Date: Mon, 25 Jun 2012 23:46:28 +0300
+Message-Id: <1340657188-16953-2-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1340657188-16953-1-git-send-email-tomas.winkler@intel.com>
+References: <1340657188-16953-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+1. Use unified _hbuf_ prefix for host/write buffer functions.
+2. Cleanup the code w/o functional changes.
+
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
-Applies to v3.5-rc4
+ drivers/misc/mei/interface.c |   31 ++++++++++++-------------------
+ drivers/misc/mei/interface.h |   14 ++++++++------
+ drivers/misc/mei/interrupt.c |    8 ++++----
+ 3 files changed, 24 insertions(+), 29 deletions(-)
 
-Changes since v1:
-* Add biding documentation
-* Fix sizeof in memset
-* Cleanup dt properties extraction
-* Use for_each macro
-* Fix memleak on buttons
-
-Thanks Rob Herring, Dmitry Torokhov and Roland Stiege for reviewing and 
-improvements suggestions.
-
- .../devicetree/bindings/input/gpio-keys-polled.txt |   38 ++++++
- drivers/input/keyboard/gpio_keys_polled.c          |  131 ++++++++++++++++++--
- 2 files changed, 158 insertions(+), 11 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-
-diff --git a/Documentation/devicetree/bindings/input/gpio-keys-polled.txt b/Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-new file mode 100644
-index 0000000..313abef
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-@@ -0,0 +1,38 @@
-+Device-Tree bindings for input/gpio_keys_polled.c keyboard driver
-+
-+Required properties:
-+	- compatible = "gpio-keys-polled";
-+	- poll-interval: Poll interval time in milliseconds
-+
-+Optional properties:
-+	- autorepeat: Boolean, Enable auto repeat feature of Linux input
-+	  subsystem.
-+
-+Each button (key) is represented as a sub-node of "gpio-keys-polled":
-+Subnode properties:
-+
-+	- gpios: OF device-tree gpio specification.
-+	- label: Descriptive name of the key.
-+	- linux,code: Keycode to emit.
-+
-+Optional subnode-properties:
-+	- linux,input-type: Specify event type this button/key generates.
-+	  If not specified defaults to <1> == EV_KEY.
-+	- debounce-interval: Debouncing interval time in milliseconds.
-+	  If not specified defaults to 5.
-+	- gpio-key,wakeup: Boolean, button can wake-up the system.
-+
-+Example nodes:
-+
-+	gpio_keys_polled {
-+			compatible = "gpio-keys-polled";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			poll-interval = <100>;
-+			autorepeat;
-+			button@21 {
-+				label = "GPIO Key UP";
-+				linux,code = <103>;
-+				gpios = <&gpio1 0 1>;
-+			};
-+			...
-diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
-index 20c8ab1..e5cb3ef 100644
---- a/drivers/input/keyboard/gpio_keys_polled.c
-+++ b/drivers/input/keyboard/gpio_keys_polled.c
-@@ -25,6 +25,8 @@
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/gpio_keys.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_gpio.h>
- 
- #define DRV_NAME	"gpio-keys-polled"
- 
-@@ -38,7 +40,7 @@ struct gpio_keys_button_data {
- struct gpio_keys_polled_dev {
- 	struct input_polled_dev *poll_dev;
- 	struct device *dev;
--	struct gpio_keys_platform_data *pdata;
-+	struct gpio_keys_platform_data pdata;
- 	struct gpio_keys_button_data data[0];
- };
- 
-@@ -67,11 +69,11 @@ static void gpio_keys_polled_check_state(struct input_dev *input,
- static void gpio_keys_polled_poll(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 	struct input_dev *input = dev->input;
- 	int i;
- 
--	for (i = 0; i < bdev->pdata->nbuttons; i++) {
-+	for (i = 0; i < pdata->nbuttons; i++) {
- 		struct gpio_keys_button_data *bdata = &bdev->data[i];
- 
- 		if (bdata->count < bdata->threshold)
-@@ -85,7 +87,7 @@ static void gpio_keys_polled_poll(struct input_polled_dev *dev)
- static void gpio_keys_polled_open(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 
- 	if (pdata->enable)
- 		pdata->enable(bdev->dev);
-@@ -94,31 +96,125 @@ static void gpio_keys_polled_open(struct input_polled_dev *dev)
- static void gpio_keys_polled_close(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 
- 	if (pdata->disable)
- 		pdata->disable(bdev->dev);
+diff --git a/drivers/misc/mei/interface.c b/drivers/misc/mei/interface.c
+index 784a606..88ada64 100644
+--- a/drivers/misc/mei/interface.c
++++ b/drivers/misc/mei/interface.c
+@@ -58,16 +58,18 @@ void mei_disable_interrupts(struct mei_device *dev)
  }
-+#ifdef CONFIG_OF
-+static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
-+			    struct gpio_keys_platform_data *pdata)
-+{
-+	struct device_node *node, *pp;
-+	int i;
-+	struct gpio_keys_button *buttons;
-+
-+	node = dev->of_node;
-+	if (node == NULL)
-+		return -ENODEV;
-+
-+	memset(pdata, 0, sizeof(*pdata));
-+
-+	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
-+
-+	of_property_read_u32(node, "poll-interval", &pdata->poll_interval);
-+
-+	pdata->nbuttons = of_get_child_count(node);
-+	if (pdata->nbuttons == 0)
-+		return -ENODEV;
-+
-+	buttons = kzalloc(pdata->nbuttons * (sizeof *buttons), GFP_KERNEL);
-+	if (!buttons)
-+		return -ENOMEM;
-+
-+	i = 0;
-+	for_each_child_of_node(node, pp) {
-+		enum of_gpio_flags flags;
-+
-+		if (!of_find_property(pp, "gpios", NULL)) {
-+			pdata->nbuttons--;
-+			dev_warn(dev, "Found button without gpios\n");
-+			continue;
-+		}
-+		buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
-+		buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
-+
-+		if (of_property_read_u32(pp, "linux,code", &buttons[i].code)) {
-+			dev_err(dev, "Button without keycode: 0x%x\n",
-+				buttons[i].gpio);
-+			goto out_fail;
-+		}
-+
-+		buttons[i].desc = of_get_property(pp, "label", NULL);
-+
-+		if (of_property_read_u32(pp, "linux,input-type",
-+			&buttons[i].type))
-+			buttons[i].type = EV_KEY;
-+
-+		buttons[i].wakeup = !!of_get_property(pp, "gpio-key,wakeup",
-+			NULL);
-+
-+		if (of_property_read_u32(pp, "debounce-interval",
-+			&buttons[i].debounce_interval))
-+			buttons[i].debounce_interval = 5;
-+
-+		i++;
-+	}
-+
-+	pdata->buttons = buttons;
-+
-+	return 0;
-+
-+out_fail:
-+	kfree(buttons);
-+	return -ENODEV;
-+}
-+
-+static struct of_device_id gpio_keys_polled_of_match[] = {
-+	{ .compatible = "gpio-keys-polled", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
-+
-+#else
-+
-+static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
-+			    struct gpio_keys_platform_data *altp)
-+{
-+	return -ENODEV;
-+}
-+#endif
  
- static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
+ /**
+- * _host_get_filled_slots - gets number of device filled buffer slots
++ * mei_hbuf_filled_slots - gets number of device filled buffer slots
+  *
+  * @device: the device structure
+  *
+  * returns number of filled slots
+  */
+-static unsigned char _host_get_filled_slots(const struct mei_device *dev)
++static unsigned char mei_hbuf_filled_slots(struct mei_device *dev)
  {
- 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
- 	struct device *dev = &pdev->dev;
-+	struct gpio_keys_platform_data alt_pdata;
- 	struct gpio_keys_polled_dev *bdev;
- 	struct input_polled_dev *poll_dev;
- 	struct input_dev *input;
- 	int error;
- 	int i;
+ 	char read_ptr, write_ptr;
  
--	if (!pdata || !pdata->poll_interval)
--		return -EINVAL;
-+	if (!pdata) {
-+		error = gpio_keys_polled_get_devtree_pdata(dev, &alt_pdata);
-+		if (error)
-+			return error;
-+		pdata = &alt_pdata;
-+	}
++	dev->host_hw_state = mei_hcsr_read(dev);
 +
-+	if (!pdata->poll_interval) {
-+		error = -EINVAL;
-+		goto err_free_buttons;
-+	}
+ 	read_ptr = (char) ((dev->host_hw_state & H_CBRP) >> 8);
+ 	write_ptr = (char) ((dev->host_hw_state & H_CBWP) >> 16);
  
- 	bdev = kzalloc(sizeof(struct gpio_keys_polled_dev) +
- 		       pdata->nbuttons * sizeof(struct gpio_keys_button_data),
- 		       GFP_KERNEL);
- 	if (!bdev) {
- 		dev_err(dev, "no memory for private data\n");
--		return -ENOMEM;
-+		error = -ENOMEM;
-+		goto err_free_buttons;
- 	}
+@@ -75,38 +77,29 @@ static unsigned char _host_get_filled_slots(const struct mei_device *dev)
+ }
  
- 	poll_dev = input_allocate_polled_device();
-@@ -184,7 +280,7 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
- 
- 	bdev->poll_dev = poll_dev;
- 	bdev->dev = dev;
--	bdev->pdata = pdata;
-+	bdev->pdata = *pdata;
- 	platform_set_drvdata(pdev, bdev);
- 
- 	error = input_register_polled_device(poll_dev);
-@@ -209,15 +305,19 @@ err_free_gpio:
- 
- err_free_bdev:
- 	kfree(bdev);
+ /**
+- * mei_host_buffer_is_empty - checks if host buffer is empty.
++ * mei_hbuf_is_empty - checks if host buffer is empty.
+  *
+  * @dev: the device structure
+  *
+- * returns 1 if empty, 0 - otherwise.
++ * returns true if empty, false - otherwise.
+  */
+-int mei_host_buffer_is_empty(struct mei_device *dev)
++bool mei_hbuf_is_empty(struct mei_device *dev)
+ {
+-	unsigned char filled_slots;
 -
- 	platform_set_drvdata(pdev, NULL);
-+
-+err_free_buttons:
-+	/* If we have no platform_data, we allocated buttons dynamically. */
-+	if (!pdev->dev.platform_data)
-+		kfree(pdata->buttons);
- 	return error;
+-	dev->host_hw_state = mei_hcsr_read(dev);
+-	filled_slots = _host_get_filled_slots(dev);
+-
+-	if (filled_slots == 0)
+-		return 1;
+-
+-	return 0;
++	return mei_hbuf_filled_slots(dev) == 0;
  }
  
- static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
+ /**
+- * mei_count_empty_write_slots - counts write empty slots.
++ * mei_hbuf_empty_slots - counts write empty slots.
+  *
+  * @dev: the device structure
+  *
+  * returns -1(ESLOTS_OVERFLOW) if overflow, otherwise empty slots count
+  */
+-int mei_count_empty_write_slots(struct mei_device *dev)
++int mei_hbuf_empty_slots(struct mei_device *dev)
  {
- 	struct gpio_keys_polled_dev *bdev = platform_get_drvdata(pdev);
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 	int i;
+ 	unsigned char filled_slots, empty_slots;
  
- 	input_unregister_polled_device(bdev->poll_dev);
-@@ -227,6 +327,14 @@ static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
+-	dev->host_hw_state = mei_hcsr_read(dev);
+-	filled_slots = _host_get_filled_slots(dev);
++	filled_slots = mei_hbuf_filled_slots(dev);
+ 	empty_slots = dev->hbuf_depth - filled_slots;
  
- 	input_free_polled_device(bdev->poll_dev);
+ 	/* check for overflow */
+@@ -139,7 +132,7 @@ int mei_write_message(struct mei_device *dev, struct mei_msg_hdr *header,
+ 			"mei_write_message header=%08x.\n",
+ 			*((u32 *) header));
  
-+	/*
-+	 * If we had no platform_data, we allocated buttons dynamically, and
-+	 * must free them here. pdata->buttons is the pointer to the
-+	 * beginning of the allocated array.
-+	 */
-+	if (!pdev->dev.platform_data)
-+		kfree(pdata->buttons);
+-	empty_slots = mei_count_empty_write_slots(dev);
++	empty_slots = mei_hbuf_empty_slots(dev);
+ 	dev_dbg(&dev->pdev->dev, "empty slots = %hu.\n", empty_slots);
+ 
+ 	dw_cnt = (length + sizeof(*header) + 3) / 4;
+diff --git a/drivers/misc/mei/interface.h b/drivers/misc/mei/interface.h
+index 8723d88..cd9b778 100644
+--- a/drivers/misc/mei/interface.h
++++ b/drivers/misc/mei/interface.h
+@@ -41,19 +41,21 @@ int mei_write_message(struct mei_device *dev,
+ 			     unsigned char *write_buffer,
+ 			     unsigned long write_length);
+ 
+-int mei_host_buffer_is_empty(struct mei_device *dev);
++bool mei_hbuf_is_empty(struct mei_device *dev);
+ 
+-int mei_count_full_read_slots(struct mei_device *dev);
+-
+-int mei_count_empty_write_slots(struct mei_device *dev);
+-
+-int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *cl);
++int mei_hbuf_empty_slots(struct mei_device *dev);
+ 
+ static inline size_t mei_hbuf_max_data(const struct mei_device *dev)
+ {
+ 	return dev->hbuf_depth * sizeof(u32) - sizeof(struct mei_msg_hdr);
+ }
+ 
++int mei_count_full_read_slots(struct mei_device *dev);
 +
- 	kfree(bdev);
- 	platform_set_drvdata(pdev, NULL);
++
++int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *cl);
++
++
  
-@@ -239,6 +347,7 @@ static struct platform_driver gpio_keys_polled_driver = {
- 	.driver	= {
- 		.name	= DRV_NAME,
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(gpio_keys_polled_of_match),
- 	},
- };
- module_platform_driver(gpio_keys_polled_driver);
+ int mei_wd_send(struct mei_device *dev);
+ int mei_wd_stop(struct mei_device *dev, bool preserve);
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index ebf97d3..013641d 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -280,7 +280,7 @@ static int _mei_irq_thread_iamthif_read(struct mei_device *dev, s32 *slots)
+ 	dev->iamthif_msg_buf_index = 0;
+ 	dev->iamthif_msg_buf_size = 0;
+ 	dev->iamthif_stall_timer = IAMTHIF_STALL_TIMER;
+-	dev->mei_host_buffer_is_empty = mei_host_buffer_is_empty(dev);
++	dev->mei_host_buffer_is_empty = mei_hbuf_is_empty(dev);
+ 	return 0;
+ }
+ 
+@@ -1199,11 +1199,11 @@ static int mei_irq_thread_write_handler(struct mei_io_list *cmpl_list,
+ 	struct mei_io_list *list;
+ 	int ret;
+ 
+-	if (!mei_host_buffer_is_empty(dev)) {
++	if (!mei_hbuf_is_empty(dev)) {
+ 		dev_dbg(&dev->pdev->dev, "host buffer is not empty.\n");
+ 		return 0;
+ 	}
+-	*slots = mei_count_empty_write_slots(dev);
++	*slots = mei_hbuf_empty_slots(dev);
+ 	if (*slots <= 0)
+ 		return -EMSGSIZE;
+ 
+@@ -1558,7 +1558,7 @@ irqreturn_t mei_interrupt_thread_handler(int irq, void *dev_id)
+ end:
+ 	dev_dbg(&dev->pdev->dev, "end of bottom half function.\n");
+ 	dev->host_hw_state = mei_hcsr_read(dev);
+-	dev->mei_host_buffer_is_empty = mei_host_buffer_is_empty(dev);
++	dev->mei_host_buffer_is_empty = mei_hbuf_is_empty(dev);
+ 
+ 	bus_message_received = false;
+ 	if (dev->recvd_msg && waitqueue_active(&dev->wait_recvd_msg)) {
 -- 
-1.7.10
+1.7.4.4
 
