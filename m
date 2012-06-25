@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab2FYKD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 06:03:28 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52100 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754742Ab2FYKD0 (ORCPT
+	id S1755606Ab2FYKHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 06:07:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35277 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab2FYKHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 06:03:26 -0400
-Date: Mon, 25 Jun 2012 12:03:21 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Jack Steiner <steiner@sgi.com>, Mike Travis <travis@sgi.com>
-Subject: Re: [PATCH 3/3] x86: UV2 BAU hang workarounds
-Message-ID: <20120625100321.GB27081@gmail.com>
-References: <E1Si3c5-0008I6-CG@eag09.americas.sgi.com>
- <20120622131459.GC31884@sgi.com>
+	Mon, 25 Jun 2012 06:07:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120622131459.GC31884@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120625090933.GD24512@gmail.com>
+References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
+ <20120622145402.8047a669.akpm@linux-foundation.org> <20120623061313.GA21895@gmail.com>
+ <1340452052.1784.40.camel@mop> <20120625090933.GD24512@gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 25 Jun 2012 12:06:41 +0200
+Message-ID: <CAPXgP10E7HNDQ73ZFyb4EyDVBko2yXs8Rw0KOSKukGUpSBSz_g@mail.gmail.com>
+Subject: Re: [PATCH] printk: Revert the buffered-printk() changes for now
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 25, 2012 at 11:09 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> * Kay Sievers <kay@vrfy.org> wrote:
 
-* Cliff Wickman <cpw@sgi.com> wrote:
+>> I just don't have a better idea than Joe or Steven.
+>
+> Then pick the fix you see as the best solution, post it and push
+> the fix to Linus, don't just sit there passive-aggressively
+> leaving a regression you introduced unresolved ...
 
-> On SGI's UV2 the BAU (Broadcast Assist Unit) driver can hang under a
-> heavy load.  To cure this: 
-> 
-> - Disable the UV2 extended status mode (see UV2_EXT_SHFT), as this
->   mode changes BAU behavior in more ways then just delivering an extra bit
->   of status.  Revert status to just two meaningful bits, like UV1.
-> - Use no IPI-style resets on UV2.  Just give up the request for whatever the
->   reason it failed and let it be accomplished with the legacy IPI method.
-> - Use no alternate sending descriptor (the former UV2 workaround
->   bcp->using_desc and handle_uv2_busy() stuff).  Just disable the use of the
->   BAU for a period of time in favor of the legacy IPI method when the h/w bug
->   leaves a descriptor busy.
->   -- new tunable: giveup_limit determines the threshold at which a hub is 
->      so plugged that it should do all requests with the legacy IPI method for a
->      period of time
->   -- generalize disable_for_congestion() (renamed disable_for_period()) for
->      use whenever a hub should avoid using the BAU for a period of time
-> 
-> Misc:
-> - fix find_another_by_swack(), which is part of the UV2 bug workaround
-> - correct and clarify the statistics (new stats s_overipilimit s_giveuplimit
->   s_enters s_ipifordisabled s_plugged s_congested)
+Yeah, sometimes we can't have everything at the same time, and we
+fixed serious reliability and integrity bugs for the cost of changing
+the behaviour of: debug-printk + continuation line + crash the box. If
+the box does not crash, the output does not change at all from before.
 
-Sigh, it looks like something that ought to be 7 successive, 
-easy to review commits got mixed up into a single, huge, hard to 
-review commit. How did that happen?
+> I think Steve's fix would be OK as a workaround, if no-one can
+> think of anything better.
+>
+> The thing is, this bug, despite being reported early on, has
+> been left unresolved for weeks and it's -rc4 time now. Time is
+> running out and frankly, I've been watching this thread, and the
+> only reason you appear to be taking this bug somewhat seriously
+> now is because Andrew and me complained. That is sad.
 
-Thanks,
+Steven said he would try something else on Monday, that's why I'm
+waiting. I'm not happy with any of the current
+optimize-continuation-lines-for-kernel-crashes patches, so I wanted to
+see what he has in mind.
 
-	Ingo
+> Kernel policy is that kernel bugs introduced during the merge
+> window are fixed by those who introduced them, or the changes
+> get reverted. The kernel project uses a very user-friendly
+> process to resolve regressions and in the worst case you as a
+> developer have to suffer your changes reverted. Obviously timely
+> fixes are preferred over invasive reverts.
+
+That's true. this change is a trade, and the kernel self-tests
+print-continuation-line-and-let-the-kernel-crash is currently affected
+by the hugely improved integrity and reliability of all the "normal"
+users.
+
+> It is not *Steve's* job to fix this bug. That he actually posted
+> a fix is nice from him, it makes your life easier (and you can
+> still write some other fix) but *you* should be driving the
+> resolution here, not Steve, me or Andrew.
+
+Let's see what other idea Steven has, he wrote "But I have an idea for
+a fix. I'll work on it on Monday, and it wont require adding a
+pr_flush() like I did in this patch set." before pointing fingers here
+please.
+
+If we find a way to solve that cleanly, I'm all for it. But honestly,
+just letting these very special-case users print fully terminated
+lines instead of continuation lines seems like an option to me too. We
+really should not optimize for cosmetics (full lines work reliably,
+they are not buffered) of self-tests, for the price of the reliability
+and integrity of all other users.
+
+The self-test users would need to be changed anyway to use "flush",
+why don't we just print a full line,  omit the "PASSED" in case all
+went well, and only print in case of an error? I really do not see the
+need for continuation lines for the crash-sensitive self-tests; people
+will find out (without PASSED on the same line), that we passed the
+test when the box is still alive.
+
+Kay
