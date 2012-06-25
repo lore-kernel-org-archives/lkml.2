@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab2FYQ4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 12:56:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39733 "EHLO mx1.redhat.com"
+	id S1757281Ab2FYQ6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 12:58:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58073 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753128Ab2FYQ4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 12:56:24 -0400
-Message-ID: <4FE89807.50708@redhat.com>
-Date: Mon, 25 Jun 2012 18:55:35 +0200
-From: Frederic Weisbecker <fweisbec@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752516Ab2FYQ6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 12:58:22 -0400
+Date: Mon, 25 Jun 2012 17:58:18 +0100
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Torsten Hilbrich <torsten.hilbrich@secunet.com>,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
+Message-ID: <20120625165721.GX21859@amd.home.annexia.org>
+References: <4FDEC3C2.4060909@secunet.com>
+ <20120625113457.GA1289@amd.home.annexia.org>
+ <x49r4t3z6s4.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 11/11] protect architectures where THREAD_SIZE >= PAGE_SIZE
- against fork bombs
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-12-git-send-email-glommer@parallels.com>
-In-Reply-To: <1340633728-12785-12-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49r4t3z6s4.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 04:15 PM, Glauber Costa wrote:
-
-> Because those architectures will draw their stacks directly from
-> the page allocator, rather than the slab cache, we can directly
-> pass __GFP_KMEMCG flag, and issue the corresponding free_pages.
+On Mon, Jun 25, 2012 at 12:38:03PM -0400, Jeff Moyer wrote:
+> "Richard W.M. Jones" <rjones@redhat.com> writes:
 > 
-> This code path is taken when the architecture doesn't define
-> CONFIG_ARCH_THREAD_INFO_ALLOCATOR (only ia64 seems to), and has
-> THREAD_SIZE >= PAGE_SIZE. Luckily, most - if not all - of the
-> remaining architectures fall in this category.
+> > On Mon, Jun 18, 2012 at 07:59:30AM +0200, Torsten Hilbrich wrote:
+> >> Hello,
+> >> 
+> >> a software that tries to mount each existing partition as ext3 file system started to fail when updating from v3.3.7 to v3.3.8.
+> >> 
+> >> The applications then hangs-up in the mount syscall, here is a snapshot of its stack at this moment:
+> >
+> > We just ran into what we think is the same problem.
+> >
+> > Note that ext4 fails like this for any 1024 byte sized filesystem (of
+> > zeroes) that you try to mount.  It's really nothing to do with
+> > extended partitions.
+> >
+> > Here is a very simple reproducer + stack trace:
+> >
+> >   https://bugzilla.redhat.com/show_bug.cgi?id=835019#c4
+> >
+> > I will try out the patch suggested later on in this thread.
 > 
-> This will guarantee that every stack page is accounted to the memcg
-> the process currently lives on, and will have the allocations to fail
-> if they go over limit.
-> 
-> For the time being, I am defining a new variant of THREADINFO_GFP, not
-> to mess with the other path. Once the slab is also tracked by memcg,
-> we can get rid of that flag.
-> 
-> Tested to successfully protect against :(){ :|:& };:
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
+> Please try the attached patch instead.  The patch I had originally
+> posted for this allowed marking the first buffer beyond EOD as
+> uptodate.  This isn't correct.  The patch I've attached below fixes the
+> infinite loop in __getblk_slow.
 
+Thanks Jeff.  I'm trying it now.
 
-Acked-by: Frederic Weisbecker <fweisbec@redhat.com>
+We also found a related bug in isofs:
 
+  https://bugzilla.redhat.com/show_bug.cgi?id=835084
 
-Thanks!
+So I will check whether your patches fixes that one too.
+
+Rich.
+
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+New in Fedora 11: Fedora Windows cross-compiler. Compile Windows
+programs, test, and build Windows installers. Over 70 libraries supprt'd
+http://fedoraproject.org/wiki/MinGW http://www.annexia.org/fedora_mingw
