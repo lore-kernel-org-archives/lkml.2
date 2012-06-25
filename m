@@ -1,112 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757091Ab2FYXC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:02:56 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:35967 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755553Ab2FYXCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:02:54 -0400
-Date: Mon, 25 Jun 2012 18:02:52 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, Christoph Lameter <cl@linux.com>,
-        Nick Piggin <npiggin@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com
-Subject: Re: [PATCH v3] tmpfs not interleaving properly
-Message-ID: <20120625230251.GA4305@gulag1.americas.sgi.com>
-References: <20120622143512.GA18468@gulag1.americas.sgi.com> <4FE50F42.6010401@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FE50F42.6010401@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1757142Ab2FYXEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:04:40 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56402 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab2FYXEi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 19:04:38 -0400
+Date: Mon, 25 Jun 2012 16:04:37 -0700 (PDT)
+Message-Id: <20120625.160437.1414802196489079213.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bjorn@mork.no
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120625133318.a57079c86bad4360828efac0@canb.auug.org.au>
+References: <20120625133318.a57079c86bad4360828efac0@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 08:35:14PM -0400, KOSAKI Motohiro wrote:
-> (6/22/12 10:35 AM), Nathan Zimmer wrote:
-> > When tmpfs has the memory policy interleaved it always starts allocating at each
-> > file at node 0.  When there are many small files the lower nodes fill up
-> > disproportionately.
-> > This patch attempts to spread out node usage by starting files at nodes other
-> > then 0.  I disturbed the addr parameter since alloc_pages_vma will only use it
-> > when the policy is MPOL_INTERLEAVE.  A files preferred node is selected by 
-> > the cpu_mem_spread_node rotor.
-> > 
-> > v2: passed preferred node via addr
-> > v3: using current->cpuset_mem_spread_rotor instead of random_node
-> > 
-> > Cc: Christoph Lameter <cl@linux.com>
-> > Cc: Nick Piggin <npiggin@gmail.com>
-> > Cc: Hugh Dickins <hughd@google.com>
-> > Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-> > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > Signed-off-by: Nathan T Zimmer <nzimmer@sgi.com>
-> > ---
-> > 
-> >  include/linux/shmem_fs.h |    1 +
-> >  mm/shmem.c               |    9 +++++++--
-> >  2 files changed, 8 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-> > index bef2cf0..cfe8a34 100644
-> > --- a/include/linux/shmem_fs.h
-> > +++ b/include/linux/shmem_fs.h
-> > @@ -17,6 +17,7 @@ struct shmem_inode_info {
-> >  		char		*symlink;	/* unswappable short symlink */
-> >  	};
-> >  	struct shared_policy	policy;		/* NUMA memory alloc policy */
-> > +	unsigned long           node_offset;	/* bias for interleaved nodes */
-> >  	struct list_head	swaplist;	/* chain of maybes on swap */
-> >  	struct list_head	xattr_list;	/* list of shmem_xattr */
-> >  	struct inode		vfs_inode;
-> > diff --git a/mm/shmem.c b/mm/shmem.c
-> > index a15a466..93801b3 100644
-> > --- a/mm/shmem.c
-> > +++ b/mm/shmem.c
-> > @@ -64,6 +64,7 @@ static struct vfsmount *shm_mnt;
-> >  #include <linux/highmem.h>
-> >  #include <linux/seq_file.h>
-> >  #include <linux/magic.h>
-> > +#include <linux/cpuset.h>
-> >  
-> >  #include <asm/uaccess.h>
-> >  #include <asm/pgtable.h>
-> > @@ -938,9 +939,12 @@ static struct page *shmem_alloc_page(gfp_t gfp,
-> >  	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
-> >  
-> >  	/*
-> > -	 * alloc_page_vma() will drop the shared policy reference
-> > +	 * alloc_page_vma() will drop the shared policy reference.
-> > +	 *
-> > +	 * To avoid allocating all tmpfs pages on node 0, we fake up a virtual
-> > +	 * address based on this file's predetermined preferred node.
-> >  	 */
-> > -	return alloc_page_vma(gfp, &pvma, 0);
-> > +	return alloc_page_vma(gfp, &pvma, info->node_offset << PAGE_SHIFT);
-> 
-> Still unacceptable. Please stop to pass hacky fake address.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 25 Jun 2012 13:33:18 +1000
 
-I am open to suggestion here. The reason it was placed there was because the 
-effect would only occur when the policy was interleaved and it would be clear 
-the call to mpol_shared_policy_lookup should still used the unaltered index. 
- 
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/usb/qmi_wwan.c between commit b9f90eb27402 ("net: qmi_wwan:
+> fix Gobi device probing") from the net tree and various commits from the
+> net-next tree.
 > 
-> >  }
-> >  #else /* !CONFIG_NUMA */
-> >  #ifdef CONFIG_TMPFS
-> > @@ -1374,6 +1378,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
-> >  			inode->i_fop = &shmem_file_operations;
-> >  			mpol_shared_policy_init(&info->policy,
-> >  						 shmem_get_sbmpol(sbinfo));
-> > +			info->node_offset = cpuset_mem_spread_node();
-> 
-> cpuset_mem_spread_node is designed for using allocation time.
-> 
-> 
-> 
-> 
+> I am not sure how to fix this, but the comments in the net tree commit
+> implied that it would be placed in the 3.6 code, so I just used the
+> version of this file from the net-next tree.
+
+I've resolved this during today's net --> net-next merge.
