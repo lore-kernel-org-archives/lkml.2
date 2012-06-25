@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2FYOre (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 10:47:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47267 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757011Ab2FYOrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 10:47:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="169739679"
-Date: Mon, 25 Jun 2012 22:47:29 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Subject: Re: 2012 Kernel Summit: Call for Participation: 2nd CALL
-Message-ID: <20120625144729.GB6876@localhost>
-References: <E1Sh0DC-0005D9-7n@tytso-glaptop.cam.corp.google.com>
- <20120621181112.GA4642@google.com>
- <20120622181853.GI4642@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120622181853.GI4642@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932076Ab2FYOs4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 10:48:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22174 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757099Ab2FYOsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 10:48:55 -0400
+X-Authority-Analysis: v=2.0 cv=bpjO9Tmi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=C_U1be-mfRQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=kbg3vzUf44lj4uVifhoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340635734.27036.327.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] printk: Revert the buffered-printk() changes for now
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Kay Sievers <kay@vrfy.org>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
+Date: Mon, 25 Jun 2012 10:48:54 -0400
+In-Reply-To: <20120625140748.GB1301@gmail.com>
+References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
+	 <20120622145402.8047a669.akpm@linux-foundation.org>
+	 <20120623061313.GA21895@gmail.com> <1340452052.1784.40.camel@mop>
+	 <20120625090933.GD24512@gmail.com>
+	 <CAPXgP10E7HNDQ73ZFyb4EyDVBko2yXs8Rw0KOSKukGUpSBSz_g@mail.gmail.com>
+	 <20120625140748.GB1301@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 11:18:53AM -0700, Tejun Heo wrote:
-> Hey again.
-> 
-> On Thu, Jun 21, 2012 at 11:11:12AM -0700, Tejun Heo wrote:
-> > Depending on the number of people affected and if at all possible, it
-> > would be nice to avoid such big holidays.  So, have fun, guys.
-> 
-> Eh never mind.  Minchan just told me KS is in August and Thanksgiving
-> is in Sept.  Stupid me.  :)
+On Mon, 2012-06-25 at 16:07 +0200, Ingo Molnar wrote:
 
-Aha, so you don't have that 1.5-month long travel season like us ;)
+> System logging is an arguably secondary role, and it should not 
+> degrade printk()s primary role.
 
-Thanks,
-Fengguang
+I would argue that printk() should not play the role of normal system
+logging. It's main role should be for boot up and crashes. If devices
+need to log information to userspace, it should really use some other
+means. What was /sys made for anyway?
+
+-- Steve
+
+
