@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2FYVNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 17:13:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20089 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756594Ab2FYVN3 (ORCPT
+	id S1756894Ab2FYVR4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 17:17:56 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:56284 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756024Ab2FYVRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 17:13:29 -0400
-X-Authority-Analysis: v=2.0 cv=bpjO9Tmi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=LzVHJJ6cxm2XebHxqMoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340658806.26736.1.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.0.36-rt57
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Mon, 25 Jun 2012 17:13:26 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 25 Jun 2012 17:17:55 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Cc: snanda@chromium.org
+Subject: [BUG, Regression, bisected] Marvell 88E8055 NIC (sky2) fails to
+ detect carrier after resume from S3
+To: linux-kernel@vger.kernel.org
+Date: Mon, 25 Jun 2012 23:17:51 +0200
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+From: "Michal Zatloukal" <myxal.mxl@gmail.com>
+Message-ID: <op.wgg9f1g716tawo@esprimo>
+User-Agent: Opera Mail/11.62 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
+Note: Please CC me into replies, I'm not subscribed. Thank you.
 
-Dear RT Folks,
+I'm the reporter of Ubuntu bug 1007841
+<https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1007841> and would
+like to bring attention to it here, since it's in upstream kernel as well.
+You can find all details collected by apport there. The gist of the
+problem is, since around 3.2 (I haven't kept up-to-date and mostly used
+2.6.35 on the machine), whenever I wake up the laptop from S3 by opening
+the lid, the NIC loses carrier detection and it's reported as always down.
 
-I'm pleased to announce the 3.0.36-rt57 stable release.
+I have done bisection (my first, so don't automatically assume it's done
+correctly ;-)  and have found the offending commit to be:
 
+commit 7afe1845dd1e7c90828c942daed7e57ffa7c38d6
+Author: Sameer Nanda <snanda@chromium.org>
+Date: Mon Jul 25 17:13:29 2011 -0700
 
-This release is just an update to the new stable 3.0.36 version
-and no RT specific changes have been made.
+init: skip calibration delay if previously done
 
+Hence, CCing author.
+Let me know if I should supply any more info.
 
-You can get this release via the git tree at:
+Best Regards,
+Michal Zatloukal
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 134f45a2e618b9014ebbb7965bda85f8a024b219
-
-
-Or to build 3.0.36-rt57 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.36.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.36-rt57.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+-- 
+Using Opera's revolutionary email client: http://www.opera.com/mail/
