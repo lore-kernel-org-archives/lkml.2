@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab2FYMMY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 08:12:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35483 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756193Ab2FYMMX (ORCPT
+	id S1756328Ab2FYMOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 08:14:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52545 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755638Ab2FYMOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 08:12:23 -0400
-Date: Mon, 25 Jun 2012 13:12:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: AnilKumar Ch <anilkumar@ti.com>
-Cc: sameo@linux.intel.com, lrg@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH 1/3] regulator: tps65217: Add device tree support
-Message-ID: <20120625121220.GA30406@opensource.wolfsonmicro.com>
-References: <1340625878-32336-1-git-send-email-anilkumar@ti.com>
- <1340625878-32336-2-git-send-email-anilkumar@ti.com>
+	Mon, 25 Jun 2012 08:14:49 -0400
+Date: Mon, 25 Jun 2012 13:14:36 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>
+Subject: Re: deferring __fput()
+Message-ID: <20120625121436.GU14083@ZenIV.linux.org.uk>
+References: <1340369098.2464.20.camel@falcor>
+ <20120623092049.GH14083@ZenIV.linux.org.uk>
+ <20120623194505.GI14083@ZenIV.linux.org.uk>
+ <20120623205755.GJ14083@ZenIV.linux.org.uk>
+ <1340625805.2507.56.camel@laptop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340625878-32336-2-git-send-email-anilkumar@ti.com>
-X-Cookie: You should go home.
+In-Reply-To: <1340625805.2507.56.camel@laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 25, 2012 at 02:03:25PM +0200, Peter Zijlstra wrote:
+> On Sat, 2012-06-23 at 21:57 +0100, Al Viro wrote:
+> > 3) at that point task_work is equal in size (and layout, BTW) to rcu_head.  So we can add it
+> > into the same union in struct file where we already have list_head and rcu_head.  No space
+> > eaten up.  fput() would, once the counter reaches 0, remove the file from list (the only
+> > place walking that list skips the ones with zero refcount anyway) and, if we are in a normal
+> > process, use task_work_add() to have __fput() done to it.  If we are in kernel thread or
+> > atomic context, just move the sucker to global list and use schedule_work() to have said
+> > list emptied and everything in it fed to __fput(). 
+> 
+> So we're now Ok with doing fput() async?
+> 
+> Last time I remember this coming up people thought this wasn't such a
+> hot idea.
 
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You mean, doing that from RCU callbacks?  Still a bad idea, IMO; you will end up with a context
+switch and unpleasantness with delayed user-visible effects of syscalls.  With aio we did have
+a delayed execution of fput() anyway; all that has changed there is that we use generic
+mechanism instead of home-grown analog thereof.
 
-On Mon, Jun 25, 2012 at 05:34:36PM +0530, AnilKumar Ch wrote:
-> This commit adds device tree support for tps65217 pmic. And usage
-> details are added to device tree documentation.
->=20
-> Driver is tested by using kernel module with regulator set and get
-> APIs.
-
-This needs to be updated for the patches Laxman recently posted for the
-regulator-compatible property (which are currently blocked on review
-=66rom the ST Ericcsson guys but I'll probably apply them in the next
-couple of days if I don't hear back from them).
-
---NzB8fVQJ5HfG6fxh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP6FSqAAoJEBus8iNuMP3dxIcP/00HGnTnaUH8hckkICDP3Dle
-ry/ohUBRawMEenbnOP7YHF5cr4gMzfSOPNE2jnxYUSXfO8cm1GL0+wTUOr4xtpvr
-+u7xMbLyshpyqqUu70P0dBCN3RWEABnuK/Sd7nfHCO+46IUdySLNk+k3++iIERhV
-C9GxDCtyLNa0PDbeoxHl7o2mfaHbYWZ9buYUMOtJP5FRNxs0+eEFe7N39Ip6O6RS
-yGiTeaDUuU9UNjv0ANJBbC59gwH9ESu005N6ZBcsrhZWLzyZ0NXOMoFZmEGhzJLC
-MumnU1OVArqQtAC3uIndqdY4zkXK5bOYoAJyzhwWzk7DEavV3ssU6moLFxX8rBSK
-R1V5T6d4Njrp+V2f0Ji68OWzzao+wL4t4uOY4uKog+BMo3cbpCNMYrHEp06OTxWX
-i77hF0C5NfE9Ij0AUHPWJyiI5f4CIlzPtBVEir3qeMBJ+qcjzEgyRgSN7ILVuzw3
-kwxIY3MTWv0352guk0WvOaYiZEqbrDm4fKzuAAAthXagwJBW3exEwd0Xx7a/UoK5
-lhgN1VIklc/Ibwcz+VnNdgjf6aEmr4gv454ZSbNuAuI9k2JbVC5ocG7gYY9VByx+
-9VyyzbQ+s1+Aofzlg4r8vOGO74l4rSguTwoCTgeorYA7/olGhLyBz1ic7/y5RhK+
-33KMVcyPmzbJizMexD+V
-=eEeF
------END PGP SIGNATURE-----
-
---NzB8fVQJ5HfG6fxh--
+I'll need to reread that thread to comment on the specifics (had been too long ago; I don't
+remember the details), but...  See Linus' objections to full-async fput() circa this April
+or March.  There's a reason why this patchset uses task_work_add() whenever possible.
