@@ -1,119 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab2FYKYm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 06:24:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51665 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368Ab2FYKYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 06:24:41 -0400
-Date: Mon, 25 Jun 2012 11:24:35 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: RFC:  Easy-Reclaimable LRU list
-Message-ID: <20120625102435.GD8271@suse.de>
-References: <4FE012CD.6010605@kernel.org>
+	id S1755702Ab2FYKYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 06:24:52 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59993 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab2FYKYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 06:24:49 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FE83BE9.7050701@jp.fujitsu.com>
+Date: Mon, 25 Jun 2012 19:22:33 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4FE012CD.6010605@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wanpeng Li <liwp.linux@gmail.com>
+CC: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] memcg: cleanup all typo in memory cgroup
+References: <1340613910-9629-1-git-send-email-liwp.linux@gmail.com>
+In-Reply-To: <1340613910-9629-1-git-send-email-liwp.linux@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 02:49:01PM +0900, Minchan Kim wrote:
-> Hi everybody!
+(2012/06/25 17:45), Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 > 
-> Recently, there are some efforts to handle system memory pressure.
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+
+my thunderbird's spell checker founds some more ;)
+
+> ---
+>   mm/memcontrol.c |   21 ++++++++++-----------
+>   1 file changed, 10 insertions(+), 11 deletions(-)
 > 
-> 1) low memory notification - [1]
-> 2) fallocate(VOLATILE) - [2]
-> 3) fadvise(NOREUSE) - [3]
-> 
-> For them, I would like to add new LRU list, aka "Ereclaimable" which is opposite of "unevictable".
-> Reclaimable LRU list includes _easy_ reclaimable pages.
-> For example, easy reclaimable pages are following as. 
-> 
-> 1. invalidated but remained LRU list.
-> 2. pageout pages for reclaim(PG_reclaim pages)
-> 3. fadvise(NOREUSE)
-> 4. fallocate(VOLATILE)
-> 
-> Their pages shouldn't stir normal LRU list and compaction might not migrate them, even.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 4520b57..d474bf6 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -115,8 +115,8 @@ static const char * const mem_cgroup_events_names[] = {
+>   
+>   /*
+>    * Per memcg event counter is incremented at every pagein/pageout. With THP,
+> - * it will be incremated by the number of pages. This counter is used for
+> - * for trigger some periodic events. This is straightforward and better
+> + * it will be incremented by the number of pages. This counter is used to
+> + * trigger some periodic events. This is straightforward and better
+>    * than using jiffies etc. to handle periodic memcg event.
+>    */
+>   enum mem_cgroup_events_target {
+> @@ -667,7 +667,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
+>    * Both of vmstat[] and percpu_counter has threshold and do periodic
+>    * synchronization to implement "quick" read. There are trade-off between
+>    * reading cost and precision of value. Then, we may have a chance to implement
+> - * a periodic synchronizion of counter in memcg's counter.
+> + * a periodic synchronization of counter in memcg's counter.
+>    *
+>    * But this _read() function is used for user interface now. The user accounts
+>    * memory usage by memory cgroup and he _always_ requires exact value because
+> @@ -677,7 +677,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
+>    *
+>    * If there are kernel internal actions which can make use of some not-exact
+>    * value, and reading all cpu value can be performance bottleneck in some
+> - * common workload, threashold and synchonization as vmstat[] should be
+> + * common workload, threshold and synchonization as vmstat[] should be
 
-Why would compaction not migrate them? We might still want to migrate
-NORESUSE or VOLATILE pages.
+synchronization
 
-> Reclaimer can reclaim Ereclaimable pages before normal lru list and will avoid unnecessary
-> swapout in anon pages in easy-reclaimable LRU list.
-> It also can make admin measure how many we have available pages at the moment without latency.
+>    * implemented.
+>    */
+>   static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
+> @@ -1304,7 +1304,7 @@ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
+>    *
+>    * mem_cgroup_under_move() - checking a cgroup is mc.from or mc.to or
+>    *			  under hierarchy of moving cgroups. This is for
+> - *			  waiting at hith-memory prressure caused by "move".
+> + *			  waiting at hit-memory pressure caused by "move".
+>    */
+>   
+>   static bool mem_cgroup_stolen(struct mem_cgroup *memcg)
+> @@ -1597,7 +1597,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+>   /*
+>    * Check all nodes whether it contains reclaimable pages or not.
+>    * For quick scan, we make use of scan_nodes. This will allow us to skip
+> - * unused nodes. But scan_nodes is lazily updated and may not cotain
+> + * unused nodes. But scan_nodes is lazily updated and may not contain
+>    * enough new information. We need to do double check.
+>    */
+>   static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
+> @@ -2211,7 +2211,6 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>   	if (mem_cgroup_wait_acct_move(mem_over_limit))
+>   		return CHARGE_RETRY;
+>   
+> -	/* If we don't need to call oom-killer at el, return immediately */
+>   	if (!oom_check)
+>   		return CHARGE_NOMEM;
+>   	/* check OOM */
+> @@ -2289,7 +2288,7 @@ again:
+>   		 * In that case, "memcg" can point to root or p can be NULL with
+>   		 * race with swapoff. Then, we have small risk of mis-accouning.
+accounting 
 
-That's not true for PG_reclaim pages as those pages cannot be discarded
-until writeback completes.
+Could you update ?
 
-One reason why I tried moving PG_reclaim pages to a separate list was
-to avoid excessive scanning when writing back to slow devices. If those
-pages were moved to an "easy-reclaimable" LRU list then the value would
-be reduced as scanning would still occur. It might make it worse because
-the whole Ereclaimable list would be scanned for pages that cannot be
-reclaimed at all before moving to another LRU list.
+Thanks,
+-Kame
 
-This separate list does not exist today because it required a page bit to
-implement and I did not want it to be a 64-bit only feature. You will
-probably hit the same problem.
+(*) In my experience, too rapid update doesn't work well, maintainers cannot review it.
 
-The setting of the page bit is also going to be a problem but you may be
-able to lazily move pages to the EReclaimable list in the same way
-unevictable pages are handled.
-
-> It's very important in recent mobile systems because page reclaim/writeback is very critical
-> of application latency. Of course, it could affect normal desktop, too.
-> With it, we can calculate fast-available pages more exactly with NR_FREE_PAGES + NR_ERECLAIMABLE_PAGES,
-> for example. If it's below threshold we defined, we could trigger 1st level notification
-> if we really need prototying low memory notification.
-> 
-
-If PG_reclaim pages are on this list, then that calculation will not be
-helpful.
-
-> We may change madvise(DONTNEED) implementation instead of zapping page immediately.
-> If memory pressure doesn't happen, pages are in memory so we can avoid so many minor fault.
-> Of course, we can discard instead of swap out if system memory pressure happens.
-> We might implement it madvise(VOLATILE) instead of DONTNEED, but anyway it's off-topic in this thread.
-> 
-> As a another example, we can implement CFLRU(Clean-First LRU) which reclaims unmapped-clean cache page firstly.
-
-That alters ageing of pages significantly. It means that workloads that
-are using read heavily will have their pages discarded first.
-
-> The rationale is that in non-rotation device, read/write cost is much asynchronous.
-
-While this is true that does not justify throwing away unmapped clean
-page cache first every time.
-
-> Read is very fast while write is very slow so it would be a gain while we can avoid writeback of dirty pages
-> if possible although we need several reads. It can be implemented easily with Ereclaimable pages, too.
-> 
-> Anyway, it's just a brain-storming phase and never implemented yet but decide posting before it's too late.
-> I hope listen others opinion before get into the code.
-> 
-
-Care is needed. I think you'll only be able to use this list for
-NORESUSE, VOLATILE and invalidated pages. If you add PG_reclaim it not be
-"easily-reclaimable" and if you add clean unmapped pages then there will
-be regressions in workloads that are read-intensive.
-
--- 
-Mel Gorman
-SUSE Labs
