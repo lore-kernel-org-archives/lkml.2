@@ -1,124 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab2FYOIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 10:08:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2389 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756987Ab2FYOIU (ORCPT
+	id S1757151Ab2FYOLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 10:11:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58395 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757029Ab2FYOLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 10:08:20 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=KUwhHYEArcovGaLp2DcA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340633298.27036.315.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.4.3-rt12
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Mon, 25 Jun 2012 10:08:18 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 25 Jun 2012 10:11:45 -0400
+Date: Mon, 25 Jun 2012 10:11:43 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC 0/2] USB gadget - configfs
+In-Reply-To: <4FE76F6C.1090300@linutronix.de>
+Message-ID: <Pine.LNX.4.44L0.1206251006520.1770-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 24 Jun 2012, Sebastian Andrzej Siewior wrote:
 
-Dear RT Folks,
+> On 06/21/2012 12:55 PM, Andrzej Pietrasiewicz wrote:
+> > $ echo 1>   /cfg/usb-function-gadget/G1/connect
+> > $ file.img>  /cfg/usb-function-gadget/G1/C1/F1/f_mass_storage/lun0/file
+> 
+> connect should be available at UDC level which triggers the
+> pull-up/down of the UDC. The gadget itself should be configured once
+> and made available / bound to the UDC. And you may have more
+> than once UDC at a time within a single a system.
+> 
+> > Each function, after creating its corresponding directory
+> > (/cfg/usb-function-gadget/G1/C1/F1), must be "personalized" by storing
+> > its name in the "name" attribute. After that it is possible to create
+> > a child item of the same name ("f_mass_storage" here). The common code
+> > handles everything from top of the hierarchy up to the function directory.
+> > Under the function directory a function-specific stuff provided by each
+> > function is used. The function-specific code is abstracted by the above
+> > mentioned struct ufg_fn. In the example, the mass storage function is
+> > supplied with one LUN.
+> 
+> The hierarchy looks good. C1 vs config1 is just taste.
 
-I'm pleased to announce the 3.4.3-rt12 stable release.
+My taste prefers "config1".  Same for "gadget1" and "func1" (or 
+"function1").  Words -- even short or abbreviated words -- are a lot 
+more meaningful to people than single letters are.
 
+> > 4. Do we need module parameters for USB descriptors like iManufacturer
+> >     and similar?
+> No. No modules parameters at all. With one exception: Currently we set
+> those things via modprobe. As a for compatibility interface I guess we
+> have to keep this. In the end I would like have f_mass_storage gone as 
+> it. We would have a new gadget_storage which provides only the function 
+> and relies on configfs module and nothing else. The replacement
+> g_mass_storage would simply be a small module which takes the
+> iManufacturer parameters and others and configures the gadget the way
+> the old gadget did i.e. without echo this and echo that.
 
-You can get this release via the git tree at:
+In any case, iManufacturer should not be adjustable by the user.  It 
+should always be managed by the composite-gadget layer, since it 
+contains nothing but the index number of the Manufacturer string 
+descriptor.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 590df7f02f97aa7acf2fe3a4d1f588534862c32d
-
-
-Or to build 3.4.3-rt12 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.3.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.3-rt12.patch.xz
-
-
-You can also build from 3.4.3-rt11 by applying the incremental patch:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.3-rt11-rt12.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-Changes from 3.4.3-rt11:
-
----
-
-Steven Rostedt (2):
-      spinlock/rt: Include bug.h in spinlock_rt.h to satisfy BUG() usage
-      Linux 3.4.3-rt12
-
-Thomas Gleixner (1):
-      Subject: powerpc: Mark low level irq handlers NO_THREAD
-
-----
- arch/powerpc/platforms/8xx/m8xx_setup.c |    1 +
- arch/powerpc/sysdev/cpm1.c              |    1 +
- include/linux/spinlock_rt.h             |    2 ++
- localversion-rt                         |    2 +-
- 4 files changed, 5 insertions(+), 1 deletion(-)
----------------------------
-diff --git a/arch/powerpc/platforms/8xx/m8xx_setup.c b/arch/powerpc/platforms/8xx/m8xx_setup.c
-index 1e12108..806cbbd 100644
---- a/arch/powerpc/platforms/8xx/m8xx_setup.c
-+++ b/arch/powerpc/platforms/8xx/m8xx_setup.c
-@@ -43,6 +43,7 @@ static irqreturn_t timebase_interrupt(int irq, void *dev)
- 
- static struct irqaction tbint_irqaction = {
- 	.handler = timebase_interrupt,
-+	.flags = IRQF_NO_THREAD,
- 	.name = "tbint",
- };
- 
-diff --git a/arch/powerpc/sysdev/cpm1.c b/arch/powerpc/sysdev/cpm1.c
-index d4fa03f..5e6ff38 100644
---- a/arch/powerpc/sysdev/cpm1.c
-+++ b/arch/powerpc/sysdev/cpm1.c
-@@ -120,6 +120,7 @@ static irqreturn_t cpm_error_interrupt(int irq, void *dev)
- 
- static struct irqaction cpm_error_irqaction = {
- 	.handler = cpm_error_interrupt,
-+	.flags = IRQF_NO_THREAD,
- 	.name = "error",
- };
- 
-diff --git a/include/linux/spinlock_rt.h b/include/linux/spinlock_rt.h
-index 3b555b4..0618387 100644
---- a/include/linux/spinlock_rt.h
-+++ b/include/linux/spinlock_rt.h
-@@ -5,6 +5,8 @@
- #error Do not include directly. Use spinlock.h
- #endif
- 
-+#include <linux/bug.h>
-+
- extern void
- __rt_spin_lock_init(spinlock_t *lock, char *name, struct lock_class_key *key);
- 
-diff --git a/localversion-rt b/localversion-rt
-index 05c35cb..6e44e54 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt11
-+-rt12
-
+Alan Stern
 
