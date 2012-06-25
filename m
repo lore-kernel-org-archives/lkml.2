@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2FYQlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 12:41:21 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:55427 "EHLO smtp.outflux.net"
+	id S1757338Ab2FYQmR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 12:42:17 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:42630 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754534Ab2FYQlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 12:41:19 -0400
-Date: Mon, 25 Jun 2012 09:40:49 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-ID: <20120625164049.GO5042@outflux.net>
-References: <20120625164141.1c5b1b543e0309005dfd0d9c@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625164141.1c5b1b543e0309005dfd0d9c@canb.auug.org.au>
-Organization: Outflux
-X-HELO: www.outflux.net
+	id S1756184Ab2FYQmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 12:42:16 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
+Date: Mon, 25 Jun 2012 11:14:38 -0500
+Message-Id: <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062516-3534-0000-0000-000009C8A2AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+This patch adds support for a local_tlb_flush_kernel_range()
+function for the x86 arch.  This function allows for CPU-local
+TLB flushing, potentially using invlpg for single entry flushing,
+using an arch independent function name.
 
-On Mon, Jun 25, 2012 at 04:41:41PM +1000, Stephen Rothwell wrote:
-> After merging the akpm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> fs/namei.c: In function 'path_openat':
-> fs/namei.c:2874:4: error: 'filp' undeclared (first use in this function)
-> 
-> Caused by patch "fs: add link restrictions" from the akpm tree
-> interacting with (at least) commit 4066cd545681 ("vfs: remove open
-> intents from nameidata") from the vfs tree.
-> 
-> I don't know how to fix this, so I have reverted the akpm patch for today
-> (in the hope that someone else will fix it).
-
-It looks like namei.c changed the logic of the lookup loop. This should
-fix it.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
+ arch/x86/include/asm/tlbflush.h |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff -uNrp a/fs/namei.c b/fs/namei.c
---- a/fs/namei.c	2012-06-25 09:30:28.125746562 -0700
-+++ b/fs/namei.c	2012-06-25 09:31:29.456997558 -0700
-@@ -2870,10 +2870,8 @@ static struct file *path_openat(int dfd,
- 			break;
- 		}
- 		error = may_follow_link(&link);
--		if (unlikely(error)) {
--			filp = ERR_PTR(error);
-+		if (unlikely(error))
- 			break;
--		}
- 		nd->flags |= LOOKUP_PARENT;
- 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
- 		error = follow_link(&link, nd, &cookie);
-
-
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 36a1a2a..92a280b 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -168,4 +168,25 @@ static inline void flush_tlb_kernel_range(unsigned long start,
+ 	flush_tlb_all();
+ }
+ 
++#define __HAVE_LOCAL_FLUSH_TLB_KERNEL_RANGE
++/*
++ * INVLPG_BREAK_EVEN_PAGES is the number of pages after which single tlb
++ * flushing becomes more costly than just doing a complete tlb flush.
++ * While this break even point varies among x86 hardware, tests have shown
++ * that 8 is a good generic value.
++*/
++#define INVLPG_BREAK_EVEN_PAGES 8
++static inline void local_flush_tlb_kernel_range(unsigned long start,
++		unsigned long end)
++{
++	if (cpu_has_invlpg &&
++		(end - start)/PAGE_SIZE <= INVLPG_BREAK_EVEN_PAGES) {
++		while (start < end) {
++			__flush_tlb_single(start);
++			start += PAGE_SIZE;
++		}
++	} else
++		local_flush_tlb();
++}
++
+ #endif /* _ASM_X86_TLBFLUSH_H */
 -- 
-Kees Cook
-Chrome OS Security
+1.7.9.5
+
