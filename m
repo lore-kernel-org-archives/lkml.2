@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab2FYN27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:28:59 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:51596 "EHLO e3.ny.us.ibm.com"
+	id S1756801Ab2FYNaq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:30:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42868 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756240Ab2FYN26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 09:28:58 -0400
-Date: Mon, 25 Jun 2012 06:20:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: tracer_alloc_buffers returned with preemption imbalance
-Message-ID: <20120625132037.GW2516@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120623101251.GA10162@localhost>
- <20120623170147.GI2516@linux.vnet.ibm.com>
- <20120623174830.GA5617@localhost>
- <CAM_iQpW-vtnHUOBoROueui-FCrw9zB4U3vwy=PnEOLXP713WWw@mail.gmail.com>
- <20120625035733.GU2516@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1206250208210.24381@chino.kir.corp.google.com>
+	id S1756260Ab2FYNap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 09:30:45 -0400
+Date: Mon, 25 Jun 2012 15:30:38 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andrew de los Reyes <adlr@chromium.org>
+Subject: Re: [PATCH] HID: magicmouse: Correct report range of major / minor
+ axes
+In-Reply-To: <20120625120407.GA522@polaris.bitmath.org>
+Message-ID: <alpine.LNX.2.00.1206251530300.18612@pobox.suse.cz>
+References: <1340382713-2957-1-git-send-email-miletus@chromium.org> <20120625120407.GA522@polaris.bitmath.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1206250208210.24381@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062513-8974-0000-0000-00000A802CC6
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 02:10:23AM -0700, David Rientjes wrote:
-> On Sun, 24 Jun 2012, Paul E. McKenney wrote:
+On Mon, 25 Jun 2012, Henrik Rydberg wrote:
+
+> > In patch "HID: magicmouse: Adjust major / minor axes to scale",
+> > touch_major and touch_minor axes are scaled by a factor of
+> > four when reported but the max touch_major/minor is not scaled
+> > accordingly. This patch scales the max touch_major/minor to
+> > be consistent with the reported value.
+> > 
+> > Signed-off-by: Yufeng Shen <miletus@chromium.org>
+> > ---
+> >  drivers/hid/hid-magicmouse.c |    6 ++++--
+> >  1 files changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+> > index 7cf3ffe..40ac665 100644
+> > --- a/drivers/hid/hid-magicmouse.c
+> > +++ b/drivers/hid/hid-magicmouse.c
+> > @@ -426,8 +426,10 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
+> >  		__set_bit(EV_ABS, input->evbit);
+> >  
+> >  		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
+> > -		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 4, 0);
+> > -		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 4, 0);
+> > +		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
+> > +				     4, 0);
+> > +		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
+> > +				     4, 0);
+> >  		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
+> >  
+> >  		/* Note: Touch Y position from the device is inverted relative
+> > -- 
+> > 1.7.7.3
+> > 
 > 
-> > But in my case, the trailing preempt_enable() should not have been
-> > optimized away, right?  Wouldn't it be more like the following?
-> > 
-> > int a = 0;
-> > int main(void)
-> > {
-> > 	a++;
-> > 	return ++a;
-> > 	a++;
-> > }
-> > 
-> > Hmmm...  But this -still- doesn't emit any warnings.
-> > 
-> 
-> gcc removed -Wunreachable-code a couple years ago.  It doesn't complain 
-> when you pass it for backwards compatibility with old Makefiles.
+>     Acked-by: Henrik Rydberg <rydberg@euromail.se>
 
-Ah well, back to manual inspection, then.  :-/
+Applied, thanks.
 
-							Thanx, Paul
-
+-- 
+Jiri Kosina
+SUSE Labs
