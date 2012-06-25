@@ -1,177 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab2FYJXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 05:23:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50971 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755297Ab2FYJXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 05:23:23 -0400
-Subject: [net-next RFC V4 PATCH 2/4] virtio_ring: move queue_index to
- vring_virtqueue
-To: krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        mst@redhat.com, netdev@vger.kernel.org, mashirle@us.ibm.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, akong@redhat.com,
-        davem@davemloft.net
-From: Jason Wang <jasowang@redhat.com>
-Cc: kvm@vger.kernel.org
-Date: Mon, 25 Jun 2012 17:17:12 +0800
-Message-ID: <20120625091712.7263.76379.stgit@amd-6168-8-1.englab.nay.redhat.com>
-In-Reply-To: <20120625090829.7263.65026.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120625090829.7263.65026.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1755535Ab2FYJYV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 05:24:21 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:48611 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab2FYJYT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 05:24:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAK9wHMTYoxVqj3Ls3Y7NEwgL4Y=XnxGFzyxfy4bseMR_Hhzp7Q@mail.gmail.com>
+References: <CAK9wHMS_P+y+NmvVVrH+nNOb=KPi3rEgJOWEcRcKf3mTkxjDPA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1206211025060.1164-100000@iolanthe.rowland.org>
+	<CAK9wHMTYoxVqj3Ls3Y7NEwgL4Y=XnxGFzyxfy4bseMR_Hhzp7Q@mail.gmail.com>
+Date: Mon, 25 Jun 2012 17:24:18 +0800
+Message-ID: <CAK9wHMSp+h9dMjZivV=Y42D1JjvZCC9vCqa4HDBV7osYek70AQ@mail.gmail.com>
+Subject: Re: pm runtime and system suspend resume
+From: chao xie <xiechao.linux@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        pavel@ucw.cz, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of storing the queue index in virtio infos, this patch moves them to
-vring_virtqueue and introduces helpers to set and get the value. This would
-simplify the management and tracing.
+2012/6/22 chao xie <xiechao.linux@gmail.com>:
+> 2012/6/21 Alan Stern <stern@rowland.harvard.edu>:
+>> On Thu, 21 Jun 2012, chao xie wrote:
+>>
+>>> I check the code, __device_suspend will invoke dev->pm_domain->ops
+>>> first if dev->pm_domain is not NULL.
+>>> Taking "suspend" as esample, i can do the following things in the
+>>> dev->pm_domain->ops->suspend
+>>> 1. invoke dev->driver->pm->suspend for suspending the device
+>>> 2. do what we do in dev->pm_domain->ops->runtime_suspend for
+>>> suspending the surrounded logic, for example, shutdown the phy or
+>>> clocks.
+>>> So is above implementation fine?
+>>
+>> Yes, that sounds like it will work.  Watch out for the case where your
+>> device is already runtime-suspended when a system suspend occurs.
+>>
+>> Have you read section 6 in Documentation/power/runtime_pm.txt?  It is
+>> related to your question.
+>>
+> I will read the document. Thanks very much.
+>
+>> Alan Stern
+>>
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/virtio/virtio_mmio.c |    5 +----
- drivers/virtio/virtio_pci.c  |   12 +++++-------
- drivers/virtio/virtio_ring.c |   17 +++++++++++++++++
- include/linux/virtio.h       |    4 ++++
- 4 files changed, 27 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index 453db0c..f5432b6 100644
---- a/drivers/virtio/virtio_mmio.c
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -131,9 +131,6 @@ struct virtio_mmio_vq_info {
- 	/* the number of entries in the queue */
- 	unsigned int num;
- 
--	/* the index of the queue */
--	int queue_index;
--
- 	/* the virtual address of the ring queue */
- 	void *queue;
- 
-@@ -324,7 +321,6 @@ static struct virtqueue *vm_setup_vq(struct virtio_device *vdev, unsigned index,
- 		err = -ENOMEM;
- 		goto error_kmalloc;
- 	}
--	info->queue_index = index;
- 
- 	/* Allocate pages for the queue - start with a queue as big as
- 	 * possible (limited by maximum size allowed by device), drop down
-@@ -363,6 +359,7 @@ static struct virtqueue *vm_setup_vq(struct virtio_device *vdev, unsigned index,
- 		goto error_new_virtqueue;
- 	}
- 
-+	virtqueue_set_queue_index(vq, index);
- 	vq->priv = info;
- 	info->vq = vq;
- 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 2e03d41..adb24f2 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -79,9 +79,6 @@ struct virtio_pci_vq_info
- 	/* the number of entries in the queue */
- 	int num;
- 
--	/* the index of the queue */
--	int queue_index;
--
- 	/* the virtual address of the ring queue */
- 	void *queue;
- 
-@@ -202,11 +199,11 @@ static void vp_reset(struct virtio_device *vdev)
- static void vp_notify(struct virtqueue *vq)
- {
- 	struct virtio_pci_device *vp_dev = to_vp_device(vq->vdev);
--	struct virtio_pci_vq_info *info = vq->priv;
- 
- 	/* we write the queue's selector into the notification register to
- 	 * signal the other end */
--	iowrite16(info->queue_index, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY);
-+	iowrite16(virtqueue_get_queue_index(vq),
-+		  vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NOTIFY);
- }
- 
- /* Handle a configuration change: Tell driver if it wants to know. */
-@@ -402,7 +399,6 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 	if (!info)
- 		return ERR_PTR(-ENOMEM);
- 
--	info->queue_index = index;
- 	info->num = num;
- 	info->msix_vector = msix_vec;
- 
-@@ -425,6 +421,7 @@ static struct virtqueue *setup_vq(struct virtio_device *vdev, unsigned index,
- 		goto out_activate_queue;
- 	}
- 
-+	virtqueue_set_queue_index(vq, index);
- 	vq->priv = info;
- 	info->vq = vq;
- 
-@@ -467,7 +464,8 @@ static void vp_del_vq(struct virtqueue *vq)
- 	list_del(&info->node);
- 	spin_unlock_irqrestore(&vp_dev->lock, flags);
- 
--	iowrite16(info->queue_index, vp_dev->ioaddr + VIRTIO_PCI_QUEUE_SEL);
-+	iowrite16(virtqueue_get_queue_index(vq),
-+		vp_dev->ioaddr + VIRTIO_PCI_QUEUE_SEL);
- 
- 	if (vp_dev->msix_enabled) {
- 		iowrite16(VIRTIO_MSI_NO_VECTOR,
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 5aa43c3..9c5aeea 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -106,6 +106,9 @@ struct vring_virtqueue
- 	/* How to notify other side. FIXME: commonalize hcalls! */
- 	void (*notify)(struct virtqueue *vq);
- 
-+	/* Index of the queue */
-+	int queue_index;
-+
- #ifdef DEBUG
- 	/* They're supposed to lock for us. */
- 	unsigned int in_use;
-@@ -171,6 +174,20 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
- 	return head;
- }
- 
-+void virtqueue_set_queue_index(struct virtqueue *_vq, int queue_index)
-+{
-+	struct vring_virtqueue *vq = to_vvq(_vq);
-+	vq->queue_index = queue_index;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_set_queue_index);
-+
-+int virtqueue_get_queue_index(struct virtqueue *_vq)
-+{
-+	struct vring_virtqueue *vq = to_vvq(_vq);
-+	return vq->queue_index;
-+}
-+EXPORT_SYMBOL_GPL(virtqueue_get_queue_index);
-+
- /**
-  * virtqueue_add_buf - expose buffer to other end
-  * @vq: the struct virtqueue we're talking about.
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index 8efd28a..0d8ed46 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -50,6 +50,10 @@ void *virtqueue_detach_unused_buf(struct virtqueue *vq);
- 
- unsigned int virtqueue_get_vring_size(struct virtqueue *vq);
- 
-+void virtqueue_set_queue_index(struct virtqueue *vq, int queue_index);
-+
-+int virtqueue_get_queue_index(struct virtqueue *vq);
-+
- /**
-  * virtio_device - representation of a device using virtio
-  * @index: unique position on the virtio bus
-
+There is no more question about runtime_idle and runtime_suspend
+as i understand that runtime_idle indicates that the device is idle,
+clock may be off, no function there, runtime_suspend means that the
+device my be power off, and making it rework may need some
+initialization work.
+So in the scenario, for USB, there are some clocks relates to it and
+there is a phy attached to it.
+When phy is powered off, it need to be initialized again, and it will
+take some time.
+So in the driver, when there is no action, we will call
+pm_runtime_put, and it will shut off the clocks, for
+pm_runtime_put_sync_suspend, it will shut off the phy to save more
+power.
+Then how do we call pm_runtime_put_sync_suspend if it already calls
+pm_runtime_put? Do we need do call pm_runtime_get before call
+pm_runtime_put_sync_suspend because the usage_count is not 0?
