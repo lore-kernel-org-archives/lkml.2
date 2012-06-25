@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2FYSHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 14:07:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51594 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab2FYSHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 14:07:53 -0400
-Date: Mon, 25 Jun 2012 11:07:47 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 07/11] mm: Allocate kernel pages to the right memcg
-Message-ID: <20120625180747.GE3869@google.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
- <1340633728-12785-8-git-send-email-glommer@parallels.com>
+	id S1754696Ab2FYSLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 14:11:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5812 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753172Ab2FYSLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 14:11:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="162408181"
+Message-ID: <4FE8A9C0.3050802@linux.intel.com>
+Date: Mon, 25 Jun 2012 11:11:12 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340633728-12785-8-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Kerneloops.org defunct?
+References: <4DE6264A.2040901@gmail.com> <20110601212432.2677b03a.rdunlap@xenotime.net> <201106211534.10366.roucaries.bastien@gmail.com> <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com> <20110826173517.7321c086@lxorguk.ukuu.org.uk> <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com> <20120625180536.GA29261@roeck-us.net>
+In-Reply-To: <20120625180536.GA29261@roeck-us.net>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 06:15:24PM +0400, Glauber Costa wrote:
-> When a process tries to allocate a page with the __GFP_KMEMCG flag,
-> the page allocator will call the corresponding memcg functions to
-> validate the allocation. Tasks in the root memcg can always proceed.
+On 6/25/2012 11:05 AM, Guenter Roeck wrote:
+
 > 
-> To avoid adding markers to the page - and a kmem flag that would
-> necessarily follow, as much as doing page_cgroup lookups for no
-> reason, whoever is marking its allocations with __GFP_KMEMCG flag
-> is responsible for telling the page allocator that this is such an
-> allocation at free_pages() time. This is done by the invocation of
-> __free_accounted_pages() and free_accounted_pages().
+> Did anyone ever get access to the kerneloops code and/or is working on a
+> replacement ?
+> 
+> I see that http://kerneloops-descope.rhcloud.com/submitoops.php appears to
+> accept kerneloops reports, http://kerneloops-descope.rhcloud.com/ reports
+> "www.kerneloops.org, coming soon", and a comment in
+> https://bugzilla.redhat.com/show_bug.cgi?id=800302 suggests that Redhat may be
+> in the process of taking over kerneloops.org.
 
-Shouldn't we be documenting that in the code somewhere, preferably in
-the function comments?
+I hope RH is willing to invest the time in this; I do not have access to
+the latest code anymore (it lived on the kernel.org servers prior to the
+incident)
 
--- 
-tejun
+
+
