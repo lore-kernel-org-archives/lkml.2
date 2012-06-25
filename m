@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab2FYVyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 17:54:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60896 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756024Ab2FYVyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 17:54:02 -0400
-Message-ID: <4FE8DD80.9040108@redhat.com>
-Date: Mon, 25 Jun 2012 17:52:00 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Rik van Riel <riel@surriel.com>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
-        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
-        mel@csn.ul.ie, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
- rbtree
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>     <1340315835-28571-2-git-send-email-riel@surriel.com>    <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>   <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>  <1340375872.18025.77.camel@twins> <4FE4922D.8070501@surriel.com> <1340652578.21991.18.camel@twins>
-In-Reply-To: <1340652578.21991.18.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757739Ab2FYWHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:07:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47791 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757718Ab2FYWHY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 18:07:24 -0400
+Date: Mon, 25 Jun 2012 15:07:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, "kay.sievers" <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
+Message-Id: <20120625150722.8cd4f45d.akpm@linux-foundation.org>
+In-Reply-To: <1340651142.7037.2.camel@gandalf.stny.rr.com>
+References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 03:29 PM, Peter Zijlstra wrote:
-> On Fri, 2012-06-22 at 11:41 -0400, Rik van Riel wrote:
->> Let me try implementing your algorithm with arbitrary
->> address constraints and alignment/colouring.
+On Mon, 25 Jun 2012 15:05:42 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> 
+> This brings back the old way of printk() that always prints to the console
+> and does not buffer the data. As printk_emit() is used by other 'facilities'
+> this only affects printk(), but keeps pretty much the new behavior.
+
+If you say so.  The core printk code is starting to make one think of
+things like "cleansing with fire".
+
+Why did that logging code need to futz with this printk behaviour in
+the first place?
+
+I don't think the thing which you're fixing here was a real
+showstopper.  If a non-newline-terminated printk gets delayed, then so
+be it - we identify and fix all callers and remember the new rule and
+move on, although I still don't know why this change was deemed
+necessary.  If that results in a cleaner, clearer and more reliable
+core printk() then we win.
+
+And we do need a cleaner, clearer and more reliable core printk() :(
+wtf have you guys been up to??  
+
+<wonders why vprintk_emit() is asmlinkage, global, exported to modules
+and has no callers outside printk.c>
+
+>	/* This stops the holder of console_sem just where we want him */
+
+This poor comment is now stranded half a page away from the code it's
+documenting.  Please check that it's still true and then relocate it?
+
 >
-> Right, so the best I could come up with for a range search is
-> O((log n)^2), it does need another pointer in the vma though :/
+> ...
 >
-> Instead of storing the single right sub-tree pointer, you store a single
-> linked list of right sub-tree pointers using that extra vma member.
->
-> Then when no gap was found on the left downward path, try each
-> successive right sub-tree (bottom-up per the LIFO single linked list and
-> top-down) and do a right-path and left subtree search for those.
->
-> So you get a log n walk, with a log n walk for each right sub-tree,
-> giving a 1/2 * log n * log n aka O((log n)^2).
->
-> If you do the search without right limit, the first right subtree search
-> is sufficient and you'll revert back to O(log n).
 
-That is essentially what my current code does.
-
-> I've also thought about the update cost and I think I can make the
-> vma_adjust case cheaper if you keep the max(vm_end) as second
-> augmentation, this does add another word to the vma though.
->
-> Using this max(vm_end) of the subtree you can do a rb_augment_path()
-> variant over a specified range (the range that gets modified by
-> vma_adjust etc..) in O(m log n) worst time, but much better on average.
->
-> You still do the m iteration on the range, but you stop the path upwards
-> whenever the subtree max(vm_end) covers the given range end. Except for
-> the very last of m, at which point you'll go all the way up.
->
-> This should avoid many of the duplicate path traversals the naive
-> implementation does.
-
-One of the benefits of an rbtree is that an insertion
-or deletion is accompanied by at most 2 rotations.
-
-These rotations, if there are two, will happen next
-to each other, meaning at most 5 nodes will have new
-child nodes.
-
-Furthermore, the parent of the area where rotation
-happened still has the same set of child nodes as
-before (plus or minus the inserted or deleted node).
-
-If we call the augmentation function from inside the
-tree manipulation code, we may be able to save on a
-lot of walking simply by having it bail out once the
-augmented value in a node equals the "new" value.
-
-The downside? This makes the rbtree code somewhat more
-complex, vs. the brute force walk up the tree the current
-augmented rbtree code does.
-
-> I haven't had any good ideas on the alignment thing though, I keep
-> getting back to O(n) or worse if you want a guarantee you find a hole if
-> you have it.
->
-> The thing you propose, the double search, once for len, and once for len
-> +align-1 doesn't guarantee you'll find a hole. All holes of len might be
-> mis-aligned but the len+align-1 search might overlook a hole of suitable
-> size and alignment, you'd have to search the entire range: [len, len
-> +align-1], and that's somewhat silly.
-
-This may still be good enough.
-
-Programs that exhaust their virtual address space to the
-point of not being able to find a properly aligned memory
-hole should be recompiled as 64 bit systems, or run on
-hardware that does not have such requirements (eg. x86).
-
-Also, the memory alignment requirement on AMD Bulldozer,
-ARM and MIPS seems to be quite small. On the order of a
-handful of pages (4 pages on AMD & ARM, I assume modern
-MIPS is fairly sane too).
+must.. stop.. thinking.. about.. fire..
