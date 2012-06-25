@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab2FYEL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 00:11:59 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38629 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab2FYEL5 (ORCPT
+	id S1751833Ab2FYESW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 00:18:22 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49526 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab2FYESV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 00:11:57 -0400
-Date: Mon, 25 Jun 2012 14:11:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rajeev Kumar <rajeev-dlh.kumar@st.com>
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20120625141140.c6d71065dab293005514ee1a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__25_Jun_2012_14_11_40_+1000_nrvdYKZvjeo3/jeL"
+	Mon, 25 Jun 2012 00:18:21 -0400
+X-AuditID: 9c93016f-b7cbdae0000024ac-96-4fe7e68af8f1
+To: undisclosed-recipients:;
+Message-ID: <4FE7E68A.6080200@kernel.org>
+Date: Mon, 25 Jun 2012 13:18:18 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        undisclosed-recipients:";
+	KOSAKI Motohiro" <kosaki.motohiro@gmail.com>,
+        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
+	CC:	undisclosed-recipients:;KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+						^-missing end of address
+Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
+References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com> <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com> <4FE26470.90401@kernel.org> <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com> <4FE27F15.8050102@kernel.org> <CAHGf_=pDw4axwG2tQ+B5hPks-sz2S5+G1Kk-=HSDmo=DSXOkEw@mail.gmail.com> <4FE2A937.6040701@kernel.org> <4FE2FCFB.4040808@jp.fujitsu.com> <4FE3C4E4.2050107@kernel.org> <4FE414A2.3000700@kernel.org> <4FE5482C.3010501@jp.fujitsu.com> <4FE7B861.6020906@kernel.org>
+In-Reply-To: <4FE7B861.6020906@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Jun_2012_14_11_40_+1000_nrvdYKZvjeo3/jeL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/25/2012 10:01 AM, Minchan Kim wrote:
 
-Hi all,
+<snip>
 
-After merging the sound-asoc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
 
-ERROR: "clk_disable" [sound/soc/dwc/designware_i2s.ko] undefined!
-ERROR: "clk_get" [sound/soc/dwc/designware_i2s.ko] undefined!
-ERROR: "clk_enable" [sound/soc/dwc/designware_i2s.ko] undefined!
-ERROR: "clk_put" [sound/soc/dwc/designware_i2s.ko] undefined!
 
-Caused by commit 3a9cf8efd7b6 ("ASoC: Add support for synopsys i2s
-controller as per ASoC framework").  According to the Kconfig in the
-patch, this driver depends on nothing ...
+>> I'm glad if this function can be static...Hm. With easy grep, I think it
+>> can be...
+> 
+> 
+> Yes. :)
+> 
 
-I have used the sound-asoc tree from next-20120622 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ 
+Unfortunately, It seems we are too late.
+http://lkml.org/lkml/2012/6/14/361
 
---Signature=_Mon__25_Jun_2012_14_11_40_+1000_nrvdYKZvjeo3/jeL
-Content-Type: application/pgp-signature
+Akpm doesn't accept above patch at the moment but will do sooner or later.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP5+T8AAoJEECxmPOUX5FE0HUP/RCwygKHwulg9stdn7NF3w0V
-fX8CevXBasTyTySKITtzHSvK3wH7BzR/HPCU1mig3v8fWCLY524bWkaMzmzolXQ0
-b6HhyX4K3pxZN5SpSUQmS/sUgRGtjWzdHO/T/+1F0riVFLuM8CXeDjJ9DaQ0OpEe
-/OgTR3CK2MfjgLim75vvzxSt9r++fGr2scpxE2o2YPy5EUc39BSnIaAJvaeARdX4
-N660SP15vD7uQ1JjOIA/oiISP4U1OzXQLEz6YcVqK2QkKtTEaNP/RLlXyTWED147
-J+MWPSWVswxYUqXWcJ52thG+oCRzgiYDDpPdUMuxUqwoSl+5xfeXZBj1OYZh3gbu
-OBkEk35LbgTcc57wgNVK8F7wnP42HBgmTx53LNE+HRf/aUvXXGbmcnVVHqWi3h06
-jGPd3v+xyEvo3ZaFwjsa5/Gq64tpgSRfBaSjFHUhI8RAM9qENfuTmV0VotcykduN
-t0xv439XXwaqoz6PCy12H3B8fLWlQZ2ehfTU0rJY6a6ArhKC/QiXzoYxNmfc3XaE
-FCHKGbwPGW6W1yowH6a5l3+rGkLh1ZG8F5mAAUs1p6yR6bqNCTjH1iuWbcpSNs90
-58R5uMT1hif9IrdQB+xFzrUc2KdYrKp/y+wycViiEOIv1WLoE8b+S1nJCuk+7sP6
-zIUE6OL/iu61zKxD4/G/
-=Rdyl
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Jun_2012_14_11_40_+1000_nrvdYKZvjeo3/jeL--
+-- 
+Kind regards,
+Minchan Kim
