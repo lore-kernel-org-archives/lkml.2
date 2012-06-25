@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab2FYDiI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 23:38:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38373 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab2FYDiG (ORCPT
+	id S1754274Ab2FYDiT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 23:38:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47482 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab2FYDiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 23:38:06 -0400
-Message-ID: <4FE7DD19.8070106@gmail.com>
-Date: Sun, 24 Jun 2012 21:38:01 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>, ryanh@linux.vnet.ibm.com
-Subject: Re: perf kvm segfaults while reporting events
-References: <20120601135627.GA3004@linux.vnet.ibm.com> <4FC8E26E.7060309@gmail.com> <20120620061423.GB3488@linux.vnet.ibm.com>
-In-Reply-To: <20120620061423.GB3488@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Jun 2012 23:38:15 -0400
+Date: Mon, 25 Jun 2012 13:38:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antonio Quartulli <ordex@autistici.org>,
+        Sven Eckelmann <sven@narfation.org>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120625133812.aad5804dca97e504650b7dd1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__25_Jun_2012_13_38_12_+1000_018ECF58LML2wX/1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/20/12 12:14 AM, Pradeep Kumar Surisetty wrote:
->
-> Ahhh perf kvm works fine if we record guest events for enough time.
-> above patch works better, if some one doesnt record for adequate time.
+--Signature=_Mon__25_Jun_2012_13_38_12_+1000_018ECF58LML2wX/1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Dumb luck. The extra time allows a sample that hits within a guest 
-module and causes the build id for it to be added to the header.
+Hi all,
 
-I added some pr_debug's to the synthesize_modules. e.g.,
+Today's linux-next merge of the net-next tree got a conflict in
+net/batman-adv/translation-table.c between commit 8b8e4bc0391f
+("batman-adv: fix race condition in TT full-table replacement") from the
+net tree and commit 7d211efc5087 ("batman-adv: Prefix originator
+non-static functions with batadv_") from the net-next tree.
 
-perf_event__synthesize_modules: host modules, pid -1, file 
-/lib/modules/3.4.0/kernel/arch/x86/crypto/crc32c-intel.ko
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-perf_event__synthesize_modules: guest modules, pid 0, file 
-/lib/modules/3.4.0/kernel/drivers/block/virtio_blk.ko
+diff --cc net/batman-adv/translation-table.c
+index 2ab83d7,5180d50..0000000
+--- a/net/batman-adv/translation-table.c
++++ b/net/batman-adv/translation-table.c
+@@@ -141,7 -139,8 +139,7 @@@ static void tt_orig_list_entry_free_rcu
+  	struct tt_orig_list_entry *orig_entry;
+ =20
+  	orig_entry =3D container_of(rcu, struct tt_orig_list_entry, rcu);
+- 	orig_node_free_ref(orig_entry->orig_node);
+ -	atomic_dec(&orig_entry->orig_node->tt_size);
++ 	batadv_orig_node_free_ref(orig_entry->orig_node);
+  	kfree(orig_entry);
+  }
+ =20
 
-which is just wrong for the guest. It's a Fedora 17 VM where the kernel 
-version is 3.4.0-1.fc17.x86_64 and even more important perf is not told 
-where to find the modules (dso name in the event), so the dso path is 
-based on the host OS.
+--Signature=_Mon__25_Jun_2012_13_38_12_+1000_018ECF58LML2wX/1
+Content-Type: application/pgp-signature
 
-Which comes back to my earlier comment: the 'default' guest options 
-(--guestmodules here) for perf-kvm are busted. You really need to use 
-the --guestmount option until perf-kvm gets some rework.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-I will submit a patch to at least keep perf from segfaulting.
+iQIcBAEBCAAGBQJP590kAAoJEECxmPOUX5FEnnYP/RfND0karGD/tYe8VLA2WkYH
+9VN7PPjqQKYLJk3hT0TSGfcZwaqDYU72LXsyNIn7t5pdEjz582jLnXaw63uf8lt1
+UhP1FKEjXWsMcgV3eKgdQ/LmWMlFHdHP7yYIill1kQeppsEtoxyqnKtxcUixEiPa
+W9zQhRJZ69e0Fi+GUes6EX8n8Bi2rBIcY2YchXDArd2wWM6VrP3qy4qEqk9uWYdb
+paOzaRnLmDW2tax4ObNnEvKrkPGr1lG851Fv8Z3llaDyZpEWMa/0amJB8OQuGauN
+1AVzEw6f9S7LAvRPP8MOT/Y+qeBTjcq/0ttIZA+hdWtvtF6oEkae0fDqK34vk2dv
+8jGco7yUXrqrnJaLUMrH6LdodSKU5rpcsFfxSB2eAfkPNd5s4CN8Ti/rLFRO5yvn
+//kiBxW1su2scahA9/WiHxXR/aNMpOidf7e5c40qTaoY66E6P5RFH+rKOYx+WZXf
+dM80uvE/kimSW9HYMrhCHkimmXC3jixRyr5tjqxoJ+Ry6crw1PQvLCH73p1d9G1E
+bR7CvaqSlqOt9MLcIfkRxpaCqElpn4oFwrl26o7KkST270ebWPv1+q9Qd8NHky4p
+T22TzWj4yOBtkPZ61kHpUwVmlXDIMqtjW6fuB1kt+ILzaH753GZr5DG9S2UwDuo+
+a1s0M/qCiYtNKMJqLjQS
+=CDXq
+-----END PGP SIGNATURE-----
 
-David
+--Signature=_Mon__25_Jun_2012_13_38_12_+1000_018ECF58LML2wX/1--
