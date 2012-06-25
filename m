@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab2FYT3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 15:29:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61252 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753172Ab2FYT3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 15:29:53 -0400
-Message-ID: <1340652590.1207.59.camel@bling.home>
-Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
-        mst@redhat.com
-Date: Mon, 25 Jun 2012 13:29:50 -0600
-In-Reply-To: <1340551118.14120.66.camel@bling.home>
-References: <20120622220040.9858.43665.stgit@bling.home>
-	 <20120622221559.9858.59593.stgit@bling.home> <4FE6EC20.5030502@redhat.com>
-	 <1340551118.14120.66.camel@bling.home>
-Content-Type: text/plain; charset="UTF-8"
+	id S1756132Ab2FYTaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 15:30:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50319 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab2FYTaG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 15:30:06 -0400
+Message-ID: <1340652578.21991.18.camel@twins>
+Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
+ rbtree
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@surriel.com>
+Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
+        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org
+Date: Mon, 25 Jun 2012 21:29:38 +0200
+In-Reply-To: <4FE4922D.8070501@surriel.com>
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>
+	    <1340315835-28571-2-git-send-email-riel@surriel.com>
+	   <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>
+	  <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>
+	 <1340375872.18025.77.camel@twins> <4FE4922D.8070501@surriel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-06-24 at 09:18 -0600, Alex Williamson wrote:
-> On Sun, 2012-06-24 at 13:29 +0300, Avi Kivity wrote:
-> > On 06/23/2012 01:16 AM, Alex Williamson wrote:
-> > > KVM_IRQFD currently only supports edge triggered interrupts,
-> > > asserting then immediately deasserting an interrupt.  There are a
-> > > couple ways we can emulate level triggered interrupts using
-> > > discrete events depending on the usage model we expect from drivers.
-> > > This patch implements a level emulation model useful for external
-> > > assigned device drivers, like VFIO.  The irqfd is used to assert
-> > > the interrupt.  When the guest issues an EOI for the interrupt, the
-> > > level is automatically deasserted and the irqfd user is notified via
-> > > an eventfd.  This is therefore the LEVEL_EOI extension to KVM_IRQFD.
-> > > To do this, we need to allocate a new irq source ID for the interrupt
-> > > so we don't get interference from userspace.
-> > > 
-> > >  
-> > > +With KVM_CAP_IRQFD_LEVEL_EOI KVM_IRQFD is able to support a level
-> > > +triggered interrupt model where the irqchip pin (kvm_irqfd.gsi) is
-> > > +asserted from the kvm_irqfd.fd eventfd and remain asserted until the
-> > > +guest issues an EOI for the irqchip pin.  The level interrupt is
-> > > +then de-asserted and the caller is notified via the eventfd specified
-> > > +by kvm_irqfd.fd2.  Note that users of this interface are responsible
-> > > +for re-asserting the interrupt if their device still requires service
-> > > +after receiving the EOI notification.  Additionally, users must not
-> > > +re-assert an interrupt until after receiving an EOI.  
-> > 
-> > What happens if this is violated?
-> 
-> Hmm, perhaps nothing.  The only race I see is re-asserting in the gap
-> between de-asserting the guest and sending the EOI.  At worst that would
-> cause a spurious interrupt, so probably no big deal.
-> 
-> > > When available,
-> > > +this feature is enabled using the KVM_IRQFD_FLAG_LEVEL_EOI flag.
-> > > +De-assigning an irqfd setup using this flag should include both
-> > > +KVM_IRQFD_FLAG_DEASSIGN and KVM_IRQFD_FLAG_LEVEL_EOI and will be
-> > > +matched using kvm_irqfd.fd, kvm_irqfd.gsi, and kvm_irqfd.fd2.
-> > > +De-assigning automatically de-asserts the interrupt line setup through
-> > > +this interface.
-> > >  
-> > > @@ -203,8 +232,8 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
-> > >  	struct kvm_irq_routing_table *irq_rt;
-> > >  	struct _irqfd *irqfd, *tmp;
-> > >  	struct file *file = NULL;
-> > > -	struct eventfd_ctx *eventfd = NULL;
-> > > -	int ret;
-> > > +	struct eventfd_ctx *eventfd = NULL, *eoi_eventfd = NULL;
-> > > +	int ret, irq_source_id = -1;
-> > >  	unsigned int events;
-> > >  
-> > >  	irqfd = kzalloc(sizeof(*irqfd), GFP_KERNEL);
-> > > @@ -214,7 +243,30 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
-> > >  	irqfd->kvm = kvm;
-> > >  	irqfd->gsi = args->gsi;
-> > >  	INIT_LIST_HEAD(&irqfd->list);
-> > > -	INIT_WORK(&irqfd->inject, irqfd_inject);
-> > > +
-> > > +	if (args->flags & KVM_IRQFD_FLAG_LEVEL_EOI) {
-> > > +		irq_source_id = kvm_request_irq_source_id(kvm);
-> > > +		if (irq_source_id < 0) {
-> > > +			ret = irq_source_id;
-> > > +			goto fail;
-> > 
-> > 'file' is NULL at this point, and fput() doesn't test for NULL.
-> 
-> Good catch.  I was looking for an excuse to move the existing code to
-> eventfd_ctx_fdget() and avoid the 2 step process it uses now.
+On Fri, 2012-06-22 at 11:41 -0400, Rik van Riel wrote:
+> Let me try implementing your algorithm with arbitrary
+> address constraints and alignment/colouring. 
 
-Well, we need file later, so a !NULL test will fix it.
+Right, so the best I could come up with for a range search is 
+O((log n)^2), it does need another pointer in the vma though :/
 
-...
-> 
-> > Xen had/has a hack for doing this in a different way, based on ioapic
-> > polarity.  When the host takes an interrupt, they reverse the polarity
-> > on that ioapic pin, so they get interrupts on both assertion and
-> > deassertion.  This is more general and more correct, but waaaaaaaaaaay
-> > more intrusive and won't play well with shared host interrupts.  But
-> > let's at least consider it.
-> 
-> Thanks, I'll look for that code.
+Instead of storing the single right sub-tree pointer, you store a single
+linked list of right sub-tree pointers using that extra vma member.
 
-I can't find the code for it, pointers welcome.  I have a hard time
-thinking this is practical for legacy interrupts though.  It sounds more
-like an x86 party trick that minimally breaks shared host interrupts,
-but more likely is intrusive (hey, why's that PCI driver asking for an
-active high interrupt, obviously wrong, BUG) and probably breaks on most
-non-x86 platforms.  I just can't imagine the cost/benefit works out for
-it with legacy interrupts.  Thanks,
+Then when no gap was found on the left downward path, try each
+successive right sub-tree (bottom-up per the LIFO single linked list and
+top-down) and do a right-path and left subtree search for those.
 
-Alex
+So you get a log n walk, with a log n walk for each right sub-tree,
+giving a 1/2 * log n * log n aka O((log n)^2).
 
+If you do the search without right limit, the first right subtree search
+is sufficient and you'll revert back to O(log n).
+
+
+
+I've also thought about the update cost and I think I can make the
+vma_adjust case cheaper if you keep the max(vm_end) as second
+augmentation, this does add another word to the vma though.
+
+Using this max(vm_end) of the subtree you can do a rb_augment_path()
+variant over a specified range (the range that gets modified by
+vma_adjust etc..) in O(m log n) worst time, but much better on average.
+
+You still do the m iteration on the range, but you stop the path upwards
+whenever the subtree max(vm_end) covers the given range end. Except for
+the very last of m, at which point you'll go all the way up.
+
+This should avoid many of the duplicate path traversals the naive
+implementation does.
+
+
+Sadly we've just added two words to the vma and are 2 words over the
+cacheline size for the fields used in the update.
+
+This too could be fixed by removing vm_{prev,next} and making
+rb_{prev,next} O(1) instead of O(log n) as they are now. Like:
+http://en.wikipedia.org/wiki/Threaded_binary_tree
+
+
+I haven't had any good ideas on the alignment thing though, I keep
+getting back to O(n) or worse if you want a guarantee you find a hole if
+you have it.
+
+The thing you propose, the double search, once for len, and once for len
++align-1 doesn't guarantee you'll find a hole. All holes of len might be
+mis-aligned but the len+align-1 search might overlook a hole of suitable
+size and alignment, you'd have to search the entire range: [len, len
++align-1], and that's somewhat silly.
