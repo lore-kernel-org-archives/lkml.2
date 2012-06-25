@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab2FYTxO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 15:53:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55839 "EHLO mx1.redhat.com"
+	id S1755558Ab2FYUEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 16:04:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41838 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab2FYTxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 15:53:13 -0400
-Date: Mon, 25 Jun 2012 15:52:48 -0400
-From: Dave Jones <davej@redhat.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Johannes Stezenbach <js@sig21.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Marc Dionne <marc.c.dionne@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: NOHZ: local_softirq_pending 08
-Message-ID: <20120625195248.GA23220@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Francois Romieu <romieu@fr.zoreil.com>,
-	Johannes Stezenbach <js@sig21.net>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Marc Dionne <marc.c.dionne@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	David Miller <davem@davemloft.net>
-References: <20120606054251.GA24467@electric-eye.fr.zoreil.com>
- <20120608023420.GD7191@redhat.com>
- <alpine.LFD.2.02.1206080954440.3086@ionos>
- <20120608142333.GB1711@redhat.com>
- <alpine.LFD.2.02.1206081641040.3086@ionos>
- <20120608202701.GA26175@electric-eye.fr.zoreil.com>
- <alpine.LFD.2.02.1206082238120.3086@ionos>
- <20120608215328.GB26175@electric-eye.fr.zoreil.com>
- <20120625123809.GA12623@sig21.net>
- <20120625192839.GA20195@electric-eye.fr.zoreil.com>
+	id S1751587Ab2FYUEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 16:04:38 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Richard W.M. Jones" <rjones@redhat.com>
+Cc: Torsten Hilbrich <torsten.hilbrich@secunet.com>,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
+References: <4FDEC3C2.4060909@secunet.com>
+	<20120625113457.GA1289@amd.home.annexia.org>
+	<x49r4t3z6s4.fsf@segfault.boston.devel.redhat.com>
+	<20120625193218.GZ21859@amd.home.annexia.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 25 Jun 2012 16:04:32 -0400
+In-Reply-To: <20120625193218.GZ21859@amd.home.annexia.org> (Richard
+	W. M. Jones's message of "Mon, 25 Jun 2012 20:32:18 +0100")
+Message-ID: <x49bok7yx7z.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625192839.GA20195@electric-eye.fr.zoreil.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 09:28:39PM +0200, Francois Romieu wrote:
- > Johannes Stezenbach <js@sig21.net> :
- > [7dbb491878a2c51d372a8890fa45a8ff80358af1]
- > > I just upgraded my rarely-used Atom based netbook from 3.3.5 to 3.4.4
- > > and got the "NOHZ: local_softirq_pending 08" message.
- > > Should this patch go into stable?
- > 
- > It should not change your life. I'll be fine with whatever policy davej,
- > tglx or davem see fit (assuming they share one :o) ).
+"Richard W.M. Jones" <rjones@redhat.com> writes:
 
-it never seemed to cause any noticable problem that I observed (just the dmesg spew),
-so I'm ambivalent about the whole thing now that it's fixed in 3.5rc :-)
+> On Mon, Jun 25, 2012 at 12:38:03PM -0400, Jeff Moyer wrote:
+>> Please try the attached patch instead.  The patch I had originally
+>> posted for this allowed marking the first buffer beyond EOD as
+>> uptodate.  This isn't correct.  The patch I've attached below fixes the
+>> infinite loop in __getblk_slow.
+>
+> This patch appears to fix both problems, thanks.
 
-	Dave 
+Thanks for testing, Rich!
+
+-Jeff
