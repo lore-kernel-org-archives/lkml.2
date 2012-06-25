@@ -1,220 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab2FYXkQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:40:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53722 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767Ab2FYXkO (ORCPT
+	id S1757932Ab2FYXso (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:48:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33474 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab2FYXsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:40:14 -0400
-Message-ID: <4FE8F6DA.8070109@gmail.com>
-Date: Mon, 25 Jun 2012 18:40:10 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 25 Jun 2012 19:48:43 -0400
+Message-ID: <4FE8F8D8.1050009@gmail.com>
+Date: Mon, 25 Jun 2012 16:48:40 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Dong Aisheng <b29396@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        paulus@samba.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 1/1] of: reform prom_update_property function
-References: <1340605714-25206-1-git-send-email-b29396@freescale.com>
-In-Reply-To: <1340605714-25206-1-git-send-email-b29396@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Miller <davem@davemloft.net>
+CC: ddaney.cavm@gmail.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        afleming@gmail.com, david.daney@cavium.com
+Subject: Re: [PATCH 1/4] netdev/phy: Handle IEEE802.3 clause 45 Ethernet PHYs
+References: <1340411056-18988-2-git-send-email-ddaney.cavm@gmail.com>	<20120625.153440.17010814246237639.davem@davemloft.net>	<4FE8F01B.2020207@gmail.com> <20120625.163355.2058784474741116830.davem@davemloft.net>
+In-Reply-To: <20120625.163355.2058784474741116830.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 01:28 AM, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> prom_update_property() currently fails if the property doesn't
-> actually exist yet which isn't what we want. Change to add-or-update
-> instead of update-only, then we can remove a lot duplicated lines.
-> 
-> Suggested-by: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+On 06/25/2012 04:33 PM, David Miller wrote:
+> From: David Daney<ddaney.cavm@gmail.com>
+> Date: Mon, 25 Jun 2012 16:11:23 -0700
+>
+>> Do you realize that at the time get_phy_device() is called, there is
+>> no PHY device?  So there can be no attribute, nor are we passing a
+>> register address.  Neither of these suggestions apply to this
+>> situation.
+>>
+>> We need to know a priori if it is c22 or c45.  So we need to
+>> communicate the type somehow to get_phy_device().  I chose an unused
+>> bit in the addr parameter to do this, another option would be to add a
+>> separate parameter to get_phy_device() specifying the type.
+>
+> Then pass it in to the get() routine and store the attribute there
+> in the device we end up with.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+OK.
 
-Ben, you can merge this via powerpc.
+addr has only 5 significant bits, and the patch *does* pass the 
+information (c22 vs. c45) in one of the high order bits.  So it is 
+essentially as you say, but you don't like the idea of multiplexing the 
+arguments into a single int.
 
-Rob
+Therefore, I am going to propose that we add a 'flags' parameter to 
+get_phy_device() and change the (two) callers.
 
-> ---
-> ChangeLog v1->v2:
-> * keep reconfig.c behavior the same as before after changes
-> ---
->  arch/powerpc/platforms/85xx/p1022_ds.c    |    8 +-------
->  arch/powerpc/platforms/pseries/mobility.c |    8 +-------
->  arch/powerpc/platforms/pseries/reconfig.c |   16 ++++++----------
->  drivers/of/base.c                         |   15 +++++++++++----
->  fs/proc/proc_devtree.c                    |    5 +++++
->  include/linux/of.h                        |    3 +--
->  6 files changed, 25 insertions(+), 30 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/85xx/p1022_ds.c b/arch/powerpc/platforms/85xx/p1022_ds.c
-> index f700c81..d66631c 100644
-> --- a/arch/powerpc/platforms/85xx/p1022_ds.c
-> +++ b/arch/powerpc/platforms/85xx/p1022_ds.c
-> @@ -348,13 +348,7 @@ void __init p1022_ds_pic_init(void)
->   */
->  static void __init disable_one_node(struct device_node *np, struct property *new)
->  {
-> -	struct property *old;
-> -
-> -	old = of_find_property(np, new->name, NULL);
-> -	if (old)
-> -		prom_update_property(np, new, old);
-> -	else
-> -		prom_add_property(np, new);
-> +	prom_update_property(np, new);
->  }
->  
->  /* TRUE if there is a "video=fslfb" command-line parameter. */
-> diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
-> index 029a562..dd30b12 100644
-> --- a/arch/powerpc/platforms/pseries/mobility.c
-> +++ b/arch/powerpc/platforms/pseries/mobility.c
-> @@ -67,7 +67,6 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
->  			      const char *name, u32 vd, char *value)
->  {
->  	struct property *new_prop = *prop;
-> -	struct property *old_prop;
->  	int more = 0;
->  
->  	/* A negative 'vd' value indicates that only part of the new property
-> @@ -117,12 +116,7 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
->  	}
->  
->  	if (!more) {
-> -		old_prop = of_find_property(dn, new_prop->name, NULL);
-> -		if (old_prop)
-> -			prom_update_property(dn, new_prop, old_prop);
-> -		else
-> -			prom_add_property(dn, new_prop);
-> -
-> +		prom_update_property(dn, new_prop);
->  		new_prop = NULL;
->  	}
->  
-> diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-> index 7b3bf76..db1b7b1 100644
-> --- a/arch/powerpc/platforms/pseries/reconfig.c
-> +++ b/arch/powerpc/platforms/pseries/reconfig.c
-> @@ -432,7 +432,7 @@ static int do_update_property(char *buf, size_t bufsize)
->  	unsigned char *value;
->  	char *name, *end, *next_prop;
->  	int rc, length;
-> -	struct property *newprop, *oldprop;
-> +	struct property *newprop;
->  	buf = parse_node(buf, bufsize, &np);
->  	end = buf + bufsize;
->  
-> @@ -443,6 +443,9 @@ static int do_update_property(char *buf, size_t bufsize)
->  	if (!next_prop)
->  		return -EINVAL;
->  
-> +	if (!strlen(name)
-> +		return -ENODEV;
-> +
->  	newprop = new_property(name, length, value, NULL);
->  	if (!newprop)
->  		return -ENOMEM;
-> @@ -450,18 +453,11 @@ static int do_update_property(char *buf, size_t bufsize)
->  	if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
->  		slb_set_size(*(int *)value);
->  
-> -	oldprop = of_find_property(np, name,NULL);
-> -	if (!oldprop) {
-> -		if (strlen(name))
-> -			return prom_add_property(np, newprop);
-> -		return -ENODEV;
-> -	}
-> -
->  	upd_value.node = np;
->  	upd_value.property = newprop;
->  	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
->  
-> -	rc = prom_update_property(np, newprop, oldprop);
-> +	rc = prom_update_property(np, newprop);
->  	if (rc)
->  		return rc;
->  
-> @@ -486,7 +482,7 @@ static int do_update_property(char *buf, size_t bufsize)
->  
->  		rc = pSeries_reconfig_notify(action, value);
->  		if (rc) {
-> -			prom_update_property(np, oldprop, newprop);
-> +			prom_update_property(np, newprop);
->  			return rc;
->  		}
->  	}
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index d9bfd49..a14f109 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -1051,7 +1051,8 @@ int prom_remove_property(struct device_node *np, struct property *prop)
->  }
->  
->  /*
-> - * prom_update_property - Update a property in a node.
-> + * prom_update_property - Update a property in a node, if the property does
-> + * not exist, add it.
->   *
->   * Note that we don't actually remove it, since we have given out
->   * who-knows-how-many pointers to the data using get-property.
-> @@ -1059,13 +1060,19 @@ int prom_remove_property(struct device_node *np, struct property *prop)
->   * and add the new property to the property list
->   */
->  int prom_update_property(struct device_node *np,
-> -			 struct property *newprop,
-> -			 struct property *oldprop)
-> +			 struct property *newprop)
->  {
-> -	struct property **next;
-> +	struct property **next, *oldprop;
->  	unsigned long flags;
->  	int found = 0;
->  
-> +	if (!newprop->name)
-> +		return -EINVAL;
-> +
-> +	oldprop = of_find_property(np, newprop->name, NULL);
-> +	if (!oldprop)
-> +		return prom_add_property(np, newprop);
-> +
->  	write_lock_irqsave(&devtree_lock, flags);
->  	next = &np->properties;
->  	while (*next) {
-> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
-> index 927cbd1..df7dd08 100644
-> --- a/fs/proc/proc_devtree.c
-> +++ b/fs/proc/proc_devtree.c
-> @@ -101,6 +101,11 @@ void proc_device_tree_update_prop(struct proc_dir_entry *pde,
->  {
->  	struct proc_dir_entry *ent;
->  
-> +	if (!oldprop) {
-> +		proc_device_tree_add_prop(pde, newprop);
-> +		return;
-> +	}
-> +
->  	for (ent = pde->subdir; ent != NULL; ent = ent->next)
->  		if (ent->data == oldprop)
->  			break;
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 2ec1083..b27c871 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -260,8 +260,7 @@ extern int of_machine_is_compatible(const char *compat);
->  extern int prom_add_property(struct device_node* np, struct property* prop);
->  extern int prom_remove_property(struct device_node *np, struct property *prop);
->  extern int prom_update_property(struct device_node *np,
-> -				struct property *newprop,
-> -				struct property *oldprop);
-> +				struct property *newprop);
->  
->  #if defined(CONFIG_OF_DYNAMIC)
->  /* For updating the device tree at runtime */
+Does that seem better (or at least acceptable)?
 
+Or do you really want to pass the address of a (one bit) structure instead?
+
+David Daney
+
+>
+> There are many parameters that go into a PHY register access, so
+> we'll probably some day end up with a descriptor struct that the
+> caller prepares on-stack to pass into the actual read/write ops
+> via reference.
+>
