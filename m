@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747Ab2FYWap (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:30:45 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53474 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757430Ab2FYWan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:30:43 -0400
-Message-ID: <4FE8E5F0.9080406@parallels.com>
-Date: Tue, 26 Jun 2012 02:28:00 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1757692Ab2FYWbE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:31:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41222 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757430Ab2FYWbB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 18:31:01 -0400
+Date: Mon, 25 Jun 2012 23:30:59 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] gpiolib: Add support for Wolfson Microelectronics
+ Arizona class devices
+Message-ID: <20120625223058.GD30406@opensource.wolfsonmicro.com>
+References: <1340454566-7206-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CACRpkdbKyHtwcsGoph_s-YPtn9yUxxKQBfXc_ksiNu=yE51spA@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 06/11] memcg: kmem controller infrastructure
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-7-git-send-email-glommer@parallels.com> <20120625180619.GD3869@google.com>
-In-Reply-To: <20120625180619.GD3869@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.9.3]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6WlEvdN9Dv0WHSBl"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbKyHtwcsGoph_s-YPtn9yUxxKQBfXc_ksiNu=yE51spA@mail.gmail.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 10:06 PM, Tejun Heo wrote:
-> Again, nits.
->
-> On Mon, Jun 25, 2012 at 06:15:23PM +0400, Glauber Costa wrote:
->> +#define mem_cgroup_kmem_on 1
->> +bool __mem_cgroup_new_kmem_page(gfp_t gfp, void *handle, int order);
->> +void __mem_cgroup_commit_kmem_page(struct page *page, void *handle, int order);
->> +void __mem_cgroup_free_kmem_page(struct page *page, int order);
->> +#define is_kmem_tracked_alloc (gfp & __GFP_KMEMCG)
->
-> Ugh... please do the following instead.
->
-> static inline bool is_kmem_tracked_alloc(gfp_t gfp)
-> {
-> 	return gfp & __GFP_KMEMCG;
-> }
->
->>   #else
->>   static inline void sock_update_memcg(struct sock *sk)
->>   {
->> @@ -416,6 +423,43 @@ static inline void sock_update_memcg(struct sock *sk)
->>   static inline void sock_release_memcg(struct sock *sk)
->>   {
->>   }
->> +
->> +#define mem_cgroup_kmem_on 0
->> +#define __mem_cgroup_new_kmem_page(a, b, c) false
->> +#define __mem_cgroup_free_kmem_page(a,b )
->> +#define __mem_cgroup_commit_kmem_page(a, b, c)
->> +#define is_kmem_tracked_alloc (false)
->
-> I would prefer static inlines here too.  It's a bit more code in the
-> header but leads to less surprises (e.g. arg evals w/ side effects or
-> compiler warning about unused vars) and makes it easier to avoid
-> cosmetic errors.
->
-> Thanks.
->
 
-Sure thing.
+--6WlEvdN9Dv0WHSBl
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Jun 26, 2012 at 03:13:58AM +0800, Linus Walleij wrote:
+> On Sat, Jun 23, 2012 at 8:29 PM, Mark Brown
+
+> > + =A0 =A0 =A0 regmap_update_bits(arizona->regmap, ARIZONA_GPIO1_CTRL + =
+offset,
+> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0ARIZONA_GPN_LVL, v=
+alue);
+
+> I'm guessing that regmap is caching, selectively updating volatile
+> regs and marshalling the writes in the background.
+
+It's just the standard read/modify/write operation (the same as you've
+got for ab8500 IIRC).  As far as the immediate user is concerned it's
+just doing the I/O, the API will work with cache or the hardware
+depending on how the chip register map is configured.
+
+--6WlEvdN9Dv0WHSBl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP6OabAAoJEBus8iNuMP3dTEEQAJ2ryh9tN6Kq/9wauYCPDaER
+TOaIgQ6kWlOu247wzIQTuWXGj1qsmvKwGRZ/Zsw89BTzI42cVRhIPQMR/QvMdgWQ
+3zG16H+qTMHQ2olFK6acl8LOYMy5b9LPK/AM/EtzEX0oopMlhHwj1n+mLJ2sS6hB
+zXC/ZcAK5mMwUcMhSUXXnflwAHPkDbPmfElf8fWCgFGUDoQgvv9aW8ppWr9jQ1CP
+xxhw4/+o1l5ZsAh07+7dKDwjMw91T/xxG5fr9IbG9oE4dNUpYk3qPZmJ1j1DHvw9
+ueDbMBo+vwqm4lrHS9DkIwCdbhpR+LwtdZUAUfsw1A7L65gT+8CT7zO245Vfhxw6
+CZsNQZBBybj3W5GdaOzYnwQmkT2ZLFuWbgIe+sh/M9rqLJkSzfUr5tWaelOhl4IL
+ZtRhKpd3IzuhnvXEGAKX/q1WYVU0O0kj7gpCDuYgTvWRx5qrjUDnv5AN6k8xRhxL
+1NqSNoTp8zr6Q9NfaqkEmuWhdLrQ6NxH0q3ZdVmL37B+mzwBTW7FlV2wzuQDcDQB
+KhzWdyq/Zz7PdhDlCKbMxXMlONN4x4/tFCjgA1B1U2ZO3Py+7htOPbHCtncD1RGI
+A2M9rfY3lYny1pIEBb5xZ3xKkN1eV+JIIJUp0ZqIUDXWewdQ1JmNt8U39/T45+A4
+UXzlCh8JL4uewBejurjq
+=4UHw
+-----END PGP SIGNATURE-----
+
+--6WlEvdN9Dv0WHSBl--
