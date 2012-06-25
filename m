@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab2FYL3i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 07:29:38 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:24203
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751088Ab2FYL3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 07:29:36 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -12
-X-BigFish: VPS-12(zz98dI1432Izz1202hzz15d4Rz2dh668h839h944hd25he5bhf0ah)
-X-WSS-ID: 0M667X3-02-2AV-02
-X-M-MSG: 
-Date: Mon, 25 Jun 2012 13:29:34 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: <dwmw2@infradead.org>, <iommu@lists.linux-foundation.org>,
-        <bhelgaas@google.com>, <benh@kernel.crashing.org>, <aik@ozlabs.ru>,
-        <david@gibson.dropbear.id.au>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <ddutile@redhat.com>, <liuj97@gmail.com>
-Subject: Re: [PATCH v2 0/7] IOMMU: Groups support
-Message-ID: <20120625112934.GU2624@amd.com>
-References: <20120530201424.31527.33142.stgit@bling.home>
+	id S1755877Ab2FYLab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 07:30:31 -0400
+Received: from fieldses.org ([174.143.236.118]:47666 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275Ab2FYLa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 07:30:29 -0400
+Date: Mon, 25 Jun 2012 07:30:25 -0400
+From: Fields James <bfields@fieldses.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Morton Andrew <akpm@linux-foundation.org>,
+        Harrosh Boaz <bharrosh@panasas.com>,
+        "<linux-nfs@vger.kernel.org>" <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [RFC PATCH] nfs: Add NFS3PROC_UMOUNT procedure.
+Message-ID: <20120625113025.GB16920@fieldses.org>
+References: <1340448406-10161-1-git-send-email-linkinjeon@gmail.com>
+ <02B16139-AFD6-4F06-99C0-C406B1A7E1DC@netapp.com>
+ <FE90D2E0-C4C9-44BC-829F-ABE94801AB4C@netapp.com>
+ <20120623155710.GA10787@fieldses.org>
+ <20120623160923.GB10787@fieldses.org>
+ <CAKYAXd80v10car7awm3Y5bzk_nXLj8NLi7C8PxUW15L9-S7pEw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120530201424.31527.33142.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <CAKYAXd80v10car7awm3Y5bzk_nXLj8NLi7C8PxUW15L9-S7pEw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 02:18:29PM -0600, Alex Williamson wrote:
-> Alex Williamson (7):
->       iommu: Remove group_mf
->       intel-iommu: Make use of DMA quirks and ACS checks in IOMMU groups
->       amd_iommu: Make use of DMA quirks and ACS checks in IOMMU groups
->       intel-iommu: Support IOMMU groups
->       amd_iommu: Support IOMMU groups
->       iommu: IOMMU Groups
->       driver core: Add iommu_group tracking to struct device
+On Sun, Jun 24, 2012 at 02:12:49PM +0900, Namjae Jeon wrote:
+> 2012/6/24, Fields James <bfields@fieldses.org>:
+> > On Sat, Jun 23, 2012 at 11:57:10AM -0400, Fields James wrote:
+> >> On Sat, Jun 23, 2012 at 03:52:20PM +0000, Myklebust, Trond wrote:
+> >> > The other objection is that NFSv3 already has a way to do this via the
+> >> > MOUNT protocol. We already call MOUNTPROC3_UMNT/MOUNTPROC_UMNT on
+> >> > unmount of a filesystem.
+> >> >
+> >> > The problem with this approach is that if the NFS client crashes before
+> >> > it can call this function, then the server never gets notified. That is
+> >> > a problem that your patch has too...
+> >>
+> >> Yes.  Could you instead work on describing *exactly* what the original
+> >> problem was that prompted this?
+> >
+> > ("You" here meaning Namjae Jeon, of course).
+> >
+> > And note here we've all read the changelog, that's not what I'm asking
+> > for.
+> >
+> > I want to know the details of *your* specific case.  "I have X clients
+> > that I use for Y, periodically I want to unmount the exported filesystem
+> > to do Z, I tried doing W but it didn't work...".
+> As you remember, We discussed this
+> issue(http://www.spinics.net/lists/linux-nfs/msg29997.html) with you
+> before. you guided me to use exportfs -f call on nfs server.
+> It is hard to use this method on our system
+
+Why is it hard?
+
+Could you hack umount to do the equivalent of "exportfs -f" before
+calling the umount?
+
+> and nomally the user is
+> thinking it is problem device busy happen after umounting.
 > 
-> 
->  .../ABI/testing/sysfs-kernel-iommu_groups          |   14 
->  Documentation/kernel-parameters.txt                |    1 
->  arch/ia64/include/asm/iommu.h                      |    2 
->  arch/ia64/kernel/pci-dma.c                         |    1 
->  arch/x86/include/asm/iommu.h                       |    1 
->  arch/x86/kernel/pci-dma.c                          |   11 
->  drivers/iommu/amd_iommu.c                          |   70 ++
->  drivers/iommu/intel-iommu.c                        |   89 ++-
->  drivers/iommu/iommu.c                              |  578 +++++++++++++++++++-
->  include/linux/device.h                             |    2 
->  include/linux/iommu.h                              |  104 +++-
->  11 files changed, 767 insertions(+), 106 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-kernel-iommu_groups
+> The details of specific case.
+> 1. There are two target or two PC. and Client want to access files of
+> usb device on server.
+> 2. the client try to mount usb mount point using nfs on sever after
+> plugging usb device.
+> 3. we try to umount mount point directory on client.
+> 4. and when we try to umount usb device mount directory server, device
+> busy message occured like this (umount: can't umount /mnt: Device or
+> resource busy)
 
-Applied and pushed all of them. Thanks a lot, Alex.
+Right, so I don't think you want protocol modifications.  They take a
+few years to get hammered out and then make it into implementations, and
+they won't help a great deal with your problem anyway.  (Because of
+problems like the possibility of lost "unmount" calls that Trond
+mentions.)
 
--- 
-AMD Operating System Research Center
+Either modify umount itself to flush the export cache before attempting
+the unmount, or if that doesn't work perhaps you could patch the kernel
+to notify nfsd on unmount and let it attemt to clear its caches before
+deciding whether the filesystem is busy.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+--b.
