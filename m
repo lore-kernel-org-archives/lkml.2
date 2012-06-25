@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2FYPzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 11:55:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42084 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928Ab2FYPzG (ORCPT
+	id S1757307Ab2FYPzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 11:55:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30519 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab2FYPzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 11:55:06 -0400
-Message-ID: <4FE889D6.4030500@wwwdotorg.org>
-Date: Mon, 25 Jun 2012 09:55:02 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: Re: [PATCH] i2c: tegra: use clk_disable_unprepare in place of clk_disable
-References: <1340196960-3002-1-git-send-email-ldewangan@nvidia.com> <4FE1F9A0.6080200@wwwdotorg.org> <4FE1F9D6.6090802@wwwdotorg.org> <4FE83374.6090608@nvidia.com>
-In-Reply-To: <4FE83374.6090608@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Jun 2012 11:55:44 -0400
+X-Authority-Analysis: v=2.0 cv=cIliQyiN c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=hVM6Fzsi8tMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=qpUykWU5KyzluN_Cnc4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340639741.27036.337.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH v2] printk: Have printk() never buffer its data
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon, 25 Jun 2012 11:55:41 -0400
+In-Reply-To: <CAPXgP13=4fgTuL3fawZUV+Khzx=RK9froKe-iD5KBY1c8wWVGw@mail.gmail.com>
+References: <1340630505.27036.294.camel@gandalf.stny.rr.com>
+	 <20120625135611.GA1301@gmail.com>
+	 <1340634366.27036.324.camel@gandalf.stny.rr.com>
+	 <CAPXgP13=4fgTuL3fawZUV+Khzx=RK9froKe-iD5KBY1c8wWVGw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 03:46 AM, Laxman Dewangan wrote:
-> Stephen,
+On Mon, 2012-06-25 at 17:22 +0200, Kay Sievers wrote:
+> On Mon, Jun 25, 2012 at 4:26 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Mon, 2012-06-25 at 15:56 +0200, Ingo Molnar wrote:
 > 
-> On Wednesday 20 June 2012 09:57 PM, Stephen Warren wrote:
->> On 06/20/2012 10:26 AM, Stephen Warren wrote:
->>> On 06/20/2012 06:56 AM, Laxman Dewangan wrote:
->>>> Use clk_disable_unprepare() inplace of clk_disable().
->>>> This was missed as part of moving clock enable/disable to
->>>> prepare/unprepare for using the common clock framework.
->> ...
->>> I see no reason not to take the second patch in the series through the
->>> I2C tree though.
->> Uggh. Ignore that paragraph - the other patch was sent separately not as
->> a series.
+> >> Anyway, bike shed painting aside, the patch looks like a
+> >> workable solution to me.
+> >
+> > Great! Lets hope Kay feels the same way.
 > 
-> so are you taking care of this patch or do I need to send the patch
-> based on your tree in place of linux-next?
+> Hmm, what I still miss, is how the log record export should work
+> properly with unbuffered continuation lines.
+> 
+> The buffering of continuation line users resulted in a clean one
+> record per logged line. Now we will get all separated records for all
+> continuation prints of a single line, which would either need to be
+> merged in userspace, or internally.
 
-Yes, this patch should be applied through the Tegra tree, since it will
-be a dependency of the common clock framework switchover there, which I
-hope to take place this kernel cycle.
+Merge it in userspace.
 
-I did just attempt to apply this patch to the for-3.6/common-clk branch,
-but it doesn't apply:-( Could you please rebase and resend. Thanks.
+> 
+> Non-buffered continuation lines and and a record buffer don't play
+> that well with each other.
+
+Yeah, I know, as they seem to be a problem together in the coding.
+
+>  It also sounds like quite a lot of wasted
+> headers in the buffer, which we need to carry around and throw away
+> when we reconstruct the line for output again. If we merge them
+> internally we mess around with the sequence numbers, if we merge them
+> in userspace we would need to export the flags to do that.
+
+As I'm still on debian and fedora 14, I have to admit that I do not
+quite understand exactly what you are trying to do with systemd or your
+logging facility. But it seems to become clear that printk isn't a tool
+for it.
+
+What exactly are you trying to record from the kernel? Device
+information, kernel diagnostics, or something else? Maybe there should
+be another facility besides printk that can pass what you want to your
+utilities.
+
+printk is the first line of attack for kernel developers to find their
+bugs. If it becomes bloated and focused on users, it will make
+development of the kernel much more difficult.
+
+Perhaps we should have added a hook or a tracepoint at the beginning of
+printk that your logging facility could attach to, and then it could do
+logging and buffering in any manner it would like, instead of hijacking
+the best debugging tool that kernel developers use.
+
+I'm starting to side with Ingo that the new printk should be reverted
+and rethought, and find another answer to the fixes that it solved.
+
+-- Steve
+
+
+
+
