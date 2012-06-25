@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab2FYGGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 02:06:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39993 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632Ab2FYGGb (ORCPT
+	id S1754608Ab2FYGHN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 02:07:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42397 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab2FYGHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 02:06:31 -0400
+	Mon, 25 Jun 2012 02:07:11 -0400
 From: Wanpeng Li <liwp.linux@gmail.com>
 To: Michal Hocko <mhocko@suse.cz>
 Cc: Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,9 +17,9 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>,
         Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         Wanpeng Li <liwp.linux@gmail.com>
-Subject: [PATCH 3/5 v2] memcg: change mem_control_xxx to mem_cgroup_xxx
-Date: Mon, 25 Jun 2012 14:06:22 +0800
-Message-Id: <1340604382-8091-1-git-send-email-liwp.linux@gmail.com>
+Subject: [PATCH 4/5 v2] memcg: optimize memcg_get_hierarchical_limit
+Date: Mon, 25 Jun 2012 14:06:48 +0800
+Message-Id: <1340604408-8136-1-git-send-email-liwp.linux@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-Unify memcg functions to mem_cgroup_xxx.
+Optimize memcg_get_hierarchical_limit to save cpu cycle.
 
 Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/memcontrol.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ mm/memcontrol.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ccda728..2e81328 100644
+index 2e81328..4520b57 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3999,7 +3999,7 @@ static int mem_cgroup_move_charge_write(struct cgroup *cgrp,
- #endif
+@@ -3917,9 +3917,9 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
  
- #ifdef CONFIG_NUMA
--static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
-+static int mem_cgroup_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 				      struct seq_file *m)
- {
- 	int nid;
-@@ -4058,7 +4058,7 @@ static inline void mem_cgroup_lru_names_not_uptodate(void)
- 	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
- }
+ 	min_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+ 	min_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+-	cgroup = memcg->css.cgroup;
+ 	if (!memcg->use_hierarchy)
+ 		goto out;
++	cgroup = memcg->css.cgroup;
  
--static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
-+static int mem_cgroup_stat_show(struct cgroup *cont, struct cftype *cft,
- 				 struct seq_file *m)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-@@ -4572,7 +4572,7 @@ static struct cftype mem_cgroup_files[] = {
- 	},
- 	{
- 		.name = "stat",
--		.read_seq_string = mem_control_stat_show,
-+		.read_seq_string = mem_cgroup_stat_show,
- 	},
- 	{
- 		.name = "force_empty",
-@@ -4604,7 +4604,7 @@ static struct cftype mem_cgroup_files[] = {
- #ifdef CONFIG_NUMA
- 	{
- 		.name = "numa_stat",
--		.read_seq_string = mem_control_numa_stat_show,
-+		.read_seq_string = mem_cgroup_numa_stat_show,
- 	},
- #endif
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ 	while (cgroup->parent) {
+ 		cgroup = cgroup->parent;
 -- 
 1.7.9.5
 
