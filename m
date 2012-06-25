@@ -1,124 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab2FYMH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 08:07:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23803 "EHLO mx1.redhat.com"
+	id S1756138Ab2FYMFM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 08:05:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50367 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756191Ab2FYMHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 08:07:23 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, akong@redhat.com, habanero@linux.vnet.ibm.com,
-        tahm@linux.vnet.ibm.com, haixiao@juniper.net, jwhan@filewood.snu.ac.kr,
-        ernesto.martin@viasat.com, mashirle@us.ibm.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        krkumar2@in.ibm.com
-Cc: shemminger@vyatta.com, edumazet@google.com,
-        Jason Wang <jasowang@redhat.com>
-Subject: [PATCH 6/6] tuntap: add ioctls to attach or detach a file form tuntap device
-Date: Mon, 25 Jun 2012 19:59:23 +0800
-Message-Id: <1340625563-9300-7-git-send-email-jasowang@redhat.com>
-In-Reply-To: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	id S1751863Ab2FYMFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 08:05:11 -0400
+From: AnilKumar Ch <anilkumar@ti.com>
+To: <sameo@linux.intel.com>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <grant.likely@secretlab.ca>, AnilKumar Ch <anilkumar@ti.com>
+Subject: [PATCH 0/3] Add device tree support for AM33XX regulators
+Date: Mon, 25 Jun 2012 17:34:35 +0530
+Message-ID: <1340625878-32336-1-git-send-email-anilkumar@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces two new ioctls which is used to attach and detach a socket
-from tuntap devices:
+Add device tree support for regulators present on AM33XX family of
+devices like AM335X-EVM and AM335X-Bone. TPS65217 regulator is present
+on AM335X-Bone and TPS65910 on AM335X-EVM.
 
-1) TUNATTACHQUEUE which is used to attach a socket to tuntap device.
-2) TUNDETACHQUEUE which is used to detach a socket from tuntap device. It allows
-                  a socket to be detached from the device temporarily and could
-                  be re-attached again by TUNATTACHQUEUE.
+First patch adds the device tree support to tps65217 regulator so
+that it will take the parameters from am335x-bone.dts file and
+convert to regulator parameters.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c      |   25 ++++++++++++++++++++++---
- include/linux/if_tun.h |    3 +++
- 2 files changed, 25 insertions(+), 3 deletions(-)
+Second patch adds tps65217 device tree data to am335x-bone.dts file
+with i2c salve address. Created seperate file tps65217, which contains
+the generic tps65217 device tree data. 
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 37e62d3..25d5e1f 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1411,11 +1411,12 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- {
- 	struct tun_file *tfile = file->private_data;
- 	struct tun_struct *tun;
-+	struct net_device *dev = NULL;
- 	void __user* argp = (void __user*)arg;
- 	struct ifreq ifr;
- 	int ret;
- 
--	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89)
-+	if (cmd == TUNSETIFF || cmd == TUNATTACHQUEUE || _IOC_TYPE(cmd) == 0x89)
- 		if (copy_from_user(&ifr, argp, ifreq_len))
- 			return -EFAULT;
- 
-@@ -1424,7 +1425,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		 * This is needed because we never checked for invalid flags on
- 		 * TUNSETIFF. */
- 		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
--				IFF_VNET_HDR,
-+				IFF_VNET_HDR | IFF_MULTI_QUEUE,
- 				(unsigned int __user*)argp);
- 	}
- 
-@@ -1440,6 +1441,8 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 			return -EFAULT;
- 		return ret;
- 	}
-+	if (cmd == TUNDETACHQUEUE)
-+		return tun_detach(tfile, false);
- 
- 	rtnl_lock();
- 
-@@ -1447,7 +1450,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 
- 	ret = -EBADFD;
- 	tun = rcu_dereference(tfile->tun);
--	if (!tun)
-+	if (!tun && cmd != TUNATTACHQUEUE)
- 		goto unlock;
- 	else
- 		ret = 0;
-@@ -1463,6 +1466,22 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 			ret = -EFAULT;
- 		goto out;
- 
-+	case TUNATTACHQUEUE:
-+		dev = __dev_get_by_name(tfile->net, ifr.ifr_name);
-+		if (!dev || (dev->netdev_ops != &tap_netdev_ops &&
-+				dev->netdev_ops != &tun_netdev_ops))
-+			ret = -EINVAL;
-+		else if (ifr.ifr_flags &
-+			~(IFF_TAP | IFF_TUN | IFF_NO_PI | IFF_VNET_HDR)) {
-+			/* ignore illegal flag */
-+			ret = -EINVAL;
-+		} else {
-+			tun = netdev_priv(dev);
-+			tfile->flags = tun->flags;
-+			ret = tun_attach(tun, file);
-+		}
-+		break;
-+
- 	case TUNSETNOCSUM:
- 		/* Disable/Enable checksum */
- 
-diff --git a/include/linux/if_tun.h b/include/linux/if_tun.h
-index c92a291..d3f24d8 100644
---- a/include/linux/if_tun.h
-+++ b/include/linux/if_tun.h
-@@ -54,6 +54,9 @@
- #define TUNDETACHFILTER _IOW('T', 214, struct sock_fprog)
- #define TUNGETVNETHDRSZ _IOR('T', 215, int)
- #define TUNSETVNETHDRSZ _IOW('T', 216, int)
-+#define TUNATTACHQUEUE  _IOW('T', 217, int)
-+#define TUNDETACHQUEUE  _IOW('T', 218, int)
-+
- 
- /* TUNSETIFF ifr flags */
- #define IFF_TUN		0x0001
+Third patch adds tps65910 device tree data to am335x-evm.dts file
+with i2c salve address. Created seperate file tps65910, which contains
+the generic tps65910 device tree data.
+
+These patches were tested along with these patches
+* DT addition to AM33XX family
+http://marc.info/?l=linux-omap&m=134035826700991&w=2
+
+AnilKumar Ch (3):
+  regulator: tps65217: Add device tree support
+  ARM: OMAP2+: AM33XX: Add tps65217 device tree data
+  ARM: OMAP2+: AM33XX: Add tps65910 device tree data
+
+ .../devicetree/bindings/regulator/tps65217.txt     |   66 +++++++++++++++++
+ arch/arm/boot/dts/am335x-bone.dts                  |   10 +++
+ arch/arm/boot/dts/am335x-evm.dts                   |   10 +++
+ arch/arm/boot/dts/tps65217.dtsi                    |   67 +++++++++++++++++
+ arch/arm/boot/dts/tps65910.dtsi                    |   76 ++++++++++++++++++++
+ drivers/mfd/tps65217.c                             |   67 ++++++++++++++++-
+ drivers/regulator/tps65217-regulator.c             |    1 +
+ include/linux/mfd/tps65217.h                       |    3 +-
+ 8 files changed, 297 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/tps65217.txt
+ create mode 100644 arch/arm/boot/dts/tps65217.dtsi
+ create mode 100644 arch/arm/boot/dts/tps65910.dtsi
+
 -- 
-1.7.1
+1.7.9.5
 
