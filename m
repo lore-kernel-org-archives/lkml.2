@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab2FYOOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 10:14:18 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58405 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757121Ab2FYOON (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 10:14:13 -0400
-Date: Mon, 25 Jun 2012 10:14:12 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Bjorn Helgaas <bhelgaas@google.com>, <linux-next@vger.kernel.org>,
+	id S1757075Ab2FYOSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 10:18:07 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4437 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756951Ab2FYOSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 10:18:05 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
         <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Huang Ying <ying.huang@intel.com>, Zheng Yan <zheng.z.yan@intel.com>
-Subject: Re: linux-next: manual merge of the pci tree with Linus' tree
-In-Reply-To: <20120625123108.06ef7f883a323df5221edc98@canb.auug.org.au>
-Message-ID: <Pine.LNX.4.44L0.1206251012470.1770-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 00/11] kmem controller for memcg: stripped down version
+Date: Mon, 25 Jun 2012 18:15:17 +0400
+Message-Id: <1340633728-12785-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jun 2012, Stephen Rothwell wrote:
+Hi,
 
-> Hi Bjorn,
-> 
-> Today's linux-next merge of the pci tree got a conflict in
-> drivers/pci/pci.c between commit c2fb8a3fa255 ("USB: add
-> NO_D3_DURING_SLEEP flag and revert 151b61284776be2") from Linus' tree and
-> commit 448bd857d48e ("PCI/PM: add PCIe runtime D3cold support") from the
-> pci tree.
-> 
-> I fixed it up (I think - see below) and can carry the fix as necessary.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc drivers/pci/pci.c
-> index 77cb54a,3f8b74f..0000000
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@@ -1744,11 -1803,10 +1803,15 @@@ int pci_prepare_to_sleep(struct pci_de
->   	if (target_state == PCI_POWER_ERROR)
->   		return -EIO;
->   
-> + 	/* D3cold during system suspend/hibernate is not supported */
-> + 	if (target_state > PCI_D3hot)
-> + 		target_state = PCI_D3hot;
-> + 
->  +	/* Some devices mustn't be in D3 during system sleep */
->  +	if (target_state == PCI_D3hot &&
->  +			(dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP))
->  +		return 0;
->  +
->   	pci_enable_wake(dev, target_state, device_may_wakeup(&dev->dev));
->   
->   	error = pci_set_power_state(dev, target_state);
+What I am proposing with this series is a stripped down version of the
+kmem controller for memcg that would allow us to merge significant parts
+of the infrastructure, while leaving out, for now, the polemic bits about
+the slab while it is being reworked by Cristoph.
 
-This looks right to me too.
+Me reasoning for that is that after the last change to introduce a gfp
+flag to mark kernel allocations, it became clear to me that tracking other
+resources like the stack would then follow extremely naturaly. I figured
+that at some point we'd have to solve the issue pointed by David, and avoid
+testing the Slab flag in the page allocator, since it would soon be made
+more generic. I do that by having the callers to explicit mark it.
 
-Alan Stern
+So to demonstrate how it would work, I am introducing a stack tracker here,
+that is already a functionality per-se: it successfully stops fork bombs to
+happen. (Sorry for doing all your work, Frederic =p ). Note that after all
+memcg infrastructure is deployed, it becomes very easy to track anything.
+The last patch of this series is extremely simple.
+
+The infrastructure is exactly the same we had in memcg, but stripped down
+of the slab parts. And because what we have after those patches is a feature
+per-se, I think it could be considered for merging.
+
+Let me know what you think.
+
+Glauber Costa (9):
+  memcg: change defines to an enum
+  kmem slab accounting basic infrastructure
+  Add a __GFP_KMEMCG flag
+  memcg: kmem controller infrastructure
+  mm: Allocate kernel pages to the right memcg
+  memcg: disable kmem code when not in use.
+  memcg: propagate kmem limiting information to children
+  memcg: allow a memcg with kmem charges to be destructed.
+  protect architectures where THREAD_SIZE >= PAGE_SIZE against fork
+    bombs
+
+Suleiman Souhlal (2):
+  memcg: Make it possible to use the stock for more than one page.
+  memcg: Reclaim when more than one page needed.
+
+ include/linux/gfp.h         |   11 +-
+ include/linux/memcontrol.h  |   46 +++++
+ include/linux/thread_info.h |    6 +
+ kernel/fork.c               |    4 +-
+ mm/memcontrol.c             |  395 ++++++++++++++++++++++++++++++++++++++++---
+ mm/page_alloc.c             |   27 +++
+ 6 files changed, 464 insertions(+), 25 deletions(-)
+
+-- 
+1.7.10.2
 
