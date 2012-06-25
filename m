@@ -1,81 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917Ab2FYXho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:37:44 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52956 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757795Ab2FYXhm (ORCPT
+	id S1757923Ab2FYXkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:40:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53722 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab2FYXkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:37:42 -0400
-Date: Mon, 25 Jun 2012 16:37:37 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 2/3] zsmalloc: add generic path and remove x86 dependency
-Message-ID: <20120625233737.GA3493@kroah.com>
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1340640878-27536-3-git-send-email-sjenning@linux.vnet.ibm.com>
- <20120625165915.GA20464@kroah.com>
- <4FE89BA1.3030709@linux.vnet.ibm.com>
- <20120625171939.GA29371@kroah.com>
- <4FE8ACDD.3070007@linux.vnet.ibm.com>
+	Mon, 25 Jun 2012 19:40:14 -0400
+Message-ID: <4FE8F6DA.8070109@gmail.com>
+Date: Mon, 25 Jun 2012 18:40:10 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FE8ACDD.3070007@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dong Aisheng <b29396@freescale.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        paulus@samba.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 1/1] of: reform prom_update_property function
+References: <1340605714-25206-1-git-send-email-b29396@freescale.com>
+In-Reply-To: <1340605714-25206-1-git-send-email-b29396@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 01:24:29PM -0500, Seth Jennings wrote:
-> On 06/25/2012 12:19 PM, Greg Kroah-Hartman wrote:
-> > On Mon, Jun 25, 2012 at 12:10:57PM -0500, Seth Jennings wrote:
-> >> On 06/25/2012 11:59 AM, Greg Kroah-Hartman wrote:
-> >>> On Mon, Jun 25, 2012 at 11:14:37AM -0500, Seth Jennings wrote:
-> >>>> This patch adds generic pages mapping methods that
-> >>>> work on all archs in the absence of support for
-> >>>> local_tlb_flush_kernel_range() advertised by the
-> >>>> arch through __HAVE_LOCAL_TLB_FLUSH_KERNEL_RANGE
-> >>>
-> >>> Is this #define something that other arches define now?  Or is this
-> >>> something new that you are adding here?
-> >>
-> >> Something new I'm adding.
-> > 
-> > Ah, ok.
-> > 
-> >> The precedent for this approach is the __HAVE_ARCH_* defines
-> >> that let the arch independent stuff know if a generic
-> >> function needs to be defined or if there is an arch specific
-> >> function.
-> >>
-> >> You can "grep -R __HAVE_ARCH_* arch/x86/" to see the ones
-> >> that already exist.
-> >>
-> >> I guess I should have called it
-> >> __HAVE_ARCH_LOCAL_TLB_FLUSH_KERNEL_RANGE though, not
-> >> __HAVE_LOCAL_TLB_FLUSH_KERNEL_RANGE.
-> > 
-> > You need to get the mm developers to agree with this before I can take
-> > it.
-> > 
-> > But, why even depend on this?  Can't you either live without it
+On 06/25/2012 01:28 AM, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> The whole point of the patch is _not_ to depend on it.  It
-> just performs worse without it.  We could just rip out all
-> the the page table assisted page mapping, but, for the
-> arches that have support for it, we'd be degrading
-> performance in exchange for portability.  Why choose when we
-> can have both?
+> prom_update_property() currently fails if the property doesn't
+> actually exist yet which isn't what we want. Change to add-or-update
+> instead of update-only, then we can remove a lot duplicated lines.
+> 
+> Suggested-by: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 
-Ok, I'll let you fight it out with the mm people before applying these 2
-patches, I've applied the first one only for now.
+Acked-by: Rob Herring <rob.herring@calxeda.com>
 
-greg k-h
+Ben, you can merge this via powerpc.
+
+Rob
+
+> ---
+> ChangeLog v1->v2:
+> * keep reconfig.c behavior the same as before after changes
+> ---
+>  arch/powerpc/platforms/85xx/p1022_ds.c    |    8 +-------
+>  arch/powerpc/platforms/pseries/mobility.c |    8 +-------
+>  arch/powerpc/platforms/pseries/reconfig.c |   16 ++++++----------
+>  drivers/of/base.c                         |   15 +++++++++++----
+>  fs/proc/proc_devtree.c                    |    5 +++++
+>  include/linux/of.h                        |    3 +--
+>  6 files changed, 25 insertions(+), 30 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/85xx/p1022_ds.c b/arch/powerpc/platforms/85xx/p1022_ds.c
+> index f700c81..d66631c 100644
+> --- a/arch/powerpc/platforms/85xx/p1022_ds.c
+> +++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+> @@ -348,13 +348,7 @@ void __init p1022_ds_pic_init(void)
+>   */
+>  static void __init disable_one_node(struct device_node *np, struct property *new)
+>  {
+> -	struct property *old;
+> -
+> -	old = of_find_property(np, new->name, NULL);
+> -	if (old)
+> -		prom_update_property(np, new, old);
+> -	else
+> -		prom_add_property(np, new);
+> +	prom_update_property(np, new);
+>  }
+>  
+>  /* TRUE if there is a "video=fslfb" command-line parameter. */
+> diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
+> index 029a562..dd30b12 100644
+> --- a/arch/powerpc/platforms/pseries/mobility.c
+> +++ b/arch/powerpc/platforms/pseries/mobility.c
+> @@ -67,7 +67,6 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+>  			      const char *name, u32 vd, char *value)
+>  {
+>  	struct property *new_prop = *prop;
+> -	struct property *old_prop;
+>  	int more = 0;
+>  
+>  	/* A negative 'vd' value indicates that only part of the new property
+> @@ -117,12 +116,7 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+>  	}
+>  
+>  	if (!more) {
+> -		old_prop = of_find_property(dn, new_prop->name, NULL);
+> -		if (old_prop)
+> -			prom_update_property(dn, new_prop, old_prop);
+> -		else
+> -			prom_add_property(dn, new_prop);
+> -
+> +		prom_update_property(dn, new_prop);
+>  		new_prop = NULL;
+>  	}
+>  
+> diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
+> index 7b3bf76..db1b7b1 100644
+> --- a/arch/powerpc/platforms/pseries/reconfig.c
+> +++ b/arch/powerpc/platforms/pseries/reconfig.c
+> @@ -432,7 +432,7 @@ static int do_update_property(char *buf, size_t bufsize)
+>  	unsigned char *value;
+>  	char *name, *end, *next_prop;
+>  	int rc, length;
+> -	struct property *newprop, *oldprop;
+> +	struct property *newprop;
+>  	buf = parse_node(buf, bufsize, &np);
+>  	end = buf + bufsize;
+>  
+> @@ -443,6 +443,9 @@ static int do_update_property(char *buf, size_t bufsize)
+>  	if (!next_prop)
+>  		return -EINVAL;
+>  
+> +	if (!strlen(name)
+> +		return -ENODEV;
+> +
+>  	newprop = new_property(name, length, value, NULL);
+>  	if (!newprop)
+>  		return -ENOMEM;
+> @@ -450,18 +453,11 @@ static int do_update_property(char *buf, size_t bufsize)
+>  	if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
+>  		slb_set_size(*(int *)value);
+>  
+> -	oldprop = of_find_property(np, name,NULL);
+> -	if (!oldprop) {
+> -		if (strlen(name))
+> -			return prom_add_property(np, newprop);
+> -		return -ENODEV;
+> -	}
+> -
+>  	upd_value.node = np;
+>  	upd_value.property = newprop;
+>  	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
+>  
+> -	rc = prom_update_property(np, newprop, oldprop);
+> +	rc = prom_update_property(np, newprop);
+>  	if (rc)
+>  		return rc;
+>  
+> @@ -486,7 +482,7 @@ static int do_update_property(char *buf, size_t bufsize)
+>  
+>  		rc = pSeries_reconfig_notify(action, value);
+>  		if (rc) {
+> -			prom_update_property(np, oldprop, newprop);
+> +			prom_update_property(np, newprop);
+>  			return rc;
+>  		}
+>  	}
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index d9bfd49..a14f109 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1051,7 +1051,8 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+>  }
+>  
+>  /*
+> - * prom_update_property - Update a property in a node.
+> + * prom_update_property - Update a property in a node, if the property does
+> + * not exist, add it.
+>   *
+>   * Note that we don't actually remove it, since we have given out
+>   * who-knows-how-many pointers to the data using get-property.
+> @@ -1059,13 +1060,19 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+>   * and add the new property to the property list
+>   */
+>  int prom_update_property(struct device_node *np,
+> -			 struct property *newprop,
+> -			 struct property *oldprop)
+> +			 struct property *newprop)
+>  {
+> -	struct property **next;
+> +	struct property **next, *oldprop;
+>  	unsigned long flags;
+>  	int found = 0;
+>  
+> +	if (!newprop->name)
+> +		return -EINVAL;
+> +
+> +	oldprop = of_find_property(np, newprop->name, NULL);
+> +	if (!oldprop)
+> +		return prom_add_property(np, newprop);
+> +
+>  	write_lock_irqsave(&devtree_lock, flags);
+>  	next = &np->properties;
+>  	while (*next) {
+> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+> index 927cbd1..df7dd08 100644
+> --- a/fs/proc/proc_devtree.c
+> +++ b/fs/proc/proc_devtree.c
+> @@ -101,6 +101,11 @@ void proc_device_tree_update_prop(struct proc_dir_entry *pde,
+>  {
+>  	struct proc_dir_entry *ent;
+>  
+> +	if (!oldprop) {
+> +		proc_device_tree_add_prop(pde, newprop);
+> +		return;
+> +	}
+> +
+>  	for (ent = pde->subdir; ent != NULL; ent = ent->next)
+>  		if (ent->data == oldprop)
+>  			break;
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 2ec1083..b27c871 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -260,8 +260,7 @@ extern int of_machine_is_compatible(const char *compat);
+>  extern int prom_add_property(struct device_node* np, struct property* prop);
+>  extern int prom_remove_property(struct device_node *np, struct property *prop);
+>  extern int prom_update_property(struct device_node *np,
+> -				struct property *newprop,
+> -				struct property *oldprop);
+> +				struct property *newprop);
+>  
+>  #if defined(CONFIG_OF_DYNAMIC)
+>  /* For updating the device tree at runtime */
+
