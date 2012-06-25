@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab2FYS4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 14:56:20 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:56489 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab2FYS4S convert rfc822-to-8bit (ORCPT
+	id S1756172Ab2FYS7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 14:59:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33453 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754409Ab2FYS7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 14:56:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAD=FV=UpBG8gmPjWDF0M9EMSvs4pg7icocMXJ1r3Lmi8frZsrg@mail.gmail.com>
-References: <1340409205-23606-1-git-send-email-bfreed@chromium.org>
-	<CAOesGMgq5HRz+pDFQtED5GPN0RUrON=_k_y4YHHzKrMkHnVk4A@mail.gmail.com>
-	<CAD=FV=UpBG8gmPjWDF0M9EMSvs4pg7icocMXJ1r3Lmi8frZsrg@mail.gmail.com>
-Date: Tue, 26 Jun 2012 02:56:17 +0800
-Message-ID: <CACRpkdbuiHmZP7HKuoaw1O0xyZJEDv6ja1Q=YqOtBViRYBufZQ@mail.gmail.com>
-Subject: Re: [PATCH] spi: Unlock a spinlock before calling into the controller driver.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Olof Johansson <olof@lixom.net>, Bryan Freed <bfreed@chromium.org>,
-        spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
+	Mon, 25 Jun 2012 14:59:31 -0400
+Date: Mon, 25 Jun 2012 11:59:23 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: mathieu.poirier@linaro.org
+Cc: linux-input@vger.kernel.org, john.stultz@linaro.org,
         linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        kernel-team@android.com
+Subject: Re: [PATCH] input: Add keyreset driver.
+Message-ID: <20120625185922.GA20660@core.coreip.homeip.net>
+References: <1340140414-9720-1-git-send-email-mathieu.poirier@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1340140414-9720-1-git-send-email-mathieu.poirier@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 1:07 AM, Doug Anderson <dianders@chromium.org> wrote:
+Hi Arve,
 
-> Specifically there should be only one instance of spi_pump_messages()
-> running at a time per master.  That's because it's a kthread work
-> function.  ...so we can't possibly get a prepare in the middle of the
-> unprepare when prepare is called because the only caller to
-> prepare/unprepare is spi_pump_messages().
+On Tue, Jun 19, 2012 at 03:13:34PM -0600, mathieu.poirier@linaro.org wrote:
+> From: Arve Hjønnevåg <arve@android.com>
+> 
+> This patch originates from the Android tree and is being submitted
+> for review and inclusion in the mainline kernel.
+> 
+> Add a platform device in the board file to specify a reset key-combo.
+> The first time the key-combo is detected a work function that syncs
+> the filesystems is scheduled. If all the keys are released and then
+> pressed again, it calls panic. Reboot on panic should be set for
+> this to work.
 
-Yes that's how the message pump is designed.
+This sounds a lot like SYSRQ handler, but with configurable key sequence.
+Why don't you extend drivers/tty/sysrq.c instead?
 
-> I can't comment on whether it's better to do something like add a
-> workqueue (which might be more obvious / less fragile) or just to add
-> a comment.  I will let others comment on that.  :)
+Thanks.
 
-The message pump initially used a workqueue, but was converted
-to a kthread because we needed to push the queue to run as
-realtime for some important low-latency workloads across
-SPI. The code is basically a tweaked workqueue if you dive down
-in the implementation.
-
-Yours,
-Linus Walleij
+-- 
+Dmitry
