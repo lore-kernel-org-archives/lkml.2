@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab2FYHon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 03:44:43 -0400
-Received: from linux-sh.org ([111.68.239.195]:54624 "EHLO linux-sh.org"
+	id S1754229Ab2FYHwe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 03:52:34 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52967 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752693Ab2FYHom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 03:44:42 -0400
-Date: Mon, 25 Jun 2012 16:44:37 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: should there still be arch-specific 4KSTACKS support?
-Message-ID: <20120625074436.GC24033@linux-sh.org>
-References: <alpine.DEB.2.02.1206231142150.14887@oneiric>
+	id S1751410Ab2FYHwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 03:52:32 -0400
+Date: Mon, 25 Jun 2012 09:52:15 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH 1/5 v2] memcg: replace unsigned long by u64 to avoid
+ overflow
+Message-ID: <20120625075215.GW27816@cmpxchg.org>
+References: <1340604266-7937-1-git-send-email-liwp.linux@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1206231142150.14887@oneiric>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1340604266-7937-1-git-send-email-liwp.linux@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 23, 2012 at 11:47:33AM -0400, Robert P. J. Day wrote:
+On Mon, Jun 25, 2012 at 02:04:20PM +0800, Wanpeng Li wrote:
+> Changlog:
 > 
->   via some convoluted logic, i ended up doing the following search:
+> V2 -> V1:
+> * fix zone_page_state()::/include/linux/vmstat.h returns 'unsigned long'
 > 
-> $ grep -r 4KSTACKS *
-> arch/sh/configs/r7785rp_defconfig:CONFIG_4KSTACKS=y
-> arch/sh/Kconfig.debug:config 4KSTACKS
-> arch/sh/include/asm/thread_info.h:#if defined(CONFIG_4KSTACKS)
-> arch/mn10300/include/asm/thread_info.h:#ifdef CONFIG_4KSTACKS
-> arch/m68k/Kconfig.machine:config 4KSTACKS
-> arch/m68k/configs/m5208evb_defconfig:# CONFIG_4KSTACKS is not set
-> arch/m68k/configs/m5275evb_defconfig:# CONFIG_4KSTACKS is not set
-> arch/m68k/configs/m5475evb_defconfig:# CONFIG_4KSTACKS is not set
-> arch/m68k/include/asm/thread_info.h:#ifdef CONFIG_4KSTACKS
-> arch/c6x/include/asm/thread_info.h:#ifdef CONFIG_4KSTACKS
-> drivers/lguest/interrupts_and_traps.c:	 * Depending on the CONFIG_4KSTACKS option, the Guest can have one or
-> kernel/lockdep.c:	 * hardirq contexts (such as on 4KSTACKS), so only
-> $
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 > 
->   so even though 4KSTACKS support was officially removed in June of
-> 2010:
+> Since the return value variable in mem_cgroup_zone_nr_lru_pages and
+> mem_cgroup_node_nr_lru_pages functions are u64, so replace the return
+> value of funtions by u64 to avoid overflow.
 > 
-> $ git show dcfa7262
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> ---
+>  include/linux/vmstat.h |    2 +-
+>  mm/memcontrol.c        |    5 ++---
+>  2 files changed, 3 insertions(+), 4 deletions(-)
 > 
-> there's still traces of it, some of it obviously harmless, leftover
-> cruft, but it would appear that both sh and m68k still provide a
-> 4KSTACKS config option.
-> 
->   how much of that can be tossed as useless?
-> 
-None. What x86 did with its implementation has no bearing on anyone else.
+> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+> index 65efb92..6a14291 100644
+> --- a/include/linux/vmstat.h
+> +++ b/include/linux/vmstat.h
+> @@ -106,7 +106,7 @@ static inline unsigned long global_page_state(enum zone_stat_item item)
+>  	return x;
+>  }
+>  
+> -static inline unsigned long zone_page_state(struct zone *zone,
+> +static inline u64 zone_page_state(struct zone *zone,
+>  					enum zone_stat_item item)
+>  {
+>  	long x = atomic_long_read(&zone->vm_stat[item]);
 
-You can read the following for more information:
+We established that there is no known reason to use ulong for page
+counters and that IF YOU HAD ONE, you should obviously say so and then
+do a wholesale conversion.  But I don't think you have one.
 
-	http://lists.linuxfoundation.org/pipermail/ltsi-dev/2012-May/000099.html
+This patch makes absolutely no sense.
