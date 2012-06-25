@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab2FYFBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 01:01:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37202 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab2FYFBo (ORCPT
+	id S1754056Ab2FYFGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 01:06:06 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:41697 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752813Ab2FYFGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 01:01:44 -0400
-Date: Mon, 25 Jun 2012 15:01:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>, Jean Delvare <khali@linux-fr.org>
-Subject: linux-next: manual merge of the tip tree with the jdelvare-hwmon
- tree
-Message-Id: <20120625150130.5fd1716cabf02aed85918c20@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__25_Jun_2012_15_01_30_+1000_5dLG1ccvbPTofU5e"
+	Mon, 25 Jun 2012 01:06:03 -0400
+Message-ID: <4FE7F19E.9020706@xenotime.net>
+Date: Sun, 24 Jun 2012 22:05:34 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Paul Mundt <lethal@linux-sh.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: error: implicit declarations of BUG/BUG_ON/WARN_ON/WARN_ON_ONCE
+References: <20120615143303.3b88edcbc3efc7b1bf81839b@canb.auug.org.au> <20120615065231.GA12272@localhost> <4FDB6261.2030400@xenotime.net> <4FDF5D50.7030505@xenotime.net> <20120622071305.GA15102@localhost> <20120625025301.GB9317@linux-sh.org> <20120625042017.GA11705@localhost> <4FE7E7CA.2030706@xenotime.net> <20120625043836.GA11937@localhost> <4FE7EB96.4050908@xenotime.net> <20120625045513.GC11989@localhost>
+In-Reply-To: <20120625045513.GC11989@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Jun_2012_15_01_30_+1000_5dLG1ccvbPTofU5e
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/24/2012 09:55 PM, Fengguang Wu wrote:
 
-Hi all,
+> On Sun, Jun 24, 2012 at 09:39:50PM -0700, Randy Dunlap wrote:
+>> On 06/24/2012 09:38 PM, Fengguang Wu wrote:
+>>
+>>> On Sun, Jun 24, 2012 at 09:23:38PM -0700, Randy Dunlap wrote:
+>>>> On 06/24/2012 09:20 PM, Fengguang Wu wrote:
+>>>>
+>>>>> Hi Paul,
+>>>>>
+>>>>> The patch builds fine, thank you!
+>>>>>
+>>>>> Tested-by: Fengguang Wu <wfg@linux.intel.com>
+>>>>
+>>>> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+>>>>
+>>>> You clearly have better build hardware than I do (a simple Core i5
+>>>> laptop).  ;)
+>>>
+>>> Thanks, and it's a surprise that you caught so many bugs with a laptop! ;)
+>>
+>> Well, that "automation" stuff helps.  It runs overnight while I sleep,
+>> then I report results during the day.
+> 
+> Kudos! I never thought of utilizing my laptop this way at night.
+> Hmm, not a bad idea, especially during the code winter ;-)
+> 
+> Do you do auto bisections when catch any build errors?
 
-Today's linux-next merge of the tip tree got a conflict in
-drivers/hwmon/coretemp.c between commit 3c1aae21b09d ("hwmon: struct
-x86_cpu_id arrays can be __initconst") from the jdelvare-hwmon tree and
-commit 3bac8715443f ("x86, cpufeature: Rename X86_FEATURE_DTS to
-X86_FEATURE_DTHERM") from the tip tree.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
+Nope, I don't even use git trees for linux-next, just the daily
+tarball.
 
-P.S. that tip tree commit has no Signed-off-by line at all :-(
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/hwmon/coretemp.c
-index b405781,637c51c..0000000
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@@ -793,8 -793,8 +793,8 @@@ static struct notifier_block coretemp_c
-  	.notifier_call =3D coretemp_cpu_callback,
-  };
- =20
- -static const struct x86_cpu_id coretemp_ids[] =3D {
- +static const struct x86_cpu_id __initconst coretemp_ids[] =3D {
-- 	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTS },
-+ 	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTHERM },
-  	{}
-  };
-  MODULE_DEVICE_TABLE(x86cpu, coretemp_ids);
-
---Signature=_Mon__25_Jun_2012_15_01_30_+1000_5dLG1ccvbPTofU5e
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP5/CqAAoJEECxmPOUX5FEBdQP/2giYJ+4DORYRWNbl5YfLUGj
-paUVtWHMLyHPlaKv+z+VS+SzRvHYsfC+SIgRGlAPGxD+WkobIP7z0BeUAQhbOTXx
-mct7AkPZfERdVa4HGaPFpZsbwYcxayuM/u6ytSYu0JV2wE4Gukq6b3xdskNwtCJc
-8+1rzG1+vDtRmQKw8C+wPpVM/p3GBWG8JbDIWYqT368WjnHcBpv0KkPZxSrlu3jD
-XLKvBLrqUV7ZI4xrYTHh5xNBmpDX02ORXOT1CDY7VXJtkxIpbkDRUk1TTwADvUSD
-ysql3cleVWu72980bGq6G/eZVOZSww3GZmuqXMLtuNzrCG5j4+dbrCn4FP1DVKbE
-2RBsiPoJ0gqr2J3NEbwIVW4AcCLzAcQER9c/oXPnUCYXcT/5QnRy8qxI59JS+tZ7
-INDXL3akcrnL2BCQpTo7Ga9nwSc4ZxqwsyMV57UTOTxH8Bq2FwwO8x10hqKN6Smu
-81k029Fta6hh/OeydIbOfDTXspk7jcsbVPDbzgJrJj6CdsVJDoRI4kDSNMW4J0dT
-hqhsepRG1CRTox0nE2qbxgkFkpOEYj53MAIh6h3jUDaPCaItIbg9lEKLIdioTVKU
-b64m3rI8lSD4csj6oP1ohNwlOh5D51GC4wAz0k1/6eWIDjj6FwfpS701W4gNPGca
-bieBW6X2aK7zQSplONno
-=SnMZ
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Jun_2012_15_01_30_+1000_5dLG1ccvbPTofU5e--
+-- 
+~Randy
