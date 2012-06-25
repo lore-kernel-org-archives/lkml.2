@@ -1,141 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab2FYMFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 08:05:23 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50375 "EHLO comal.ext.ti.com"
+	id S1756366Ab2FYMGE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 08:06:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49649 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756227Ab2FYMFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 08:05:18 -0400
-From: AnilKumar Ch <anilkumar@ti.com>
-To: <sameo@linux.intel.com>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <grant.likely@secretlab.ca>, AnilKumar Ch <anilkumar@ti.com>
-Subject: [PATCH 2/3] ARM: OMAP2+: AM33XX: Add tps65217 device tree data
-Date: Mon, 25 Jun 2012 17:34:37 +0530
-Message-ID: <1340625878-32336-3-git-send-email-anilkumar@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1340625878-32336-1-git-send-email-anilkumar@ti.com>
-References: <1340625878-32336-1-git-send-email-anilkumar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756284Ab2FYMGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 08:06:02 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, akong@redhat.com, habanero@linux.vnet.ibm.com,
+        tahm@linux.vnet.ibm.com, haixiao@juniper.net, jwhan@filewood.snu.ac.kr,
+        ernesto.martin@viasat.com, mashirle@us.ibm.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        krkumar2@in.ibm.com
+Cc: shemminger@vyatta.com, edumazet@google.com,
+        Jason Wang <jasowang@redhat.com>
+Subject: [net-next RFC V3 0/6] Multiqueue support in tun/tap
+Date: Mon, 25 Jun 2012 19:59:17 +0800
+Message-Id: <1340625563-9300-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com>
+References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree data for tps65217 regulator by adding all the consumers
-necessary for AM335X-BeagleBone. The data will be map to a regulator
-constraints which is required for regulator set_voltage and get_voltage
-calls.
+Hello All:
 
-All tps65217 PMIC regulator constraints are placed in a seperate device
-tree include file (tps65217.dtsi).
+This is an update of multiqueue support in tun/tap from V2. Please consider to
+merge.
 
-This patch also adds the I2C slave address of TPS65217 pmic to
-am335x-bone.dts file.
+The main idea for this series is to let tun/tap device to benefit from
+multiqueue network cards and multi-cores host by letting it to be able to
+transmit and receive packets from mmultiple sockets/queues. This series allows
+multiple sockets to be attached and detached to the tun/tap devices. Userspace
+could utilize this parallism to achiveve higher throughput.
 
-Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
----
-These patches were tested along with these patches
-* DT addition to AM33XX family
-http://marc.info/?l=linux-omap&m=134035826700991&w=2
+Some quick overview of the design:
 
- arch/arm/boot/dts/am335x-bone.dts |   10 ++++++
- arch/arm/boot/dts/tps65217.dtsi   |   67 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 77 insertions(+)
- create mode 100644 arch/arm/boot/dts/tps65217.dtsi
+- Moving socket from tun_device to tun_file.
+- Allowing multiple sockets to be attached to a tun/tap devices.
+- Using RCU to synchronize the data path and system call.
+- A simple hash based queue selecting algorithm is used to choose the tx queue.
+- Two new ioctls were added for the usespace to attach and detach socket to the device.
+- ABI compatibility were maintained, userspace that only use one queue won't
+ need any changes.
 
-diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-index a9af4db..a4d4415 100644
---- a/arch/arm/boot/dts/am335x-bone.dts
-+++ b/arch/arm/boot/dts/am335x-bone.dts
-@@ -18,3 +18,13 @@
- 		reg = <0x80000000 0x10000000>; /* 256 MB */
- 	};
- };
-+
-+&i2c1 {
-+	clock-frequency = <400000>;
-+
-+	tps: tps@24 {
-+		reg = <0x24>;
-+	};
-+};
-+
-+/include/ "tps65217.dtsi"
-diff --git a/arch/arm/boot/dts/tps65217.dtsi b/arch/arm/boot/dts/tps65217.dtsi
-new file mode 100644
-index 0000000..5b9850b
---- /dev/null
-+++ b/arch/arm/boot/dts/tps65217.dtsi
-@@ -0,0 +1,67 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/*
-+ * Integrated Power Management Chip
-+ * http://www.ti.com/lit/ds/symlink/tps65217.pdf
-+ */
-+
-+&tps {
-+	compatible = "ti,tps65217";
-+
-+	regulators {
-+		dcdc1_reg: dcdc1 {
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <1800000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		dcdc2_reg: dcdc2 {
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		dcdc3_reg: dcdc3 {
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <1500000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo1_reg: ldo1 {
-+			regulator-min-microvolt = <1000000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo2_reg: ldo2 {
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo3_reg: ldo3 {
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo4_reg: ldo4 {
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+	};
-+};
--- 
-1.7.9.5
+Performance test:
+
+This series were originally designed to serve as the backend of the multiqueue
+virito-net in kvm guest. But the design is generic enough to let it to be reused
+by any other type of userspace.
+
+Since I would post a series of multiqueue virtio-net as RFC, so I would post the
+performance result in that thread. To summarize the performance, the multiqueue
+improves the transaction in the TCP_RR test but have some regression in small
+packets transmission in TCP_STREAM test.
+
+Martin test the multiqueue tap for their userspace, and he see an improvement in
+terms of packets per second.
+
+References:
+- V2 of multiqueue tun/tap, http://lwn.net/Articles/459270/
+- V1 of multiqueue tun/tap, http://www.mail-archive.com/kvm@vger.kernel.org/msg59479.html
+
+Changes from V2:
+
+- Rebase to the latest net-next
+- Fix netdev leak when tun_attach fails
+- Fix return value of TUNSETOWNER
+- Purge the receive queue in socket destructor
+- Enable multiqueue tun (V1 and V2 only allows mq to be eanbled for tap
+- Add per-queue u64 statistics
+- Fix wrong BUG_ON() check in tun_detach()
+- Check numqueues instead of tfile[0] in tun_set_iff() to let tunctl -d works
+  correctly
+- Set numqueues to MAX_TAP_QUEUES during tun_detach_all() to prevent the
+  attaching.
+
+Changes from V1:
+
+- Simplify the sockets array management by not leaving NULL in the slot.
+- Optimization on the tx queue selecting.
+- Fix the bug in tun_deatch_all()
+
+Jason Wang (6):
+  tuntap: move socket to tun_file
+  tuntap: categorize ioctl
+  tuntap: introduce multiqueue flags
+  tuntap: multiqueue support
+  tuntap: per queue 64 bit stats
+  tuntap: add ioctls to attach or detach a file form tuntap device
+
+ drivers/net/tun.c      |  797 ++++++++++++++++++++++++++++++------------------
+ include/linux/if_tun.h |    5 +
+ 2 files changed, 503 insertions(+), 299 deletions(-)
 
