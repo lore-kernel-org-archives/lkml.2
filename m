@@ -1,197 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799Ab2FYWfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:35:16 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:65351 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757698Ab2FYWfN (ORCPT
+	id S1757817Ab2FYWiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:38:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53696 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757658Ab2FYWiC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:35:13 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: FlorianSchandinat@gmx.de
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] grvga: Fix error handling issues
-Date: Tue, 26 Jun 2012 00:37:32 +0200
-Message-Id: <1340663852-11719-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Mon, 25 Jun 2012 18:38:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo4oE8nHmu1KBXSX=YjQGfD89v2fqL=96THz98uZ4Va_rQ@mail.gmail.com>
+References: <1340650789-3326-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo4oE8nHmu1KBXSX=YjQGfD89v2fqL=96THz98uZ4Va_rQ@mail.gmail.com>
+Date: Mon, 25 Jun 2012 15:38:02 -0700
+X-Google-Sender-Auth: xJhlHcfPnwiiG7G_unTx7LZHCGo
+Message-ID: <CAE9FiQXhGLwSH4gq7L9DrhVAXcDu_NbjLA5QkCDOEqaFO09m7w@mail.gmail.com>
+Subject: Re: [PATCH] PCI, X86: busnum/node boot command line for pci dev node setting.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, lenb@kernel.org, x86@kernel.org,
+        Ulrich Drepper <drepper@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes two problems with the error handling in the
-grvga_probe function and simplifies it making the code
-easier to read.
+On Mon, Jun 25, 2012 at 1:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Jun 25, 2012 at 12:59 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> Some intel new sandybridge or newer two sockets system do support support numa
+>> for pci devices. But BIOS does not provide _PXM under those root bus in DSDT.
+>>
+>> Add boot command line, so user could have chance to input node info before
+>> BIOS guys figure out to add _PXM.
+>>
+>> Fold fix from Ulrich to use ";" instead of ",".
+>> | The problem is the pci= parameter
+>> | handling uses ',' to separate parameters and therefore the second PCI
+>> | root information, separated by a comma, is interpreted as a new pci=
+>> | parameter.
+>>
+>> -v3: According to Bjorn and Ingo, change to use "user input first" policy
+>>     so it could cover wrong _PXM case.
+>> -v4: Folded change from Ulrich to record pointer of busnum_node string.
+>>
+>> Reported-by: Ulrich Drepper <drepper@gmail.com>
+>> Tested-by: Ulrich Drepper <drepper@gmail.com>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>> ---
+>>  Documentation/kernel-parameters.txt |    5 +++++
+>>  arch/x86/include/asm/pci_x86.h      |    3 +++
+>>  arch/x86/pci/acpi.c                 |   22 +++++++++++++---------
+>>  arch/x86/pci/common.c               |   36 ++++++++++++++++++++++++++++++++++++
+>>  4 files changed, 57 insertions(+), 9 deletions(-)
+>>
+>> Index: linux-2.6/Documentation/kernel-parameters.txt
+>> ===================================================================
+>> --- linux-2.6.orig/Documentation/kernel-parameters.txt
+>> +++ linux-2.6/Documentation/kernel-parameters.txt
+>> @@ -2068,6 +2068,11 @@ bytes respectively. Such letter suffixes
+>>                                hardware access methods are allowed. Use this
+>>                                if you experience crashes upon bootup and you
+>>                                suspect they are caused by the BIOS.
+>> +               busnum_node=    [X86] Set node for root bus.
+>> +                               Format:
+>> +                               <bus>:<node>[;...]
+>> +                               Specifies node for bus, will override bios _PXM
+>> +                               or probed value from hostbridge.
+>
+> I liked the previous argument format that included "pci".  Now we're
+> assuming the only bus type important enough to care about NUMA
+> information is PCI.
 
-- If the call to grvga_parse_custom on line 370 fails we use
-  the wrong label so that release_mem_region will be called
-  without a call to request_mem_region being made.
+which one?
 
-- If the call to ioremap on line 436 fails we should not try
-  to call iounmap in the error handling code.
+>
+> This should also work on ia64, which also uses ACPI.  For that matter,
+> it'd be nice if it worked on *any* NUMA architecture, though I don't
+> see any  PCI NUMA support at all for anything but x86 and ia64.
 
-This patch introduces the following changes:
+ia64 platform should be well tested with Linux?
 
-- Converts request_mem_region into its devm_ equivalent
-  which simplifies the otherwise messy clean up code.
+>
+>>                conf1           [X86] Force use of PCI Configuration
+>>                                Mechanism 1.
+>>                conf2           [X86] Force use of PCI Configuration
+>> Index: linux-2.6/arch/x86/pci/common.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/pci/common.c
+>> +++ linux-2.6/arch/x86/pci/common.c
+>> @@ -494,6 +494,39 @@ int __init pcibios_init(void)
+>>        return 0;
+>>  }
+>>
+>> +static const char *busnum_node_param;
+>> +
+>> +static void remember_busnum_node(const char *str)
+>> +{
+>> +       busnum_node_param = str;
+>
+> Can you convince me this is safe?  pci_setup() is an early_param, so
+> it looks to me like we might be saving a pointer to initdata in this
+> call path:
+>
+>    setup_arch
+>      parse_early_param
+>        strlcpy(tmp_cmdline, boot_command_line)
+>        parse_early_options(__initdata tmp_cmdline)
+>          parse_args
+>            do_early_param
+>              ...
+>              pci_setup (early_param)
+>                pcibios_setup
+>                  remember_busnum_node
+>
+> And then we use that saved pointer to parse the string at host bridge
+> add-time, which might be after initdata has been freed.
 
-- Changes the labels for correct error handling and their
-  names to make the code easier to read.
+ok, that will need one separate buffer.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
-v2: Simplifies the error handling by converting to
-    devm_request_mem_region
+>
+>> +}
+>> +
+>> +int get_user_busnum_node(int busnum)
+>> +{
+>> +       int bus, node, count;
+>> +       const char *p = busnum_node_param;
+>> +
+>> +       if (!p)
+>> +               return -1;
+>> +
+>> +       while (*p) {
+>> +               count = 0;
+>> +               if (sscanf(p, "%x:%x%n", &bus, &node, &count) != 2) {
+>> +                       printk(KERN_ERR "PCI: Can't parse busnum_node input: %s\n",
+>> +                                       p);
+>> +                       break;
+>> +               }
+>> +               if (bus == busnum)
+>> +                       return node;
+>> +               p += count;
+>> +               if (*p != ';')
+>> +                       break;
+>> +               p++;
+>> +       }
+>> +
+>> +       return -1;
+>> +}
+>> +
+>>  char * __devinit  pcibios_setup(char *str)
+>>  {
+>>        if (!strcmp(str, "off")) {
+>> @@ -579,6 +612,9 @@ char * __devinit  pcibios_setup(char *st
+>>        } else if (!strcmp(str, "nocrs")) {
+>>                pci_probe |= PCI_ROOT_NO_CRS;
+>>                return NULL;
+>> +       } else if (!strncmp(str, "busnum_node=", 12)) {
+>> +               remember_busnum_node(str + 12);
+>> +               return NULL;
+>>        } else if (!strcmp(str, "earlydump")) {
+>>                pci_early_dump_regs = 1;
+>>                return NULL;
+>> Index: linux-2.6/arch/x86/include/asm/pci_x86.h
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/include/asm/pci_x86.h
+>> +++ linux-2.6/arch/x86/include/asm/pci_x86.h
+>> @@ -46,6 +46,9 @@ enum pci_bf_sort_state {
+>>        pci_dmi_bf,
+>>  };
+>>
+>> +/* pci-common.c */
+>> +int get_user_busnum_node(int busnum);
+>> +
+>>  /* pci-i386.c */
+>>
+>>  void pcibios_resource_survey(void);
+>> Index: linux-2.6/arch/x86/pci/acpi.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/pci/acpi.c
+>> +++ linux-2.6/arch/x86/pci/acpi.c
+>> @@ -453,7 +453,7 @@ struct pci_bus * __devinit pci_acpi_scan
+>>        struct pci_sysdata *sd;
+>>        int node;
+>>  #ifdef CONFIG_ACPI_NUMA
+>> -       int pxm;
+>> +       int pxm = -1;
+>>  #endif
+>>
+>>        if (domain && !pci_domains_supported) {
+>> @@ -463,16 +463,20 @@ struct pci_bus * __devinit pci_acpi_scan
+>>                return NULL;
+>>        }
+>>
+>> -       node = -1;
+>> +       node = get_user_busnum_node(busnum);
+>> +       if (node == -1) {
+>>  #ifdef CONFIG_ACPI_NUMA
+>> -       pxm = acpi_get_pxm(device->handle);
+>> -       if (pxm >= 0)
+>> -               node = pxm_to_node(pxm);
+>> -       if (node != -1)
+>> -               set_mp_bus_to_node(busnum, node);
+>> -       else
+>> -#endif
+>> +               pxm = acpi_get_pxm(device->handle);
+>> +               if (pxm >= 0)
+>> +                       node = pxm_to_node(pxm);
+>
+> The code above (everything except the calls to set_mp_bus_to_node()
+> and get_mp_bus_to_node(), which are x86-specific) should be the same
+> between x86 and ia64.  Can you rationalize them?  It'd be better if
+> they used the same #ifdefs and the same code structure.
 
- drivers/video/grvga.c |   47 ++++++++++++++++++++++-------------------------
- 1 file changed, 22 insertions(+), 25 deletions(-)
+this patch does not change set_mp_bus_to_node/get_mp_bus_to_node...
+only let user_busnum_node override them.
 
-diff --git a/drivers/video/grvga.c b/drivers/video/grvga.c
-index da066c2..5245f9a 100644
---- a/drivers/video/grvga.c
-+++ b/drivers/video/grvga.c
-@@ -354,7 +354,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 	 */
- 	if (fb_get_options("grvga", &options)) {
- 		retval = -ENODEV;
--		goto err;
-+		goto free_fb;
- 	}
- 
- 	if (!options || !*options)
-@@ -370,7 +370,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 			if (grvga_parse_custom(this_opt, &info->var) < 0) {
- 				dev_err(&dev->dev, "Failed to parse custom mode (%s).\n", this_opt);
- 				retval = -EINVAL;
--				goto err1;
-+				goto free_fb;
- 			}
- 		} else if (!strncmp(this_opt, "addr", 4))
- 			grvga_fix_addr = simple_strtoul(this_opt + 5, NULL, 16);
-@@ -387,10 +387,11 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 	info->flags = FBINFO_DEFAULT | FBINFO_PARTIAL_PAN_OK | FBINFO_HWACCEL_YPAN;
- 	info->fix.smem_len = grvga_mem_size;
- 
--	if (!request_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]), "grlib-svgactrl regs")) {
-+	if (!devm_request_mem_region(&dev->dev, dev->resource[0].start,
-+		    resource_size(&dev->resource[0]), "grlib-svgactrl regs")) {
- 		dev_err(&dev->dev, "registers already mapped\n");
- 		retval = -EBUSY;
--		goto err;
-+		goto free_fb;
- 	}
- 
- 	par->regs = of_ioremap(&dev->resource[0], 0,
-@@ -400,14 +401,14 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 	if (!par->regs) {
- 		dev_err(&dev->dev, "failed to map registers\n");
- 		retval = -ENOMEM;
--		goto err1;
-+		goto free_fb;
- 	}
- 
- 	retval = fb_alloc_cmap(&info->cmap, 256, 0);
- 	if (retval < 0) {
- 		dev_err(&dev->dev, "failed to allocate mem with fb_alloc_cmap\n");
- 		retval = -ENOMEM;
--		goto err2;
-+		goto unmap_regs;
- 	}
- 
- 	if (mode_opt) {
-@@ -415,7 +416,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 				      grvga_modedb, sizeof(grvga_modedb), &grvga_modedb[0], 8);
- 		if (!retval || retval == 4) {
- 			retval = -EINVAL;
--			goto err3;
-+			goto dealloc_cmap;
- 		}
- 	}
- 
-@@ -427,10 +428,11 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 
- 		physical_start = grvga_fix_addr;
- 
--		if (!request_mem_region(physical_start, grvga_mem_size, dev->name)) {
-+		if (!devm_request_mem_region(&dev->dev, physical_start,
-+					     grvga_mem_size, dev->name)) {
- 			dev_err(&dev->dev, "failed to request memory region\n");
- 			retval = -ENOMEM;
--			goto err3;
-+			goto dealloc_cmap;
- 		}
- 
- 		virtual_start = (unsigned long) ioremap(physical_start, grvga_mem_size);
-@@ -438,7 +440,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 		if (!virtual_start) {
- 			dev_err(&dev->dev, "error mapping framebuffer memory\n");
- 			retval = -ENOMEM;
--			goto err4;
-+			goto dealloc_cmap;
- 		}
- 	} else {	/* Allocate frambuffer memory */
- 
-@@ -451,7 +453,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 				"unable to allocate framebuffer memory (%lu bytes)\n",
- 				grvga_mem_size);
- 			retval = -ENOMEM;
--			goto err3;
-+			goto dealloc_cmap;
- 		}
- 
- 		physical_start = dma_map_single(&dev->dev, (void *)virtual_start, grvga_mem_size, DMA_TO_DEVICE);
-@@ -484,7 +486,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 	retval = register_framebuffer(info);
- 	if (retval < 0) {
- 		dev_err(&dev->dev, "failed to register framebuffer\n");
--		goto err4;
-+		goto free_mem;
- 	}
- 
- 	__raw_writel(physical_start, &par->regs->fb_pos);
-@@ -493,21 +495,18 @@ static int __devinit grvga_probe(struct platform_device *dev)
- 
- 	return 0;
- 
--err4:
-+free_mem:
- 	dev_set_drvdata(&dev->dev, NULL);
--	if (grvga_fix_addr) {
--		release_mem_region(physical_start, grvga_mem_size);
-+	if (grvga_fix_addr)
- 		iounmap((void *)virtual_start);
--	} else
-+	else
- 		kfree((void *)virtual_start);
--err3:
-+dealloc_cmap:
- 	fb_dealloc_cmap(&info->cmap);
--err2:
-+unmap_regs:
- 	of_iounmap(&dev->resource[0], par->regs,
- 		   resource_size(&dev->resource[0]));
--err1:
--	release_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]));
--err:
-+free_fb:
- 	framebuffer_release(info);
- 
- 	return retval;
-@@ -524,12 +523,10 @@ static int __devexit grvga_remove(struct platform_device *device)
- 
- 		of_iounmap(&device->resource[0], par->regs,
- 			   resource_size(&device->resource[0]));
--		release_mem_region(device->resource[0].start, resource_size(&device->resource[0]));
- 
--		if (!par->fb_alloced) {
--			release_mem_region(info->fix.smem_start, info->fix.smem_len);
-+		if (!par->fb_alloced)
- 			iounmap(info->screen_base);
--		} else
-+		else
- 			kfree((void *)info->screen_base);
- 
- 		framebuffer_release(info);
--- 
-1.7.10
-
+Yinghai
