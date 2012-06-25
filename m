@@ -1,89 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab2FYNLE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:11:04 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43402 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756584Ab2FYNLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 09:11:00 -0400
-Message-ID: <4FE86361.3050603@linaro.org>
-Date: Mon, 25 Jun 2012 15:10:57 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-CC: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Lee <rob.lee@linaro.org>
-Subject: Re: [linux-pm] cpuidle future and improvements
-References: <4FDEE98D.7010802@linaro.org> <4FDF2D58.9010006@ti.com> <CAMQu2gz8aGC1DeOvWNNPaaMD9eJLuiJ5HGoKe98EDtV73_QRTQ@mail.gmail.com>
-In-Reply-To: <CAMQu2gz8aGC1DeOvWNNPaaMD9eJLuiJ5HGoKe98EDtV73_QRTQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756774Ab2FYNM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:12:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17306 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753040Ab2FYNMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 09:12:25 -0400
+From: Peter Jones <pjones@redhat.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Jones <pjones@redhat.com>
+Subject: [PATCH] Support UEFI variable append and deleting authenticated variables.
+Date: Mon, 25 Jun 2012 09:12:19 -0400
+Message-Id: <1340629939-30048-1-git-send-email-pjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 02:58 PM, Shilimkar, Santosh wrote:
-> On Mon, Jun 18, 2012 at 7:00 PM, a0393909 <santosh.shilimkar@ti.com> wrote:
->> Daniel,
->>
->>
->> On 06/18/2012 02:10 PM, Daniel Lezcano wrote:
->>>
->>>
->>> Dear all,
->>>
->>> A few weeks ago, Peter De Schrijver proposed a patch [1] to allow per
->>> cpu latencies. We had a discussion about this patchset because it
->>> reverse the modifications Deepthi did some months ago [2] and we may
->>> want to provide a different implementation.
->>>
->>> The Linaro Connect [3] event bring us the opportunity to meet people
->>> involved in the power management and the cpuidle area for different SoC.
->>>
->>> With the Tegra3 and big.LITTLE architecture, making per cpu latencies
->>> for cpuidle is vital.
->>>
->>> Also, the SoC vendors would like to have the ability to tune their cpu
->>> latencies through the device tree.
->>>
->>> We agreed in the following steps:
->>>
->>> 1. factor out / cleanup the cpuidle code as much as possible
->>> 2. better sharing of code amongst SoC idle drivers by moving common bits
->>> to core code
->>> 3. make the cpuidle_state structure contain only data
->>> 4. add a API to register latencies per cpu
->>>
->>> These four steps impacts all the architecture. I began the factor out
->>> code / cleanup [4] and that has been accepted upstream and I proposed
->>> some modifications [5] but I had a very few answers.
->>>
->> Another thing which we discussed is bringing the CPU cluster/package
->> notion in the core idle code. Couple idle did bring that idea to some
->> extent but in can be further extended and abstracted. Atm, most of
->> the work is done in back-end cpuidle drivers which can be easily
->> abstracted if the "cluster idle" notion is supported in the core layer.
->>
-> Are you considering the "cluster idle" as one of the topic ?
+This adds support for appending to all UEFI variables, and also for
+deleting authentication variables.
 
-Yes, absolutely. ATM, I am looking for refactoring the cpuidle code and
-cleanup whenever is possible.
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ drivers/firmware/efivars.c |   99 +++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 94 insertions(+), 5 deletions(-)
 
-
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 47408e8..b12a2f0 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -108,6 +108,27 @@ struct efi_variable {
+ 	__u32         Attributes;
+ } __attribute__((packed));
+ 
++struct win_certificate {
++	__u32	dwLength;
++	__u16	wRevision;
++	__u16	wCertificateType;
++	__u8	wCertificate[];
++};
++
++struct win_certificate_uefi_guid {
++	struct win_certificate	Hdr;
++	efi_guid_t		CertType;
++};
++
++struct efi_variable_authentication {
++	__u64					MonotonicCount;
++	struct win_certificate_uefi_guid	AuthInfo;
++};
++
++struct efi_variable_authentication_2 {
++	efi_time_t				TimeStamp;
++	struct win_certificate_uefi_guid	AuthInfo;
++};
+ 
+ struct efivar_entry {
+ 	struct efivars *efivars;
+@@ -802,6 +823,54 @@ static struct pstore_info efi_pstore_info = {
+ 	.erase		= efi_pstore_erase,
+ };
+ 
++static int is_authenticated_delete(struct efi_variable *new_var)
++{
++	/* If we get a set_variable() call that's got an authenticated
++	 * variable attribute set, and its DataSize is the same size as
++	 * the AuthInfo descriptor, then it's really a delete. */
++	if (new_var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS) {
++		struct efi_variable_authentication *eva;
++		__u32 size;
++
++		if (new_var->DataSize <
++				sizeof(struct efi_variable_authentication))
++			return 0;
++
++		eva = (struct efi_variable_authentication *)new_var->Data;
++
++		/* 27.2.4 says:
++		 * dwLength: The length of the entire certificate, including
++		 *           the length of the header, in bytes.
++		 */
++		size = sizeof(eva->AuthInfo.CertType) +
++		       eva->AuthInfo.Hdr.dwLength;
++
++		if (size == new_var->DataSize)
++			return 1;
++	} else if (new_var->Attributes
++			& EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS) {
++		struct efi_variable_authentication_2 *eva;
++		__u32 size;
++
++		if (new_var->DataSize <
++				sizeof(struct efi_variable_authentication_2))
++			return 0;
++
++		eva = (struct efi_variable_authentication_2 *)new_var->Data;
++
++		/* 27.2.4 says:
++		 * dwLength: The length of the entire certificate, including
++		 *           the length of the header, in bytes.
++		 */
++		size = sizeof(eva->AuthInfo.CertType) +
++		       eva->AuthInfo.Hdr.dwLength;
++
++		if (size == new_var->DataSize)
++			return 1;
++	}
++	return 0;
++}
++
+ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 			     struct bin_attribute *bin_attr,
+ 			     char *buf, loff_t pos, size_t count)
+@@ -812,6 +881,8 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 	unsigned long strsize1, strsize2;
+ 	efi_status_t status = EFI_NOT_FOUND;
+ 	int found = 0;
++	int is_append = 0;
++	int is_delete = 0;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+@@ -839,11 +910,20 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 			break;
+ 		}
+ 	}
+-	if (found) {
++	if (new_var->Attributes & EFI_VARIABLE_APPEND_WRITE) {
++		if (!found) {
++			spin_unlock(&efivars->lock);
++			return -EINVAL;
++		}
++		is_append = 1;
++	} else if (is_authenticated_delete(new_var)) {
++		is_delete = 1;
++	} else if (found) {
+ 		spin_unlock(&efivars->lock);
+ 		return -EINVAL;
+ 	}
+ 
++
+ 	/* now *really* create the variable via EFI */
+ 	status = efivars->ops->set_variable(new_var->VariableName,
+ 					    &new_var->VendorGuid,
+@@ -857,16 +937,25 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 		spin_unlock(&efivars->lock);
+ 		return -EIO;
+ 	}
+-	spin_unlock(&efivars->lock);
+ 
+ 	/* Create the entry in sysfs.  Locking is not required here */
+-	status = efivar_create_sysfs_entry(efivars,
++	if (is_delete) {
++		list_del(&search_efivar->list);
++
++		/* We need to release this lock before unregistering. */
++		spin_unlock(&efivars->lock);
++		efivar_unregister(search_efivar);
++	} else if (is_append) {
++		spin_unlock(&efivars->lock);
++	} else {
++		spin_unlock(&efivars->lock);
++		status = efivar_create_sysfs_entry(efivars,
+ 					   utf16_strsize(new_var->VariableName,
+ 							 1024),
+ 					   new_var->VariableName,
+ 					   &new_var->VendorGuid);
+-	if (status) {
+-		printk(KERN_WARNING "efivars: variable created, but sysfs entry wasn't.\n");
++		if (status)
++			pr_warn("efivars: variable created, but sysfs entry wasn't.\n");
+ 	}
+ 	return count;
+ }
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.7.10.2
 
