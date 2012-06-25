@@ -1,112 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324Ab2FYWyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:54:05 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53681 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925Ab2FYWyD (ORCPT
+	id S1756883Ab2FYWzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:55:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36854 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab2FYWzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:54:03 -0400
-Date: Tue, 26 Jun 2012 08:53:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
+	Mon, 25 Jun 2012 18:55:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQXhGLwSH4gq7L9DrhVAXcDu_NbjLA5QkCDOEqaFO09m7w@mail.gmail.com>
+References: <1340650789-3326-1-git-send-email-yinghai@kernel.org>
+	<CAErSpo4oE8nHmu1KBXSX=YjQGfD89v2fqL=96THz98uZ4Va_rQ@mail.gmail.com>
+	<CAE9FiQXhGLwSH4gq7L9DrhVAXcDu_NbjLA5QkCDOEqaFO09m7w@mail.gmail.com>
+Date: Mon, 25 Jun 2012 15:55:12 -0700
+X-Google-Sender-Auth: 94_NCTPC6lOPeifer0hVQdaeW44
+Message-ID: <CAE9FiQVhL+5y9n7n8JkPMwdTd-N14rcOc7Sm_5WHN+w8nVg-4Q@mail.gmail.com>
+Subject: Re: [PATCH] PCI, X86: busnum/node boot command line for pci dev node setting.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, lenb@kernel.org, x86@kernel.org,
+        Ulrich Drepper <drepper@gmail.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Lee <rob.lee@linaro.org>
-Subject: Re: linux-next : cpuidle - could you add my tree please
-Message-Id: <20120626085349.532133b8b72c92ffa6519043@canb.auug.org.au>
-In-Reply-To: <4FE86727.5010400@linaro.org>
-References: <4FDEE98D.7010802@linaro.org>
-	<4FDF2D58.9010006@ti.com>
-	<4FE86727.5010400@linaro.org>
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__26_Jun_2012_08_53_49_+1000_Nuiqzk1NuC2Y/NmR"
+        linux-pci@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b33d650e71ce604c353df4a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Jun_2012_08_53_49_+1000_Nuiqzk1NuC2Y/NmR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+--047d7b33d650e71ce604c353df4a
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-Hi Daniel,
-
-On Mon, 25 Jun 2012 15:27:03 +0200 Daniel Lezcano <daniel.lezcano@linaro.or=
-g> wrote:
+On Mon, Jun 25, 2012 at 3:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Jun 25, 2012 at 1:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrot=
+e:
+>>
+>> Can you convince me this is safe? =A0pci_setup() is an early_param, so
+>> it looks to me like we might be saving a pointer to initdata in this
+>> call path:
+>>
+>> =A0 =A0setup_arch
+>> =A0 =A0 =A0parse_early_param
+>> =A0 =A0 =A0 =A0strlcpy(tmp_cmdline, boot_command_line)
+>> =A0 =A0 =A0 =A0parse_early_options(__initdata tmp_cmdline)
+>> =A0 =A0 =A0 =A0 =A0parse_args
+>> =A0 =A0 =A0 =A0 =A0 =A0do_early_param
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0...
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0pci_setup (early_param)
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0pcibios_setup
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0remember_busnum_node
+>>
+>> And then we use that saved pointer to parse the string at host bridge
+>> add-time, which might be after initdata has been freed.
 >
-> we discussed last week to put in place a tree grouping the cpuidle
-> modifications [1]. Is it possible to add the tree ?
->=20
-> git://git.linaro.org/people/dlezcano/cpuidle-next.git #cpuidle-next
->=20
-> It contains for the moment Colin Cross's cpuidle coupled states.
+> ok, that will need one separate buffer.
 
-Added from today.
+could used saved_command_line directly.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+also do we need to include this one to upsteam ?
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+Thanks
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+Yinghai
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+--047d7b33d650e71ce604c353df4a
+Content-Type: application/octet-stream; name="busnum_node_v3_x.patch"
+Content-Disposition: attachment; filename="busnum_node_v3_x.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h3w59eg50
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Tue__26_Jun_2012_08_53_49_+1000_Nuiqzk1NuC2Y/NmR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP6Ov9AAoJEECxmPOUX5FE4IUP/2q3WNVkErDVVcKmdF2aGXHd
-s8puPfgYWRb6JoxPfznHKUL+OR4i+DOcTX423zdxk6vVViAr6LcJ0+L/giEGf/3O
-4UPcbo3Or3xFUduiUyCHkhWVRo9LAJsDidak6e9xfZ/3eJdQXdo1E2oPRnWTcKlq
-EosOkysGPaafeqRHmQCX9wIV7Pzz33cyBEqnK+CpWmEguPYR4DJ0sOun4AezROLY
-aQJ2YXIO9UoIxuwFUcIX97n6T0kAK5XveSiuEu3lHxZiNGebP+3RAL/zQavP9yWH
-KOlFboM4gQeOQ4McjHpWsEcR0sgqIGxZRC8RKy/bUZILxGZbVFKzmQB6clHADntn
-W0xiAZkWoEk6qw6hizVdD7Bg9Xv18NT9OBUn2tlu6HqLJ82weSIaijdUVr6F0Gd8
-z0rmgMFCY84rOVWRsDINoKpkr355AEIN9Yw5kLHlik/bdvj/x9n+p0k6iRMXJEpX
-LH0QzsSwwk4qwy0F5SisZyITYhgKqGvEe2gsYXt3uSkhiL0U0xqgtlkGjNSX265n
-eIRJ+7gZJizEF+S7/6VTFNqvO/QnCufa5f6wDb66PU1UZhlIQeGXgG+eKpi4bnj5
-8sT9mx8uKq2RmNmVOKDsi3fBfBkYbQvovkP2u0enz+uNOpb2Ukcob0RmiuWoSbks
-pDusNptPuaBTC0nLwjE0
-=onhO
------END PGP SIGNATURE-----
-
---Signature=_Tue__26_Jun_2012_08_53_49_+1000_Nuiqzk1NuC2Y/NmR--
+U3ViamVjdDogW1BBVENIXSBQQ0ksIFg4NjogYnVzbnVtL25vZGUgYm9vdCBjb21tYW5kIGxpbmUg
+Zm9yIHBjaSBkZXYgbm9kZSBzZXR0aW5nLgoKU29tZSBpbnRlbCBuZXcgc2FuZHlicmlkZ2Ugb3Ig
+bmV3ZXIgdHdvIHNvY2tldHMgc3lzdGVtIGRvIHN1cHBvcnQgc3VwcG9ydCBudW1hCmZvciBwY2kg
+ZGV2aWNlcy4gQnV0IEJJT1MgZG9lcyBub3QgcHJvdmlkZSBfUFhNIHVuZGVyIHRob3NlIHJvb3Qg
+YnVzIGluIERTRFQuCgpBZGQgYm9vdCBjb21tYW5kIGxpbmUsIHNvIHVzZXIgY291bGQgaGF2ZSBj
+aGFuY2UgdG8gaW5wdXQgbm9kZSBpbmZvIGJlZm9yZQpCSU9TIGd1eXMgZmlndXJlIG91dCB0byBh
+ZGQgX1BYTS4KCkZvbGQgZml4IGZyb20gVWxyaWNoIHRvIHVzZSAiOyIgaW5zdGVhZCBvZiAiLCIu
+CnwgVGhlIHByb2JsZW0gaXMgdGhlIHBjaT0gcGFyYW1ldGVyCnwgaGFuZGxpbmcgdXNlcyAnLCcg
+dG8gc2VwYXJhdGUgcGFyYW1ldGVycyBhbmQgdGhlcmVmb3JlIHRoZSBzZWNvbmQgUENJCnwgcm9v
+dCBpbmZvcm1hdGlvbiwgc2VwYXJhdGVkIGJ5IGEgY29tbWEsIGlzIGludGVycHJldGVkIGFzIGEg
+bmV3IHBjaT0KfCBwYXJhbWV0ZXIuCgotdjM6IEFjY29yZGluZyB0byBCam9ybiBhbmQgSW5nbywg
+Y2hhbmdlIHRvIHVzZSAidXNlciBpbnB1dCBmaXJzdCIgcG9saWN5CiAgICAgc28gaXQgY291bGQg
+Y292ZXIgd3JvbmcgX1BYTSBjYXNlLgotdjU6IHJldmVydCBiYWNrIHRvIC12MywgYW5kIGNoYW5n
+ZSB0byB1c2Ugc2F2ZWRfY29tbWFuZF9saW5lLgoKClJlcG9ydGVkLWJ5OiBVbHJpY2ggRHJlcHBl
+ciA8ZHJlcHBlckBnbWFpbC5jb20+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlA
+a2VybmVsLm9yZz4KCi0tLQogRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQgfCAg
+ICA1ICsrKysrCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9wY2lfeDg2LmggICAgICB8ICAgIDMgKysr
+CiBhcmNoL3g4Ni9wY2kvYWNwaS5jICAgICAgICAgICAgICAgICB8ICAgMjIgKysrKysrKysrKysr
+Ky0tLS0tLS0tLQogYXJjaC94ODYvcGNpL2NvbW1vbi5jICAgICAgICAgICAgICAgfCAgIDI4ICsr
+KysrKysrKysrKysrKysrKysrKysrKysrKysKIDQgZmlsZXMgY2hhbmdlZCwgNDkgaW5zZXJ0aW9u
+cygrKSwgOSBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvRG9jdW1lbnRhdGlvbi9rZXJu
+ZWwtcGFyYW1ldGVycy50eHQKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvRG9jdW1lbnRh
+dGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKKysrIGxpbnV4LTIuNi9Eb2N1bWVudGF0aW9uL2tl
+cm5lbC1wYXJhbWV0ZXJzLnR4dApAQCAtMjE5NSw2ICsyMTk1LDExIEBAIGJ5dGVzIHJlc3BlY3Rp
+dmVseS4gU3VjaCBsZXR0ZXIgc3VmZml4ZXMKIAkJCQlvbmx5IGxvb2sgZm9yIG9uZSBkZXZpY2Ug
+YmVsb3cgYSBQQ0llIGRvd25zdHJlYW0KIAkJCQlwb3J0LgogCisJYnVzbnVtX25vZGU9ICAgIFtY
+ODZdIFNldCBub2RlIGZvciByb290IGJ1cy4KKwkJCUZvcm1hdDoKKwkJCTxidXM+Ojxub2RlPls7
+IC4uLl0KKwkJCVNwZWNpZmllcyBub2RlIGZvciBidXMsIHdpbGwgb3ZlcnJpZGUgYmlvcyBfUFhN
+CisJCQlvciBwcm9iZWQgdmFsdWUgZnJvbSBob3N0YnJpZGdlLgogCXBjaWVfYXNwbT0JW1BDSUVd
+IEZvcmNpYmx5IGVuYWJsZSBvciBkaXNhYmxlIFBDSWUgQWN0aXZlIFN0YXRlIFBvd2VyCiAJCQlN
+YW5hZ2VtZW50LgogCQlvZmYJRGlzYWJsZSBBU1BNLgpJbmRleDogbGludXgtMi42L2FyY2gveDg2
+L3BjaS9jb21tb24uYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9wY2kv
+Y29tbW9uLmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKQEAgLTQ5NCw2ICs0
+OTQsMzQgQEAgaW50IF9faW5pdCBwY2liaW9zX2luaXQodm9pZCkKIAlyZXR1cm4gMDsKIH0KIAor
+aW50IGdldF91c2VyX2J1c251bV9ub2RlKGludCBidXNudW0pCit7CisJaW50IGJ1cywgbm9kZSwg
+Y291bnQ7CisJY2hhciAqcDsKKworCXAgPSBzdHJzdHIoc2F2ZWRfY29tbWFuZF9saW5lLCAiYnVz
+bnVtX25vZGU9Iik7CisJaWYgKCFwKQorCQlyZXR1cm4gLTE7CisKKwlwICs9IDEyOyAvKiBzdHJs
+ZW4oImJ1c251bV9ub2RlPSIpICovCisJd2hpbGUgKCpwKSB7CisJCWNvdW50ID0gMDsKKwkJaWYg
+KHNzY2FuZihwLCAiJXg6JXglbiIsICZidXMsICZub2RlLCAmY291bnQpICE9IDIpIHsKKwkJCXBy
+aW50ayhLRVJOX0VSUiAiUENJOiBDYW4ndCBwYXJzZSBidXNudW1fbm9kZSBpbnB1dDogJXNcbiIs
+CisJCQkJCXApOworCQkJYnJlYWs7CisJCX0KKwkJaWYgKGJ1cyA9PSBidXNudW0pCisJCQlyZXR1
+cm4gbm9kZTsKKwkJcCArPSBjb3VudDsKKwkJaWYgKCpwICE9ICc7JykKKwkJCWJyZWFrOworCQlw
+Kys7CisJfQorCisJcmV0dXJuIC0xOworfQorCiBjaGFyICogX19kZXZpbml0ICBwY2liaW9zX3Nl
+dHVwKGNoYXIgKnN0cikKIHsKIAlpZiAoIXN0cmNtcChzdHIsICJvZmYiKSkgewpJbmRleDogbGlu
+dXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3BjaV94ODYuaAo9PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51
+eC0yLjYub3JpZy9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wY2lfeDg2LmgKKysrIGxpbnV4LTIuNi9h
+cmNoL3g4Ni9pbmNsdWRlL2FzbS9wY2lfeDg2LmgKQEAgLTQ2LDYgKzQ2LDkgQEAgZW51bSBwY2lf
+YmZfc29ydF9zdGF0ZSB7CiAJcGNpX2RtaV9iZiwKIH07CiAKKy8qIHBjaS1jb21tb24uYyAqLwor
+aW50IGdldF91c2VyX2J1c251bV9ub2RlKGludCBidXNudW0pOworCiAvKiBwY2ktaTM4Ni5jICov
+CiAKIHZvaWQgcGNpYmlvc19yZXNvdXJjZV9zdXJ2ZXkodm9pZCk7CkluZGV4OiBsaW51eC0yLjYv
+YXJjaC94ODYvcGNpL2FjcGkuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4
+Ni9wY2kvYWNwaS5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYvcGNpL2FjcGkuYwpAQCAtNDMzLDcg
+KzQzMyw3IEBAIHN0cnVjdCBwY2lfYnVzICogX19kZXZpbml0IHBjaV9hY3BpX3NjYW4KIAlzdHJ1
+Y3QgcGNpX3N5c2RhdGEgKnNkOwogCWludCBub2RlOwogI2lmZGVmIENPTkZJR19BQ1BJX05VTUEK
+LQlpbnQgcHhtOworCWludCBweG0gPSAtMTsKICNlbmRpZgogCiAJaWYgKGRvbWFpbiAmJiAhcGNp
+X2RvbWFpbnNfc3VwcG9ydGVkKSB7CkBAIC00NDMsMTYgKzQ0MywyMCBAQCBzdHJ1Y3QgcGNpX2J1
+cyAqIF9fZGV2aW5pdCBwY2lfYWNwaV9zY2FuCiAJCXJldHVybiBOVUxMOwogCX0KIAotCW5vZGUg
+PSAtMTsKKwlub2RlID0gZ2V0X3VzZXJfYnVzbnVtX25vZGUoYnVzbnVtKTsKKwlpZiAobm9kZSA9
+PSAtMSkgewogI2lmZGVmIENPTkZJR19BQ1BJX05VTUEKLQlweG0gPSBhY3BpX2dldF9weG0oZGV2
+aWNlLT5oYW5kbGUpOwotCWlmIChweG0gPj0gMCkKLQkJbm9kZSA9IHB4bV90b19ub2RlKHB4bSk7
+Ci0JaWYgKG5vZGUgIT0gLTEpCi0JCXNldF9tcF9idXNfdG9fbm9kZShidXNudW0sIG5vZGUpOwot
+CWVsc2UKLSNlbmRpZgorCQlweG0gPSBhY3BpX2dldF9weG0oZGV2aWNlLT5oYW5kbGUpOworCQlp
+ZiAocHhtID49IDApCisJCQlub2RlID0gcHhtX3RvX25vZGUocHhtKTsKKwkJaWYgKG5vZGUgIT0g
+LTEpCisJCQlzZXRfbXBfYnVzX3RvX25vZGUoYnVzbnVtLCBub2RlKTsKKwkJZWxzZQorCQkJbm9k
+ZSA9IGdldF9tcF9idXNfdG9fbm9kZShidXNudW0pOworI2Vsc2UKIAkJbm9kZSA9IGdldF9tcF9i
+dXNfdG9fbm9kZShidXNudW0pOworI2VuZGlmCisJfQogCiAJaWYgKG5vZGUgIT0gLTEgJiYgIW5v
+ZGVfb25saW5lKG5vZGUpKQogCQlub2RlID0gLTE7Cg==
+--047d7b33d650e71ce604c353df4a--
