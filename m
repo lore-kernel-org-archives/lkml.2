@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab2FYR0H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 13:26:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62463 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757336Ab2FYR0E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 13:26:04 -0400
-Date: Mon, 25 Jun 2012 10:26:00 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Josh Hunt <joshhunt00@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: multi-second application stall in open()
-Message-ID: <20120625172600.GB3869@google.com>
-References: <20120621203217.GC14095@redhat.com>
- <CAKA=qzYmh8DD7J__WWDyX_2fFQbSx+M=k4ttqRTD3M8nao-WVg@mail.gmail.com>
- <20120622141211.GB18409@redhat.com>
- <CAKA=qzYYK5KUNsZ1C7Z7BEkqo-7uvn=HYr0N9KLPaLt9ut+MDQ@mail.gmail.com>
- <CAKA=qzY+u64vVZmbiH4zp_Fij2zejQBFUSNENKF=PZBT0G7xrQ@mail.gmail.com>
- <20120622204207.GA22063@redhat.com>
- <CAKA=qzbycm0cjLyiuKaKkD8sxDm5DvX9WVqSxN2QVT2WZOzU0Q@mail.gmail.com>
- <CAKA=qza_s6zr+wZzfFTVPSzgPQAov=K63jf-SJOTDcrnDELY5w@mail.gmail.com>
- <CAKA=qzYea71A5VQOQgrqzaZtVFadjhcghgH+Z9n4ivS7vUgW0g@mail.gmail.com>
- <20120625133047.GA9394@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625133047.GA9394@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757550Ab2FYRaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 13:30:10 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39072 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757215Ab2FYRaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 13:30:09 -0400
+Message-ID: <1340645408.3359.4.camel@joe2Laptop>
+Subject: Re: [PATCH] drivers: staging: android: fix binder.c printk macros
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, swetland@google.com,
+        Sherwin Soltani <sherwin@wybc.com>, linux-kernel@vger.kernel.org
+Date: Mon, 25 Jun 2012 10:30:08 -0700
+In-Reply-To: <20120625172423.GA1935@kroah.com>
+References: <1340431781-2809-1-git-send-email-sherwin@wybc.com>
+	 <20120625171715.GA29309@kroah.com> <1340644800.3359.1.camel@joe2Laptop>
+	 <20120625172423.GA1935@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 09:30:47AM -0400, Vivek Goyal wrote:
-> In slice_expired() we can probably put a BUG_ON() which checks following.
+On Mon, 2012-06-25 at 10:24 -0700, Greg KH wrote:
+> On Mon, Jun 25, 2012 at 10:20:00AM -0700, Joe Perches wrote:
+> > Your patch-bot needs work.
+> > 
+> > Converting printks to pr_<level> is trivial
+> > and should be done all at once, not piecemeal.
 > 
-> BUG_ON(RB_EMPTY_ROOT(&cfqq->sort_list) && (cfqq->queued[0] || cfqq->queued[1]));
+> I'm not disagreeing with that, unfortunately this patch also did more
+> than just pr_<level> conversions, which is why my patch-bot kicked in.
+> 
+> So your patch-bot complaint generator needs work :)
 
-Nit: Please use WARN_ON_ONCE() instead.  Multi-sec stalls tend to be
-better than panic. :)
+Or not.  I think wholesale whitespace changes are just
+fine too.
 
--- 
-tejun
+git diff -w can ignore all those things pretty easily.
+
+Using a bot is certainly sensible and sanity-preserving.
+I think it just needs a little tweaking.
+
+cheers, Joe
+
