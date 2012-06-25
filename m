@@ -1,109 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab2FYNOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:14:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38247 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab2FYNOj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 09:14:39 -0400
-Subject: Re: [PATCH v7 2/2] x86 mce: use new printk recursion disabling
- interface
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: ShuoX Liu <shuox.liu@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20120625091734.GA25839@gmail.com>
-References: <20120605081448.GA7097@liondog.tnic>
-	 <4FCDD72A.9030701@intel.com> <4FCDD78A.3070106@intel.com>
-	 <20120605151542.GA10669@x1.osrc.amd.com>
-	 <1338942965.14538.233.camel@ymzhang.sh.intel.com>
-	 <4FCF155B.3090705@intel.com> <4FCF160D.8010404@intel.com>
-	 <20120606152238.GA3874@x1.osrc.amd.com> <4FD01896.1010506@intel.com>
-	 <4FD01933.7070000@intel.com>  <20120625091734.GA25839@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jun 2012 15:14:21 +0200
-Message-ID: <1340630061.2507.61.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1756192Ab2FYNQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:16:32 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40150 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752330Ab2FYNQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 09:16:31 -0400
+Message-ID: <4FE86411.5020708@parallels.com>
+Date: Mon, 25 Jun 2012 17:13:53 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-mm@kvack.org>, Pekka Enberg <penberg@kernel.org>,
+        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v4 07/25] memcg: Reclaim when more than one page needed.
+References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-8-git-send-email-glommer@parallels.com> <20120620134738.GG5541@tiehlicka.suse.cz> <4FE227F8.3000504@parallels.com> <20120621211923.GC31759@tiehlicka.suse.cz>
+In-Reply-To: <20120621211923.GC31759@tiehlicka.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-25 at 11:17 +0200, Ingo Molnar wrote:
-> * ShuoX Liu <shuox.liu@intel.com> wrote:
-> 
-> > From: ShuoX Liu <shuox.liu@intel.com>
-> > 
-> > On x86 machines, some times MCE happens just when kernel calls printk
-> > to output some log info to serial console, while usually MCE module in
-> > kernel is used to print out some hardware error information, such like
-> > bad cache or bad memory bank. That causes printk recursion and printk
-> > would omit MCE printk output.
-> > 
-> > We hit it when running MTBF testing on Android ATOM mobiles.
-> > 
-> > Here in print_mce, we choose to disable printk recursion to make sure
-> > MCE logs printed out.
-> > 
-> > Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> > Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
-> > ---
-> >  arch/x86/kernel/cpu/mcheck/mce.c |    6 +++++-
-> >  1 files changed, 5 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> > index 2afcbd2..6056e94 100644
-> > --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> > @@ -242,6 +242,7 @@ static void print_mce(struct mce *m)
-> >  {
-> >  	int ret = 0;
-> >  
-> > +	printk_recursion_check_disable();
-> >  	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
-> >  	       m->extcpu, m->mcgstatus, m->bank, m->status);
-> >  
-> > @@ -275,10 +276,13 @@ static void print_mce(struct mce *m)
-> >  	 * (if the CPU has an implementation for that)
-> >  	 */
-> >  	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-> > -	if (ret == NOTIFY_STOP)
-> > +	if (ret == NOTIFY_STOP) {
-> > +		printk_recursion_check_enable();
-> >  		return;
-> > +	}
-> >  
-> >  	pr_emerg_ratelimited(HW_ERR "Run the above through 'mcelog --ascii'\n");
-> > +	printk_recursion_check_enable();
-> 
-> Ok, this looks useful and it solves a real problem, but I'd 
-> prefer a better interface: instead of exposing the guts of 
-> printk to drivers in an unsafe manner (and allowing them to keep 
-> printk in an unsafe state indefinitely), shouldn't we instead 
-> introduce printk_emergency() (and variants) that just disable 
-> the recursion check, do the printk and then enable them?
 
-I really don't see why you'd do anything like the above. For one the
-oops_in_progress thing is exported, so you could simply use that, you're
-going to panic the machine here anyway, right?
+>>>> +
+>>>>   	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
+>>>>   	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+>>>>   		return CHARGE_RETRY;
+>>>> @@ -2234,8 +2235,10 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>>>>   	 * unlikely to succeed so close to the limit, and we fall back
+>>>>   	 * to regular pages anyway in case of failure.
+>>>>   	 */
+>>>> -	if (nr_pages == 1 && ret)
+>>>> +	if (nr_pages <= (1 << PAGE_ALLOC_COSTLY_ORDER) && ret) {
+>>>> +		cond_resched();
+>>>>   		return CHARGE_RETRY;
+>>>> +	}
+>>>
+>>> What prevents us from looping for unbounded amount of time here?
+>>> Maybe you need to consider the number of reclaimed pages here.
+>>
+>> Why would we even loop here? It will just return CHARGE_RETRY, it is
+>> up to the caller to decide whether or not it will retry.
+>
+> Yes, but the test was original to prevent oom when we managed to reclaim
+> something. And something might be enough for a single page but now you
+> have high order allocations so we can retry without any success.
+>
 
-Furthermore the whole recursion stuff is broken anyway, see:
-  http://marc.info/?l=linux-kernel&m=132446646923333
+So,
 
-That also introduces recursive_printk() which you could (ab)use if
-needed.
+Most of the kmem allocations are likely to be quite small as well. For 
+the slab, we're dealing with the order of 2-3 pages, and for other 
+allocations that may happen, like stack, they will be in the order of 2 
+pages as well.
 
-That said, its not entirely clear to me what context you're in when
-you're calling this print_mce(), it looks like its only used from
-mce_panic().
+So one thing I could do here, is define a threshold, say, 3, and only 
+retry for that very low threshold, instead of following COSTLY_ORDER.
+I don't expect two or three pages to be much less likely to be freed 
+than a single page.
 
-That already does bust_spinlocks() which already increments the
-oops_in_progress thing, so WTF are you doing anyway?
+I am fine with ripping of the cond_resched as well.
+
+Let me know if you would be okay with that.
+
 
