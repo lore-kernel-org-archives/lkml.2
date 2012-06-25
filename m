@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab2FYId5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:33:57 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:13197 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab2FYId4 (ORCPT
+	id S1753136Ab2FYIff (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:35:35 -0400
+Received: from nm10.access.bullet.mail.sp2.yahoo.com ([98.139.44.137]:27979
+	"HELO nm10.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751318Ab2FYIfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:33:56 -0400
-X-AuditID: cbfee61a-b7f9f6d0000016a8-db-4fe8226bf26a
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        linaro-mm-sig@lists.linaro.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [GIT PULL] DMA-mapping fixes for v3.5-rc5
-Date: Mon, 25 Jun 2012 10:33:22 +0200
-Message-id: <1340613202-1053-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t9jAd1spRf+Bru/cltc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mxg//2Au+slZ8vD6TqYHxFUsXIyeHhICJxJ65b5kgbDGJC/fW
-	s3UxcnEICSxilPj54SoLhLOaSWLp5UfMIFVsAoYSXW+72EBsEQEjic8vrrCCFDELdDFJfLsw
-	hxEkIQyU6OjdATaWRUBV4u2xDlYQm1fAXWJr21ZmiHXyEk/v97FNYORewMiwilE0tSC5oDgp
-	PddQrzgxt7g0L10vOT93EyPYi8+kdjCubLA4xCjAwajEw9sg9cJfiDWxrLgy9xCjBAezkggv
-	ByNQiDclsbIqtSg/vqg0J7X4EKM0B4uSOG+T9QV/IYH0xJLU7NTUgtQimCwTB6dUA2O6Wp3x
-	K+nJqQ+rRcRChesLZ3lsi4ze9tb53JpdzpJcGw/7BEzZ0rktMOqJXGUyz+bVB7dp6zV+OPJe
-	+sR397DHigac6165bteNnijfInc0KllEnOXC1TJzn58pa+9U+WQYGf3fukWqhK9++8tP01W1
-	4uWeciXpqZZenBtVXn3v+QGOK7wfdyuxFGckGmoxFxUnAgAMWpAM3gEAAA==
-X-TM-AS-MML: No
+	Mon, 25 Jun 2012 04:35:32 -0400
+X-Yahoo-Newman-Id: 239855.642.bm@omp1007.access.mail.sp2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: fhw3ixEVM1neLvDMZfRtsprgnFXDh43zPoESiUj_8L1QNE3
+ ot_M2UyrqIWGS7lxuNTqP1ieaNr6A.phjuffM._bRSvS2PZSTueLMPV7Hk3Q
+ dPpr664beVBsFfYiwfIVjtUqpVN2Y9GLutpWDKbwi0TnL3UdZgWPh59v880n
+ UdGNsiVqOdxPZwa4ScD9ra4roy0DAIq2vvRSzAviM7_9JVGkZXZLzec4D7F_
+ BT8HbSF.P.4HscWEDFoeugv6kTrKKedLEyAxi_QELh473ntdfLMeoIHYli93
+ XqAkSgtjPYetXCESWFLWz61hUZim43iAk.F.XTAloQ3XRn53YrnBMuHWT9wF
+ 4H4Ghyw0P9GyckxKtQIxuaBo33gssFbFBCBVMbWrWrK59aF99RZdktRkoGpF
+ vdjBqQg--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <4FE822D2.7000407@att.net>
+Date: Mon, 25 Jun 2012 03:35:30 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: daniel.santos@pobox.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+MIME-Version: 1.0
+To: Pavel Pisa <pisa@cmp.felk.cvut.cz>
+CC: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-doc@vger.kernel.org, linux-sparse@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Weinberger <richard@nod.at>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH v4 0/13] Generic Red-Black Trees
+References: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com> <4FE661F8.3000109@att.net> <4FE69A14.6040904@landley.net> <201206240957.09136.pisa@cmp.felk.cvut.cz>
+In-Reply-To: <201206240957.09136.pisa@cmp.felk.cvut.cz>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-I would like to ask for pulling another minor fixup for ARM dma-mapping
-redesign and extensions merged in v3.5-rc1.
+> It would worth to have even user space version of the
+> kernel RB tree code with Dainie's interface to run feasibility
+> and performance tests in more environments quickly
+> (as Daniel mentioned already). But it is not necessary
+> for me to be convinced that provided changes should go into
+> kernel because I am convinced  already and offer my
+> "Reviewed-by" confirmation.
+Thanks Pavel!
 
-The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
+As far as user-space testing, I have a simple test program that
+compilers in user-space using a hacked-up system include directory and
+compiles the kernel code unmodified.  I'll be sure and write the test
+code to work both in-kernel and in user space, although working out the
+portability of the build will be a bit of a challenge.
 
-  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
-
-with the top-most commit 593f47355467b9ef44293698817e2bdb347e2d11
-
-  ARM: dma-mapping: fix buffer chunk allocation order
-
-are available in the git repository at:
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-linus
-
-Marek Szyprowski (1):
-      ARM: dma-mapping: fix buffer chunk allocation order
-
- arch/arm/mm/dma-mapping.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-Thanks!
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
+Daniel
 
