@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab2FYNQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:16:32 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:40150 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752330Ab2FYNQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 09:16:31 -0400
-Message-ID: <4FE86411.5020708@parallels.com>
-Date: Mon, 25 Jun 2012 17:13:53 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756346Ab2FYNSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:18:24 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:55936 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755851Ab2FYNSV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 09:18:21 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-mm@kvack.org>, Pekka Enberg <penberg@kernel.org>,
-        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v4 07/25] memcg: Reclaim when more than one page needed.
-References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-8-git-send-email-glommer@parallels.com> <20120620134738.GG5541@tiehlicka.suse.cz> <4FE227F8.3000504@parallels.com> <20120621211923.GC31759@tiehlicka.suse.cz>
-In-Reply-To: <20120621211923.GC31759@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4FE86361.3050603@linaro.org>
+References: <4FDEE98D.7010802@linaro.org> <4FDF2D58.9010006@ti.com>
+ <CAMQu2gz8aGC1DeOvWNNPaaMD9eJLuiJ5HGoKe98EDtV73_QRTQ@mail.gmail.com> <4FE86361.3050603@linaro.org>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Mon, 25 Jun 2012 18:47:59 +0530
+Message-ID: <CAMQu2gy2Mdegm0OBJeH+wRLF4BDz02qe0aXO_h=twxoPg2QdNw@mail.gmail.com>
+Subject: Re: [linux-pm] cpuidle future and improvements
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Lee <rob.lee@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->>>> +
->>>>   	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
->>>>   	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
->>>>   		return CHARGE_RETRY;
->>>> @@ -2234,8 +2235,10 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->>>>   	 * unlikely to succeed so close to the limit, and we fall back
->>>>   	 * to regular pages anyway in case of failure.
->>>>   	 */
->>>> -	if (nr_pages == 1 && ret)
->>>> +	if (nr_pages <= (1 << PAGE_ALLOC_COSTLY_ORDER) && ret) {
->>>> +		cond_resched();
->>>>   		return CHARGE_RETRY;
->>>> +	}
+On Mon, Jun 25, 2012 at 6:40 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 06/25/2012 02:58 PM, Shilimkar, Santosh wrote:
+>> On Mon, Jun 18, 2012 at 7:00 PM, a0393909 <santosh.shilimkar@ti.com> wrote:
+>>> Daniel,
 >>>
->>> What prevents us from looping for unbounded amount of time here?
->>> Maybe you need to consider the number of reclaimed pages here.
->>
->> Why would we even loop here? It will just return CHARGE_RETRY, it is
->> up to the caller to decide whether or not it will retry.
+>>>
+>>> On 06/18/2012 02:10 PM, Daniel Lezcano wrote:
+>>>>
+>>>>
+>>>> Dear all,
+>>>>
+>>>> A few weeks ago, Peter De Schrijver proposed a patch [1] to allow per
+>>>> cpu latencies. We had a discussion about this patchset because it
+>>>> reverse the modifications Deepthi did some months ago [2] and we may
+>>>> want to provide a different implementation.
+>>>>
+>>>> The Linaro Connect [3] event bring us the opportunity to meet people
+>>>> involved in the power management and the cpuidle area for different SoC.
+>>>>
+>>>> With the Tegra3 and big.LITTLE architecture, making per cpu latencies
+>>>> for cpuidle is vital.
+>>>>
+>>>> Also, the SoC vendors would like to have the ability to tune their cpu
+>>>> latencies through the device tree.
+>>>>
+>>>> We agreed in the following steps:
+>>>>
+>>>> 1. factor out / cleanup the cpuidle code as much as possible
+>>>> 2. better sharing of code amongst SoC idle drivers by moving common bits
+>>>> to core code
+>>>> 3. make the cpuidle_state structure contain only data
+>>>> 4. add a API to register latencies per cpu
+>>>>
+>>>> These four steps impacts all the architecture. I began the factor out
+>>>> code / cleanup [4] and that has been accepted upstream and I proposed
+>>>> some modifications [5] but I had a very few answers.
+>>>>
+>>> Another thing which we discussed is bringing the CPU cluster/package
+>>> notion in the core idle code. Couple idle did bring that idea to some
+>>> extent but in can be further extended and abstracted. Atm, most of
+>>> the work is done in back-end cpuidle drivers which can be easily
+>>> abstracted if the "cluster idle" notion is supported in the core layer.
+>>>
+>> Are you considering the "cluster idle" as one of the topic ?
 >
-> Yes, but the test was original to prevent oom when we managed to reclaim
-> something. And something might be enough for a single page but now you
-> have high order allocations so we can retry without any success.
+> Yes, absolutely. ATM, I am looking for refactoring the cpuidle code and
+> cleanup whenever is possible.
 >
+Cool !!
 
-So,
-
-Most of the kmem allocations are likely to be quite small as well. For 
-the slab, we're dealing with the order of 2-3 pages, and for other 
-allocations that may happen, like stack, they will be in the order of 2 
-pages as well.
-
-So one thing I could do here, is define a threshold, say, 3, and only 
-retry for that very low threshold, instead of following COSTLY_ORDER.
-I don't expect two or three pages to be much less likely to be freed 
-than a single page.
-
-I am fine with ripping of the cond_resched as well.
-
-Let me know if you would be okay with that.
-
-
+regards
+Santosh
