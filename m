@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab2FYWSj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:18:39 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:56770 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756458Ab2FYWSh (ORCPT
+	id S1757669Ab2FYWUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:20:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50569 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757393Ab2FYWUV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:18:37 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-131.messagelabs.com!1340662716!20864701!3
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 03/33] staging: comedi: cb_das16_cs: add module_{init,exit} declarations
-Date: Mon, 25 Jun 2012 15:18:17 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 25 Jun 2012 18:20:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206251518.18027.hartleys@visionengravers.com>
+In-Reply-To: <20120625151409.5e13702b.akpm@linux-foundation.org>
+References: <20120625180327.GA31931@www.outflux.net>
+	<20120625151409.5e13702b.akpm@linux-foundation.org>
+Date: Mon, 25 Jun 2012 15:20:19 -0700
+X-Google-Sender-Auth: Lp2i6WELzWI8BiKV1mD9N_xaUgY
+Message-ID: <CAGXu5jL8XpkWhFkWtdQA7egR+pOmu5TVjK7NTzeVEr=sqcmePw@mail.gmail.com>
+Subject: Re: [PATCH v5] fs: make dumpable=2 require fully qualified path
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alan Cox <alan@linux.intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Doug Ledford <dledford@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Joe Korty <joe.korty@ccur.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The init and exit functions for this module were being declared
-as global symbols. Add the module_{init,exit} declarations and
-make the functions static. Also, rename the functions so they
-have namespace associated with the module.
+On Mon, Jun 25, 2012 at 3:14 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 25 Jun 2012 11:03:27 -0700
+> Kees Cook <keescook@chromium.org> wrote:
+>
+>> Instead of introducing a suid_dumpable=3 mode and breaking all users
+>> of mode 2, this only disables the unsafe portion of mode 2 (writing to
+>> disk via relative path).
+>
+> It would be nicer to generate the warning at configuration time rather than
+> at core-dumping time.  I have a feeling that's Hard To Do, but why?
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_das16_cs.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+I actually feel that this is much more discoverable because anyone
+trying to figure out why a crash isn't dumping core isn't going to be
+looking back in time through their dmesg to find the warning from
+setting the sysctl. Additionally, I think it's the same kind of thing
+that the other existing "Skipping core dump" printk messages are
+reporting.
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index 76833d0..bca4cbe 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -792,7 +792,7 @@ static void __exit exit_das16cs_pcmcia_cs(void)
- 	pcmcia_unregister_driver(&das16cs_driver);
- }
- 
--int __init init_module(void)
-+static int __init das16cs_init(void)
- {
- 	int ret;
- 
-@@ -802,12 +802,14 @@ int __init init_module(void)
- 
- 	return comedi_driver_register(&driver_das16cs);
- }
-+module_init(das16cs_init);
- 
--void __exit cleanup_module(void)
-+static void __exit das16cs_exit(void)
- {
- 	exit_das16cs_pcmcia_cs();
- 	comedi_driver_unregister(&driver_das16cs);
- }
-+module_exit(das16cs_exit);
- 
- MODULE_AUTHOR("David A. Schleef <ds@schleef.org>");
- MODULE_DESCRIPTION("Comedi driver for Computer Boards PC-CARD DAS16/16");
+-Kees
+
 -- 
-1.7.11
-
+Kees Cook
+Chrome OS Security
