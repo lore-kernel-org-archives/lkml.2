@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660Ab2FYW2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:28:39 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:36586 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756687Ab2FYW2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:28:37 -0400
-Message-ID: <4FE8E56A.6080601@parallels.com>
-Date: Tue, 26 Jun 2012 02:25:46 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 10/11] memcg: allow a memcg with kmem charges to be destructed.
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-11-git-send-email-glommer@parallels.com> <20120625183442.GG3869@google.com>
-In-Reply-To: <20120625183442.GG3869@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1757713Ab2FYW25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:28:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47829 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757683Ab2FYW2z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 18:28:55 -0400
+Date: Mon, 25 Jun 2012 15:28:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alan Cox <alan@linux.intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Doug Ledford <dledford@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Joe Korty <joe.korty@ccur.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v5] fs: make dumpable=2 require fully qualified path
+Message-Id: <20120625152853.1ec6a824.akpm@linux-foundation.org>
+In-Reply-To: <CAGXu5jL8XpkWhFkWtdQA7egR+pOmu5TVjK7NTzeVEr=sqcmePw@mail.gmail.com>
+References: <20120625180327.GA31931@www.outflux.net>
+	<20120625151409.5e13702b.akpm@linux-foundation.org>
+	<CAGXu5jL8XpkWhFkWtdQA7egR+pOmu5TVjK7NTzeVEr=sqcmePw@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.9.3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 10:34 PM, Tejun Heo wrote:
-> On Mon, Jun 25, 2012 at 06:15:27PM +0400, Glauber Costa wrote:
->> Because the ultimate goal of the kmem tracking in memcg is to
->> track slab pages as well, we can't guarantee that we'll always
->> be able to point a page to a particular process, and migrate
->> the charges along with it - since in the common case, a page
->> will contain data belonging to multiple processes.
->>
->> Because of that, when we destroy a memcg, we only make sure
->> the destruction will succeed by discounting the kmem charges
->> from the user charges when we try to empty the cgroup.
->>
->> Signed-off-by: Glauber Costa <glommer@parallels.com>
->> CC: Christoph Lameter <cl@linux.com>
->> CC: Pekka Enberg <penberg@cs.helsinki.fi>
->> CC: Michal Hocko <mhocko@suse.cz>
->> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> CC: Johannes Weiner <hannes@cmpxchg.org>
->> CC: Suleiman Souhlal <suleiman@google.com>
->> ---
->>   mm/memcontrol.c |   10 +++++++++-
->>   1 file changed, 9 insertions(+), 1 deletion(-)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index a6a440b..bb9b6fe 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -598,6 +598,11 @@ static void disarm_kmem_keys(struct mem_cgroup *memcg)
->>   {
->>   	if (test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted))
->>   		static_key_slow_dec(&mem_cgroup_kmem_enabled_key);
->> +	/*
->> +	 * This check can't live in kmem destruction function,
->> +	 * since the charges will outlive the cgroup
->> +	 */
->> +	BUG_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
->
-> WARN_ON() please.  Misaccounted kernel usually is better than dead
-> kernel.
->
+On Mon, 25 Jun 2012 15:20:19 -0700
+Kees Cook <keescook@chromium.org> wrote:
 
-You're absolutely right, will change.
+> On Mon, Jun 25, 2012 at 3:14 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Mon, 25 Jun 2012 11:03:27 -0700
+> > Kees Cook <keescook@chromium.org> wrote:
+> >
+> >> Instead of introducing a suid_dumpable=3 mode and breaking all users
+> >> of mode 2, this only disables the unsafe portion of mode 2 (writing to
+> >> disk via relative path).
+> >
+> > It would be nicer to generate the warning at configuration time rather than
+> > at core-dumping time. __I have a feeling that's Hard To Do, but why?
+> 
+> I actually feel that this is much more discoverable because anyone
+> trying to figure out why a crash isn't dumping core isn't going to be
+> looking back in time through their dmesg to find the warning from
+> setting the sysctl. Additionally, I think it's the same kind of thing
+> that the other existing "Skipping core dump" printk messages are
+> reporting.
+
+People who don't discover we changed their kernel until after they lost
+an important core dump will be sad.  Do both?
 
 
