@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab2FYQkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 12:40:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52427 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754534Ab2FYQkk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 12:40:40 -0400
-Date: Mon, 25 Jun 2012 09:40:33 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Kay Sievers <kay@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] printk: Revert the buffered-printk() changes for now
-Message-ID: <20120625164033.GA14000@kroah.com>
-References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
- <20120622145402.8047a669.akpm@linux-foundation.org>
- <20120623061313.GA21895@gmail.com>
- <1340452052.1784.40.camel@mop>
- <20120625090933.GD24512@gmail.com>
- <CAPXgP10E7HNDQ73ZFyb4EyDVBko2yXs8Rw0KOSKukGUpSBSz_g@mail.gmail.com>
- <20120625140748.GB1301@gmail.com>
- <1340635734.27036.327.camel@gandalf.stny.rr.com>
+	id S1757292Ab2FYQlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 12:41:21 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55427 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754534Ab2FYQlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 12:41:19 -0400
+Date: Mon, 25 Jun 2012 09:40:49 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-ID: <20120625164049.GO5042@outflux.net>
+References: <20120625164141.1c5b1b543e0309005dfd0d9c@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340635734.27036.327.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120625164141.1c5b1b543e0309005dfd0d9c@canb.auug.org.au>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 10:48:54AM -0400, Steven Rostedt wrote:
-> On Mon, 2012-06-25 at 16:07 +0200, Ingo Molnar wrote:
+Hi Stephen,
+
+On Mon, Jun 25, 2012 at 04:41:41PM +1000, Stephen Rothwell wrote:
+> After merging the akpm tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> > System logging is an arguably secondary role, and it should not 
-> > degrade printk()s primary role.
+> fs/namei.c: In function 'path_openat':
+> fs/namei.c:2874:4: error: 'filp' undeclared (first use in this function)
 > 
-> I would argue that printk() should not play the role of normal system
-> logging. It's main role should be for boot up and crashes. If devices
-> need to log information to userspace, it should really use some other
-> means. What was /sys made for anyway?
+> Caused by patch "fs: add link restrictions" from the akpm tree
+> interacting with (at least) commit 4066cd545681 ("vfs: remove open
+> intents from nameidata") from the vfs tree.
+> 
+> I don't know how to fix this, so I have reverted the akpm patch for today
+> (in the hope that someone else will fix it).
 
-Specifically not for logging.  See the very old discussions of this a
-long time ago (back in the 2.5 days), if you are curious.
+It looks like namei.c changed the logic of the lookup loop. This should
+fix it.
 
-printk() is the best thing we have for logging as everyone uses it and
-the information in it is exactly what userspace wants to know about.
-Because of that, why wouldn't we use it?
+Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Anyway, your "never buffer printk data" patch looks like the right
-solution here, I'm guessing you are going to respin it based on the
-feedback so far, right?
+---
 
-thanks,
+diff -uNrp a/fs/namei.c b/fs/namei.c
+--- a/fs/namei.c	2012-06-25 09:30:28.125746562 -0700
++++ b/fs/namei.c	2012-06-25 09:31:29.456997558 -0700
+@@ -2870,10 +2870,8 @@ static struct file *path_openat(int dfd,
+ 			break;
+ 		}
+ 		error = may_follow_link(&link);
+-		if (unlikely(error)) {
+-			filp = ERR_PTR(error);
++		if (unlikely(error))
+ 			break;
+-		}
+ 		nd->flags |= LOOKUP_PARENT;
+ 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
+ 		error = follow_link(&link, nd, &cookie);
 
-greg k-h
+
+-- 
+Kees Cook
+Chrome OS Security
