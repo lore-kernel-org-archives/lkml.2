@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab2FYEhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 00:37:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56613 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab2FYEho (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 00:37:44 -0400
-From: David Ahern <dsahern@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: psuriset@linux.vnet.ibm.com, David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] perf kvm: fix segfault with default guest arguments
-Date: Sun, 24 Jun 2012 22:37:35 -0600
-Message-Id: <1340599055-89633-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	id S1752999Ab2FYEim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 00:38:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4950 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752507Ab2FYEik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 00:38:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="115629610"
+Date: Mon, 25 Jun 2012 12:38:36 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Paul Mundt <lethal@linux-sh.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: error: implicit declarations of BUG/BUG_ON/WARN_ON/WARN_ON_ONCE
+Message-ID: <20120625043836.GA11937@localhost>
+References: <20120615143303.3b88edcbc3efc7b1bf81839b@canb.auug.org.au>
+ <20120615065231.GA12272@localhost>
+ <4FDB6261.2030400@xenotime.net>
+ <4FDF5D50.7030505@xenotime.net>
+ <20120622071305.GA15102@localhost>
+ <20120625025301.GB9317@linux-sh.org>
+ <20120625042017.GA11705@localhost>
+ <4FE7E7CA.2030706@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE7E7CA.2030706@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File generated with:
-$ perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms
-    --guestmodules=/tmp/guest-modules record -a
+On Sun, Jun 24, 2012 at 09:23:38PM -0700, Randy Dunlap wrote:
+> On 06/24/2012 09:20 PM, Fengguang Wu wrote:
+> 
+> > Hi Paul,
+> > 
+> > The patch builds fine, thank you!
+> > 
+> > Tested-by: Fengguang Wu <wfg@linux.intel.com>
+> 
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> You clearly have better build hardware than I do (a simple Core i5
+> laptop).  ;)
 
-The report command:
-$ perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms
-    --guestmodules=/tmp/guest-modules report
+Thanks, and it's a surprise that you caught so many bugs with a laptop! ;)
 
-dies with a SEGFAULT:
-Program received signal SIGSEGV, Segmentation fault.
-0x000000000046dd7b in machine__mmap_name (self=0x0, bf=0x7fffffffbd20 "q\021", size=4096) at util/map.c:715
-715			snprintf(bf, size, "[%s.%d]", "guest.kernel.kallsyms", self->pid);
+Thanks,
+Fengguang
 
-(gdb) bt
-    at util/event.c:668
-    file_offset=8480) at util/session.c:979
-    0x7fffffffdd80) at util/session.c:1363
-
-If no samples hit within a guest module then no build id events are written
-to the header during the record. On the report side this cases no 'machine'
-to be generated for the default guest (pid == 0) leading to a
-machine == NULL in perf_session_deliver_event.
-
-perf's handling of default kallsyms and guest-modules needs to be reworked.
-Until then perf should at least not segfault.
-
-Reported-by: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/session.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index c3e399b..3999d5e 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -976,6 +976,8 @@ static int perf_session_deliver_event(struct perf_session *session,
- 		}
- 		return tool->sample(tool, event, sample, evsel, machine);
- 	case PERF_RECORD_MMAP:
-+		if (machine == NULL)
-+			return 0;
- 		return tool->mmap(tool, event, sample, machine);
- 	case PERF_RECORD_COMM:
- 		return tool->comm(tool, event, sample, machine);
--- 
-1.7.10.1
-
+> >> I'm really starting to loathe this header. This should take care of it:
+> >>
+> >> ---
+> >>
+> >> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> >> index 506ec19..7d10f96 100644
+> >> --- a/include/asm-generic/bug.h
+> >> +++ b/include/asm-generic/bug.h
+> >> @@ -3,10 +3,18 @@
+> >>  
+> >>  #include <linux/compiler.h>
+> >>  
+> >> +#ifdef CONFIG_GENERIC_BUG
+> >> +#define BUGFLAG_WARNING		(1 << 0)
+> >> +#define BUGFLAG_TAINT(taint)	(BUGFLAG_WARNING | ((taint) << 8))
+> >> +#define BUG_GET_TAINT(bug)	((bug)->flags >> 8)
+> >> +#endif
+> >> +
+> >> +#ifndef __ASSEMBLY__
+> >> +#include <linux/kernel.h>
+> >> +
+> >>  #ifdef CONFIG_BUG
+> >>  
+> >>  #ifdef CONFIG_GENERIC_BUG
+> >> -#ifndef __ASSEMBLY__
+> >>  struct bug_entry {
+> >>  #ifndef CONFIG_GENERIC_BUG_RELATIVE_POINTERS
+> >>  	unsigned long	bug_addr;
+> >> @@ -23,17 +31,8 @@ struct bug_entry {
+> >>  #endif
+> >>  	unsigned short	flags;
+> >>  };
+> >> -#endif		/* __ASSEMBLY__ */
+> >> -
+> >> -#define BUGFLAG_WARNING		(1 << 0)
+> >> -#define BUGFLAG_TAINT(taint)	(BUGFLAG_WARNING | ((taint) << 8))
+> >> -#define BUG_GET_TAINT(bug)	((bug)->flags >> 8)
+> >> -
+> >>  #endif	/* CONFIG_GENERIC_BUG */
+> >>  
+> >> -#ifndef __ASSEMBLY__
+> >> -#include <linux/kernel.h>
+> >> -
+> >>  /*
+> >>   * Don't use BUG() or BUG_ON() unless there's really no way out; one
+> >>   * example might be detecting data structure corruption in the middle
+> 
+> 
+> 
+> -- 
+> ~Randy
