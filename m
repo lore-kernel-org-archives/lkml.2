@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab2FYRVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 13:21:37 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:36197 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757253Ab2FYRVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 13:21:35 -0400
-Message-ID: <4FE89BA1.3030709@linux.vnet.ibm.com>
-Date: Mon, 25 Jun 2012 12:10:57 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1757596Ab2FYRX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 13:23:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45866 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757380Ab2FYRX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 13:23:57 -0400
+Date: Mon, 25 Jun 2012 10:23:52 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: 2012 Kernel Summit: Call for Participation: 2nd CALL
+Message-ID: <20120625172352.GA3869@google.com>
+References: <E1Sh0DC-0005D9-7n@tytso-glaptop.cam.corp.google.com>
+ <20120621181112.GA4642@google.com>
+ <20120622181853.GI4642@google.com>
+ <20120625144729.GB6876@localhost>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 2/3] zsmalloc: add generic path and remove x86 dependency
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-3-git-send-email-sjenning@linux.vnet.ibm.com> <20120625165915.GA20464@kroah.com>
-In-Reply-To: <20120625165915.GA20464@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062517-1976-0000-0000-00000E8E913C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120625144729.GB6876@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 11:59 AM, Greg Kroah-Hartman wrote:
-> On Mon, Jun 25, 2012 at 11:14:37AM -0500, Seth Jennings wrote:
->> This patch adds generic pages mapping methods that
->> work on all archs in the absence of support for
->> local_tlb_flush_kernel_range() advertised by the
->> arch through __HAVE_LOCAL_TLB_FLUSH_KERNEL_RANGE
+On Mon, Jun 25, 2012 at 10:47:29PM +0800, Fengguang Wu wrote:
+> On Fri, Jun 22, 2012 at 11:18:53AM -0700, Tejun Heo wrote:
+> > Hey again.
+> > 
+> > On Thu, Jun 21, 2012 at 11:11:12AM -0700, Tejun Heo wrote:
+> > > Depending on the number of people affected and if at all possible, it
+> > > would be nice to avoid such big holidays.  So, have fun, guys.
+> > 
+> > Eh never mind.  Minchan just told me KS is in August and Thanksgiving
+> > is in Sept.  Stupid me.  :)
 > 
-> Is this #define something that other arches define now?  Or is this
-> something new that you are adding here?
+> Aha, so you don't have that 1.5-month long travel season like us ;)
 
-Something new I'm adding.
+Heh, yeah, it's a pretty small country.  It's much less now but
+majority of the population used to travel to their hometowns over
+Thanksgiving much like the lunar new year in China, but even then,
+even if you travel one end to the other, taking more than a day was
+extremely rare.  The land is at most slightly above 500km across after
+all, so it's usually three (or maybe four or five) day deal over here.
+I kinda want to try the 1.5 month thing tho. :)
 
-The precedent for this approach is the __HAVE_ARCH_* defines
-that let the arch independent stuff know if a generic
-function needs to be defined or if there is an arch specific
-function.
-
-You can "grep -R __HAVE_ARCH_* arch/x86/" to see the ones
-that already exist.
-
-I guess I should have called it
-__HAVE_ARCH_LOCAL_TLB_FLUSH_KERNEL_RANGE though, not
-__HAVE_LOCAL_TLB_FLUSH_KERNEL_RANGE.
-
---
-Seth
-
+-- 
+tejun
