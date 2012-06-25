@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab2FYOSP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 10:18:15 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29306 "EHLO relay.sw.ru"
+	id S1757344Ab2FYOS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 10:18:27 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26051 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757093Ab2FYOSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 10:18:11 -0400
+	id S1757321Ab2FYOSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 10:18:25 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <cgroups@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -15,11 +15,11 @@ Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
         Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
         <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Suleiman Souhlal <suleiman@google.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 02/11] memcg: Reclaim when more than one page needed.
-Date: Mon, 25 Jun 2012 18:15:19 +0400
-Message-Id: <1340633728-12785-3-git-send-email-glommer@parallels.com>
+        Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH 06/11] memcg: kmem controller infrastructure
+Date: Mon, 25 Jun 2012 18:15:23 +0400
+Message-Id: <1340633728-12785-7-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340633728-12785-1-git-send-email-glommer@parallels.com>
 References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
@@ -27,96 +27,296 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
+This patch introduces infrastructure for tracking kernel memory pages
+to a given memcg. This will happen whenever the caller includes the
+flag __GFP_KMEMCG flag, and the task belong to a memcg other than
+the root.
 
-mem_cgroup_do_charge() was written before slab accounting, and expects
-three cases: being called for 1 page, being called for a stock of 32 pages,
-or being called for a hugepage.  If we call for 2 or 3 pages (and several
-slabs used in process creation are such, at least with the debug options I
-had), it assumed it's being called for stock and just retried without reclaiming.
+In memcontrol.h those functions are wrapped in inline acessors.
+The idea is to later on, patch those with jump labels, so we don't
+incur any overhead when no mem cgroups are being used.
 
-Fix that by passing down a minsize argument in addition to the csize.
-
-And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
-needed at all (and presumably is since it's there, perhaps to handle
-races), then it should be extended to more than PAGE_SIZE, yet how far?
-And should there be a retry count limit, of what?  For now retry up to
-COSTLY_ORDER (as page_alloc.c does), stay safe with a cond_resched(),
-and make sure not to do it if __GFP_NORETRY.
-
-[v4: fixed nr pages calculation pointed out by Christoph Lameter ]
-
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/memcontrol.c |   23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+ include/linux/memcontrol.h |   44 ++++++++++++
+ mm/memcontrol.c            |  172 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 216 insertions(+)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 83e7ba9..22479eb 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -21,6 +21,7 @@
+ #define _LINUX_MEMCONTROL_H
+ #include <linux/cgroup.h>
+ #include <linux/vm_event_item.h>
++#include <linux/hardirq.h>
+ 
+ struct mem_cgroup;
+ struct page_cgroup;
+@@ -409,6 +410,12 @@ struct sock;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ void sock_update_memcg(struct sock *sk);
+ void sock_release_memcg(struct sock *sk);
++
++#define mem_cgroup_kmem_on 1
++bool __mem_cgroup_new_kmem_page(gfp_t gfp, void *handle, int order);
++void __mem_cgroup_commit_kmem_page(struct page *page, void *handle, int order);
++void __mem_cgroup_free_kmem_page(struct page *page, int order);
++#define is_kmem_tracked_alloc (gfp & __GFP_KMEMCG)
+ #else
+ static inline void sock_update_memcg(struct sock *sk)
+ {
+@@ -416,6 +423,43 @@ static inline void sock_update_memcg(struct sock *sk)
+ static inline void sock_release_memcg(struct sock *sk)
+ {
+ }
++
++#define mem_cgroup_kmem_on 0
++#define __mem_cgroup_new_kmem_page(a, b, c) false
++#define __mem_cgroup_free_kmem_page(a,b )
++#define __mem_cgroup_commit_kmem_page(a, b, c)
++#define is_kmem_tracked_alloc (false)
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
++static __always_inline
++bool mem_cgroup_new_kmem_page(gfp_t gfp, void *handle, int order)
++{
++	if (!mem_cgroup_kmem_on)
++		return true;
++	if (!is_kmem_tracked_alloc)
++		return true;
++	if (!current->mm)
++		return true;
++	if (in_interrupt())
++		return true;
++	if (gfp & __GFP_NOFAIL)
++		return true;
++	return __mem_cgroup_new_kmem_page(gfp, handle, order);
++}
++
++static __always_inline
++void mem_cgroup_free_kmem_page(struct page *page, int order)
++{
++	if (mem_cgroup_kmem_on)
++		__mem_cgroup_free_kmem_page(page, order);
++}
++
++static __always_inline
++void mem_cgroup_commit_kmem_page(struct page *page, struct mem_cgroup *handle,
++				 int order)
++{
++	if (mem_cgroup_kmem_on)
++		__mem_cgroup_commit_kmem_page(page, handle, order);
++}
+ #endif /* _LINUX_MEMCONTROL_H */
+ 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9304db2..8e601e8 100644
+index 6f34b77..27b2b6f 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2158,8 +2158,16 @@ enum {
- 	CHARGE_OOM_DIE,		/* the current is killed because of OOM */
- };
+@@ -10,6 +10,10 @@
+  * Copyright (C) 2009 Nokia Corporation
+  * Author: Kirill A. Shutemov
+  *
++ * Kernel Memory Controller
++ * Copyright (C) 2012 Parallels Inc. and Google Inc.
++ * Authors: Glauber Costa and Suleiman Souhlal
++ *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+  * the Free Software Foundation; either version 2 of the License, or
+@@ -422,6 +426,9 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
+ #include <net/ip.h>
  
-+/*
-+ * We need a number that is small enough to be likely to have been
-+ * reclaimed even under pressure, but not too big to trigger unnecessary 
-+ * retries
-+ */
-+#define NR_PAGES_TO_RETRY 2
+ static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
++static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta);
++static void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta);
 +
- static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
--				unsigned int nr_pages, bool oom_check)
-+				unsigned int nr_pages, unsigned int min_pages,
-+				bool oom_check)
+ void sock_update_memcg(struct sock *sk)
  {
- 	unsigned long csize = nr_pages * PAGE_SIZE;
- 	struct mem_cgroup *mem_over_limit;
-@@ -2182,18 +2190,18 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 	} else
- 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
- 	/*
--	 * nr_pages can be either a huge page (HPAGE_PMD_NR), a batch
--	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
--	 *
- 	 * Never reclaim on behalf of optional batching, retry with a
- 	 * single page instead.
- 	 */
--	if (nr_pages == CHARGE_BATCH)
-+	if (nr_pages > min_pages)
- 		return CHARGE_RETRY;
- 
- 	if (!(gfp_mask & __GFP_WAIT))
- 		return CHARGE_WOULDBLOCK;
- 
-+	if (gfp_mask & __GFP_NORETRY)
-+		return CHARGE_NOMEM;
+ 	if (mem_cgroup_sockets_enabled) {
+@@ -476,6 +483,105 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+ }
+ EXPORT_SYMBOL(tcp_proto_cgroup);
+ #endif /* CONFIG_INET */
 +
- 	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
- 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
- 		return CHARGE_RETRY;
-@@ -2206,7 +2214,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 	 * unlikely to succeed so close to the limit, and we fall back
- 	 * to regular pages anyway in case of failure.
- 	 */
--	if (nr_pages == 1 && ret)
-+	if (nr_pages <= NR_PAGES_TO_RETRY && ret)
- 		return CHARGE_RETRY;
++static inline bool mem_cgroup_kmem_enabled(struct mem_cgroup *memcg)
++{
++	return !mem_cgroup_disabled() && memcg &&
++	       !mem_cgroup_is_root(memcg) && memcg->kmem_accounted;
++}
++
++bool __mem_cgroup_new_kmem_page(gfp_t gfp, void *_handle, int order)
++{
++	struct mem_cgroup *memcg;
++	struct mem_cgroup **handle = (struct mem_cgroup **)_handle;
++	bool ret = true;
++	size_t size;
++	struct task_struct *p;
++
++	*handle = NULL;
++	rcu_read_lock();
++	p = rcu_dereference(current->mm->owner);
++	memcg = mem_cgroup_from_task(p);
++	if (!mem_cgroup_kmem_enabled(memcg))
++		goto out;
++
++	mem_cgroup_get(memcg);
++
++	size = (1 << order) << PAGE_SHIFT;
++	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
++	if (!ret) {
++		mem_cgroup_put(memcg);
++		goto out;
++	}
++
++	*handle = memcg;
++out:
++	rcu_read_unlock();
++	return ret;
++}
++EXPORT_SYMBOL(__mem_cgroup_new_kmem_page);
++
++void __mem_cgroup_commit_kmem_page(struct page *page, void *handle, int order)
++{
++	struct page_cgroup *pc;
++	struct mem_cgroup *memcg = handle;
++	size_t size;
++
++	if (!memcg)
++		return;
++
++	WARN_ON(mem_cgroup_is_root(memcg));
++	/* The page allocation must have failed. Revert */
++	if (!page) {
++		size = (1 << order) << PAGE_SHIFT;
++		memcg_uncharge_kmem(memcg, size);
++		mem_cgroup_put(memcg);
++		return;
++	}
++
++	pc = lookup_page_cgroup(page);
++	lock_page_cgroup(pc);
++	pc->mem_cgroup = memcg;
++	SetPageCgroupUsed(pc);
++	unlock_page_cgroup(pc);
++}
++void __mem_cgroup_free_kmem_page(struct page *page, int order)
++{
++	struct mem_cgroup *memcg;
++	size_t size;
++	struct page_cgroup *pc;
++
++	if (mem_cgroup_disabled())
++		return;
++
++	pc = lookup_page_cgroup(page);
++	lock_page_cgroup(pc);
++	memcg = pc->mem_cgroup;
++	pc->mem_cgroup = NULL;
++	if (!PageCgroupUsed(pc)) {
++		unlock_page_cgroup(pc);
++		return;
++	}
++	ClearPageCgroupUsed(pc);
++	unlock_page_cgroup(pc);
++
++	/*
++	 * The classical disabled check won't work
++	 * for uncharge, since it is possible that the user enabled
++	 * kmem tracking, allocated, and then disabled.
++	 *
++	 * We trust if there is a memcg associated with the page,
++	 * it is a valid allocation
++	 */
++	if (!memcg)
++		return;
++
++	WARN_ON(mem_cgroup_is_root(memcg));
++	size = (1 << order) << PAGE_SHIFT;
++	memcg_uncharge_kmem(memcg, size);
++	mem_cgroup_put(memcg);
++}
++EXPORT_SYMBOL(__mem_cgroup_free_kmem_page);
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
  
- 	/*
-@@ -2341,7 +2349,8 @@ again:
- 			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
- 		}
+ #if defined(CONFIG_INET) && defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
+@@ -5645,3 +5751,69 @@ static int __init enable_swap_account(char *s)
+ __setup("swapaccount=", enable_swap_account);
  
--		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
-+		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, nr_pages,
-+		    oom_check);
- 		switch (ret) {
- 		case CHARGE_OK:
- 			break;
+ #endif
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta)
++{
++	struct res_counter *fail_res;
++	struct mem_cgroup *_memcg;
++	int may_oom, ret;
++	bool nofail = false;
++
++	may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
++	    !(gfp & __GFP_NORETRY);
++
++	ret = 0;
++
++	if (!memcg)
++		return ret;
++
++	_memcg = memcg;
++	ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
++	    &_memcg, may_oom);
++
++	if (ret == -EINTR)  {
++		nofail = true;
++		/*
++		 * __mem_cgroup_try_charge() chose to bypass to root due
++		 * to OOM kill or fatal signal.
++		 * Since our only options are to either fail the
++		 * allocation or charge it to this cgroup, do it as
++		 * a temporary condition. But we can't fail. From a kmem/slab
++		 * perspective, the cache has already been selected, by
++		 * mem_cgroup_get_kmem_cache(), so it is too late to change our
++		 * minds
++		 */
++		res_counter_charge_nofail(&memcg->res, delta, &fail_res);
++		if (do_swap_account)
++			res_counter_charge_nofail(&memcg->memsw, delta,
++						  &fail_res);
++		ret = 0;
++	} else if (ret == -ENOMEM)
++		return ret;
++
++	if (nofail)
++		res_counter_charge_nofail(&memcg->kmem, delta, &fail_res);
++	else
++		ret = res_counter_charge(&memcg->kmem, delta, &fail_res);
++
++	if (ret) {
++		res_counter_uncharge(&memcg->res, delta);
++		if (do_swap_account)
++			res_counter_uncharge(&memcg->memsw, delta);
++	}
++
++	return ret;
++}
++
++void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta)
++{
++	if (!memcg)
++		return;
++
++	res_counter_uncharge(&memcg->kmem, delta);
++	res_counter_uncharge(&memcg->res, delta);
++	if (do_swap_account)
++		res_counter_uncharge(&memcg->memsw, delta);
++}
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
 -- 
 1.7.10.2
 
