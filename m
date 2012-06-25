@@ -1,246 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab2FYX6j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:58:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757262Ab2FYX6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:58:37 -0400
-Date: Mon, 25 Jun 2012 20:57:40 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/4] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120625235739.GA1887@t510.redhat.com>
-References: <cover.1340665087.git.aquini@redhat.com>
- <7f83427b3894af7969c67acc0f27ab5aa68b4279.1340665087.git.aquini@redhat.com>
- <CAPbh3rvN0U=xVuqb=7wHkbEAgM=dC67uG-1=m=8GAv9MNX7LWg@mail.gmail.com>
+	id S1757996Ab2FYX6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:58:44 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:28744 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757262Ab2FYX6l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 19:58:41 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-209.messagelabs.com!1340668719!6916915!1
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 17/33] staging: comedi: cb_das16_cs: remove skel driver cut-and-paste comments
+Date: Mon, 25 Jun 2012 16:58:34 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPbh3rvN0U=xVuqb=7wHkbEAgM=dC67uG-1=m=8GAv9MNX7LWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <201206251658.34368.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 07:31:38PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jun 25, 2012 at 7:25 PM, Rafael Aquini <aquini@redhat.com> wrote:
-> > This patch introduces helper functions that teach compaction and migration bits
-> > how to cope with pages which are part of a guest memory balloon, in order to
-> > make them movable by memory compaction procedures.
-> >
-> 
-> Should the names that are exported be prefixed with kvm_?
->
-I rather let them as generic as possible, specially because I believe other
-balloon drivers can leverage the same technique to make their page lists movable
-as well, in the near future. However, I do agree with your tip if we ended up
-finding out no one else can reuse this piece of code.
+There are a number of comments in this driver that are cut-and-paste
+from the skel driver. They are not needed in "real" drivers.
 
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/cb_das16_cs.c | 20 --------------------
+ 1 file changed, 20 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index e1e3ff0..36fd3e6 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -108,10 +108,6 @@ static irqreturn_t das16cs_interrupt(int irq, void *d)
+ 	return IRQ_HANDLED;
+ }
  
-> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> > ---
-> >  include/linux/mm.h |   17 +++++++++++++
-> >  mm/compaction.c    |   72 ++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  mm/migrate.c       |   30 +++++++++++++++++++++-
-> >  3 files changed, 118 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > index b36d08c..360656e 100644
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -1629,5 +1629,22 @@ static inline unsigned int debug_guardpage_minorder(void) { return 0; }
-> >  static inline bool page_is_guard(struct page *page) { return false; }
-> >  #endif /* CONFIG_DEBUG_PAGEALLOC */
-> >
-> > +#if (defined(CONFIG_VIRTIO_BALLOON) || \
-> > +       defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
-> > +extern int is_balloon_page(struct page *);
-> > +extern int isolate_balloon_page(struct page *);
-> > +extern int putback_balloon_page(struct page *);
-> > +
-> > +/* return 1 if page is part of a guest's memory balloon, 0 otherwise */
-> > +static inline int PageBalloon(struct page *page)
-> > +{
-> > +       return is_balloon_page(page);
-> > +}
-> > +#else
-> > +static inline int PageBalloon(struct page *page)               { return 0; }
-> > +static inline int isolate_balloon_page(struct page *page)      { return 0; }
-> > +static inline int putback_balloon_page(struct page *page)      { return 0; }
-> > +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
-> > +
-> >  #endif /* __KERNEL__ */
-> >  #endif /* _LINUX_MM_H */
-> > diff --git a/mm/compaction.c b/mm/compaction.c
-> > index 7ea259d..8835d55 100644
-> > --- a/mm/compaction.c
-> > +++ b/mm/compaction.c
-> > @@ -14,6 +14,7 @@
-> >  #include <linux/backing-dev.h>
-> >  #include <linux/sysctl.h>
-> >  #include <linux/sysfs.h>
-> > +#include <linux/export.h>
-> >  #include "internal.h"
-> >
-> >  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
-> > @@ -312,6 +313,14 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> >                        continue;
-> >                }
-> >
-> > +               /*
-> > +                * For ballooned pages, we need to isolate them before testing
-> > +                * for PageLRU, as well as skip the LRU page isolation steps.
-> > +                */
-> > +               if (PageBalloon(page))
-> > +                       if (isolate_balloon_page(page))
-> > +                               goto isolated_balloon_page;
-> > +
-> >                if (!PageLRU(page))
-> >                        continue;
-> >
-> > @@ -338,6 +347,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> >
-> >                /* Successfully isolated */
-> >                del_page_from_lru_list(page, lruvec, page_lru(page));
-> > +isolated_balloon_page:
-> >                list_add(&page->lru, migratelist);
-> >                cc->nr_migratepages++;
-> >                nr_isolated++;
-> > @@ -903,4 +913,66 @@ void compaction_unregister_node(struct node *node)
-> >  }
-> >  #endif /* CONFIG_SYSFS && CONFIG_NUMA */
-> >
-> > +#if defined(CONFIG_VIRTIO_BALLOON) || defined(CONFIG_VIRTIO_BALLOON_MODULE)
-> > +/*
-> > + * Balloon pages special page->mapping.
-> > + * users must properly allocate and initiliaze an instance of balloon_mapping,
-> > + * and set it as the page->mapping for balloon enlisted page instances.
-> > + *
-> > + * address_space_operations necessary methods for ballooned pages:
-> > + *   .migratepage    - used to perform balloon's page migration (as is)
-> > + *   .invalidatepage - used to isolate a page from balloon's page list
-> > + *   .freepage       - used to reinsert an isolated page to balloon's page list
-> > + */
-> > +struct address_space *balloon_mapping;
-> > +EXPORT_SYMBOL(balloon_mapping);
-> > +
-> > +/* ballooned page id check */
-> > +int is_balloon_page(struct page *page)
-> > +{
-> > +       struct address_space *mapping = page->mapping;
-> > +       if (mapping == balloon_mapping)
-> > +               return 1;
-> > +       return 0;
-> > +}
-> > +
-> > +/* __isolate_lru_page() counterpart for a ballooned page */
-> > +int isolate_balloon_page(struct page *page)
-> > +{
-> > +       struct address_space *mapping = page->mapping;
-> > +       if (mapping->a_ops->invalidatepage) {
-> > +               /*
-> > +                * We can race against move_to_new_page() and stumble across a
-> > +                * locked 'newpage'. If we succeed on isolating it, the result
-> > +                * tends to be disastrous. So, we sanely skip PageLocked here.
-> > +                */
-> > +               if (likely(!PageLocked(page) && get_page_unless_zero(page))) {
-> > +                       /*
-> > +                        * A ballooned page, by default, has just one refcount.
-> > +                        * Prevent concurrent compaction threads from isolating
-> > +                        * an already isolated balloon page.
-> > +                        */
-> > +                       if (page_count(page) == 2) {
-> > +                               mapping->a_ops->invalidatepage(page, 0);
-> > +                               return 1;
-> > +                       }
-> > +                       /* Drop refcount taken for this already isolated page */
-> > +                       put_page(page);
-> > +               }
-> > +       }
-> > +       return 0;
-> > +}
-> > +
-> > +/* putback_lru_page() counterpart for a ballooned page */
-> > +int putback_balloon_page(struct page *page)
-> > +{
-> > +       struct address_space *mapping = page->mapping;
-> > +       if (mapping->a_ops->freepage) {
-> > +               mapping->a_ops->freepage(page);
-> > +               put_page(page);
-> > +               return 1;
-> > +       }
-> > +       return 0;
-> > +}
-> > +#endif /* CONFIG_VIRTIO_BALLOON || CONFIG_VIRTIO_BALLOON_MODULE */
-> >  #endif /* CONFIG_COMPACTION */
-> > diff --git a/mm/migrate.c b/mm/migrate.c
-> > index be26d5c..ffc02a4 100644
-> > --- a/mm/migrate.c
-> > +++ b/mm/migrate.c
-> > @@ -78,7 +78,10 @@ void putback_lru_pages(struct list_head *l)
-> >                list_del(&page->lru);
-> >                dec_zone_page_state(page, NR_ISOLATED_ANON +
-> >                                page_is_file_cache(page));
-> > -               putback_lru_page(page);
-> > +               if (unlikely(PageBalloon(page)))
-> > +                       VM_BUG_ON(!putback_balloon_page(page));
-> > +               else
-> > +                       putback_lru_page(page);
-> >        }
-> >  }
-> >
-> > @@ -783,6 +786,17 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
-> >                }
-> >        }
-> >
-> > +       if (PageBalloon(page)) {
-> > +               /*
-> > +                * A ballooned page does not need any special attention from
-> > +                * physical to virtual reverse mapping procedures.
-> > +                * To avoid burning cycles at rmap level,
-> > +                * skip attempts to unmap PTEs or remap swapcache.
-> > +                */
-> > +               remap_swapcache = 0;
-> > +               goto skip_unmap;
-> > +       }
-> > +
-> >        /*
-> >         * Corner case handling:
-> >         * 1. When a new swap-cache page is read into, it is added to the LRU
-> > @@ -852,6 +866,20 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
-> >                        goto out;
-> >
-> >        rc = __unmap_and_move(page, newpage, force, offlining, mode);
-> > +
-> > +       if (PageBalloon(newpage)) {
-> > +               /*
-> > +                * A ballooned page has been migrated already. Now, it is the
-> > +                * time to wrap-up counters, handle the old page back to Buddy
-> > +                * and return.
-> > +                */
-> > +               list_del(&page->lru);
-> > +               dec_zone_page_state(page, NR_ISOLATED_ANON +
-> > +                                   page_is_file_cache(page));
-> > +               put_page(page);
-> > +               __free_page(page);
-> > +               return rc;
-> > +       }
-> >  out:
-> >        if (rc != -EAGAIN) {
-> >                /*
-> > --
-> > 1.7.10.2
-> >
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
+-/*
+- * "instructions" read/write data in "one-shot" or "software-triggered"
+- * mode.
+- */
+ static int das16cs_ai_rinsn(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s,
+ 			    struct comedi_insn *insn, unsigned int *data)
+@@ -168,13 +164,6 @@ static int das16cs_ai_cmdtest(struct comedi_device *dev,
+ 	int err = 0;
+ 	int tmp;
+ 
+-	/* cmdtest tests a particular command to see if it is valid.
+-	 * Using the cmdtest ioctl, a user can create a valid cmd
+-	 * and then have it executes by the cmd ioctl.
+-	 *
+-	 * cmdtest returns 1,2,3,4 or 0, depending on which tests
+-	 * the command passes. */
+-
+ 	/* step 1: make sure trigger sources are trivially valid */
+ 
+ 	tmp = cmd->start_src;
+@@ -367,8 +356,6 @@ static int das16cs_ao_winsn(struct comedi_device *dev,
+ 	return i;
+ }
+ 
+-/* AO subdevices should have a read insn as well as a write insn.
+- * Usually this means copying a value stored in devpriv. */
+ static int das16cs_ao_rinsn(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s,
+ 			    struct comedi_insn *insn, unsigned int *data)
+@@ -383,11 +370,6 @@ static int das16cs_ao_rinsn(struct comedi_device *dev,
+ 	return i;
+ }
+ 
+-/* DIO devices are slightly special.  Although it is possible to
+- * implement the insn_read/insn_write interface, it is much more
+- * useful to applications if you implement the insn_bits interface.
+- * This allows packed reading/writing of the DIO channels.  The
+- * comedi core can convert between insn_bits and insn_read/write */
+ static int das16cs_dio_insn_bits(struct comedi_device *dev,
+ 				 struct comedi_subdevice *s,
+ 				 struct comedi_insn *insn, unsigned int *data)
+@@ -399,8 +381,6 @@ static int das16cs_dio_insn_bits(struct comedi_device *dev,
+ 		outw(s->state, dev->iobase + 16);
+ 	}
+ 
+-	/* on return, data[1] contains the value of the digital
+-	 * input and output lines. */
+ 	data[1] = inw(dev->iobase + 16);
+ 
+ 	return insn->n;
+-- 
+1.7.11
+
