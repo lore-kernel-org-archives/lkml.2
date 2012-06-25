@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757849Ab2FYXXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:23:46 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:58497 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757391Ab2FYXXo (ORCPT
+	id S1757890Ab2FYXXz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:23:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48198 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757869Ab2FYXXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:23:44 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-132.messagelabs.com!1340666623!12519166!1
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 13/33] staging: comedi: cb_das16_cs: Move the comedi_driver variable
-Date: Mon, 25 Jun 2012 16:23:38 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Mon, 25 Jun 2012 19:23:53 -0400
+Date: Mon, 25 Jun 2012 16:23:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/11] memcg: propagate kmem limiting information to
+ children
+Message-Id: <20120625162352.51997c5a.akpm@linux-foundation.org>
+In-Reply-To: <1340633728-12785-10-git-send-email-glommer@parallels.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
+	<1340633728-12785-10-git-send-email-glommer@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206251623.38443.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the comedi_driver variable to remove the need for the
-forward declarations. Add some whitespace to the declaration
-for aesthetic reasons.
+On Mon, 25 Jun 2012 18:15:26 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_das16_cs.c | 17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -287,7 +287,11 @@ struct mem_cgroup {
+>  	 * Should the accounting and control be hierarchical, per subtree?
+>  	 */
+>  	bool use_hierarchy;
+> -	bool kmem_accounted;
+> +	/*
+> +	 * bit0: accounted by this cgroup
+> +	 * bit1: accounted by a parent.
+> +	 */
+> +	volatile unsigned long kmem_accounted;
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index 8661e13..92c774d 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -96,16 +96,6 @@ struct das16cs_private {
- };
- #define devpriv ((struct das16cs_private *)dev->private)
- 
--static int das16cs_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it);
--static void das16cs_detach(struct comedi_device *dev);
--static struct comedi_driver driver_das16cs = {
--	.driver_name = "cb_das16_cs",
--	.module = THIS_MODULE,
--	.attach = das16cs_attach,
--	.detach = das16cs_detach,
--};
--
- static struct pcmcia_device *cur_dev;
- 
- static const struct comedi_lrange das16cs_ai_range = { 4, {
-@@ -623,6 +613,13 @@ static int das16cs_timer_insn_config(struct comedi_device *dev,
- 	return -EINVAL;
- }
- 
-+static struct comedi_driver driver_das16cs = {
-+	.driver_name	= "cb_das16_cs",
-+	.module		= THIS_MODULE,
-+	.attach		= das16cs_attach,
-+	.detach		= das16cs_detach,
-+};
-+
- static int das16cs_pcmcia_config_loop(struct pcmcia_device *p_dev,
- 				void *priv_data)
- {
--- 
-1.7.11
+I suggest
 
+	unsigned long kmem_accounted;	/* See KMEM_ACCOUNTED_*, below */
+
+>  	bool		oom_lock;
+>  	atomic_t	under_oom;
+> @@ -340,6 +344,9 @@ struct mem_cgroup {
+>  #endif
+>  };
+>  
+> +#define KMEM_ACCOUNTED_THIS	0
+> +#define KMEM_ACCOUNTED_PARENT	1
+
+And then document the fields here.
