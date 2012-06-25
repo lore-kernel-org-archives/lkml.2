@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab2FYKnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 06:43:37 -0400
-Received: from [216.32.180.11] ([216.32.180.11]:27717 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755790Ab2FYKnf (ORCPT
+	id S1755861Ab2FYKon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 06:44:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42447 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729Ab2FYKol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 06:43:35 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2dI98dI9371I1432Izz1202hzz15d4R8275bh8275dhz2dh668h839h944hd25he5bhf0ah)
-X-WSS-ID: 0M665RI-02-00K-02
-X-M-MSG: 
-Date: Mon, 25 Jun 2012 12:42:09 +0200
-From: "joerg.roedel@amd.com" <joerg.roedel@amd.com>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [v2 1/5] iommu: Add DMA window parser, of_get_dma_window()
-Message-ID: <20120625104209.GR2624@amd.com>
-References: <4FE20457.8090307@wwwdotorg.org>
- <20120621.094611.2108645748323641310.hdoyu@nvidia.com>
- <4FE2C5F3.1010007@wwwdotorg.org>
- <20120621.113023.1324461719984328307.hdoyu@nvidia.com>
- <4FE34973.1020400@wwwdotorg.org>
- <20120625081543.bf25af1f74d7d1057d9cd216@nvidia.com>
+	Mon, 25 Jun 2012 06:44:41 -0400
+Date: Mon, 25 Jun 2012 18:43:57 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH v3 3/4] memcg: optimize memcg_get_hierarchical_limit
+Message-ID: <20120625104357.GB12148@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1340613872-9581-1-git-send-email-liwp.linux@gmail.com>
+ <4FE834D9.8070903@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120625081543.bf25af1f74d7d1057d9cd216@nvidia.com>
+In-Reply-To: <4FE834D9.8070903@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 08:15:43AM +0300, Hiroshi Doyu wrote:
-> On Thu, 21 Jun 2012 18:18:59 +0200
-> Stephen Warren <swarren@wwwdotorg.org> wrote:
-> 
-> > On 06/21/2012 02:30 AM, Hiroshi Doyu wrote:
-> > > From: Hiroshi DOYU <hdoyu@nvidia.com>
-> > > 
-> > > This code was based on:
-> > >     "arch/microblaze/kernel/prom_parse.c"
-> > >     "arch/powerpc/kernel/prom_parse.c"
-> > > 
-> > > Can replace "of_parse_dma_window()" in the above. This supports
-> > > different formats flexibly. "prefix" can be configured if any. "busno"
-> > > and "index" are optionally specified. Set NULL and 0 if not used.
-> > > 
-> > > Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
-> > 
-> > Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-> 
-> Thanks.
-> 
-> > BTW, I only see patches 1 & 2 of 5 in this series; did you only mean to
-> > post just 2 patches or did the others get lost on the way to my system
-> > somehow?
-> 
-> I reposted only [1/5] and [2/5] as "v2" because the rests are
-> same. Probably it was better to send a whole series again. Sorry for
-> confusion.
+On Mon, Jun 25, 2012 at 06:52:25PM +0900, Kamezawa Hiroyuki wrote:
+>(2012/06/25 17:44), Wanpeng Li wrote:
+>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>> 
+>> Optimize memcg_get_hierarchical_limit to save cpu cycle.
+>> 
+>> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+>
+>I can't understand the benefit of this patch to the real world...
+>
+>So, if you wrote the patch description as "clean up" rather than optimize,
+>ok, I'll agree.
+OK, I will change to "Cleanup". Thank you Kame.
 
-Please repost the whole series with the Acks included as a new thread so
-that I can easily apply them.
+Best Regards,
+Wanpeng Li
 
-
-	Joerg
-
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+>
+>Thanks,
+>-Kame
+>
+>> ---
+>>   mm/memcontrol.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 2e81328..4520b57 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -3917,9 +3917,9 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
+>>   
+>>   	min_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+>>   	min_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+>> -	cgroup = memcg->css.cgroup;
+>>   	if (!memcg->use_hierarchy)
+>>   		goto out;
+>> +	cgroup = memcg->css.cgroup;
+>>   
+>>   	while (cgroup->parent) {
+>>   		cgroup = cgroup->parent;
+>> 
+>
+>
+>
