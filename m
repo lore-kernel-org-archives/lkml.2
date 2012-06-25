@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab2FYIMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:12:54 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:59907 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab2FYIMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:12:52 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AolTAPQc6E9V5qg+PGdsb2JhbABEihWsCRkBAQEBNzSCGAEBBScTHCMQCAMYLhQlChoTiA+4MBSLH4UiYAOVLYVmg0GJPA
-X-IronPort-AV: E=Sophos;i="4.77,471,1336341600"; 
-   d="scan'208";a="145509724"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 25 Jun 2012 10:15:58 +0200
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/22 v4] Input: atmel_mxt_ts - set phys to i2c client
- adapter name
-Message-ID: <20120625081558.GA641@polaris.bitmath.org>
-References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
- <1339992522-22073-2-git-send-email-djkurtz@chromium.org>
- <20120621084107.GB2193@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120621084107.GB2193@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752936Ab2FYIN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:13:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43987 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539Ab2FYINx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 04:13:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="157814176"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
+        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH v6 00/11] SATA ZPODD support
+Date: Mon, 25 Jun 2012 16:13:01 +0800
+Message-Id: <1340611992-41457-1-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 01:41:07AM -0700, Dmitry Torokhov wrote:
-> On Mon, Jun 18, 2012 at 12:08:21PM +0800, Daniel Kurtz wrote:
-> > This allows userspace to more easily distinguish which bus a particular
-> > atmel_mxt_ts device is attached to.
-> > 
-> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> > ---
-> >  drivers/input/touchscreen/atmel_mxt_ts.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> > index 42e6450..eda9eed 100644
-> > --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> > +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> > @@ -1106,6 +1106,7 @@ static int __devinit mxt_probe(struct i2c_client *client,
-> >  	}
-> >  
-> >  	input_dev->name = "Atmel maXTouch Touchscreen";
-> > +	input_dev->phys = client->adapter->name;
-> 
-> Normally we set phys to 'xxx/input0' nstead of just the adaptor name.
+Hi all,
 
-Daniel, will we be seeing another version of this patch?
+This is the v6 patches to add SATA ZPODD support, to try it:
+git pull git://git.kernel.org/pub/scm/linux/kernel/git/mlin/linux.git zpodd
 
-Thanks,
-Henrik
+Holger and Mathtew,
+Patch 1 to Patch 3 are the libata acpi binding patches from you.
+I removed dock related code from your original version.
+
+v6:
+- rebase to v3.5-rc4
+- merge patch 4("libata: use correct PCI devices") with patch 2 (Dan Williams)
+- makes ata_acpi_find_device mostly independent of the topology,
+  gives some type safety, and drops some redundant work finding the ata_port
+  (Dan Williams)
+
+v5:
+http://lkml.org/lkml/2012/6/18/62
+- rebase to v3.5-rc3
+- fixed crash reported at https://lkml.org/lkml/2012/2/24/2 (Aaron Lu)
+- rename is_pci_ata to compat_pci_ata (Alan Cox)
+
+v4:
+https://lkml.org/lkml/2012/5/28/11
+- Includes libata acpi binding patches from Holger Macht and Matthew Garrett.
+- tell scsi layer device supports runtime power off
+- check support for device busy class events
+
+v3:
+https://lkml.org/lkml/2012/3/28/20
+- Split the ACPI D3Cold state support patches out
+- Adds "Device Attention" bit check
+
+v2:
+https://lkml.org/lkml/2012/3/1/61
+- _PR3 indicates D3Cold support
+- move can_power_off flag to pm_subsys_data
+- allow all combinations of power resource and device
+- split patches into smaller ones to make review easy
+
+v1:
+https://lkml.org/lkml/2012/2/13/86
+
+Aaron Lu (4):
+      libata: tell scsi layer device supports runtime power off
+      [SCSI] sr: check support for device busy class events
+      [SCSI] sr: support zero power ODD
+      [SCSI] sr: make sure ODD is in resumed state in block ioctl
+
+Holger Macht (1):
+      [SCSI]: add wrapper to access and set scsi_bus_type in struct acpi_bus_type
+
+Lin Ming (4):
+      libata-acpi: set acpi state for SATA port
+      libata-acpi: add ata port runtime D3Cold support
+      libata-acpi: register/unregister device to/from power resource
+      libata: detect Device Attention support
+
+Matthew Garrett (2):
+      libata: bind the Linux device tree to the ACPI device tree
+      libata: migrate ACPI code over to new bindings
+
+ drivers/acpi/glue.c        |    4 +-
+ drivers/acpi/power.c       |    2 +
+ drivers/acpi/sleep.c       |    2 +
+ drivers/ata/libata-acpi.c  |  410 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------------
+ drivers/ata/libata-core.c  |   11 +--
+ drivers/ata/libata-pmp.c   |    4 -
+ drivers/ata/libata-scsi.c  |    3 +
+ drivers/ata/libata.h       |   15 ++--
+ drivers/ata/pata_acpi.c    |    4 +-
+ drivers/scsi/scsi_lib.c    |   17 ++++
+ drivers/scsi/sr.c          |  160 ++++++++++++++++++++++++++++++++++-
+ drivers/scsi/sr.h          |    3 +
+ include/linux/ata.h        |    1 +
+ include/linux/cdrom.h      |   43 ++++++++++
+ include/linux/libata.h     |    9 +-
+ include/scsi/scsi.h        |   10 +++
+ include/scsi/scsi_device.h |    2 +
+ 17 files changed, 560 insertions(+), 140 deletions(-)
+
+
