@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab2FYSiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 14:38:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35909 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754750Ab2FYSiX (ORCPT
+	id S1755701Ab2FYSnM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 14:43:12 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:52198 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab2FYSnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 14:38:23 -0400
-Date: Mon, 25 Jun 2012 11:38:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@redhat.com>
-Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 11/11] protect architectures where THREAD_SIZE >=
- PAGE_SIZE against fork bombs
-Message-ID: <20120625183818.GH3869@google.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
- <1340633728-12785-12-git-send-email-glommer@parallels.com>
- <4FE89807.50708@redhat.com>
+	Mon, 25 Jun 2012 14:43:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FE89807.50708@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1340612258.1773.150.camel@x61.thuisdomein>
+References: <1339017960.21725.22.camel@x61.thuisdomein>
+	<CACRpkdbsF-bdXUEctyG8-npqfzFP4uoxE=hRrjgt_TxMWKAD8w@mail.gmail.com>
+	<1339020451.21725.33.camel@x61.thuisdomein>
+	<1340612258.1773.150.camel@x61.thuisdomein>
+Date: Tue, 26 Jun 2012 02:43:10 +0800
+Message-ID: <CACRpkdavrhM+F1i5BDrRy+nTO0khL=FLQDAKiVJBO8mN6ytPrw@mail.gmail.com>
+Subject: Re: [PATCH] u8500_defconfig: delete CONFIG_AB5500_CORE
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Paul Bolle <pebolle@tiscali.nl>, arm@kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 06:55:35PM +0200, Frederic Weisbecker wrote:
-> On 06/25/2012 04:15 PM, Glauber Costa wrote:
-> 
-> > Because those architectures will draw their stacks directly from
-> > the page allocator, rather than the slab cache, we can directly
-> > pass __GFP_KMEMCG flag, and issue the corresponding free_pages.
-> > 
-> > This code path is taken when the architecture doesn't define
-> > CONFIG_ARCH_THREAD_INFO_ALLOCATOR (only ia64 seems to), and has
-> > THREAD_SIZE >= PAGE_SIZE. Luckily, most - if not all - of the
-> > remaining architectures fall in this category.
-> > 
-> > This will guarantee that every stack page is accounted to the memcg
-> > the process currently lives on, and will have the allocations to fail
-> > if they go over limit.
-> > 
-> > For the time being, I am defining a new variant of THREADINFO_GFP, not
-> > to mess with the other path. Once the slab is also tracked by memcg,
-> > we can get rid of that flag.
-> > 
-> > Tested to successfully protect against :(){ :|:& };:
-> > 
-> > Signed-off-by: Glauber Costa <glommer@parallels.com>
-> > CC: Christoph Lameter <cl@linux.com>
-> > CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> > CC: Michal Hocko <mhocko@suse.cz>
-> > CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > CC: Johannes Weiner <hannes@cmpxchg.org>
-> > CC: Suleiman Souhlal <suleiman@google.com>
-> 
-> 
-> Acked-by: Frederic Weisbecker <fweisbec@redhat.com>
+On Mon, Jun 25, 2012 at 4:17 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
 
-Frederic, does this (with proper slab accounting added later) achieve
-what you wanted with the task counter?
+> I wonder what you actually meant with "the ARM SoC tree". MAINTAINERS
+> seems to have multiple entries related to ARM SoC.
 
-Thanks.
+The ARM SoC tree is a tree accumulating ARM sub architrecture
+(plat-*, mach-*) before being sent to linux-next and then to
+Torvalds.
 
--- 
-tejun
+They are reached on arm@kernel.org and send out info mails
+like this:
+http://lwn.net/Articles/485753/
+
+Currently on the other side of that mail alias you find mostly
+Arnd Bergmann and Olof Johansson.
+
+ARM SoC people: care to send a MAINTAINERS patch to formalize
+your statement of work?
+
+Yours,
+Linus Walleij
