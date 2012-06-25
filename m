@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab2FYV3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 17:29:46 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:39763 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756237Ab2FYV3o (ORCPT
+	id S1757511Ab2FYVam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 17:30:42 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:62895 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756458Ab2FYVak convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 17:29:44 -0400
-Message-Id: <4fe8d847.0fbd0e0a.7895.ffffa29fSMTPIN_ADDED@gmr-mx.google.com>
-From: Andrew Hunter <ahh@google.com>
-Date: Fri, 15 Jun 2012 15:18:26 -0700
-Subject: [PATCH 1/1] core-kernel: use multiply instead of shifts in hash_64
-Apparently-To: <ahh@google.com>
+	Mon, 25 Jun 2012 17:30:40 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        "Alexandre Pereira da Silva" <aletes.xgr@gmail.com>
+Subject: Re: [RFC 2/2] usb: gadget: composite: parse dt overrides
+References: <1340655832-30447-1-git-send-email-aletes.xgr@gmail.com>
+Date: Mon, 25 Jun 2012 23:30:36 +0200
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wgg91aya3l0zgt@mpn-glaptop>
+In-Reply-To: <1340655832-30447-1-git-send-email-aletes.xgr@gmail.com>
+User-Agent: Opera Mail/12.01 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-To: unlisted-recipients:; (no To-header on input)
 
-hash_64(val) = val * (a 64-bit constant).  It is "optimized" by
-replacing the multiply by a bunch of shifts and adds.  On modern
-machines, this is not an optimization; remove it.
+On Mon, 25 Jun 2012 22:23:52 +0200, Alexandre Pereira da Silva <aletes.xgr@gmail.com> wrote:
+> Grab the devicetree node properties to override VendorId, ProductId,
+> bcdDevice, Manucacturer, Product and SerialNumber
+>
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-Running this hash function in a independent benchmark, it's about three times
-as fast (1ns vs 3ns) with a multiply as with a shift on Westmere. It's also
-considerably smaller (and since we inline this function often, that matters.)
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-Signed-off-by: Andrew Hunter <ahh@google.com>
-Reviewed-by: Paul Turner <pjt@google.com>
----
- include/linux/hash.h |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+> @@ -1470,6 +1472,35 @@ static int composite_bind(struct usb_gadget *gadget)
+> 	cdev->desc = *composite->dev;
+>+	/* grab overrides from devicetree */
+> +	if (np) {
+> +		u32 reg;
+> +
+> +		if (!idVendor &&
+> +			of_property_read_u32(np, "vendor_id", &reg) == 0)
+> +			idVendor = reg;
+> +
+> +		if (!idProduct &&
+> +			of_property_read_u32(np, "product_id", &reg) == 0)
+> +			idProduct = reg;
+> +
+> +		if (!bcdDevice &&
+> +			of_property_read_u32(np, "bcd_device", &reg) == 0)
+> +			bcdDevice = reg;
+> +
+> +		if (!iManufacturer)
+> +			of_property_read_string(np, "manufacturer",
+> +				&iManufacturer);
+> +
+> +		if (!iProduct)
+> +			of_property_read_string(np, "product",
+> +				&iProduct);
+> +
+> +		if (!iSerialNumber)
+> +			of_property_read_string(np, "serial_number",
+> +				&iSerialNumber);
+> +	}
+> +
+>  	/* standardized runtime overrides for device ID data */
+>  	if (idVendor)
+>  		cdev->desc.idVendor = cpu_to_le16(idVendor);
 
-diff --git a/include/linux/hash.h b/include/linux/hash.h
-index b80506b..daabc3d 100644
---- a/include/linux/hash.h
-+++ b/include/linux/hash.h
-@@ -34,7 +34,9 @@
- static inline u64 hash_64(u64 val, unsigned int bits)
- {
- 	u64 hash = val;
--
-+#if BITS_PER_LONG == 64
-+	hash *= GOLDEN_RATIO_PRIME_64;
-+#else
- 	/*  Sigh, gcc can't optimise this alone like it does for 32 bits. */
- 	u64 n = hash;
- 	n <<= 18;
-@@ -49,7 +51,7 @@ static inline u64 hash_64(u64 val, unsigned int bits)
- 	hash += n;
- 	n <<= 2;
- 	hash += n;
--
-+#endif
- 	/* High bits are more random, so use them. */
- 	return hash >> (64 - bits);
- }
+
 -- 
-1.7.7.3
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
