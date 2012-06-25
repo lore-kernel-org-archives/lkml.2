@@ -1,107 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab2FYTLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 15:11:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45333 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820Ab2FYTLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 15:11:47 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] ARM: Delete asm/system.h
-To: linux@arm.linux.org.uk
-Cc: dhowells@redhat.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 25 Jun 2012 20:11:31 +0100
-Message-ID: <20120625191130.27109.42551.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1755736Ab2FYTMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 15:12:22 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62089 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab2FYTMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 15:12:20 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 25 Jun 2012 12:12:33 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        anton@redhat.com
+Subject: Re: Kerneloops.org defunct?
+Message-ID: <20120625191233.GA29324@roeck-us.net>
+References: <4DE6264A.2040901@gmail.com>
+ <20110601212432.2677b03a.rdunlap@xenotime.net>
+ <201106211534.10366.roucaries.bastien@gmail.com>
+ <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+ <20110826173517.7321c086@lxorguk.ukuu.org.uk>
+ <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+ <20120625180536.GA29261@roeck-us.net>
+ <4FE8A9C0.3050802@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE8A9C0.3050802@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete asm/system.h from the ARM arch.  This was missed when the others were
-deleted.
+On Mon, Jun 25, 2012 at 11:11:12AM -0700, Arjan van de Ven wrote:
+> On 6/25/2012 11:05 AM, Guenter Roeck wrote:
+> 
+> > 
+> > Did anyone ever get access to the kerneloops code and/or is working on a
+> > replacement ?
+> > 
+> > I see that http://kerneloops-descope.rhcloud.com/submitoops.php appears to
+> > accept kerneloops reports, http://kerneloops-descope.rhcloud.com/ reports
+> > "www.kerneloops.org, coming soon", and a comment in
+> > https://bugzilla.redhat.com/show_bug.cgi?id=800302 suggests that Redhat may be
+> > in the process of taking over kerneloops.org.
+> 
+> I hope RH is willing to invest the time in this; I do not have access to
+> the latest code anymore (it lived on the kernel.org servers prior to the
+> incident)
+> 
+Maybe we can get some feedback from RH. Anton, can you shed some light about
+what is happening, if anything ?
 
-Reported-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- arch/arm/include/asm/jump_label.h |    1 -
- arch/arm/include/asm/system.h     |    8 --------
- arch/arm/mach-msm/idle.c          |    2 +-
- arch/arm/plat-omap/mux.c          |    2 --
- drivers/usb/gadget/lpc32xx_udc.c  |    1 -
- 5 files changed, 1 insertions(+), 13 deletions(-)
- delete mode 100644 arch/arm/include/asm/system.h
-
-diff --git a/arch/arm/include/asm/jump_label.h b/arch/arm/include/asm/jump_label.h
-index bfc198c..f0409ec 100644
---- a/arch/arm/include/asm/jump_label.h
-+++ b/arch/arm/include/asm/jump_label.h
-@@ -4,7 +4,6 @@
- #ifdef __KERNEL__
- 
- #include <linux/types.h>
--#include <asm/system.h>
- 
- #define JUMP_LABEL_NOP_SIZE 4
- 
-diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
-deleted file mode 100644
-index 74542c5..0000000
---- a/arch/arm/include/asm/system.h
-+++ /dev/null
-@@ -1,8 +0,0 @@
--/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
--#include <asm/barrier.h>
--#include <asm/compiler.h>
--#include <asm/cmpxchg.h>
--#include <asm/exec.h>
--#include <asm/switch_to.h>
--#include <asm/system_info.h>
--#include <asm/system_misc.h>
-diff --git a/arch/arm/mach-msm/idle.c b/arch/arm/mach-msm/idle.c
-index 0c9e13c..e4d0c66 100644
---- a/arch/arm/mach-msm/idle.c
-+++ b/arch/arm/mach-msm/idle.c
-@@ -17,7 +17,7 @@
-  */
- 
- #include <linux/init.h>
--#include <asm/system.h>
-+#include <asm/system_misc.h>
- 
- static void msm_idle(void)
- {
-diff --git a/arch/arm/plat-omap/mux.c b/arch/arm/plat-omap/mux.c
-index cff8712..da503eb 100644
---- a/arch/arm/plat-omap/mux.c
-+++ b/arch/arm/plat-omap/mux.c
-@@ -28,8 +28,6 @@
- #include <linux/io.h>
- #include <linux/spinlock.h>
- 
--#include <asm/system.h>
--
- #include <plat/cpu.h>
- #include <plat/mux.h>
- 
-diff --git a/drivers/usb/gadget/lpc32xx_udc.c b/drivers/usb/gadget/lpc32xx_udc.c
-index 262acfd..626963e 100644
---- a/drivers/usb/gadget/lpc32xx_udc.c
-+++ b/drivers/usb/gadget/lpc32xx_udc.c
-@@ -55,7 +55,6 @@
- #include <mach/hardware.h>
- #include <linux/io.h>
- #include <asm/irq.h>
--#include <asm/system.h>
- 
- #include <mach/platform.h>
- #include <mach/irqs.h>
-
+Thanks,
+Guenter
