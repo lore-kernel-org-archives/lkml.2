@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab2FYUXv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 16:23:51 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:42765 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab2FYUXt (ORCPT
+	id S1756197Ab2FYUbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 16:31:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64617 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab2FYUbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 16:23:49 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Subject: [RFC 2/2] usb: gadget: composite: parse dt overrides
-Date: Mon, 25 Jun 2012 17:23:52 -0300
-Message-Id: <1340655832-30447-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Mon, 25 Jun 2012 16:31:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: balbi@ti.com
+Subject: Re: [RFC PATCH v2 1/2] drivers: misc: omap: add a new driver for ocp2scp
+Date: Mon, 25 Jun 2012 16:26:08 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
+        b-cousson@ti.com, rnayak@ti.com, tony@atomide.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1340370942-23201-1-git-send-email-kishon@ti.com> <CAAe_U6+dkiQw-i93pFapt6qKrArzaQoE8X3GjDzUDraziG8B2Q@mail.gmail.com> <20120625122449.GA30463@arwen.pp.htv.fi>
+In-Reply-To: <20120625122449.GA30463@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206251626.09666.arnd@arndb.de>
+X-Provags-ID: V02:K0:okxOslY2v0cQunvvE6kTtmSKsgUjp0vh0Lae2x+JXss
+ KXceuJ80RLJ7+d1ONpCK+wFqf3ofEYxVV/aZaxXbW4j/xYbHPB
+ CsbJtJOOIYUFBl/5718TPCOFzxr1AHYGqghv0NGEWXsRFw1In/
+ 4ntEtcoApK+Tjz/qq3MaYtkwwqwFx/Q08H4k65VqQLzCedbf18
+ dDRWbw79kGr/BhyI9jFX3YEV3HyNyt1oZ8HZPjdCNGhRTbNCHx
+ NPfWpfJM6amma7KJxTPfagACOMR59BZ2fizUUfPFfKR7qR4nYJ
+ inr29Wg6peWXmrpIB7xlAPPojcABgPB0lfc0s/w+C+hrnyQjas
+ e0dAuFFaCmcu0Qqj6elY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grab the devicetree node properties to override VendorId, ProductId,
-bcdDevice, Manucacturer, Product and SerialNumber
+On Monday 25 June 2012, Felipe Balbi wrote:
+> > > Can't this live where the scp drivers live?  Actually, where is that at?
+> > > Do we have scp drivers?
+> > AFAIK, there isn't any driver for scp. But we have a driver for ocp
+> > and it is present at arch/arm/mach-omap2/omap_l3_noc.c
+> 
+> I don't think this deserves a directory of its own. Maybe
+> drivers/platform/arm/omap/ ?? the l3_noc is an OMAP-specific
+> interconnect and the SCP bus is also an OMAP-specific bus. I don't know
+> of any other arch/soc who uses the same interconnect IP as OMAP and the
+> same ocp2scp bridge. That bridge was created by TI for all I know.
+> 
+> Greg, would drivers/platform/arm/omap/ work for you ? We could also move
+> the interconnect drivers there.
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
----
- drivers/usb/gadget/composite.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+I really don't like the idea of introducing drivers/platform/arm/ because
+very little of the stuff that one would put in there are actually ARM
+specific.
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 390749b..f3b480e 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -17,6 +17,7 @@
- #include <linux/module.h>
- #include <linux/device.h>
- #include <linux/utsname.h>
-+#include <linux/of.h>
- 
- #include <linux/usb/composite.h>
- #include <asm/unaligned.h>
-@@ -1423,6 +1424,7 @@ static int composite_bind(struct usb_gadget *gadget)
- {
- 	struct usb_composite_dev	*cdev;
- 	int				status = -ENOMEM;
-+	struct device_node		*np = gadget->dev.of_node;
- 
- 	cdev = kzalloc(sizeof *cdev, GFP_KERNEL);
- 	if (!cdev)
-@@ -1470,6 +1472,35 @@ static int composite_bind(struct usb_gadget *gadget)
- 
- 	cdev->desc = *composite->dev;
- 
-+	/* grab overrides from devicetree */
-+	if (np) {
-+		u32 reg;
-+
-+		if (!idVendor &&
-+			of_property_read_u32(np, "vendor_id", &reg) == 0)
-+			idVendor = reg;
-+
-+		if (!idProduct &&
-+			of_property_read_u32(np, "product_id", &reg) == 0)
-+			idProduct = reg;
-+
-+		if (!bcdDevice &&
-+			of_property_read_u32(np, "bcd_device", &reg) == 0)
-+			bcdDevice = reg;
-+
-+		if (!iManufacturer)
-+			of_property_read_string(np, "manufacturer",
-+				&iManufacturer);
-+
-+		if (!iProduct)
-+			of_property_read_string(np, "product",
-+				&iProduct);
-+
-+		if (!iSerialNumber)
-+			of_property_read_string(np, "serial_number",
-+				&iSerialNumber);
-+	}
-+
- 	/* standardized runtime overrides for device ID data */
- 	if (idVendor)
- 		cdev->desc.idVendor = cpu_to_le16(idVendor);
--- 
-1.7.10
+I have suggested a drivers/bus/ before and people did not see the need
+back then, and we agreed to continue having a directory for each bus,
+as we have for the big ones (pci, usb, i2c, spi, ...) and a lot of
+simple (amba, rapidio, bcma, ...) or obscure (tc,  vlynq, nubus, ...)
+ones.
+
+I think we should reconsider the idea of drivers/bus/ with a file per
+bus in there at least for new buses, but doing a new drivers/scp/
+would be ok for me if there is enough opposition against the idea
+of drivers/bus aggregating different buses.
+
+	Arnd
 
