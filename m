@@ -1,77 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549Ab2FYMgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 08:36:41 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:36279 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756282Ab2FYMgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 08:36:40 -0400
-Date: Mon, 25 Jun 2012 07:36:47 -0500
-From: Cliff Wickman <cpw@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Jack Steiner <steiner@sgi.com>, Mike Travis <travis@sgi.com>
-Subject: Re: [PATCH 3/3] x86: UV2 BAU hang workarounds
-Message-ID: <20120625123647.GA28138@sgi.com>
-References: <E1Si3c5-0008I6-CG@eag09.americas.sgi.com> <20120622131459.GC31884@sgi.com> <20120625100321.GB27081@gmail.com>
+	id S1756601Ab2FYMiS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 08:38:18 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56214 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756365Ab2FYMiR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 08:38:17 -0400
+Message-ID: <4FE85BAF.609@linux.vnet.ibm.com>
+Date: Mon, 25 Jun 2012 18:08:07 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625100321.GB27081@gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Fengguang Wu <wfg@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Preeti Murthy <preeti@linux.vnet.ibm.com>,
+        Srivatsa S Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: boot hang on commit "PM / ACPI: Fix suspend/resume regression
+ caused by cpuidle cleanup."
+References: <20120622073513.GA15864@localhost> <4FE44163.4060509@linux.vnet.ibm.com> <20120622122453.GA17341@localhost> <201206250018.15384.rjw@sisk.pl>
+In-Reply-To: <201206250018.15384.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062512-3864-0000-0000-0000037C1102
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 12:03:21PM +0200, Ingo Molnar wrote:
-> 
-> * Cliff Wickman <cpw@sgi.com> wrote:
-> 
-> > On SGI's UV2 the BAU (Broadcast Assist Unit) driver can hang under a
-> > heavy load.  To cure this: 
-> > 
-> > - Disable the UV2 extended status mode (see UV2_EXT_SHFT), as this
-> >   mode changes BAU behavior in more ways then just delivering an extra bit
-> >   of status.  Revert status to just two meaningful bits, like UV1.
-> > - Use no IPI-style resets on UV2.  Just give up the request for whatever the
-> >   reason it failed and let it be accomplished with the legacy IPI method.
-> > - Use no alternate sending descriptor (the former UV2 workaround
-> >   bcp->using_desc and handle_uv2_busy() stuff).  Just disable the use of the
-> >   BAU for a period of time in favor of the legacy IPI method when the h/w bug
-> >   leaves a descriptor busy.
-> >   -- new tunable: giveup_limit determines the threshold at which a hub is 
-> >      so plugged that it should do all requests with the legacy IPI method for a
-> >      period of time
-> >   -- generalize disable_for_congestion() (renamed disable_for_period()) for
-> >      use whenever a hub should avoid using the BAU for a period of time
-> > 
-> > Misc:
-> > - fix find_another_by_swack(), which is part of the UV2 bug workaround
-> > - correct and clarify the statistics (new stats s_overipilimit s_giveuplimit
-> >   s_enters s_ipifordisabled s_plugged s_congested)
-> 
-> Sigh, it looks like something that ought to be 7 successive, 
-> easy to review commits got mixed up into a single, huge, hard to 
-> review commit. How did that happen?
-> 
-> Thanks,
-> 
-> 	Ingo
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 
-Hi Ingo,
+Fix suspend/resume regression caused by cpuidle cleanup.
 
-  Yes, admittedly large.
-  This patch was the 'bottom line' of a great deal of experimentation on
-  how to work around some hardware problems with the bau.  This is what
-  remains after pulling out the unnecessary or unhelpful attempts.
-  I could break it up for review purposes, if you think anyone would
-  want to examine each component.
-  You sound like you're willing to spend that time and effort.  Yes?
+Commit e978aa7d7d57d04eb5f88a7507c4fb98577def77 ( cpuidle: Move
+dev->last_residency update to driver enter routine; remove dev->last_state)
+was  breaking suspend on laptops, as reported in the below link
+	- https://lkml.org/lkml/2011/11/11/164
 
--Cliff
+This was fixed in commit 3439a8da16bcad6b0982ece938c9f8299bb53584
+(ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend regression)
+by removing acpi_idle_suspend flag.
+	- https://lkml.org/lkml/2011/11/14/74
 
--- 
-Cliff Wickman
-SGI
-cpw@sgi.com
-(651) 683-3824
+But this did fix did not work on all systems
+as Suspend/resume regression was reported on Lenovo S10-3
+recently by Dave.
+	- https://lkml.org/lkml/2012/5/27/115
+It looked like with commit e978aa7d broke suspend and
+with commit 3439a8da resume was not working with acpi_idle driver.
+
+This patch fixes the regression that caused this issue
+in the first place. acpi_idle_suspend flag is essential on
+some x86 systems to prevent the cpus from going to deeper C-states
+when suspend is triggered ( commit b04e7bdb984 )
+So reverting the commit 3439a8da is essential.
+
+By default, irqs are disabled in cpu_idle arch specific call
+and re-enabled in idle state return path . During suspend,
+the acpi_idle_suspend flag is set, which
+prevents the cpus from going to deeper idle states,
+it is essential to enabling the irqs in this return path too.
+
+To address the suspend issue,
+we were not re-enabling the interrupts while returning from
+acpi_idle_enter_bm() routine if acpi_idle_suspend flag is set.
+and this caused suspend failure.
+
+In addition to the above, to improve the readability of the code,
+return of -ENIVAL is replaced with -EBUSY in acpi_idle_suspend
+return path. Implying that the system is currently busy when suspend
+is in progress, which prevents the cpus from entering deeper C-states.
+
+---
+This patch applies on 3.5-rc2
+
+Reported-and-Tested-by: Dav Hansen <dave@linux.vnet.ibm.com>
+Tested-by: Preeti Murthy <preeti@linux.vnet.ibm.com>
+Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Reviewed-by: Srivatsa S Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/processor_idle.c |   32 ++++++++++++++++++++++++++++++--
+ 1 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index f3decb3..47a8caa 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -224,6 +224,7 @@ static void lapic_timer_state_broadcast(struct acpi_processor *pr,
+ /*
+  * Suspend / resume control
+  */
++static int acpi_idle_suspend;
+ static u32 saved_bm_rld;
+ 
+ static void acpi_idle_bm_rld_save(void)
+@@ -242,13 +243,21 @@ static void acpi_idle_bm_rld_restore(void)
+ 
+ int acpi_processor_suspend(struct acpi_device * device, pm_message_t state)
+ {
++	if (acpi_idle_suspend == 1)
++		return 0;
++
+ 	acpi_idle_bm_rld_save();
++	acpi_idle_suspend = 1;
+ 	return 0;
+ }
+ 
+ int acpi_processor_resume(struct acpi_device * device)
+ {
++	if (acpi_idle_suspend == 0)
++		return 0;
++
+ 	acpi_idle_bm_rld_restore();
++	acpi_idle_suspend = 0;
+ 	return 0;
+ }
+ 
+@@ -754,6 +763,12 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
+ 
+ 	local_irq_disable();
+ 
++	if (acpi_idle_suspend) {
++		local_irq_enable();
++		cpu_relax();
++		return -EBUSY;
++	}
++
+ 	lapic_timer_state_broadcast(pr, cx, 1);
+ 	kt1 = ktime_get_real();
+ 	acpi_idle_do_entry(cx);
+@@ -823,6 +838,12 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
+ 
+ 	local_irq_disable();
+ 
++	if (acpi_idle_suspend) {
++		local_irq_enable();
++		cpu_relax();
++		return -EBUSY;
++	}
++
+ 	if (cx->entry_method != ACPI_CSTATE_FFH) {
+ 		current_thread_info()->status &= ~TS_POLLING;
+ 		/*
+@@ -907,14 +928,21 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
+ 						drv, drv->safe_state_index);
+ 		} else {
+ 			local_irq_disable();
+-			acpi_safe_halt();
++			if (!acpi_idle_suspend)
++				acpi_safe_halt();
+ 			local_irq_enable();
+-			return -EINVAL;
++			return -EBUSY;
+ 		}
+ 	}
+ 
+ 	local_irq_disable();
+ 
++	if (acpi_idle_suspend) {
++		local_irq_enable();
++		cpu_relax();
++		return -EBUSY;
++	}
++
+ 	if (cx->entry_method != ACPI_CSTATE_FFH) {
+ 		current_thread_info()->status &= ~TS_POLLING;
+ 		/*
+
+Cheers,
+Deepthi
+
