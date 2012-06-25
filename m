@@ -1,87 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757011Ab2FYXB3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:01:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53855 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268Ab2FYXB1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:01:27 -0400
-MIME-Version: 1.0
-Reply-To: konrad@darnok.org
-In-Reply-To: <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
-Date: Mon, 25 Jun 2012 19:01:26 -0400
-X-Google-Sender-Auth: _mJ7VtKHSpDtAmFQ7Oa5uUciAeM
-Message-ID: <CAPbh3rvkKZOuGh_Pn9WpeV5_=vA=k9=x17oa2GoT8fEgRMr+WQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	id S1757049Ab2FYXCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:02:16 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:47430 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754151Ab2FYXCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 19:02:14 -0400
+Date: Mon, 25 Jun 2012 16:02:04 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] warn about unsafe suid_dumpable / core_pattern combo
+Message-ID: <20120625230204.GA27001@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 12:14 PM, Seth Jennings
-<sjenning@linux.vnet.ibm.com> wrote:
-> This patch adds support for a local_tlb_flush_kernel_range()
-> function for the x86 arch.  This function allows for CPU-local
-> TLB flushing, potentially using invlpg for single entry flushing,
-> using an arch independent function name.
+When suid_dumpable=2, detect unsafe core_pattern settings and warn when
+they are seen.
 
-What x86 hardware did you use to figure the optimal number?
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/exec.c             |   10 +++++-----
+ include/linux/sched.h |    5 +++++
+ kernel/sysctl.c       |   37 +++++++++++++++++++++++++++++++++++--
+ 3 files changed, 45 insertions(+), 7 deletions(-)
 
->
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> ---
->  arch/x86/include/asm/tlbflush.h |   21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
->
-> diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-> index 36a1a2a..92a280b 100644
-> --- a/arch/x86/include/asm/tlbflush.h
-> +++ b/arch/x86/include/asm/tlbflush.h
-> @@ -168,4 +168,25 @@ static inline void flush_tlb_kernel_range(unsigned long start,
->        flush_tlb_all();
->  }
->
-> +#define __HAVE_LOCAL_FLUSH_TLB_KERNEL_RANGE
-> +/*
-> + * INVLPG_BREAK_EVEN_PAGES is the number of pages after which single tlb
-> + * flushing becomes more costly than just doing a complete tlb flush.
-> + * While this break even point varies among x86 hardware, tests have shown
-> + * that 8 is a good generic value.
-> +*/
-> +#define INVLPG_BREAK_EVEN_PAGES 8
-> +static inline void local_flush_tlb_kernel_range(unsigned long start,
-> +               unsigned long end)
-> +{
-> +       if (cpu_has_invlpg &&
-> +               (end - start)/PAGE_SIZE <= INVLPG_BREAK_EVEN_PAGES) {
-> +               while (start < end) {
-> +                       __flush_tlb_single(start);
-> +                       start += PAGE_SIZE;
-> +               }
-> +       } else
-> +               local_flush_tlb();
-> +}
-> +
->  #endif /* _ASM_X86_TLBFLUSH_H */
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+diff --git a/fs/exec.c b/fs/exec.c
+index a6506ba..ddb4c99 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2002,17 +2002,17 @@ static void coredump_finish(struct mm_struct *mm)
+ void set_dumpable(struct mm_struct *mm, int value)
+ {
+ 	switch (value) {
+-	case 0:
++	case SUID_DUMPABLE_DISABLED:
+ 		clear_bit(MMF_DUMPABLE, &mm->flags);
+ 		smp_wmb();
+ 		clear_bit(MMF_DUMP_SECURELY, &mm->flags);
+ 		break;
+-	case 1:
++	case SUID_DUMPABLE_ENABLED:
+ 		set_bit(MMF_DUMPABLE, &mm->flags);
+ 		smp_wmb();
+ 		clear_bit(MMF_DUMP_SECURELY, &mm->flags);
+ 		break;
+-	case 2:
++	case SUID_DUMPABLE_SAFE:
+ 		set_bit(MMF_DUMP_SECURELY, &mm->flags);
+ 		smp_wmb();
+ 		set_bit(MMF_DUMPABLE, &mm->flags);
+@@ -2025,7 +2025,7 @@ static int __get_dumpable(unsigned long mm_flags)
+ 	int ret;
+ 
+ 	ret = mm_flags & MMF_DUMPABLE_MASK;
+-	return (ret >= 2) ? 2 : ret;
++	return (ret > SUID_DUMPABLE_ENABLED) ? SUID_DUMPABLE_SAFE : ret;
+ }
+ 
+ int get_dumpable(struct mm_struct *mm)
+@@ -2142,7 +2142,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ 	 * so we dump it as root in mode 2, and only into a controlled
+ 	 * environment (pipe handler or fully qualified path).
+ 	 */
+-	if (__get_dumpable(cprm.mm_flags) == 2) {
++	if (__get_dumpable(cprm.mm_flags) == SUID_DUMPABLE_SAFE) {
+ 		/* Setuid core dump mode */
+ 		flag = O_EXCL;		/* Stop rewrite attacks */
+ 		cred->fsuid = GLOBAL_ROOT_UID;	/* Dump root private */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4059c0f..394d635 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -406,6 +406,11 @@ static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
+ extern void set_dumpable(struct mm_struct *mm, int value);
+ extern int get_dumpable(struct mm_struct *mm);
+ 
++/* get/set_dumpable() values */
++#define SUID_DUMPABLE_DISABLED	0
++#define SUID_DUMPABLE_ENABLED	1
++#define SUID_DUMPABLE_SAFE	2
++
+ /* mm flags */
+ /* dumpable bits */
+ #define MMF_DUMPABLE      0  /* core dump is permitted */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4ab1187..b46f496 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -174,6 +174,11 @@ static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos);
+ #endif
+ 
++static int proc_dointvec_minmax_coredump(struct ctl_table *table, int write,
++		void __user *buffer, size_t *lenp, loff_t *ppos);
++static int proc_dostring_coredump(struct ctl_table *table, int write,
++		void __user *buffer, size_t *lenp, loff_t *ppos);
++
+ #ifdef CONFIG_MAGIC_SYSRQ
+ /* Note: sysrq code uses it's own private copy */
+ static int __sysrq_enabled = SYSRQ_DEFAULT_ENABLE;
+@@ -410,7 +415,7 @@ static struct ctl_table kern_table[] = {
+ 		.data		= core_pattern,
+ 		.maxlen		= CORENAME_MAX_SIZE,
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dostring,
++		.proc_handler	= proc_dostring_coredump,
+ 	},
+ 	{
+ 		.procname	= "core_pipe_limit",
+@@ -1498,7 +1503,7 @@ static struct ctl_table fs_table[] = {
+ 		.data		= &suid_dumpable,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
++		.proc_handler	= proc_dointvec_minmax_coredump,
+ 		.extra1		= &zero,
+ 		.extra2		= &two,
+ 	},
+@@ -2009,6 +2014,34 @@ int proc_dointvec_minmax(struct ctl_table *table, int write,
+ 				do_proc_dointvec_minmax_conv, &param);
+ }
+ 
++static void validate_coredump_safety(void)
++{
++	if (suid_dumpable == SUID_DUMPABLE_SAFE &&
++	    core_pattern[0] != '/' && core_pattern[0] != '|') {
++		printk(KERN_WARNING "Unsafe core_pattern used with "\
++			"suid_dumpable=2. Pipe handler or fully qualified "\
++			"core dump path required.\n");
++	}
++}
++
++static int proc_dointvec_minmax_coredump(struct ctl_table *table, int write,
++		void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	int error = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
++	if (!error)
++		validate_coredump_safety();
++	return error;
++}
++
++static int proc_dostring_coredump(struct ctl_table *table, int write,
++		  void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	int error = proc_dostring(table, write, buffer, lenp, ppos);
++	if (!error)
++		validate_coredump_safety();
++	return error;
++}
++
+ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int write,
+ 				     void __user *buffer,
+ 				     size_t *lenp, loff_t *ppos,
+-- 
+1.7.0.4
+
+-- 
+Kees Cook
+Chrome OS Security
