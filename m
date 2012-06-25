@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab2FYLJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 07:09:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55461 "EHLO mx2.suse.de"
+	id S1755965Ab2FYLNn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 07:13:43 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:45299 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755553Ab2FYLJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 07:09:28 -0400
-Date: Mon, 25 Jun 2012 13:09:26 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] memcg: optimize memcg_get_hierarchical_limit
-Message-ID: <20120625110926.GJ19805@tiehlicka.suse.cz>
-References: <1340613872-9581-1-git-send-email-liwp.linux@gmail.com>
- <4FE834D9.8070903@jp.fujitsu.com>
- <20120625104357.GB12148@kernel>
+	id S1755920Ab2FYLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 07:13:42 -0400
+Message-ID: <4FE84741.9000703@parallels.com>
+Date: Mon, 25 Jun 2012 15:10:57 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625104357.GB12148@kernel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Paul Mackerras" <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
+        "PowerPC email list" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH SLUB 1/2] duplicate the cache name in saved_alias list
+References: <1340617984.13778.37.camel@ThinkPad-T420>
+In-Reply-To: <1340617984.13778.37.camel@ThinkPad-T420>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 25-06-12 18:43:57, Wanpeng Li wrote:
-> On Mon, Jun 25, 2012 at 06:52:25PM +0900, Kamezawa Hiroyuki wrote:
-> >(2012/06/25 17:44), Wanpeng Li wrote:
-> >> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> >> 
-> >> Optimize memcg_get_hierarchical_limit to save cpu cycle.
-> >> 
-> >> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
-> >
-> >I can't understand the benefit of this patch to the real world...
-> >
-> >So, if you wrote the patch description as "clean up" rather than optimize,
-> >ok, I'll agree.
-> OK, I will change to "Cleanup". Thank you Kame.
+On 06/25/2012 01:53 PM, Li Zhong wrote:
+> SLUB duplicates the cache name in kmem_cache_create(). However if the
+> cache could be merged to others during early booting, the name pointer
+> is saved in saved_alias list, and the string needs to be kept valid
+> before slab_sysfs_init() is called.
+>
+> This patch tries to duplicate the cache name in saved_alias list, so
+> that the cache name could be safely kfreed after calling
+> kmem_cache_create(), if that name is kmalloced.
+>
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> ---
+>   mm/slub.c |    6 ++++++
+>   1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 8c691fa..3dc8ed5 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -5373,6 +5373,11 @@ static int sysfs_slab_alias(struct kmem_cache *s,
+> const char *name)
+>
+>   	al->s = s;
+>   	al->name = name;
+> +	al->name = kstrdup(name, GFP_KERNEL);
+> +	if (!al->name) {
+> +		kfree(al);
+> +		return -ENOMEM;
+> +	}
+>   	al->next = alias_list;
+>   	alias_list = al;
+>   	return 0;
+> @@ -5409,6 +5414,7 @@ static int __init slab_sysfs_init(void)
+>   		if (err)
+>   			printk(KERN_ERR "SLUB: Unable to add boot slab alias"
+>   					" %s to sysfs\n", s->name);
+> +		kfree(al->name);
+>   		kfree(al);
+>   	}
+>
+>
 
-Does this really clean something up?
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+What's unsafe about the current state of affairs ?
+Whenever we alias, we'll increase the reference counter.
+kmem_cache_destroy will only actually destroy the structure whenever 
+that refcnt reaches zero.
+
+This means that kfree shouldn't happen until then. So what is exactly 
+that you are seeing?
+
+Now, if you ask me, keeping the name around in user-visible files like 
+/proc/slabinfo for caches that are removed already can be a bit 
+confusing (that is because we don't add aliases to the slab_cache list)
+
+If you want to touch this, one thing you can do is to keep a list of 
+names bundled in an alias. If an alias is removed, you free that name. 
+If that name is the representative name of the bundle, you move to the 
+next one.
