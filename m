@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab2FYE0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 00:26:51 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48626 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab2FYE0t (ORCPT
+	id S1752083Ab2FYEhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 00:37:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56613 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2FYEho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 00:26:49 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE7E7FA.80702@jp.fujitsu.com>
-Date: Mon, 25 Jun 2012 13:24:26 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/6] memcg: replace unsigned long by u64 to avoid overflow
-References: <1340432134-5178-1-git-send-email-liwp.linux@gmail.com> <20120623081514.GJ27816@cmpxchg.org> <20120623090339.GA6184@kernel> <20120623092654.GL27816@cmpxchg.org>
-In-Reply-To: <20120623092654.GL27816@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Jun 2012 00:37:44 -0400
+From: David Ahern <dsahern@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: psuriset@linux.vnet.ibm.com, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] perf kvm: fix segfault with default guest arguments
+Date: Sun, 24 Jun 2012 22:37:35 -0600
+Message-Id: <1340599055-89633-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/23 18:26), Johannes Weiner wrote:
-> On Sat, Jun 23, 2012 at 05:03:39PM +0800, Wanpeng Li wrote:
->> On Sat, Jun 23, 2012 at 10:15:14AM +0200, Johannes Weiner wrote:
->>> On Sat, Jun 23, 2012 at 02:15:34PM +0800, Wanpeng Li wrote:
->>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>>>
->>>> Since the return value variable in mem_cgroup_zone_nr_lru_pages and
->>>> mem_cgroup_node_nr_lru_pages functions are u64, so replace the return
->>>> value of funtions by u64 to avoid overflow.
->>>
->>> I wonder what 16 TB of memory must think running on a 32-bit kernel...
->>> "What is this, an address space for ants?"
->>
->> Hi Johannes,
->>
->> You mean change all u64 in memcg to unsigned long? or something I
->> miss....
->
-> Not _all_ of them, we have some that count bytes.  But those counting
-> pages should probably be ulong, yes.
->
-> I think Kame added the ones that you wanted to adjust the surroundings
-> for in particular, so let's ask him.  Kame?
->
+File generated with:
+$ perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms
+    --guestmodules=/tmp/guest-modules record -a
 
-I've been using 'unsigned long' for the number of pages and 'u64' for the number of
-bytes. I think it's enough and it should be. I don't have any reason to use u64 for
-the number of pages on 32bit archs.
-If 'bytes' are handled by 'unsigned long', please fix it.
+The report command:
+$ perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms
+    --guestmodules=/tmp/guest-modules report
 
-BTW, zone_page_state()::/include/linux/vmstat.h returns 'unsigned long'.
-If you want to change this in memcg, please change zone's ones first.
+dies with a SEGFAULT:
+Program received signal SIGSEGV, Segmentation fault.
+0x000000000046dd7b in machine__mmap_name (self=0x0, bf=0x7fffffffbd20 "q\021", size=4096) at util/map.c:715
+715			snprintf(bf, size, "[%s.%d]", "guest.kernel.kallsyms", self->pid);
 
-Thanks,
--Kame
+(gdb) bt
+    at util/event.c:668
+    file_offset=8480) at util/session.c:979
+    0x7fffffffdd80) at util/session.c:1363
+
+If no samples hit within a guest module then no build id events are written
+to the header during the record. On the report side this cases no 'machine'
+to be generated for the default guest (pid == 0) leading to a
+machine == NULL in perf_session_deliver_event.
+
+perf's handling of default kallsyms and guest-modules needs to be reworked.
+Until then perf should at least not segfault.
+
+Reported-by: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/util/session.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index c3e399b..3999d5e 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -976,6 +976,8 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 		}
+ 		return tool->sample(tool, event, sample, evsel, machine);
+ 	case PERF_RECORD_MMAP:
++		if (machine == NULL)
++			return 0;
+ 		return tool->mmap(tool, event, sample, machine);
+ 	case PERF_RECORD_COMM:
+ 		return tool->comm(tool, event, sample, machine);
+-- 
+1.7.10.1
 
