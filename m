@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab2FYP0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 11:26:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51630 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752361Ab2FYP0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 11:26:33 -0400
-Date: Mon, 25 Jun 2012 17:26:25 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jan Beulich <jbeulich@suse.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Fix the Kconfig option for generic device
- handling
-In-Reply-To: <20120625151615.GA11770@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1206251726110.18612@pobox.suse.cz>
-References: <1340356390-4614-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1206251537190.18612@pobox.suse.cz> <20120625151615.GA11770@polaris.bitmath.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756324Ab2FYPbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 11:31:31 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40309 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab2FYPb3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 11:31:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1340637550-12669-1-git-send-email-aletes.xgr@gmail.com>
+References: <1340637550-12669-1-git-send-email-aletes.xgr@gmail.com>
+Date: Mon, 25 Jun 2012 21:01:28 +0530
+Message-ID: <CAD2nsn08gkYJnyYfqyZT8VX-bFPgDVZPgVSHE_QBEuXj5aEWMw@mail.gmail.com>
+Subject: Re: [PATCH] mac80211: fix build warning
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jun 2012, Henrik Rydberg wrote:
+Hi,
 
-> > > The generic HID driver is obviously not a special driver, so move
-> > > it outside of the special drivers menu. Explain the usage and make
-> > > the default follow the HID setting. This should simplify migration
-> > > from older kernels.
-> > > 
-> > > Reported-by: Jan Beulich <jbeulich@suse.com>
-> > > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > > ---
-> > > Hi Jiri,
-> > > 
-> > > As pointed out by Jan Beulich, the generic hid driver Kconfig option
-> > > is confusing. This patch ought to fix most of the concerns. For 3.5.
-> > 
-> > The change makes sense. I'd however propose to perhaps unify 
-> > CONFIG_HID_SUPPORT and CONFIG_HID, while we are at it ... ?
-> 
-> Here is a version putting together both patches sent previously, and in 
-> addition removing the HID_SUPPORT option.
+On Mon, Jun 25, 2012 at 8:49 PM, Alexandre Pereira da Silva
+<aletes.xgr@gmail.com> wrote:
+> Fix:
+> net/mac80211/mlme.c: In function 'ieee80211_prep_connection':
+> net/mac80211/mlme.c:3035:19: warning: 'sta' may be used uninitialized in
+> this function
+>
+> Initialize sta to NULL
 
-Applied, thank you Henrik.
+i think already fixed by and there in wireless-testing
+http://www.spinics.net/lists/linux-wireless/msg92385.html
+
+>
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> ---
+>  net/mac80211/mlme.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+> index 91d84cc..cfe6b43 100644
+> --- a/net/mac80211/mlme.c
+> +++ b/net/mac80211/mlme.c
+> @@ -3032,7 +3032,7 @@ static int ieee80211_prep_connection(struct ieee80211_sub_if_data *sdata,
+>        struct ieee80211_local *local = sdata->local;
+>        struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+>        struct ieee80211_bss *bss = (void *)cbss->priv;
+> -       struct sta_info *sta;
+> +       struct sta_info *sta = NULL;
+>        bool have_sta = false;
+>        int err;
+>        int ht_cfreq;
+> --
+> 1.7.10
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 -- 
-Jiri Kosina
-SUSE Labs
+thanks,
+shafi
