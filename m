@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab2FYVGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 17:06:13 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:59368 "EHLO smtp.outflux.net"
+	id S1757350Ab2FYVGM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 17:06:12 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:45278 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755516Ab2FYVGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 17:06:09 -0400
+	id S1756270Ab2FYVGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 17:06:08 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -18,20 +18,110 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
         Dan Rosenberg <drosenberg@vsecurity.com>,
         kernel-hardening@lists.openwall.com
-Subject: [PATCH v2012.4 0/2] fs: add link restrictions
-Date: Mon, 25 Jun 2012 14:05:25 -0700
-Message-Id: <1340658327-2932-1-git-send-email-keescook@chromium.org>
+Subject: [PATCH 2/2] fs: add link restriction audit reporting
+Date: Mon, 25 Jun 2012 14:05:27 -0700
+Message-Id: <1340658327-2932-3-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1340658327-2932-1-git-send-email-keescook@chromium.org>
+References: <1340658327-2932-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This splits the VFS restrictions from the audit reporting so they can
-be reviewed separately. Note that this applies to linux-next (in that
-the error/filp handling in namei.c changed[1]).
+Adds audit messages for unexpected link restriction violations so that
+system owners will have some sort of potentially actionable information
+about misbehaving processes.
 
--Kees
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/namei.c            |    3 +++
+ include/linux/audit.h |    4 ++++
+ kernel/audit.c        |   21 +++++++++++++++++++++
+ 3 files changed, 28 insertions(+), 0 deletions(-)
 
-[1] https://lkml.org/lkml/2012/6/25/312
+diff --git a/fs/namei.c b/fs/namei.c
+index 71bb13c..27d838f 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -658,6 +658,8 @@ static inline int may_follow_link(struct path *link)
+ 	}
+ 	spin_unlock(&dentry->d_lock);
+ 
++	if (error)
++		audit_log_link_denied("follow_link", link);
+ 	return error;
+ }
+ 
+@@ -726,6 +728,7 @@ static int may_linkat(struct path *link)
+ 	    capable(CAP_FOWNER))
+ 		return 0;
+ 
++	audit_log_link_denied("linkat", link);
+ 	return -EPERM;
+ }
+ #else
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 22f292a..36abf2a 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -130,6 +130,7 @@
+ #define AUDIT_LAST_KERN_ANOM_MSG    1799
+ #define AUDIT_ANOM_PROMISCUOUS      1700 /* Device changed promiscuous mode */
+ #define AUDIT_ANOM_ABEND            1701 /* Process ended abnormally */
++#define AUDIT_ANOM_LINK		    1702 /* Suspicious use of file links */
+ #define AUDIT_INTEGRITY_DATA	    1800 /* Data integrity verification */
+ #define AUDIT_INTEGRITY_METADATA    1801 /* Metadata integrity verification */
+ #define AUDIT_INTEGRITY_STATUS	    1802 /* Integrity enable status */
+@@ -687,6 +688,8 @@ extern void		    audit_log_d_path(struct audit_buffer *ab,
+ 					     const struct path *path);
+ extern void		    audit_log_key(struct audit_buffer *ab,
+ 					  char *key);
++extern void		    audit_log_link_denied(const char *operation,
++						  struct path *link);
+ extern void		    audit_log_lost(const char *message);
+ #ifdef CONFIG_SECURITY
+ extern void 		    audit_log_secctx(struct audit_buffer *ab, u32 secid);
+@@ -716,6 +719,7 @@ extern int audit_enabled;
+ #define audit_log_untrustedstring(a,s) do { ; } while (0)
+ #define audit_log_d_path(b, p, d) do { ; } while (0)
+ #define audit_log_key(b, k) do { ; } while (0)
++#define audit_log_link_denied(o, l) do { ; } while (0)
+ #define audit_log_secctx(b,s) do { ; } while (0)
+ #define audit_enabled 0
+ #endif
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 1c7f2c6..fda8bd9 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1450,6 +1450,27 @@ void audit_log_key(struct audit_buffer *ab, char *key)
+ }
+ 
+ /**
++ * audit_log_link_denied - report a link restriction denial
++ * @operation: specific link opreation
++ * @link: the path that triggered the restriction
++ */
++void audit_log_link_denied(const char *operation, struct path *link)
++{
++	struct audit_buffer *ab;
++
++	ab = audit_log_start(current->audit_context, GFP_KERNEL,
++			     AUDIT_ANOM_LINK);
++	audit_log_format(ab, "op=%s action=denied", operation);
++	audit_log_format(ab, " pid=%d comm=", current->pid);
++	audit_log_untrustedstring(ab, current->comm);
++	audit_log_d_path(ab, " path=", link);
++	audit_log_format(ab, " dev=");
++	audit_log_untrustedstring(ab, link->dentry->d_inode->i_sb->s_id);
++	audit_log_format(ab, " ino=%lu", link->dentry->d_inode->i_ino);
++	audit_log_end(ab);
++}
++
++/**
+  * audit_log_end - end one audit record
+  * @ab: the audit_buffer
+  *
+-- 
+1.7.0.4
 
