@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2FYCMv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 22:12:51 -0400
-Received: from linux-sh.org ([111.68.239.195]:37979 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753251Ab2FYCMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 22:12:49 -0400
-Date: Mon, 25 Jun 2012 11:11:21 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Rik van Riel <riel@surriel.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
-        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
-        andi@firstfloor.org, hannes@cmpxchg.org, mel@csn.ul.ie,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH -mm v2 11/11] mm: remove SH arch_get_unmapped_area
- functions
-Message-ID: <20120625021121.GA9317@linux-sh.org>
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>
- <1340315835-28571-12-git-send-email-riel@surriel.com>
+	id S1753837Ab2FYCP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 22:15:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48300 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab2FYCP0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 22:15:26 -0400
+Message-ID: <4FE7C9B8.7060506@gmail.com>
+Date: Mon, 25 Jun 2012 10:15:20 +0800
+From: Charles Wang <muming.wq@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340315835-28571-12-git-send-email-riel@surriel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Doug Smythies <dsmythies@telus.net>,
+        "'Yong Zhang'" <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Ingo Molnar'" <mingo@redhat.com>, "'Tao Ma'" <tm@tao.ma>,
+        =?UTF-8?B?J+WQq+m7myc=?= <handai.szj@taobao.com>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>
+Subject: Re: [PATCH] sched: Folding nohz load accounting more accurate
+References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com> 		 <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com> 		 <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com> 		 <1340035417.15222.95.camel@twins> <20120619060824.GA31684@zhy> 	 <1340097532.21745.19.camel@twins> <000001cd4e33$496f6c30$dc4e4490$@net>  <1340185528.21745.86.camel@twins> <002301cd4f64$17a055c0$46e10140$@net> <1340373782.18025.74.camel@twins>
+In-Reply-To: <1340373782.18025.74.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 05:57:15PM -0400, Rik van Riel wrote:
-> Remove the SH special variants of arch_get_unmapped_area since
-> the generic functions should now be able to handle everything.
-> 
-> Paul, does anything in NOMMU SH need shm_align_mask?
-> 
-> Untested because I have no SH hardware.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Magnus Damm <magnus.damm@gmail.com>
-> Cc: linux-sh@vger.kernel.org
+On Friday, June 22, 2012 10:03 PM, Peter Zijlstra wrote:
 
-We don't particularly need it for the nommu case, it's just using the
-default PAGE_SIZE case there. The primary reason for having it defined
-is so we can use the same cache alias checking and d-cache purging code
-on parts that can operate with or without the MMU enabled.
+> Doug, Charles,
+> 
+> Can you both confirm that the below patch is what you tested and we
+> should finally be able to close this issue?
+> 
+> 
+> ---
 
-So it would be nice to have the variable generally accessible regardless
-of CONFIG_MMU setting, rather than having to have a private definition
-for the nommu case.
+[... patch code deleted ...]
+
+Yes, this patch can cure my problem.
