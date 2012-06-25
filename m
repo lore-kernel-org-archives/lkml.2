@@ -1,66 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab2FYNa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:30:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756365Ab2FYNa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 09:30:57 -0400
-Date: Mon, 25 Jun 2012 09:30:47 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Josh Hunt <joshhunt00@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: multi-second application stall in open()
-Message-ID: <20120625133047.GA9394@redhat.com>
-References: <CAKA=qzbqoK5_3GXM8DZhbQ5cTU=DTg5DFFJ+46OrD7y=XrMLTg@mail.gmail.com>
- <20120621203217.GC14095@redhat.com>
- <CAKA=qzYmh8DD7J__WWDyX_2fFQbSx+M=k4ttqRTD3M8nao-WVg@mail.gmail.com>
- <20120622141211.GB18409@redhat.com>
- <CAKA=qzYYK5KUNsZ1C7Z7BEkqo-7uvn=HYr0N9KLPaLt9ut+MDQ@mail.gmail.com>
- <CAKA=qzY+u64vVZmbiH4zp_Fij2zejQBFUSNENKF=PZBT0G7xrQ@mail.gmail.com>
- <20120622204207.GA22063@redhat.com>
- <CAKA=qzbycm0cjLyiuKaKkD8sxDm5DvX9WVqSxN2QVT2WZOzU0Q@mail.gmail.com>
- <CAKA=qza_s6zr+wZzfFTVPSzgPQAov=K63jf-SJOTDcrnDELY5w@mail.gmail.com>
- <CAKA=qzYea71A5VQOQgrqzaZtVFadjhcghgH+Z9n4ivS7vUgW0g@mail.gmail.com>
+	id S1756851Ab2FYNcI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:32:08 -0400
+Received: from mailout.rz.uni-frankfurt.de ([141.2.22.233]:37697 "EHLO
+	mailout.rz.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756365Ab2FYNcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 09:32:07 -0400
+X-Greylist: delayed 2025 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Jun 2012 09:32:07 EDT
+Message-ID: <4FE86067.9010408@med.uni-frankfurt.de>
+Date: Mon, 25 Jun 2012 14:58:15 +0200
+From: Thomas Sattler <sattler@med.uni-frankfurt.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKA=qzYea71A5VQOQgrqzaZtVFadjhcghgH+Z9n4ivS7vUgW0g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: BUG: scheduling while atomic: chcpu/6197/0x00000002
+References: <4FDF00CB.7090703@med.uni-frankfurt.de> <4FDF201E.2090408@med.uni-frankfurt.de> <4FE19494.6000303@med.uni-frankfurt.de>
+In-Reply-To: <4FE19494.6000303@med.uni-frankfurt.de>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-MailScanner: Found to be clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 04:34:07PM -0500, Josh Hunt wrote:
+Hi again ...
 
-[..]
-> Shouldn't the queue stay on the RR list until it is empty?
+seems there is a little progress in 3.4.3-rt12-rc1: While
+the BUG message still is in 'dmesg' and the call trace is
+identical to 3.4.3-rt11 (except the PID of 'chcpu' and
+the order of the list of modules), the 'chcpu' process
+doesn't hang anymore and the machine can be rebooted
+after the BUG occured.
 
-This does look odd. cfqq should stay on service tree as long as it has
-requests.
-
-Can you attach the full log again. Also make sure that blktrace is not
-dropping any trace events.
-
-In slice_expire() we check following.
-
-        if (cfq_cfqq_on_rr(cfqq) && RB_EMPTY_ROOT(&cfqq->sort_list))
-                cfq_del_cfqq_rr(cfqd, cfqq);
-
-So for some reason RB_EMPTY_ROOT() is returning true. But we must have
-added the request and it should not have been empty.
-
-cfq_insert_request()
-  cfq_add_rq_rb()
-    elv_rb_add()
-
-So may be little more tracing after request addition will help. Just check
-that RB_EMPTY_ROOT() is not true after addition of request and also print
-number of requests queued. 
-
-In slice_expired() we can probably put a BUG_ON() which checks following.
-
-BUG_ON(RB_EMPTY_ROOT(&cfqq->sort_list) && (cfqq->queued[0] || cfqq->queued[1]));
-
-Thanks
-Vivek
+Thomas
