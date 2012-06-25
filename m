@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2FYMvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 08:51:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57061 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756563Ab2FYMvG (ORCPT
+	id S1756687Ab2FYMwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 08:52:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34487 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388Ab2FYMwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 08:51:06 -0400
-Message-ID: <4FE85EB6.80908@gmail.com>
-Date: Mon, 25 Jun 2012 06:51:02 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: linux-kernel@vger.kernel.org, psuriset@linux.vnet.ibm.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] perf kvm: fix segfault with default guest arguments
-References: <1340599286-89757-1-git-send-email-dsahern@gmail.com> <877guvwzt1.fsf@sejong.aot.lge.com>
-In-Reply-To: <877guvwzt1.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 25 Jun 2012 08:52:51 -0400
+Subject: Re: [PATCH 5/6] tuntap: per queue 64 bit stats
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: mst@redhat.com, akong@redhat.com, habanero@linux.vnet.ibm.com,
+        tahm@linux.vnet.ibm.com, haixiao@juniper.net, jwhan@filewood.snu.ac.kr,
+        ernesto.martin@viasat.com, mashirle@us.ibm.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        krkumar2@in.ibm.com, shemminger@vyatta.com, edumazet@google.com
+In-Reply-To: <1340625563-9300-6-git-send-email-jasowang@redhat.com>
+References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <1340625563-9300-6-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Jun 2012 14:52:45 +0200
+Message-ID: <1340628765.10893.46.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/25/12 2:39 AM, Namhyung Kim wrote
->
-> I don't know about the kvm, but isn't there a possibility that the same
-> thing happends on other types of event too - i.e. comm, fork, exit..?
+On Mon, 2012-06-25 at 19:59 +0800, Jason Wang wrote:
+> As we've added multiqueue support for tun/tap, this patch convert the statistics
+> to use per-queue 64 bit statistics.
 
-COMM, FORK, EXIT events cannot be generated in the guest of a guest; 
-host machine is always non-NULL.
+LLTX means you can have several cpus calling TX path in parallel.
 
-David
+So tx stats are wrong (even before this patch), and racy after this
+patch (if several cpu access same queue, it seems to be possible)
+
+       u64_stats_update_begin(&tfile->stats.tx_syncp);
+       tfile->stats.tx_packets++;
+       tfile->stats.tx_bytes += total;
+       u64_stats_update_end(&tfile->stats.tx_syncp);
+ 
+This can break horribly if several cpus run this code using same 'tfile'
+pointer.
+
+I suggest this patch comes before 'tuntap: multiqueue support' in the
+serie.
+
+
+
