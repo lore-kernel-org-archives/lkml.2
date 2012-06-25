@@ -1,58 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab2FYUiF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 16:38:05 -0400
+	id S1756780Ab2FYUiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 16:38:46 -0400
 Received: from mga09.intel.com ([134.134.136.24]:17493 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755965Ab2FYUiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 16:38:03 -0400
+	id S1756115Ab2FYUiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 16:38:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="158064554"
+   d="scan'208";a="158064583"
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>, agordeev@redhat.com,
         yinghai@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         gorcunov@openvz.org
-Subject: [PATCH v3 0/3] -tip cleanups/fixes for x2apic cluster mode routing
-Date: Mon, 25 Jun 2012 13:38:26 -0700
-Message-Id: <1340656709-11423-1-git-send-email-suresh.b.siddha@intel.com>
+Subject: [PATCH v3 3/3] x86, x2apic: use multiple cluster members for the irq destination only with the explicit affinity
+Date: Mon, 25 Jun 2012 13:38:29 -0700
+Message-Id: <1340656709-11423-4-git-send-email-suresh.b.siddha@intel.com>
 X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1340656709-11423-1-git-send-email-suresh.b.siddha@intel.com>
+References: <1340656709-11423-1-git-send-email-suresh.b.siddha@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following patches will reserve the vector only on the cpu's where
-the interrupt will be routed to based on the specified affinity mask
-(not on the complete x2apic cluster which is the current behavior).
-And by default during boot, device bringup etc, only one cpu
-is used for interrupt destination. All this will reduce the vector
-pressure (specifically for the case of single/two socket systems where
-there will be atmost one or two x2apic clusters per-socket) when
-there are more interrupt sources than the number of x2apic clusters.
+During boot or driver load etc, interrupt destination is setup using default
+target cpu's. Later the user (irqbalance etc) or the driver (irq_set_affinity/
+irq_set_affinity_hint) can request the interrupt to be migrated to some
+specific set of cpu's.
 
-Changes in v3:
-* Fixed missing vsmp changes.
+In the x2apic cluster routing, for the default scenario use single cpu as the
+interrupt destination and when there is an explicit interrupt affinity
+request, route the interrupt to multiple members of a x2apic cluster
+specified in the cpumask of the migration request.
 
-Changes in v2:
+This will minmize the vector pressure when there are lot of interrupt
+sources and relatively few x2apic clusters (for example a single socket
+server). This will allow the performance critical interrupts to be
+routed to multiple cpu's in the x2apic cluster (irqbalance for example
+uses the cache siblings etc while specifying the interrupt destination) and
+allow non-critical interrupts to be serviced by a single logical cpu.
 
-* cleaned up the apic driver's vector_allocation_domain() API.
-* Minimize the vector usage during boot/device bringup.
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Alexander Gordeev <agordeev@redhat.com>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ arch/x86/kernel/apic/x2apic_cluster.c |   21 +++++++++++++++++++--
+ 1 files changed, 19 insertions(+), 2 deletions(-)
 
-Suresh Siddha (3):
-  x86, apic: optimize cpu traversal in __assign_irq_vector() using
-    domain membership
-  x86, x2apic: limit the vector reservation to the user specified mask
-  x86, x2apic: use multiple cluster members for the irq destination
-    only with the explicit affinity
-
- arch/x86/include/asm/apic.h           |   15 ++++++-----
- arch/x86/kernel/apic/apic_noop.c      |    4 +-
- arch/x86/kernel/apic/io_apic.c        |   44 ++++++++++++++++----------------
- arch/x86/kernel/apic/x2apic_cluster.c |   26 +++++++++++++++---
- arch/x86/kernel/vsmp_64.c             |    4 +-
- 5 files changed, 55 insertions(+), 38 deletions(-)
-
+diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+index bde78d0..c88baa4 100644
+--- a/arch/x86/kernel/apic/x2apic_cluster.c
++++ b/arch/x86/kernel/apic/x2apic_cluster.c
+@@ -209,13 +209,30 @@ static int x2apic_cluster_probe(void)
+ 		return 0;
+ }
+ 
++static const struct cpumask *x2apic_cluster_target_cpus(void)
++{
++	return cpu_all_mask;
++}
++
+ /*
+  * Each x2apic cluster is an allocation domain.
+  */
+ static void cluster_vector_allocation_domain(int cpu, struct cpumask *retmask,
+ 					     const struct cpumask *mask)
+ {
+-	cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
++	/*
++	 * To minimize vector pressure, default case of boot, device bringup
++	 * etc will use a single cpu for the interrupt destination.
++	 *
++	 * On explicit migration requests coming from irqbalance etc,
++	 * interrupts will be routed to the x2apic cluster (cluster-id
++	 * derived from the first cpu in the mask) members specified
++	 * in the mask.
++	 */
++	if (mask == x2apic_cluster_target_cpus())
++		cpumask_copy(retmask, cpumask_of(cpu));
++	else
++		cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
+ }
+ 
+ static struct apic apic_x2apic_cluster = {
+@@ -229,7 +246,7 @@ static struct apic apic_x2apic_cluster = {
+ 	.irq_delivery_mode		= dest_LowestPrio,
+ 	.irq_dest_mode			= 1, /* logical */
+ 
+-	.target_cpus			= online_target_cpus,
++	.target_cpus			= x2apic_cluster_target_cpus,
+ 	.disable_esr			= 0,
+ 	.dest_logical			= APIC_DEST_LOGICAL,
+ 	.check_apicid_used		= NULL,
 -- 
 1.7.6.5
 
