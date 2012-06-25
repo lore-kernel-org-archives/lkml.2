@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab2FYGLS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 02:11:18 -0400
+	id S1754773Ab2FYGLY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 02:11:24 -0400
 Received: from mga09.intel.com ([134.134.136.24]:27904 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754652Ab2FYGLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 02:11:16 -0400
+	id S1754743Ab2FYGLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 02:11:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="162133017"
+   d="scan'208";a="162133068"
 From: Alex Shi <alex.shi@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
         rostedt@goodmis.org, fweisbec@gmail.com
@@ -21,9 +21,9 @@ Cc: jeremy@goop.org, alex.shi@intel.com, luto@mit.edu, yinghai@kernel.org,
         kamezawa.hiroyu@jp.fujitsu.com, rientjes@google.com,
         aarcange@redhat.com, linux-kernel@vger.kernel.org,
         yongjie.ren@intel.com
-Subject: [PATCH v9 4/9] x86/tlb: add tlb_flushall_shift for specific CPU
-Date: Mon, 25 Jun 2012 14:08:22 +0800
-Message-Id: <1340604507-11214-5-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v9 5/9] x86/tlb: add tlb_flushall_shift knob into debugfs
+Date: Mon, 25 Jun 2012 14:08:23 +0800
+Message-Id: <1340604507-11214-6-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1340604507-11214-1-git-send-email-alex.shi@intel.com>
 References: <1340604507-11214-1-git-send-email-alex.shi@intel.com>
@@ -31,173 +31,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Testing show different CPU type(micro architectures and NUMA mode) has
-different balance points between the TLB flush all and multiple invlpg.
-And there also has cases the tlb flush change has no any help.
+kernel will replace cr3 rewrite with invlpg when
+  tlb_flush_entries <= active_tlb_entries / 2^tlb_flushall_factor
+if tlb_flushall_factor is -1, kernel won't do this replacement.
 
-This patch give a interface to let x86 vendor developers have a chance
-to set different shift for different CPU type.
+User can modify its value according to specific CPU/applications.
 
-like some machine in my hands, balance points is 16 entries on
-Romely-EP; while it is at 8 entries on Bloomfield NHM-EP; and is 256 on
-IVB mobile CPU. but on model 15 core2 Xeon using invlpg has nothing
-help.
-
-For untested machine, do a conservative optimization, same as NHM CPU.
+Thanks for Borislav providing the help message of
+CONFIG_DEBUG_TLBFLUSH.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- arch/x86/include/asm/processor.h |    2 ++
- arch/x86/kernel/cpu/common.c     |   14 ++++++++++++--
- arch/x86/kernel/cpu/intel.c      |   34 ++++++++++++++++++++++++++++++++++
- arch/x86/mm/tlb.c                |    7 +++----
- include/asm-generic/tlb.h        |    3 ++-
- 5 files changed, 53 insertions(+), 7 deletions(-)
+ arch/x86/Kconfig.debug |   19 +++++++++++++++++
+ arch/x86/mm/tlb.c      |   51 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 39b2bd4..d048cad 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -72,6 +72,8 @@ extern u16 __read_mostly tlb_lli_4m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4k[NR_INFO];
- extern u16 __read_mostly tlb_lld_2m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4m[NR_INFO];
-+extern s8  __read_mostly tlb_flushall_shift;
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index e46c214..b322f12 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -129,6 +129,25 @@ config DOUBLEFAULT
+ 	  option saves about 4k and might cause you much additional grey
+ 	  hair.
+ 
++config DEBUG_TLBFLUSH
++	bool "Set upper limit of TLB entries to flush one-by-one"
++	depends on DEBUG_KERNEL && (X86_64 || X86_INVLPG)
++	---help---
 +
- /*
-  *  CPU type and hardware bug flags. Kept separately for each CPU.
-  *  Members of this structure are referenced in head.S, so think twice
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 41acb77..39a6b01 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -459,16 +459,26 @@ u16 __read_mostly tlb_lld_4k[NR_INFO];
- u16 __read_mostly tlb_lld_2m[NR_INFO];
- u16 __read_mostly tlb_lld_4m[NR_INFO];
- 
-+/*
-+ * tlb_flushall_shift shows the balance point in replacing cr3 write
-+ * with multiple 'invlpg'. It will do this replacement when
-+ *   flush_tlb_lines <= active_lines/2^tlb_flushall_shift.
-+ * If tlb_flushall_shift is -1, means the replacement will be disabled.
-+ */
-+s8  __read_mostly tlb_flushall_shift = -1;
++	X86-only for now.
 +
- void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
- {
- 	if (c->x86_vendor == X86_VENDOR_INTEL)
- 		intel_cpu_detect_tlb(c);
- 
- 	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
--		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
-+		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n"	     \
-+		"tlb_flushall_shift is 0x%x\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
- 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
--		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES]);
-+		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
-+		tlb_flushall_shift);
- }
- 
- void __cpuinit detect_ht(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 28ecd1b..bb90754 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -610,6 +610,39 @@ static void __cpuinit intel_tlb_lookup(const unsigned char desc)
- 	}
- }
- 
-+static void __cpuinit intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
-+{
-+	if (!cpu_has_invlpg) {
-+		tlb_flushall_shift = -1;
-+		return;
-+	}
-+	switch ((c->x86 << 8) + c->x86_model) {
-+	case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
-+	case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
-+	case 0x617: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
-+	case 0x61d: /* six-core 45 nm xeon "Dunnington" */
-+		tlb_flushall_shift = -1;
-+		break;
-+	case 0x61a: /* 45 nm nehalem, "Bloomfield" */
-+	case 0x61e: /* 45 nm nehalem, "Lynnfield" */
-+	case 0x625: /* 32 nm nehalem, "Clarkdale" */
-+	case 0x62c: /* 32 nm nehalem, "Gulftown" */
-+	case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
-+	case 0x62f: /* 32 nm Xeon E7 */
-+		tlb_flushall_shift = 6;
-+		break;
-+	case 0x62a: /* SandyBridge */
-+	case 0x62d: /* SandyBridge, "Romely-EP" */
-+		tlb_flushall_shift = 5;
-+		break;
-+	case 0x63a: /* Ivybridge */
-+		tlb_flushall_shift = 1;
-+		break;
-+	default:
-+		tlb_flushall_shift = 6;
-+	}
-+}
++	This option allows the user to tune the amount of TLB entries the
++	kernel flushes one-by-one instead of doing a full TLB flush. In
++	certain situations, the former is cheaper. This is controlled by the
++	tlb_flushall_shift knob under /sys/kernel/debug/x86. If you set it
++	to -1, the code flushes the whole TLB unconditionally. Otherwise,
++	for positive values of it, the kernel will use single TLB entry
++	invalidating instructions according to the following formula:
 +
- void __cpuinit intel_cpu_detect_tlb(struct cpuinfo_x86 *c)
- {
- 	int i, j, n;
-@@ -630,6 +663,7 @@ void __cpuinit intel_cpu_detect_tlb(struct cpuinfo_x86 *c)
- 		for (j = 1 ; j < 16 ; j++)
- 			intel_tlb_lookup(desc[j]);
- 	}
-+	intel_tlb_flushall_shift_set(c);
- }
- 
- static const struct cpu_dev __cpuinitconst intel_cpu_dev = {
++	flush_entries <= active_tlb_entries / 2^tlb_flushall_shift
++
++	If in doubt, say "N".
++
+ config IOMMU_DEBUG
+ 	bool "Enable IOMMU debugging"
+ 	depends on GART_IOMMU && DEBUG_KERNEL
 diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 184a02a..2939f2f 100644
+index 2939f2f..5911f61 100644
 --- a/arch/x86/mm/tlb.c
 +++ b/arch/x86/mm/tlb.c
-@@ -316,8 +316,6 @@ void flush_tlb_mm(struct mm_struct *mm)
- 	preempt_enable();
- }
+@@ -12,6 +12,7 @@
+ #include <asm/cache.h>
+ #include <asm/apic.h>
+ #include <asm/uv/uv.h>
++#include <linux/debugfs.h>
  
--#define FLUSHALL_BAR	16
--
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- static inline unsigned long has_large_page(struct mm_struct *mm,
- 				 unsigned long start, unsigned long end)
-@@ -352,7 +350,7 @@ void flush_tlb_range(struct vm_area_struct *vma,
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
+ 			= { &init_mm, 0, };
+@@ -430,3 +431,53 @@ void flush_tlb_all(void)
  {
- 	struct mm_struct *mm;
- 
--	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
-+	if (vma->vm_flags & VM_HUGETLB || tlb_flushall_shift == -1) {
- flush_all:
- 		flush_tlb_mm(vma->vm_mm);
- 		return;
-@@ -373,7 +371,8 @@ flush_all:
- 			act_entries = tlb_entries > mm->total_vm ?
- 					mm->total_vm : tlb_entries;
- 
--			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
-+			if ((end - start) >> PAGE_SHIFT >
-+					act_entries >> tlb_flushall_shift)
- 				local_flush_tlb();
- 			else {
- 				if (has_large_page(mm, start, end)) {
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index f96a5b5..75e888b 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -113,7 +113,8 @@ static inline int tlb_fast_mode(struct mmu_gather *tlb)
- 
- void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm);
- void tlb_flush_mmu(struct mmu_gather *tlb);
--void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end);
-+void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start,
-+							unsigned long end);
- int __tlb_remove_page(struct mmu_gather *tlb, struct page *page);
- 
- /* tlb_remove_page
+ 	on_each_cpu(do_flush_tlb_all, NULL, 1);
+ }
++
++#ifdef CONFIG_DEBUG_TLBFLUSH
++static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
++			     size_t count, loff_t *ppos)
++{
++	char buf[32];
++	unsigned int len;
++
++	len = sprintf(buf, "%hd\n", tlb_flushall_shift);
++	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
++}
++
++static ssize_t tlbflush_write_file(struct file *file,
++		 const char __user *user_buf, size_t count, loff_t *ppos)
++{
++	char buf[32];
++	ssize_t len;
++	s8 shift;
++
++	len = min(count, sizeof(buf) - 1);
++	if (copy_from_user(buf, user_buf, len))
++		return -EFAULT;
++
++	buf[len] = '\0';
++	if (kstrtos8(buf, 0, &shift))
++		return -EINVAL;
++
++	if (shift > 64)
++		return -EINVAL;
++
++	tlb_flushall_shift = shift;
++	return count;
++}
++
++static const struct file_operations fops_tlbflush = {
++	.read = tlbflush_read_file,
++	.write = tlbflush_write_file,
++	.llseek = default_llseek,
++};
++
++static int __cpuinit create_tlb_flushall_shift(void)
++{
++	if (cpu_has_invlpg) {
++		debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
++			arch_debugfs_dir, NULL, &fops_tlbflush);
++	}
++	return 0;
++}
++late_initcall(create_tlb_flushall_shift);
++#endif
 -- 
 1.7.5.4
 
