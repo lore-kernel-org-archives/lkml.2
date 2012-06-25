@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab2FYSFZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 14:05:25 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:53804 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab2FYSFX (ORCPT
+	id S1755455Ab2FYSGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 14:06:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48631 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752711Ab2FYSGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 14:05:23 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 25 Jun 2012 11:05:36 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-Cc: Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: Kerneloops.org defunct?
-Message-ID: <20120625180536.GA29261@roeck-us.net>
-References: <4DE6264A.2040901@gmail.com>
- <20110601212432.2677b03a.rdunlap@xenotime.net>
- <201106211534.10366.roucaries.bastien@gmail.com>
- <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
- <20110826173517.7321c086@lxorguk.ukuu.org.uk>
- <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+	Mon, 25 Jun 2012 14:06:24 -0400
+Date: Mon, 25 Jun 2012 11:06:19 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 06/11] memcg: kmem controller infrastructure
+Message-ID: <20120625180619.GD3869@google.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
+ <1340633728-12785-7-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1340633728-12785-7-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 02:35:44PM +0200, Bastien ROUCARIES wrote:
-> Any news now that the fiasco is going to be resolved.
-> 
-> Bastien
-> 
-> On Wed, Sep 28, 2011 at 10:51 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
-> > On Wed, Sep 28, 2011 at 3:37 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
-> >> On 08/26/2011 08:48 PM, Arjan van de Ven wrote:
-> >>> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
-> >>>>
-> >>>> Is the code available somewhere, or will it need to be rewritten ?
-> >>>
-> >>> we have the code on the server/etc... if someone signs up to help he
-> >>> will be on the server of course
-> >>
-> >> It looks like there are some volunteers. Did you have a chance to talk
-> >> to each other and make any progress?
-> >>
-> >> If not, may we have at least a backup of the database published, please?
-> >> There are very valuable data you collected over time and I'm sure there
-> >> are more people than me who would appreciate that.
-> >>
-> >> thanks,
-> >> --
-> >> js
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >>
-> >
-> > Apparently kerneoops.org is hosted by kernel.org so there will be no
-> > progress until that fiasco is resolved. I'm still up for working on it
-> > if and when the site is back online.
-> >
-> > --
-> > Josh
-> >
-> --
+Again, nits.
 
-Did anyone ever get access to the kerneloops code and/or is working on a
-replacement ?
+On Mon, Jun 25, 2012 at 06:15:23PM +0400, Glauber Costa wrote:
+> +#define mem_cgroup_kmem_on 1
+> +bool __mem_cgroup_new_kmem_page(gfp_t gfp, void *handle, int order);
+> +void __mem_cgroup_commit_kmem_page(struct page *page, void *handle, int order);
+> +void __mem_cgroup_free_kmem_page(struct page *page, int order);
+> +#define is_kmem_tracked_alloc (gfp & __GFP_KMEMCG)
 
-I see that http://kerneloops-descope.rhcloud.com/submitoops.php appears to
-accept kerneloops reports, http://kerneloops-descope.rhcloud.com/ reports
-"www.kerneloops.org, coming soon", and a comment in
-https://bugzilla.redhat.com/show_bug.cgi?id=800302 suggests that Redhat may be
-in the process of taking over kerneloops.org.
+Ugh... please do the following instead.
 
-Thanks,
-Guenter
+static inline bool is_kmem_tracked_alloc(gfp_t gfp)
+{
+	return gfp & __GFP_KMEMCG;
+}
+
+>  #else
+>  static inline void sock_update_memcg(struct sock *sk)
+>  {
+> @@ -416,6 +423,43 @@ static inline void sock_update_memcg(struct sock *sk)
+>  static inline void sock_release_memcg(struct sock *sk)
+>  {
+>  }
+> +
+> +#define mem_cgroup_kmem_on 0
+> +#define __mem_cgroup_new_kmem_page(a, b, c) false
+> +#define __mem_cgroup_free_kmem_page(a,b )
+> +#define __mem_cgroup_commit_kmem_page(a, b, c)
+> +#define is_kmem_tracked_alloc (false)
+
+I would prefer static inlines here too.  It's a bit more code in the
+header but leads to less surprises (e.g. arg evals w/ side effects or
+compiler warning about unused vars) and makes it easier to avoid
+cosmetic errors.
+
+Thanks.
+
+-- 
+tejun
