@@ -1,52 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2FYFj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 01:39:57 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:32795 "EHLO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752176Ab2FYFjz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 01:39:55 -0400
+	id S1754458Ab2FYFsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 01:48:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55808 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab2FYFsH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 01:48:07 -0400
+Date: Mon, 25 Jun 2012 06:48:04 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Chris Jones <chrisjones@spin.net.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Solaris kernel. Compile in Linux
+Message-ID: <20120625054804.GS14083@ZenIV.linux.org.uk>
+References: <4FE79E27.3070302@spin.net.au>
 MIME-Version: 1.0
-In-Reply-To: <20120623044445.GA2993@kroah.com>
-References: <1340370942-23201-1-git-send-email-kishon@ti.com>
-	<1340370942-23201-2-git-send-email-kishon@ti.com>
-	<20120623044445.GA2993@kroah.com>
-Date: Mon, 25 Jun 2012 11:09:54 +0530
-Message-ID: <CAAe_U6+dkiQw-i93pFapt6qKrArzaQoE8X3GjDzUDraziG8B2Q@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 1/2] drivers: misc: omap: add a new driver for ocp2scp
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, arnd@arndb.de, b-cousson@ti.com, rnayak@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE79E27.3070302@spin.net.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Mon, Jun 25, 2012 at 09:09:27AM +1000, Chris Jones wrote:
+> Is it possible to compile the Solaris kernel using Linux based
+> tools? I suspect not. And if not, why can't this be done?
 
-On Sat, Jun 23, 2012 at 10:14 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Jun 22, 2012 at 06:45:41PM +0530, Kishon Vijay Abraham I wrote:
->> Adds a new driver _ocp2scp_.
->
-> That's not what you called this driver in the patch below :(
->
->> This driver takes the responsibility of creating
->> all the devices that is connected to OCP2SCP. In the case of OMAP4, USB2PHY
->> is connected to ocp2scp.
->>
->> This also includes device tree support for ocp2scp driver and
->> the documentation with device tree binding information is updated.
->
-> Can't this live where the scp drivers live?  Actually, where is that at?
-> Do we have scp drivers?
-AFAIK, there isn't any driver for scp. But we have a driver for ocp
-and it is present at arch/arm/mach-omap2/omap_l3_noc.c
-
-Thanks
-Kishon
+And if this question was posted to a maillist that had something
+to do with Solaris kernel or Linux toolchain, what list it was?
