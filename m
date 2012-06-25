@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab2FYRX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 13:23:58 -0400
+	id S1757612Ab2FYRY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 13:24:28 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:45866 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380Ab2FYRX5 (ORCPT
+	with ESMTP id S1754571Ab2FYRY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 13:23:57 -0400
-Date: Mon, 25 Jun 2012 10:23:52 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Subject: Re: 2012 Kernel Summit: Call for Participation: 2nd CALL
-Message-ID: <20120625172352.GA3869@google.com>
-References: <E1Sh0DC-0005D9-7n@tytso-glaptop.cam.corp.google.com>
- <20120621181112.GA4642@google.com>
- <20120622181853.GI4642@google.com>
- <20120625144729.GB6876@localhost>
+	Mon, 25 Jun 2012 13:24:27 -0400
+Date: Mon, 25 Jun 2012 10:24:23 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: devel@driverdev.osuosl.org, swetland@google.com,
+        Sherwin Soltani <sherwin@wybc.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: staging: android: fix binder.c printk macros
+Message-ID: <20120625172423.GA1935@kroah.com>
+References: <1340431781-2809-1-git-send-email-sherwin@wybc.com>
+ <20120625171715.GA29309@kroah.com>
+ <1340644800.3359.1.camel@joe2Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120625144729.GB6876@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1340644800.3359.1.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 10:47:29PM +0800, Fengguang Wu wrote:
-> On Fri, Jun 22, 2012 at 11:18:53AM -0700, Tejun Heo wrote:
-> > Hey again.
+On Mon, Jun 25, 2012 at 10:20:00AM -0700, Joe Perches wrote:
+> On Mon, 2012-06-25 at 10:17 -0700, Greg KH wrote:
+> > On Sat, Jun 23, 2012 at 02:09:41AM -0400, Sherwin Soltani wrote:
+> > > Changed to pr_warn, pr_err, and pr_info macros and reformatted some
+> > > lines to bring them under the 80 column limit in the binder.c code.
+> > > 
+> > > Signed-off-by: Sherwin Soltani <sherwin@wybc.com>
+> > > ---
+> > >  drivers/staging/android/binder.c |   74 ++++++++++++++++++++------------------
+> > >  1 file changed, 40 insertions(+), 34 deletions(-)
 > > 
-> > On Thu, Jun 21, 2012 at 11:11:12AM -0700, Tejun Heo wrote:
-> > > Depending on the number of people affected and if at all possible, it
-> > > would be nice to avoid such big holidays.  So, have fun, guys.
+> > Hi,
 > > 
-> > Eh never mind.  Minchan just told me KS is in August and Thanksgiving
-> > is in Sept.  Stupid me.  :)
+> > This is the friendly patch-bot of Greg Kroah-Hartman.  You have sent him
+> > a patch that has triggered this response.  He used to manually respond
+> > to these common problems, but in order to save his sanity (he kept
+> > writing the same thing over and over, yet to different people), I was
+> > created.  Hopefully you will not take offence and will fix the problem
+> > in your patch and resubmit it so that it can be accepted into the Linux
+> > kernel tree.
 > 
-> Aha, so you don't have that 1.5-month long travel season like us ;)
+> > You are receiving this message because of the following common error(s)
+> > as indicated below:
+> > 
+> > ---   Your patch did many different things all at once, making it
+> >       difficult to review.
+> 
+> Your patch-bot needs work.
+> 
+> Converting printks to pr_<level> is trivial
+> and should be done all at once, not piecemeal.
 
-Heh, yeah, it's a pretty small country.  It's much less now but
-majority of the population used to travel to their hometowns over
-Thanksgiving much like the lunar new year in China, but even then,
-even if you travel one end to the other, taking more than a day was
-extremely rare.  The land is at most slightly above 500km across after
-all, so it's usually three (or maybe four or five) day deal over here.
-I kinda want to try the 1.5 month thing tho. :)
+I'm not disagreeing with that, unfortunately this patch also did more
+than just pr_<level> conversions, which is why my patch-bot kicked in.
 
--- 
-tejun
+So your patch-bot complaint generator needs work :)
+
+greg k-h
