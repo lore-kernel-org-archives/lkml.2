@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab2FYImE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:42:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab2FYImC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:42:02 -0400
-Date: Mon, 25 Jun 2012 11:41:51 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: habanero@linux.vnet.ibm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, krkumar2@in.ibm.com,
-        tahm@linux.vnet.ibm.com, akong@redhat.com, davem@davemloft.net,
-        shemminger@vyatta.com, mashirle@us.ibm.com
-Subject: Re: [net-next RFC V3 PATCH 4/6] tuntap: multiqueue support
-Message-ID: <20120625084151.GA18987@redhat.com>
-References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com>
- <20120625061018.6765.76633.stgit@amd-6168-8-1.englab.nay.redhat.com>
- <20120625082553.GC18229@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625082553.GC18229@redhat.com>
+	id S1753515Ab2FYIm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:42:59 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55250 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2FYIm5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 04:42:57 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH v3 0/4] mm/memcg: cleanup memory cgroup
+Date: Mon, 25 Jun 2012 16:42:45 +0800
+Message-Id: <1340613765-9372-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 11:25:53AM +0300, Michael S. Tsirkin wrote:
-> On Mon, Jun 25, 2012 at 02:10:18PM +0800, Jason Wang wrote:
-> > This patch adds multiqueue support for tap device. This is done by abstracting
-> > each queue as a file/socket and allowing multiple sockets to be attached to the
-> > tuntap device (an array of tun_file were stored in the tun_struct). Userspace
-> > could write and read from those files to do the parallel packet
-> > sending/receiving.
-> > 
-> > Unlike the previous single queue implementation, the socket and device were
-> > loosely coupled, each of them were allowed to go away first. In order to let the
-> > tx path lockless, netif_tx_loch_bh() is replaced by RCU/NETIF_F_LLTX to
-> > synchronize between data path and system call.
-> 
-> Don't use LLTX/RCU. It's not worth it.
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-Or maybe we should use LLTX. Need to think about it.
-But if yes I'd like a separate patch moving tun to LLTX
-and move it always to LLTX. Don't play with LLTX at runtime.
+Changelog:
 
--- 
-MST
+* drop memcg: move recent_rotated and recent_scanned informations patch
+* drop memcg: replace unsigned long by u64 to avoid overflow
+
+Wanpeng Li (4):
+
+memcg: cleanup useless LRU_ALL_EVICTABLE
+memcg: change mem_control_xxx to mem_cgroup_xxx
+memcg: optimize memcg_get_hierarchical_limit
+memcg: cleanup all typo in memory cgroup
+
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+---
+ include/linux/mmzone.h |    2 +-
+ include/linux/vmstat.h |    2 +-
+ mm/memcontrol.c        |   40 +++++++++++++++++++---------------------
+ 3 files changed, 21 insertions(+), 23 deletions(-)
