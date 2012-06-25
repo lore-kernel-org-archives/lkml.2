@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab2FYJyy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 05:54:54 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42696 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab2FYJyx (ORCPT
+	id S1755659Ab2FYJzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 05:55:16 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:36012 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755255Ab2FYJzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 05:54:53 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE834D9.8070903@jp.fujitsu.com>
-Date: Mon, 25 Jun 2012 18:52:25 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Wanpeng Li <liwp.linux@gmail.com>
-CC: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] memcg: optimize memcg_get_hierarchical_limit
-References: <1340613872-9581-1-git-send-email-liwp.linux@gmail.com>
-In-Reply-To: <1340613872-9581-1-git-send-email-liwp.linux@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Mon, 25 Jun 2012 05:55:14 -0400
+Message-ID: <1340618099.13778.39.camel@ThinkPad-T420>
+Subject: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if SLUB
+ is used
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
+        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
+Date: Mon, 25 Jun 2012 17:54:59 +0800
+In-Reply-To: <1340617984.13778.37.camel@ThinkPad-T420>
+References: <1340617984.13778.37.camel@ThinkPad-T420>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12062509-2674-0000-0000-00000503929E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/25 17:44), Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> 
-> Optimize memcg_get_hierarchical_limit to save cpu cycle.
-> 
-> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+This patch tries to kfree the cache name of pgtables cache if SLUB is
+used, as SLUB duplicates the cache name, and the original one is leaked.
 
-I can't understand the benefit of this patch to the real world...
+This patch depends on patch 1 -- (duplicate the cache name in
+saved_alias list) in this mail thread. As the pgtables cache might be
+merged to other caches. In this case, the name could be safely kfreed
+after calling kmem_cache_create() with patch 1.
 
-So, if you wrote the patch description as "clean up" rather than optimize,
-ok, I'll agree.
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ arch/powerpc/mm/init_64.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Thanks,
--Kame
-
-> ---
->   mm/memcontrol.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 2e81328..4520b57 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3917,9 +3917,9 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
->   
->   	min_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
->   	min_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-> -	cgroup = memcg->css.cgroup;
->   	if (!memcg->use_hierarchy)
->   		goto out;
-> +	cgroup = memcg->css.cgroup;
->   
->   	while (cgroup->parent) {
->   		cgroup = cgroup->parent;
-> 
-
-
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index 620b7ac..c9d2a7f 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -130,6 +130,9 @@ void pgtable_cache_add(unsigned shift, void
+(*ctor)(void *))
+ 	align = max_t(unsigned long, align, minalign);
+ 	name = kasprintf(GFP_KERNEL, "pgtable-2^%d", shift);
+ 	new = kmem_cache_create(name, table_size, align, 0, ctor);
++#ifdef CONFIG_SLUB
++	kfree(name); /* SLUB duplicates the cache name */
++#endif
+ 	PGT_CACHE(shift) = new;
+ 
+ 	pr_debug("Allocated pgtable cache for order %d\n", shift);
+-- 
+1.7.1
 
