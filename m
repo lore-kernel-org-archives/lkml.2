@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab2FYREl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 13:04:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31672 "EHLO mga09.intel.com"
+	id S1757468Ab2FYRGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 13:06:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3246 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756949Ab2FYREi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 13:04:38 -0400
+	id S1754080Ab2FYRGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 13:06:39 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="157982443"
-Date: Mon, 25 Jun 2012 19:15:32 +0200
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="160462343"
+Date: Mon, 25 Jun 2012 19:17:38 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org,
-        aloisio.almeida@openbossa.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH] net: nfc: fix panic in accept()
-Message-ID: <20120625171532.GB16275@sortiz-mobl>
-References: <1339423241.4999.53.camel@lappy>
- <20120611144134.GX22557@sortiz-mobl>
- <1339425693.6001.2268.camel@edumazet-glaptop>
- <20120611145700.GY22557@sortiz-mobl>
- <1339426778.6001.2312.camel@edumazet-glaptop>
- <20120611152007.GZ22557@sortiz-mobl>
- <1339433810.4999.65.camel@lappy>
- <20120611172545.GA1776@redhat.com>
- <CA+1xoqcwr-5dzHvqkt9x0-xj9EFAywVfva=asbHXvX-LSBWqdA@mail.gmail.com>
- <1340639612.10893.84.camel@edumazet-glaptop>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
+        linville@tuxdriver.com, davej@redhat.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFC: only put local on destruction if it was created
+ before
+Message-ID: <20120625171738.GC16275@sortiz-mobl>
+References: <1339531699-7377-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340639612.10893.84.camel@edumazet-glaptop>
+In-Reply-To: <1339531699-7377-1-git-send-email-levinsasha928@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+Hi Sasha,
 
-On Mon, Jun 25, 2012 at 05:53:32PM +0200, Eric Dumazet wrote:
-> From: Eric Dumazet <edumazet@google.com>
+On Tue, Jun 12, 2012 at 10:08:19PM +0200, Sasha Levin wrote:
+> Not having 'local' is a valid case when a socket was created but never
+> bound or connected to anything, so avoid putting 'local' if it was
+> never created.
 > 
-> Sasha Levin reported following panic :
-I applied a similar patch, more consistent with the rest of the NFC socket
-code, still with you as the author. See here:
-
-http://git.kernel.org/?p=linux/kernel/git/sameo/nfc-3.0.git;a=commit;h=631c301f20558525a641fadffc0126affd3dc4a4
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  net/nfc/llcp/sock.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/nfc/llcp/sock.c b/net/nfc/llcp/sock.c
+> index 2c0b317..54daa10 100644
+> --- a/net/nfc/llcp/sock.c
+> +++ b/net/nfc/llcp/sock.c
+> @@ -710,7 +710,8 @@ void nfc_llcp_sock_free(struct nfc_llcp_sock *sock)
+>  
+>  	sock->parent = NULL;
+>  
+> -	nfc_llcp_local_put(sock->local);
+> +	if (sock->local)
+> +		nfc_llcp_local_put(sock->local);
+nfc_llcp_local_put() already checks for its argument being NULL or not.
 
 Cheers,
 Samuel.
