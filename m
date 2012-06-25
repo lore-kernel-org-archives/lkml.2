@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab2FYNAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:00:01 -0400
-Received: from mail.fidal.it ([94.88.95.180]:38155 "EHLO server1.fidal.it"
+	id S1756664Ab2FYNFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:05:43 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:33230 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756070Ab2FYM76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 08:59:58 -0400
-Message-ID: <60873.197.242.102.66.1340629188.squirrel@webmail.fidal.it>
-Date: Mon, 25 Jun 2012 14:59:48 +0200 (CEST)
-Subject: CUENTA DE ADVERTENCIA
-From: "WEB ADMIN" <abach2121@myway.com>
-User-Agent: SquirrelMail/1.4.9a
+	id S1756090Ab2FYNFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 09:05:41 -0400
+Message-ID: <4FE86188.6060700@parallels.com>
+Date: Mon, 25 Jun 2012 17:03:04 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Scan: VAMS 1.60.2
-To: undisclosed-recipients:;
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-mm@kvack.org>, Pekka Enberg <penberg@kernel.org>,
+        Cristoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v4 06/25] memcg: Make it possible to use the stock for
+ more than one page.
+References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-7-git-send-email-glommer@parallels.com> <20120620132804.GF5541@tiehlicka.suse.cz>
+In-Reply-To: <20120620132804.GF5541@tiehlicka.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Su buzón ha superado su límite, su correo web se está ejecutando
-actualmente el 99,7% de su límite de cuota del 100%. No se puede enviar o
-recibir correo electrónico correctamente hasta que haya actualizado su
-cuenta de correo web. Para actualizar su cuenta de correo web, haga clic
-en el enlace de abajo y pegarlo en su navegador a la solicitud de
-actualización.
+On 06/20/2012 05:28 PM, Michal Hocko wrote:
+> I guess you want:
+> 	if (nr_pages > CHARGE_BATCH)
+> 		return false;
+>
+> because you don't want to try to use stock for THP pages.
 
-HAGA CLIC AQUÍ: http://goo.gl/Ezg4z
+Done, thanks.
 
-Estamos sinceramente disculpas por cualquier inconveniente que esto pueda
-causarle, tendemos a ofrecerle un mejor servicio.
-
-Gracias por su cooperación.
-Webmail actualización de equipo.
 
