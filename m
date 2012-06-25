@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab2FYX6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:58:44 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:28744 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757262Ab2FYX6l (ORCPT
+	id S1757998Ab2FYX7f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:59:35 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:56080 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757262Ab2FYX7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:58:41 -0400
+	Mon, 25 Jun 2012 19:59:34 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-209.messagelabs.com!1340668719!6916915!1
+X-Msg-Ref: server-2.tower-131.messagelabs.com!1340668770!24311289!1
 X-Originating-IP: [216.166.12.72]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 17/33] staging: comedi: cb_das16_cs: remove skel driver cut-and-paste comments
-Date: Mon, 25 Jun 2012 16:58:34 -0700
+Subject: [PATCH 18/33] staging: comedi: cb_das16_cs: remove unused timer subdevice
+Date: Mon, 25 Jun 2012 16:59:26 -0700
 User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+CC: <abbotti@mev.co.uk>, <fmhess@users.sourceforge.net>,
+        <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201206251658.34368.hartleys@visionengravers.com>
+Message-ID: <201206251659.26939.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a number of comments in this driver that are cut-and-paste
-from the skel driver. They are not needed in "real" drivers.
+The timer subdevice is never initialized due to the 'if (0)'. The
+comedi callbacks also don't do anything and just return -EINVAL.
+
+Remove the subdevice and associated code.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/cb_das16_cs.c | 20 --------------------
- 1 file changed, 20 deletions(-)
+ drivers/staging/comedi/drivers/cb_das16_cs.c | 32 +---------------------------
+ 1 file changed, 1 insertion(+), 31 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index e1e3ff0..36fd3e6 100644
+index 36fd3e6..b0a2223 100644
 --- a/drivers/staging/comedi/drivers/cb_das16_cs.c
 +++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -108,10 +108,6 @@ static irqreturn_t das16cs_interrupt(int irq, void *d)
- 	return IRQ_HANDLED;
+@@ -425,21 +425,6 @@ static int das16cs_dio_insn_config(struct comedi_device *dev,
+ 	return insn->n;
  }
  
--/*
-- * "instructions" read/write data in "one-shot" or "software-triggered"
-- * mode.
-- */
- static int das16cs_ai_rinsn(struct comedi_device *dev,
- 			    struct comedi_subdevice *s,
- 			    struct comedi_insn *insn, unsigned int *data)
-@@ -168,13 +164,6 @@ static int das16cs_ai_cmdtest(struct comedi_device *dev,
- 	int err = 0;
- 	int tmp;
- 
--	/* cmdtest tests a particular command to see if it is valid.
--	 * Using the cmdtest ioctl, a user can create a valid cmd
--	 * and then have it executes by the cmd ioctl.
--	 *
--	 * cmdtest returns 1,2,3,4 or 0, depending on which tests
--	 * the command passes. */
+-static int das16cs_timer_insn_read(struct comedi_device *dev,
+-				   struct comedi_subdevice *s,
+-				   struct comedi_insn *insn, unsigned int *data)
+-{
+-	return -EINVAL;
+-}
 -
- 	/* step 1: make sure trigger sources are trivially valid */
+-static int das16cs_timer_insn_config(struct comedi_device *dev,
+-				     struct comedi_subdevice *s,
+-				     struct comedi_insn *insn,
+-				     unsigned int *data)
+-{
+-	return -EINVAL;
+-}
+-
+ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
+ 						 struct pcmcia_device *link)
+ {
+@@ -497,7 +482,7 @@ static int das16cs_attach(struct comedi_device *dev,
+ 	if (alloc_private(dev, sizeof(struct das16cs_private)) < 0)
+ 		return -ENOMEM;
  
- 	tmp = cmd->start_src;
-@@ -367,8 +356,6 @@ static int das16cs_ao_winsn(struct comedi_device *dev,
- 	return i;
- }
+-	ret = comedi_alloc_subdevices(dev, 4);
++	ret = comedi_alloc_subdevices(dev, 3);
+ 	if (ret)
+ 		return ret;
  
--/* AO subdevices should have a read insn as well as a write insn.
-- * Usually this means copying a value stored in devpriv. */
- static int das16cs_ao_rinsn(struct comedi_device *dev,
- 			    struct comedi_subdevice *s,
- 			    struct comedi_insn *insn, unsigned int *data)
-@@ -383,11 +370,6 @@ static int das16cs_ao_rinsn(struct comedi_device *dev,
- 	return i;
- }
- 
--/* DIO devices are slightly special.  Although it is possible to
-- * implement the insn_read/insn_write interface, it is much more
-- * useful to applications if you implement the insn_bits interface.
-- * This allows packed reading/writing of the DIO channels.  The
-- * comedi core can convert between insn_bits and insn_read/write */
- static int das16cs_dio_insn_bits(struct comedi_device *dev,
- 				 struct comedi_subdevice *s,
- 				 struct comedi_insn *insn, unsigned int *data)
-@@ -399,8 +381,6 @@ static int das16cs_dio_insn_bits(struct comedi_device *dev,
- 		outw(s->state, dev->iobase + 16);
+@@ -540,21 +525,6 @@ static int das16cs_attach(struct comedi_device *dev,
+ 		s->type = COMEDI_SUBD_UNUSED;
  	}
  
--	/* on return, data[1] contains the value of the digital
--	 * input and output lines. */
- 	data[1] = inw(dev->iobase + 16);
+-	s = dev->subdevices + 3;
+-	/* timer subdevice */
+-	if (0) {
+-		s->type = COMEDI_SUBD_TIMER;
+-		s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
+-		s->n_chan = 1;
+-		s->maxdata = 0xff;
+-		s->range_table = &range_unknown;
+-		s->insn_read = das16cs_timer_insn_read;
+-		s->insn_config = das16cs_timer_insn_config;
+-	} else {
+-		s->type = COMEDI_SUBD_UNUSED;
+-	}
+-
+-
+ 	return 1;
+ }
  
- 	return insn->n;
 -- 
 1.7.11
 
