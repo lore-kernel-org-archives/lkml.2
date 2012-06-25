@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab2FYGbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 02:31:07 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18098 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145Ab2FYGbF (ORCPT
+	id S1754702Ab2FYGb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 02:31:58 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2140 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145Ab2FYGb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 02:31:05 -0400
-Date: Mon, 25 Jun 2012 09:30:41 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6656: Style cleanup of iwctl
-Message-ID: <20120625063041.GL5390@mwanda>
-References: <alpine.LNX.2.00.1206242131040.30361@swampdragon.chaosbits.net>
- <20120624204711.GK5390@mwanda>
- <alpine.LNX.2.00.1206242258230.30361@swampdragon.chaosbits.net>
+	Mon, 25 Jun 2012 02:31:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 24 Jun 2012 23:31:54 -0700
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <swarren@wwwdotorg.org>
+CC: <linux-kernel@vger.kernel.org>, <ldewangan@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+Subject: [PATCH] dma: tegra: add clk_prepare/clk_unprepare
+Date: Mon, 25 Jun 2012 12:01:31 +0530
+Message-ID: <1340605891-19076-1-git-send-email-pgaikwad@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1206242258230.30361@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 11:01:58PM +0200, Jesper Juhl wrote:
-> On Sun, 24 Jun 2012, Dan Carpenter wrote:
-> > Nope.  It is worth it.  Broken out patches are a million times
-> > easier to review.
-> > 
-> Ok. I'll redo it as a series. It'll take a little while, so I may not 
-> finish it tonight, but I'll do it.
-> 
+Use clk_prepare/clk_unprepare as required by the generic clk framework.
 
-Thank you for redoing the new broken out version is a lot easier to
-review.  For many of the patches, I just press my "filter white
-space changes" button and the patch shows up as empty.  This process
-takes me under five seconds.  But when it's all tangled up that
-change could take minutes to untangle and verify.
+Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+---
+ drivers/dma/tegra20-apb-dma.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> > It frustrates me that you would do things like this when you know
-> > the rules.  Which part is difficult to understand?
-> > 
-> Nothing is difficult to understand, but breaking this into (for example) a 
-> series that does:
-> 	1) fix the indentation to use tabs and not spaces and proper depth
-> 	2) remove space between cast and variable
-> 	3) add spaces around operators (like "foo && bar" rather than "foo&&bar")
-> 	4) add {} to all branches of if statement if one needs it (or remove if none need them)
-> would, for many lines, result in all 4 patches changing the same lines.
-> That just seemed like a little too much churn for a trivial style cleanup 
-> patch.
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 134ea7c..30fa67a 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -1366,7 +1366,7 @@ static int tegra_dma_runtime_suspend(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct tegra_dma *tdma = platform_get_drvdata(pdev);
+ 
+-	clk_disable(tdma->dma_clk);
++	clk_disable_unprepare(tdma->dma_clk);
+ 	return 0;
+ }
+ 
+@@ -1376,7 +1376,7 @@ static int tegra_dma_runtime_resume(struct device *dev)
+ 	struct tegra_dma *tdma = platform_get_drvdata(pdev);
+ 	int ret;
+ 
+-	ret = clk_enable(tdma->dma_clk);
++	ret = clk_prepare_enable(tdma->dma_clk);
+ 	if (ret < 0) {
+ 		dev_err(dev, "clk_enable failed: %d\n", ret);
+ 		return ret;
+-- 
+1.7.4.1
 
-How do I know if it's trivial or not when I can't review it
-properly?  I think you are saying I should just trust you?  That's
-not how it works at all.
-
-regards,
-dan carpenter
