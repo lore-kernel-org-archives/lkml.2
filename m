@@ -1,89 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab2FYMkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 08:40:53 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53434 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023Ab2FYMkw (ORCPT
+	id S1756682Ab2FYMnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 08:43:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55702 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756584Ab2FYMnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 08:40:52 -0400
-Date: Mon, 25 Jun 2012 14:40:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Jack Steiner <steiner@sgi.com>, Mike Travis <travis@sgi.com>
-Subject: Re: [PATCH 3/3] x86: UV2 BAU hang workarounds
-Message-ID: <20120625124045.GA30571@gmail.com>
-References: <E1Si3c5-0008I6-CG@eag09.americas.sgi.com>
- <20120622131459.GC31884@sgi.com>
- <20120625100321.GB27081@gmail.com>
- <20120625123647.GA28138@sgi.com>
+	Mon, 25 Jun 2012 08:43:13 -0400
+Message-ID: <4FE85CDC.1090604@gmail.com>
+Date: Mon, 25 Jun 2012 07:43:08 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625123647.GA28138@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>, JJ Ding <dgdunix@gmail.com>,
+        Roland Stigge <stigge@antcom.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH RESEND] input: gpio_keys_polled: convert to dt
+References: <1340192062-10565-1-git-send-email-aletes.xgr@gmail.com>
+In-Reply-To: <1340192062-10565-1-git-send-email-aletes.xgr@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Cliff Wickman <cpw@sgi.com> wrote:
-
-> On Mon, Jun 25, 2012 at 12:03:21PM +0200, Ingo Molnar wrote:
-> > 
-> > * Cliff Wickman <cpw@sgi.com> wrote:
-> > 
-> > > On SGI's UV2 the BAU (Broadcast Assist Unit) driver can hang under a
-> > > heavy load.  To cure this: 
-> > > 
-> > > - Disable the UV2 extended status mode (see UV2_EXT_SHFT), as this
-> > >   mode changes BAU behavior in more ways then just delivering an extra bit
-> > >   of status.  Revert status to just two meaningful bits, like UV1.
-> > > - Use no IPI-style resets on UV2.  Just give up the request for whatever the
-> > >   reason it failed and let it be accomplished with the legacy IPI method.
-> > > - Use no alternate sending descriptor (the former UV2 workaround
-> > >   bcp->using_desc and handle_uv2_busy() stuff).  Just disable the use of the
-> > >   BAU for a period of time in favor of the legacy IPI method when the h/w bug
-> > >   leaves a descriptor busy.
-> > >   -- new tunable: giveup_limit determines the threshold at which a hub is 
-> > >      so plugged that it should do all requests with the legacy IPI method for a
-> > >      period of time
-> > >   -- generalize disable_for_congestion() (renamed disable_for_period()) for
-> > >      use whenever a hub should avoid using the BAU for a period of time
-> > > 
-> > > Misc:
-> > > - fix find_another_by_swack(), which is part of the UV2 bug workaround
-> > > - correct and clarify the statistics (new stats s_overipilimit s_giveuplimit
-> > >   s_enters s_ipifordisabled s_plugged s_congested)
-> > 
-> > Sigh, it looks like something that ought to be 7 successive, 
-> > easy to review commits got mixed up into a single, huge, hard to 
-> > review commit. How did that happen?
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
+On 06/20/2012 06:34 AM, Alexandre Pereira da Silva wrote:
+> Add device tree support to gpio_keys_polled.c
 > 
-> Hi Ingo,
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> Tested-by: Roland Stigge <stigge@antcom.de>
+> ---
+>  drivers/input/keyboard/gpio_keys_polled.c |  121 +++++++++++++++++++++++++++--
+>  1 file changed, 113 insertions(+), 8 deletions(-)
+
+Needs binding documentation.
+
 > 
->   Yes, admittedly large.
->   This patch was the 'bottom line' of a great deal of experimentation on
->   how to work around some hardware problems with the bau.  This is what
->   remains after pulling out the unnecessary or unhelpful attempts.
+> diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
+> index 20c8ab1..a64b361 100644
+> --- a/drivers/input/keyboard/gpio_keys_polled.c
+> +++ b/drivers/input/keyboard/gpio_keys_polled.c
+> @@ -25,6 +25,8 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/gpio.h>
+>  #include <linux/gpio_keys.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_gpio.h>
+>  
+>  #define DRV_NAME	"gpio-keys-polled"
+>  
+> @@ -38,7 +40,7 @@ struct gpio_keys_button_data {
+>  struct gpio_keys_polled_dev {
+>  	struct input_polled_dev *poll_dev;
+>  	struct device *dev;
+> -	struct gpio_keys_platform_data *pdata;
+> +	struct gpio_keys_platform_data pdata;
+>  	struct gpio_keys_button_data data[0];
+>  };
+>  
+> @@ -67,11 +69,11 @@ static void gpio_keys_polled_check_state(struct input_dev *input,
+>  static void gpio_keys_polled_poll(struct input_polled_dev *dev)
+>  {
+>  	struct gpio_keys_polled_dev *bdev = dev->private;
+> -	struct gpio_keys_platform_data *pdata = bdev->pdata;
+> +	struct gpio_keys_platform_data *pdata = &bdev->pdata;
+>  	struct input_dev *input = dev->input;
+>  	int i;
+>  
+> -	for (i = 0; i < bdev->pdata->nbuttons; i++) {
+> +	for (i = 0; i < pdata->nbuttons; i++) {
+>  		struct gpio_keys_button_data *bdata = &bdev->data[i];
+>  
+>  		if (bdata->count < bdata->threshold)
+> @@ -85,7 +87,7 @@ static void gpio_keys_polled_poll(struct input_polled_dev *dev)
+>  static void gpio_keys_polled_open(struct input_polled_dev *dev)
+>  {
+>  	struct gpio_keys_polled_dev *bdev = dev->private;
+> -	struct gpio_keys_platform_data *pdata = bdev->pdata;
+> +	struct gpio_keys_platform_data *pdata = &bdev->pdata;
+>  
+>  	if (pdata->enable)
+>  		pdata->enable(bdev->dev);
+> @@ -94,23 +96,125 @@ static void gpio_keys_polled_open(struct input_polled_dev *dev)
+>  static void gpio_keys_polled_close(struct input_polled_dev *dev)
+>  {
+>  	struct gpio_keys_polled_dev *bdev = dev->private;
+> -	struct gpio_keys_platform_data *pdata = bdev->pdata;
+> +	struct gpio_keys_platform_data *pdata = &bdev->pdata;
+>  
+>  	if (pdata->disable)
+>  		pdata->disable(bdev->dev);
+>  }
+> +#ifdef CONFIG_OF
+> +static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
+> +			    struct gpio_keys_platform_data *pdata)
+> +{
+> +	struct device_node *node, *pp;
+> +	int i;
+> +	struct gpio_keys_button *buttons;
+> +	u32 reg;
+> +
+> +	node = dev->of_node;
+> +	if (node == NULL)
+> +		return -ENODEV;
+> +
+> +	memset(pdata, 0, sizeof *pdata);
 
-Ok - this happens sometimes.
+parentheses around *pdata.
 
->   I could break it up for review purposes, if you think anyone would
->   want to examine each component.
->   You sound like you're willing to spend that time and effort.  Yes?
+> +
+> +	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
+> +
+> +	if (of_property_read_u32(node, "poll-interval", &reg) == 0)
+> +		pdata->poll_interval = reg;
 
-I had a look already and it didn't look fundamentally 
-objectionable - besides its size. As long as it wasn't actually 
-the result of merging multiple patches I'll apply it to 
-tip:x86/uv. If there's problem with the patch we could still 
-break it up and re-try.
+You can just do this instead of the if:
 
-Thanks,
+of_property_read_u32(node, "poll-interval", &pdata->poll_interval);
 
-	Ingo
+
+> +
+> +	/* First count the subnodes */
+> +	pdata->nbuttons = 0;
+
+You already to this to 0.
+
+> +	pp = NULL;
+> +	while ((pp = of_get_next_child(node, pp)))
+> +		pdata->nbuttons++;
+
+of_get_child_count()
+
+> +
+> +	if (pdata->nbuttons == 0)
+> +		return -ENODEV;
+> +
+> +	buttons = kzalloc(pdata->nbuttons * (sizeof *buttons), GFP_KERNEL);
+> +	if (!buttons)
+> +		return -ENOMEM;
+> +
+> +	pp = NULL;
+> +	i = 0;
+> +	while ((pp = of_get_next_child(node, pp))) {
+
+for_each_child_of_node
+
+> +		enum of_gpio_flags flags;
+> +
+> +		if (!of_find_property(pp, "gpios", NULL)) {
+> +			pdata->nbuttons--;
+> +			dev_warn(dev, "Found button without gpios\n");
+> +			continue;
+> +		}
+> +		buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
+> +		buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
+> +
+> +		if (of_property_read_u32(pp, "linux,code", &reg)) {
+> +			dev_err(dev, "Button without keycode: 0x%x\n", buttons[i].gpio);
+> +			goto out_fail;
+> +		}
+> +		buttons[i].code = reg;
+> +
+> +		buttons[i].desc = of_get_property(pp, "label", NULL);
+> +
+> +		if (of_property_read_u32(pp, "linux,input-type", &reg) == 0)
+> +			buttons[i].type = reg;
+> +		else
+> +			buttons[i].type = EV_KEY;
+
+if (of_property_read_u32(pp, "linux,input-type", &buttons[i].type))
+	buttons[i].type = EV_KEY;
+
+> +
+> +		buttons[i].wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
+> +
+> +		if (of_property_read_u32(pp, "debounce-interval", &reg) == 0)
+> +			buttons[i].debounce_interval = reg;
+> +		else
+> +			buttons[i].debounce_interval = 5;
+
+ditto
+
+> +
+> +		i++;
+> +	}
+> +
+> +	pdata->buttons = buttons;
+> +
+> +	return 0;
+> +
+> +out_fail:
+> +	kfree(buttons);
+> +	return -ENODEV;
+> +}
+> +
+> +static struct of_device_id gpio_keys_polled_of_match[] = {
+> +	{ .compatible = "gpio-keys-polled", },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
+> +#else
+> +
+> +static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
+> +			    struct gpio_keys_platform_data *altp)
+> +{
+> +	return -ENODEV;
+> +}
+> +
+> +#define gpio_keys_polled_of_match NULL
+> +
+> +#endif
+>  
+>  static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
+>  {
+>  	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
+>  	struct device *dev = &pdev->dev;
+> +	struct gpio_keys_platform_data alt_pdata;
+>  	struct gpio_keys_polled_dev *bdev;
+>  	struct input_polled_dev *poll_dev;
+>  	struct input_dev *input;
+>  	int error;
+>  	int i;
+>  
+> -	if (!pdata || !pdata->poll_interval)
+> +	if (!pdata) {
+> +	    error = gpio_keys_polled_get_devtree_pdata(dev, &alt_pdata);
+> +		if (error)
+> +			return error;
+> +		pdata = &alt_pdata;
+> +	}
+> +
+> +	if (!pdata->poll_interval)
+>  		return -EINVAL;
+>  
+>  	bdev = kzalloc(sizeof(struct gpio_keys_polled_dev) +
+> @@ -184,7 +288,7 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
+>  
+>  	bdev->poll_dev = poll_dev;
+>  	bdev->dev = dev;
+> -	bdev->pdata = pdata;
+> +	bdev->pdata = *pdata;
+>  	platform_set_drvdata(pdev, bdev);
+>  
+>  	error = input_register_polled_device(poll_dev);
+> @@ -217,7 +321,7 @@ err_free_bdev:
+>  static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
+>  {
+>  	struct gpio_keys_polled_dev *bdev = platform_get_drvdata(pdev);
+> -	struct gpio_keys_platform_data *pdata = bdev->pdata;
+> +	struct gpio_keys_platform_data *pdata = &bdev->pdata;
+>  	int i;
+>  
+>  	input_unregister_polled_device(bdev->poll_dev);
+> @@ -239,6 +343,7 @@ static struct platform_driver gpio_keys_polled_driver = {
+>  	.driver	= {
+>  		.name	= DRV_NAME,
+>  		.owner	= THIS_MODULE,
+> +		.of_match_table = gpio_keys_polled_of_match,
+>  	},
+>  };
+>  module_platform_driver(gpio_keys_polled_driver);
