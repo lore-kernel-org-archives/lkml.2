@@ -1,71 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab2FYGlx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 02:41:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37732 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145Ab2FYGlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 02:41:52 -0400
-Date: Mon, 25 Jun 2012 16:41:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-Id: <20120625164141.1c5b1b543e0309005dfd0d9c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1754520Ab2FYGq7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 02:46:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55478 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227Ab2FYGq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 02:46:58 -0400
+Message-ID: <1340606798.16104.142.camel@pasglop>
+Subject: Re: [PATCH v2 1/1] of: reform prom_update_property function
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linuxppc-dev@lists.ozlabs.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, galak@kernel.crashing.org, paulus@samba.org
+Date: Mon, 25 Jun 2012 16:46:38 +1000
+In-Reply-To: <1340605714-25206-1-git-send-email-b29396@freescale.com>
+References: <1340605714-25206-1-git-send-email-b29396@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__25_Jun_2012_16_41_41_+1000_sCL7wSPmJ2JSk1.H"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Jun_2012_16_41_41_+1000_sCL7wSPmJ2JSk1.H
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-06-25 at 14:28 +0800, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> prom_update_property() currently fails if the property doesn't
+> actually exist yet which isn't what we want. Change to add-or-update
+> instead of update-only, then we can remove a lot duplicated lines.
+> 
+> Suggested-by: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> ---
 
-Hi Andrew,
+Grand, should I merge that via the powerpc tree or will you take care of
+it ?
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-fs/namei.c: In function 'path_openat':
-fs/namei.c:2874:4: error: 'filp' undeclared (first use in this function)
-
-Caused by patch "fs: add link restrictions" from the akpm tree
-interacting with (at least) commit 4066cd545681 ("vfs: remove open
-intents from nameidata") from the vfs tree.
-
-I don't know how to fix this, so I have reverted the akpm patch for today
-(in the hope that someone else will fix it).
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben.
 
---Signature=_Mon__25_Jun_2012_16_41_41_+1000_sCL7wSPmJ2JSk1.H
-Content-Type: application/pgp-signature
+> ChangeLog v1->v2:
+> * keep reconfig.c behavior the same as before after changes
+> ---
+>  arch/powerpc/platforms/85xx/p1022_ds.c    |    8 +-------
+>  arch/powerpc/platforms/pseries/mobility.c |    8 +-------
+>  arch/powerpc/platforms/pseries/reconfig.c |   16 ++++++----------
+>  drivers/of/base.c                         |   15 +++++++++++----
+>  fs/proc/proc_devtree.c                    |    5 +++++
+>  include/linux/of.h                        |    3 +--
+>  6 files changed, 25 insertions(+), 30 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/85xx/p1022_ds.c b/arch/powerpc/platforms/85xx/p1022_ds.c
+> index f700c81..d66631c 100644
+> --- a/arch/powerpc/platforms/85xx/p1022_ds.c
+> +++ b/arch/powerpc/platforms/85xx/p1022_ds.c
+> @@ -348,13 +348,7 @@ void __init p1022_ds_pic_init(void)
+>   */
+>  static void __init disable_one_node(struct device_node *np, struct property *new)
+>  {
+> -	struct property *old;
+> -
+> -	old = of_find_property(np, new->name, NULL);
+> -	if (old)
+> -		prom_update_property(np, new, old);
+> -	else
+> -		prom_add_property(np, new);
+> +	prom_update_property(np, new);
+>  }
+>  
+>  /* TRUE if there is a "video=fslfb" command-line parameter. */
+> diff --git a/arch/powerpc/platforms/pseries/mobility.c b/arch/powerpc/platforms/pseries/mobility.c
+> index 029a562..dd30b12 100644
+> --- a/arch/powerpc/platforms/pseries/mobility.c
+> +++ b/arch/powerpc/platforms/pseries/mobility.c
+> @@ -67,7 +67,6 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+>  			      const char *name, u32 vd, char *value)
+>  {
+>  	struct property *new_prop = *prop;
+> -	struct property *old_prop;
+>  	int more = 0;
+>  
+>  	/* A negative 'vd' value indicates that only part of the new property
+> @@ -117,12 +116,7 @@ static int update_dt_property(struct device_node *dn, struct property **prop,
+>  	}
+>  
+>  	if (!more) {
+> -		old_prop = of_find_property(dn, new_prop->name, NULL);
+> -		if (old_prop)
+> -			prom_update_property(dn, new_prop, old_prop);
+> -		else
+> -			prom_add_property(dn, new_prop);
+> -
+> +		prom_update_property(dn, new_prop);
+>  		new_prop = NULL;
+>  	}
+>  
+> diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
+> index 7b3bf76..db1b7b1 100644
+> --- a/arch/powerpc/platforms/pseries/reconfig.c
+> +++ b/arch/powerpc/platforms/pseries/reconfig.c
+> @@ -432,7 +432,7 @@ static int do_update_property(char *buf, size_t bufsize)
+>  	unsigned char *value;
+>  	char *name, *end, *next_prop;
+>  	int rc, length;
+> -	struct property *newprop, *oldprop;
+> +	struct property *newprop;
+>  	buf = parse_node(buf, bufsize, &np);
+>  	end = buf + bufsize;
+>  
+> @@ -443,6 +443,9 @@ static int do_update_property(char *buf, size_t bufsize)
+>  	if (!next_prop)
+>  		return -EINVAL;
+>  
+> +	if (!strlen(name)
+> +		return -ENODEV;
+> +
+>  	newprop = new_property(name, length, value, NULL);
+>  	if (!newprop)
+>  		return -ENOMEM;
+> @@ -450,18 +453,11 @@ static int do_update_property(char *buf, size_t bufsize)
+>  	if (!strcmp(name, "slb-size") || !strcmp(name, "ibm,slb-size"))
+>  		slb_set_size(*(int *)value);
+>  
+> -	oldprop = of_find_property(np, name,NULL);
+> -	if (!oldprop) {
+> -		if (strlen(name))
+> -			return prom_add_property(np, newprop);
+> -		return -ENODEV;
+> -	}
+> -
+>  	upd_value.node = np;
+>  	upd_value.property = newprop;
+>  	pSeries_reconfig_notify(PSERIES_UPDATE_PROPERTY, &upd_value);
+>  
+> -	rc = prom_update_property(np, newprop, oldprop);
+> +	rc = prom_update_property(np, newprop);
+>  	if (rc)
+>  		return rc;
+>  
+> @@ -486,7 +482,7 @@ static int do_update_property(char *buf, size_t bufsize)
+>  
+>  		rc = pSeries_reconfig_notify(action, value);
+>  		if (rc) {
+> -			prom_update_property(np, oldprop, newprop);
+> +			prom_update_property(np, newprop);
+>  			return rc;
+>  		}
+>  	}
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index d9bfd49..a14f109 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1051,7 +1051,8 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+>  }
+>  
+>  /*
+> - * prom_update_property - Update a property in a node.
+> + * prom_update_property - Update a property in a node, if the property does
+> + * not exist, add it.
+>   *
+>   * Note that we don't actually remove it, since we have given out
+>   * who-knows-how-many pointers to the data using get-property.
+> @@ -1059,13 +1060,19 @@ int prom_remove_property(struct device_node *np, struct property *prop)
+>   * and add the new property to the property list
+>   */
+>  int prom_update_property(struct device_node *np,
+> -			 struct property *newprop,
+> -			 struct property *oldprop)
+> +			 struct property *newprop)
+>  {
+> -	struct property **next;
+> +	struct property **next, *oldprop;
+>  	unsigned long flags;
+>  	int found = 0;
+>  
+> +	if (!newprop->name)
+> +		return -EINVAL;
+> +
+> +	oldprop = of_find_property(np, newprop->name, NULL);
+> +	if (!oldprop)
+> +		return prom_add_property(np, newprop);
+> +
+>  	write_lock_irqsave(&devtree_lock, flags);
+>  	next = &np->properties;
+>  	while (*next) {
+> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+> index 927cbd1..df7dd08 100644
+> --- a/fs/proc/proc_devtree.c
+> +++ b/fs/proc/proc_devtree.c
+> @@ -101,6 +101,11 @@ void proc_device_tree_update_prop(struct proc_dir_entry *pde,
+>  {
+>  	struct proc_dir_entry *ent;
+>  
+> +	if (!oldprop) {
+> +		proc_device_tree_add_prop(pde, newprop);
+> +		return;
+> +	}
+> +
+>  	for (ent = pde->subdir; ent != NULL; ent = ent->next)
+>  		if (ent->data == oldprop)
+>  			break;
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 2ec1083..b27c871 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -260,8 +260,7 @@ extern int of_machine_is_compatible(const char *compat);
+>  extern int prom_add_property(struct device_node* np, struct property* prop);
+>  extern int prom_remove_property(struct device_node *np, struct property *prop);
+>  extern int prom_update_property(struct device_node *np,
+> -				struct property *newprop,
+> -				struct property *oldprop);
+> +				struct property *newprop);
+>  
+>  #if defined(CONFIG_OF_DYNAMIC)
+>  /* For updating the device tree at runtime */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJP6AglAAoJEECxmPOUX5FEsEEP/jnfHNOdoAkgm29P3imKFhc+
-aWX8CWBzxTPTp6Dc2Lh4M0H1as5atETI4E5gaHtGLqSSiYVngOCjasmuupyOJKpM
-5zB3B9SEMHG+8GcEU5JBko6niTPzkG5ZpXs+1PPeii7HEcjCL63k4EeoTs6YptEH
-GzPdoENZB5B5WViGfnjc2+0t4WMTDe9Iegr0LSjLdDn9m3DYF0FtvQ6xd7ZjBZxa
-jgg0GHl/guXUehAxicPEZuddCl65gbi/rjBDsdzc8iZDziB8+wDgyb4IfrU01nt5
-TFfH/HUgh3J4Q5gkljrzgLkofNHhFYTiMvYf8UkYFyfkc3EONYG9mfeZjA8Y6leK
-E2oOPowYnFhPFuGjD5XkWEcROtzL+oilT7j22ChK7qDpJO4Uc8/+8rasTOTuOMJU
-ZCbaYloq9Sl5c/JLlEBlulYSSamIGxmxYaNpXVjaC0bFdeNxdc4ODLBbnEE7uM3V
-HIo7huK+b4/y819AOZ3EMr0DulSSHsrYQCsdEgn2axOWF1cEVo79+H/olmQFUj0B
-rYD/8rWI0W+1N+8M6RNtisVAZxYhpgxS713U6yu0O9UQxnBNJpLtMFBBBPP3tZAs
-t9X7JEYFwFhGZkCdatqZpzIDF1UR5LbOf5oQ5OAaPZpXxoXZHnwljwhgbGgRuepN
-iKmSY0z4VDYGAbbCZFuV
-=UZKp
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Jun_2012_16_41_41_+1000_sCL7wSPmJ2JSk1.H--
