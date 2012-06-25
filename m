@@ -1,186 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab2FYUqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 16:46:40 -0400
+	id S1756859Ab2FYUqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 16:46:51 -0400
 Received: from mga14.intel.com ([143.182.124.37]:63466 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755516Ab2FYUqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756024Ab2FYUqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Jun 2012 16:46:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="115896943"
+   d="scan'208";a="115896926"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 2/2] mei: revamp host buffer interface function
-Date: Mon, 25 Jun 2012 23:46:28 +0300
-Message-Id: <1340657188-16953-2-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 1/2] mei: don't query HCSR for host buffer depth
+Date: Mon, 25 Jun 2012 23:46:27 +0300
+Message-Id: <1340657188-16953-1-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1340657188-16953-1-git-send-email-tomas.winkler@intel.com>
-References: <1340657188-16953-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Use unified _hbuf_ prefix for host/write buffer functions.
-2. Cleanup the code w/o functional changes.
+1. We record host (write) buffer depth during reset
+ so we don't need to query HCSR register later on.
+ The host buffer depth doesn't change after the reset
+2. Use mei_hbuf_max_data function to compute payload size in bytes
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/interface.c |   31 ++++++++++++-------------------
- drivers/misc/mei/interface.h |   14 ++++++++------
- drivers/misc/mei/interrupt.c |    8 ++++----
- 3 files changed, 24 insertions(+), 29 deletions(-)
+ drivers/misc/mei/init.c      |    3 +++
+ drivers/misc/mei/interface.c |    7 +++----
+ drivers/misc/mei/interface.h |    6 ++++++
+ drivers/misc/mei/interrupt.c |    6 +++---
+ drivers/misc/mei/iorw.c      |    8 ++------
+ drivers/misc/mei/main.c      |    9 ++-------
+ drivers/misc/mei/mei_dev.h   |    6 +++++-
+ 7 files changed, 24 insertions(+), 21 deletions(-)
 
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index a7d0bb0..d39b277 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -162,6 +162,9 @@ int mei_hw_init(struct mei_device *dev)
+ 	if ((dev->host_hw_state & H_IS) == H_IS)
+ 		mei_reg_write(dev, H_CSR, dev->host_hw_state);
+ 
++	/* Doesn't change in runtime */
++	dev->hbuf_depth = (dev->host_hw_state & H_CBD) >> 24;
++
+ 	dev->recvd_msg = false;
+ 	dev_dbg(&dev->pdev->dev, "reset in start the mei device.\n");
+ 
 diff --git a/drivers/misc/mei/interface.c b/drivers/misc/mei/interface.c
-index 784a606..88ada64 100644
+index 6c05691..784a606 100644
 --- a/drivers/misc/mei/interface.c
 +++ b/drivers/misc/mei/interface.c
-@@ -58,16 +58,18 @@ void mei_disable_interrupts(struct mei_device *dev)
- }
- 
- /**
-- * _host_get_filled_slots - gets number of device filled buffer slots
-+ * mei_hbuf_filled_slots - gets number of device filled buffer slots
-  *
-  * @device: the device structure
-  *
-  * returns number of filled slots
+@@ -103,15 +103,14 @@ int mei_host_buffer_is_empty(struct mei_device *dev)
   */
--static unsigned char _host_get_filled_slots(const struct mei_device *dev)
-+static unsigned char mei_hbuf_filled_slots(struct mei_device *dev)
+ int mei_count_empty_write_slots(struct mei_device *dev)
  {
- 	char read_ptr, write_ptr;
+-	unsigned char buffer_depth, filled_slots, empty_slots;
++	unsigned char filled_slots, empty_slots;
  
-+	dev->host_hw_state = mei_hcsr_read(dev);
-+
- 	read_ptr = (char) ((dev->host_hw_state & H_CBRP) >> 8);
- 	write_ptr = (char) ((dev->host_hw_state & H_CBWP) >> 16);
- 
-@@ -75,38 +77,29 @@ static unsigned char _host_get_filled_slots(const struct mei_device *dev)
- }
- 
- /**
-- * mei_host_buffer_is_empty - checks if host buffer is empty.
-+ * mei_hbuf_is_empty - checks if host buffer is empty.
-  *
-  * @dev: the device structure
-  *
-- * returns 1 if empty, 0 - otherwise.
-+ * returns true if empty, false - otherwise.
-  */
--int mei_host_buffer_is_empty(struct mei_device *dev)
-+bool mei_hbuf_is_empty(struct mei_device *dev)
- {
--	unsigned char filled_slots;
--
--	dev->host_hw_state = mei_hcsr_read(dev);
--	filled_slots = _host_get_filled_slots(dev);
--
--	if (filled_slots == 0)
--		return 1;
--
--	return 0;
-+	return mei_hbuf_filled_slots(dev) == 0;
- }
- 
- /**
-- * mei_count_empty_write_slots - counts write empty slots.
-+ * mei_hbuf_empty_slots - counts write empty slots.
-  *
-  * @dev: the device structure
-  *
-  * returns -1(ESLOTS_OVERFLOW) if overflow, otherwise empty slots count
-  */
--int mei_count_empty_write_slots(struct mei_device *dev)
-+int mei_hbuf_empty_slots(struct mei_device *dev)
- {
- 	unsigned char filled_slots, empty_slots;
- 
--	dev->host_hw_state = mei_hcsr_read(dev);
--	filled_slots = _host_get_filled_slots(dev);
-+	filled_slots = mei_hbuf_filled_slots(dev);
- 	empty_slots = dev->hbuf_depth - filled_slots;
+ 	dev->host_hw_state = mei_hcsr_read(dev);
+-	buffer_depth = (unsigned char) ((dev->host_hw_state & H_CBD) >> 24);
+ 	filled_slots = _host_get_filled_slots(dev);
+-	empty_slots = buffer_depth - filled_slots;
++	empty_slots = dev->hbuf_depth - filled_slots;
  
  	/* check for overflow */
-@@ -139,7 +132,7 @@ int mei_write_message(struct mei_device *dev, struct mei_msg_hdr *header,
- 			"mei_write_message header=%08x.\n",
- 			*((u32 *) header));
+-	if (filled_slots > buffer_depth)
++	if (filled_slots > dev->hbuf_depth)
+ 		return -EOVERFLOW;
  
--	empty_slots = mei_count_empty_write_slots(dev);
-+	empty_slots = mei_hbuf_empty_slots(dev);
- 	dev_dbg(&dev->pdev->dev, "empty slots = %hu.\n", empty_slots);
- 
- 	dw_cnt = (length + sizeof(*header) + 3) / 4;
+ 	return empty_slots;
 diff --git a/drivers/misc/mei/interface.h b/drivers/misc/mei/interface.h
-index 8723d88..cd9b778 100644
+index ddff5d1..8723d88 100644
 --- a/drivers/misc/mei/interface.h
 +++ b/drivers/misc/mei/interface.h
-@@ -41,19 +41,21 @@ int mei_write_message(struct mei_device *dev,
- 			     unsigned char *write_buffer,
- 			     unsigned long write_length);
+@@ -49,6 +49,12 @@ int mei_count_empty_write_slots(struct mei_device *dev);
  
--int mei_host_buffer_is_empty(struct mei_device *dev);
-+bool mei_hbuf_is_empty(struct mei_device *dev);
+ int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *cl);
  
--int mei_count_full_read_slots(struct mei_device *dev);
--
--int mei_count_empty_write_slots(struct mei_device *dev);
--
--int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *cl);
-+int mei_hbuf_empty_slots(struct mei_device *dev);
- 
- static inline size_t mei_hbuf_max_data(const struct mei_device *dev)
- {
- 	return dev->hbuf_depth * sizeof(u32) - sizeof(struct mei_msg_hdr);
- }
- 
-+int mei_count_full_read_slots(struct mei_device *dev);
++static inline size_t mei_hbuf_max_data(const struct mei_device *dev)
++{
++	return dev->hbuf_depth * sizeof(u32) - sizeof(struct mei_msg_hdr);
++}
 +
 +
-+int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *cl);
-+
-+
- 
  int mei_wd_send(struct mei_device *dev);
  int mei_wd_stop(struct mei_device *dev, bool preserve);
+ int mei_wd_host_init(struct mei_device *dev);
 diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index ebf97d3..013641d 100644
+index 7ea0254..ebf97d3 100644
 --- a/drivers/misc/mei/interrupt.c
 +++ b/drivers/misc/mei/interrupt.c
-@@ -280,7 +280,7 @@ static int _mei_irq_thread_iamthif_read(struct mei_device *dev, s32 *slots)
- 	dev->iamthif_msg_buf_index = 0;
- 	dev->iamthif_msg_buf_size = 0;
- 	dev->iamthif_stall_timer = IAMTHIF_STALL_TIMER;
--	dev->mei_host_buffer_is_empty = mei_host_buffer_is_empty(dev);
-+	dev->mei_host_buffer_is_empty = mei_hbuf_is_empty(dev);
- 	return 0;
- }
+@@ -951,7 +951,7 @@ static int _mei_irq_thread_cmpl(struct mei_device *dev,	s32 *slots,
+ 			list_move_tail(&cb_pos->cb_list,
+ 				&dev->write_waiting_list.mei_cb.cb_list);
+ 		}
+-	} else if (*slots == ((dev->host_hw_state & H_CBD) >> 24)) {
++	} else if (*slots == dev->hbuf_depth) {
+ 		/* buffer is still empty */
+ 		mei_hdr = (struct mei_msg_hdr *) &dev->wr_msg_buf[0];
+ 		mei_hdr->host_addr = cl->host_client_id;
+@@ -1046,8 +1046,8 @@ static int _mei_irq_thread_cmpl_iamthif(struct mei_device *dev, s32 *slots,
+ 				&dev->write_waiting_list.mei_cb.cb_list);
  
-@@ -1199,11 +1199,11 @@ static int mei_irq_thread_write_handler(struct mei_io_list *cmpl_list,
- 	struct mei_io_list *list;
- 	int ret;
+ 		}
+-	} else if (*slots == ((dev->host_hw_state & H_CBD) >> 24)) {
+-			/* buffer is still empty */
++	} else if (*slots == dev->hbuf_depth) {
++		/* buffer is still empty */
+ 		mei_hdr = (struct mei_msg_hdr *) &dev->wr_msg_buf[0];
+ 		mei_hdr->host_addr = cl->host_client_id;
+ 		mei_hdr->me_addr = cl->me_client_id;
+diff --git a/drivers/misc/mei/iorw.c b/drivers/misc/mei/iorw.c
+index f9cced6..50f52e2 100644
+--- a/drivers/misc/mei/iorw.c
++++ b/drivers/misc/mei/iorw.c
+@@ -481,12 +481,8 @@ int amthi_write(struct mei_device *dev, struct mei_cl_cb *cb)
+ 	if (ret && dev->mei_host_buffer_is_empty) {
+ 		ret = 0;
+ 		dev->mei_host_buffer_is_empty = false;
+-		if (cb->request_buffer.size >
+-			(((dev->host_hw_state & H_CBD) >> 24) * sizeof(u32))
+-				-sizeof(struct mei_msg_hdr)) {
+-			mei_hdr.length =
+-			    (((dev->host_hw_state & H_CBD) >> 24) *
+-			    sizeof(u32)) - sizeof(struct mei_msg_hdr);
++		if (cb->request_buffer.size > mei_hbuf_max_data(dev)) {
++			mei_hdr.length = mei_hbuf_max_data(dev);
+ 			mei_hdr.msg_complete = 0;
+ 		} else {
+ 			mei_hdr.length = cb->request_buffer.size;
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 7de1389..1c1df04 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -714,13 +714,8 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+ 	if (rets && dev->mei_host_buffer_is_empty) {
+ 		rets = 0;
+ 		dev->mei_host_buffer_is_empty = false;
+-		if (length > ((((dev->host_hw_state & H_CBD) >> 24) *
+-			sizeof(u32)) - sizeof(struct mei_msg_hdr))) {
+-
+-			mei_hdr.length =
+-				(((dev->host_hw_state & H_CBD) >> 24) *
+-				sizeof(u32)) -
+-				sizeof(struct mei_msg_hdr);
++		if (length >  mei_hbuf_max_data(dev)) {
++			mei_hdr.length = mei_hbuf_max_data(dev);
+ 			mei_hdr.msg_complete = 0;
+ 		} else {
+ 			mei_hdr.length = length;
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 4fe6533..d60250d 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -167,7 +167,10 @@ struct mei_io_list {
+ 	struct mei_cl_cb mei_cb;
+ };
  
--	if (!mei_host_buffer_is_empty(dev)) {
-+	if (!mei_hbuf_is_empty(dev)) {
- 		dev_dbg(&dev->pdev->dev, "host buffer is not empty.\n");
- 		return 0;
- 	}
--	*slots = mei_count_empty_write_slots(dev);
-+	*slots = mei_hbuf_empty_slots(dev);
- 	if (*slots <= 0)
- 		return -EMSGSIZE;
- 
-@@ -1558,7 +1558,7 @@ irqreturn_t mei_interrupt_thread_handler(int irq, void *dev_id)
- end:
- 	dev_dbg(&dev->pdev->dev, "end of bottom half function.\n");
- 	dev->host_hw_state = mei_hcsr_read(dev);
--	dev->mei_host_buffer_is_empty = mei_host_buffer_is_empty(dev);
-+	dev->mei_host_buffer_is_empty = mei_hbuf_is_empty(dev);
- 
- 	bus_message_received = false;
- 	if (dev->recvd_msg && waitqueue_active(&dev->wait_recvd_msg)) {
+-/* MEI private device struct */
++/**
++ * struct mei_deive -  MEI private device struct
++ * @hbuf_depth - depth of host(write) buffer
++ */
+ struct mei_device {
+ 	struct pci_dev *pdev;	/* pointer to pci device struct */
+ 	/*
+@@ -205,6 +208,7 @@ struct mei_device {
+ 	 */
+ 	u32 host_hw_state;
+ 	u32 me_hw_state;
++	u8  hbuf_depth;
+ 	/*
+ 	 * waiting queue for receive message from FW
+ 	 */
 -- 
 1.7.4.4
 
