@@ -1,181 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab2FYVrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 17:47:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47214 "EHLO mx1.redhat.com"
+	id S1757594Ab2FYVyF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 17:54:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60896 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756145Ab2FYVrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 17:47:32 -0400
-Message-ID: <4FE8DC6F.2020901@redhat.com>
-Date: Mon, 25 Jun 2012 18:47:27 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756024Ab2FYVyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 17:54:02 -0400
+Message-ID: <4FE8DD80.9040108@redhat.com>
+Date: Mon, 25 Jun 2012 17:52:00 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.5-rc5] media fixes
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Rik van Riel <riel@surriel.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
+        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
+ rbtree
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>     <1340315835-28571-2-git-send-email-riel@surriel.com>    <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>   <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>  <1340375872.18025.77.camel@twins> <4FE4922D.8070501@surriel.com> <1340652578.21991.18.camel@twins>
+In-Reply-To: <1340652578.21991.18.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 06/25/2012 03:29 PM, Peter Zijlstra wrote:
+> On Fri, 2012-06-22 at 11:41 -0400, Rik van Riel wrote:
+>> Let me try implementing your algorithm with arbitrary
+>> address constraints and alignment/colouring.
+>
+> Right, so the best I could come up with for a range search is
+> O((log n)^2), it does need another pointer in the vma though :/
+>
+> Instead of storing the single right sub-tree pointer, you store a single
+> linked list of right sub-tree pointers using that extra vma member.
+>
+> Then when no gap was found on the left downward path, try each
+> successive right sub-tree (bottom-up per the LIFO single linked list and
+> top-down) and do a right-path and left subtree search for those.
+>
+> So you get a log n walk, with a log n walk for each right sub-tree,
+> giving a 1/2 * log n * log n aka O((log n)^2).
+>
+> If you do the search without right limit, the first right subtree search
+> is sufficient and you'll revert back to O(log n).
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+That is essentially what my current code does.
 
-For a set of fixup patches, several of them are due to regressions.
+> I've also thought about the update cost and I think I can make the
+> vma_adjust case cheaper if you keep the max(vm_end) as second
+> augmentation, this does add another word to the vma though.
+>
+> Using this max(vm_end) of the subtree you can do a rb_augment_path()
+> variant over a specified range (the range that gets modified by
+> vma_adjust etc..) in O(m log n) worst time, but much better on average.
+>
+> You still do the m iteration on the range, but you stop the path upwards
+> whenever the subtree max(vm_end) covers the given range end. Except for
+> the very last of m, at which point you'll go all the way up.
+>
+> This should avoid many of the duplicate path traversals the naive
+> implementation does.
 
-Regards,
-Mauro
+One of the benefits of an rbtree is that an insertion
+or deletion is accompanied by at most 2 rotations.
 
-Latest commit at the branch: 
-099987f0aaf28771261b91a41240b9228f2e32b2 [media] smia: Fix compile failures
-The following changes since commit 71006fb22b0f5a2045605b3887ee99a0e9adafe4:
+These rotations, if there are two, will happen next
+to each other, meaning at most 5 nodes will have new
+child nodes.
 
-  [media] saa7134-cards: Remove a PCI entry added by mistake (2012-05-21 12:48:44 -0300)
+Furthermore, the parent of the area where rotation
+happened still has the same set of child nodes as
+before (plus or minus the inserted or deleted node).
 
-are available in the git repository at:
+If we call the augmentation function from inside the
+tree manipulation code, we may be able to save on a
+lot of walking simply by having it bail out once the
+augmented value in a node equals the "new" value.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+The downside? This makes the rbtree code somewhat more
+complex, vs. the brute force walk up the tree the current
+augmented rbtree code does.
 
-for you to fetch changes up to 099987f0aaf28771261b91a41240b9228f2e32b2:
+> I haven't had any good ideas on the alignment thing though, I keep
+> getting back to O(n) or worse if you want a guarantee you find a hole if
+> you have it.
+>
+> The thing you propose, the double search, once for len, and once for len
+> +align-1 doesn't guarantee you'll find a hole. All holes of len might be
+> mis-aligned but the len+align-1 search might overlook a hole of suitable
+> size and alignment, you'd have to search the entire range: [len, len
+> +align-1], and that's somewhat silly.
 
-  [media] smia: Fix compile failures (2012-06-18 19:52:05 -0300)
+This may still be good enough.
 
-----------------------------------------------------------------
-Alan Cox (1):
-      [media] smia: Fix compile failures
+Programs that exhaust their virtual address space to the
+point of not being able to find a properly aligned memory
+hole should be recompiled as 64 bit systems, or run on
+hardware that does not have such requirements (eg. x86).
 
-Andrzej Hajda (2):
-      [media] v4l/s5p-mfc: corrected encoder v4l control definitions
-      [media] v4l/s5p-mfc: added image size align in VIDIOC_TRY_FMT
-
-Antonio Ospite (1):
-      [media] gspca_ov534: make AGC and AWB controls independent
-
-Guennadi Liakhovetski (1):
-      [media] Revert "[media] media: mx2_camera: Fix mbus format handling"
-
-Hans Verkuil (15):
-      [media] Fix vivi regression
-      [media] Fix regression in ioctl numbering
-      [media] Fix query/enum_dv_timings regression
-      [media] V4L2 spec fix
-      [media] saa7146_fops: remove unused variable
-      [media] cx24110: fix compiler warning
-      [media] vino: fix compiler warnings
-      [media] v4l2-ioctl: set readbuffers to 2 in g_parm
-      [media] v4l2-dev.c: fix g_parm regression in determine_valid_ioctls()
-      [media] tuner-core: return the frequency range of the correct tuner
-      [media] ivtv: fix support for big-endian systems
-      [media] cx18: support big-endian systems
-      [media] cx88: fix firmware load on big-endian systems
-      [media] bw-qcam: driver and pixfmt documentation fixes
-      [media]  Fix VIDIOC_DQEVENT docbook entry
-
-Hans de Goede (10):
-      [media] radio/si470x: Add support for the Axentia ALERT FM USB Receiver
-      [media] snd_tea575x: Report correct frequency range for EU/US versus JA models
-      [media] snd_tea575x: Make the module using snd_tea575x the fops owner
-      [media] snd_tea575x: set_freq: update cached freq to the actual achieved frequency
-      [media] bttv: Use btv->has_radio rather then the card info when registering the tuner
-      [media] bttv: Remove unused needs_tvaudio card variable
-      [media] bttv: The Hauppauge 61334 needs the msp3410 to do radio demodulation
-      [media] gspca_pac7311: Correct number of controls
-      [media] gscpa_sn9c20x: Move clustering of controls to after error checking
-      [media] gspca-core: Fix buffers staying in queued state after a stream_off
-
-Janne Huttunen (1):
-      [media] cxd2820r: Fix an incorrect modulation type bitmask
-
-Jean-Francois Moine (2):
-      [media] gspca - ov534/ov534_9: Fix sccd_read/write errors
-      [media] gspca - sonixj: Fix bad values of webcam 0458:7025
-
-Kamil Debski (3):
-      [media] s5p-mfc: Bug fix of timestamp/timecode copy mechanism
-      [media] s5p-mfc: Fix setting controls
-      [media] s5p-fimc: Fix control creation function
-
-Martin Blumenstingl (2):
-      [media] em28xx: Add remote control support for Terratec's Cinergy HTC Stick HD
-      [media] em28xx: Show a warning if the board does not support remote controls
-
-Michael Krufky (2):
-      [media] lg2160: fix off-by-one error in lg216x_write_regs
-      [media] smsusb: add autodetection support for USB ID 2040:f5a0
-
-Sachin Kamat (1):
-      [media] s5p-mfc: Fix checkpatch error in s5p_mfc_shm.h file
-
-Sakari Ailus (1):
-      [media] v4l: Correct create_bufs documentation
-
-Sasha Levin (1):
-      [media] USB: Staging: media: lirc: initialize spinlocks before usage
-
-Tomasz Moń (1):
-      [media] v4l: mem2mem_testdev: Fix race conditions in driver
-
- Documentation/DocBook/media/v4l/pixfmt.xml         |    4 +-
- Documentation/DocBook/media/v4l/v4l2.xml           |    2 +-
- .../DocBook/media/v4l/vidioc-create-bufs.xml       |    5 +-
- Documentation/DocBook/media/v4l/vidioc-dqevent.xml |    2 +-
- arch/arm/plat-mxc/include/mach/mx2_cam.h           |    2 +
- drivers/hid/hid-core.c                             |    1 +
- drivers/hid/hid-ids.h                              |    3 +
- drivers/media/common/saa7146_fops.c                |    5 --
- drivers/media/dvb/frontends/cx24110.c              |    4 +-
- drivers/media/dvb/frontends/cxd2820r_c.c           |    2 +-
- drivers/media/dvb/frontends/lg2160.c               |    2 +-
- drivers/media/dvb/siano/smsusb.c                   |    2 +
- drivers/media/radio/radio-maxiradio.c              |    2 +-
- drivers/media/radio/radio-sf16fmr2.c               |    2 +-
- drivers/media/radio/si470x/radio-si470x-usb.c      |    2 +
- drivers/media/video/bt8xx/bttv-cards.c             |   84 ++------------------
- drivers/media/video/bt8xx/bttv-driver.c            |    5 ++
- drivers/media/video/bt8xx/bttv.h                   |    1 -
- drivers/media/video/bt8xx/bttvp.h                  |    1 +
- drivers/media/video/bw-qcam.c                      |   47 ++++++++---
- drivers/media/video/cx18/cx18-driver.c             |   10 +--
- drivers/media/video/cx18/cx18-driver.h             |    2 +-
- drivers/media/video/cx18/cx18-firmware.c           |    9 ++-
- drivers/media/video/cx18/cx18-mailbox.c            |   15 ++--
- drivers/media/video/cx88/cx88-blackbird.c          |    2 +-
- drivers/media/video/em28xx/em28xx-cards.c          |    1 +
- drivers/media/video/em28xx/em28xx-input.c          |    2 +
- drivers/media/video/gspca/gspca.c                  |    4 +-
- drivers/media/video/gspca/ov534.c                  |   32 +-------
- drivers/media/video/gspca/ov534_9.c                |    1 +
- drivers/media/video/gspca/pac7311.c                |    2 +-
- drivers/media/video/gspca/sn9c20x.c                |   24 +++---
- drivers/media/video/gspca/sonixj.c                 |    2 +-
- drivers/media/video/ivtv/ivtv-driver.c             |   18 ++---
- drivers/media/video/ivtv/ivtv-driver.h             |    2 +-
- drivers/media/video/mem2mem_testdev.c              |   50 ++++++------
- drivers/media/video/mx2_camera.c                   |   52 ++----------
- drivers/media/video/s5p-fimc/fimc-core.c           |    2 +-
- drivers/media/video/s5p-mfc/regs-mfc.h             |    5 ++
- drivers/media/video/s5p-mfc/s5p_mfc_dec.c          |    4 +-
- drivers/media/video/s5p-mfc/s5p_mfc_enc.c          |   12 +--
- drivers/media/video/s5p-mfc/s5p_mfc_opr.h          |    4 +-
- drivers/media/video/s5p-mfc/s5p_mfc_shm.h          |    3 +-
- drivers/media/video/smiapp/Kconfig                 |    2 +-
- drivers/media/video/smiapp/smiapp-core.c           |    1 +
- drivers/media/video/tuner-core.c                   |    2 +-
- drivers/media/video/v4l2-dev.c                     |    4 +-
- drivers/media/video/v4l2-ioctl.c                   |    1 +
- drivers/media/video/vino.c                         |    4 +-
- drivers/media/video/vivi.c                         |    6 +-
- drivers/staging/media/lirc/lirc_serial.c           |    6 ++
- include/linux/videodev2.h                          |    6 +-
- include/sound/tea575x-tuner.h                      |    3 +-
- sound/i2c/other/tea575x-tuner.c                    |   21 +++--
- sound/pci/es1968.c                                 |    2 +-
- sound/pci/fm801.c                                  |    4 +-
- 56 files changed, 220 insertions(+), 278 deletions(-)
-
+Also, the memory alignment requirement on AMD Bulldozer,
+ARM and MIPS seems to be quite small. On the order of a
+handful of pages (4 pages on AMD & ARM, I assume modern
+MIPS is fairly sane too).
