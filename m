@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab2FYInp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:43:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55061 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab2FYInn (ORCPT
+	id S1754147Ab2FYIoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:44:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39411 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2FYIoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:43:43 -0400
+	Mon, 25 Jun 2012 04:44:17 -0400
 From: Wanpeng Li <liwp.linux@gmail.com>
 To: Michal Hocko <mhocko@suse.cz>
 Cc: Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,9 +17,9 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>,
         Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
         linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         Wanpeng Li <liwp.linux@gmail.com>
-Subject: [PATCH v3 1/4] memcg: cleanup useless LRU_ALL_EVICTABLE
-Date: Mon, 25 Jun 2012 16:43:32 +0800
-Message-Id: <1340613812-9458-1-git-send-email-liwp.linux@gmail.com>
+Subject: [PATCH v3 2/4] memcg: change mem_control_xxx to mem_cgroup_xxx
+Date: Mon, 25 Jun 2012 16:44:08 +0800
+Message-Id: <1340613848-9536-1-git-send-email-liwp.linux@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-Since LRU_ALL_EVICTABLE is useless, just remove it.
-Add LRU_ALL_UNEVICTABLE to mask unevictable pages.
+Unify memcg functions to mem_cgroup_xxx.
 
 Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- include/linux/mmzone.h |    2 +-
- mm/memcontrol.c        |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ mm/memcontrol.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 68c569f..5873620 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -209,7 +209,7 @@ struct lruvec {
- /* Mask used at gathering information at once (see memcontrol.c) */
- #define LRU_ALL_FILE (BIT(LRU_INACTIVE_FILE) | BIT(LRU_ACTIVE_FILE))
- #define LRU_ALL_ANON (BIT(LRU_INACTIVE_ANON) | BIT(LRU_ACTIVE_ANON))
--#define LRU_ALL_EVICTABLE (LRU_ALL_FILE | LRU_ALL_ANON)
-+#define LRU_ALL_UNEVICTABLE (BIT(LRU_UNEVICTABLE))
- #define LRU_ALL	     ((1 << NR_LRU_LISTS) - 1)
- 
- /* Isolate clean file */
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 724bd02..ccda728 100644
+index ccda728..2e81328 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -4033,11 +4033,11 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 	}
- 	seq_putc(m, '\n');
+@@ -3999,7 +3999,7 @@ static int mem_cgroup_move_charge_write(struct cgroup *cgrp,
+ #endif
  
--	unevictable_nr = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_UNEVICTABLE));
-+	unevictable_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_UNEVICTABLE);
- 	seq_printf(m, "unevictable=%lu", unevictable_nr);
- 	for_each_node_state(nid, N_HIGH_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
--				BIT(LRU_UNEVICTABLE));
-+				LRU_ALL_UNEVICTABLE);
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
- 	}
- 	seq_putc(m, '\n');
+ #ifdef CONFIG_NUMA
+-static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
++static int mem_cgroup_numa_stat_show(struct cgroup *cont, struct cftype *cft,
+ 				      struct seq_file *m)
+ {
+ 	int nid;
+@@ -4058,7 +4058,7 @@ static inline void mem_cgroup_lru_names_not_uptodate(void)
+ 	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
+ }
+ 
+-static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
++static int mem_cgroup_stat_show(struct cgroup *cont, struct cftype *cft,
+ 				 struct seq_file *m)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+@@ -4572,7 +4572,7 @@ static struct cftype mem_cgroup_files[] = {
+ 	},
+ 	{
+ 		.name = "stat",
+-		.read_seq_string = mem_control_stat_show,
++		.read_seq_string = mem_cgroup_stat_show,
+ 	},
+ 	{
+ 		.name = "force_empty",
+@@ -4604,7 +4604,7 @@ static struct cftype mem_cgroup_files[] = {
+ #ifdef CONFIG_NUMA
+ 	{
+ 		.name = "numa_stat",
+-		.read_seq_string = mem_control_numa_stat_show,
++		.read_seq_string = mem_cgroup_numa_stat_show,
+ 	},
+ #endif
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
 -- 
 1.7.9.5
 
