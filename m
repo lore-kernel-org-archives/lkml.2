@@ -1,350 +1,502 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2FYVGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 17:06:33 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:61711 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757461Ab2FYVGa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 17:06:30 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Subject: [PATCH v2] spi/pl022: add devicetree support
-Date: Mon, 25 Jun 2012 18:06:28 -0300
-Message-Id: <1340658390-29569-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	id S1757567Ab2FYVG4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 17:06:56 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:51267 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756395Ab2FYVGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 17:06:09 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Matthew Wilcox <matthew@wil.cx>, Doug Ledford <dledford@redhat.com>,
+        Joe Korty <joe.korty@ccur.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        kernel-hardening@lists.openwall.com
+Subject: [PATCH 1/2] fs: add link restrictions
+Date: Mon, 25 Jun 2012 14:05:26 -0700
+Message-Id: <1340658327-2932-2-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1340658327-2932-1-git-send-email-keescook@chromium.org>
+References: <1340658327-2932-1-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the chipselect array and cur_cs properties to pl022 main structure
+This adds symlink and hardlink restrictions to the Linux VFS.
 
-Add a wrapper function to decide if the cs should be controlled by the
-cs_control callback or the chipselect gpio
+Symlinks:
 
-Populate chipselect property from cs-gpios
+A long-standing class of security issues is the symlink-based
+time-of-check-time-of-use race, most commonly seen in world-writable
+directories like /tmp. The common method of exploitation of this flaw
+is to cross privilege boundaries when following a given symlink (i.e. a
+root process follows a symlink belonging to another user). For a likely
+incomplete list of hundreds of examples across the years, please see:
+http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
 
-Populate master->dev.of_node, so the spi bus can find child spi
-devices and register them
+The solution is to permit symlinks to only be followed when outside
+a sticky world-writable directory, or when the uid of the symlink and
+follower match, or when the directory owner matches the symlink's owner.
 
-At pl022 setup, fill chip_data structure from dt nodes, if not provided
-by platform.
+Some pointers to the history of earlier discussion that I could find:
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Tested-by: Roland Stigge <stigge@antcom.de>
+ 1996 Aug, Zygo Blaxell
+  http://marc.info/?l=bugtraq&m=87602167419830&w=2
+ 1996 Oct, Andrew Tridgell
+  http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
+ 1997 Dec, Albert D Cahalan
+  http://lkml.org/lkml/1997/12/16/4
+ 2005 Feb, Lorenzo Hernández García-Hierro
+  http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
+ 2010 May, Kees Cook
+  https://lkml.org/lkml/2010/5/30/144
+
+Past objections and rebuttals could be summarized as:
+
+ - Violates POSIX.
+   - POSIX didn't consider this situation and it's not useful to follow
+     a broken specification at the cost of security.
+ - Might break unknown applications that use this feature.
+   - Applications that break because of the change are easy to spot and
+     fix. Applications that are vulnerable to symlink ToCToU by not having
+     the change aren't. Additionally, no applications have yet been found
+     that rely on this behavior.
+ - Applications should just use mkstemp() or O_CREATE|O_EXCL.
+   - True, but applications are not perfect, and new software is written
+     all the time that makes these mistakes; blocking this flaw at the
+     kernel is a single solution to the entire class of vulnerability.
+ - This should live in the core VFS.
+   - This should live in an LSM. (https://lkml.org/lkml/2010/5/31/135)
+ - This should live in an LSM.
+   - This should live in the core VFS. (https://lkml.org/lkml/2010/8/2/188)
+
+Hardlinks:
+
+On systems that have user-writable directories on the same partition
+as system files, a long-standing class of security issues is the
+hardlink-based time-of-check-time-of-use race, most commonly seen in
+world-writable directories like /tmp. The common method of exploitation
+of this flaw is to cross privilege boundaries when following a given
+hardlink (i.e. a root process follows a hardlink created by another
+user). Additionally, an issue exists where users can "pin" a potentially
+vulnerable setuid/setgid file so that an administrator will not actually
+upgrade a system fully.
+
+The solution is to permit hardlinks to only be created when the user is
+already the existing file's owner, or if they already have read/write
+access to the existing file.
+
+Many Linux users are surprised when they learn they can link to files
+they have no access to, so this change appears to follow the doctrine
+of "least surprise". Additionally, this change does not violate POSIX,
+which states "the implementation may require that the calling process
+has permission to access the existing file"[1].
+
+This change is known to break some implementations of the "at" daemon,
+though the version used by Fedora and Ubuntu has been fixed[2] for
+a while. Otherwise, the change has been undisruptive while in use in
+Ubuntu for the last 1.5 years.
+
+[1] http://pubs.opengroup.org/onlinepubs/9699919799/functions/linkat.html
+[2] http://anonscm.debian.org/gitweb/?p=collab-maint/at.git;a=commitdiff;h=f4114656c3a6c6f6070e315ffdf940a49eda3279
+
+This patch is based on the patches in Openwall and grsecurity, along with
+suggestions from Al Viro. I have added a sysctl to enable the protected
+behavior, and documentation.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
 ---
-Applies to v3.5-rc4
+v2012.4:
+ - split audit functions into a separate patch, suggested by Eric Paris.
+v2012.3:
+ While this code has been living in -mm and linux-next for 2 releases,
+ this is a small rework based on feedback from Al Viro:
+ - Moved audit functions into audit.c.
+ - Added tests directly to path_openat/path_lookupat.
+ - Merged with hardlink restriction patch to make things more sensible.
+v2012.2:
+ - Change sysctl mode to 0600, suggested by Ingo Molnar.
+ - Rework CONFIG logic to split code from default behavior.
+ - Renamed sysctl to have a "sysctl_" prefix, suggested by Andrew Morton.
+ - Use "true/false" instead of "1/0" for bool arg, thanks to Andrew Morton.
+ - Do not trust s_id to be safe to print, suggested by Andrew Morton.
+v2012.1:
+ - Use GFP_KERNEL for audit log allocation, thanks to Ingo Molnar.
+v2011.3:
+ - Add pid/comm back to logging.
+v2011.2:
+ - Updated documentation, thanks to Randy Dunlap.
+ - Switched Kconfig default to "y", added __read_mostly to sysctl,
+   thanks to Ingo Molnar.
+ - Switched to audit logging to gain safe path and name reporting when
+   hitting the restriction.
+v2011.1:
+ - back from hiatus
+---
+ Documentation/sysctl/fs.txt |   42 +++++++++++++
+ fs/Kconfig                  |   60 ++++++++++++++++++
+ fs/namei.c                  |  139 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h          |    2 +
+ kernel/sysctl.c             |   20 ++++++
+ 5 files changed, 263 insertions(+), 0 deletions(-)
 
-Changes since v1:
-return EPROBE_DEFFER if gpios are not initialized yet
-
- .../devicetree/bindings/spi/spi_pl022.txt          |   15 +++
- drivers/spi/spi-pl022.c                            |  117 ++++++++++++++++----
- 2 files changed, 112 insertions(+), 20 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/spi/spi_pl022.txt b/Documentation/devicetree/bindings/spi/spi_pl022.txt
-index 306ec3f..b089ec7 100644
---- a/Documentation/devicetree/bindings/spi/spi_pl022.txt
-+++ b/Documentation/devicetree/bindings/spi/spi_pl022.txt
-@@ -6,7 +6,22 @@ Required properties:
- - interrupts : Should contain SPI controller interrupt
+diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
+index 13d6166..d4a372e 100644
+--- a/Documentation/sysctl/fs.txt
++++ b/Documentation/sysctl/fs.txt
+@@ -32,6 +32,8 @@ Currently, these files are in /proc/sys/fs:
+ - nr_open
+ - overflowuid
+ - overflowgid
++- protected_hardlinks
++- protected_symlinks
+ - suid_dumpable
+ - super-max
+ - super-nr
+@@ -157,6 +159,46 @@ The default is 65534.
  
- Optional properties:
-+- pl022,num-chipselects : total number of chipselects
- - cs-gpios : should specify GPIOs used for chipselects.
-   The gpios will be referred to as reg = <index> in the SPI child nodes.
-   If unspecified, a single SPI device without a chip select can be used.
+ ==============================================================
  
-+SPI slave nodes must be children of the SPI master node and can
-+contain the following properties.
-+See include/linux/amba/pl022.h for more details
++protected_hardlinks:
 +
-+- pl022,hierarchy : master or slave interface
-+- pl022,interface : interface type
-+- pl022,slave-tx-disable : disconnect tx line in slave mode
-+- pl022,com-mode : polling, interrupt or dma
-+- pl022,rx-level-trig : Rx FIFO watermark level
-+- pl022,tx-level-trig : Tx FIFO watermark level
-+- pl022,ctrl-len : Microwire interface: Control length
-+- pl022,wait-state : Microwire interface: Wait state
-+- pl022,duplex : Microwire interface: Full/Half duplex
++A long-standing class of security issues is the hardlink-based
++time-of-check-time-of-use race, most commonly seen in world-writable
++directories like /tmp. The common method of exploitation of this flaw
++is to cross privilege boundaries when following a given hardlink (i.e. a
++root process follows a hardlink created by another user). Additionally,
++on systems without separated partitions, this stops unauthorized users
++from "pinning" vulnerable setuid/setgid files against being upgraded by
++the administrator, or linking to special files.
 +
-diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-index 400ae21..f33e3fa 100644
---- a/drivers/spi/spi-pl022.c
-+++ b/drivers/spi/spi-pl022.c
-@@ -40,6 +40,8 @@
- #include <linux/dma-mapping.h>
- #include <linux/scatterlist.h>
- #include <linux/pm_runtime.h>
-+#include <linux/gpio.h>
-+#include <linux/of_gpio.h>
++When set to "0", hardlink creation behavior is unrestricted.
++
++When set to "1" hardlinks cannot be created by users if they do not
++already own the source file, or do not have read/write access to it.
++
++This protection is based on the restrictions in Openwall and grsecurity.
++
++==============================================================
++
++protected_symlinks:
++
++A long-standing class of security issues is the symlink-based
++time-of-check-time-of-use race, most commonly seen in world-writable
++directories like /tmp. The common method of exploitation of this flaw
++is to cross privilege boundaries when following a given symlink (i.e. a
++root process follows a symlink belonging to another user). For a likely
++incomplete list of hundreds of examples across the years, please see:
++http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
++
++When set to "0", symlink following behavior is unrestricted.
++
++When set to "1" symlinks are permitted to be followed only when outside
++a sticky world-writable directory, or when the uid of the symlink and
++follower match, or when the directory owner matches the symlink's owner.
++
++This protection is based on the restrictions in Openwall and grsecurity.
++
++==============================================================
++
+ suid_dumpable:
  
- /*
-  * This macro is used to define some register default values.
-@@ -389,6 +391,8 @@ struct pl022 {
- 	char				*dummypage;
- 	bool				dma_running;
- #endif
-+	int cur_cs;
-+	int chipselect[0];
- };
+ This value can be used to query and set the core dump mode for setuid
+diff --git a/fs/Kconfig b/fs/Kconfig
+index f95ae3a..ba8974e 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -276,4 +276,64 @@ endif # NETWORK_FILESYSTEMS
+ source "fs/nls/Kconfig"
+ source "fs/dlm/Kconfig"
  
- /**
-@@ -433,6 +437,14 @@ static void null_cs_control(u32 command)
- 	pr_debug("pl022: dummy chip select control, CS=0x%x\n", command);
++config PROTECTED_LINKS
++	bool "Evaluate vulnerable link conditions"
++	default y
++	help
++	  A long-standing class of security issues is the link-based
++	  time-of-check-time-of-use race, most commonly seen in
++	  world-writable directories like /tmp. The common method of
++	  exploitation of this flaw is to cross privilege boundaries
++	  when following a given link (i.e. a root process follows
++	  a malicious symlink belonging to another user, or a hardlink
++	  created to a root-owned file).
++
++	  Enabling this adds the logic to examine these dangerous link
++	  conditions. Whether or not the dangerous link situations are
++	  allowed is controlled by PROTECTED_HARDLINKS_ENABLED and
++	  PROTECTED_SYMLINKS_ENABLED.
++
++config PROTECTED_SYMLINKS
++	depends on PROTECTED_LINKS
++	bool "Disallow symlink following in sticky world-writable dirs"
++	default y
++	help
++	  Solve ToCToU symlink race vulnerabilities by permitting symlinks
++	  to be followed only when outside a sticky world-writable directory,
++	  or when the uid of the symlink and follower match, or when the
++	  directory and symlink owners match.
++
++	  When PROC_SYSCTL is enabled, this setting can also be controlled
++	  via /proc/sys/kernel/protected_symlinks.
++
++	  See Documentation/sysctl/fs.txt for details.
++
++config PROTECTED_SYMLINKS_SYSCTL
++	depends on PROTECTED_LINKS
++	int
++	default "1" if PROTECTED_SYMLINKS
++	default "0"
++
++config PROTECTED_HARDLINKS
++	depends on PROTECTED_LINKS
++	bool "Disallow hardlink creation to non-accessible files"
++	default y
++	help
++	  Solve ToCToU hardlink race vulnerabilities by permitting hardlinks
++	  to be created only when to a regular file that is owned by the user,
++	  or is readable and writable by the user. Also blocks users from
++	  "pinning" vulnerable setuid/setgid programs from being upgraded by
++	  the administrator.
++
++	  When PROC_SYSCTL is enabled, this setting can also be controlled
++	  via /proc/sys/kernel/protected_hardlinks.
++
++	  See Documentation/sysctl/fs.txt for details.
++
++config PROTECTED_HARDLINKS_SYSCTL
++	depends on PROTECTED_LINKS
++	int
++	default "1" if PROTECTED_HARDLINKS
++	default "0"
++
+ endmenu
+diff --git a/fs/namei.c b/fs/namei.c
+index 7d69419..71bb13c 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -610,6 +610,136 @@ static inline void put_link(struct nameidata *nd, struct path *link, void *cooki
+ 	path_put(link);
  }
  
-+static void pl022_cs_control(struct pl022 *pl022, u32 command)
++#ifdef CONFIG_PROTECTED_LINKS
++int sysctl_protected_symlinks __read_mostly =
++	CONFIG_PROTECTED_SYMLINKS_SYSCTL;
++int sysctl_protected_hardlinks __read_mostly =
++	CONFIG_PROTECTED_HARDLINKS_SYSCTL;
++
++/**
++ * may_follow_link - Check symlink following for unsafe situations
++ * @link: The path of the symlink
++ *
++ * In the case of the sysctl_protected_symlinks sysctl being enabled,
++ * CAP_DAC_OVERRIDE needs to be specifically ignored if the symlink is
++ * in a sticky world-writable directory. This is to protect privileged
++ * processes from failing races against path names that may change out
++ * from under them by way of other users creating malicious symlinks.
++ * It will permit symlinks to be followed only when outside a sticky
++ * world-writable directory, or when the uid of the symlink and follower
++ * match, or when the directory owner matches the symlink's owner.
++ *
++ * Returns 0 if following the symlink is allowed, -ve on error.
++ */
++static inline int may_follow_link(struct path *link)
 +{
-+	if (gpio_is_valid(pl022->cur_cs))
-+		gpio_set_value(pl022->cur_cs, command);
-+	else
-+		pl022->cur_chip->cs_control(command);
++	int error = 0;
++	const struct inode *parent;
++	const struct inode *inode;
++	const struct cred *cred;
++	struct dentry *dentry;
++
++	if (!sysctl_protected_symlinks)
++		return 0;
++
++	/* Allowed if owner and follower match. */
++	cred = current_cred();
++	dentry = link->dentry;
++	inode = dentry->d_inode;
++	if (cred->fsuid == inode->i_uid)
++		return 0;
++
++	/* Check parent directory mode and owner. */
++	spin_lock(&dentry->d_lock);
++	parent = dentry->d_parent->d_inode;
++	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
++	    parent->i_uid != inode->i_uid) {
++		error = -EACCES;
++	}
++	spin_unlock(&dentry->d_lock);
++
++	return error;
 +}
 +
- /**
-  * giveback - current spi_message is over, schedule next message and call
-  * callback of this message. Assumes that caller already
-@@ -479,7 +491,7 @@ static void giveback(struct pl022 *pl022)
- 		if (next_msg && next_msg->spi != pl022->cur_msg->spi)
- 			next_msg = NULL;
- 		if (!next_msg || pl022->cur_msg->state == STATE_ERROR)
--			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
-+			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
- 		else
- 			pl022->next_msg_cs_active = true;
- 
-@@ -813,8 +825,7 @@ static void dma_callback(void *data)
- 	/* Update total bytes transferred */
- 	msg->actual_length += pl022->cur_transfer->len;
- 	if (pl022->cur_transfer->cs_change)
--		pl022->cur_chip->
--			cs_control(SSP_CHIP_DESELECT);
-+		pl022_cs_control(pl022, SSP_CHIP_DESELECT);
- 
- 	/* Move to next transfer */
- 	msg->state = next_transfer(pl022);
-@@ -1247,8 +1258,7 @@ static irqreturn_t pl022_interrupt_handler(int irq, void *dev_id)
- 		/* Update total bytes transferred */
- 		msg->actual_length += pl022->cur_transfer->len;
- 		if (pl022->cur_transfer->cs_change)
--			pl022->cur_chip->
--				cs_control(SSP_CHIP_DESELECT);
-+			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
- 		/* Move to next transfer */
- 		msg->state = next_transfer(pl022);
- 		tasklet_schedule(&pl022->pump_transfers);
-@@ -1333,7 +1343,7 @@ static void pump_transfers(unsigned long data)
- 
- 		/* Reselect chip select only if cs_change was requested */
- 		if (previous->cs_change)
--			pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-+			pl022_cs_control(pl022, SSP_CHIP_SELECT);
- 	} else {
- 		/* STATE_START */
- 		message->state = STATE_RUNNING;
-@@ -1372,7 +1382,7 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
- 
- 	/* Enable target chip, if not already active */
- 	if (!pl022->next_msg_cs_active)
--		pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-+		pl022_cs_control(pl022, SSP_CHIP_SELECT);
- 
- 	if (set_up_next_transfer(pl022, pl022->cur_transfer)) {
- 		/* Error path */
-@@ -1424,12 +1434,12 @@ static void do_polling_transfer(struct pl022 *pl022)
- 			if (previous->delay_usecs)
- 				udelay(previous->delay_usecs);
- 			if (previous->cs_change)
--				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-+				pl022_cs_control(pl022, SSP_CHIP_SELECT);
- 		} else {
- 			/* STATE_START */
- 			message->state = STATE_RUNNING;
- 			if (!pl022->next_msg_cs_active)
--				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-+				pl022_cs_control(pl022, SSP_CHIP_SELECT);
- 		}
- 
- 		/* Configuration Changing Per Transfer */
-@@ -1461,7 +1471,7 @@ static void do_polling_transfer(struct pl022 *pl022)
- 		/* Update total byte transferred */
- 		message->actual_length += pl022->cur_transfer->len;
- 		if (pl022->cur_transfer->cs_change)
--			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
-+			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
- 		/* Move to next transfer */
- 		message->state = next_transfer(pl022);
- 	}
-@@ -1490,6 +1500,7 @@ static int pl022_transfer_one_message(struct spi_master *master,
- 
- 	/* Setup the SPI using the per chip configuration */
- 	pl022->cur_chip = spi_get_ctldata(msg->spi);
-+	pl022->cur_cs = pl022->chipselect[msg->spi->chip_select];
- 
- 	restore_state(pl022);
- 	flush(pl022);
-@@ -1733,7 +1744,7 @@ static int calculate_effective_freq(struct pl022 *pl022, int freq, struct
-  * A piece of default chip info unless the platform
-  * supplies it.
-  */
--static const struct pl022_config_chip pl022_default_chip_info = {
-+static struct pl022_config_chip pl022_default_chip_info = {
- 	.com_mode = POLLING_TRANSFER,
- 	.iface = SSP_INTERFACE_MOTOROLA_SPI,
- 	.hierarchy = SSP_SLAVE,
-@@ -1761,12 +1772,14 @@ static const struct pl022_config_chip pl022_default_chip_info = {
- static int pl022_setup(struct spi_device *spi)
- {
- 	struct pl022_config_chip const *chip_info;
-+	struct pl022_config_chip chip_info_dt;
- 	struct chip_data *chip;
- 	struct ssp_clock_params clk_freq = { .cpsdvsr = 0, .scr = 0};
- 	int status = 0;
- 	struct pl022 *pl022 = spi_master_get_devdata(spi->master);
- 	unsigned int bits = spi->bits_per_word;
- 	u32 tmp;
-+	struct device_node *np = spi->dev.of_node;
- 
- 	if (!spi->max_speed_hz)
- 		return -EINVAL;
-@@ -1789,10 +1802,36 @@ static int pl022_setup(struct spi_device *spi)
- 	chip_info = spi->controller_data;
- 
- 	if (chip_info == NULL) {
--		chip_info = &pl022_default_chip_info;
--		/* spi_board_info.controller_data not is supplied */
--		dev_dbg(&spi->dev,
--			"using default controller_data settings\n");
-+		if (np) {
-+			chip_info_dt = pl022_default_chip_info;
++/**
++ * safe_hardlink_source - Check for safe hardlink conditions
++ * @inode: the source inode to hardlink from
++ *
++ * Return false if at least one of the following conditions:
++ *    - inode is not a regular file
++ *    - inode is setuid
++ *    - inode is setgid and group-exec
++ *    - access failure for read and write
++ *
++ * Otherwise returns true.
++ */
++static bool safe_hardlink_source(struct inode *inode)
++{
++	mode_t mode = inode->i_mode;
 +
-+			of_property_read_u32(np, "pl022,hierarchy",
-+				&chip_info_dt.hierarchy);
-+			of_property_read_u32(np, "pl022,interface",
-+				&chip_info_dt.iface);
-+			chip_info_dt.slave_tx_disable =
-+				of_property_read_bool(np,
-+					"pl022,slave-tx-disable");
-+			of_property_read_u32(np, "pl022,com-mode",
-+				&chip_info_dt.com_mode);
-+			of_property_read_u32(np, "pl022,rx-level-trig",
-+				&chip_info_dt.rx_lev_trig);
-+			of_property_read_u32(np, "pl022,tx-level-trig",
-+				&chip_info_dt.tx_lev_trig);
-+			of_property_read_u32(np, "pl022,ctrl-len",
-+				&chip_info_dt.ctrl_len);
-+			of_property_read_u32(np, "pl022,wait-state",
-+				&chip_info_dt.wait_state);
-+			of_property_read_u32(np, "pl022,duplex",
-+				&chip_info_dt.duplex);
++	/* Special files should not get pinned to the filesystem. */
++	if (!S_ISREG(mode))
++		return false;
 +
-+			chip_info = &chip_info_dt;
-+		} else {
-+			chip_info = &pl022_default_chip_info;
-+			/* spi_board_info.controller_data not is supplied */
-+			dev_dbg(&spi->dev,
-+				"using default controller_data settings\n");
-+		}
- 	} else
- 		dev_dbg(&spi->dev,
- 			"using user supplied controller_data settings\n");
-@@ -1835,8 +1874,9 @@ static int pl022_setup(struct spi_device *spi)
- 	chip->xfer_type = chip_info->com_mode;
- 	if (!chip_info->cs_control) {
- 		chip->cs_control = null_cs_control;
--		dev_warn(&spi->dev,
--			 "chip select function is NULL for this chip\n");
-+		if (!gpio_is_valid(pl022->chipselect[spi->chip_select]))
-+			dev_warn(&spi->dev,
-+				 "chip select function is NULL for this chip\n");
- 	} else
- 		chip->cs_control = chip_info->cs_control;
- 
-@@ -1988,7 +2028,8 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
- 	struct pl022_ssp_controller *platform_info = adev->dev.platform_data;
- 	struct spi_master *master;
- 	struct pl022 *pl022 = NULL;	/*Data for this driver */
--	int status = 0;
-+	struct device_node *np = adev->dev.of_node;
-+	int status = 0, i, num_cs;
- 
- 	dev_info(&adev->dev,
- 		 "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
-@@ -1998,8 +2039,14 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
- 		goto err_no_pdata;
- 	}
- 
-+	num_cs = platform_info->num_chipselect;
-+#ifdef CONFIG_OF
-+	of_property_read_u32(np, "pl022,num-chipselects", &num_cs);
-+#endif
++	/* Setuid files should not get pinned to the filesystem. */
++	if (mode & S_ISUID)
++		return false;
 +
- 	/* Allocate master with space for data */
--	master = spi_alloc_master(dev, sizeof(struct pl022));
-+	master = spi_alloc_master(dev,
-+		sizeof(struct pl022) + sizeof(int) * num_cs);
- 	if (master == NULL) {
- 		dev_err(&adev->dev, "probe - cannot alloc SPI master\n");
- 		status = -ENOMEM;
-@@ -2017,13 +2064,40 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
- 	 * on this board
- 	 */
- 	master->bus_num = platform_info->bus_id;
--	master->num_chipselect = platform_info->num_chipselect;
-+	master->num_chipselect = num_cs;
- 	master->cleanup = pl022_cleanup;
- 	master->setup = pl022_setup;
- 	master->prepare_transfer_hardware = pl022_prepare_transfer_hardware;
- 	master->transfer_one_message = pl022_transfer_one_message;
- 	master->unprepare_transfer_hardware = pl022_unprepare_transfer_hardware;
- 	master->rt = platform_info->rt;
-+	master->dev.of_node = dev->of_node;
++	/* Executable setgid files should not get pinned to the filesystem. */
++	if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))
++		return false;
 +
-+#ifdef CONFIG_OF
-+	for (i = 0; i < num_cs; i++) {
-+		int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
++	/* Hardlinking to unreadable or unwritable sources is dangerous. */
++	if (inode_permission(inode, MAY_READ | MAY_WRITE))
++		return false;
 +
-+		if (cs_gpio == -EPROBE_DEFER) {
-+			status = -EPROBE_DEFER;
-+			goto err_no_gpio;
-+		}
++	return true;
++}
 +
-+		pl022->chipselect[i] = cs_gpio;
++/**
++ * may_linkat - Check permissions for creating a hardlink
++ * @link: the source to hardlink from
++ *
++ * Block hardlink when all of:
++ *  - sysctl_protected_hardlinks enabled
++ *  - fsuid does not match inode
++ *  - hardlink source is unsafe (see safe_hardlink_source() above)
++ *  - not CAP_FOWNER
++ *
++ * Returns 0 if successful, -ve on error.
++ */
++static int may_linkat(struct path *link)
++{
++	const struct cred *cred;
++	struct inode *inode;
 +
-+		if (gpio_is_valid(cs_gpio)) {
-+			if (gpio_request(cs_gpio, "ssp-pl022"))
-+				dev_err(&adev->dev,
-+					"could not request %d gpio\n", cs_gpio);
-+			else if (gpio_direction_output(cs_gpio, 1))
-+				dev_err(&adev->dev,
-+					"could set gpio %d as output\n",
-+					cs_gpio);
-+		}
-+	}
++	if (!sysctl_protected_hardlinks)
++		return 0;
++
++	cred = current_cred();
++	inode = link->dentry->d_inode;
++
++	/* Source inode owner (or CAP_FOWNER) can hardlink all they like,
++	 * otherwise, it must be a safe source.
++	 */
++	if (cred->fsuid == inode->i_uid || safe_hardlink_source(inode) ||
++	    capable(CAP_FOWNER))
++		return 0;
++
++	return -EPERM;
++}
 +#else
-+	for (i = 0; i < num_cs; i++)
-+		pl022->chipselect[i] = -EINVAL;
++static inline int may_follow_link(struct path *link)
++{
++	return 0;
++}
++
++static inline int may_linkat(struct path *link)
++{
++	return 0;
++}
 +#endif
++
+ static __always_inline int
+ follow_link(struct path *link, struct nameidata *nd, void **p)
+ {
+@@ -1775,6 +1905,9 @@ static int path_lookupat(int dfd, const char *name,
+ 		while (err > 0) {
+ 			void *cookie;
+ 			struct path link = path;
++			err = may_follow_link(&link);
++			if (unlikely(err))
++				break;
+ 			nd->flags |= LOOKUP_PARENT;
+ 			err = follow_link(&link, nd, &cookie);
+ 			if (!err)
+@@ -2471,6 +2604,9 @@ static struct file *path_openat(int dfd, const char *pathname,
+ 			filp = ERR_PTR(-ELOOP);
+ 			break;
+ 		}
++		error = may_follow_link(&link);
++		if (unlikely(error))
++			break;
+ 		nd->flags |= LOOKUP_PARENT;
+ 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
+ 		error = follow_link(&link, nd, &cookie);
+@@ -3130,6 +3266,9 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 	error = -EXDEV;
+ 	if (old_path.mnt != new_path.mnt)
+ 		goto out_dput;
++	error = may_linkat(&old_path);
++	if (unlikely(error))
++		goto out_dput;
+ 	error = mnt_want_write(new_path.mnt);
+ 	if (error)
+ 		goto out_dput;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 17fd887..b0a6d44 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -437,6 +437,8 @@ extern unsigned long get_max_files(void);
+ extern int sysctl_nr_open;
+ extern struct inodes_stat_t inodes_stat;
+ extern int leases_enable, lease_break_time;
++extern int sysctl_protected_symlinks;
++extern int sysctl_protected_hardlinks;
  
- 	/*
- 	 * Supports mode 0-3, loopback, and active low CS. Transfers are
-@@ -2130,6 +2204,9 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
-  err_no_ioremap:
- 	amba_release_regions(adev);
-  err_no_ioregion:
-+ #ifdef CONFIG_OF
-+ err_no_gpio:
-+ #endif
- 	spi_master_put(master);
-  err_no_master:
-  err_no_pdata:
+ struct buffer_head;
+ typedef int (get_block_t)(struct inode *inode, sector_t iblock,
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4ab1187..ba133ec 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1493,6 +1493,26 @@ static struct ctl_table fs_table[] = {
+ 	},
+ #endif
+ #endif
++#ifdef CONFIG_PROTECTED_LINKS
++	{
++		.procname	= "protected_symlinks",
++		.data		= &sysctl_protected_symlinks,
++		.maxlen		= sizeof(int),
++		.mode		= 0600,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
++	{
++		.procname	= "protected_hardlinks",
++		.data		= &sysctl_protected_hardlinks,
++		.maxlen		= sizeof(int),
++		.mode		= 0600,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
++#endif
+ 	{
+ 		.procname	= "suid_dumpable",
+ 		.data		= &suid_dumpable,
 -- 
-1.7.10
+1.7.0.4
 
