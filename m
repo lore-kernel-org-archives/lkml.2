@@ -1,47 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab2FYIR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:17:56 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:2905 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753178Ab2FYIRl (ORCPT
+	id S1754316Ab2FYITB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:19:01 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46007 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab2FYIS7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:17:41 -0400
-Message-ID: <1340612258.1773.150.camel@x61.thuisdomein>
-Subject: Re: [PATCH] u8500_defconfig: delete CONFIG_AB5500_CORE
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>
-Date: Mon, 25 Jun 2012 10:17:38 +0200
-In-Reply-To: <1339020451.21725.33.camel@x61.thuisdomein>
-References: <1339017960.21725.22.camel@x61.thuisdomein>
-	 <CACRpkdbsF-bdXUEctyG8-npqfzFP4uoxE=hRrjgt_TxMWKAD8w@mail.gmail.com>
-	 <1339020451.21725.33.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 25 Jun 2012 08:17:39.0962 (UTC) FILETIME=[FC9C1DA0:01CD52AA]
-X-RcptDomain: vger.kernel.org
+	Mon, 25 Jun 2012 04:18:59 -0400
+Message-ID: <4FE81EEE.3040001@arm.com>
+Date: Mon, 25 Jun 2012 09:18:54 +0100
+From: viresh kumar <viresh.kumar2@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Devendra Naga <devendra.aaru@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        "spear-devel@list.st.com" <spear-devel@list.st.com>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rtc/rtc-spear: remove unnecessary check against rtc_valid_tm
+ and tm2bcd
+References: <1340451839-30623-1-git-send-email-devendra.aaru@gmail.com>
+In-Reply-To: <1340451839-30623-1-git-send-email-devendra.aaru@gmail.com>
+X-MC-Unique: 112062509185711001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-07 at 00:07 +0200, Paul Bolle wrote:
-> On Wed, 2012-06-06 at 23:43 +0200, Linus Walleij wrote:
-> > Anyway this should go through
-> > the ARM SoC tree if you want it anyway,
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> That's fine with me. I hope to resend (sort of) shortly, with your ACK,
-> to the people in charge of the ARM SoC tree.
 
-(Shortly became two weeks.)
+Hi Devendra,
 
-I wonder what you actually meant with "the ARM SoC tree". MAINTAINERS
-seems to have multiple entries related to ARM SoC.
+On 23/06/12 12:43, Devendra Naga wrote:
+> rtc_valid_tm is always return
+> -EINVAL if the time doesn't represent a valid date and time and 0 if its.
+>
+> so we can simply do rtc_valid_tm(tm) rather doing rtc_valid_tm(tm) != 0 checking.
+> and also tm2bcd() does return -EINVAL if the time doesn't represent a valid date and time
+> and 0 if its.
+>
+> and also removing err because is_write_complete will return -EIO if our write to the
+> RTC registers didn't happen and 0 if its.
+>
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> ---
+>
+> This is only tested by compiling the code with arm-linux-gcc
+>
+> /bin/arm-linux-gnueabihf-gcc --version
+>
+> arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-2012.05-20120523 - Linaro GCC 2012.05) 4.7.1 20120514 (prerelease)
+>
+>  drivers/rtc/rtc-spear.c |   13 +++++--------
+>  1 file changed, 5 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-spear.c b/drivers/rtc/rtc-spear.c
+> index e278547..eb7d399 100644
+> --- a/drivers/rtc/rtc-spear.c
+> +++ b/drivers/rtc/rtc-spear.c
+> @@ -172,7 +172,7 @@ static irqreturn_t spear_rtc_irq(int irq, void *dev_id)
+>
+>  static int tm2bcd(struct rtc_time *tm)
+>  {
+> -     if (rtc_valid_tm(tm) != 0)
+> +     if (rtc_valid_tm(tm))
+>               return -EINVAL;
 
+The name of this routine conflicts with its behavior (In my opinion :) )
+rtc_valid_tm() should have returned
+- false or true
+OR
+less than zero (invalid) or greater than zero (valid)
 
-Paul Bolle
+Probably second one is opted for it. so, it would make more sense to have something like
+
+if (rtc_valid_tm() < 0)
+        return -EINVAL;
+
+instead of what you went for. Because that looked incorrect to me from readability point of view.
+i.e. if rtc_valid_tm, that's an error. What do you say?
+
+>       tm->tm_sec = bin2bcd(tm->tm_sec);
+>       tm->tm_min = bin2bcd(tm->tm_min);
+> @@ -235,9 +235,9 @@ static int spear_rtc_read_time(struct device *dev, struct rtc_time *tm)
+>  static int spear_rtc_set_time(struct device *dev, struct rtc_time *tm)
+>  {
+>       struct spear_rtc_config *config = dev_get_drvdata(dev);
+> -     unsigned int time, date, err = 0;
+> +     unsigned int time, date;
+>
+> -     if (tm2bcd(tm) < 0)
+> +     if (tm2bcd(tm))
+>               return -EINVAL;
+
+Same applied here.
+
+>       rtc_wait_not_busy(config);
+> @@ -247,11 +247,8 @@ static int spear_rtc_set_time(struct device *dev, struct rtc_time *tm)
+>               (tm->tm_year << YEAR_SHIFT);
+>       writel(time, config->ioaddr + TIME_REG);
+>       writel(date, config->ioaddr + DATE_REG);
+> -     err = is_write_complete(config);
+> -     if (err < 0)
+> -             return err;
+>
+> -     return 0;
+> +     return is_write_complete(config);
+>  }
+
+This one must have returned true or false, because of nature of its name. So, still checking
+for < 0 is better.
+
+--
+Viresh
+
+-- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
 
