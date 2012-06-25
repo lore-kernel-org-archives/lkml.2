@@ -1,128 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab2FYC3m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 22:29:42 -0400
-Received: from tundra.namei.org ([65.99.196.166]:44525 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167Ab2FYC3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 22:29:41 -0400
-Date: Mon, 25 Jun 2012 12:29:38 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ima: use full pathnames in measurement list
-In-Reply-To: <1340375022.2464.29.camel@falcor>
-Message-ID: <alpine.LRH.2.02.1206251229180.26369@tundra.namei.org>
-References: <1340375022.2464.29.camel@falcor>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753974Ab2FYCbW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 22:31:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36862 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab2FYCbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 22:31:20 -0400
+Date: Mon, 25 Jun 2012 12:31:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Huang Ying <ying.huang@intel.com>, Zheng Yan <zheng.z.yan@intel.com>
+Subject: linux-next: manual merge of the pci tree with Linus' tree
+Message-Id: <20120625123108.06ef7f883a323df5221edc98@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__25_Jun_2012_12_31_08_+1000_nryVGxTThuz.9sEG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jun 2012, Mimi Zohar wrote:
+--Signature=_Mon__25_Jun_2012_12_31_08_+1000_nryVGxTThuz.9sEG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The IMA measurement list contains filename hints, which can be
-> ambigious without the full pathname.  This patch replaces the
-> filename hint with the full pathname, simplifying for userspace
-> the correlating of file hash measurements with files.
-> 
-> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Hi Bjorn,
 
-Are you posting this for review or do you want it applied to my tree?
+Today's linux-next merge of the pci tree got a conflict in
+drivers/pci/pci.c between commit c2fb8a3fa255 ("USB: add
+NO_D3_DURING_SLEEP flag and revert 151b61284776be2") from Linus' tree and
+commit 448bd857d48e ("PCI/PM: add PCIe runtime D3cold support") from the
+pci tree.
 
+I fixed it up (I think - see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> ---
->  security/integrity/ima/ima_main.c |   40 +++++++++++++++++++++++++++++++-----
->  1 files changed, 34 insertions(+), 6 deletions(-)
-> 
-> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-> index b17be79..91fa323 100644
-> --- a/security/integrity/ima/ima_main.c
-> +++ b/security/integrity/ima/ima_main.c
-> @@ -54,6 +54,7 @@ static void ima_rdwr_violation_check(struct file *file)
->  	fmode_t mode = file->f_mode;
->  	int rc;
->  	bool send_tomtou = false, send_writers = false;
-> +	unsigned char *pathname = NULL, *pathbuf = NULL;
->  
->  	if (!S_ISREG(inode->i_mode) || !ima_initialized)
->  		return;
-> @@ -75,12 +76,25 @@ static void ima_rdwr_violation_check(struct file *file)
->  out:
->  	mutex_unlock(&inode->i_mutex);
->  
-> +	if (!send_tomtou && !send_writers)
-> +		return;
-> +
-> +	/* We will allow 11 spaces for ' (deleted)' to be appended */
-> +	pathbuf = kmalloc(PATH_MAX + 11, GFP_KERNEL);
-> +	if (pathbuf) {
-> +		pathname = d_path(&file->f_path, pathbuf, PATH_MAX + 11);
-> +		if (IS_ERR(pathname))
-> +			pathname = NULL;
-> +	}
->  	if (send_tomtou)
-> -		ima_add_violation(inode, dentry->d_name.name, "invalid_pcr",
-> -				  "ToMToU");
-> +		ima_add_violation(inode,
-> +				  !pathname ? dentry->d_name.name : pathname,
-> +				  "invalid_pcr", "ToMToU");
->  	if (send_writers)
-> -		ima_add_violation(inode, dentry->d_name.name, "invalid_pcr",
-> -				  "open_writers");
-> +		ima_add_violation(inode,
-> +				  !pathname ? dentry->d_name.name : pathname,
-> +				  "invalid_pcr", "open_writers");
-> +	kfree(pathbuf);
->  }
->  
->  static void ima_check_last_writer(struct integrity_iint_cache *iint,
-> @@ -123,6 +137,7 @@ static int process_measurement(struct file *file, const unsigned char *filename,
->  {
->  	struct inode *inode = file->f_dentry->d_inode;
->  	struct integrity_iint_cache *iint;
-> +	unsigned char *pathname = NULL, *pathbuf = NULL;
->  	int rc = 0;
->  
->  	if (!ima_initialized || !S_ISREG(inode->i_mode))
-> @@ -147,8 +162,21 @@ retry:
->  		goto out;
->  
->  	rc = ima_collect_measurement(iint, file);
-> -	if (!rc)
-> -		ima_store_measurement(iint, file, filename);
-> +	if (rc != 0)
-> +		goto out;
-> +
-> +	if (function != BPRM_CHECK) {
-> +		/* We will allow 11 spaces for ' (deleted)' to be appended */
-> +		pathbuf = kmalloc(PATH_MAX + 11, GFP_KERNEL);
-> +		if (pathbuf) {
-> +			pathname =
-> +			    d_path(&file->f_path, pathbuf, PATH_MAX + 11);
-> +			if (IS_ERR(pathname))
-> +				pathname = NULL;
-> +		}
-> +	}
-> +	ima_store_measurement(iint, file, !pathname ? filename : pathname);
-> +	kfree(pathbuf);
->  out:
->  	mutex_unlock(&iint->mutex);
->  	return rc;
-> -- 
-> 1.7.7.6
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --cc drivers/pci/pci.c
+index 77cb54a,3f8b74f..0000000
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@@ -1744,11 -1803,10 +1803,15 @@@ int pci_prepare_to_sleep(struct pci_de
+  	if (target_state =3D=3D PCI_POWER_ERROR)
+  		return -EIO;
+ =20
++ 	/* D3cold during system suspend/hibernate is not supported */
++ 	if (target_state > PCI_D3hot)
++ 		target_state =3D PCI_D3hot;
++=20
+ +	/* Some devices mustn't be in D3 during system sleep */
+ +	if (target_state =3D=3D PCI_D3hot &&
+ +			(dev->dev_flags & PCI_DEV_FLAGS_NO_D3_DURING_SLEEP))
+ +		return 0;
+ +
+  	pci_enable_wake(dev, target_state, device_may_wakeup(&dev->dev));
+ =20
+  	error =3D pci_set_power_state(dev, target_state);
 
--- 
-James Morris
-<jmorris@namei.org>
+--Signature=_Mon__25_Jun_2012_12_31_08_+1000_nryVGxTThuz.9sEG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP581sAAoJEECxmPOUX5FEtx4P/2JqCen8p5UdQpCkMTvi7GMb
+IubYUUkTBPLOIywkUvw8ncp97UZ6u7qaf494odaKdVIuZ86kNlBQ3DPmlZQe7/lS
+WUNHeJCYcm2p2MhUWhiQhCrLVbH1BR5a3CqYWXpignpXskG13vjVmO4jhWRlGDbi
+VmiLo2BbfCrTSFW7pHr/ZskaplHgU3Y4xu0QJTNvQTh7WZEinM4TimjtFbjvEIE9
+ed8vlBqogONVGsMUZSozlvFrKA0b5ZaDNUtq7DxACctZxzCxHXx7nbJfK43dnpYO
+skG7pT+ANiursXhC4BcOVwvf8zPS13HzZ9VPnM+1g7kMAbDIjrGX60z8OFnXg1Dh
+QsfZbrvkgEcayjExoPS28khLWukWZdMF4HV5W3MAIdW88dtWFRsfnSE3Hp/vP4kY
+eR2pxX6EHj1tT6tlZ3lMvlPOlf98Z63UXwdhMKZwNILtX19I5IMOqaqE2LuXfbod
+tkokHhvvr9KxWPYNQP+bQTlFvnHLs4Y6embMZqWYWOkmOKFhDeDsH/V23tegGUWi
+XITf1RX5PpgOfGSzttHbrVzSkK/B2sy+f/IMOBJcaMEgB4OUMMULbR7t6YxeVx0C
+510d0k1rZyVCDArXZzipYc+mtoll0HqhfdhiwD2PD3/ZXumg5Z6CIpir5w7Tkh6Y
+WWSL2yYf0kr4DjE44Ki8
+=MtbU
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__25_Jun_2012_12_31_08_+1000_nryVGxTThuz.9sEG--
