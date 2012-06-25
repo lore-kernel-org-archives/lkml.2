@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab2FYLlD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 07:41:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62699 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126Ab2FYLlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 07:41:01 -0400
-X-IronPort-AV: E=Sophos;i="4.77,471,1336320000"; 
-   d="scan'208";a="5258684"
-Message-ID: <4FE84E53.6070604@cn.fujitsu.com>
-Date: Mon, 25 Jun 2012 19:41:07 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756085Ab2FYLlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 07:41:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51036 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756001Ab2FYLlP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 07:41:15 -0400
+Date: Mon, 25 Jun 2012 04:40:41 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-357398e96d8c883b010379a7669df43ed0e2e32b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, zheng.z.yan@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, zheng.z.yan@intel.com,
+        tglx@linutronix.de
+In-Reply-To: <20120620163927.GI5046@erda.amd.com>
+References: <20120620163927.GI5046@erda.amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86: Fix section mismatch in uncore_pci_init(
+ )
+Git-Commit-ID: 357398e96d8c883b010379a7669df43ed0e2e32b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Wanpeng Li <liwp.linux@gmail.com>
-CC: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] memcg: cleanup memory cgroup
-References: <1340622900-13034-1-git-send-email-liwp.linux@gmail.com>
-In-Reply-To: <1340622900-13034-1-git-send-email-liwp.linux@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/25 19:41:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/25 19:41:15,
-	Serialize complete at 2012/06/25 19:41:15
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 25 Jun 2012 04:40:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 07:15 PM, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> 
-> Changelog:
-> 
-> * drop memcg: move recent_rotated and recent_scanned informations patch
-> * drop memcg: replace unsigned long by u64 to avoid overflow
-> * not add Add LRU_ALL_UNEVICTABLE
-> * drop memcg: cleanup all typo in memory cgroup, if it really need, I will resend in single patch
-> * drop memcg: optimize memcg_get_hierarchical_limit 
-> 
-> Wanpeng Li (2):
-> 
-> memcg: cleanup useless LRU_ALL_EVICTABLE
-> memcg: change mem_control_xxx to mem_cgroup_xxx
+Commit-ID:  357398e96d8c883b010379a7669df43ed0e2e32b
+Gitweb:     http://git.kernel.org/tip/357398e96d8c883b010379a7669df43ed0e2e32b
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Wed, 20 Jun 2012 18:39:27 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 25 Jun 2012 10:32:21 +0200
 
-You'd be better to send one version of patch set in the same thread.
+perf/x86: Fix section mismatch in uncore_pci_init()
 
-Thanks,
-Wanlong Gao
+Fix section mismatch in uncore_pci_init():
 
-> 
-> ---
->  include/linux/mmzone.h |    1 -
->  mm/memcontrol.c        |   8 +++---
->  2 files changed, 4 insertions(+), 5 deletions(-)
-> 
+ WARNING: vmlinux.o(.init.text+0x9246): Section mismatch in reference from the function uncore_pci_init() to the function .devexit.text:uncore_pci_remove()
+ The function __init uncore_pci_init() references
+ a function __devexit uncore_pci_remove().
+ [...]
 
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: <a.p.zijlstra@chello.nl>
+Cc: <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/20120620163927.GI5046@erda.amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 28a8413..6f43f95 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1313,7 +1313,7 @@ static int __devinit uncore_pci_add(struct intel_uncore_type *type,
+ 	return 0;
+ }
+ 
+-static void __devexit uncore_pci_remove(struct pci_dev *pdev)
++static void uncore_pci_remove(struct pci_dev *pdev)
+ {
+ 	struct intel_uncore_box *box = pci_get_drvdata(pdev);
+ 	struct intel_uncore_pmu *pmu = box->pmu;
