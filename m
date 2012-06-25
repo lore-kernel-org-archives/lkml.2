@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab2FYSLc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 14:11:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5812 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753172Ab2FYSLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 14:11:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="162408181"
-Message-ID: <4FE8A9C0.3050802@linux.intel.com>
-Date: Mon, 25 Jun 2012 11:11:12 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1755613Ab2FYSSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 14:18:52 -0400
+Received: from mail.windriver.com ([147.11.1.11]:50230 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab2FYSSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 14:18:50 -0400
+Message-ID: <4FE8AAFC.1080306@windriver.com>
+Date: Mon, 25 Jun 2012 14:16:28 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: Kerneloops.org defunct?
-References: <4DE6264A.2040901@gmail.com> <20110601212432.2677b03a.rdunlap@xenotime.net> <201106211534.10366.roucaries.bastien@gmail.com> <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com> <20110826173517.7321c086@lxorguk.ukuu.org.uk> <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com> <20120625180536.GA29261@roeck-us.net>
-In-Reply-To: <20120625180536.GA29261@roeck-us.net>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Santos <daniel.santos@pobox.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        <linux-doc@vger.kernel.org>, <linux-sparse@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Weinberger <richard@nod.at>, Rob Landley <rob@landley.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH v4 6/13] bug.h: Replace __linktime_error with __compiletime_error
+References: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com> <1340424048-7759-7-git-send-email-daniel.santos@pobox.com>
+In-Reply-To: <1340424048-7759-7-git-send-email-daniel.santos@pobox.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/25/2012 11:05 AM, Guenter Roeck wrote:
-
+On 12-06-23 12:00 AM, Daniel Santos wrote:
+> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+> ---
+>  include/linux/bug.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Did anyone ever get access to the kerneloops code and/or is working on a
-> replacement ?
-> 
-> I see that http://kerneloops-descope.rhcloud.com/submitoops.php appears to
-> accept kerneloops reports, http://kerneloops-descope.rhcloud.com/ reports
-> "www.kerneloops.org, coming soon", and a comment in
-> https://bugzilla.redhat.com/show_bug.cgi?id=800302 suggests that Redhat may be
-> in the process of taking over kerneloops.org.
+> diff --git a/include/linux/bug.h b/include/linux/bug.h
+> index aaac4bb..298a916 100644
+> --- a/include/linux/bug.h
+> +++ b/include/linux/bug.h
+> @@ -73,7 +73,7 @@ extern int __build_bug_on_failed;
+>  #define BUILD_BUG()						\
+>  	do {							\
+>  		extern void __build_bug_failed(void)		\
+> -			__linktime_error("BUILD_BUG failed");	\
+> +			__compiletime_error("BUILD_BUG failed");\
 
-I hope RH is willing to invest the time in this; I do not have access to
-the latest code anymore (it lived on the kernel.org servers prior to the
-incident)
+At a quick glance of the bug.h parts, I would think you need
+this commit _before_ #5 (that deleted __linktime_error) otherwise
+you'll have introduced a bisection build failure.  Or, alternatively
+you could combine #5 and #6 since they are clearly related, and
+their separation is more of a per-file CVS mentality than it is of
+any existence of distinct and separate/unrelated changesets.
 
+P.
 
-
+>  		__build_bug_failed();				\
+>  	} while (0)
+>  
