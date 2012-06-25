@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab2FYWOG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:14:06 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:61208 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab2FYWOE (ORCPT
+	id S1757636Ab2FYWOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:14:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47801 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab2FYWOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:14:04 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-160.messagelabs.com!1340662442!7784211!1
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/33] staging: comedi: cb_das16_cs: cleanup the driver
-Date: Mon, 25 Jun 2012 15:13:46 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Mon, 25 Jun 2012 18:14:11 -0400
+Date: Mon, 25 Jun 2012 15:14:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alan Cox <alan@linux.intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Doug Ledford <dledford@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Joe Korty <joe.korty@ccur.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v5] fs: make dumpable=2 require fully qualified path
+Message-Id: <20120625151409.5e13702b.akpm@linux-foundation.org>
+In-Reply-To: <20120625180327.GA31931@www.outflux.net>
+References: <20120625180327.GA31931@www.outflux.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206251513.46905.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup the comedi cb_das16_cs driver.
+On Mon, 25 Jun 2012 11:03:27 -0700
+Kees Cook <keescook@chromium.org> wrote:
 
-H Hartley Sweeten (33):
-  staging: comedi: cb_das16_cs: remove CONFIG_PCMCIA check
-  staging: comedi: cb_das16_cs: move the MODULE_* stuff to the EOF
-  staging: comedi: cb_das16_cs: add module_{init,exit} declarations
-  staging: comedi: cb_das16_cs: consolidate the init and exit functions
-  staging: comedi: cb_das13_cs: change driver registration order
-  staging: comedi: cb_das16_cs: cleanup to the pcmcia_driver declaration
-  staging: comedi: cb_das16_cs: remove some useless comments
-  staging: comedi: cb_das16_cs: refactor the pcmcia support code
-  staging: comedi: cb_das16_cs: refactor the pcmcia attach/detach
-  staging: comedi: cb_das16_cs: remove unused pcmcia 'stop' logic
-  staging: comedi: cb_das16_cs: remove the pcmcia suspend/resume
-  staging: comedi: cb_das16_cs: remove unneeded pcmcia private data
-  staging: comedi: cb_das16_cs: Move the comedi_driver variable
-  staging: comedi: cb_das16_cs: refactor the comedi attach/detach
-  staging: comedi: cb_das16_cs: remove thisboard and devpriv macros
-  staging: comedi: cb_das16_cs: remove n_boards define
-  staging: comedi: cb_das16_cs: remove skel driver cut-and-past comments
-  staging: comedi: cb_das16_cs: remove unused timer subdevice
-  staging: comedi: cb_das16_cs: cleanup dio subdevice initialization
-  staging: comedi: cb_das16_cs: fix analog outputo subdevice init
-  staging: comedi: cb_das16_cs: remove unneeded include
-  staging: comedi: cb_das16_cs: probe for the device first
-  staging: comedi: cb_das16_cs: remove the debug output of the "fingerprint"
-  staging: comedi: cb_das16_cs: cleanup the boardinfo
-  staging: comedi: cb_das16_cs: consolidate the attach messages
-  staging: comedi: cb_das16_cs: return '0' for successful attach
-  staging: comedi: cb_das16_cs: add whitespace to the subdev init
-  staging: comedi: cb_das16_cs: cleanup das16cs_ai_rinsn()
-  staging: comedi: cb_das16_cs: use #define'd io reg offsets
-  staging: comedi: cb_das16_cs: remove unused variable in private data
-  staging: comedi: cb_das16_cs: use the BIP_RANGE helper macro
-  staging: comedi: cb_das16_cs: remove some commented out debug
-  staging: comedi: cb_das16_cs: fix a multi-line comment
+> Instead of introducing a suid_dumpable=3 mode and breaking all users
+> of mode 2, this only disables the unsafe portion of mode 2 (writing to
+> disk via relative path).
 
- drivers/staging/comedi/drivers/cb_das16_cs.c | 575 +++++++++------------------
- 1 file changed, 184 insertions(+), 391 deletions(-)
-
--- 
-1.7.11
-
+It would be nicer to generate the warning at configuration time rather than
+at core-dumping time.  I have a feeling that's Hard To Do, but why?
