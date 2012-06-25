@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab2FYQxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 12:53:30 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33233 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757184Ab2FYQx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 12:53:29 -0400
-Message-ID: <1340643208.26404.13.camel@joe2Laptop>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
-Date: Mon, 25 Jun 2012 09:53:28 -0700
-In-Reply-To: <20120625084545.GC24512@gmail.com>
-References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
-	 <20120622145402.8047a669.akpm@linux-foundation.org>
-	 <20120623061313.GA21895@gmail.com> <1340437465.2274.5.camel@joe2Laptop>
-	 <20120625084545.GC24512@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1757373Ab2FYQ4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 12:56:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39733 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753128Ab2FYQ4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 12:56:24 -0400
+Message-ID: <4FE89807.50708@redhat.com>
+Date: Mon, 25 Jun 2012 18:55:35 +0200
+From: Frederic Weisbecker <fweisbec@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 11/11] protect architectures where THREAD_SIZE >= PAGE_SIZE
+ against fork bombs
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-12-git-send-email-glommer@parallels.com>
+In-Reply-To: <1340633728-12785-12-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-25 at 10:45 +0200, Ingo Molnar wrote:
-> * Joe Perches <joe@perches.com> wrote:
+On 06/25/2012 04:15 PM, Glauber Costa wrote:
+
+> Because those architectures will draw their stacks directly from
+> the page allocator, rather than the slab cache, we can directly
+> pass __GFP_KMEMCG flag, and issue the corresponding free_pages.
 > 
-> > On Sat, 2012-06-23 at 08:13 +0200, Ingo Molnar wrote:
-> > > * Andrew Morton <akpm@linux-foundation.org> wrote:
-> > > 
-> > > > On Thu, 21 Jun 2012 19:52:03 -0400
-> > > > Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > > 
-> > > > > But with the new printk() changes, text without a newline 
-> > > > > gets buffered and does not print out to the console at the 
-> > > > > location of the printk.
-> > > > 
-> > > > uh, how about we fix that?  The old behaviour was good, the 
-> > > > new behaviour is noxious.
-> > > 
-> > > Absolutely.
-> > > 
-> > > pr_flush() really seems to be a workaround.
-> > 
-> > I think the new behavior an overall improvement.
-> > It helps avoid multiple thread interleaving.
-> > 
-> > I suggested a fix to enable a printk buffered/non-buffered
-> > mechanism with an optional printk_flush/pr_flush.
-> > 
-> > https://lkml.org/lkml/2012/6/21/305
+> This code path is taken when the architecture doesn't define
+> CONFIG_ARCH_THREAD_INFO_ALLOCATOR (only ia64 seems to), and has
+> THREAD_SIZE >= PAGE_SIZE. Luckily, most - if not all - of the
+> remaining architectures fall in this category.
 > 
-> Ugh, so you suggest a global toggle to turn buffering on/off?
-
-<shrug>
-
-Rather than adding a bunch of printk_flush() calls around
-the possibly many sites per file that need them, I'd rather
-see a code block surrounded by buffer(false)/buffer(true).
-
-I'd actually rather see the existing partial line uses like:
-
-	printk("doing test_func: ");
-	printk("%s\n", test_func(foo) ? "successful", "failed");
-
-and
-
-	printk("step 1")
-	bar();
-	printk(" - step 2");
-	baz();
-	printk("completed\n");
-		
-changed to whole lines rather than adding a bunch of
-printk_flush() sites or the printk_buffering(on|off)
-blocks.
-
-Anyway, I suggested it shouldn't be merged awhile ago.
-
-https://lkml.org/lkml/2012/5/22/439
-
-Making systemic printk changes is a slow business.
+> This will guarantee that every stack page is accounted to the memcg
+> the process currently lives on, and will have the allocations to fail
+> if they go over limit.
+> 
+> For the time being, I am defining a new variant of THREADINFO_GFP, not
+> to mess with the other path. Once the slab is also tracked by memcg,
+> we can get rid of that flag.
+> 
+> Tested to successfully protect against :(){ :|:& };:
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
 
 
+Acked-by: Frederic Weisbecker <fweisbec@redhat.com>
+
+
+Thanks!
