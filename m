@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab2FYLab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 07:30:31 -0400
-Received: from fieldses.org ([174.143.236.118]:47666 "EHLO fieldses.org"
+	id S1755941Ab2FYLfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 07:35:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64620 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab2FYLa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 07:30:29 -0400
-Date: Mon, 25 Jun 2012 07:30:25 -0400
-From: Fields James <bfields@fieldses.org>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Morton Andrew <akpm@linux-foundation.org>,
-        Harrosh Boaz <bharrosh@panasas.com>,
-        "<linux-nfs@vger.kernel.org>" <linux-nfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [RFC PATCH] nfs: Add NFS3PROC_UMOUNT procedure.
-Message-ID: <20120625113025.GB16920@fieldses.org>
-References: <1340448406-10161-1-git-send-email-linkinjeon@gmail.com>
- <02B16139-AFD6-4F06-99C0-C406B1A7E1DC@netapp.com>
- <FE90D2E0-C4C9-44BC-829F-ABE94801AB4C@netapp.com>
- <20120623155710.GA10787@fieldses.org>
- <20120623160923.GB10787@fieldses.org>
- <CAKYAXd80v10car7awm3Y5bzk_nXLj8NLi7C8PxUW15L9-S7pEw@mail.gmail.com>
+	id S1751863Ab2FYLfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 07:35:04 -0400
+Date: Mon, 25 Jun 2012 12:34:57 +0100
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Cc: jmoyer@redhat.com, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
+Message-ID: <20120625113457.GA1289@amd.home.annexia.org>
+References: <4FDEC3C2.4060909@secunet.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKYAXd80v10car7awm3Y5bzk_nXLj8NLi7C8PxUW15L9-S7pEw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FDEC3C2.4060909@secunet.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 02:12:49PM +0900, Namjae Jeon wrote:
-> 2012/6/24, Fields James <bfields@fieldses.org>:
-> > On Sat, Jun 23, 2012 at 11:57:10AM -0400, Fields James wrote:
-> >> On Sat, Jun 23, 2012 at 03:52:20PM +0000, Myklebust, Trond wrote:
-> >> > The other objection is that NFSv3 already has a way to do this via the
-> >> > MOUNT protocol. We already call MOUNTPROC3_UMNT/MOUNTPROC_UMNT on
-> >> > unmount of a filesystem.
-> >> >
-> >> > The problem with this approach is that if the NFS client crashes before
-> >> > it can call this function, then the server never gets notified. That is
-> >> > a problem that your patch has too...
-> >>
-> >> Yes.  Could you instead work on describing *exactly* what the original
-> >> problem was that prompted this?
-> >
-> > ("You" here meaning Namjae Jeon, of course).
-> >
-> > And note here we've all read the changelog, that's not what I'm asking
-> > for.
-> >
-> > I want to know the details of *your* specific case.  "I have X clients
-> > that I use for Y, periodically I want to unmount the exported filesystem
-> > to do Z, I tried doing W but it didn't work...".
-> As you remember, We discussed this
-> issue(http://www.spinics.net/lists/linux-nfs/msg29997.html) with you
-> before. you guided me to use exportfs -f call on nfs server.
-> It is hard to use this method on our system
-
-Why is it hard?
-
-Could you hack umount to do the equivalent of "exportfs -f" before
-calling the umount?
-
-> and nomally the user is
-> thinking it is problem device busy happen after umounting.
+On Mon, Jun 18, 2012 at 07:59:30AM +0200, Torsten Hilbrich wrote:
+> Hello,
 > 
-> The details of specific case.
-> 1. There are two target or two PC. and Client want to access files of
-> usb device on server.
-> 2. the client try to mount usb mount point using nfs on sever after
-> plugging usb device.
-> 3. we try to umount mount point directory on client.
-> 4. and when we try to umount usb device mount directory server, device
-> busy message occured like this (umount: can't umount /mnt: Device or
-> resource busy)
+> a software that tries to mount each existing partition as ext3 file system started to fail when updating from v3.3.7 to v3.3.8.
+> 
+> The applications then hangs-up in the mount syscall, here is a snapshot of its stack at this moment:
 
-Right, so I don't think you want protocol modifications.  They take a
-few years to get hammered out and then make it into implementations, and
-they won't help a great deal with your problem anyway.  (Because of
-problems like the possibility of lost "unmount" calls that Trond
-mentions.)
+We just ran into what we think is the same problem.
 
-Either modify umount itself to flush the export cache before attempting
-the unmount, or if that doesn't work perhaps you could patch the kernel
-to notify nfsd on unmount and let it attemt to clear its caches before
-deciding whether the filesystem is busy.
+Note that ext4 fails like this for any 1024 byte sized filesystem (of
+zeroes) that you try to mount.  It's really nothing to do with
+extended partitions.
 
---b.
+Here is a very simple reproducer + stack trace:
+
+  https://bugzilla.redhat.com/show_bug.cgi?id=835019#c4
+
+I will try out the patch suggested later on in this thread.
+
+Rich.
+
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+virt-p2v converts physical machines to virtual machines.  Boot with a
+live CD or over the network (PXE) and turn machines into Xen guests.
+http://et.redhat.com/~rjones/virt-p2v
