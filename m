@@ -1,45 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab2FYPdy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 11:33:54 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:34082 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224Ab2FYPdx (ORCPT
+	id S1757074Ab2FYPqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 11:46:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46131 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756949Ab2FYPqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 11:33:53 -0400
+	Mon, 25 Jun 2012 11:46:37 -0400
+Message-ID: <4FE887DA.2040308@wwwdotorg.org>
+Date: Mon, 25 Jun 2012 09:46:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAD2nsn08gkYJnyYfqyZT8VX-bFPgDVZPgVSHE_QBEuXj5aEWMw@mail.gmail.com>
-References: <1340637550-12669-1-git-send-email-aletes.xgr@gmail.com>
-	<CAD2nsn08gkYJnyYfqyZT8VX-bFPgDVZPgVSHE_QBEuXj5aEWMw@mail.gmail.com>
-Date: Mon, 25 Jun 2012 12:33:51 -0300
-Message-ID: <CAAAP30EaW67e_w0k0W5qasaFfccfn0pDtqdHQB+-hesEbJwOLQ@mail.gmail.com>
-Subject: Re: [PATCH] mac80211: fix build warning
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Mohammed Shafi <shafi.wireless@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, ldewangan@nvidia.com
+Subject: Re: [PATCH] dma: tegra: add clk_prepare/clk_unprepare
+References: <1340605891-19076-1-git-send-email-pgaikwad@nvidia.com>
+In-Reply-To: <1340605891-19076-1-git-send-email-pgaikwad@nvidia.com>
+X-Enigmail-Version: 1.5pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 12:31 PM, Mohammed Shafi
-<shafi.wireless@gmail.com> wrote:
-> Hi,
->
-> On Mon, Jun 25, 2012 at 8:49 PM, Alexandre Pereira da Silva
-> <aletes.xgr@gmail.com> wrote:
->> Fix:
->> net/mac80211/mlme.c: In function 'ieee80211_prep_connection':
->> net/mac80211/mlme.c:3035:19: warning: 'sta' may be used uninitialized in
->> this function
->>
->> Initialize sta to NULL
->
-> i think already fixed by and there in wireless-testing
-> http://www.spinics.net/lists/linux-wireless/msg92385.html
+On 06/25/2012 12:31 AM, Prashant Gaikwad wrote:
+> Use clk_prepare/clk_unprepare as required by the generic clk framework.
+> 
+> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-Ok, thanks for pointing that out.
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
