@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab2FYWkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:40:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56282 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab2FYWks (ORCPT
+	id S1754892Ab2FYWtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:49:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58643 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab2FYWtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:40:48 -0400
-Date: Mon, 25 Jun 2012 15:40:47 -0700 (PDT)
-Message-Id: <20120625.154047.462435723648654696.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: johunt@akamai.com, kaber@trash.net, dbavatar@gmail.com,
-        netdev@vger.kernel.org, yoshfuji@linux-ipv6.org, jmorris@namei.org,
-        pekkas@netcore.fi, kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org,
-        greearb@candelatech.com
-Subject: Re: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1340429851.4604.11942.camel@edumazet-glaptop>
-References: <1340388785.4604.11442.camel@edumazet-glaptop>
-	<20120622.170237.1504103690155447356.davem@davemloft.net>
-	<1340429851.4604.11942.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Jun 2012 18:49:47 -0400
+Date: Mon, 25 Jun 2012 15:49:42 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/11] memcg: propagate kmem limiting information to
+ children
+Message-ID: <20120625224942.GN3869@google.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
+ <1340633728-12785-10-git-send-email-glommer@parallels.com>
+ <20120625182907.GF3869@google.com>
+ <4FE8E7EB.2020804@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE8E7EB.2020804@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sat, 23 Jun 2012 07:37:31 +0200
+Hello, Glauber.
 
-> [PATCH] ipv6: fib: fix fib dump restart
+On Tue, Jun 26, 2012 at 02:36:27AM +0400, Glauber Costa wrote:
+> >Is the volatile declaration really necessary?  Why is it necessary?
+> >Why no comment explaining it?
 > 
-> Commit 2bec5a369ee79576a3 (ipv6: fib: fix crash when changing large fib
-> while dumping it) introduced ability to restart the dump at tree root,
-> but failed to skip correctly a count of already dumped entries. Code
-> didn't match Patrick intent.
+> Seems to be required by set_bit and friends. gcc will complain if it
+> is not volatile (take a look at the bit function headers)
+
+Hmmm?  Are you sure gcc includes volatile in type check?  There are a
+lot of bitops users in the kernel but most of them don't use volatile
+decl on the variable.
+
+> >>+			 */
+> >>+			parent = parent_mem_cgroup(iter);
+> >>+			while (parent && (parent != memcg)) {
+> >>+				if (test_bit(KMEM_ACCOUNTED_THIS, &parent->kmem_accounted))
+> >>+					goto noclear;
+> >>+					
+> >>+				parent = parent_mem_cgroup(parent);
+> >>+			}
+> >
+> >Better written in for (;;)?  Also, if we're breaking on parent ==
+> >memcg, can we ever hit NULL parent in the above loop?
 > 
-> We must skip exactly the number of already dumped entries.
-> 
-> Note that like other /proc/net files or netlink producers, we could
-> still dump some duplicates entries.
-> 
-> Reported-by: Debabrata Banerjee <dbavatar@gmail.com>
-> Reported-by: Josh Hunt <johunt@akamai.com>
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> I can simplify to test parent != memcg only, indeed it is not
+> expected to be NULL (but if it happens to be due to any kind of bug,
+> we protect against NULL-dereference, that is why I like to write
+> this way)
 
-I've applied this.
+I personally don't really like that.  It doesn't really add meaningful
+protection (if that happens the tree walking is already severely
+broken) while causes confusion to future readers of the code (when can
+parent be NULL?).
 
-But I wonder if it does the right thing, to be honest.
+Thanks.
 
-When tree change is detected, w->skip is set to w->count
-
-But with your change, w->count won't be the number of entries to
-skip from the root after the first time we handle a tree change.
-
-So on the second tree change, we'll skip the wrong number of
-entries, since the w->count we save into w->skip will be biased
-by the previous w->skip value.  So we'll skip too few entries.
-
+-- 
+tejun
