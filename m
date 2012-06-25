@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab2FYKly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 06:41:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46620 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553Ab2FYKlx (ORCPT
+	id S1755855Ab2FYKnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 06:43:37 -0400
+Received: from [216.32.180.11] ([216.32.180.11]:27717 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1755790Ab2FYKnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 06:41:53 -0400
-Date: Mon, 25 Jun 2012 18:41:43 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH v3 4/4] memcg: cleanup all typo in memory cgroup
-Message-ID: <20120625104143.GA12148@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1340613910-9629-1-git-send-email-liwp.linux@gmail.com>
- <4FE83BE9.7050701@jp.fujitsu.com>
+	Mon, 25 Jun 2012 06:43:35 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2dI98dI9371I1432Izz1202hzz15d4R8275bh8275dhz2dh668h839h944hd25he5bhf0ah)
+X-WSS-ID: 0M665RI-02-00K-02
+X-M-MSG: 
+Date: Mon, 25 Jun 2012 12:42:09 +0200
+From: "joerg.roedel@amd.com" <joerg.roedel@amd.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [v2 1/5] iommu: Add DMA window parser, of_get_dma_window()
+Message-ID: <20120625104209.GR2624@amd.com>
+References: <4FE20457.8090307@wwwdotorg.org>
+ <20120621.094611.2108645748323641310.hdoyu@nvidia.com>
+ <4FE2C5F3.1010007@wwwdotorg.org>
+ <20120621.113023.1324461719984328307.hdoyu@nvidia.com>
+ <4FE34973.1020400@wwwdotorg.org>
+ <20120625081543.bf25af1f74d7d1057d9cd216@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4FE83BE9.7050701@jp.fujitsu.com>
+In-Reply-To: <20120625081543.bf25af1f74d7d1057d9cd216@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 07:22:33PM +0900, Kamezawa Hiroyuki wrote:
->(2012/06/25 17:45), Wanpeng Li wrote:
->> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->> 
->> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->
->my thunderbird's spell checker founds some more ;)
->
->> ---
->>   mm/memcontrol.c |   21 ++++++++++-----------
->>   1 file changed, 10 insertions(+), 11 deletions(-)
->> 
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 4520b57..d474bf6 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -115,8 +115,8 @@ static const char * const mem_cgroup_events_names[] = {
->>   
->>   /*
->>    * Per memcg event counter is incremented at every pagein/pageout. With THP,
->> - * it will be incremated by the number of pages. This counter is used for
->> - * for trigger some periodic events. This is straightforward and better
->> + * it will be incremented by the number of pages. This counter is used to
->> + * trigger some periodic events. This is straightforward and better
->>    * than using jiffies etc. to handle periodic memcg event.
->>    */
->>   enum mem_cgroup_events_target {
->> @@ -667,7 +667,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
->>    * Both of vmstat[] and percpu_counter has threshold and do periodic
->>    * synchronization to implement "quick" read. There are trade-off between
->>    * reading cost and precision of value. Then, we may have a chance to implement
->> - * a periodic synchronizion of counter in memcg's counter.
->> + * a periodic synchronization of counter in memcg's counter.
->>    *
->>    * But this _read() function is used for user interface now. The user accounts
->>    * memory usage by memory cgroup and he _always_ requires exact value because
->> @@ -677,7 +677,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
->>    *
->>    * If there are kernel internal actions which can make use of some not-exact
->>    * value, and reading all cpu value can be performance bottleneck in some
->> - * common workload, threashold and synchonization as vmstat[] should be
->> + * common workload, threshold and synchonization as vmstat[] should be
->
->synchronization
->
->>    * implemented.
->>    */
->>   static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
->> @@ -1304,7 +1304,7 @@ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
->>    *
->>    * mem_cgroup_under_move() - checking a cgroup is mc.from or mc.to or
->>    *			  under hierarchy of moving cgroups. This is for
->> - *			  waiting at hith-memory prressure caused by "move".
->> + *			  waiting at hit-memory pressure caused by "move".
->>    */
->>   
->>   static bool mem_cgroup_stolen(struct mem_cgroup *memcg)
->> @@ -1597,7 +1597,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
->>   /*
->>    * Check all nodes whether it contains reclaimable pages or not.
->>    * For quick scan, we make use of scan_nodes. This will allow us to skip
->> - * unused nodes. But scan_nodes is lazily updated and may not cotain
->> + * unused nodes. But scan_nodes is lazily updated and may not contain
->>    * enough new information. We need to do double check.
->>    */
->>   static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
->> @@ -2211,7 +2211,6 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->>   	if (mem_cgroup_wait_acct_move(mem_over_limit))
->>   		return CHARGE_RETRY;
->>   
->> -	/* If we don't need to call oom-killer at el, return immediately */
->>   	if (!oom_check)
->>   		return CHARGE_NOMEM;
->>   	/* check OOM */
->> @@ -2289,7 +2288,7 @@ again:
->>   		 * In that case, "memcg" can point to root or p can be NULL with
->>   		 * race with swapoff. Then, we have small risk of mis-accouning.
->accounting 
->
->Could you update ?
->
->Thanks,
->-Kame
->
->(*) In my experience, too rapid update doesn't work well, maintainers cannot review it.
+On Mon, Jun 25, 2012 at 08:15:43AM +0300, Hiroshi Doyu wrote:
+> On Thu, 21 Jun 2012 18:18:59 +0200
+> Stephen Warren <swarren@wwwdotorg.org> wrote:
+> 
+> > On 06/21/2012 02:30 AM, Hiroshi Doyu wrote:
+> > > From: Hiroshi DOYU <hdoyu@nvidia.com>
+> > > 
+> > > This code was based on:
+> > >     "arch/microblaze/kernel/prom_parse.c"
+> > >     "arch/powerpc/kernel/prom_parse.c"
+> > > 
+> > > Can replace "of_parse_dma_window()" in the above. This supports
+> > > different formats flexibly. "prefix" can be configured if any. "busno"
+> > > and "index" are optionally specified. Set NULL and 0 if not used.
+> > > 
+> > > Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> > 
+> > Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+> 
+> Thanks.
+> 
+> > BTW, I only see patches 1 & 2 of 5 in this series; did you only mean to
+> > post just 2 patches or did the others get lost on the way to my system
+> > somehow?
+> 
+> I reposted only [1/5] and [2/5] as "v2" because the rests are
+> same. Probably it was better to send a whole series again. Sorry for
+> confusion.
 
-Thank you Kame. Now I will drop disputed patch, if it really need,
-anyone can tell me fix it and resend.
+Please repost the whole series with the Acks included as a new thread so
+that I can easily apply them.
 
-Regards,
-Wanpeng Li 
+
+	Joerg
+
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
