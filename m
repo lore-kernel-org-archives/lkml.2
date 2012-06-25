@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab2FYXzh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:55:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39591 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757465Ab2FYXzg (ORCPT
+	id S932096Ab2FYX4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:56:00 -0400
+Received: from toast.topped-with-meat.com ([204.197.218.159]:47004 "EHLO
+	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757465Ab2FYXzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:55:36 -0400
-Date: Mon, 25 Jun 2012 16:55:31 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, "kay.sievers" <kay.sievers@vrfy.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-Message-ID: <20120625235531.GB3652@kroah.com>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
- <20120625150722.8cd4f45d.akpm@linux-foundation.org>
+	Mon, 25 Jun 2012 19:55:47 -0400
+X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Jun 2012 19:55:47 EDT
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625150722.8cd4f45d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@hack.frob.com>
+To: Dave Martin <dave.martin@linaro.org>
+X-Fcc: ~/Mail/lkml
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, ananth@in.ibm.com,
+        jkenisto@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, oleg@redhat.com, andi@firstfloor.org,
+        hch@infradead.org, rostedt@goodmis.org,
+        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, anton@redhat.com,
+        srikar@linux.vnet.ibm.com, linux-perf-users@vger.kernel.org,
+        mingo@elte.hu
+Subject: Re: Fwd: [PATCH-V2] perf symbols: fix symbol offset breakage with
+ separated debug info
+In-Reply-To: Dave Martin's message of  Wednesday, 13 June 2012 11:14:36 +0100 <20120613101436.GA2122@linaro.org>
+References: <4FA0DBEE.3040909@linux.vnet.ibm.com>
+	<4FD5D3CE.2010307@linux.vnet.ibm.com>
+	<20120611135352.GA2202@infradead.org>
+	<20120613101436.GA2122@linaro.org>
+X-Antipastobozoticataclysm: Bariumenemanilow
+Message-Id: <20120625234951.B839C2C08D@topped-with-meat.com>
+Date: Mon, 25 Jun 2012 16:49:51 -0700 (PDT)
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=2.0 cv=e8d9udV/ c=1 sm=1 a=yWN5KmZC0w4A:10
+		a=Z6MIti7PxpgA:10 a=kj9zAlcOel0A:10 a=hOe2yjtxAAAA:8 a=14OXPxybAAAA:8
+		a=WbB9be_xJKwIxumEGH0A:9 a=CjuIK1q_8ugA:10 a=WkljmVdYkabdwxfqvArNOQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 03:07:22PM -0700, Andrew Morton wrote:
-> On Mon, 25 Jun 2012 15:05:42 -0400
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > 
-> > This brings back the old way of printk() that always prints to the console
-> > and does not buffer the data. As printk_emit() is used by other 'facilities'
-> > this only affects printk(), but keeps pretty much the new behavior.
-> 
-> If you say so.  The core printk code is starting to make one think of
-> things like "cleansing with fire".
-> 
-> Why did that logging code need to futz with this printk behaviour in
-> the first place?
+> For one thing, I assumed that the section headers for a debug-only image
+> may be bogus garbage and not useful for some aspects of symbol
+> processing.  I'm no longer sure that this is the case: if not, then we
+> don't need to bother with saving the section headers because once we
+> have chosen a reference image for the symbols, we know that image is
+> good enough for all the symbol processing.  My previous assumption
+> that we may need to juggle parts of two ELF images in order to do the
+> symbol processing does complicate things -- hopefully we don't need it.
 
-Because, as Kay, and I think Linus, showed a while ago, the behavior
-really wasn't all that good and it wasn't doing what people thought it
-was doing, especially when printks from multiple cpus happened at the
-same time.  There were other cases that had problems as well, the long
-thread a few months ago detailed it all, which drove the creation of
-these changes.
+The section headers in a .debug file are never "bogus garbage".  Aside
+from sh_offset fields, they match the original unstripped file except
+that sh_type is changed to SHT_NOBITS for each section that is kept only
+in the stripped file.
 
-> I don't think the thing which you're fixing here was a real
-> showstopper.  If a non-newline-terminated printk gets delayed, then so
-> be it - we identify and fix all callers and remember the new rule and
-> move on, although I still don't know why this change was deemed
-> necessary.  If that results in a cleaner, clearer and more reliable
-> core printk() then we win.
+The one issue you have to deal with (in ET_DYN files) is that the
+addresses used in the section headers and everywhere else in the .debug
+file (symbol table st_value fields, all DWARF data containing addresses,
+etc.) may no longer match the addresses used in the stripped file, if
+prelink has changed that file after stripping.  For this, all you need
+to do is calculate the offset between .debug file and stripped-file
+addresses.  The way to do that is to examine the PT_LOAD program headers
+(just the first one is all you really need), and take the difference
+between the p_vaddr fields of the same PT_LOAD command in the two files.
 
-I'm beginning to agree here as well.
 
-Actually, didn't I say that at the beginning of this?  :)
-
-Stephen and Ingo, I understand that your tests now would require
-multiple printk() lines, but this affects what, 10 boxes in the world
-that run these tests (I'm not trying to be mean, just understand the
-issues).  The fixes that now are in place fix problems for many more
-systems, and provide the infrastructure for proper logging that people
-have been screaming at us for over 10 years to accomplish.
-
-I'll be glad to make the patch to fix up these test printks, (remember,
-as a bonus, you now get a timestamp showing exactly how long your tests
-take, which you didn't get before, how can you pass up an offer like
-that?)  I think that's the best solution here, and easiest for everyone
-involved (your tests then properly show what failed, you get bonus
-timestamps, multi-cpu printks happen properly, proper logging messages
-get sent to userspace, everone wins.)
-
-> And we do need a cleaner, clearer and more reliable core printk() :(
-> wtf have you guys been up to??  
-
-See, Andrew even agrees with me :)
-
-thanks,
-
-greg k-h
+Thanks,
+Roland
