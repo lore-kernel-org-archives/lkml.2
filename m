@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2FYLNn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 07:13:43 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:45299 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755920Ab2FYLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 07:13:42 -0400
-Message-ID: <4FE84741.9000703@parallels.com>
-Date: Mon, 25 Jun 2012 15:10:57 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Paul Mackerras" <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
-        "PowerPC email list" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH SLUB 1/2] duplicate the cache name in saved_alias list
-References: <1340617984.13778.37.camel@ThinkPad-T420>
-In-Reply-To: <1340617984.13778.37.camel@ThinkPad-T420>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755989Ab2FYLPQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 07:15:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48213 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab2FYLPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 07:15:14 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH v4 0/2] memcg: cleanup memory cgroup
+Date: Mon, 25 Jun 2012 19:15:00 +0800
+Message-Id: <1340622900-13034-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 01:53 PM, Li Zhong wrote:
-> SLUB duplicates the cache name in kmem_cache_create(). However if the
-> cache could be merged to others during early booting, the name pointer
-> is saved in saved_alias list, and the string needs to be kept valid
-> before slab_sysfs_init() is called.
->
-> This patch tries to duplicate the cache name in saved_alias list, so
-> that the cache name could be safely kfreed after calling
-> kmem_cache_create(), if that name is kmalloced.
->
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> ---
->   mm/slub.c |    6 ++++++
->   1 files changed, 6 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 8c691fa..3dc8ed5 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -5373,6 +5373,11 @@ static int sysfs_slab_alias(struct kmem_cache *s,
-> const char *name)
->
->   	al->s = s;
->   	al->name = name;
-> +	al->name = kstrdup(name, GFP_KERNEL);
-> +	if (!al->name) {
-> +		kfree(al);
-> +		return -ENOMEM;
-> +	}
->   	al->next = alias_list;
->   	alias_list = al;
->   	return 0;
-> @@ -5409,6 +5414,7 @@ static int __init slab_sysfs_init(void)
->   		if (err)
->   			printk(KERN_ERR "SLUB: Unable to add boot slab alias"
->   					" %s to sysfs\n", s->name);
-> +		kfree(al->name);
->   		kfree(al);
->   	}
->
->
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-What's unsafe about the current state of affairs ?
-Whenever we alias, we'll increase the reference counter.
-kmem_cache_destroy will only actually destroy the structure whenever 
-that refcnt reaches zero.
+Changelog:
 
-This means that kfree shouldn't happen until then. So what is exactly 
-that you are seeing?
+* drop memcg: move recent_rotated and recent_scanned informations patch
+* drop memcg: replace unsigned long by u64 to avoid overflow
+* not add Add LRU_ALL_UNEVICTABLE
+* drop memcg: cleanup all typo in memory cgroup, if it really need, I will resend in single patch
+* drop memcg: optimize memcg_get_hierarchical_limit 
 
-Now, if you ask me, keeping the name around in user-visible files like 
-/proc/slabinfo for caches that are removed already can be a bit 
-confusing (that is because we don't add aliases to the slab_cache list)
+Wanpeng Li (2):
 
-If you want to touch this, one thing you can do is to keep a list of 
-names bundled in an alias. If an alias is removed, you free that name. 
-If that name is the representative name of the bundle, you move to the 
-next one.
+memcg: cleanup useless LRU_ALL_EVICTABLE
+memcg: change mem_control_xxx to mem_cgroup_xxx
+
+---
+ include/linux/mmzone.h |    1 -
+ mm/memcontrol.c        |   8 +++---
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+-- 
+1.7.9.5
+
