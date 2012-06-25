@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378Ab2FYIHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:07:08 -0400
-Received: from service88.mimecast.com ([195.130.217.12]:46141 "EHLO
-	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab2FYIHG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:07:06 -0400
-Message-ID: <4FE81C23.30203@arm.com>
-Date: Mon, 25 Jun 2012 09:06:59 +0100
-From: viresh kumar <viresh.kumar2@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752288Ab2FYIIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:08:50 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52973 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab2FYIIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 04:08:47 -0400
+Date: Mon, 25 Jun 2012 10:08:32 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Zheng Liu <gnehzuil.liu@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
+Message-ID: <20120625080832.GX27816@cmpxchg.org>
+References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+ <20120517195342.GB1800@cmpxchg.org>
+ <20120521025149.GA32375@gmail.com>
+ <20120521073632.GL1406@cmpxchg.org>
+ <20120521085951.GA4687@gmail.com>
+ <20120521093705.GM1406@cmpxchg.org>
+ <20120521110659.GA7143@gmail.com>
+ <20120623110450.GP27816@cmpxchg.org>
+ <4FE7A867.70207@kernel.org>
 MIME-Version: 1.0
-To: Rajeev kumar <rajeev-dlh.kumar@st.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Liam Girdwood <lrg@ti.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-References: <20120625141140.c6d71065dab293005514ee1a@canb.auug.org.au> <4FE8009A.4020503@st.com>
-In-Reply-To: <4FE8009A.4020503@st.com>
-X-MC-Unique: 112062509070301602
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE7A867.70207@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/06/12 07:09, Rajeev kumar wrote:
-> 1. Protecting clk_get/clk_put* calls under macro 'CONFIG_HAVE_CLK' in
-> the driver.
+On Mon, Jun 25, 2012 at 08:53:11AM +0900, Minchan Kim wrote:
+> Hi Hannes,
+> 
+> On 06/23/2012 08:04 PM, Johannes Weiner wrote:
+> 
+> > On Mon, May 21, 2012 at 07:07:00PM +0800, Zheng Liu wrote:
+> >> On Mon, May 21, 2012 at 11:37:05AM +0200, Johannes Weiner wrote:
+> >> [snip]
+> >>>>> Is it because the read()/write() IO is high throughput and pushes
+> >>>>> pages through the LRU lists faster than the mmap pages are referenced?
+> >>>>
+> >>>> Yes, in this application, one query needs to access mapped file page
+> >>>> twice and file page cache twice.  Namely, one query needs to do 4 disk
+> >>>> I/Os.  We have used fadvise(2) to reduce file page cache accessing to
+> >>>> only once.  For mapped file page, in fact them are accessed only once
+> >>>> because in one query the same data is accessed twice.  Thus, one query
+> >>>> causes 2 disk I/Os now.  The size of read/write is quite larger than
+> >>>> mmap/munmap.  So, as you see, if we can keep mmap/munmap file in memory
+> >>>> as much as possible, we will gain the better performance.
+> >>>
+> >>> You access the same unmapped cache twice, i.e. repeated reads or
+> >>> writes against the same file offset?
+> >>
+> >> No.  We access the same mapped file twice.
+> >>
+> >>>
+> >>> How do you use fadvise?
+> >>
+> >> We access the header and content of the file respectively using read/write.
+> >> The header and content are sequentially.  So we use fadivse(2) with
+> >> FADV_WILLNEED flag to do a readahead.
+> >>
+> >>>> In addition, another factor also has some impacts for this application.
+> >>>> In inactive_file_is_low_global(), it is different between 2.6.18 and
+> >>>> upstream kernel.  IMHO, it causes that mapped file pages in active list
+> >>>> are moved into inactive list frequently.
+> >>>>
+> >>>> Currently, we add a parameter in inactive_file_is_low_global() to adjust
+> >>>> this ratio.  Meanwhile we activate every mapped file pages for the first
+> >>>> time.  Then the performance gets better, but it still doesn't reach the
+> >>>> performance of 2.6.18.
+> >>>
+> >>> 2.6.18 didn't have the active list protection at all and always
+> >>> forcibly deactivated pages during reclaim.  Have you tried fully
+> >>> reverting to this by making inactive_file_is_low_global() return true
+> >>> unconditionally?
+> >>
+> >> No, I don't try it.  AFAIK, 2.6.18 didn't protect the active list.  But
+> >> it doesn't always forcibly deactivate the pages.  I remember that in
+> >> 2.6.18 kernel we calculate 'mapped_ratio' in shrink_active_list(), and
+> >> then we get 'swap_tendency' according to 'mapped_ratio', 'distress', and
+> >> 'sc->swappiness'.  If 'swap_tendency' is not greater than 100.  It
+> >> doesn't reclaim mapped file pages.  By this equation, if the sum of the
+> >> anonymous pages and mapped file pages is not greater than the 50% of
+> >> total pages, we don't deactivate these pages.  Am I missing something?
+> > 
+> > I think we need to go back to protecting mapped pages based on how
+> > much of reclaimable memory they make up, one way or another.
+> 
+> 
+> I partly agreed it with POV regression.
+> But I would like to understand rationale of "Why we should handle specially mmapped page".
+> In case of code pages(VM_EXEC), we already have handled it specially and
+> I understand why we did. At least, my opinion was that our LRU algorithm doesn't consider
+> _frequency_ fully while it does _recency_ well. I thought code page would be high frequency of access
+> compared to other pages.
+> But in case of mapped data pages, why we should handle specially?
+> I guess mapped data pages would have higher access chance than unmapped page because
+> unmapped page doesn't have any owner(it's just for caching for reducing I/O) while mapped page
+> has a owner above.
+> 
+> Doesn't it make sense?
 
-Not at all now.
+I agree that the reason behind protecting VM_EXEC pages was that our
+frequency information for mapped pages is at LRU cycle granularity.
 
-> 2. Adding a check in Kconfig for HAVE_CLK.
-> (But that will limit the compilation of this driver for only platforms
-> which are ARM based/or similar).
-
-Not actually required
-
-> 3. We can pick the patches circulated by Viresh Kumar where we don't
-> have HAVE_CLK defined for x86_64, then the inline routines like
-> following should come into play:
-
-That's the best. But probably Mark need to pull in AKPM's tree first into
-sound-asoc tree. Mark?
-
---
-Viresh
-
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
-
+But I don't see why you think this problem wouldn't apply to all
+mapped pages in general.
