@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2FYJcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 05:32:20 -0400
-Received: from antcom.de ([188.40.178.216]:40731 "EHLO chuck.antcom.de"
+	id S1755492Ab2FYJdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 05:33:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46669 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677Ab2FYJcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 05:32:18 -0400
-Message-ID: <4FE8301D.9050108@antcom.de>
-Date: Mon, 25 Jun 2012 11:32:13 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1754401Ab2FYJdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 05:33:31 -0400
+Date: Mon, 25 Jun 2012 11:33:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH v3 1/4] memcg: cleanup useless LRU_ALL_EVICTABLE
+Message-ID: <20120625093328.GD19805@tiehlicka.suse.cz>
+References: <1340613812-9458-1-git-send-email-liwp.linux@gmail.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: axel.lin@gmail.com, riyer@nvidia.com, michael.hennerich@analog.com,
-        grant.likely@secretlab.ca, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        aletes.xgr@gmail.com
-Subject: Re: [PATCH v6] input: keyboard: Add keys driver for the LPC32xx SoC
-References: <1340549078-8973-1-git-send-email-stigge@antcom.de> <20120625070614.GA13876@core.coreip.homeip.net>
-In-Reply-To: <20120625070614.GA13876@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340613812-9458-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry!
+Marking this patch as memcg is quite misleading. mm is more suitable.
 
-On 06/25/2012 09:06 AM, Dmitry Torokhov wrote:
-> On Sun, Jun 24, 2012 at 04:44:38PM +0200, Roland Stigge wrote:
->> This patch adds a driver for the key scan interface of the LPC32xx SoC
->>
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
->>
+On Mon 25-06-12 16:43:32, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 > 
-> This looks _very_ good, I just have a couple more comments:
+> Since LRU_ALL_EVICTABLE is useless, just remove it.
 
-Thanks for reviewing!
+It's really strange but I do not see any usage of this except for it's
+introduction. So agreed to remove it.
 
-I think I'm addressing all of those points in my v7 patch.
+> Add LRU_ALL_UNEVICTABLE to mask unevictable pages.
 
-Roland
+Does it really make sense to introduce just for two uses in a single
+function?
+
+> 
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> ---
+>  include/linux/mmzone.h |    2 +-
+>  mm/memcontrol.c        |    4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 68c569f..5873620 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -209,7 +209,7 @@ struct lruvec {
+>  /* Mask used at gathering information at once (see memcontrol.c) */
+>  #define LRU_ALL_FILE (BIT(LRU_INACTIVE_FILE) | BIT(LRU_ACTIVE_FILE))
+>  #define LRU_ALL_ANON (BIT(LRU_INACTIVE_ANON) | BIT(LRU_ACTIVE_ANON))
+> -#define LRU_ALL_EVICTABLE (LRU_ALL_FILE | LRU_ALL_ANON)
+> +#define LRU_ALL_UNEVICTABLE (BIT(LRU_UNEVICTABLE))
+>  #define LRU_ALL	     ((1 << NR_LRU_LISTS) - 1)
+>  
+>  /* Isolate clean file */
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 724bd02..ccda728 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4033,11 +4033,11 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
+>  	}
+>  	seq_putc(m, '\n');
+>  
+> -	unevictable_nr = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_UNEVICTABLE));
+> +	unevictable_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_UNEVICTABLE);
+>  	seq_printf(m, "unevictable=%lu", unevictable_nr);
+>  	for_each_node_state(nid, N_HIGH_MEMORY) {
+>  		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
+> -				BIT(LRU_UNEVICTABLE));
+> +				LRU_ALL_UNEVICTABLE);
+>  		seq_printf(m, " N%d=%lu", nid, node_nr);
+>  	}
+>  	seq_putc(m, '\n');
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
