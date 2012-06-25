@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab2FYMyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 08:54:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53947 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756591Ab2FYMyF (ORCPT
+	id S1756727Ab2FYMzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 08:55:39 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:58009 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756472Ab2FYMzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 08:54:05 -0400
-Message-ID: <4FE85F6A.80307@linaro.org>
-Date: Mon, 25 Jun 2012 14:54:02 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 25 Jun 2012 08:55:37 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoxTACVS6E9V5qg+PGdsb2JhbABEihWsChkBAQEBNzSCGAEBBScTHBMBDxAIAw4KLhQlChoTiA+4RBSLH4UiYAOVLYVmjH0
+X-IronPort-AV: E=Sophos;i="4.77,471,1336341600"; 
+   d="scan'208";a="364757627"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 25 Jun 2012 14:04:07 +0200
+To: Yufeng Shen <miletus@chromium.org>
+Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, Andrew de los Reyes <adlr@chromium.org>
+Subject: Re: [PATCH] HID: magicmouse: Correct report range of major / minor
+ axes
+Message-ID: <20120625120407.GA522@polaris.bitmath.org>
+References: <1340382713-2957-1-git-send-email-miletus@chromium.org>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Rob Lee <rob.lee@linaro.org>, rjw@sisk.pl,
-        Kevin Hilman <khilman@ti.com>, linux-next@vger.kernel.org
-Subject: Re: cpuidle future and improvements
-References: <4FDEE98D.7010802@linaro.org> <CAMbhsRQRFXcayyWjM1RirgFppVAK23z2+3EbYOCw-qmzuY9_2g@mail.gmail.com>
-In-Reply-To: <CAMbhsRQRFXcayyWjM1RirgFppVAK23z2+3EbYOCw-qmzuY9_2g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340382713-2957-1-git-send-email-miletus@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2012 08:15 PM, Colin Cross wrote:
-> On Mon, Jun 18, 2012 at 1:40 AM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> I propose to host a cpuidle-next tree where all these modifications will
->> be and where people can send patches against, preventing last minutes
->> conflicts and perhaps Lenb will agree to pull from this tree. In the
->> meantime, the tree will be part of the linux-next, the patches will be
->> more widely tested and could be fixed earlier.
+On Fri, Jun 22, 2012 at 12:31:53PM -0400, Yufeng Shen wrote:
+> In patch "HID: magicmouse: Adjust major / minor axes to scale",
+> touch_major and touch_minor axes are scaled by a factor of
+> four when reported but the max touch_major/minor is not scaled
+> accordingly. This patch scales the max touch_major/minor to
+> be consistent with the reported value.
 > 
-> My coupled cpuidle patches were acked and temporarily in Len's
-> next/Linus pull branch, but were later dropped when the first pull
-> request to Linus was rejected.  I asked Len to either put the coupled
-> cpuidle patches into his next branch, or let me host them so people
-> could base SoC branches off of them and let Len pull them later, but
-> got no response.  If you do start a cpuidle for-next branch, can you
-> pull my coupled-cpuidle branch:
+> Signed-off-by: Yufeng Shen <miletus@chromium.org>
+> ---
+>  drivers/hid/hid-magicmouse.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
+> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+> index 7cf3ffe..40ac665 100644
+> --- a/drivers/hid/hid-magicmouse.c
+> +++ b/drivers/hid/hid-magicmouse.c
+> @@ -426,8 +426,10 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
+>  		__set_bit(EV_ABS, input->evbit);
+>  
+>  		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
+> -		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 4, 0);
+> -		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 4, 0);
+> +		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
+> +				     4, 0);
+> +		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
+> +				     4, 0);
+>  		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
+>  
+>  		/* Note: Touch Y position from the device is inverted relative
+> -- 
+> 1.7.7.3
 > 
->   Linux 3.4 (2012-05-20 15:29:13 -0700)
-> 
-> are available in the git repository at:
->   https://android.googlesource.com/kernel/common.git coupled-cpuidle
-> 
-> Colin Cross (4):
->       cpuidle: refactor out cpuidle_enter_state
->       cpuidle: fix error handling in __cpuidle_register_device
->       cpuidle: add support for states that affect multiple cpus
->       cpuidle: coupled: add parallel barrier function
-> 
->  drivers/cpuidle/Kconfig   |    3 +
->  drivers/cpuidle/Makefile  |    1 +
->  drivers/cpuidle/coupled.c |  715 +++++++++++++++++++++++++++++++++++++++++++++
->  drivers/cpuidle/cpuidle.c |   68 ++++-
->  drivers/cpuidle/cpuidle.h |   32 ++
->  include/linux/cpuidle.h   |   11 +
->  6 files changed, 813 insertions(+), 17 deletions(-)
->  create mode 100644 drivers/cpuidle/coupled.c
 
+    Acked-by: Henrik Rydberg <rydberg@euromail.se>
 
-Done.
-
-http://git.linaro.org/gitweb?p=people/dlezcano/cpuidle-next.git;a=shortlog;h=refs/heads/cpuidle-next
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Thanks,
+Henrik
