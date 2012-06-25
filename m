@@ -1,424 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab2FYNU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:20:59 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:46285 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962Ab2FYNU5 convert rfc822-to-8bit (ORCPT
+	id S1756599Ab2FYNVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:21:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24197 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755962Ab2FYNVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 09:20:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <201206131507.40470.arnd@arndb.de>
-References: <20120528203757.GA1713@p4.domain>
-	<201206131507.40470.arnd@arndb.de>
-Date: Mon, 25 Jun 2012 21:20:55 +0800
-Message-ID: <CAJRGBZyMq+yxyBT2taRqwJUEU0pSGAfr_w1=y-z4ZFsAZBp+9Q@mail.gmail.com>
-Subject: Re: [patch] a simple hardware detector for latency as well as
- throughput ver. 0.1.0
-From: Luming Yu <luming.yu@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: jcm@jonmasters.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 25 Jun 2012 09:21:48 -0400
+X-Authority-Analysis: v=2.0 cv=cIliQyiN c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=DWS2s1G2NFMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=ag1SF4gXAAAA:8 a=82irRftXAAAA:8 a=VnNF1IyMAAAA:8 a=QyXUC8HyAAAA:8 a=IJv9LcIfAAAA:8 a=b4KrJKo_AAAA:8 a=oJL9DFzx_I2NS8JTTJoA:9 a=PUjeQqilurYA:10 a=tXsnliwV7b4A:10 a=jbrJJM5MRmoA:10 a=1TSTQ8KKaH4A:10 a=WgwKcZQGGVUA:10 a=dGJ0OcVc7YAA:10 a=K6kUPx8HyhEA:10 a=jeBq3FmKZ4MA:10 a=sD2Ybbs_uaN92KxG:21 a=jGLI7Ta0u2rwWmgp:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340630505.27036.294.camel@gandalf.stny.rr.com>
+Subject: [PATCH v2] printk: Have printk() never buffer its data
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, "kay.sievers" <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, "Paul E. McKenney" <paulmck@us.ibm.com>
+Date: Mon, 25 Jun 2012 09:21:45 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 11:07 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> Hi Luming,
->
-> On Monday 28 May 2012, Luming Yu wrote:
->> The patch is the fist step to test some basic hardware functions like
->> TSC to help people understand if there is any hardware latency as well as
->> throughput problem exposed on bare metal or left behind by BIOS or
->> interfered by SM. Currently the patch tests hardware features
->> (tsc,freq, and rdrandom whiich is new instruction to get random
->> number) in stop_machine context. I will add more after the first step
->> get merged for those guys who want to directly play with new hardware
->> functions.
->>
->> I suppose I can add your signed-off-by as the code is derived from your
->> hwlat_dector.
->>
->> I'm also reuqesting if you are going to queue it up somewhere that can
->> be pulled into 3.5.
->>
->> Of cause, I will update the patch based upon any comments that you
->> think must be fixed for 3.5 merge.
->>
->> Signed-off-by Luming Yu <luming.yu@intel.com>
->>
->>
->>  Kconfig   |    7
->>  Makefile  |    2
->>  hw_test.c |  954
->> ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 963 insertions(+)
->
-> Please write the text in the email so that it can be used as a permanent
-> changelog entry for the kernel git history. Everything that you do not
-> want to have in that history can go under the "---" line that separates
-> the Signed-off-by from the diffstat.
 
-Done in patch update.
+Fengguang Wu had a config that caused the system to lockup. It reported:
 
->
->> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
->> index c779509..f66ad56 100644
->> --- a/drivers/misc/Kconfig
->> +++ b/drivers/misc/Kconfig
->> @@ -123,6 +123,13 @@ config IBM_ASM
->>         for information on the specific driver level and support statement
->>         for your IBM server.
->>
->> +config HW_TEST
->> +     tristate "Testing module to detect hardware lattency and throughput"
->> +     depends on DEBUG_FS
->> +     depends on RING_BUFFER
->> +     depends on X86
->> +     default m
->> +
->>  config PHANTOM
->>       tristate "Sensable PHANToM (PCI)"
->>       depends on PCI
->
-> Any reason why this depends on X86?
->
-> I think the name "HW_TEST" is too generic. Maybe "HW_LATENCY_TEST"?
+[    6.086395] type=2000 audit(1339501575.085:1): initialized
+[    6.116356] Kprobe smoke test started
+[    6.125915] Kprobe smoke test passed successfully
+[    6.127478] rcu-torture:--- Start of test: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0
++fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4 shutdown_secs=0 onoff_interval=0 onoff_holdoff=0
 
-Done in update
+and then froze. So naturally, the suspected bug was with rcu-torture.
+Fengguang did a git bisect and discovered that the crash came with a
+function trace update. He also noticed that if he reverted that update,
+the system got farther and showed:
 
->
->> +static struct ring_buffer *ring_buffer;
->> +static DEFINE_MUTEX(ring_buffer_mutex);
->> +static unsigned long buf_size = 262144UL;
->> +static struct task_struct *kthread;
->> +
->> +struct sample;
->> +struct data;
->> +
->> +struct sample_function {
->> +     const char *name;
->> +     struct list_head list;
->> +     int (*get_sample)(void *unused);
->> +};
->
-> why the "unused" argument?
-It's a placeholder for future use although it's not used right now in
-current tests.
+[    1.611901] Testing tracer function: PASSED
 
->
->> +static struct sample_function *current_sample_func = NULL;
->> +static LIST_HEAD(sample_function_list);
->> +static DEFINE_MUTEX(sample_function_mutex);
->> +static int sample_function_register(struct sample_function *sf);
->> +
->> +static struct dentry *debug_dir;
->> +static struct dentry *debug_available;
->> +static struct dentry *debug_current;
->> +static struct dentry *debug_max;
->> +static struct dentry *debug_count;
->> +static struct dentry *debug_sample_width;
->> +static struct dentry *debug_sample_window;
->> +static struct dentry *debug_sample;
->> +static struct dentry *debug_threshold;
->> +static struct dentry *debug_enable;
->
-> I think it would help here to put the local variables into a data structure
-> that gets allocated at module load time.
+His time was wasted by the fact that the function tracing self test
+first prints:
 
-I've reduced the code redundancy in update.
+  "Testing tracer function: "
 
->
->> +static int __buffer_add_sample(struct sample *sample);
->> +static struct sample *buffer_get_sample(struct sample *sample);
->> +
-> ...
->> +static ssize_t debug_enable_fwrite(struct file *filp,
->> +                             const char __user *user_buffer,
->> +                             size_t user_size, loff_t *offset);
->> +
->> +static int init_debugfs(void);
->> +static void free_debugfs(void);
->> +static int hw_test_init(void);
->> +static void hw_test_exit(void);
->
-> Please reorder all the functions so that you no longer need forward
-> declarations.
+then runs the test, and if it succeeds, it prints "PASSED", giving us
+the nice output you see above.
 
-Done
+But with the new printk() changes, text without a newline gets buffered
+and does not print out to the console at the location of the printk.
+This caused the "Testing tracer function: " not to print out and because
+the test caused the kernel to lock up, we are clueless to the fact that
+the problem was with the function tracer test and not the rcu_torture
+test. As it made sense that the rcu_torture test could lock up the
+system, many kernel developer hours were wasted chasing the wrong wild
+goose.
 
->
->> +static int get_random_bytes_sample(void *unused)
->> +{
->> +     u32 *buffer;
->> +     ktime_t start, t1, t2;
->> +     s64     diff, total = 0;
->> +     u64     sample = 0;
->> +     int     ret = 1;
->> +
->> +     buffer = kzalloc(1024, GFP_KERNEL);
->> +
->> +     start = ktime_get();
->> +     do {
->> +
->> +             t1 = ktime_get();
->> +             get_random_bytes(buffer, 1024);
->> +             t2 = ktime_get();
->> +             total = ktime_to_us(ktime_sub(t2, start));
->> +             diff = ktime_to_us(ktime_sub(t2, t1));
->
-> You need more comments to explain why you are doing things. For instance
-> here: why is it a useful thing to test how long get_random_bytes()
-> takes?
+If the "Testing tracer function: " had printed out in the first place,
+we would have caught the correct wild goose and saved precious kernel
+developer's time.
 
-It is for testing new instruction rdrand for new cpus like Intel Ivy Bridge.
+This brings back the old way of printk() that always prints to the console
+and does not buffer the data. As printk_emit() is used by other 'facilities'
+this only affects printk(), but keeps pretty much the new behavior.
 
->
->> +static int get_freq_sample(void *unused)
->> +{
->> +     ktime_t start, t1, t2;
->> +     s64     diff, total = 0;
->> +     u32     sample = 0;
->> +     int     ret = 1;
->> +     unsigned int cpu_tsc_freq;
->> +     static DEFINE_MUTEX(freq_pit_mutex);
->> +
->> +     start = ktime_get();
->> +     do {
->> +             t1 = ktime_get();
->> +             mutex_lock(&freq_pit_mutex);
->> +             cpu_tsc_freq = x86_platform.calibrate_tsc();
->> +             mutex_unlock(&freq_pit_mutex);
->
-> Or the calibrate_tsc() function.
->
-> It's also not clear what function the freq_pit_mutex has. I don't
-> see how the code could ever get run twice at the same time.
+The printk() state of the last print is kept around to know how to print
+the new lines. If the printk does not have a new line, the state is
+stored in msg_print_text() and if a prefix is to be printed next, it
+forces a newline. This keeps the new behavior when multiple partial prints are
+happening across CPUs. Each one will have its own line (like it does today).
 
-The purpose is to sequentially test all cpu's frequency.
+I hooked onto the 'facility' infrastructure and used '0x1ffc' (the max
+number) as a way to communicate printk() commands to the msg_print_text()
+which is performed at a later time (console_unlock()).
 
->
->> +static int kthread_fn(void *unused)
->> +{
->> +     int err = 0;
->> +     u64 interval = 0;
->> +     int (*get_sample)(void *unused);
->> +
->> +     mutex_lock(&sample_function_mutex);
->> +     if (current_sample_func)
->> +static int hw_test_init(void)
->> +{
->> +     int ret = -ENOMEM;
->> +
->> +     printk(KERN_INFO BANNER "version %s\n", VERSION);
->> +
->> +     sample_function_register(&tsc_sample);
->> +     sample_function_register(&tsc_freq_sample);
->> +     sample_function_register(&random_bytes_sample);
->> +
->> +     ret = init_stats();
->> +     if (0 != ret)
->> +             goto out;
->> +     ret = init_debugfs();
->> +     if (0 != ret)
->> +             goto err_stats;
->> +     if (enabled)
->> +             ret = start_kthread();
->> +     goto out;
->> +
->> +err_stats:
->> +     ring_buffer_free(ring_buffer);
->> +out:
->> +     return ret;
->> +}
->> +
->> +static void hw_test_exit(void)
->> +{
->> +     int err;
->> +
->> +     if (enabled) {
->> +             enabled = 0;
->> +             err = stop_kthread();
->> +             if (err)
->> +                     printk(KERN_ERR BANNER "cannot stop kthread\n");
->> +     }
->> +
->> +     free_debugfs();
->> +     ring_buffer_free(ring_buffer);
->> +}
->> +
->> +module_init(hw_test_init);
->> +module_exit(hw_test_exit);
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->> +             get_sample = current_sample_func->get_sample;
->> +     else
->> +             goto out;
->> +
->> +     while (!kthread_should_stop()) {
->> +             mutex_lock(&data.lock);
->> +
->> +             err = stop_machine(get_sample, unused, cpu_online_mask);
->> +             if (err) {
->> +                     mutex_unlock(&data.lock);
->> +                     goto err_out;
->> +             }
->> +
->> +             wake_up(&data.wq);
->
-> Using stop_machine() sounds like a very expensive thing to do here.
-> Is it necessary?
+I tested this out, and now the lockup shows:
 
-Yes, the only purpose of the tool is to measure various hardware
-operation's latency
-as well as bandwidth. We need the test done with least invasion from others.
+[    9.018231] Kprobe smoke test passed successfully
+[    9.023084] rcu-torture:--- Start of test: nreaders=4 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_hold
+off=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4 shutdown_secs=0 onoff_interval=0 onoff_holdoff=0
+[    9.066065] Testing tracer function:
 
->
->> +             interval = data.sample_window - data.sample_width;
->> +             do_div(interval, USEC_PER_MSEC);
->
-> Have you tried avoiding the need for do_div? You could use an "unsigned long"
-> to count the microseconds here, or you could do everything using miliseconds.
+To prevent the flush to cause the next printk to have a timestamp that
+would produce the following:
 
-It's out the testing loops. I didn't notice it hurts testing results
-so far. I will change it
-in 0.1-> 0.2
+[    6.834073] Testing tracer function: [    7.136194] PASSED
 
->
->> +static int start_kthread(void)
->> +{
->> +     kthread = kthread_run(kthread_fn, NULL, DRVNAME);
->> +     if (IS_ERR(kthread)) {
->> +             printk(KERN_ERR BANNER "could not start sampling thread\n");
->> +             enabled = 0;
->> +             return -ENOMEM;
->> +     }
->> +     return 0;
->> +}
->> +
->> +static int stop_kthread(void)
->> +{
->> +     int ret;
->> +     ret = kthread_stop(kthread);
->> +     return ret;
->> +}
->
-> These helper functions do not appear to help. Just remove them.
-There is a data.lock encapsulated in the helper.  I can't remove them
-otherwise the data protection will get lost.
+I made the KERN_CONT ("<c>") use the facility as well to pass info to
+not print the timestamp. This fixes the abve issue to print:
 
->
->> +static ssize_t simple_data_read(struct file *filp, char __user *ubuf,
->> +                             size_t cnt, loff_t *ppos, const u64 *entry)
->> +{
->> +     char buf[U64STR_SIZE];
->> +     u64 val = 0;
->> +     int len = 0;
->> +
->> +     memset(buf, 0, sizeof(buf));
->> +     if (!entry)
->> +             return -EFAULT;
->> +     mutex_lock(&data.lock);
->> +     val = *entry;
->> +     mutex_unlock(&data.lock);
->> +     len = snprintf(buf, sizeof(buf), "%llu\n", (unsigned long long)val);
->> +     return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
->> +}
->> +
->> +static ssize_t simple_data_write(struct file *filp, const char __user *ubuf,
->> +                             size_t cnt, loff_t *ppos, u64 *entry)
->> +{
->> +     char buf[U64STR_SIZE];
->> +     int csize = min(cnt, sizeof(buf));
->> +     u64 val = 0;
->> +     int err = 0;
->> +
->> +     memset(buf, '\0', sizeof(buf));
->> +     if (copy_from_user(buf, ubuf, csize))
->> +             return -EFAULT;
->> +     buf[U64STR_SIZE-1] = '\0';
->> +     err = strict_strtoull(buf, 10, &val);
->> +     if (err)
->> +             return -EINVAL;
->> +     mutex_lock(&data.lock);
->> +     *entry = val;
->> +     mutex_unlock(&data.lock);
->> +     return csize;
->> +}
->
-> These look like you can use DEFINE_SIMPLE_ATTRIBUTE() or debugfs_create_u64()
-> to simplify your code.
+[    1.291025] Testing tracer function: PASSED
 
-I've simplified syfs interface code in other ways. Basically use  define magic.
+When multiple SMP calls take place, this happens:
 
->
->> +static int debug_available_fopen(struct inode *inode, struct file *filp)
->> +{
->> +     return 0;
->> +}
->
-> Just use simple_open() or no open function in the file_operations, there is
-> no need to provide an empty function.
+[    1.310024] Testing tracer function: PASSED
+[    1.648504] Testing dynamic ftrace: PASSED
+[    2.099752] Testing dynamic ftrace ops #1: (1 0 1 1 0) (1 1 2 1 0)
+[    2.247911] Refined TSC clocksource calibration: 2659.999 MHz.
+[    2.254229] Switching to clocksource tsc
+(2 1 3 1 22) (2 2 4 1 4044) PASSED
+[    2.572013] Testing dynamic ftrace ops #2: (1 0 1 11 0) (1 1 2 4623 0) (2 1 3 10096 170) (2 2 4 16097 6162) PASSED
+[    3.106015] Testing tracer irqsoff: PASSED
 
-I've used define magic in patch update.
->
->> +static ssize_t debug_available_fwrite(struct file *filp, const char __user *ubuf,
->> +                                     size_t  cnt, loff_t *ppos)
->> +{
->> +     return (ssize_t) 0;
->> +}
->
-> Same for empty write functions.
+Link: http://lkml.kernel.org/r/1339649173.13377.191.camel@gandalf.stny.rr.com
 
-All empty functions are gone.
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "kay.sievers" <kay.sievers@vrfy.org>
+Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/printk.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 88 insertions(+), 11 deletions(-)
 
->
->> +static int init_debugfs(void)
->> +{
->> +     int ret = -ENOMEM;
->> +
->> +     debug_dir = debugfs_create_dir(DRVNAME, NULL);
->> +     if (!debug_dir)
->> +             goto err_debug_dir;
->> +
->> +     debug_available = debugfs_create_file("available", 0444,
->> +                                             debug_dir, NULL,
->> +                                             &available_fops);
->> +     if (!debug_available)
->> +             goto err_available;
->> +
->> +     debug_current = debugfs_create_file("current", 0444,
->> +                                             debug_dir, NULL,
->> +                                             &current_fops);
->> +     if (!debug_current)
->> +             goto err_current;
->> +
->> +     debug_sample = debugfs_create_file("sample", 0444,
->> +                                             debug_dir, NULL,
->> +                                             &sample_fops);
->> +     if (!debug_sample)
->> +             goto err_sample;
->> +
->> +     debug_count = debugfs_create_file("count", 0444,
->> +                                             debug_dir, NULL,
->> +                                             &count_fops);
->
-> Just use an array of file_operations and create the files using a loop.
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..15267cd 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -237,6 +237,24 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+ static char *log_buf = __log_buf;
+ static u32 log_buf_len = __LOG_BUF_LEN;
+ 
++/*
++ * The max number for facility is 0xffff >> 3, or 0x1fff.
++ * As log facilities count upward from 1, we have the kernel
++ * keep the top numbers or itself.
++ *
++ * 0x1ffc is the code for kernel processing in msg->level (facility)
++ * bit 0 - do not print prefix
++ * bit 1 - do not print newline
++ */
++#define LOG_KERNEL		0x1ffc
++#define LOG_NONL_NOPREFIX_MSK	3
++#define LOG_NONL_SET		2
++#define LOG_NOPREFIX_SET	1
++
++#define LOG_NONL_NOPREFIX	(LOG_KERNEL | LOG_NONL_NOPREFIX_MSK)
++#define LOG_NONL		(LOG_KERNEL | LOG_NONL_SET)
++#define LOG_NOPREFIX		(LOG_KERNEL | LOG_NOPREFIX_SET)
++
+ /* cpu currently holding logbuf_lock */
+ static volatile unsigned int logbuf_cpu = UINT_MAX;
+ 
+@@ -836,14 +854,45 @@ static size_t msg_print_text(const struct log *msg, bool syslog,
+ 		}
+ 
+ 		if (buf) {
+-			if (print_prefix(msg, syslog, NULL) +
+-			    text_len + 1>= size - len)
+-				break;
++			static bool last_newline = true;
++			bool newline = true;
++			bool prefix = true;
++			int facility = msg->level >> 3;
++
++			/*
++			 * The kernel sends some commands via the facility.
++			 * To do so, a high number mask is used (LOG_KERNEL)
++			 * and the low bits of the mask hold the command bits
++			 * that the kernel printk() will use to state how the
++			 * msg will be printed.
++			 */
++			if ((facility & LOG_KERNEL) == LOG_KERNEL) {
++				if (facility & LOG_NOPREFIX_SET)
++					prefix = false;
++				if (facility & LOG_NONL_SET)
++					newline = false;
++			}
++
++			if (prefix) {
++				/*
++				 * Force newline, for last line if this line
++				 * is printing out a prefix.
++				 */
++				if (!last_newline)
++					buf[len++] = '\n';
++
++				if (print_prefix(msg, syslog, NULL) +
++				    text_len + 1 >= size - len)
++					break;
++
++				len += print_prefix(msg, syslog, buf + len);
++			}
+ 
+-			len += print_prefix(msg, syslog, buf + len);
+ 			memcpy(buf + len, text, text_len);
+ 			len += text_len;
+-			buf[len++] = '\n';
++			if (newline)
++				buf[len++] = '\n';
++			last_newline = newline;
+ 		} else {
+ 			/* SYSLOG_ACTION_* buffer size only calculation */
+ 			len += print_prefix(msg, syslog, NULL);
+@@ -1267,6 +1316,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	static char cont_buf[LOG_LINE_MAX];
+ 	static size_t cont_len;
+ 	static int cont_level;
++	static bool cont_prefix;
+ 	static struct task_struct *cont_task;
+ 	static char textbuf[LOG_LINE_MAX];
+ 	char *text = textbuf;
+@@ -1275,8 +1325,12 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	int this_cpu;
+ 	bool newline = false;
+ 	bool prefix = false;
++	bool flush;
+ 	int printed_len = 0;
+ 
++	/* output from printk() always flush to console (no line buffering) */
++	flush = facility == 0;
++
+ 	boot_delay_msec();
+ 	printk_delay();
+ 
+@@ -1350,8 +1404,13 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		newline = true;
+ 	}
+ 
++	/* Force prefix for new task */
++	if (cont_task != current)
++		prefix = true;
++
+ 	if (!newline) {
+-		if (cont_len && (prefix || cont_task != current)) {
++
++		if (cont_len && prefix) {
+ 			/*
+ 			 * Flush earlier buffer, which is either from a
+ 			 * different thread, or when we got a new prefix.
+@@ -1363,13 +1422,29 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		if (!cont_len) {
+ 			cont_level = level;
+ 			cont_task = current;
++			cont_prefix = prefix;
+ 		}
+ 
+-		/* buffer or append to earlier buffer from the same thread */
+-		if (cont_len + text_len > sizeof(cont_buf))
+-			text_len = sizeof(cont_buf) - cont_len;
+-		memcpy(cont_buf + cont_len, text, text_len);
+-		cont_len += text_len;
++		/* For printk() callers, always output to the console */
++		if (flush) {
++			int code = LOG_NONL;
++
++			/*
++			 * If the buffered string was KERN_CONT,
++			 * do not print prefix.
++			 */
++			if (!prefix)
++				code = LOG_NONL_NOPREFIX;
++
++			log_store(code, cont_level, NULL, 0, text, text_len);
++		} else {
++
++			/* buffer or append to earlier buffer from the same thread */
++			if (cont_len + text_len > sizeof(cont_buf))
++				text_len = sizeof(cont_buf) - cont_len;
++			memcpy(cont_buf + cont_len, text, text_len);
++			cont_len += text_len;
++		}
+ 	} else {
+ 		if (cont_len && cont_task == current) {
+ 			if (prefix) {
+@@ -1395,6 +1470,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 			printed_len = cont_len;
+ 		} else {
+ 			/* ordinary single and terminated line */
++			if (!prefix && !facility && cont_task == current)
++				facility = LOG_NOPREFIX;
+ 			log_store(facility, level,
+ 				  dict, dictlen, text, text_len);
+ 			printed_len = text_len;
+-- 
+1.7.3.4
 
-Done in update patch.
 
->
->
->        Arnd
 
-Thanks for detailed review. An update patch is being prepared right
-now. Will send in few minutes.
-
-/l
