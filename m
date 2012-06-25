@@ -1,132 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab2FYGHu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 02:07:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53662 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab2FYGHs (ORCPT
+	id S1754581Ab2FYGJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 02:09:51 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:43452 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753172Ab2FYGJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 02:07:48 -0400
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: [PATCH 5/5 v2] memcg: cleanup all typo in memory cgroup
-Date: Mon, 25 Jun 2012 14:07:36 +0800
-Message-Id: <1340604456-8221-1-git-send-email-liwp.linux@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 25 Jun 2012 02:09:50 -0400
+Message-ID: <4FE8009A.4020503@st.com>
+Date: Mon, 25 Jun 2012 11:39:30 +0530
+From: Rajeev kumar <rajeev-dlh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+References: <20120625141140.c6d71065dab293005514ee1a@canb.auug.org.au>
+In-Reply-To: <20120625141140.c6d71065dab293005514ee1a@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+Hi Stephen,
 
-Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
----
- mm/memcontrol.c |   21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+On 6/25/2012 9:41 AM, Stephen Rothwell wrote:
+> Hi all,
+>
+> After merging the sound-asoc tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> ERROR: "clk_disable" [sound/soc/dwc/designware_i2s.ko] undefined!
+> ERROR: "clk_get" [sound/soc/dwc/designware_i2s.ko] undefined!
+> ERROR: "clk_enable" [sound/soc/dwc/designware_i2s.ko] undefined!
+> ERROR: "clk_put" [sound/soc/dwc/designware_i2s.ko] undefined!
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 4520b57..d474bf6 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -115,8 +115,8 @@ static const char * const mem_cgroup_events_names[] = {
- 
- /*
-  * Per memcg event counter is incremented at every pagein/pageout. With THP,
-- * it will be incremated by the number of pages. This counter is used for
-- * for trigger some periodic events. This is straightforward and better
-+ * it will be incremented by the number of pages. This counter is used to
-+ * trigger some periodic events. This is straightforward and better
-  * than using jiffies etc. to handle periodic memcg event.
-  */
- enum mem_cgroup_events_target {
-@@ -667,7 +667,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
-  * Both of vmstat[] and percpu_counter has threshold and do periodic
-  * synchronization to implement "quick" read. There are trade-off between
-  * reading cost and precision of value. Then, we may have a chance to implement
-- * a periodic synchronizion of counter in memcg's counter.
-+ * a periodic synchronization of counter in memcg's counter.
-  *
-  * But this _read() function is used for user interface now. The user accounts
-  * memory usage by memory cgroup and he _always_ requires exact value because
-@@ -677,7 +677,7 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
-  *
-  * If there are kernel internal actions which can make use of some not-exact
-  * value, and reading all cpu value can be performance bottleneck in some
-- * common workload, threashold and synchonization as vmstat[] should be
-+ * common workload, threshold and synchonization as vmstat[] should be
-  * implemented.
-  */
- static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
-@@ -1304,7 +1304,7 @@ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
-  *
-  * mem_cgroup_under_move() - checking a cgroup is mc.from or mc.to or
-  *			  under hierarchy of moving cgroups. This is for
-- *			  waiting at hith-memory prressure caused by "move".
-+ *			  waiting at hit-memory pressure caused by "move".
-  */
- 
- static bool mem_cgroup_stolen(struct mem_cgroup *memcg)
-@@ -1597,7 +1597,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
- /*
-  * Check all nodes whether it contains reclaimable pages or not.
-  * For quick scan, we make use of scan_nodes. This will allow us to skip
-- * unused nodes. But scan_nodes is lazily updated and may not cotain
-+ * unused nodes. But scan_nodes is lazily updated and may not contain
-  * enough new information. We need to do double check.
-  */
- static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
-@@ -2211,7 +2211,6 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 	if (mem_cgroup_wait_acct_move(mem_over_limit))
- 		return CHARGE_RETRY;
- 
--	/* If we don't need to call oom-killer at el, return immediately */
- 	if (!oom_check)
- 		return CHARGE_NOMEM;
- 	/* check OOM */
-@@ -2289,7 +2288,7 @@ again:
- 		 * In that case, "memcg" can point to root or p can be NULL with
- 		 * race with swapoff. Then, we have small risk of mis-accouning.
- 		 * But such kind of mis-account by race always happens because
--		 * we don't have cgroup_mutex(). It's overkill and we allo that
-+		 * we don't have cgroup_mutex(). It's overkill and we allow that
- 		 * small race, here.
- 		 * (*) swapoff at el will charge against mm-struct not against
- 		 * task-struct. So, mm->owner can be NULL.
-@@ -2303,7 +2302,7 @@ again:
- 		}
- 		if (nr_pages == 1 && consume_stock(memcg)) {
- 			/*
--			 * It seems dagerous to access memcg without css_get().
-+			 * It seems dangerous to access memcg without css_get().
- 			 * But considering how consume_stok works, it's not
- 			 * necessary. If consume_stock success, some charges
- 			 * from this memcg are cached on this cpu. So, we
-@@ -2394,7 +2393,7 @@ static void __mem_cgroup_cancel_charge(struct mem_cgroup *memcg,
- }
- 
- /*
-- * Cancel chrages in this cgroup....doesn't propagate to parent cgroup.
-+ * Cancel charges in this cgroup....doesn't propagate to parent cgroup.
-  * This is useful when moving usage to parent cgroup.
-  */
- static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
-@@ -3208,7 +3207,7 @@ int mem_cgroup_prepare_migration(struct page *page,
- 		 * C)
- 		 * The "old" page is under lock_page() until the end of
- 		 * migration, so, the old page itself will not be swapped-out.
--		 * If the new page is swapped out before end_migraton, our
-+		 * If the new page is swapped out before end_migration, our
- 		 * hook to usual swap-out path will catch the event.
- 		 */
- 		if (PageAnon(page))
--- 
-1.7.9.5
+I have checked this on ARM platform where these definitions are 
+available (clk_get/clk_put* variants are usually used by ARM platforms).
+
+To ensure compilation does not fail on x86_64 we can do either of three 
+things:
+
+1. Protecting clk_get/clk_put* calls under macro 'CONFIG_HAVE_CLK' in 
+the driver.
+
+2. Adding a check in Kconfig for HAVE_CLK.
+(But that will limit the compilation of this driver for only platforms 
+which are ARM based/or similar).
+
+3. We can pick the patches circulated by Viresh Kumar where we don't 
+have HAVE_CLK defined for x86_64, then the inline routines like 
+following should come into play:
+
+static inline unsigned long clk_get_rate(struct clk *clk)
+{
+         return 0;
+}
+
+See the patches for the same here:
+http://lkml.org/lkml/2012/4/24/154
+
+Please let me know your opinion.
+
+Best Regards
+Rajeev
+
+
+
+
 
