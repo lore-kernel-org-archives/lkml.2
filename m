@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346Ab2FYNSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:18:24 -0400
-Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:55936 "EHLO
-	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755851Ab2FYNSV (ORCPT
+	id S1756413Ab2FYNUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:20:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44775 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756023Ab2FYNT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 09:18:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FE86361.3050603@linaro.org>
-References: <4FDEE98D.7010802@linaro.org> <4FDF2D58.9010006@ti.com>
- <CAMQu2gz8aGC1DeOvWNNPaaMD9eJLuiJ5HGoKe98EDtV73_QRTQ@mail.gmail.com> <4FE86361.3050603@linaro.org>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Mon, 25 Jun 2012 18:47:59 +0530
-Message-ID: <CAMQu2gy2Mdegm0OBJeH+wRLF4BDz02qe0aXO_h=twxoPg2QdNw@mail.gmail.com>
-Subject: Re: [linux-pm] cpuidle future and improvements
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Mon, 25 Jun 2012 09:19:59 -0400
+Subject: Re: deferring __fput()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Lee <rob.lee@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>
+In-Reply-To: <20120625121436.GU14083@ZenIV.linux.org.uk>
+References: <1340369098.2464.20.camel@falcor>
+	 <20120623092049.GH14083@ZenIV.linux.org.uk>
+	 <20120623194505.GI14083@ZenIV.linux.org.uk>
+	 <20120623205755.GJ14083@ZenIV.linux.org.uk>
+	 <1340625805.2507.56.camel@laptop>
+	 <20120625121436.GU14083@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Jun 2012 15:19:56 +0200
+Message-ID: <1340630396.2507.66.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 6:40 PM, Daniel Lezcano
-<daniel.lezcano@linaro.org> wrote:
-> On 06/25/2012 02:58 PM, Shilimkar, Santosh wrote:
->> On Mon, Jun 18, 2012 at 7:00 PM, a0393909 <santosh.shilimkar@ti.com> wrote:
->>> Daniel,
->>>
->>>
->>> On 06/18/2012 02:10 PM, Daniel Lezcano wrote:
->>>>
->>>>
->>>> Dear all,
->>>>
->>>> A few weeks ago, Peter De Schrijver proposed a patch [1] to allow per
->>>> cpu latencies. We had a discussion about this patchset because it
->>>> reverse the modifications Deepthi did some months ago [2] and we may
->>>> want to provide a different implementation.
->>>>
->>>> The Linaro Connect [3] event bring us the opportunity to meet people
->>>> involved in the power management and the cpuidle area for different SoC.
->>>>
->>>> With the Tegra3 and big.LITTLE architecture, making per cpu latencies
->>>> for cpuidle is vital.
->>>>
->>>> Also, the SoC vendors would like to have the ability to tune their cpu
->>>> latencies through the device tree.
->>>>
->>>> We agreed in the following steps:
->>>>
->>>> 1. factor out / cleanup the cpuidle code as much as possible
->>>> 2. better sharing of code amongst SoC idle drivers by moving common bits
->>>> to core code
->>>> 3. make the cpuidle_state structure contain only data
->>>> 4. add a API to register latencies per cpu
->>>>
->>>> These four steps impacts all the architecture. I began the factor out
->>>> code / cleanup [4] and that has been accepted upstream and I proposed
->>>> some modifications [5] but I had a very few answers.
->>>>
->>> Another thing which we discussed is bringing the CPU cluster/package
->>> notion in the core idle code. Couple idle did bring that idea to some
->>> extent but in can be further extended and abstracted. Atm, most of
->>> the work is done in back-end cpuidle drivers which can be easily
->>> abstracted if the "cluster idle" notion is supported in the core layer.
->>>
->> Are you considering the "cluster idle" as one of the topic ?
->
-> Yes, absolutely. ATM, I am looking for refactoring the cpuidle code and
-> cleanup whenever is possible.
->
-Cool !!
+On Mon, 2012-06-25 at 13:14 +0100, Al Viro wrote:
 
-regards
-Santosh
+> You mean, doing that from RCU callbacks?
+
+Indirectly, yeah, but the RCU callback would schedule it or whatever.
+
+>   Still a bad idea, IMO; you will end up with a context
+> switch and unpleasantness with delayed user-visible effects of syscalls.  With aio we did have
+> a delayed execution of fput() anyway; all that has changed there is that we use generic
+> mechanism instead of home-grown analog thereof.
+
+Right, the delayed effect is the main concern. The example in the
+referred thread was unmount() returning -EBUSY after the last
+close()/munmap().
+
+> I'll need to reread that thread to comment on the specifics (had been too long ago; I don't
+> remember the details), but...  See Linus' objections to full-async fput() circa this April
+> or March.  There's a reason why this patchset uses task_work_add() whenever possible.
+
+Ok, I'll try and find that thread, so the advantage of task_work_add()
+is that you'll keep the work in the task that caused it wherever
+possible, right -- provided its actually sitll around.
+
+If we make fput() deferable in general we'll be sure to grow some 'fun'
+cases. So are we going to add a sync against unmount someplace to avoid
+these un-expected -EBUSY things?
+
