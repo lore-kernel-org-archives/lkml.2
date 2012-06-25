@@ -1,83 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab2FYUNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 16:13:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61813 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754201Ab2FYUNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 16:13:52 -0400
-Date: Mon, 25 Jun 2012 23:13:56 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH 3/4] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120625201356.GE11266@redhat.com>
-References: <20120622220040.9858.43665.stgit@bling.home>
- <20120622221559.9858.59593.stgit@bling.home>
- <4FE6EC20.5030502@redhat.com>
- <1340551118.14120.66.camel@bling.home>
- <20120624154938.GE2851@redhat.com>
- <1340575167.5076.165.camel@bling.home>
- <20120624230251.GE17046@redhat.com>
- <1340641034.1207.28.camel@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340641034.1207.28.camel@bling.home>
+	id S1756128Ab2FYUVu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 16:21:50 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37087 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab2FYUVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 16:21:49 -0400
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Usb Gadget Devicetree override
+Date: Mon, 25 Jun 2012 17:21:42 -0300
+Message-Id: <1340655704-30398-1-git-send-email-aletes.xgr@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 10:17:14AM -0600, Alex Williamson wrote:
-> On Mon, 2012-06-25 at 02:02 +0300, Michael S. Tsirkin wrote:
-> > On Sun, Jun 24, 2012 at 03:59:27PM -0600, Alex Williamson wrote:
-> > > On Sun, 2012-06-24 at 18:49 +0300, Michael S. Tsirkin wrote:
-> > > > On Sun, Jun 24, 2012 at 09:18:38AM -0600, Alex Williamson wrote:
-> > > > > > > @@ -242,7 +299,8 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
-> > > > > > >  
-> > > > > > >  	ret = 0;
-> > > > > > >  	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
-> > > > > > > -		if (irqfd->eventfd != tmp->eventfd)
-> > > > > > > +		if (irqfd->eventfd != tmp->eventfd &&
-> > > > > > > +		    irqfd->eventfd != tmp->eoi_eventfd)
-> > > > > > >  			continue;
-> > > > > > 
-> > > > > > So we allow duplicate irqfd with differing eoifd (or edge-triggered and
-> > > > > > level-triggered irqfd on the same context).
-> > > > > > 
-> > > > > > (why the check in the first place? just so we can have a reliable
-> > > > > > deassign or is it avoiding a deeper problem?)
-> > > > > 
-> > > > > I really wasn't sure to what extent we wanted to prevent duplicates.  My
-> > > > > guess was that we don't want to have an irqfd trigger more than one
-> > > > > thing.  That seems to be what the current code does.  I don't see any
-> > > > > problems with multiple irqfds triggering the same eventfd though.  I
-> > > > > only added a test that a new irqfd can't be triggered by an existing
-> > > > > eoi_eventfd as that could make a nasty loop.
-> > > > 
-> > > > How would that make a loop? You can have the same thing
-> > > > with e.g. ioeventfd - why isn't it a problem there?
-> > > 
-> > > eoi_eventfd1 -> irqfd2 [eoi] eoi_eventfd2 -> irqfd1 [eoi] eoi_eventfd1 ->...
-> > 
-> > Sorry I don't understand.
-> > What does this [eoi] mean? How is eoi eventfd different from ioeventfd?
-> 
-> [eoi] is simply the guest doing an EOI write.
+Hi,
 
-So you trigger irq, later guest does an eoi etc. Why is this a loop?
+This series is a proposal to enable the devicetree udc node to override the gadget driver information, instead of using module arguments.
 
->  There's some interaction
-> required from the guest which could rate limit the loop.  I'm not really
-> following your comparison to an ioeventfd.  If the question is can you
-> create loops with an ioeventfd, I imagine the answer is probably so.
+Please, let me know if this seems ok. If so, I can repost this as a full patch set including all udc and gadget drivers.
 
-I think the answer is no.
+Thanks.
 
->  I
-> certainly don't plan on adding code to test every fd in use by a vm and
-> validate it can't do crazy things, so if even this minor sanity test
-> could prevent useful things, I'll happily remove it.  Thanks,
-> 
-> Alex
