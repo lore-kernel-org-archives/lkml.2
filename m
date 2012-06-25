@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab2FYGEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 02:04:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58070 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab2FYGEF (ORCPT
+	id S1754486Ab2FYGEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 02:04:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49763 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab2FYGEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 02:04:05 -0400
-Date: Mon, 25 Jun 2012 07:03:57 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: deferring __fput()
-Message-ID: <20120625060357.GT14083@ZenIV.linux.org.uk>
-References: <1340369098.2464.20.camel@falcor>
- <20120623092049.GH14083@ZenIV.linux.org.uk>
- <20120623194505.GI14083@ZenIV.linux.org.uk>
- <20120623203800.GA10306@redhat.com>
- <20120623210141.GK14083@ZenIV.linux.org.uk>
- <20120624041652.GN14083@ZenIV.linux.org.uk>
- <20120624153310.GB24596@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120624153310.GB24596@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Jun 2012 02:04:41 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH 1/5 v2] memcg: replace unsigned long by u64 to avoid overflow
+Date: Mon, 25 Jun 2012 14:04:20 +0800
+Message-Id: <1340604266-7937-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 05:33:10PM +0200, Oleg Nesterov wrote:
-> No, we can't do this?
-> 
-> OK, perhaps we can check something else instead of PF_EXITING.
-> But somehow we should ensuree that if task_work_add(twork) succeeds,
-> then twork->func() will be called. IOW, if task_work_add() races with
-> the exiting task, it should not succeed after exit_task_work().
+Changlog:
 
-Hrm...  I still think that callers can bloody well check it themselves,
-but anyway - we can add a new PF_... bit and have it set on kernel threads
-(all along) and during exit_task_work(); the real question is in locking
-and barriers needed there.  Suggestions?
+V2 -> V1:
+* fix zone_page_state()::/include/linux/vmstat.h returns 'unsigned long'
+
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+
+Since the return value variable in mem_cgroup_zone_nr_lru_pages and
+mem_cgroup_node_nr_lru_pages functions are u64, so replace the return
+value of funtions by u64 to avoid overflow.
+
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+---
+ include/linux/vmstat.h |    2 +-
+ mm/memcontrol.c        |    5 ++---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 65efb92..6a14291 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -106,7 +106,7 @@ static inline unsigned long global_page_state(enum zone_stat_item item)
+ 	return x;
+ }
+ 
+-static inline unsigned long zone_page_state(struct zone *zone,
++static inline u64 zone_page_state(struct zone *zone,
+ 					enum zone_stat_item item)
+ {
+ 	long x = atomic_long_read(&zone->vm_stat[item]);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a2677e0..724bd02 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -776,8 +776,7 @@ mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
+ 	return ret;
+ }
+ 
+-static unsigned long
+-mem_cgroup_node_nr_lru_pages(struct mem_cgroup *memcg,
++static u64 mem_cgroup_node_nr_lru_pages(struct mem_cgroup *memcg,
+ 			int nid, unsigned int lru_mask)
+ {
+ 	u64 total = 0;
+@@ -790,7 +789,7 @@ mem_cgroup_node_nr_lru_pages(struct mem_cgroup *memcg,
+ 	return total;
+ }
+ 
+-static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
++static u64 mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
+ 			unsigned int lru_mask)
+ {
+ 	int nid;
+-- 
+1.7.9.5
+
