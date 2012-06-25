@@ -1,127 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab2FYPRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 11:17:20 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64478 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab2FYPRS (ORCPT
+	id S1754247Ab2FYPSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 11:18:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57734 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab2FYPSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 11:17:18 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Tobias Klauser <tklauser@distanz.ch>, David Jander <david@protonic.nl>,
-        Laxman Dewangan <ldewangan@nvidia.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] input: gpio_keys: Cleanup devicetree parser
-Date: Mon, 25 Jun 2012 12:17:01 -0300
-Message-Id: <1340637423-12072-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 25 Jun 2012 11:18:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Cong Wang <amwang@redhat.com>
+Subject: Re: [PATCH 00/12] kmap_atomic cleanup for 3.6
+Date: Mon, 25 Jun 2012 15:18:08 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+References: <1340445863-16111-1-git-send-email-amwang@redhat.com> <201206232111.25411.arnd@arndb.de> <1340598382.19173.3.camel@cr0>
+In-Reply-To: <1340598382.19173.3.camel@cr0>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206251518.08791.arnd@arndb.de>
+X-Provags-ID: V02:K0:D3LxzVVW1B/9SmY7xdDBv7U0pTcRXAcNl8E4vSXyVfp
+ ll4MIIen2gLPUDXoz4NellF7W0xs9FRXnF3MQ5KMl23YOOvPk8
+ SBNuQUZdV+5kj6+ntaqDZsPZd/EWeI4R+uNJDn4yoSk44sJ5hS
+ T4iH5h9BzSQyzrn/nOhXIuHCD76qz4Iu5kWwsgKAs5fFFh1R4e
+ rQ5ZOeWbjZM0+Nz6jqC8kUvbi4hvaQhQb+5YRW+ydn3MeDrCms
+ 9vq7IT7Fy2jXuwOsIY8MseviVSyG9uFp/++1E6humijZ81D5rq
+ 4glEqg7bsr+4xZn/Y6ugYVoE1ZKCJcEaIjxQ+ct+PnAvWDZ4e6
+ +wOrhZmCxnOEQFhX4aog=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix sizeof in memset.
-Cleanup dt properties extraction.
-Use for_each macro.
-Use of_match_ptr macro.
+On Monday 25 June 2012, Cong Wang wrote:
+> On Sat, 2012-06-23 at 21:11 +0000, Arnd Bergmann wrote:
+> > On Saturday 23 June 2012, Cong Wang wrote:
+> > > After few releases, it seems there are no more callers
+> > > using the deprecated form of kmap_atomic(), the one
+> > > with two parameters. So we can remove it now and remove
+> > > the KM_* definition except KM_TYPE_NR together.
+> > > 
+> > > All the patches are available at:
+> > > 
+> > >         git://github.com/congwang/linux.git #kmap_atomic
+> > > 
+> > 
+> > What is the significance of having an architecture-specific
+> > definition for KM_TYPE_NR now? Should that be replaced
+> > with a fixed value in include/linux/highmem.h so we can
+> > remove the asm/kmap_types.h files entirely?
+> > 
+> 
+> Different arch has different values for KM_TYPE_NR, I am not sure if
+> unifying them to a fixed value could fit all? 
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
----
- drivers/input/keyboard/gpio_keys.c |   30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
+Well, that's something you could find out in the review.
 
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index 62bfce4..1ef15ae 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -548,22 +548,16 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 	struct device_node *node, *pp;
- 	int i;
- 	struct gpio_keys_button *buttons;
--	u32 reg;
- 
- 	node = dev->of_node;
- 	if (node == NULL)
- 		return -ENODEV;
- 
--	memset(pdata, 0, sizeof *pdata);
-+	memset(pdata, 0, sizeof(*pdata));
- 
- 	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
- 
--	/* First count the subnodes */
--	pdata->nbuttons = 0;
--	pp = NULL;
--	while ((pp = of_get_next_child(node, pp)))
--		pdata->nbuttons++;
--
-+	pdata->nbuttons = of_get_child_count(node);
- 	if (pdata->nbuttons == 0)
- 		return -ENODEV;
- 
-@@ -571,9 +565,8 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 	if (!buttons)
- 		return -ENOMEM;
- 
--	pp = NULL;
- 	i = 0;
--	while ((pp = of_get_next_child(node, pp))) {
-+	for_each_child_of_node(node, pp) {
- 		enum of_gpio_flags flags;
- 
- 		if (!of_find_property(pp, "gpios", NULL)) {
-@@ -584,24 +577,21 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 		buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
- 		buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
- 
--		if (of_property_read_u32(pp, "linux,code", &reg)) {
-+		if (of_property_read_u32(pp, "linux,code", &buttons[i].code)) {
- 			dev_err(dev, "Button without keycode: 0x%x\n", buttons[i].gpio);
- 			goto out_fail;
- 		}
--		buttons[i].code = reg;
- 
- 		buttons[i].desc = of_get_property(pp, "label", NULL);
- 
--		if (of_property_read_u32(pp, "linux,input-type", &reg) == 0)
--			buttons[i].type = reg;
--		else
-+		if (of_property_read_u32(pp, "linux,input-type",
-+			&buttons[i].type))
- 			buttons[i].type = EV_KEY;
- 
- 		buttons[i].wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
- 
--		if (of_property_read_u32(pp, "debounce-interval", &reg) == 0)
--			buttons[i].debounce_interval = reg;
--		else
-+		if (of_property_read_u32(pp, "debounce-interval",
-+			&buttons[i].debounce_interval))
- 			buttons[i].debounce_interval = 5;
- 
- 		i++;
-@@ -630,8 +620,6 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 	return -ENODEV;
- }
- 
--#define gpio_keys_of_match NULL
--
- #endif
- 
- static void gpio_remove_key(struct gpio_button_data *bdata)
-@@ -823,7 +811,7 @@ static struct platform_driver gpio_keys_device_driver = {
- 		.name	= "gpio-keys",
- 		.owner	= THIS_MODULE,
- 		.pm	= &gpio_keys_pm_ops,
--		.of_match_table = gpio_keys_of_match,
-+		.of_match_table = of_match_ptr(gpio_keys_of_match),
- 	}
- };
- 
--- 
-1.7.10
+> For safety, I kept their original values.
 
+My fear is that it will make it harder to clean that code up for
+real, when there is no longer an indication about where the number
+comes from.
+
+The only architecture that actually seems to have a restriction
+here is tile, which defines it to 8.
+
+I would suggest putting that value into include/linux/highmem.h,
+it seems more than sufficient.  I would structure the series to
+have your patches 1 and 9 through 12 first, then remove
+all explicit #include <asm/kmap_types.h> statements (you have
+proven that they are not required already) and finally add the
+define in linux/highmem.h and remove the arch specific headers.
+
+	Arnd
