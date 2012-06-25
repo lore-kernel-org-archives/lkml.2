@@ -1,82 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab2FYDiT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 23:38:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47482 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab2FYDiP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 23:38:15 -0400
-Date: Mon, 25 Jun 2012 13:38:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Antonio Quartulli <ordex@autistici.org>,
-        Sven Eckelmann <sven@narfation.org>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20120625133812.aad5804dca97e504650b7dd1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__25_Jun_2012_13_38_12_+1000_018ECF58LML2wX/1"
+	id S1753043Ab2FYD5E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 23:57:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44974 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab2FYD5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jun 2012 23:57:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="157753813"
+From: Sundar Iyer <sundar.iyer@intel.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, arjan@linux.intel.com, lethal@linux-sh.org,
+        sundar.iyer@intel.com, german.monroy@intel.com
+Subject: [PATCH v3 1/1] x86/irq: handle chained interrupts during IRQ migration
+Date: Mon, 25 Jun 2012 09:25:07 +0530
+Message-Id: <1340596507-12702-1-git-send-email-sundar.iyer@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Jun_2012_13_38_12_+1000_018ECF58LML2wX/1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Chained interrupt handlers dont have an irqaction and hence are not
+handled during migrating interrupts when some cores go offline.
 
-Hi all,
+Handle this by introducing a irq_is_chained() check which is based
+on the the CHAINED flag being set for such interrupts. fixup_irq()
+can then handle such interrupts and not skip them over.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/batman-adv/translation-table.c between commit 8b8e4bc0391f
-("batman-adv: fix race condition in TT full-table replacement") from the
-net tree and commit 7d211efc5087 ("batman-adv: Prefix originator
-non-static functions with batadv_") from the net-next tree.
+Signed-off-by: Sundar Iyer <sundar.iyer@intel.com>
+Reviewed-by: Yang, Fei <fei.yang@intel.com>
+Tested-by: Ng, Cheon-woei <cheon-woei.ng@intel.com>
+---
+v1: use accessors instead of new variables to identify chained irqs
+v2: use a mask of NOREQUEST, NOPROBE, and NOTHREAD accessor flags as per Paul M
+v3: use a new accessor called IRQ_CHAINED instead of the mask in v2
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ arch/x86/kernel/irq.c   |    6 ++++--
+ include/linux/irq.h     |    1 +
+ include/linux/irqdesc.h |    7 +++++++
+ kernel/irq/chip.c       |    1 +
+ kernel/irq/settings.h   |    7 +++++++
+ 5 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --cc net/batman-adv/translation-table.c
-index 2ab83d7,5180d50..0000000
---- a/net/batman-adv/translation-table.c
-+++ b/net/batman-adv/translation-table.c
-@@@ -141,7 -139,8 +139,7 @@@ static void tt_orig_list_entry_free_rcu
-  	struct tt_orig_list_entry *orig_entry;
- =20
-  	orig_entry =3D container_of(rcu, struct tt_orig_list_entry, rcu);
-- 	orig_node_free_ref(orig_entry->orig_node);
- -	atomic_dec(&orig_entry->orig_node->tt_size);
-+ 	batadv_orig_node_free_ref(orig_entry->orig_node);
-  	kfree(orig_entry);
-  }
- =20
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 6c0802e..ba7238b 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -249,8 +249,10 @@ void fixup_irqs(void)
+ 
+ 		data = irq_desc_get_irq_data(desc);
+ 		affinity = data->affinity;
+-		if (!irq_has_action(irq) || irqd_is_per_cpu(data) ||
+-		    cpumask_subset(affinity, cpu_online_mask)) {
++		/* include IRQs who have no action, but are chained */
++		if ((!irq_has_action(irq) && !irq_is_chained(irq)) ||
++			irqd_is_per_cpu(data) ||
++			cpumask_subset(affinity, cpu_online_mask)) {
+ 			raw_spin_unlock(&desc->lock);
+ 			continue;
+ 		}
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index baa397e..7ec7826 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -87,6 +87,7 @@ enum {
+ 	IRQ_MOVE_PCNTXT		= (1 << 14),
+ 	IRQ_NESTED_THREAD	= (1 << 15),
+ 	IRQ_NOTHREAD		= (1 << 16),
++	IRQ_CHAINED		= (1 << 17),
+ };
+ 
+ #define IRQF_MODIFY_MASK	\
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 2d921b3..b170c69 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -120,6 +120,13 @@ static inline int irq_has_action(unsigned int irq)
+ 	return desc->action != NULL;
+ }
+ 
++/* Test to see if the IRQ is chained */
++static inline int irq_is_chained(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	return desc->status_use_accessors & IRQ_CHAINED;
++}
++
+ /* caller has locked the irq_desc and both params are valid */
+ static inline void __irq_set_handler_locked(unsigned int irq,
+ 					    irq_flow_handler_t handler)
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 990965e..1c68de0 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -598,6 +598,7 @@ __irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+ 		irq_settings_set_noprobe(desc);
+ 		irq_settings_set_norequest(desc);
+ 		irq_settings_set_nothread(desc);
++		irq_settings_set_chained(desc);
+ 		irq_startup(desc, true);
+ 	}
+ out:
+diff --git a/kernel/irq/settings.h b/kernel/irq/settings.h
+index f166783..1814115 100644
+--- a/kernel/irq/settings.h
++++ b/kernel/irq/settings.h
+@@ -14,6 +14,7 @@ enum {
+ 	_IRQ_NO_BALANCING	= IRQ_NO_BALANCING,
+ 	_IRQ_NESTED_THREAD	= IRQ_NESTED_THREAD,
+ 	_IRQF_MODIFY_MASK	= IRQF_MODIFY_MASK,
++	_IRQ_CHAINED		= IRQ_CHAINED,
+ };
+ 
+ #define IRQ_PER_CPU		GOT_YOU_MORON
+@@ -26,6 +27,7 @@ enum {
+ #define IRQ_NESTED_THREAD	GOT_YOU_MORON
+ #undef IRQF_MODIFY_MASK
+ #define IRQF_MODIFY_MASK	GOT_YOU_MORON
++#define IRQ_CHAINED		GOT_YOU_MORON
+ 
+ static inline void
+ irq_settings_clr_and_set(struct irq_desc *desc, u32 clr, u32 set)
+@@ -140,3 +142,8 @@ static inline bool irq_settings_is_nested_thread(struct irq_desc *desc)
+ {
+ 	return desc->status_use_accessors & _IRQ_NESTED_THREAD;
+ }
++
++static inline bool irq_settings_set_chained(struct irq_desc *desc)
++{
++	return desc->status_use_accessors |= _IRQ_CHAINED;
++}
+-- 
+1.7.0.4
 
---Signature=_Mon__25_Jun_2012_13_38_12_+1000_018ECF58LML2wX/1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP590kAAoJEECxmPOUX5FEnnYP/RfND0karGD/tYe8VLA2WkYH
-9VN7PPjqQKYLJk3hT0TSGfcZwaqDYU72LXsyNIn7t5pdEjz582jLnXaw63uf8lt1
-UhP1FKEjXWsMcgV3eKgdQ/LmWMlFHdHP7yYIill1kQeppsEtoxyqnKtxcUixEiPa
-W9zQhRJZ69e0Fi+GUes6EX8n8Bi2rBIcY2YchXDArd2wWM6VrP3qy4qEqk9uWYdb
-paOzaRnLmDW2tax4ObNnEvKrkPGr1lG851Fv8Z3llaDyZpEWMa/0amJB8OQuGauN
-1AVzEw6f9S7LAvRPP8MOT/Y+qeBTjcq/0ttIZA+hdWtvtF6oEkae0fDqK34vk2dv
-8jGco7yUXrqrnJaLUMrH6LdodSKU5rpcsFfxSB2eAfkPNd5s4CN8Ti/rLFRO5yvn
-//kiBxW1su2scahA9/WiHxXR/aNMpOidf7e5c40qTaoY66E6P5RFH+rKOYx+WZXf
-dM80uvE/kimSW9HYMrhCHkimmXC3jixRyr5tjqxoJ+Ry6crw1PQvLCH73p1d9G1E
-bR7CvaqSlqOt9MLcIfkRxpaCqElpn4oFwrl26o7KkST270ebWPv1+q9Qd8NHky4p
-T22TzWj4yOBtkPZ61kHpUwVmlXDIMqtjW6fuB1kt+ILzaH753GZr5DG9S2UwDuo+
-a1s0M/qCiYtNKMJqLjQS
-=CDXq
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Jun_2012_13_38_12_+1000_018ECF58LML2wX/1--
