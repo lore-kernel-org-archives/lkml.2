@@ -1,166 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab2FYX07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 19:26:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52723 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757722Ab2FYX0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 19:26:13 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Rafael Aquini <aquini@redhat.com>
-Subject: [PATCH 2/4] virtio_balloon: handle concurrent accesses to virtio_balloon struct elements
-Date: Mon, 25 Jun 2012 20:25:57 -0300
-Message-Id: <dc3fde17bdf093113c8e85a26be1d8bb243cc785.1340665087.git.aquini@redhat.com>
-In-Reply-To: <cover.1340665087.git.aquini@redhat.com>
-References: <cover.1340665087.git.aquini@redhat.com>
-In-Reply-To: <cover.1340665087.git.aquini@redhat.com>
-References: <cover.1340665087.git.aquini@redhat.com>
+	id S1757790Ab2FYX1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 19:27:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48231 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756821Ab2FYX1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 19:27:46 -0400
+Date: Mon, 25 Jun 2012 16:27:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 00/11] kmem controller for memcg: stripped down version
+Message-Id: <20120625162745.eabe4f03.akpm@linux-foundation.org>
+In-Reply-To: <1340633728-12785-1-git-send-email-glommer@parallels.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces access sychronization to critical elements of struct
-virtio_balloon, in order to allow the thread concurrency compaction/migration
-bits might ended up imposing to the balloon driver on several situations.
+On Mon, 25 Jun 2012 18:15:17 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
- drivers/virtio/virtio_balloon.c |   45 +++++++++++++++++++++++++++++----------
- 1 file changed, 34 insertions(+), 11 deletions(-)
+> What I am proposing with this series is a stripped down version of the
+> kmem controller for memcg that would allow us to merge significant parts
+> of the infrastructure, while leaving out, for now, the polemic bits about
+> the slab while it is being reworked by Cristoph.
+> 
+> Me reasoning for that is that after the last change to introduce a gfp
+> flag to mark kernel allocations, it became clear to me that tracking other
+> resources like the stack would then follow extremely naturaly. I figured
+> that at some point we'd have to solve the issue pointed by David, and avoid
+> testing the Slab flag in the page allocator, since it would soon be made
+> more generic. I do that by having the callers to explicit mark it.
+> 
+> So to demonstrate how it would work, I am introducing a stack tracker here,
+> that is already a functionality per-se: it successfully stops fork bombs to
+> happen. (Sorry for doing all your work, Frederic =p ). Note that after all
+> memcg infrastructure is deployed, it becomes very easy to track anything.
+> The last patch of this series is extremely simple.
+> 
+> The infrastructure is exactly the same we had in memcg, but stripped down
+> of the slab parts. And because what we have after those patches is a feature
+> per-se, I think it could be considered for merging.
 
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index bfbc15c..d47c5c2 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -51,6 +51,10 @@ struct virtio_balloon
- 
- 	/* Number of balloon pages we've told the Host we're not using. */
- 	unsigned int num_pages;
-+
-+	/* Protect 'pages', 'pfns' & 'num_pnfs' against concurrent updates */
-+	spinlock_t pfn_list_lock;
-+
- 	/*
- 	 * The pages we've told the Host we're not using.
- 	 * Each page on this list adds VIRTIO_BALLOON_PAGES_PER_PAGE
-@@ -97,21 +101,23 @@ static void balloon_ack(struct virtqueue *vq)
- 		complete(&vb->acked);
- }
- 
--static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
--{
--	struct scatterlist sg;
--
--	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
-+/* Protection for concurrent accesses to balloon virtqueues and vb->acked */
-+DEFINE_MUTEX(vb_queue_completion);
- 
-+static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq,
-+		      struct scatterlist *sg)
-+{
-+	mutex_lock(&vb_queue_completion);
- 	init_completion(&vb->acked);
- 
- 	/* We should always be able to add one buffer to an empty queue. */
--	if (virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL) < 0)
-+	if (virtqueue_add_buf(vq, sg, 1, 0, vb, GFP_KERNEL) < 0)
- 		BUG();
- 	virtqueue_kick(vq);
- 
- 	/* When host has read buffer, this completes via balloon_ack */
- 	wait_for_completion(&vb->acked);
-+	mutex_unlock(&vb_queue_completion);
- }
- 
- static void set_page_pfns(u32 pfns[], struct page *page)
-@@ -126,9 +132,12 @@ static void set_page_pfns(u32 pfns[], struct page *page)
- 
- static void fill_balloon(struct virtio_balloon *vb, size_t num)
- {
-+	struct scatterlist sg;
-+	int alloc_failed = 0;
- 	/* We can only do one array worth at a time. */
- 	num = min(num, ARRAY_SIZE(vb->pfns));
- 
-+	spin_lock(&vb->pfn_list_lock);
- 	for (vb->num_pfns = 0; vb->num_pfns < num;
- 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
- 		struct page *page = alloc_page(GFP_HIGHUSER | __GFP_NORETRY |
-@@ -138,8 +147,7 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
- 				dev_printk(KERN_INFO, &vb->vdev->dev,
- 					   "Out of puff! Can't get %zu pages\n",
- 					   num);
--			/* Sleep for at least 1/5 of a second before retry. */
--			msleep(200);
-+			alloc_failed = 1;
- 			break;
- 		}
- 		set_page_pfns(vb->pfns + vb->num_pfns, page);
-@@ -149,10 +157,19 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
- 	}
- 
- 	/* Didn't get any?  Oh well. */
--	if (vb->num_pfns == 0)
-+	if (vb->num_pfns == 0) {
-+		spin_unlock(&vb->pfn_list_lock);
- 		return;
-+	}
-+
-+	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
-+	spin_unlock(&vb->pfn_list_lock);
- 
--	tell_host(vb, vb->inflate_vq);
-+	/* alloc_page failed, sleep for at least 1/5 of a sec before retry. */
-+	if (alloc_failed)
-+		msleep(200);
-+
-+	tell_host(vb, vb->inflate_vq, &sg);
- }
- 
- static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
-@@ -169,10 +186,12 @@ static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
- static void leak_balloon(struct virtio_balloon *vb, size_t num)
- {
- 	struct page *page;
-+	struct scatterlist sg;
- 
- 	/* We can only do one array worth at a time. */
- 	num = min(num, ARRAY_SIZE(vb->pfns));
- 
-+	spin_lock(&vb->pfn_list_lock);
- 	for (vb->num_pfns = 0; vb->num_pfns < num;
- 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
- 		page = list_first_entry(&vb->pages, struct page, lru);
-@@ -180,13 +199,15 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
- 		set_page_pfns(vb->pfns + vb->num_pfns, page);
- 		vb->num_pages -= VIRTIO_BALLOON_PAGES_PER_PAGE;
- 	}
-+	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
-+	spin_unlock(&vb->pfn_list_lock);
- 
- 	/*
- 	 * Note that if
- 	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
- 	 * is true, we *have* to do it in this order
- 	 */
--	tell_host(vb, vb->deflate_vq);
-+	tell_host(vb, vb->deflate_vq, &sg);
- 	release_pages_by_pfn(vb->pfns, vb->num_pfns);
- }
- 
-@@ -356,6 +377,8 @@ static int virtballoon_probe(struct virtio_device *vdev)
- 	}
- 
- 	INIT_LIST_HEAD(&vb->pages);
-+	spin_lock_init(&vb->pfn_list_lock);
-+
- 	vb->num_pages = 0;
- 	init_waitqueue_head(&vb->config_change);
- 	vb->vdev = vdev;
--- 
-1.7.10.2
+hm.  None of this new code makes the kernel smaller, faster, easier to
+understand or more fun to read!
+
+Presumably we're getting some benefit for all the downside.  When the
+time is appropriate, please do put some time into explaining that
+benefit, so that others can agree that it is a worthwhile tradeoff.
 
