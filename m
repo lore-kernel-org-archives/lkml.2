@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab2FYLfF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 07:35:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64620 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863Ab2FYLfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 07:35:04 -0400
-Date: Mon, 25 Jun 2012 12:34:57 +0100
-From: "Richard W.M. Jones" <rjones@redhat.com>
-To: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Cc: jmoyer@redhat.com, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
-Message-ID: <20120625113457.GA1289@amd.home.annexia.org>
-References: <4FDEC3C2.4060909@secunet.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FDEC3C2.4060909@secunet.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755832Ab2FYLjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 07:39:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51540 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863Ab2FYLjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 07:39:42 -0400
+Subject: Re: Question about the export of symbol lockdep_init_map
+From: Peter Zijlstra <peterz@infradead.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4FE7512D.2010608@lwfinger.net>
+References: <4FE7512D.2010608@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Jun 2012 13:39:28 +0200
+Message-ID: <1340624368.2507.53.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 18, 2012 at 07:59:30AM +0200, Torsten Hilbrich wrote:
-> Hello,
+On Sun, 2012-06-24 at 12:41 -0500, Larry Finger wrote:
+> Ingo,
 > 
-> a software that tries to mount each existing partition as ext3 file system started to fail when updating from v3.3.7 to v3.3.8.
+> when you added the locking correctness validator code in commit fbb9ce95, you 
+> exported lockdep_init_map() with EXPORT_SYMBOL_GPL. This choice is causing a 
+> problem with the latest version of Broadcom's hybrid wl driver. Although I do 
+> not agree with their policies regarding drivers with binary blobs, there are 
+> some devices such as the BCM43228 (14e4:4359) for which no open-source driver is 
+> yet available. As a result, owners of such devices are forced to use solutions 
+> such as ndiswrapper, which is worse than using wl.
 > 
-> The applications then hangs-up in the mount syscall, here is a snapshot of its stack at this moment:
+> would you accept the following patch?
+> 
+> Index: wireless-testing/kernel/lockdep.c
+> ===================================================================
+> --- wireless-testing.orig/kernel/lockdep.c
+> +++ wireless-testing/kernel/lockdep.c
+> @@ -2994,7 +2994,7 @@ void lockdep_init_map(struct lockdep_map
+>          if (subclass)
+>                  register_lock_class(lock, subclass, 1);
+>   }
+> -EXPORT_SYMBOL_GPL(lockdep_init_map);
+> +EXPORT_SYMBOL(lockdep_init_map);
+> 
+>   struct lock_class_key __lockdep_no_validate__;
+> 
 
-We just ran into what we think is the same problem.
+I can't speak for Ingo, but I would object to it. Owners of such devices
+can send them back to wherever they got them from and demand a refund.
 
-Note that ext4 fails like this for any 1024 byte sized filesystem (of
-zeroes) that you try to mount.  It's really nothing to do with
-extended partitions.
+Loading binary blobs pretty much wrecks your kernel validation anyway,
+who knows what they do.
 
-Here is a very simple reproducer + stack trace:
-
-  https://bugzilla.redhat.com/show_bug.cgi?id=835019#c4
-
-I will try out the patch suggested later on in this thread.
-
-Rich.
-
--- 
-Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
-virt-p2v converts physical machines to virtual machines.  Boot with a
-live CD or over the network (PXE) and turn machines into Xen guests.
-http://et.redhat.com/~rjones/virt-p2v
