@@ -1,143 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab2FYWzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:55:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36854 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472Ab2FYWzN (ORCPT
+	id S1756580Ab2FYW55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:57:57 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:15579 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418Ab2FYW5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:55:13 -0400
+	Mon, 25 Jun 2012 18:57:55 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-132.messagelabs.com!1340665074!12487120!1
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/33] staging: comedi: cb_das16_cs: cleanup the pcmcia_driver declaration
+Date: Mon, 25 Jun 2012 15:57:49 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXhGLwSH4gq7L9DrhVAXcDu_NbjLA5QkCDOEqaFO09m7w@mail.gmail.com>
-References: <1340650789-3326-1-git-send-email-yinghai@kernel.org>
-	<CAErSpo4oE8nHmu1KBXSX=YjQGfD89v2fqL=96THz98uZ4Va_rQ@mail.gmail.com>
-	<CAE9FiQXhGLwSH4gq7L9DrhVAXcDu_NbjLA5QkCDOEqaFO09m7w@mail.gmail.com>
-Date: Mon, 25 Jun 2012 15:55:12 -0700
-X-Google-Sender-Auth: 94_NCTPC6lOPeifer0hVQdaeW44
-Message-ID: <CAE9FiQVhL+5y9n7n8JkPMwdTd-N14rcOc7Sm_5WHN+w8nVg-4Q@mail.gmail.com>
-Subject: Re: [PATCH] PCI, X86: busnum/node boot command line for pci dev node setting.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, lenb@kernel.org, x86@kernel.org,
-        Ulrich Drepper <drepper@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7b33d650e71ce604c353df4a
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206251557.49993.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b33d650e71ce604c353df4a
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+For aesthetic reasons, add some whitespace to the declaration
+of the pcmcia_driver and reorder it a bit.
 
-On Mon, Jun 25, 2012 at 3:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Jun 25, 2012 at 1:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrot=
-e:
->>
->> Can you convince me this is safe? =A0pci_setup() is an early_param, so
->> it looks to me like we might be saving a pointer to initdata in this
->> call path:
->>
->> =A0 =A0setup_arch
->> =A0 =A0 =A0parse_early_param
->> =A0 =A0 =A0 =A0strlcpy(tmp_cmdline, boot_command_line)
->> =A0 =A0 =A0 =A0parse_early_options(__initdata tmp_cmdline)
->> =A0 =A0 =A0 =A0 =A0parse_args
->> =A0 =A0 =A0 =A0 =A0 =A0do_early_param
->> =A0 =A0 =A0 =A0 =A0 =A0 =A0...
->> =A0 =A0 =A0 =A0 =A0 =A0 =A0pci_setup (early_param)
->> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0pcibios_setup
->> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0remember_busnum_node
->>
->> And then we use that saved pointer to parse the string at host bridge
->> add-time, which might be after initdata has been freed.
->
-> ok, that will need one separate buffer.
+Also, the symbol 'das16cs_driver' is only referenced in this file,
+make it static. This quiets the following sparse warning:
 
-could used saved_command_line directly.
+warning: symbol 'das16cs_driver' was not declared. Should it be static?
 
-also do we need to include this one to upsteam ?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/cb_das16_cs.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Thanks
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index 625134f..2ac30f4 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -770,14 +770,14 @@ static const struct pcmcia_device_id das16cs_id_table[] = {
+ 
+ MODULE_DEVICE_TABLE(pcmcia, das16cs_id_table);
+ 
+-struct pcmcia_driver das16cs_driver = {
+-	.probe = das16cs_pcmcia_attach,
+-	.remove = das16cs_pcmcia_detach,
+-	.suspend = das16cs_pcmcia_suspend,
+-	.resume = das16cs_pcmcia_resume,
+-	.id_table = das16cs_id_table,
+-	.owner = THIS_MODULE,
+-	.name = "cb_das16_cs",
++static struct pcmcia_driver das16cs_driver = {
++	.name		= "cb_das16_cs",
++	.owner		= THIS_MODULE,
++	.probe		= das16cs_pcmcia_attach,
++	.remove		= das16cs_pcmcia_detach,
++	.suspend	= das16cs_pcmcia_suspend,
++	.resume		= das16cs_pcmcia_resume,
++	.id_table	= das16cs_id_table,
+ };
+ 
+ static int __init das16cs_init(void)
+-- 
+1.7.11
 
-Yinghai
-
---047d7b33d650e71ce604c353df4a
-Content-Type: application/octet-stream; name="busnum_node_v3_x.patch"
-Content-Disposition: attachment; filename="busnum_node_v3_x.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3w59eg50
-
-U3ViamVjdDogW1BBVENIXSBQQ0ksIFg4NjogYnVzbnVtL25vZGUgYm9vdCBjb21tYW5kIGxpbmUg
-Zm9yIHBjaSBkZXYgbm9kZSBzZXR0aW5nLgoKU29tZSBpbnRlbCBuZXcgc2FuZHlicmlkZ2Ugb3Ig
-bmV3ZXIgdHdvIHNvY2tldHMgc3lzdGVtIGRvIHN1cHBvcnQgc3VwcG9ydCBudW1hCmZvciBwY2kg
-ZGV2aWNlcy4gQnV0IEJJT1MgZG9lcyBub3QgcHJvdmlkZSBfUFhNIHVuZGVyIHRob3NlIHJvb3Qg
-YnVzIGluIERTRFQuCgpBZGQgYm9vdCBjb21tYW5kIGxpbmUsIHNvIHVzZXIgY291bGQgaGF2ZSBj
-aGFuY2UgdG8gaW5wdXQgbm9kZSBpbmZvIGJlZm9yZQpCSU9TIGd1eXMgZmlndXJlIG91dCB0byBh
-ZGQgX1BYTS4KCkZvbGQgZml4IGZyb20gVWxyaWNoIHRvIHVzZSAiOyIgaW5zdGVhZCBvZiAiLCIu
-CnwgVGhlIHByb2JsZW0gaXMgdGhlIHBjaT0gcGFyYW1ldGVyCnwgaGFuZGxpbmcgdXNlcyAnLCcg
-dG8gc2VwYXJhdGUgcGFyYW1ldGVycyBhbmQgdGhlcmVmb3JlIHRoZSBzZWNvbmQgUENJCnwgcm9v
-dCBpbmZvcm1hdGlvbiwgc2VwYXJhdGVkIGJ5IGEgY29tbWEsIGlzIGludGVycHJldGVkIGFzIGEg
-bmV3IHBjaT0KfCBwYXJhbWV0ZXIuCgotdjM6IEFjY29yZGluZyB0byBCam9ybiBhbmQgSW5nbywg
-Y2hhbmdlIHRvIHVzZSAidXNlciBpbnB1dCBmaXJzdCIgcG9saWN5CiAgICAgc28gaXQgY291bGQg
-Y292ZXIgd3JvbmcgX1BYTSBjYXNlLgotdjU6IHJldmVydCBiYWNrIHRvIC12MywgYW5kIGNoYW5n
-ZSB0byB1c2Ugc2F2ZWRfY29tbWFuZF9saW5lLgoKClJlcG9ydGVkLWJ5OiBVbHJpY2ggRHJlcHBl
-ciA8ZHJlcHBlckBnbWFpbC5jb20+ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlA
-a2VybmVsLm9yZz4KCi0tLQogRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQgfCAg
-ICA1ICsrKysrCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9wY2lfeDg2LmggICAgICB8ICAgIDMgKysr
-CiBhcmNoL3g4Ni9wY2kvYWNwaS5jICAgICAgICAgICAgICAgICB8ICAgMjIgKysrKysrKysrKysr
-Ky0tLS0tLS0tLQogYXJjaC94ODYvcGNpL2NvbW1vbi5jICAgICAgICAgICAgICAgfCAgIDI4ICsr
-KysrKysrKysrKysrKysrKysrKysrKysrKysKIDQgZmlsZXMgY2hhbmdlZCwgNDkgaW5zZXJ0aW9u
-cygrKSwgOSBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvRG9jdW1lbnRhdGlvbi9rZXJu
-ZWwtcGFyYW1ldGVycy50eHQKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvRG9jdW1lbnRh
-dGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKKysrIGxpbnV4LTIuNi9Eb2N1bWVudGF0aW9uL2tl
-cm5lbC1wYXJhbWV0ZXJzLnR4dApAQCAtMjE5NSw2ICsyMTk1LDExIEBAIGJ5dGVzIHJlc3BlY3Rp
-dmVseS4gU3VjaCBsZXR0ZXIgc3VmZml4ZXMKIAkJCQlvbmx5IGxvb2sgZm9yIG9uZSBkZXZpY2Ug
-YmVsb3cgYSBQQ0llIGRvd25zdHJlYW0KIAkJCQlwb3J0LgogCisJYnVzbnVtX25vZGU9ICAgIFtY
-ODZdIFNldCBub2RlIGZvciByb290IGJ1cy4KKwkJCUZvcm1hdDoKKwkJCTxidXM+Ojxub2RlPls7
-IC4uLl0KKwkJCVNwZWNpZmllcyBub2RlIGZvciBidXMsIHdpbGwgb3ZlcnJpZGUgYmlvcyBfUFhN
-CisJCQlvciBwcm9iZWQgdmFsdWUgZnJvbSBob3N0YnJpZGdlLgogCXBjaWVfYXNwbT0JW1BDSUVd
-IEZvcmNpYmx5IGVuYWJsZSBvciBkaXNhYmxlIFBDSWUgQWN0aXZlIFN0YXRlIFBvd2VyCiAJCQlN
-YW5hZ2VtZW50LgogCQlvZmYJRGlzYWJsZSBBU1BNLgpJbmRleDogbGludXgtMi42L2FyY2gveDg2
-L3BjaS9jb21tb24uYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9wY2kv
-Y29tbW9uLmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKQEAgLTQ5NCw2ICs0
-OTQsMzQgQEAgaW50IF9faW5pdCBwY2liaW9zX2luaXQodm9pZCkKIAlyZXR1cm4gMDsKIH0KIAor
-aW50IGdldF91c2VyX2J1c251bV9ub2RlKGludCBidXNudW0pCit7CisJaW50IGJ1cywgbm9kZSwg
-Y291bnQ7CisJY2hhciAqcDsKKworCXAgPSBzdHJzdHIoc2F2ZWRfY29tbWFuZF9saW5lLCAiYnVz
-bnVtX25vZGU9Iik7CisJaWYgKCFwKQorCQlyZXR1cm4gLTE7CisKKwlwICs9IDEyOyAvKiBzdHJs
-ZW4oImJ1c251bV9ub2RlPSIpICovCisJd2hpbGUgKCpwKSB7CisJCWNvdW50ID0gMDsKKwkJaWYg
-KHNzY2FuZihwLCAiJXg6JXglbiIsICZidXMsICZub2RlLCAmY291bnQpICE9IDIpIHsKKwkJCXBy
-aW50ayhLRVJOX0VSUiAiUENJOiBDYW4ndCBwYXJzZSBidXNudW1fbm9kZSBpbnB1dDogJXNcbiIs
-CisJCQkJCXApOworCQkJYnJlYWs7CisJCX0KKwkJaWYgKGJ1cyA9PSBidXNudW0pCisJCQlyZXR1
-cm4gbm9kZTsKKwkJcCArPSBjb3VudDsKKwkJaWYgKCpwICE9ICc7JykKKwkJCWJyZWFrOworCQlw
-Kys7CisJfQorCisJcmV0dXJuIC0xOworfQorCiBjaGFyICogX19kZXZpbml0ICBwY2liaW9zX3Nl
-dHVwKGNoYXIgKnN0cikKIHsKIAlpZiAoIXN0cmNtcChzdHIsICJvZmYiKSkgewpJbmRleDogbGlu
-dXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3BjaV94ODYuaAo9PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51
-eC0yLjYub3JpZy9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wY2lfeDg2LmgKKysrIGxpbnV4LTIuNi9h
-cmNoL3g4Ni9pbmNsdWRlL2FzbS9wY2lfeDg2LmgKQEAgLTQ2LDYgKzQ2LDkgQEAgZW51bSBwY2lf
-YmZfc29ydF9zdGF0ZSB7CiAJcGNpX2RtaV9iZiwKIH07CiAKKy8qIHBjaS1jb21tb24uYyAqLwor
-aW50IGdldF91c2VyX2J1c251bV9ub2RlKGludCBidXNudW0pOworCiAvKiBwY2ktaTM4Ni5jICov
-CiAKIHZvaWQgcGNpYmlvc19yZXNvdXJjZV9zdXJ2ZXkodm9pZCk7CkluZGV4OiBsaW51eC0yLjYv
-YXJjaC94ODYvcGNpL2FjcGkuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4
-Ni9wY2kvYWNwaS5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYvcGNpL2FjcGkuYwpAQCAtNDMzLDcg
-KzQzMyw3IEBAIHN0cnVjdCBwY2lfYnVzICogX19kZXZpbml0IHBjaV9hY3BpX3NjYW4KIAlzdHJ1
-Y3QgcGNpX3N5c2RhdGEgKnNkOwogCWludCBub2RlOwogI2lmZGVmIENPTkZJR19BQ1BJX05VTUEK
-LQlpbnQgcHhtOworCWludCBweG0gPSAtMTsKICNlbmRpZgogCiAJaWYgKGRvbWFpbiAmJiAhcGNp
-X2RvbWFpbnNfc3VwcG9ydGVkKSB7CkBAIC00NDMsMTYgKzQ0MywyMCBAQCBzdHJ1Y3QgcGNpX2J1
-cyAqIF9fZGV2aW5pdCBwY2lfYWNwaV9zY2FuCiAJCXJldHVybiBOVUxMOwogCX0KIAotCW5vZGUg
-PSAtMTsKKwlub2RlID0gZ2V0X3VzZXJfYnVzbnVtX25vZGUoYnVzbnVtKTsKKwlpZiAobm9kZSA9
-PSAtMSkgewogI2lmZGVmIENPTkZJR19BQ1BJX05VTUEKLQlweG0gPSBhY3BpX2dldF9weG0oZGV2
-aWNlLT5oYW5kbGUpOwotCWlmIChweG0gPj0gMCkKLQkJbm9kZSA9IHB4bV90b19ub2RlKHB4bSk7
-Ci0JaWYgKG5vZGUgIT0gLTEpCi0JCXNldF9tcF9idXNfdG9fbm9kZShidXNudW0sIG5vZGUpOwot
-CWVsc2UKLSNlbmRpZgorCQlweG0gPSBhY3BpX2dldF9weG0oZGV2aWNlLT5oYW5kbGUpOworCQlp
-ZiAocHhtID49IDApCisJCQlub2RlID0gcHhtX3RvX25vZGUocHhtKTsKKwkJaWYgKG5vZGUgIT0g
-LTEpCisJCQlzZXRfbXBfYnVzX3RvX25vZGUoYnVzbnVtLCBub2RlKTsKKwkJZWxzZQorCQkJbm9k
-ZSA9IGdldF9tcF9idXNfdG9fbm9kZShidXNudW0pOworI2Vsc2UKIAkJbm9kZSA9IGdldF9tcF9i
-dXNfdG9fbm9kZShidXNudW0pOworI2VuZGlmCisJfQogCiAJaWYgKG5vZGUgIT0gLTEgJiYgIW5v
-ZGVfb25saW5lKG5vZGUpKQogCQlub2RlID0gLTE7Cg==
---047d7b33d650e71ce604c353df4a--
