@@ -1,756 +1,903 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab2FYI0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:26:32 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:53327 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab2FYI02 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:26:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6752"; a="204235193"
-From: "Subhash Jadavani" <subhashj@codeaurora.org>
-To: "'Seungwon Jeon'" <tgih.jun@samsung.com>, <linux-mmc@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, "'Chris Ball'" <cjb@laptop.org>,
-        "'Maya Erez'" <merez@codeaurora.org>,
-        "'S, Venkatraman'" <svenkatr@ti.com>,
-        "Saugata Das" <saugata.das@linaro.org>
-References: <007b01cd4d15$40673510$c1359f30$%jun@samsung.com>
-In-Reply-To: <007b01cd4d15$40673510$c1359f30$%jun@samsung.com>
-Subject: RE: [PATCH RESEND v7 2/3] mmc: core: Support packed write command for eMMC4.5 device
-Date: Mon, 25 Jun 2012 13:56:21 +0530
-Message-ID: <001201cd52ac$368857d0$a3990770$@codeaurora.org>
+	id S1754303Ab2FYI1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:27:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61666 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753521Ab2FYI1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 04:27:47 -0400
+Date: Mon, 25 Jun 2012 11:27:42 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, krkumar2@in.ibm.com,
+        tahm@linux.vnet.ibm.com, akong@redhat.com, davem@davemloft.net,
+        shemminger@vyatta.com, mashirle@us.ibm.com
+Subject: Re: [net-next RFC V3 PATCH 1/6] tuntap: move socket to tun_file
+Message-ID: <20120625082742.GA18794@redhat.com>
+References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com>
+ <20120625060945.6765.98618.stgit@amd-6168-8-1.englab.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQJIve/o/bnpzc2PFlwTN/n3eQGuPJYT2bDQ
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120625060945.6765.98618.stgit@amd-6168-8-1.englab.nay.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<Saugata's inputs are needed>
-
-Hi Seungwon,
-
-Please one comment inline below related to large sector size handling for packed commands.
-
-Regards,
-Subhash
-
-> -----Original Message-----
-> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
-> owner@vger.kernel.org] On Behalf Of Seungwon Jeon
-> Sent: Monday, June 18, 2012 11:13 AM
-> To: linux-mmc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; 'Chris Ball'; 'Maya Erez'; 'Subhash Jadavani';
-> 'S, Venkatraman'
-> Subject: [PATCH RESEND v7 2/3] mmc: core: Support packed write command
-> for eMMC4.5 device
+On Mon, Jun 25, 2012 at 02:09:45PM +0800, Jason Wang wrote:
+> This patch moves socket structure from tun_device and to tun_file in order to
+> let it possbile for multiple sockets to be attached to tun/tap device. The
+> reference between tap device and socket was setup during TUNSETIFF as
+> usual.
 > 
-> This patch supports packed write command of eMMC4.5 device.
-> Several writes can be grouped in packed command and all data of the
-> individual commands can be sent in a single transfer on the bus.
+> After this patch, we can go further towards multiqueue tun/tap support by
+> storing an array of pointers of tun_file in tun_device.
 > 
-> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+
+I think this changes visible userspace
+behaviour for persistent devices.
+
+Specifically, with this patch, TUNSETSNDBUF and TUNATTACHFILTER won't
+be effective if you close and reopen the device, right?
+
+It's possible that no application uses either of these
+ioctls on persistent tun devices at the moment,
+but seems safer to avoid changing such behaviour.
+
+
 > ---
->  drivers/mmc/card/block.c   |  406
-> +++++++++++++++++++++++++++++++++++++++++---
->  drivers/mmc/card/queue.c   |   45 +++++-
->  drivers/mmc/card/queue.h   |   12 ++
->  drivers/mmc/core/mmc_ops.c |    1 +
->  include/linux/mmc/core.h   |    4 +
->  5 files changed, 441 insertions(+), 27 deletions(-)
+>  drivers/net/tun.c |  352 +++++++++++++++++++++++++++--------------------------
+>  1 files changed, 181 insertions(+), 171 deletions(-)
 > 
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c index
-> 7e3f453..eb99e35 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -58,6 +58,12 @@ MODULE_ALIAS("mmc:block");  #define
-> INAND_CMD38_ARG_SECTRIM1 0x81  #define INAND_CMD38_ARG_SECTRIM2
-> 0x88
-> 
-> +#define mmc_req_rel_wr(req)	(((req->cmd_flags & REQ_FUA) || \
-> +			(req->cmd_flags & REQ_META)) && \
-> +			(rq_data_dir(req) == WRITE))
-> +#define PACKED_CMD_VER		0x01
-> +#define PACKED_CMD_WR		0x02
-> +
->  static DEFINE_MUTEX(block_mutex);
-> 
->  /*
-> @@ -123,9 +129,21 @@ enum mmc_blk_status {
->  	MMC_BLK_NOMEDIUM,
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 987aeef..1f27789 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -108,9 +108,16 @@ struct tap_filter {
 >  };
-> 
-> +enum {
-> +	MMC_PACKED_N_IDX = -1,
-> +	MMC_PACKED_N_ZERO,
-> +	MMC_PACKED_N_SINGLE,
-> +};
-> +
->  module_param(perdev_minors, int, 0444);
-> MODULE_PARM_DESC(perdev_minors, "Minors numbers to allocate per
-> device");
-> 
-> +static inline void mmc_blk_clear_packed(struct mmc_queue_req *mqrq) {
-> +	mqrq->packed_cmd = MMC_PACKED_NONE;
-> +	mqrq->packed_num = MMC_PACKED_N_ZERO;
-> +}
-> +
->  static struct mmc_blk_data *mmc_blk_get(struct gendisk *disk)  {
->  	struct mmc_blk_data *md;
-> @@ -1081,12 +1099,61 @@ static int mmc_blk_err_check(struct mmc_card
-> *card,
->  	if (!brq->data.bytes_xfered)
->  		return MMC_BLK_RETRY;
-> 
-> +	if (mq_mrq->packed_cmd != MMC_PACKED_NONE) {
-> +		if (unlikely(brq->data.blocks << 9 != brq->data.bytes_xfered))
-> +			return MMC_BLK_PARTIAL;
-> +		else
-> +			return MMC_BLK_SUCCESS;
-> +	}
-> +
->  	if (blk_rq_bytes(req) != brq->data.bytes_xfered)
->  		return MMC_BLK_PARTIAL;
-> 
->  	return MMC_BLK_SUCCESS;
->  }
-> 
-> +static int mmc_blk_packed_err_check(struct mmc_card *card,
-> +				    struct mmc_async_req *areq)
-> +{
-> +	struct mmc_queue_req *mq_rq = container_of(areq, struct
-> mmc_queue_req,
-> +			mmc_active);
-> +	struct request *req = mq_rq->req;
-> +	int err, check, status;
-> +	u8 ext_csd[512];
-> +
-> +	mq_rq->packed_retries--;
-> +	check = mmc_blk_err_check(card, areq);
-> +	err = get_card_status(card, &status, 0);
-> +	if (err) {
-> +		pr_err("%s: error %d sending status command\n",
-> +				req->rq_disk->disk_name, err);
-> +		return MMC_BLK_ABORT;
-> +	}
-> +
-> +	if (status & R1_EXP_EVENT) {
-> +		err = mmc_send_ext_csd(card, ext_csd);
-> +		if (err) {
-> +			pr_err("%s: error %d sending ext_csd\n",
-> +					req->rq_disk->disk_name, err);
-> +			return MMC_BLK_ABORT;
-> +		}
-> +
-> +		if ((ext_csd[EXT_CSD_EXP_EVENTS_STATUS] &
-> +					EXT_CSD_PACKED_FAILURE) &&
-> +				(ext_csd[EXT_CSD_PACKED_CMD_STATUS] &
-> +				 EXT_CSD_PACKED_GENERIC_ERROR)) {
-> +			if (ext_csd[EXT_CSD_PACKED_CMD_STATUS] &
-> +					EXT_CSD_PACKED_INDEXED_ERROR) {
-> +				mq_rq->packed_fail_idx =
-> +				  ext_csd[EXT_CSD_PACKED_FAILURE_INDEX] -
-> 1;
-> +				return MMC_BLK_PARTIAL;
-> +			}
-> +		}
-> +	}
-> +
-> +	return check;
-> +}
-> +
->  static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
->  			       struct mmc_card *card,
->  			       int disable_multi,
-> @@ -1241,10 +1308,197 @@ static void mmc_blk_rw_rq_prep(struct
-> mmc_queue_req *mqrq,
->  	mmc_queue_bounce_pre(mqrq);
->  }
-> 
-> +static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request
-> +*req) {
-> +	struct request_queue *q = mq->queue;
-> +	struct mmc_card *card = mq->card;
-> +	struct request *cur = req, *next = NULL;
-> +	struct mmc_blk_data *md = mq->data;
-> +	bool en_rel_wr = card->ext_csd.rel_param &
-> EXT_CSD_WR_REL_PARAM_EN;
-> +	unsigned int req_sectors = 0, phys_segments = 0;
-> +	unsigned int max_blk_count, max_phys_segs;
-> +	u8 put_back = 0;
-> +	u8 max_packed_rw = 0;
-> +	u8 reqs = 0;
-> +
-> +	mmc_blk_clear_packed(mq->mqrq_cur);
-> +
-> +	if (!(md->flags & MMC_BLK_CMD23) ||
-> +			!card->ext_csd.packed_event_en)
-> +		goto no_packed;
-> +
-> +	if ((rq_data_dir(cur) == WRITE) &&
-> +			(card->host->caps2 & MMC_CAP2_PACKED_WR))
-> +		max_packed_rw = card->ext_csd.max_packed_writes;
-> +
-> +	if (max_packed_rw == 0)
-> +		goto no_packed;
-> +
-> +	if (mmc_req_rel_wr(cur) &&
-> +			(md->flags & MMC_BLK_REL_WR) &&
-> +			!en_rel_wr) {
-> +		goto no_packed;
-> +	}
-> +
-> +	max_blk_count = min(card->host->max_blk_count,
-> +			card->host->max_req_size >> 9);
-> +	if (unlikely(max_blk_count > 0xffff))
-> +		max_blk_count = 0xffff;
-> +
-> +	max_phys_segs = queue_max_segments(q);
-> +	req_sectors += blk_rq_sectors(cur);
-> +	phys_segments += cur->nr_phys_segments;
-> +
-> +	if (rq_data_dir(cur) == WRITE) {
-> +		req_sectors++;
-> +		phys_segments++;
-> +	}
-> +
-> +	while (reqs < max_packed_rw - 1) {
-> +		spin_lock_irq(q->queue_lock);
-> +		next = blk_fetch_request(q);
-> +		spin_unlock_irq(q->queue_lock);
-> +		if (!next)
-> +			break;
-> +
-> +		if (next->cmd_flags & REQ_DISCARD ||
-> +				next->cmd_flags & REQ_FLUSH) {
-> +			put_back = 1;
-> +			break;
-> +		}
-> +
-> +		if (rq_data_dir(cur) != rq_data_dir(next)) {
-> +			put_back = 1;
-> +			break;
-> +		}
-> +
-> +		if (mmc_req_rel_wr(next) &&
-> +				(md->flags & MMC_BLK_REL_WR) &&
-> +				!en_rel_wr) {
-> +			put_back = 1;
-> +			break;
-> +		}
-> +
-> +		req_sectors += blk_rq_sectors(next);
-> +		if (req_sectors > max_blk_count) {
-> +			put_back = 1;
-> +			break;
-> +		}
-> +
-> +		phys_segments +=  next->nr_phys_segments;
-> +		if (phys_segments > max_phys_segs) {
-> +			put_back = 1;
-> +			break;
-> +		}
-> +
-> +		list_add_tail(&next->queuelist, &mq->mqrq_cur->packed_list);
-> +		cur = next;
-> +		reqs++;
-> +	}
-> +
-> +	if (put_back) {
-> +		spin_lock_irq(q->queue_lock);
-> +		blk_requeue_request(q, next);
-> +		spin_unlock_irq(q->queue_lock);
-> +	}
-> +
-> +	if (reqs > 0) {
-> +		list_add(&req->queuelist, &mq->mqrq_cur->packed_list);
-> +		mq->mqrq_cur->packed_num = ++reqs;
-> +		mq->mqrq_cur->packed_retries = reqs;
-> +		return reqs;
-> +	}
-> +
-> +no_packed:
-> +	mmc_blk_clear_packed(mq->mqrq_cur);
-> +	return 0;
-> +}
-> +
-> +static void mmc_blk_packed_hdr_wrq_prep(struct mmc_queue_req *mqrq,
-> +					struct mmc_card *card,
-> +					struct mmc_queue *mq)
-> +{
-> +	struct mmc_blk_request *brq = &mqrq->brq;
-> +	struct request *req = mqrq->req;
-> +	struct request *prq;
-> +	struct mmc_blk_data *md = mq->data;
-> +	bool do_rel_wr, do_data_tag;
-> +	u32 *packed_cmd_hdr = mqrq->packed_cmd_hdr;
-> +	u8 i = 1;
-> +
-> +	mqrq->packed_cmd = MMC_PACKED_WRITE;
-> +	mqrq->packed_blocks = 0;
-> +	mqrq->packed_fail_idx = MMC_PACKED_N_IDX;
-> +
-> +	memset(packed_cmd_hdr, 0, sizeof(mqrq->packed_cmd_hdr));
-> +	packed_cmd_hdr[0] = (mqrq->packed_num << 16) |
-> +		(PACKED_CMD_WR << 8) | PACKED_CMD_VER;
-> +
-> +	/*
-> +	 * Argument for each entry of packed group
-> +	 */
-> +	list_for_each_entry(prq, &mqrq->packed_list, queuelist) {
-> +		do_rel_wr = mmc_req_rel_wr(prq) && (md->flags &
-> MMC_BLK_REL_WR);
-> +		do_data_tag = (card->ext_csd.data_tag_unit_size) &&
-> +			(prq->cmd_flags & REQ_META) &&
-> +			(rq_data_dir(prq) == WRITE) &&
-> +			((brq->data.blocks * brq->data.blksz) >=
-> +			 card->ext_csd.data_tag_unit_size);
-> +		/* Argument of CMD23 */
-> +		packed_cmd_hdr[(i * 2)] =
-> +			(do_rel_wr ? MMC_CMD23_ARG_REL_WR : 0) |
-> +			(do_data_tag ? MMC_CMD23_ARG_TAG_REQ : 0) |
-> +			blk_rq_sectors(prq);
-> +		/* Argument of CMD18 or CMD25 */
-> +		packed_cmd_hdr[((i * 2)) + 1] =
-> +			mmc_card_blockaddr(card) ?
-> +			blk_rq_pos(prq) : blk_rq_pos(prq) << 9;
-> +		mqrq->packed_blocks += blk_rq_sectors(prq);
-> +		i++;
-> +	}
-> +
-> +	memset(brq, 0, sizeof(struct mmc_blk_request));
-> +	brq->mrq.cmd = &brq->cmd;
-> +	brq->mrq.data = &brq->data;
-> +	brq->mrq.sbc = &brq->sbc;
-> +	brq->mrq.stop = &brq->stop;
-> +
-> +	brq->sbc.opcode = MMC_SET_BLOCK_COUNT;
-> +	brq->sbc.arg = MMC_CMD23_ARG_PACKED | (mqrq->packed_blocks +
-> 1);
-> +	brq->sbc.flags = MMC_RSP_R1 | MMC_CMD_AC;
-> +
-> +	brq->cmd.opcode = MMC_WRITE_MULTIPLE_BLOCK;
-> +	brq->cmd.arg = blk_rq_pos(req);
-> +	if (!mmc_card_blockaddr(card))
-> +		brq->cmd.arg <<= 9;
-> +	brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 |
-> MMC_CMD_ADTC;
-> +
-> +	brq->data.blksz = 512;
-> +	brq->data.blocks = mqrq->packed_blocks + 1;
-> +	brq->data.flags |= MMC_DATA_WRITE;
-> +
-> +	brq->stop.opcode = MMC_STOP_TRANSMISSION;
-> +	brq->stop.arg = 0;
-> +	brq->stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B |
-> MMC_CMD_AC;
-> +
-> +	mmc_set_data_timeout(&brq->data, card);
-> +
-> +	brq->data.sg = mqrq->sg;
-> +	brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
-> +
-> +	mqrq->mmc_active.mrq = &brq->mrq;
-> +	mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
-> +
-> +	mmc_queue_bounce_pre(mqrq);
-> +}
-> +
->  static int mmc_blk_cmd_err(struct mmc_blk_data *md, struct mmc_card
-> *card,
->  			   struct mmc_blk_request *brq, struct request *req,
->  			   int ret)
+>  
+>  struct tun_file {
+> +	struct sock sk;
+> +	struct socket socket;
+> +	struct socket_wq wq;
+> +	int vnet_hdr_sz;
+> +	struct tap_filter txflt;
+>  	atomic_t count;
+>  	struct tun_struct *tun;
+>  	struct net *net;
+> +	struct fasync_struct *fasync;
+> +	unsigned int flags;
+>  };
+>  
+>  struct tun_sock;
+> @@ -125,29 +132,12 @@ struct tun_struct {
+>  	netdev_features_t	set_features;
+>  #define TUN_USER_FEATURES (NETIF_F_HW_CSUM|NETIF_F_TSO_ECN|NETIF_F_TSO| \
+>  			  NETIF_F_TSO6|NETIF_F_UFO)
+> -	struct fasync_struct	*fasync;
+> -
+> -	struct tap_filter       txflt;
+> -	struct socket		socket;
+> -	struct socket_wq	wq;
+> -
+> -	int			vnet_hdr_sz;
+>  
+>  #ifdef TUN_DEBUG
+>  	int debug;
+>  #endif
+>  };
+>  
+> -struct tun_sock {
+> -	struct sock		sk;
+> -	struct tun_struct	*tun;
+> -};
+> -
+> -static inline struct tun_sock *tun_sk(struct sock *sk)
+> -{
+> -	return container_of(sk, struct tun_sock, sk);
+> -}
+> -
+>  static int tun_attach(struct tun_struct *tun, struct file *file)
 >  {
-> +	struct mmc_queue_req *mq_rq;
-> +	mq_rq = container_of(brq, struct mmc_queue_req, brq);
-> +
->  	/*
->  	 * If this is an SD card and we're writing, we can first
->  	 * mark the known good sectors as ok.
-> @@ -1261,10 +1515,73 @@ static int mmc_blk_cmd_err(struct mmc_blk_data
-> *md, struct mmc_card *card,
->  			ret = blk_end_request(req, 0, blocks << 9);
->  		}
->  	} else {
-> -		ret = blk_end_request(req, 0, brq->data.bytes_xfered);
-> +		if (mq_rq->packed_cmd == MMC_PACKED_NONE)
-> +			ret = blk_end_request(req, 0, brq->data.bytes_xfered);
-> +	}
-> +	return ret;
-> +}
-> +
-> +static int mmc_blk_end_packed_req(struct mmc_queue_req *mq_rq) {
-> +	struct request *prq;
-> +	int idx = mq_rq->packed_fail_idx, i = 0;
-> +	int ret = 0;
-> +
-> +	while (!list_empty(&mq_rq->packed_list)) {
-> +		prq = list_entry_rq(mq_rq->packed_list.next);
-> +		if (idx == i) {
-> +			/* retry from error index */
-> +			mq_rq->packed_num -= idx;
-> +			mq_rq->req = prq;
-> +			ret = 1;
-> +
-> +			if (mq_rq->packed_num == MMC_PACKED_N_SINGLE)
-> {
-> +				list_del_init(&prq->queuelist);
-> +				mmc_blk_clear_packed(mq_rq);
-> +			}
-> +			return ret;
-> +		}
-> +		list_del_init(&prq->queuelist);
-> +		blk_end_request(prq, 0, blk_rq_bytes(prq));
-> +		i++;
+>  	struct tun_file *tfile = file->private_data;
+> @@ -168,10 +158,9 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+>  	err = 0;
+>  	tfile->tun = tun;
+>  	tun->tfile = tfile;
+> -	tun->socket.file = file;
+>  	netif_carrier_on(tun->dev);
+>  	dev_hold(tun->dev);
+> -	sock_hold(tun->socket.sk);
+> +	sock_hold(&tfile->sk);
+>  	atomic_inc(&tfile->count);
+>  
+>  out:
+> @@ -181,15 +170,15 @@ out:
+>  
+>  static void __tun_detach(struct tun_struct *tun)
+>  {
+> +	struct tun_file *tfile = tun->tfile;
+>  	/* Detach from net device */
+>  	netif_tx_lock_bh(tun->dev);
+>  	netif_carrier_off(tun->dev);
+>  	tun->tfile = NULL;
+> -	tun->socket.file = NULL;
+>  	netif_tx_unlock_bh(tun->dev);
+>  
+>  	/* Drop read queue */
+> -	skb_queue_purge(&tun->socket.sk->sk_receive_queue);
+> +	skb_queue_purge(&tfile->socket.sk->sk_receive_queue);
+>  
+>  	/* Drop the extra count on the net device */
+>  	dev_put(tun->dev);
+> @@ -348,19 +337,12 @@ static void tun_net_uninit(struct net_device *dev)
+>  	/* Inform the methods they need to stop using the dev.
+>  	 */
+>  	if (tfile) {
+> -		wake_up_all(&tun->wq.wait);
+> +		wake_up_all(&tfile->wq.wait);
+>  		if (atomic_dec_and_test(&tfile->count))
+>  			__tun_detach(tun);
 >  	}
+>  }
+>  
+> -static void tun_free_netdev(struct net_device *dev)
+> -{
+> -	struct tun_struct *tun = netdev_priv(dev);
+> -
+> -	sk_release_kernel(tun->socket.sk);
+> -}
+> -
+>  /* Net device open. */
+>  static int tun_net_open(struct net_device *dev)
+>  {
+> @@ -379,24 +361,26 @@ static int tun_net_close(struct net_device *dev)
+>  static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+>  {
+>  	struct tun_struct *tun = netdev_priv(dev);
+> +	struct tun_file *tfile = tun->tfile;
+>  
+>  	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
+>  
+>  	/* Drop packet if interface is not attached */
+> -	if (!tun->tfile)
+> +	if (!tfile)
+>  		goto drop;
+>  
+>  	/* Drop if the filter does not like it.
+>  	 * This is a noop if the filter is disabled.
+>  	 * Filter can be enabled only for the TAP devices. */
+> -	if (!check_filter(&tun->txflt, skb))
+> +	if (!check_filter(&tfile->txflt, skb))
+>  		goto drop;
+>  
+> -	if (tun->socket.sk->sk_filter &&
+> -	    sk_filter(tun->socket.sk, skb))
+> +	if (tfile->socket.sk->sk_filter &&
+> +	    sk_filter(tfile->socket.sk, skb))
+>  		goto drop;
+>  
+> -	if (skb_queue_len(&tun->socket.sk->sk_receive_queue) >= dev->tx_queue_len) {
+> +	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue)
+> +	    >= dev->tx_queue_len) {
+>  		if (!(tun->flags & TUN_ONE_QUEUE)) {
+>  			/* Normal queueing mode. */
+>  			/* Packet scheduler handles dropping of further packets. */
+> @@ -417,12 +401,12 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+>  	skb_orphan(skb);
+>  
+>  	/* Enqueue packet */
+> -	skb_queue_tail(&tun->socket.sk->sk_receive_queue, skb);
+> +	skb_queue_tail(&tfile->socket.sk->sk_receive_queue, skb);
+>  
+>  	/* Notify and wake up reader process */
+> -	if (tun->flags & TUN_FASYNC)
+> -		kill_fasync(&tun->fasync, SIGIO, POLL_IN);
+> -	wake_up_interruptible_poll(&tun->wq.wait, POLLIN |
+> +	if (tfile->flags & TUN_FASYNC)
+> +		kill_fasync(&tfile->fasync, SIGIO, POLL_IN);
+> +	wake_up_interruptible_poll(&tfile->wq.wait, POLLIN |
+>  				   POLLRDNORM | POLLRDBAND);
+>  	return NETDEV_TX_OK;
+>  
+> @@ -550,11 +534,11 @@ static unsigned int tun_chr_poll(struct file *file, poll_table * wait)
+>  	if (!tun)
+>  		return POLLERR;
+>  
+> -	sk = tun->socket.sk;
+> +	sk = tfile->socket.sk;
+>  
+>  	tun_debug(KERN_INFO, tun, "tun_chr_poll\n");
+>  
+> -	poll_wait(file, &tun->wq.wait, wait);
+> +	poll_wait(file, &tfile->wq.wait, wait);
+>  
+>  	if (!skb_queue_empty(&sk->sk_receive_queue))
+>  		mask |= POLLIN | POLLRDNORM;
+> @@ -573,11 +557,11 @@ static unsigned int tun_chr_poll(struct file *file, poll_table * wait)
+>  
+>  /* prepad is the amount to reserve at front.  len is length after that.
+>   * linear is a hint as to how much to copy (usually headers). */
+> -static struct sk_buff *tun_alloc_skb(struct tun_struct *tun,
+> +static struct sk_buff *tun_alloc_skb(struct tun_file *tfile,
+>  				     size_t prepad, size_t len,
+>  				     size_t linear, int noblock)
+>  {
+> -	struct sock *sk = tun->socket.sk;
+> +	struct sock *sk = tfile->socket.sk;
+>  	struct sk_buff *skb;
+>  	int err;
+>  
+> @@ -601,7 +585,7 @@ static struct sk_buff *tun_alloc_skb(struct tun_struct *tun,
+>  }
+>  
+>  /* Get packet from user space buffer */
+> -static ssize_t tun_get_user(struct tun_struct *tun,
+> +static ssize_t tun_get_user(struct tun_file *tfile,
+>  			    const struct iovec *iv, size_t count,
+>  			    int noblock)
+>  {
+> @@ -610,8 +594,10 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+>  	size_t len = count, align = NET_SKB_PAD;
+>  	struct virtio_net_hdr gso = { 0 };
+>  	int offset = 0;
+> +	struct tun_struct *tun = NULL;
+> +	bool drop = false, error = false;
+>  
+> -	if (!(tun->flags & TUN_NO_PI)) {
+> +	if (!(tfile->flags & TUN_NO_PI)) {
+>  		if ((len -= sizeof(pi)) > count)
+>  			return -EINVAL;
+>  
+> @@ -620,8 +606,9 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+>  		offset += sizeof(pi);
+>  	}
+>  
+> -	if (tun->flags & TUN_VNET_HDR) {
+> -		if ((len -= tun->vnet_hdr_sz) > count)
+> +	if (tfile->flags & TUN_VNET_HDR) {
+> +		len -= tfile->vnet_hdr_sz;
+> +		if (len > count)
+>  			return -EINVAL;
+>  
+>  		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
+> @@ -633,41 +620,43 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+>  
+>  		if (gso.hdr_len > len)
+>  			return -EINVAL;
+> -		offset += tun->vnet_hdr_sz;
+> +		offset += tfile->vnet_hdr_sz;
+>  	}
+>  
+> -	if ((tun->flags & TUN_TYPE_MASK) == TUN_TAP_DEV) {
+> +	if ((tfile->flags & TUN_TYPE_MASK) == TUN_TAP_DEV) {
+>  		align += NET_IP_ALIGN;
+>  		if (unlikely(len < ETH_HLEN ||
+>  			     (gso.hdr_len && gso.hdr_len < ETH_HLEN)))
+>  			return -EINVAL;
+>  	}
+>  
+> -	skb = tun_alloc_skb(tun, align, len, gso.hdr_len, noblock);
+> +	skb = tun_alloc_skb(tfile, align, len, gso.hdr_len, noblock);
 > +
-> +	mmc_blk_clear_packed(mq_rq);
+>  	if (IS_ERR(skb)) {
+>  		if (PTR_ERR(skb) != -EAGAIN)
+> -			tun->dev->stats.rx_dropped++;
+> -		return PTR_ERR(skb);
+> +			drop = true;
+> +		count = PTR_ERR(skb);
+> +		goto err;
+>  	}
+>  
+>  	if (skb_copy_datagram_from_iovec(skb, 0, iv, offset, len)) {
+> -		tun->dev->stats.rx_dropped++;
+> +		drop = true;
+>  		kfree_skb(skb);
+> -		return -EFAULT;
+> +		count = -EFAULT;
+> +		goto err;
+>  	}
+>  
+>  	if (gso.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
+>  		if (!skb_partial_csum_set(skb, gso.csum_start,
+>  					  gso.csum_offset)) {
+> -			tun->dev->stats.rx_frame_errors++;
+> -			kfree_skb(skb);
+> -			return -EINVAL;
+> +			error = true;
+> +			goto err_free;
+>  		}
+>  	}
+>  
+> -	switch (tun->flags & TUN_TYPE_MASK) {
+> +	switch (tfile->flags & TUN_TYPE_MASK) {
+>  	case TUN_TUN_DEV:
+> -		if (tun->flags & TUN_NO_PI) {
+> +		if (tfile->flags & TUN_NO_PI) {
+>  			switch (skb->data[0] & 0xf0) {
+>  			case 0x40:
+>  				pi.proto = htons(ETH_P_IP);
+> @@ -676,18 +665,15 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+>  				pi.proto = htons(ETH_P_IPV6);
+>  				break;
+>  			default:
+> -				tun->dev->stats.rx_dropped++;
+> -				kfree_skb(skb);
+> -				return -EINVAL;
+> +				drop = true;
+> +				goto err_free;
+>  			}
+>  		}
+>  
+>  		skb_reset_mac_header(skb);
+>  		skb->protocol = pi.proto;
+> -		skb->dev = tun->dev;
+>  		break;
+>  	case TUN_TAP_DEV:
+> -		skb->protocol = eth_type_trans(skb, tun->dev);
+>  		break;
+>  	}
+>  
+> @@ -704,9 +690,8 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+>  			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
+>  			break;
+>  		default:
+> -			tun->dev->stats.rx_frame_errors++;
+> -			kfree_skb(skb);
+> -			return -EINVAL;
+> +			error = true;
+> +			goto err_free;
+>  		}
+>  
+>  		if (gso.gso_type & VIRTIO_NET_HDR_GSO_ECN)
+> @@ -714,9 +699,8 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+>  
+>  		skb_shinfo(skb)->gso_size = gso.gso_size;
+>  		if (skb_shinfo(skb)->gso_size == 0) {
+> -			tun->dev->stats.rx_frame_errors++;
+> -			kfree_skb(skb);
+> -			return -EINVAL;
+> +			error = true;
+> +			goto err_free;
+>  		}
+>  
+>  		/* Header must be checked, and gso_segs computed. */
+> @@ -724,11 +708,38 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+>  		skb_shinfo(skb)->gso_segs = 0;
+>  	}
+>  
+> -	netif_rx_ni(skb);
+> +	tun = __tun_get(tfile);
+> +	if (!tun)
+> +		return -EBADFD;
+>  
+> +	switch (tfile->flags & TUN_TYPE_MASK) {
+> +	case TUN_TUN_DEV:
+> +		skb->dev = tun->dev;
+> +		break;
+> +	case TUN_TAP_DEV:
+> +		skb->protocol = eth_type_trans(skb, tun->dev);
+> +		break;
+> +	}
+> +
+> +	netif_rx_ni(skb);
+>  	tun->dev->stats.rx_packets++;
+>  	tun->dev->stats.rx_bytes += len;
+> +	tun_put(tun);
+> +	return count;
+> +
+> +err_free:
+> +	count = -EINVAL;
+> +	kfree_skb(skb);
+> +err:
+> +	tun = __tun_get(tfile);
+> +	if (!tun)
+> +		return -EBADFD;
+>  
+> +	if (drop)
+> +		tun->dev->stats.rx_dropped++;
+> +	if (error)
+> +		tun->dev->stats.rx_frame_errors++;
+> +	tun_put(tun);
+>  	return count;
+>  }
+>  
+> @@ -736,30 +747,25 @@ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
+>  			      unsigned long count, loff_t pos)
+>  {
+>  	struct file *file = iocb->ki_filp;
+> -	struct tun_struct *tun = tun_get(file);
+> +	struct tun_file *tfile = file->private_data;
+>  	ssize_t result;
+>  
+> -	if (!tun)
+> -		return -EBADFD;
+> -
+> -	tun_debug(KERN_INFO, tun, "tun_chr_write %ld\n", count);
+> -
+> -	result = tun_get_user(tun, iv, iov_length(iv, count),
+> +	result = tun_get_user(tfile, iv, iov_length(iv, count),
+>  			      file->f_flags & O_NONBLOCK);
+>  
+> -	tun_put(tun);
+>  	return result;
+>  }
+>  
+>  /* Put packet to the user space buffer */
+> -static ssize_t tun_put_user(struct tun_struct *tun,
+> +static ssize_t tun_put_user(struct tun_file *tfile,
+>  			    struct sk_buff *skb,
+>  			    const struct iovec *iv, int len)
+>  {
+> +	struct tun_struct *tun = NULL;
+>  	struct tun_pi pi = { 0, skb->protocol };
+>  	ssize_t total = 0;
+>  
+> -	if (!(tun->flags & TUN_NO_PI)) {
+> +	if (!(tfile->flags & TUN_NO_PI)) {
+>  		if ((len -= sizeof(pi)) < 0)
+>  			return -EINVAL;
+>  
+> @@ -773,9 +779,10 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+>  		total += sizeof(pi);
+>  	}
+>  
+> -	if (tun->flags & TUN_VNET_HDR) {
+> +	if (tfile->flags & TUN_VNET_HDR) {
+>  		struct virtio_net_hdr gso = { 0 }; /* no info leak */
+> -		if ((len -= tun->vnet_hdr_sz) < 0)
+> +		len -= tfile->vnet_hdr_sz;
+> +		if (len < 0)
+>  			return -EINVAL;
+>  
+>  		if (skb_is_gso(skb)) {
+> @@ -818,7 +825,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+>  		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
+>  					       sizeof(gso))))
+>  			return -EFAULT;
+> -		total += tun->vnet_hdr_sz;
+> +		total += tfile->vnet_hdr_sz;
+>  	}
+>  
+>  	len = min_t(int, skb->len, len);
+> @@ -826,29 +833,33 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+>  	skb_copy_datagram_const_iovec(skb, 0, iv, total, len);
+>  	total += skb->len;
+>  
+> -	tun->dev->stats.tx_packets++;
+> -	tun->dev->stats.tx_bytes += len;
+> +	tun = __tun_get(tfile);
+> +	if (tun) {
+> +		tun->dev->stats.tx_packets++;
+> +		tun->dev->stats.tx_bytes += len;
+> +		tun_put(tun);
+> +	}
+>  
+>  	return total;
+>  }
+>  
+> -static ssize_t tun_do_read(struct tun_struct *tun,
+> +static ssize_t tun_do_read(struct tun_file *tfile,
+>  			   struct kiocb *iocb, const struct iovec *iv,
+>  			   ssize_t len, int noblock)
+>  {
+>  	DECLARE_WAITQUEUE(wait, current);
+>  	struct sk_buff *skb;
+>  	ssize_t ret = 0;
+> -
+> -	tun_debug(KERN_INFO, tun, "tun_chr_read\n");
+> +	struct tun_struct *tun = NULL;
+>  
+>  	if (unlikely(!noblock))
+> -		add_wait_queue(&tun->wq.wait, &wait);
+> +		add_wait_queue(&tfile->wq.wait, &wait);
+>  	while (len) {
+>  		current->state = TASK_INTERRUPTIBLE;
+>  
+> +		skb = skb_dequeue(&tfile->socket.sk->sk_receive_queue);
+>  		/* Read frames from the queue */
+> -		if (!(skb=skb_dequeue(&tun->socket.sk->sk_receive_queue))) {
+> +		if (!skb) {
+>  			if (noblock) {
+>  				ret = -EAGAIN;
+>  				break;
+> @@ -857,25 +868,38 @@ static ssize_t tun_do_read(struct tun_struct *tun,
+>  				ret = -ERESTARTSYS;
+>  				break;
+>  			}
+> +
+> +			tun = __tun_get(tfile);
+> +			if (!tun) {
+> +				ret = -EIO;
+> +				break;
+> +			}
+>  			if (tun->dev->reg_state != NETREG_REGISTERED) {
+>  				ret = -EIO;
+> +				tun_put(tun);
+>  				break;
+>  			}
+> +			tun_put(tun);
+>  
+>  			/* Nothing to read, let's sleep */
+>  			schedule();
+>  			continue;
+>  		}
+> -		netif_wake_queue(tun->dev);
+>  
+> -		ret = tun_put_user(tun, skb, iv, len);
+> +		tun = __tun_get(tfile);
+> +		if (tun) {
+> +			netif_wake_queue(tun->dev);
+> +			tun_put(tun);
+> +		}
+> +
+> +		ret = tun_put_user(tfile, skb, iv, len);
+>  		kfree_skb(skb);
+>  		break;
+>  	}
+>  
+>  	current->state = TASK_RUNNING;
+>  	if (unlikely(!noblock))
+> -		remove_wait_queue(&tun->wq.wait, &wait);
+> +		remove_wait_queue(&tfile->wq.wait, &wait);
+>  
 >  	return ret;
 >  }
-> +static void mmc_blk_abort_packed_req(struct mmc_queue_req *mq_rq) {
-> +	struct request *prq;
-> +
-> +	while (!list_empty(&mq_rq->packed_list)) {
-> +		prq = list_entry_rq(mq_rq->packed_list.next);
-> +		list_del_init(&prq->queuelist);
-> +		blk_end_request(prq, -EIO, blk_rq_bytes(prq));
-> +	}
-> +
-> +	mmc_blk_clear_packed(mq_rq);
-> +}
-> +
-> +static void mmc_blk_revert_packed_req(struct mmc_queue *mq,
-> +				      struct mmc_queue_req *mq_rq)
-> +{
-> +	struct request *prq;
-> +	struct request_queue *q = mq->queue;
-> +
-> +	while (!list_empty(&mq_rq->packed_list)) {
-> +		prq = list_entry_rq(mq_rq->packed_list.prev);
-> +		if (prq->queuelist.prev != &mq_rq->packed_list) {
-> +			list_del_init(&prq->queuelist);
-> +			spin_lock_irq(q->queue_lock);
-> +			blk_requeue_request(mq->queue, prq);
-> +			spin_unlock_irq(q->queue_lock);
-> +		} else {
-> +			list_del_init(&prq->queuelist);
-> +		}
-> +	}
-> +
-> +	mmc_blk_clear_packed(mq_rq);
-> +}
-> 
->  static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
-> { @@ -1276,23 +1593,35 @@ static int mmc_blk_issue_rw_rq(struct
-> mmc_queue *mq, struct request *rqc)
->  	struct mmc_queue_req *mq_rq;
->  	struct request *req = rqc;
->  	struct mmc_async_req *areq;
-> +	const u8 packed_num = 2;
-> +	u8 reqs = 0;
-> 
->  	if (!rqc && !mq->mqrq_prev->req)
->  		return 0;
-> 
-> +	if (rqc) {
-> +		/*
-> +		 * When 4KB native sector is enabled, only 8 blocks
-> +		 * multiple read or write is allowed
-> +		 */
-> +		if ((brq->data.blocks & 0x07) &&
-
-What will be the value of "brq->data.blocks" here? I don't think this has been even initialized here.
-Also this is what specification (6.6.30.2  Native 4KB sector behavior) mandates for large sector size native:
-	- Sector counts shall be multiples of 8 (4KB), e.g. in SET_BLOCK_COUNT (CMD23), and CORRECTLY_PRG_SECTORS_NUM field in EXT_CSD
-	- Arguments for read commands (CMD17/18) and write commands (CMD24/25) shall always be aligned to 8 (4KB)
-
-So for each entry (which is for each request) in packed command header, you need to make sure that sector count is in multiple of 8 for CMD23 argument and also CMD18/CMD25 arguments (sector address) must be 4KB aligned.
-
-Regards,
-Subhash
-
-> +				(card->ext_csd.data_sector_size == 4096)) {
-> +			pr_err("%s: Transfer size is not 4KB sector size
-> aligned\n",
-> +					req->rq_disk->disk_name);
-> +			mq_rq = mq->mqrq_cur;
-> +			goto cmd_abort;
-> +		}
-> +
-> +		reqs = mmc_blk_prep_packed_list(mq, rqc);
-> +	}
-> +
->  	do {
->  		if (rqc) {
-> -			/*
-> -			 * When 4KB native sector is enabled, only 8 blocks
-> -			 * multiple read or write is allowed
-> -			 */
-> -			if ((brq->data.blocks & 0x07) &&
-> -			    (card->ext_csd.data_sector_size == 4096)) {
-> -				pr_err("%s: Transfer size is not 4KB sector size
-> aligned\n",
-> -					req->rq_disk->disk_name);
-> -				goto cmd_abort;
-> -			}
-> -			mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-> +			if (reqs >= packed_num)
-> +				mmc_blk_packed_hdr_wrq_prep(mq-
-> >mqrq_cur,
-> +						card, mq);
-> +			else
-> +				mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0,
-> mq);
->  			areq = &mq->mqrq_cur->mmc_active;
->  		} else
->  			areq = NULL;
-> @@ -1313,8 +1642,15 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
-> *mq, struct request *rqc)
->  			 * A block was successfully transferred.
->  			 */
->  			mmc_blk_reset_success(md, type);
-> -			ret = blk_end_request(req, 0,
-> +
-> +			if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
-> +				ret = mmc_blk_end_packed_req(mq_rq);
-> +				break;
-> +			} else {
-> +				ret = blk_end_request(req, 0,
->  						brq->data.bytes_xfered);
-> +			}
-> +
->  			/*
->  			 * If the blk_end_request function returns non-zero
-> even
->  			 * though all data has been transferred and no errors
-> @@ -1347,7 +1683,8 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
-> *mq, struct request *rqc)
->  			err = mmc_blk_reset(md, card->host, type);
->  			if (!err)
->  				break;
-> -			if (err == -ENODEV)
-> +			if (err == -ENODEV ||
-> +				mq_rq->packed_cmd !=
-> MMC_PACKED_NONE)
->  				goto cmd_abort;
->  			/* Fall through */
->  		}
-> @@ -1374,25 +1711,46 @@ static int mmc_blk_issue_rw_rq(struct
-> mmc_queue *mq, struct request *rqc)
->  		}
-> 
->  		if (ret) {
-> -			/*
-> -			 * In case of a incomplete request
-> -			 * prepare it again and resend.
-> -			 */
-> -			mmc_blk_rw_rq_prep(mq_rq, card, disable_multi,
-> mq);
-> -			mmc_start_req(card->host, &mq_rq->mmc_active,
-> NULL);
-> +			if (mq_rq->packed_cmd == MMC_PACKED_NONE) {
-> +				/*
-> +				 * In case of a incomplete request
-> +				 * prepare it again and resend.
-> +				 */
-> +				mmc_blk_rw_rq_prep(mq_rq, card,
-> +						disable_multi, mq);
-> +				mmc_start_req(card->host,
-> +						&mq_rq->mmc_active, NULL);
-> +			} else {
-> +				if (!mq_rq->packed_retries)
-> +					goto cmd_abort;
-> +				mmc_blk_packed_hdr_wrq_prep(mq_rq, card,
-> mq);
-> +				mmc_start_req(card->host,
-> +						&mq_rq->mmc_active, NULL);
-> +			}
->  		}
->  	} while (ret);
-> 
->  	return 1;
-> 
->   cmd_abort:
-> -	if (mmc_card_removed(card))
-> -		req->cmd_flags |= REQ_QUIET;
-> -	while (ret)
-> -		ret = blk_end_request(req, -EIO, blk_rq_cur_bytes(req));
-> +	if (mq_rq->packed_cmd == MMC_PACKED_NONE) {
-> +		if (mmc_card_removed(card))
-> +			req->cmd_flags |= REQ_QUIET;
-> +		while (ret)
-> +			ret = blk_end_request(req, -EIO,
-> +					blk_rq_cur_bytes(req));
-> +	} else {
-> +		mmc_blk_abort_packed_req(mq_rq);
-> +	}
-> 
->   start_new_req:
->  	if (rqc) {
-> +		/*
-> +		 * If current request is packed, it needs to put back.
-> +		 */
-> +		if (mq->mqrq_cur->packed_cmd != MMC_PACKED_NONE)
-> +			mmc_blk_revert_packed_req(mq, mq->mqrq_cur);
-> +
->  		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
->  		mmc_start_req(card->host, &mq->mqrq_cur->mmc_active,
-> NULL);
+> @@ -885,21 +909,17 @@ static ssize_t tun_chr_aio_read(struct kiocb *iocb, const struct iovec *iv,
+>  {
+>  	struct file *file = iocb->ki_filp;
+>  	struct tun_file *tfile = file->private_data;
+> -	struct tun_struct *tun = __tun_get(tfile);
+>  	ssize_t len, ret;
+>  
+> -	if (!tun)
+> -		return -EBADFD;
+>  	len = iov_length(iv, count);
+>  	if (len < 0) {
+>  		ret = -EINVAL;
+>  		goto out;
 >  	}
-> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c index
-> e360a97..165d85a 100644
-> --- a/drivers/mmc/card/queue.c
-> +++ b/drivers/mmc/card/queue.c
-> @@ -175,6 +175,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct
-> mmc_card *card,
->  	if (!mq->queue)
+>  
+> -	ret = tun_do_read(tun, iocb, iv, len, file->f_flags & O_NONBLOCK);
+> +	ret = tun_do_read(tfile, iocb, iv, len, file->f_flags & O_NONBLOCK);
+>  	ret = min_t(ssize_t, ret, len);
+>  out:
+> -	tun_put(tun);
+>  	return ret;
+>  }
+>  
+> @@ -911,7 +931,7 @@ static void tun_setup(struct net_device *dev)
+>  	tun->group = -1;
+>  
+>  	dev->ethtool_ops = &tun_ethtool_ops;
+> -	dev->destructor = tun_free_netdev;
+> +	dev->destructor = free_netdev;
+>  }
+>  
+>  /* Trivial set of netlink ops to allow deleting tun or tap
+> @@ -931,7 +951,7 @@ static struct rtnl_link_ops tun_link_ops __read_mostly = {
+>  
+>  static void tun_sock_write_space(struct sock *sk)
+>  {
+> -	struct tun_struct *tun;
+> +	struct tun_file *tfile = NULL;
+>  	wait_queue_head_t *wqueue;
+>  
+>  	if (!sock_writeable(sk))
+> @@ -945,37 +965,38 @@ static void tun_sock_write_space(struct sock *sk)
+>  		wake_up_interruptible_sync_poll(wqueue, POLLOUT |
+>  						POLLWRNORM | POLLWRBAND);
+>  
+> -	tun = tun_sk(sk)->tun;
+> -	kill_fasync(&tun->fasync, SIGIO, POLL_OUT);
+> -}
+> -
+> -static void tun_sock_destruct(struct sock *sk)
+> -{
+> -	free_netdev(tun_sk(sk)->tun->dev);
+> +	tfile = container_of(sk, struct tun_file, sk);
+> +	kill_fasync(&tfile->fasync, SIGIO, POLL_OUT);
+>  }
+>  
+>  static int tun_sendmsg(struct kiocb *iocb, struct socket *sock,
+>  		       struct msghdr *m, size_t total_len)
+>  {
+> -	struct tun_struct *tun = container_of(sock, struct tun_struct, socket);
+> -	return tun_get_user(tun, m->msg_iov, total_len,
+> -			    m->msg_flags & MSG_DONTWAIT);
+> +	struct tun_file *tfile = container_of(sock, struct tun_file, socket);
+> +	ssize_t result;
+> +
+> +	result = tun_get_user(tfile, m->msg_iov, total_len,
+> +			      m->msg_flags & MSG_DONTWAIT);
+> +	return result;
+>  }
+>  
+>  static int tun_recvmsg(struct kiocb *iocb, struct socket *sock,
+>  		       struct msghdr *m, size_t total_len,
+>  		       int flags)
+>  {
+> -	struct tun_struct *tun = container_of(sock, struct tun_struct, socket);
+> +	struct tun_file *tfile = container_of(sock, struct tun_file, socket);
+>  	int ret;
+> +
+>  	if (flags & ~(MSG_DONTWAIT|MSG_TRUNC))
+>  		return -EINVAL;
+> -	ret = tun_do_read(tun, iocb, m->msg_iov, total_len,
+> +
+> +	ret = tun_do_read(tfile, iocb, m->msg_iov, total_len,
+>  			  flags & MSG_DONTWAIT);
+>  	if (ret > total_len) {
+>  		m->msg_flags |= MSG_TRUNC;
+>  		ret = flags & MSG_TRUNC ? ret : total_len;
+>  	}
+> +
+>  	return ret;
+>  }
+>  
+> @@ -996,7 +1017,7 @@ static const struct proto_ops tun_socket_ops = {
+>  static struct proto tun_proto = {
+>  	.name		= "tun",
+>  	.owner		= THIS_MODULE,
+> -	.obj_size	= sizeof(struct tun_sock),
+> +	.obj_size	= sizeof(struct tun_file),
+>  };
+>  
+>  static int tun_flags(struct tun_struct *tun)
+> @@ -1047,8 +1068,8 @@ static DEVICE_ATTR(group, 0444, tun_show_group, NULL);
+>  
+>  static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  {
+> -	struct sock *sk;
+>  	struct tun_struct *tun;
+> +	struct tun_file *tfile = file->private_data;
+>  	struct net_device *dev;
+>  	int err;
+>  
+> @@ -1069,7 +1090,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  		     (tun->group != -1 && !in_egroup_p(tun->group))) &&
+>  		    !capable(CAP_NET_ADMIN))
+>  			return -EPERM;
+> -		err = security_tun_dev_attach(tun->socket.sk);
+> +		err = security_tun_dev_attach(tfile->socket.sk);
+>  		if (err < 0)
+>  			return err;
+>  
+> @@ -1113,25 +1134,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  		tun = netdev_priv(dev);
+>  		tun->dev = dev;
+>  		tun->flags = flags;
+> -		tun->txflt.count = 0;
+> -		tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
+>  
+> -		err = -ENOMEM;
+> -		sk = sk_alloc(&init_net, AF_UNSPEC, GFP_KERNEL, &tun_proto);
+> -		if (!sk)
+> -			goto err_free_dev;
+> -
+> -		sk_change_net(sk, net);
+> -		tun->socket.wq = &tun->wq;
+> -		init_waitqueue_head(&tun->wq.wait);
+> -		tun->socket.ops = &tun_socket_ops;
+> -		sock_init_data(&tun->socket, sk);
+> -		sk->sk_write_space = tun_sock_write_space;
+> -		sk->sk_sndbuf = INT_MAX;
+> -
+> -		tun_sk(sk)->tun = tun;
+> -
+> -		security_tun_dev_post_create(sk);
+> +		security_tun_dev_post_create(&tfile->sk);
+>  
+>  		tun_net_init(dev);
+>  
+> @@ -1141,15 +1145,13 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  
+>  		err = register_netdevice(tun->dev);
+>  		if (err < 0)
+> -			goto err_free_sk;
+> +			goto err_free_dev;
+>  
+>  		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
+>  		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
+>  		    device_create_file(&tun->dev->dev, &dev_attr_group))
+>  			pr_err("Failed to create tun sysfs files\n");
+>  
+> -		sk->sk_destruct = tun_sock_destruct;
+> -
+>  		err = tun_attach(tun, file);
+>  		if (err < 0)
+>  			goto failed;
+> @@ -1172,6 +1174,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  	else
+>  		tun->flags &= ~TUN_VNET_HDR;
+>  
+> +	/* Cache flags from tun device */
+> +	tfile->flags = tun->flags;
+>  	/* Make sure persistent devices do not get stuck in
+>  	 * xoff state.
+>  	 */
+> @@ -1181,11 +1185,9 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>  	strcpy(ifr->ifr_name, tun->dev->name);
+>  	return 0;
+>  
+> - err_free_sk:
+> -	tun_free_netdev(dev);
+> - err_free_dev:
+> +err_free_dev:
+>  	free_netdev(dev);
+> - failed:
+> +failed:
+>  	return err;
+>  }
+>  
+> @@ -1357,9 +1359,9 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  	case TUNSETTXFILTER:
+>  		/* Can be set only for TAPs */
+>  		ret = -EINVAL;
+> -		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
+> +		if ((tfile->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
+>  			break;
+> -		ret = update_filter(&tun->txflt, (void __user *)arg);
+> +		ret = update_filter(&tfile->txflt, (void __user *)arg);
+>  		break;
+>  
+>  	case SIOCGIFHWADDR:
+> @@ -1379,7 +1381,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  		break;
+>  
+>  	case TUNGETSNDBUF:
+> -		sndbuf = tun->socket.sk->sk_sndbuf;
+> +		sndbuf = tfile->socket.sk->sk_sndbuf;
+>  		if (copy_to_user(argp, &sndbuf, sizeof(sndbuf)))
+>  			ret = -EFAULT;
+>  		break;
+> @@ -1390,11 +1392,11 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  			break;
+>  		}
+>  
+> -		tun->socket.sk->sk_sndbuf = sndbuf;
+> +		tfile->socket.sk->sk_sndbuf = sndbuf;
+>  		break;
+>  
+>  	case TUNGETVNETHDRSZ:
+> -		vnet_hdr_sz = tun->vnet_hdr_sz;
+> +		vnet_hdr_sz = tfile->vnet_hdr_sz;
+>  		if (copy_to_user(argp, &vnet_hdr_sz, sizeof(vnet_hdr_sz)))
+>  			ret = -EFAULT;
+>  		break;
+> @@ -1409,27 +1411,27 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  			break;
+>  		}
+>  
+> -		tun->vnet_hdr_sz = vnet_hdr_sz;
+> +		tfile->vnet_hdr_sz = vnet_hdr_sz;
+>  		break;
+>  
+>  	case TUNATTACHFILTER:
+>  		/* Can be set only for TAPs */
+>  		ret = -EINVAL;
+> -		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
+> +		if ((tfile->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
+>  			break;
+>  		ret = -EFAULT;
+>  		if (copy_from_user(&fprog, argp, sizeof(fprog)))
+>  			break;
+>  
+> -		ret = sk_attach_filter(&fprog, tun->socket.sk);
+> +		ret = sk_attach_filter(&fprog, tfile->socket.sk);
+>  		break;
+>  
+>  	case TUNDETACHFILTER:
+>  		/* Can be set only for TAPs */
+>  		ret = -EINVAL;
+> -		if ((tun->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
+> +		if ((tfile->flags & TUN_TYPE_MASK) != TUN_TAP_DEV)
+>  			break;
+> -		ret = sk_detach_filter(tun->socket.sk);
+> +		ret = sk_detach_filter(tfile->socket.sk);
+>  		break;
+>  
+>  	default:
+> @@ -1481,43 +1483,50 @@ static long tun_chr_compat_ioctl(struct file *file,
+>  
+>  static int tun_chr_fasync(int fd, struct file *file, int on)
+>  {
+> -	struct tun_struct *tun = tun_get(file);
+> -	int ret;
+> -
+> -	if (!tun)
+> -		return -EBADFD;
+> -
+> -	tun_debug(KERN_INFO, tun, "tun_chr_fasync %d\n", on);
+> +	struct tun_file *tfile = file->private_data;
+> +	int ret = fasync_helper(fd, file, on, &tfile->fasync);
+>  
+> -	if ((ret = fasync_helper(fd, file, on, &tun->fasync)) < 0)
+> +	if (ret < 0)
+>  		goto out;
+>  
+>  	if (on) {
+>  		ret = __f_setown(file, task_pid(current), PIDTYPE_PID, 0);
+>  		if (ret)
+>  			goto out;
+> -		tun->flags |= TUN_FASYNC;
+> +		tfile->flags |= TUN_FASYNC;
+>  	} else
+> -		tun->flags &= ~TUN_FASYNC;
+> +		tfile->flags &= ~TUN_FASYNC;
+>  	ret = 0;
+>  out:
+> -	tun_put(tun);
+>  	return ret;
+>  }
+>  
+>  static int tun_chr_open(struct inode *inode, struct file * file)
+>  {
+> +	struct net *net = current->nsproxy->net_ns;
+>  	struct tun_file *tfile;
+>  
+>  	DBG1(KERN_INFO, "tunX: tun_chr_open\n");
+>  
+> -	tfile = kmalloc(sizeof(*tfile), GFP_KERNEL);
+> +	tfile = (struct tun_file *)sk_alloc(net, AF_UNSPEC, GFP_KERNEL,
+> +					&tun_proto);
+>  	if (!tfile)
 >  		return -ENOMEM;
-> 
-> +	INIT_LIST_HEAD(&mqrq_cur->packed_list);
-> +	INIT_LIST_HEAD(&mqrq_prev->packed_list);
+> -	atomic_set(&tfile->count, 0);
 > +
->  	mq->mqrq_cur = mqrq_cur;
->  	mq->mqrq_prev = mqrq_prev;
->  	mq->queue->queuedata = mq;
-> @@ -375,6 +378,35 @@ void mmc_queue_resume(struct mmc_queue *mq)
->  	}
+>  	tfile->tun = NULL;
+> -	tfile->net = get_net(current->nsproxy->net_ns);
+> +	tfile->net = net;
+> +	tfile->txflt.count = 0;
+> +	tfile->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
+> +	tfile->socket.wq = &tfile->wq;
+> +	init_waitqueue_head(&tfile->wq.wait);
+> +	tfile->socket.file = file;
+> +	tfile->socket.ops = &tun_socket_ops;
+> +	sock_init_data(&tfile->socket, &tfile->sk);
+> +
+> +	tfile->sk.sk_write_space = tun_sock_write_space;
+> +	tfile->sk.sk_sndbuf = INT_MAX;
+>  	file->private_data = tfile;
+> +
+>  	return 0;
 >  }
-> 
-> +static unsigned int mmc_queue_packed_map_sg(struct mmc_queue *mq,
-> +					    struct mmc_queue_req *mqrq,
-> +					    struct scatterlist *sg)
-> +{
-> +	struct scatterlist *__sg;
-> +	unsigned int sg_len = 0;
-> +	struct request *req;
-> +	enum mmc_packed_cmd cmd;
-> +
-> +	cmd = mqrq->packed_cmd;
-> +
-> +	if (cmd == MMC_PACKED_WRITE) {
-> +		__sg = sg;
-> +		sg_set_buf(__sg, mqrq->packed_cmd_hdr,
-> +				sizeof(mqrq->packed_cmd_hdr));
-> +		sg_len++;
-> +		__sg->page_link &= ~0x02;
+>  
+> @@ -1541,14 +1550,14 @@ static int tun_chr_close(struct inode *inode, struct file *file)
+>  				unregister_netdevice(dev);
+>  			rtnl_unlock();
+>  		}
+> -	}
+>  
+> -	tun = tfile->tun;
+> -	if (tun)
+> -		sock_put(tun->socket.sk);
+> +		/* drop the reference that netdevice holds */
+> +		sock_put(&tfile->sk);
+>  
+> -	put_net(tfile->net);
+> -	kfree(tfile);
 > +	}
 > +
-> +	__sg = sg + sg_len;
-> +	list_for_each_entry(req, &mqrq->packed_list, queuelist) {
-> +		sg_len += blk_rq_map_sg(mq->queue, req, __sg);
-> +		__sg = sg + (sg_len - 1);
-> +		(__sg++)->page_link &= ~0x02;
-> +	}
-> +	sg_mark_end(sg + (sg_len - 1));
-> +	return sg_len;
-> +}
-> +
->  /*
->   * Prepare the sg list(s) to be handed of to the host driver
->   */
-> @@ -385,12 +417,19 @@ unsigned int mmc_queue_map_sg(struct
-> mmc_queue *mq, struct mmc_queue_req *mqrq)
->  	struct scatterlist *sg;
->  	int i;
-> 
-> -	if (!mqrq->bounce_buf)
-> -		return blk_rq_map_sg(mq->queue, mqrq->req, mqrq->sg);
-> +	if (!mqrq->bounce_buf) {
-> +		if (!list_empty(&mqrq->packed_list))
-> +			return mmc_queue_packed_map_sg(mq, mqrq, mqrq-
-> >sg);
-> +		else
-> +			return blk_rq_map_sg(mq->queue, mqrq->req, mqrq-
-> >sg);
-> +	}
-> 
->  	BUG_ON(!mqrq->bounce_sg);
-> 
-> -	sg_len = blk_rq_map_sg(mq->queue, mqrq->req, mqrq->bounce_sg);
-> +	if (!list_empty(&mqrq->packed_list))
-> +		sg_len = mmc_queue_packed_map_sg(mq, mqrq, mqrq-
-> >bounce_sg);
-> +	else
-> +		sg_len = blk_rq_map_sg(mq->queue, mqrq->req, mqrq-
-> >bounce_sg);
-> 
->  	mqrq->bounce_sg_len = sg_len;
-> 
-> diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h index
-> d2a1eb4..5e04938 100644
-> --- a/drivers/mmc/card/queue.h
-> +++ b/drivers/mmc/card/queue.h
-> @@ -12,6 +12,11 @@ struct mmc_blk_request {
->  	struct mmc_data		data;
->  };
-> 
-> +enum mmc_packed_cmd {
-> +	MMC_PACKED_NONE = 0,
-> +	MMC_PACKED_WRITE,
-> +};
-> +
->  struct mmc_queue_req {
->  	struct request		*req;
->  	struct mmc_blk_request	brq;
-> @@ -20,6 +25,13 @@ struct mmc_queue_req {
->  	struct scatterlist	*bounce_sg;
->  	unsigned int		bounce_sg_len;
->  	struct mmc_async_req	mmc_active;
-> +	struct list_head	packed_list;
-> +	u32			packed_cmd_hdr[128];
-> +	unsigned int		packed_blocks;
-> +	enum mmc_packed_cmd	packed_cmd;
-> +	int		packed_retries;
-> +	int		packed_fail_idx;
-> +	u8		packed_num;
->  };
-> 
->  struct mmc_queue {
-> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-> index 69370f4..2a2fed8 100644
-> --- a/drivers/mmc/core/mmc_ops.c
-> +++ b/drivers/mmc/core/mmc_ops.c
-> @@ -335,6 +335,7 @@ int mmc_send_ext_csd(struct mmc_card *card, u8
-> *ext_csd)
->  	return mmc_send_cxd_data(card, card->host, MMC_SEND_EXT_CSD,
->  			ext_csd, 512);
+> +	/* drop the reference that file holds */
+> +	sock_put(&tfile->sk);
+>  
+>  	return 0;
 >  }
-> +EXPORT_SYMBOL_GPL(mmc_send_ext_csd);
-> 
->  int mmc_spi_read_ocr(struct mmc_host *host, int highcap, u32 *ocrp)  { diff --
-> git a/include/linux/mmc/core.h b/include/linux/mmc/core.h index
-> 1b431c7..d787037 100644
-> --- a/include/linux/mmc/core.h
-> +++ b/include/linux/mmc/core.h
-> @@ -18,6 +18,9 @@ struct mmc_request;
->  struct mmc_command {
->  	u32			opcode;
->  	u32			arg;
-> +#define MMC_CMD23_ARG_REL_WR	(1 << 31)
-> +#define MMC_CMD23_ARG_PACKED	((0 << 31) | (1 << 30))
-> +#define MMC_CMD23_ARG_TAG_REQ	(1 << 29)
->  	u32			resp[4];
->  	unsigned int		flags;		/* expected response type */
->  #define MMC_RSP_PRESENT	(1 << 0)
-> @@ -143,6 +146,7 @@ extern int mmc_app_cmd(struct mmc_host *, struct
-> mmc_card *);  extern int mmc_wait_for_app_cmd(struct mmc_host *, struct
-> mmc_card *,
->  	struct mmc_command *, int);
->  extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
-> +extern int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd);
-> 
->  #define MMC_ERASE_ARG		0x00000000
->  #define MMC_SECURE_ERASE_ARG	0x80000000
-> --
-> 1.7.0.4
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+> @@ -1676,13 +1685,14 @@ static void tun_cleanup(void)
+>  struct socket *tun_get_socket(struct file *file)
+>  {
+>  	struct tun_struct *tun;
+> +	struct tun_file *tfile = file->private_data;
+>  	if (file->f_op != &tun_fops)
+>  		return ERR_PTR(-EINVAL);
+>  	tun = tun_get(file);
+>  	if (!tun)
+>  		return ERR_PTR(-EBADFD);
+>  	tun_put(tun);
+> -	return &tun->socket;
+> +	return &tfile->socket;
+>  }
+>  EXPORT_SYMBOL_GPL(tun_get_socket);
+>  
