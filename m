@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757663Ab2FYWVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:21:07 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:26869 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757393Ab2FYWVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:21:06 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-209.messagelabs.com!1340662830!6919855!41
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 05/33] staging: comedi: cb_das13_cs: change driver registration order
-Date: Mon, 25 Jun 2012 15:20:53 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	id S1757660Ab2FYW2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:28:39 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:36586 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756687Ab2FYW2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 18:28:37 -0400
+Message-ID: <4FE8E56A.6080601@parallels.com>
+Date: Tue, 26 Jun 2012 02:25:46 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 10/11] memcg: allow a memcg with kmem charges to be destructed.
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-11-git-send-email-glommer@parallels.com> <20120625183442.GG3869@google.com>
+In-Reply-To: <20120625183442.GG3869@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206251520.54274.hartleys@visionengravers.com>
+X-Originating-IP: [109.173.9.3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As done with the other comedi driver types, register the
-comedi_driver first then the pcmcia_driver. Also, make
-sure the pcmcia_driver registration succeeds and unregister
-the comedi_driver it it fails.
+On 06/25/2012 10:34 PM, Tejun Heo wrote:
+> On Mon, Jun 25, 2012 at 06:15:27PM +0400, Glauber Costa wrote:
+>> Because the ultimate goal of the kmem tracking in memcg is to
+>> track slab pages as well, we can't guarantee that we'll always
+>> be able to point a page to a particular process, and migrate
+>> the charges along with it - since in the common case, a page
+>> will contain data belonging to multiple processes.
+>>
+>> Because of that, when we destroy a memcg, we only make sure
+>> the destruction will succeed by discounting the kmem charges
+>> from the user charges when we try to empty the cgroup.
+>>
+>> Signed-off-by: Glauber Costa <glommer@parallels.com>
+>> CC: Christoph Lameter <cl@linux.com>
+>> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+>> CC: Michal Hocko <mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner <hannes@cmpxchg.org>
+>> CC: Suleiman Souhlal <suleiman@google.com>
+>> ---
+>>   mm/memcontrol.c |   10 +++++++++-
+>>   1 file changed, 9 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index a6a440b..bb9b6fe 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -598,6 +598,11 @@ static void disarm_kmem_keys(struct mem_cgroup *memcg)
+>>   {
+>>   	if (test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted))
+>>   		static_key_slow_dec(&mem_cgroup_kmem_enabled_key);
+>> +	/*
+>> +	 * This check can't live in kmem destruction function,
+>> +	 * since the charges will outlive the cgroup
+>> +	 */
+>> +	BUG_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
+>
+> WARN_ON() please.  Misaccounted kernel usually is better than dead
+> kernel.
+>
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_das16_cs.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+You're absolutely right, will change.
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index 624e005..625134f 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -784,11 +784,17 @@ static int __init das16cs_init(void)
- {
- 	int ret;
- 
--	ret = pcmcia_register_driver(&das16cs_driver);
-+	ret = comedi_driver_register(&driver_das16cs);
- 	if (ret < 0)
- 		return ret;
- 
--	return comedi_driver_register(&driver_das16cs);
-+	ret = pcmcia_register_driver(&das16cs_driver);
-+	if (ret < 0) {
-+		comedi_driver_unregister(&driver_das16cs);
-+		return ret;
-+	}
-+
-+	return 0;
- }
- module_init(das16cs_init);
- 
--- 
-1.7.11
 
