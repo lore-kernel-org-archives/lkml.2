@@ -1,104 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab2FYVnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 17:43:24 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:59626 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756145Ab2FYVnV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 17:43:21 -0400
-X-Auth-Info: SIwRfXL1csNUXLZFlCNocd6L/nLpVDF8paNz+aCQwOc=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: =?utf-8?Q?Bj=C3=B8rn?= Mork <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Linux-Next <linux-next@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: [PATCH] mod/file2alias: make modalias generation safe for cross compiling
-References: <CAMuHMdXk6pByz14JcDgY+UE6QM0sHD8cbXye9CgOVSRRtr7J+Q@mail.gmail.com>
-	<20120615201021.GB14544@kroah.com>
-	<CAMuHMdUj6tAcWhkSkV43Kw3-2-3+JzgP6W=2w3fjL2KBfRh9ZQ@mail.gmail.com>
-	<20120615231220.GC8205@kroah.com> <87lijns84s.fsf@nemi.mork.no>
-	<m2bokjb6tv.fsf@igel.home> <87fw9urqau.fsf@nemi.mork.no>
-	<m2d34n1sz9.fsf_-_@igel.home>
-	<alpine.DEB.2.00.1206252217580.21346@ayla.of.borg>
-X-Yow: Hand me a pair of leather pants and a CASIO keyboard
- -- I'm living for today!
-Date: Mon, 25 Jun 2012 23:43:15 +0200
-In-Reply-To: <alpine.DEB.2.00.1206252217580.21346@ayla.of.borg> (Geert
-	Uytterhoeven's message of "Mon, 25 Jun 2012 22:32:53 +0200 (CEST)")
-Message-ID: <m28vfb130s.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757524Ab2FYVrd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 17:47:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47214 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756145Ab2FYVrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 17:47:32 -0400
+Message-ID: <4FE8DC6F.2020901@redhat.com>
+Date: Mon, 25 Jun 2012 18:47:27 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v3.5-rc5] media fixes
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+Hi Linus,
 
-> 	Hi Andreas,
->
-> On Mon, 25 Jun 2012, Andreas Schwab wrote:
->> --- /dev/null
->> +++ b/scripts/mod/devicetable-offsets.c
->> @@ -0,0 +1,171 @@
->> +#include <linux/kbuild.h>
->> +#include <linux/mod_devicetable.h>
->> +
->> +#define DEVID(devid) DEFINE(SIZE_##devid, sizeof(struct devid))
->> +#define DEVID_FIELD(devid, field) \
->> +	DEFINE(OFF_##devid##_##field, offsetof(struct devid, field))
->> +
->> +int main(void)
->> +{
->> +	DEVID(usb_device_id);
->> +	DEVID_FIELD(usb_device_id, match_flags);
->> +	DEVID_FIELD(usb_device_id, idVendor);
->> +	DEVID_FIELD(usb_device_id, idProduct);
->> +	DEVID_FIELD(usb_device_id, bcdDevice_lo);
->> +	DEVID_FIELD(usb_device_id, bcdDevice_hi);
->> +	DEVID_FIELD(usb_device_id, bDeviceClass);
->> +	DEVID_FIELD(usb_device_id, bDeviceSubClass);
->> +	DEVID_FIELD(usb_device_id, bDeviceProtocol);
->> +	DEVID_FIELD(usb_device_id, bInterfaceClass);
->> +	DEVID_FIELD(usb_device_id, bInterfaceSubClass);
->> +	DEVID_FIELD(usb_device_id, bInterfaceProtocol);
->
-> These are all duplicates of the structures in <linux/mod_devicetable.h>.
-> Can't you get rid of the duplication by putting e.g. the following
-> in <linux/mod_devicetable.h>:
->
->     DEVID_START(usb_device_id);
->     DEVID_FIELD(usb_device_id, __u16, match_flags);
->     DEVID_FIELD(usb_device_id, __u16, idVendor);
->     DEVID_FIELD(usb_device_id, __u16, idProduct);
->     DEVID_FIELD(usb_device_id, __u16, bcdDevice_lo);
->     DEVID_FIELD(usb_device_id, __u16, bcdDevice_hi);
->     DEVID_FIELD(usb_device_id, __u8, bDeviceClass);
->     DEVID_FIELD(usb_device_id, __u8, bDeviceSubClass);
->     DEVID_FIELD(usb_device_id, __u8, bDeviceProtocol);
->     DEVID_FIELD(usb_device_id, __u8, bInterfaceClass);
->     DEVID_FIELD(usb_device_id, __u8, bInterfaceSubClass);
->     DEVID_FIELD(usb_device_id, __u8, bInterfaceProtocol);
->     DEVID_END();
->
-> and redefining the DEVID_*() macros depending on
->   1. __KERNEL__, to generate the C struct definitions for kernel builds,
->   2. first inclusion by devicetable-offsets.c, also to generate C struct
->      definitions,
->   3. second inclusion by devicetable-offsets.c, to generate the sizes and
->      offset definitions for modalias?
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-That requires some reorganisation of the struct pnp_card_device_id which
-has a somewhat complicated structure (which also accounts for the
-ugliest part of the patch).
+For a set of fixup patches, several of them are due to regressions.
 
-Andreas.
+Regards,
+Mauro
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Latest commit at the branch: 
+099987f0aaf28771261b91a41240b9228f2e32b2 [media] smia: Fix compile failures
+The following changes since commit 71006fb22b0f5a2045605b3887ee99a0e9adafe4:
+
+  [media] saa7134-cards: Remove a PCI entry added by mistake (2012-05-21 12:48:44 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+
+for you to fetch changes up to 099987f0aaf28771261b91a41240b9228f2e32b2:
+
+  [media] smia: Fix compile failures (2012-06-18 19:52:05 -0300)
+
+----------------------------------------------------------------
+Alan Cox (1):
+      [media] smia: Fix compile failures
+
+Andrzej Hajda (2):
+      [media] v4l/s5p-mfc: corrected encoder v4l control definitions
+      [media] v4l/s5p-mfc: added image size align in VIDIOC_TRY_FMT
+
+Antonio Ospite (1):
+      [media] gspca_ov534: make AGC and AWB controls independent
+
+Guennadi Liakhovetski (1):
+      [media] Revert "[media] media: mx2_camera: Fix mbus format handling"
+
+Hans Verkuil (15):
+      [media] Fix vivi regression
+      [media] Fix regression in ioctl numbering
+      [media] Fix query/enum_dv_timings regression
+      [media] V4L2 spec fix
+      [media] saa7146_fops: remove unused variable
+      [media] cx24110: fix compiler warning
+      [media] vino: fix compiler warnings
+      [media] v4l2-ioctl: set readbuffers to 2 in g_parm
+      [media] v4l2-dev.c: fix g_parm regression in determine_valid_ioctls()
+      [media] tuner-core: return the frequency range of the correct tuner
+      [media] ivtv: fix support for big-endian systems
+      [media] cx18: support big-endian systems
+      [media] cx88: fix firmware load on big-endian systems
+      [media] bw-qcam: driver and pixfmt documentation fixes
+      [media]  Fix VIDIOC_DQEVENT docbook entry
+
+Hans de Goede (10):
+      [media] radio/si470x: Add support for the Axentia ALERT FM USB Receiver
+      [media] snd_tea575x: Report correct frequency range for EU/US versus JA models
+      [media] snd_tea575x: Make the module using snd_tea575x the fops owner
+      [media] snd_tea575x: set_freq: update cached freq to the actual achieved frequency
+      [media] bttv: Use btv->has_radio rather then the card info when registering the tuner
+      [media] bttv: Remove unused needs_tvaudio card variable
+      [media] bttv: The Hauppauge 61334 needs the msp3410 to do radio demodulation
+      [media] gspca_pac7311: Correct number of controls
+      [media] gscpa_sn9c20x: Move clustering of controls to after error checking
+      [media] gspca-core: Fix buffers staying in queued state after a stream_off
+
+Janne Huttunen (1):
+      [media] cxd2820r: Fix an incorrect modulation type bitmask
+
+Jean-Francois Moine (2):
+      [media] gspca - ov534/ov534_9: Fix sccd_read/write errors
+      [media] gspca - sonixj: Fix bad values of webcam 0458:7025
+
+Kamil Debski (3):
+      [media] s5p-mfc: Bug fix of timestamp/timecode copy mechanism
+      [media] s5p-mfc: Fix setting controls
+      [media] s5p-fimc: Fix control creation function
+
+Martin Blumenstingl (2):
+      [media] em28xx: Add remote control support for Terratec's Cinergy HTC Stick HD
+      [media] em28xx: Show a warning if the board does not support remote controls
+
+Michael Krufky (2):
+      [media] lg2160: fix off-by-one error in lg216x_write_regs
+      [media] smsusb: add autodetection support for USB ID 2040:f5a0
+
+Sachin Kamat (1):
+      [media] s5p-mfc: Fix checkpatch error in s5p_mfc_shm.h file
+
+Sakari Ailus (1):
+      [media] v4l: Correct create_bufs documentation
+
+Sasha Levin (1):
+      [media] USB: Staging: media: lirc: initialize spinlocks before usage
+
+Tomasz Moń (1):
+      [media] v4l: mem2mem_testdev: Fix race conditions in driver
+
+ Documentation/DocBook/media/v4l/pixfmt.xml         |    4 +-
+ Documentation/DocBook/media/v4l/v4l2.xml           |    2 +-
+ .../DocBook/media/v4l/vidioc-create-bufs.xml       |    5 +-
+ Documentation/DocBook/media/v4l/vidioc-dqevent.xml |    2 +-
+ arch/arm/plat-mxc/include/mach/mx2_cam.h           |    2 +
+ drivers/hid/hid-core.c                             |    1 +
+ drivers/hid/hid-ids.h                              |    3 +
+ drivers/media/common/saa7146_fops.c                |    5 --
+ drivers/media/dvb/frontends/cx24110.c              |    4 +-
+ drivers/media/dvb/frontends/cxd2820r_c.c           |    2 +-
+ drivers/media/dvb/frontends/lg2160.c               |    2 +-
+ drivers/media/dvb/siano/smsusb.c                   |    2 +
+ drivers/media/radio/radio-maxiradio.c              |    2 +-
+ drivers/media/radio/radio-sf16fmr2.c               |    2 +-
+ drivers/media/radio/si470x/radio-si470x-usb.c      |    2 +
+ drivers/media/video/bt8xx/bttv-cards.c             |   84 ++------------------
+ drivers/media/video/bt8xx/bttv-driver.c            |    5 ++
+ drivers/media/video/bt8xx/bttv.h                   |    1 -
+ drivers/media/video/bt8xx/bttvp.h                  |    1 +
+ drivers/media/video/bw-qcam.c                      |   47 ++++++++---
+ drivers/media/video/cx18/cx18-driver.c             |   10 +--
+ drivers/media/video/cx18/cx18-driver.h             |    2 +-
+ drivers/media/video/cx18/cx18-firmware.c           |    9 ++-
+ drivers/media/video/cx18/cx18-mailbox.c            |   15 ++--
+ drivers/media/video/cx88/cx88-blackbird.c          |    2 +-
+ drivers/media/video/em28xx/em28xx-cards.c          |    1 +
+ drivers/media/video/em28xx/em28xx-input.c          |    2 +
+ drivers/media/video/gspca/gspca.c                  |    4 +-
+ drivers/media/video/gspca/ov534.c                  |   32 +-------
+ drivers/media/video/gspca/ov534_9.c                |    1 +
+ drivers/media/video/gspca/pac7311.c                |    2 +-
+ drivers/media/video/gspca/sn9c20x.c                |   24 +++---
+ drivers/media/video/gspca/sonixj.c                 |    2 +-
+ drivers/media/video/ivtv/ivtv-driver.c             |   18 ++---
+ drivers/media/video/ivtv/ivtv-driver.h             |    2 +-
+ drivers/media/video/mem2mem_testdev.c              |   50 ++++++------
+ drivers/media/video/mx2_camera.c                   |   52 ++----------
+ drivers/media/video/s5p-fimc/fimc-core.c           |    2 +-
+ drivers/media/video/s5p-mfc/regs-mfc.h             |    5 ++
+ drivers/media/video/s5p-mfc/s5p_mfc_dec.c          |    4 +-
+ drivers/media/video/s5p-mfc/s5p_mfc_enc.c          |   12 +--
+ drivers/media/video/s5p-mfc/s5p_mfc_opr.h          |    4 +-
+ drivers/media/video/s5p-mfc/s5p_mfc_shm.h          |    3 +-
+ drivers/media/video/smiapp/Kconfig                 |    2 +-
+ drivers/media/video/smiapp/smiapp-core.c           |    1 +
+ drivers/media/video/tuner-core.c                   |    2 +-
+ drivers/media/video/v4l2-dev.c                     |    4 +-
+ drivers/media/video/v4l2-ioctl.c                   |    1 +
+ drivers/media/video/vino.c                         |    4 +-
+ drivers/media/video/vivi.c                         |    6 +-
+ drivers/staging/media/lirc/lirc_serial.c           |    6 ++
+ include/linux/videodev2.h                          |    6 +-
+ include/sound/tea575x-tuner.h                      |    3 +-
+ sound/i2c/other/tea575x-tuner.c                    |   21 +++--
+ sound/pci/es1968.c                                 |    2 +-
+ sound/pci/fm801.c                                  |    4 +-
+ 56 files changed, 220 insertions(+), 278 deletions(-)
+
