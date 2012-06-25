@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab2FYITc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:19:32 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:50657 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754053Ab2FYITb (ORCPT
+	id S1753547Ab2FYIWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:22:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51728 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab2FYIWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:19:31 -0400
-Message-ID: <4FE81EFE.20000@st.com>
-Date: Mon, 25 Jun 2012 13:49:10 +0530
-From: Rajeev kumar <rajeev-dlh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Mon, 25 Jun 2012 04:22:31 -0400
+Date: Mon, 25 Jun 2012 10:22:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Arun Sharma <asharma@fb.com>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, David Ahern <dsahern@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Shan Wei <davidshan@tencent.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 00/20] perf/core improvements
+Message-ID: <20120625082225.GB24512@gmail.com>
+References: <1340128221-17348-1-git-send-email-acme@infradead.org>
+ <20120620120141.GB1925@gmail.com>
+ <1340201223.1520.5.camel@leonhard>
+ <20120620144902.GB2007@gmail.com>
+ <87lijgkmlw.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        spear-devel <spear-devel@list.st.com>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rtc/rtc-spear: remove unnecessary check against rtc_valid_tm
- and tm2bcd
-References: <1340451839-30623-1-git-send-email-devendra.aaru@gmail.com>
-In-Reply-To: <1340451839-30623-1-git-send-email-devendra.aaru@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lijgkmlw.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/23/2012 5:13 PM, Devendra Naga wrote:
-> rtc_valid_tm is always return
-> -EINVAL if the time doesn't represent a valid date and time and 0 if its.
->
-> so we can simply do rtc_valid_tm(tm) rather doing rtc_valid_tm(tm) != 0 checking.
-> and also tm2bcd() does return -EINVAL if the time doesn't represent a valid date and time
-> and 0 if its.
->
-> and also removing err because is_write_complete will return -EIO if our write to the
-> RTC registers didn't happen and 0 if its.
->
-> Signed-off-by: Devendra Naga<devendra.aaru@gmail.com>
 
-Acked-By: Rajeev Kumar <rajeev-dlh.kumar@st.com>
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-~Rajeev
+> Hi, Ingo
+> 
+> On Wed, 20 Jun 2012 16:49:02 +0200, Ingo Molnar wrote:
+> > Well, 'make' should notice that they are stale or should 
+> > regenerate them all the time.
+> >
+> 
+> Could you check the patch below does it?
+> 
+> 
+> diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+> index 3d69aa9ff51e..42f018e15f36 100644
+> --- a/tools/lib/traceevent/Makefile
+> +++ b/tools/lib/traceevent/Makefile
+> @@ -250,8 +250,12 @@ endef
+>  all_objs := $(sort $(ALL_OBJS))
+>  all_deps := $(all_objs:%.o=.%.d)
+>  
+> +# let .d file also depends on the source and header files
+>  define check_deps
+> -               $(CC) -M $(CFLAGS) $< > $@;
+> +               @set -e; $(RM) $@; \
+> +               $(CC) -M $(CFLAGS) $< > $@.$$$$; \
+> +               sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+> +               $(RM) $@.$$$$
+>  endef
+
+Yeah, something like this should do the trick.
+
+Thanks,
+
+	Ingo
