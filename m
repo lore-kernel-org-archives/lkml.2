@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2FYEuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 00:50:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59252 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab2FYEuW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 00:50:22 -0400
+	id S1753435Ab2FYEyx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 00:54:53 -0400
+Received: from linux-sh.org ([111.68.239.195]:57504 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751728Ab2FYEyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 00:54:51 -0400
+Date: Mon, 25 Jun 2012 13:54:39 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: error: implicit declarations of BUG/BUG_ON/WARN_ON/WARN_ON_ONCE
+Message-ID: <20120625045438.GA24033@linux-sh.org>
+References: <20120615143303.3b88edcbc3efc7b1bf81839b@canb.auug.org.au>
+ <20120615065231.GA12272@localhost>
+ <4FDB6261.2030400@xenotime.net>
+ <4FDF5D50.7030505@xenotime.net>
+ <20120622071305.GA15102@localhost>
+ <20120625025301.GB9317@linux-sh.org>
+ <20120625042017.GA11705@localhost>
+ <4FE7E7CA.2030706@xenotime.net>
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-Date: Mon, 25 Jun 2012 13:50:21 +0900
-X-Google-Sender-Auth: 2_C553sHIVxh8hyssMRIlYaYC1o
-Message-ID: <CAJ0PZbTLEtUb0D9xvr6WQu-L6FXU6=zhx5FSKpttgtNPkXsUdw@mail.gmail.com>
-Subject: [PATCH] MAINTAINERS: Add entries for extcon (external connector) subsystem.
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Axel Lin <axel.lin@gmail.com>, Mike Lockwood <lockwood@android.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "cw00.choi@samsung.com" <cw00.choi@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE7E7CA.2030706@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- MAINTAINERS |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3e30a3a..c27ecab 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2704,6 +2704,14 @@ S:	Maintained
- F:	Documentation/filesystems/ext4.txt
- F:	fs/ext4/
-
-+EXTERNAL CONNECTOR SUBSYSTEM (EXTCON)
-+M:	MyungJoo Ham <myungjoo.ham@samsung.com>
-+M:	Chanwoo Choi <cw00.choi@samsung.com>
-+L:	linux-kernel@vger.kernel.org
-+S:	Maintained
-+F:	drivers/extcon/
-+F:	Documentation/extcon/
-+
- Extended Verification Module (EVM)
- M:	Mimi Zohar <zohar@us.ibm.com>
- S:	Supported
--- 
-1.7.4.1
+On Sun, Jun 24, 2012 at 09:23:38PM -0700, Randy Dunlap wrote:
+> On 06/24/2012 09:20 PM, Fengguang Wu wrote:
+> 
+> > Hi Paul,
+> > 
+> > The patch builds fine, thank you!
+> > 
+> > Tested-by: Fengguang Wu <wfg@linux.intel.com>
+> 
+> 
+> You clearly have better build hardware than I do (a simple Core i5
+> laptop).  ;)
+> 
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> Thanks.
+> 
+Great, I'll send it off to Linus, thanks for testing.
