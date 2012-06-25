@@ -1,144 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2FYDE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 23:04:26 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48577 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753921Ab2FYDEY (ORCPT
+	id S1753741Ab2FYDde (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 23:33:34 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59403 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752654Ab2FYDdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 23:04:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE7D4B1.4040803@jp.fujitsu.com>
-Date: Mon, 25 Jun 2012 12:02:09 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Wanpeng Li <liwp.linux@gmail.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm/memcg: add MAX_CHARGE_BATCH to limit unnecessary charge
- overhead
-References: <1340504169-5344-1-git-send-email-liwp.linux@gmail.com> <20120624094614.GT27816@cmpxchg.org> <20120624100812.GA7095@kernel> <20120624101948.GU27816@cmpxchg.org> <20120624103258.GB10915@kernel>
-In-Reply-To: <20120624103258.GB10915@kernel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Jun 2012 23:33:33 -0400
+Date: Mon, 25 Jun 2012 13:33:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IkJqw7hybiBNb3JrIg==?= <bjorn@mork.no>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120625133318.a57079c86bad4360828efac0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__25_Jun_2012_13_33_18_+1000_wKb8ulSpM+VLtTPa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/24 19:32), Wanpeng Li wrote:
-> On Sun, Jun 24, 2012 at 12:19:48PM +0200, Johannes Weiner wrote:
->> On Sun, Jun 24, 2012 at 06:08:26PM +0800, Wanpeng Li wrote:
->>> On Sun, Jun 24, 2012 at 11:46:14AM +0200, Johannes Weiner wrote:
->>>> On Sun, Jun 24, 2012 at 10:16:09AM +0800, Wanpeng Li wrote:
->>>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>>>>
->>>>> Since exceeded unused cached charges would add pressure to
->>>>> mem_cgroup_do_charge, more overhead would burn cpu cycles when
->>>>> mem_cgroup_do_charge cause page reclaim or even OOM be triggered
->>>>> just for such exceeded unused cached charges. Add MAX_CHARGE_BATCH
->>>>> to limit max cached charges.
->>>>>
->>>>> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->>>>> ---
->>>>>   mm/memcontrol.c |   16 ++++++++++++++++
->>>>>   1 file changed, 16 insertions(+)
->>>>>
->>>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>>>> index 0e092eb..1ff317a 100644
->>>>> --- a/mm/memcontrol.c
->>>>> +++ b/mm/memcontrol.c
->>>>> @@ -1954,6 +1954,14 @@ void mem_cgroup_update_page_stat(struct page *page,
->>>>>    * TODO: maybe necessary to use big numbers in big irons.
->>>>>    */
->>>>>   #define CHARGE_BATCH	32U
->>>>> +
->>>>> +/*
->>>>> + * Max size of charge stock. Since exceeded unused cached charges would
->>>>> + * add pressure to mem_cgroup_do_charge which will cause page reclaim or
->>>>> + * even oom be triggered.
->>>>> + */
->>>>> +#define MAX_CHARGE_BATCH 1024U
->>>>> +
->>>>>   struct memcg_stock_pcp {
->>>>>   	struct mem_cgroup *cached; /* this never be root cgroup */
->>>>>   	unsigned int nr_pages;
->>>>> @@ -2250,6 +2258,7 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
->>>>>   	unsigned int batch = max(CHARGE_BATCH, nr_pages);
->>>>>   	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
->>>>>   	struct mem_cgroup *memcg = NULL;
->>>>> +	struct memcg_stock_pcp *stock;
->>>>>   	int ret;
->>>>>
->>>>>   	/*
->>>>> @@ -2320,6 +2329,13 @@ again:
->>>>>   		rcu_read_unlock();
->>>>>   	}
->>>>>
->>>>> +	stock = &get_cpu_var(memcg_stock);
->>>>> +	if (memcg == stock->cached && stock->nr_pages) {
->>>>> +		if (stock->nr_pages > MAX_CHARGE_BATCH)
->>>>> +			batch = nr_pages;
->>>>> +	}
->>>>> +	put_cpu_var(memcg_stock);
->>>>
->>>> The only way excessive stock can build up is if the charging task gets
->>>> rescheduled, after trying to consume stock a few lines above, to a cpu
->>>> it was running on when it built up stock in the past.
->>>>
->>>>     consume_stock()
->>>>       memcg != stock->cached:
->>>>         return false
->>>>     do_charge()
->>>>     <reschedule>
->>>>     refill_stock()
->>>>       memcg == stock->cached:
->>>>         stock->nr_pages += nr_pages
->>>
->>> __mem_cgroup_try_charge() {
->>> 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
->>> 	[...]
->>> 	mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
->>> 	[...]
->>> 	if(batch > nr_pages)
->>> 		refill_stock(memcg, batch - nr_pages);
->>> }
->>>
->>> Consider this scenario, If one task wants to charge nr_pages = 1,
->>> then batch = max(32,1) = 32, this time 31 excess charges
->>> will be charged in mem_cgroup_do_charge and then add to stock by
->>> refill_stock. Generally there are many tasks in one memory cgroup and
->>> maybe charges frequency. In this situation, limit will reach soon,
->>> and cause mem_cgroup_reclaim to call try_to_free_mem_cgroup_pages.
->>
->> But the stock is not a black hole that gets built up for giggles!  The
->> next time the processes want to charge a page on this cpu, they will
->> consume it from the stock.  Not add more pages to it.  Look at where
->> consume_stock() is called.
->
-> if(nr_pages == 1 && consume_stock(memcg))
-> 	goto done;
->
-> Only when charge one page will call consume_stock. You can see the codes
-> in mem_cgroup_charge_common() which also call __mem_cgroup_try_charge,
-> when both transparent huge and hugetlbfs pages, nr_pages will larger than 1.
->
+--Signature=_Mon__25_Jun_2012_13_33_18_+1000_wKb8ulSpM+VLtTPa
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Because THP charges 2M bytes at once, the optimization by 'stock' will have no
-effects. (It merges 512page faults into a page fault.)
-I think you can't see any performance difference even if we handle THP
-pages with 'stock'.
+Hi all,
 
-And I think MAX_CHARGE_BATCH=1024 is too big...If you have 256cpus, you'll
-have 1GB of cached charges...it means 1GB of inaccuracy of usage.
-If you want to enlarge it, please show performance benefit.
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/usb/qmi_wwan.c between commit b9f90eb27402 ("net: qmi_wwan:
+fix Gobi device probing") from the net tree and various commits from the
+net-next tree.
 
-Thanks,
--Kame
+I am not sure how to fix this, but the comments in the net tree commit
+implied that it would be placed in the 3.6 code, so I just used the
+version of this file from the net-next tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__25_Jun_2012_13_33_18_+1000_wKb8ulSpM+VLtTPa
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJP59v+AAoJEECxmPOUX5FEfnoP/1wJ2+5sV9ul1lqwnD+VOvtv
+U10dLgP6mpa0b5MU7dduiYqZ6UJ5CTQr3ELzDFfkwHtRqsYl+pjZTVIPTQL1JvE1
+RLUSkwB6QW/vjz3DsBGaecyS3p9ChO4hiMNUWOigEncTbD8SpbKjFZMRHe4rMLcM
+pbuT+10zzX1iY++kyyzAZgU9yZJ5s6lv/cnKtNagu1U5toYRwlTDryxT+9sZBD1Z
+Si/KxM0onHCynRvxsY41nYP4vX9aFfVFp/xjfXOpEB00rcOelmlibDOY/gLY7BAS
+19R0Nu1ABDS8WD0awyoXdwgCyXDsyWtgfmE0KGRKi0HPoNxAPHa6uRM1bZw57Fj6
+RcVzguQ8XewotdK66I1PG2I/QPPf0SdU/Jv2hjAgGOJsvQuUpBsFShZmbN3KafgF
+5nvnXKaoO7fwu9che8240Gg3gQM75NeTPGnHhXRRhFESw1wLRA11ckuK7SbAQ/op
+KZaLvGQaAT2Nd7YzHoLzdwH+1+CiQgdHVX2lUDKW+biPx+Ni8W4iDEnq5eEci/X7
+r1dakiX0IxOZuHo1TaK6yYUJVQKvSXy9eSfuscxvz+TKA18bH+ktZusM0AJ871ET
+la1Gx/Mb232Z/fkadq7llqvJky3ZlTiR+dlam5HEwiHGSnL72ROdgpXxNi5yGCDW
+S5+sw9R6SAgFcFDeQhJE
+=dYqs
+-----END PGP SIGNATURE-----
 
-
+--Signature=_Mon__25_Jun_2012_13_33_18_+1000_wKb8ulSpM+VLtTPa--
