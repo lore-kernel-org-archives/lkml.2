@@ -1,268 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2FYPEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 11:04:37 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:46947 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393Ab2FYPEf convert rfc822-to-8bit (ORCPT
+	id S932126Ab2FYPE6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 11:04:58 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:49653 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756944Ab2FYPE4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 11:04:35 -0400
+	Mon, 25 Jun 2012 11:04:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FE85CDC.1090604@gmail.com>
-References: <1340192062-10565-1-git-send-email-aletes.xgr@gmail.com>
-	<4FE85CDC.1090604@gmail.com>
-Date: Mon, 25 Jun 2012 12:04:34 -0300
-Message-ID: <CAAAP30G=egLCUJGvzVUQ2+zb1MAk-CoCDoZs2BfZiswKosSBKQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND] input: gpio_keys_polled: convert to dt
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>, JJ Ding <dgdunix@gmail.com>,
-        Roland Stigge <stigge@antcom.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <20120611172545.GA1776@redhat.com>
+References: <1339423241.4999.53.camel@lappy> <20120611144134.GX22557@sortiz-mobl>
+ <1339425693.6001.2268.camel@edumazet-glaptop> <20120611145700.GY22557@sortiz-mobl>
+ <1339426778.6001.2312.camel@edumazet-glaptop> <20120611152007.GZ22557@sortiz-mobl>
+ <1339433810.4999.65.camel@lappy> <20120611172545.GA1776@redhat.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 25 Jun 2012 17:04:35 +0200
+Message-ID: <CA+1xoqcwr-5dzHvqkt9x0-xj9EFAywVfva=asbHXvX-LSBWqdA@mail.gmail.com>
+Subject: Re: net: nfc: BUG and panic in accept() on 3.5-rc2
+To: Dave Jones <davej@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org,
+        aloisio.almeida@openbossa.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 9:43 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On 06/20/2012 06:34 AM, Alexandre Pereira da Silva wrote:
->> Add device tree support to gpio_keys_polled.c
->>
->> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
->> Tested-by: Roland Stigge <stigge@antcom.de>
->> ---
->>  drivers/input/keyboard/gpio_keys_polled.c |  121 +++++++++++++++++++++++++++--
->>  1 file changed, 113 insertions(+), 8 deletions(-)
+On Mon, Jun 11, 2012 at 7:25 PM, Dave Jones <davej@redhat.com> wrote:
+> On Mon, Jun 11, 2012 at 06:56:50PM +0200, Sasha Levin wrote:
 >
-> Needs binding documentation.
+>  > > > > > > What's trinity ?
+>  > > > > > > Also, if this one is reproducible, would you mind sharing some details about
+>  > > > > > > how we could reproduce it ?
+>  > > > > >
+>  > > > > > Well, bugfix should be trivial enough ;)
+>  > > > > Yep, I looked at the code only after looking at Sasha's report.
+>  > > > >
+>  > > > > Thanks for the patch, do you mind if I add your SOB to it ?
+>  > > >
+>  > > > I  would prefer making sure it fixes the bug first ;)
+>  > > Sure, although your patch makes sense regardless of that :)
+>  > > I'll still wait for Sasha to confirm that it fixes his crash.
+>  >
+>  > I don't have a direct way of reproducing it, but I've put it in the test
+>  > vm and the fuzzer is running, I'll let you know tomorrow if it happened
+>  > again.
 >
->>
->> diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
->> index 20c8ab1..a64b361 100644
->> --- a/drivers/input/keyboard/gpio_keys_polled.c
->> +++ b/drivers/input/keyboard/gpio_keys_polled.c
->> @@ -25,6 +25,8 @@
->>  #include <linux/platform_device.h>
->>  #include <linux/gpio.h>
->>  #include <linux/gpio_keys.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/of_gpio.h>
->>
->>  #define DRV_NAME     "gpio-keys-polled"
->>
->> @@ -38,7 +40,7 @@ struct gpio_keys_button_data {
->>  struct gpio_keys_polled_dev {
->>       struct input_polled_dev *poll_dev;
->>       struct device *dev;
->> -     struct gpio_keys_platform_data *pdata;
->> +     struct gpio_keys_platform_data pdata;
->>       struct gpio_keys_button_data data[0];
->>  };
->>
->> @@ -67,11 +69,11 @@ static void gpio_keys_polled_check_state(struct input_dev *input,
->>  static void gpio_keys_polled_poll(struct input_polled_dev *dev)
->>  {
->>       struct gpio_keys_polled_dev *bdev = dev->private;
->> -     struct gpio_keys_platform_data *pdata = bdev->pdata;
->> +     struct gpio_keys_platform_data *pdata = &bdev->pdata;
->>       struct input_dev *input = dev->input;
->>       int i;
->>
->> -     for (i = 0; i < bdev->pdata->nbuttons; i++) {
->> +     for (i = 0; i < pdata->nbuttons; i++) {
->>               struct gpio_keys_button_data *bdata = &bdev->data[i];
->>
->>               if (bdata->count < bdata->threshold)
->> @@ -85,7 +87,7 @@ static void gpio_keys_polled_poll(struct input_polled_dev *dev)
->>  static void gpio_keys_polled_open(struct input_polled_dev *dev)
->>  {
->>       struct gpio_keys_polled_dev *bdev = dev->private;
->> -     struct gpio_keys_platform_data *pdata = bdev->pdata;
->> +     struct gpio_keys_platform_data *pdata = &bdev->pdata;
->>
->>       if (pdata->enable)
->>               pdata->enable(bdev->dev);
->> @@ -94,23 +96,125 @@ static void gpio_keys_polled_open(struct input_polled_dev *dev)
->>  static void gpio_keys_polled_close(struct input_polled_dev *dev)
->>  {
->>       struct gpio_keys_polled_dev *bdev = dev->private;
->> -     struct gpio_keys_platform_data *pdata = bdev->pdata;
->> +     struct gpio_keys_platform_data *pdata = &bdev->pdata;
->>
->>       if (pdata->disable)
->>               pdata->disable(bdev->dev);
->>  }
->> +#ifdef CONFIG_OF
->> +static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
->> +                         struct gpio_keys_platform_data *pdata)
->> +{
->> +     struct device_node *node, *pp;
->> +     int i;
->> +     struct gpio_keys_button *buttons;
->> +     u32 reg;
->> +
->> +     node = dev->of_node;
->> +     if (node == NULL)
->> +             return -ENODEV;
->> +
->> +     memset(pdata, 0, sizeof *pdata);
+> You might be able to trigger it faster by using -P PF_NFC, which will
+> force trinity to only use NFC sockets.
 >
-> parentheses around *pdata.
->
->> +
->> +     pdata->rep = !!of_get_property(node, "autorepeat", NULL);
->> +
->> +     if (of_property_read_u32(node, "poll-interval", &reg) == 0)
->> +             pdata->poll_interval = reg;
->
-> You can just do this instead of the if:
->
-> of_property_read_u32(node, "poll-interval", &pdata->poll_interval);
->
->
->> +
->> +     /* First count the subnodes */
->> +     pdata->nbuttons = 0;
->
-> You already to this to 0.
->
->> +     pp = NULL;
->> +     while ((pp = of_get_next_child(node, pp)))
->> +             pdata->nbuttons++;
->
-> of_get_child_count()
->
->> +
->> +     if (pdata->nbuttons == 0)
->> +             return -ENODEV;
->> +
->> +     buttons = kzalloc(pdata->nbuttons * (sizeof *buttons), GFP_KERNEL);
->> +     if (!buttons)
->> +             return -ENOMEM;
->> +
->> +     pp = NULL;
->> +     i = 0;
->> +     while ((pp = of_get_next_child(node, pp))) {
->
-> for_each_child_of_node
->
->> +             enum of_gpio_flags flags;
->> +
->> +             if (!of_find_property(pp, "gpios", NULL)) {
->> +                     pdata->nbuttons--;
->> +                     dev_warn(dev, "Found button without gpios\n");
->> +                     continue;
->> +             }
->> +             buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
->> +             buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
->> +
->> +             if (of_property_read_u32(pp, "linux,code", &reg)) {
->> +                     dev_err(dev, "Button without keycode: 0x%x\n", buttons[i].gpio);
->> +                     goto out_fail;
->> +             }
->> +             buttons[i].code = reg;
->> +
->> +             buttons[i].desc = of_get_property(pp, "label", NULL);
->> +
->> +             if (of_property_read_u32(pp, "linux,input-type", &reg) == 0)
->> +                     buttons[i].type = reg;
->> +             else
->> +                     buttons[i].type = EV_KEY;
->
-> if (of_property_read_u32(pp, "linux,input-type", &buttons[i].type))
->        buttons[i].type = EV_KEY;
->
->> +
->> +             buttons[i].wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
->> +
->> +             if (of_property_read_u32(pp, "debounce-interval", &reg) == 0)
->> +                     buttons[i].debounce_interval = reg;
->> +             else
->> +                     buttons[i].debounce_interval = 5;
->
-> ditto
->
->> +
->> +             i++;
->> +     }
->> +
->> +     pdata->buttons = buttons;
->> +
->> +     return 0;
->> +
->> +out_fail:
->> +     kfree(buttons);
->> +     return -ENODEV;
->> +}
->> +
->> +static struct of_device_id gpio_keys_polled_of_match[] = {
->> +     { .compatible = "gpio-keys-polled", },
->> +     { },
->> +};
->> +MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
->> +#else
->> +
->> +static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
->> +                         struct gpio_keys_platform_data *altp)
->> +{
->> +     return -ENODEV;
->> +}
->> +
->> +#define gpio_keys_polled_of_match NULL
->> +
->> +#endif
->>
->>  static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
->>  {
->>       struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
->>       struct device *dev = &pdev->dev;
->> +     struct gpio_keys_platform_data alt_pdata;
->>       struct gpio_keys_polled_dev *bdev;
->>       struct input_polled_dev *poll_dev;
->>       struct input_dev *input;
->>       int error;
->>       int i;
->>
->> -     if (!pdata || !pdata->poll_interval)
->> +     if (!pdata) {
->> +         error = gpio_keys_polled_get_devtree_pdata(dev, &alt_pdata);
->> +             if (error)
->> +                     return error;
->> +             pdata = &alt_pdata;
->> +     }
->> +
->> +     if (!pdata->poll_interval)
->>               return -EINVAL;
->>
->>       bdev = kzalloc(sizeof(struct gpio_keys_polled_dev) +
->> @@ -184,7 +288,7 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
->>
->>       bdev->poll_dev = poll_dev;
->>       bdev->dev = dev;
->> -     bdev->pdata = pdata;
->> +     bdev->pdata = *pdata;
->>       platform_set_drvdata(pdev, bdev);
->>
->>       error = input_register_polled_device(poll_dev);
->> @@ -217,7 +321,7 @@ err_free_bdev:
->>  static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
->>  {
->>       struct gpio_keys_polled_dev *bdev = platform_get_drvdata(pdev);
->> -     struct gpio_keys_platform_data *pdata = bdev->pdata;
->> +     struct gpio_keys_platform_data *pdata = &bdev->pdata;
->>       int i;
->>
->>       input_unregister_polled_device(bdev->poll_dev);
->> @@ -239,6 +343,7 @@ static struct platform_driver gpio_keys_polled_driver = {
->>       .driver = {
->>               .name   = DRV_NAME,
->>               .owner  = THIS_MODULE,
->> +             .of_match_table = gpio_keys_polled_of_match,
->>       },
->>  };
->>  module_platform_driver(gpio_keys_polled_driver);
+> sidenote: most protocols trigger the module to be auto-loaded when a socket
+> is created. This doesn't seem to happen with nfc, making me need to manually
+> modprobe it first. Intentional ?
 
-Thanks for reviewing. I will submit patches for both gpio-keys and
-gpio-keys-polled to address those issues.
+It fixes the bug, wasn't been able to reproduce it since then.
