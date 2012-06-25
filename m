@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab2FYTaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 15:30:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50319 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab2FYTaG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 15:30:06 -0400
-Message-ID: <1340652578.21991.18.camel@twins>
-Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
- rbtree
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@surriel.com>
-Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
-        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
-        mel@csn.ul.ie, linux-kernel@vger.kernel.org
-Date: Mon, 25 Jun 2012 21:29:38 +0200
-In-Reply-To: <4FE4922D.8070501@surriel.com>
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>
-	    <1340315835-28571-2-git-send-email-riel@surriel.com>
-	   <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>
-	  <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>
-	 <1340375872.18025.77.camel@twins> <4FE4922D.8070501@surriel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756112Ab2FYTcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 15:32:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755647Ab2FYTcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 15:32:23 -0400
+Date: Mon, 25 Jun 2012 20:32:18 +0100
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Torsten Hilbrich <torsten.hilbrich@secunet.com>,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
+Message-ID: <20120625193218.GZ21859@amd.home.annexia.org>
+References: <4FDEC3C2.4060909@secunet.com>
+ <20120625113457.GA1289@amd.home.annexia.org>
+ <x49r4t3z6s4.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49r4t3z6s4.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-22 at 11:41 -0400, Rik van Riel wrote:
-> Let me try implementing your algorithm with arbitrary
-> address constraints and alignment/colouring. 
+On Mon, Jun 25, 2012 at 12:38:03PM -0400, Jeff Moyer wrote:
+> Please try the attached patch instead.  The patch I had originally
+> posted for this allowed marking the first buffer beyond EOD as
+> uptodate.  This isn't correct.  The patch I've attached below fixes the
+> infinite loop in __getblk_slow.
 
-Right, so the best I could come up with for a range search is 
-O((log n)^2), it does need another pointer in the vma though :/
+This patch appears to fix both problems, thanks.
 
-Instead of storing the single right sub-tree pointer, you store a single
-linked list of right sub-tree pointers using that extra vma member.
+Rich.
 
-Then when no gap was found on the left downward path, try each
-successive right sub-tree (bottom-up per the LIFO single linked list and
-top-down) and do a right-path and left subtree search for those.
+> Cheers,
+> Jeff
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index 838a9cf..c7062c8 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -1036,6 +1036,9 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+>  static struct buffer_head *
+>  __getblk_slow(struct block_device *bdev, sector_t block, int size)
+>  {
+> +	int ret;
+> +	struct buffer_head *bh;
+> +
+>  	/* Size must be multiple of hard sectorsize */
+>  	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+>  			(size < 512 || size > PAGE_SIZE))) {
+> @@ -1048,20 +1051,21 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+>  		return NULL;
+>  	}
+>  
+> -	for (;;) {
+> -		struct buffer_head * bh;
+> -		int ret;
+> +retry:
+> +	bh = __find_get_block(bdev, block, size);
+> +	if (bh)
+> +		return bh;
+>  
+> +	ret = grow_buffers(bdev, block, size);
+> +	if (ret == 0) {
+> +		free_more_memory();
+> +		goto retry;
+> +	} else if (ret > 0) {
+>  		bh = __find_get_block(bdev, block, size);
+>  		if (bh)
+>  			return bh;
+> -
+> -		ret = grow_buffers(bdev, block, size);
+> -		if (ret < 0)
+> -			return NULL;
+> -		if (ret == 0)
+> -			free_more_memory();
+>  	}
+> +	return NULL;
+>  }
+>  
+>  /*
 
-So you get a log n walk, with a log n walk for each right sub-tree,
-giving a 1/2 * log n * log n aka O((log n)^2).
-
-If you do the search without right limit, the first right subtree search
-is sufficient and you'll revert back to O(log n).
-
-
-
-I've also thought about the update cost and I think I can make the
-vma_adjust case cheaper if you keep the max(vm_end) as second
-augmentation, this does add another word to the vma though.
-
-Using this max(vm_end) of the subtree you can do a rb_augment_path()
-variant over a specified range (the range that gets modified by
-vma_adjust etc..) in O(m log n) worst time, but much better on average.
-
-You still do the m iteration on the range, but you stop the path upwards
-whenever the subtree max(vm_end) covers the given range end. Except for
-the very last of m, at which point you'll go all the way up.
-
-This should avoid many of the duplicate path traversals the naive
-implementation does.
-
-
-Sadly we've just added two words to the vma and are 2 words over the
-cacheline size for the fields used in the update.
-
-This too could be fixed by removing vm_{prev,next} and making
-rb_{prev,next} O(1) instead of O(log n) as they are now. Like:
-http://en.wikipedia.org/wiki/Threaded_binary_tree
-
-
-I haven't had any good ideas on the alignment thing though, I keep
-getting back to O(n) or worse if you want a guarantee you find a hole if
-you have it.
-
-The thing you propose, the double search, once for len, and once for len
-+align-1 doesn't guarantee you'll find a hole. All holes of len might be
-mis-aligned but the len+align-1 search might overlook a hole of suitable
-size and alignment, you'd have to search the entire range: [len, len
-+align-1], and that's somewhat silly.
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+virt-df lists disk usage of guests without needing to install any
+software inside the virtual machine.  Supports Linux and Windows.
+http://et.redhat.com/~rjones/virt-df/
