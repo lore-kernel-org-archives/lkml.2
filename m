@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab2FYBTQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jun 2012 21:19:16 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59641 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab2FYBTP (ORCPT
+	id S1753291Ab2FYBWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jun 2012 21:22:09 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:44109 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750908Ab2FYBWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jun 2012 21:19:15 -0400
-X-AuditID: 9c930197-b7c94ae0000037ff-f6-4fe7bc8db320
-Message-ID: <4FE7BCAD.4090002@kernel.org>
-Date: Mon, 25 Jun 2012 10:19:41 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 24 Jun 2012 21:22:06 -0400
+Subject: Re: linux-next: build failure after merge of the slave-dma tree
+From: Zhangfei Gao <zgao6@marvell.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Leo Yan <leoy@marvell.com>, Qiao Zhou <zhouqiao@marvell.com>
+In-Reply-To: <1340341305.1562.2.camel@vkoul-udesk3>
+References: <20120622130049.05d18e86de1256aa980566b0@canb.auug.org.au>
+	 <1340341305.1562.2.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Jun 2012 09:21:20 +0800
+Message-ID: <1340587280.14586.9.camel@apse>
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: undisclosed-recipients:";
-	Kamezawa Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Aaditya Kumar <aaditya.kumar.30@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	undisclosed-recipients:;Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-						^-missing end of address
-Subject: Re: Accounting problem of MIGRATE_ISOLATED freed page
-References: <4FE169B1.7020600@kernel.org> <4FE16E80.9000306@gmail.com> <4FE18187.3050103@kernel.org> <4FE23069.5030702@gmail.com> <4FE26470.90401@kernel.org> <CAHGf_=pjoiHQ9vxXXe-GtbkYRzhxdDhu3pf6pwDsCe5pBQE8Nw@mail.gmail.com> <4FE27F15.8050102@kernel.org> <CAHGf_=pDw4axwG2tQ+B5hPks-sz2S5+G1Kk-=HSDmo=DSXOkEw@mail.gmail.com> <4FE2A937.6040701@kernel.org> <4FE2FCFB.4040808@jp.fujitsu.com> <4FE3C4E4.2050107@kernel.org> <4FE414A2.3000700@kernel.org> <4FE530F7.1060108@gmail.com>
-In-Reply-To: <4FE530F7.1060108@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2012 11:59 AM, KOSAKI Motohiro wrote:
-
+On Thu, 2012-06-21 at 22:01 -0700, Vinod Koul wrote:
+> On Fri, 2012-06-22 at 13:00 +1000, Stephen Rothwell wrote:
+> > Hi Vinod,
+> > 
+> > After merging the slave-dma tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > drivers/dma/mmp_tdma.c:21:27: fatal error: mach/regs-icu.h: No such file or directory
+> > 
+> > Caused by commit c6da0ba8dfc8 ("dmaengine: mmp_tdma: add mmp tdma
+> > support").
+> > 
+> > I have used the slave-dma tree from next-20120621 for today.
+> Thanks Stephen,
 > 
-> One more.
+> It should not build for this target!. I will added the below patch to
+> fix the failure
 > 
+> >From 0efc8562577cd6a022b8b42d58fcf58ffc2a91d3 Mon Sep 17 00:00:00 2001
+> From: Vinod Koul <vinod.koul@linux.intel.com>
+> Date: Fri, 22 Jun 2012 10:29:53 +0530
+> Subject: [PATCH] dmaengine: mmp_tdma: fix the arch dependency
 > 
->> +/*
->> + * NOTE:
->> + * Don't use set_pageblock_migratetype(page, MIGRATE_ISOLATE) direclty.
->> + * Instead, use {un}set_pageblock_isolate.
->> + */
->>  void set_pageblock_migratetype(struct page *page, int migratetype)
->>  {
->>         if (unlikely(page_group_by_mobility_disabled))
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+> ---
+>  drivers/dma/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> I don't think we need this comment. please just add BUG_ON.
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 90fec0e..d45cf1b 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -276,7 +276,7 @@ config DMA_SA11X0
+>  
+>  config MMP_TDMA
+>  	bool "MMP Two-Channel DMA support"
+> -	default ARCH_MMP
+> +	depends on ARCH_MMP
+>  	select DMA_ENGINE
+>  	help
+>  	  Support the MMP Two-Channel DMA engine.
+> -- 
+> 1.7.0.4
+> 
+
+Thanks Vinod and Stephen, sorry for the trouble.
+> 
 
 
-It adds new condition check in __rmqueue_fallback.
-If it's okay, no problem.
-
-But as you know, calling MIGRATE_ISOLATE is very very rare and we can
-make sure it's no problem on existing code. So the problem is future
-user and I hope they can look at the code comment before using and we mm
-have strong review system rather than other subsystem, I believe. :)
-
-If you can't agree, I am willing to add BUG_ON but not sure others
-like it. (Especially, Mel).
-
-
-
--- 
-Kind regards,
-Minchan Kim
