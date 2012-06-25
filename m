@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab2FYNaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 09:30:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42868 "EHLO mx2.suse.de"
+	id S1756839Ab2FYNa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 09:30:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42499 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756260Ab2FYNap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 09:30:45 -0400
-Date: Mon, 25 Jun 2012 15:30:38 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andrew de los Reyes <adlr@chromium.org>
-Subject: Re: [PATCH] HID: magicmouse: Correct report range of major / minor
- axes
-In-Reply-To: <20120625120407.GA522@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1206251530300.18612@pobox.suse.cz>
-References: <1340382713-2957-1-git-send-email-miletus@chromium.org> <20120625120407.GA522@polaris.bitmath.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756365Ab2FYNa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 09:30:57 -0400
+Date: Mon, 25 Jun 2012 09:30:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Josh Hunt <joshhunt00@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, tj@kernel.org
+Subject: Re: multi-second application stall in open()
+Message-ID: <20120625133047.GA9394@redhat.com>
+References: <CAKA=qzbqoK5_3GXM8DZhbQ5cTU=DTg5DFFJ+46OrD7y=XrMLTg@mail.gmail.com>
+ <20120621203217.GC14095@redhat.com>
+ <CAKA=qzYmh8DD7J__WWDyX_2fFQbSx+M=k4ttqRTD3M8nao-WVg@mail.gmail.com>
+ <20120622141211.GB18409@redhat.com>
+ <CAKA=qzYYK5KUNsZ1C7Z7BEkqo-7uvn=HYr0N9KLPaLt9ut+MDQ@mail.gmail.com>
+ <CAKA=qzY+u64vVZmbiH4zp_Fij2zejQBFUSNENKF=PZBT0G7xrQ@mail.gmail.com>
+ <20120622204207.GA22063@redhat.com>
+ <CAKA=qzbycm0cjLyiuKaKkD8sxDm5DvX9WVqSxN2QVT2WZOzU0Q@mail.gmail.com>
+ <CAKA=qza_s6zr+wZzfFTVPSzgPQAov=K63jf-SJOTDcrnDELY5w@mail.gmail.com>
+ <CAKA=qzYea71A5VQOQgrqzaZtVFadjhcghgH+Z9n4ivS7vUgW0g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKA=qzYea71A5VQOQgrqzaZtVFadjhcghgH+Z9n4ivS7vUgW0g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jun 2012, Henrik Rydberg wrote:
+On Fri, Jun 22, 2012 at 04:34:07PM -0500, Josh Hunt wrote:
 
-> > In patch "HID: magicmouse: Adjust major / minor axes to scale",
-> > touch_major and touch_minor axes are scaled by a factor of
-> > four when reported but the max touch_major/minor is not scaled
-> > accordingly. This patch scales the max touch_major/minor to
-> > be consistent with the reported value.
-> > 
-> > Signed-off-by: Yufeng Shen <miletus@chromium.org>
-> > ---
-> >  drivers/hid/hid-magicmouse.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-> > index 7cf3ffe..40ac665 100644
-> > --- a/drivers/hid/hid-magicmouse.c
-> > +++ b/drivers/hid/hid-magicmouse.c
-> > @@ -426,8 +426,10 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
-> >  		__set_bit(EV_ABS, input->evbit);
-> >  
-> >  		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
-> > -		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 4, 0);
-> > -		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255, 4, 0);
-> > +		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
-> > +				     4, 0);
-> > +		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
-> > +				     4, 0);
-> >  		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
-> >  
-> >  		/* Note: Touch Y position from the device is inverted relative
-> > -- 
-> > 1.7.7.3
-> > 
-> 
->     Acked-by: Henrik Rydberg <rydberg@euromail.se>
+[..]
+> Shouldn't the queue stay on the RR list until it is empty?
 
-Applied, thanks.
+This does look odd. cfqq should stay on service tree as long as it has
+requests.
 
--- 
-Jiri Kosina
-SUSE Labs
+Can you attach the full log again. Also make sure that blktrace is not
+dropping any trace events.
+
+In slice_expire() we check following.
+
+        if (cfq_cfqq_on_rr(cfqq) && RB_EMPTY_ROOT(&cfqq->sort_list))
+                cfq_del_cfqq_rr(cfqd, cfqq);
+
+So for some reason RB_EMPTY_ROOT() is returning true. But we must have
+added the request and it should not have been empty.
+
+cfq_insert_request()
+  cfq_add_rq_rb()
+    elv_rb_add()
+
+So may be little more tracing after request addition will help. Just check
+that RB_EMPTY_ROOT() is not true after addition of request and also print
+number of requests queued. 
+
+In slice_expired() we can probably put a BUG_ON() which checks following.
+
+BUG_ON(RB_EMPTY_ROOT(&cfqq->sort_list) && (cfqq->queued[0] || cfqq->queued[1]));
+
+Thanks
+Vivek
