@@ -1,34 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2FYJp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 05:45:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41407 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab2FYJp6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 05:45:58 -0400
-Subject: Re: [BUG] sched: clock wrap bug in 2.6.35-stable kills scheduling
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Lange <thomas@corelatus.se>
-Cc: mingo@redhat.com, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4FE74F1B.6070803@corelatus.se>
-References: <4FE74F1B.6070803@corelatus.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jun 2012 11:45:41 +0200
-Message-ID: <1340617541.2507.50.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755439Ab2FYJqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 05:46:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48011 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753251Ab2FYJqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 05:46:51 -0400
+Date: Mon, 25 Jun 2012 11:46:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH v3 3/4] memcg: optimize memcg_get_hierarchical_limit
+Message-ID: <20120625094649.GF19805@tiehlicka.suse.cz>
+References: <1340613872-9581-1-git-send-email-liwp.linux@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340613872-9581-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-06-24 at 19:32 +0200, Thomas Lange wrote:
-> Bug was introduced in 2.6.35.12 and is still present in linux-2.6.35.y HEAD.
+On Mon 25-06-12 16:44:32, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> 
+> Optimize memcg_get_hierarchical_limit to save cpu cycle.
 
-Ok, so nobody cares about that.. what does something recent like 3.5-rc4
-do?
+How did you check that this actually saves some cycles?
+There are no (compiler) barriers here so it should reordered.
 
-If that's fixed, find the patch that fixes it. If not, we'll have a
-look.
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 2e81328..4520b57 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3917,9 +3917,9 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
+>  
+>  	min_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+>  	min_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+> -	cgroup = memcg->css.cgroup;
+>  	if (!memcg->use_hierarchy)
+>  		goto out;
+> +	cgroup = memcg->css.cgroup;
+>  
+>  	while (cgroup->parent) {
+>  		cgroup = cgroup->parent;
+> -- 
+> 1.7.9.5
+> 
 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
