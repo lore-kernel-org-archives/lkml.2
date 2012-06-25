@@ -1,102 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab2FYQOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 12:14:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53280 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756996Ab2FYQOs (ORCPT
+	id S1757381Ab2FYQPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 12:15:24 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:58590 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757180Ab2FYQPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 12:14:48 -0400
-Date: Mon, 25 Jun 2012 09:14:29 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-55f6cb9d0b364e7e8cb65b51193f5e4743c44fde@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        JBeulich@suse.com, khali@linux-fr.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        JBeulich@suse.com, khali@linux-fr.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <4FE34BCB.5050305@linux.intel.com>
-References: <4FE34BCB.5050305@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, cpufeature:
-  Catch duplicate CPU feature strings
-Git-Commit-ID: 55f6cb9d0b364e7e8cb65b51193f5e4743c44fde
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 25 Jun 2012 09:14:35 -0700 (PDT)
+	Mon, 25 Jun 2012 12:15:22 -0400
+Date: Mon, 25 Jun 2012 09:15:42 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_ips: blacklist HP ProBook laptops
+Message-ID: <20120625091542.7ad5e594@jbarnes-x220>
+In-Reply-To: <s5h1ul3a6be.wl%tiwai@suse.de>
+References: <s5h1ul3a6be.wl%tiwai@suse.de>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 192.55.60.129 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  55f6cb9d0b364e7e8cb65b51193f5e4743c44fde
-Gitweb:     http://git.kernel.org/tip/55f6cb9d0b364e7e8cb65b51193f5e4743c44fde
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Fri, 22 Jun 2012 11:47:15 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 25 Jun 2012 09:02:13 -0700
+On Mon, 25 Jun 2012 15:07:17 +0200
+Takashi Iwai <tiwai@suse.de> wrote:
 
-x86, cpufeature: Catch duplicate CPU feature strings
+> intel_ips driver spews the warning message
+>   "ME failed to update for more than 1s, likely hung"
+> at each second endlessly on HP ProBook laptops with IronLake.
+> 
+> As this has never worked, better to blacklist the driver for now.
 
-We had a case of duplicate CPU feature strings, a user space ABI
-violation, for almost two years.  Make it a build error so that
-doesn't happen again.
+Sounds like this ME doesn't support the feature.  It would be nice to
+have a better way of detecting this, but unless we hear a bunch more
+noise like this a one off is fine with me.
 
-Link: http://lkml.kernel.org/r/4FE34BCB.5050305@linux.intel.com
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Jean Delvare <khali@linux-fr.org>
----
- arch/x86/kernel/cpu/mkcapflags.pl |   23 ++++++++++++++++++-----
- 1 files changed, 18 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mkcapflags.pl b/arch/x86/kernel/cpu/mkcapflags.pl
-index dfea390..0c5b549 100644
---- a/arch/x86/kernel/cpu/mkcapflags.pl
-+++ b/arch/x86/kernel/cpu/mkcapflags.pl
-@@ -11,22 +11,35 @@ open(OUT, "> $out\0") or die "$0: cannot create: $out: $!\n";
- print OUT "#include <asm/cpufeature.h>\n\n";
- print OUT "const char * const x86_cap_flags[NCAPINTS*32] = {\n";
- 
-+%features = ();
-+$err = 0;
-+
- while (defined($line = <IN>)) {
- 	if ($line =~ /^\s*\#\s*define\s+(X86_FEATURE_(\S+))\s+(.*)$/) {
- 		$macro = $1;
--		$feature = $2;
-+		$feature = "\L$2";
- 		$tail = $3;
- 		if ($tail =~ /\/\*\s*\"([^"]*)\".*\*\//) {
--			$feature = $1;
-+			$feature = "\L$1";
- 		}
- 
--		if ($feature ne '') {
--			printf OUT "\t%-32s = \"%s\",\n",
--				"[$macro]", "\L$feature";
-+		next if ($feature eq '');
-+
-+		if ($features{$feature}++) {
-+			print STDERR "$in: duplicate feature name: $feature\n";
-+			$err++;
- 		}
-+		printf OUT "\t%-32s = \"%s\",%s\n", "[$macro]", $feature;
- 	}
- }
- print OUT "};\n";
- 
- close(IN);
- close(OUT);
-+
-+if ($err) {
-+	unlink($out);
-+	exit(1);
-+}
-+
-+exit(0);
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
