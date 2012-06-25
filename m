@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2FYIRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 04:17:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52967 "EHLO mga02.intel.com"
+	id S1755072Ab2FYIRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 04:17:43 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:55477 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab2FYINy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 04:13:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="157814191"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>, Aaron Lu <aaron.lu@amd.com>,
-        Holger Macht <holger@homac.de>, Matthew Garrett <mjg@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH v6 01/11] [SCSI]: add wrapper to access and set scsi_bus_type in struct acpi_bus_type
-Date: Mon, 25 Jun 2012 16:13:02 +0800
-Message-Id: <1340611992-41457-2-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1340611992-41457-1-git-send-email-ming.m.lin@intel.com>
-References: <1340611992-41457-1-git-send-email-ming.m.lin@intel.com>
+	id S1751699Ab2FYIRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 04:17:37 -0400
+Message-ID: <4FE81DEB.5090407@parallels.com>
+Date: Mon, 25 Jun 2012 12:14:35 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Wanpeng Li <liwp.linux@gmail.com>
+CC: <linux-mm@kvack.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: Re: [PATCH 5/6] memcg: optimize memcg_get_hierarchical_limit
+References: <1340432297-5362-1-git-send-email-liwp.linux@gmail.com>
+In-Reply-To: <1340432297-5362-1-git-send-email-liwp.linux@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Holger Macht <holger@homac.de>
+On 06/23/2012 10:18 AM, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>
+> Optimize memcg_get_hierarchical_limit to save cpu cycle.
+>
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> ---
+>   mm/memcontrol.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c821e36..1ca79e2 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3917,9 +3917,9 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
+>
+>   	min_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+>   	min_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+> -	cgroup = memcg->css.cgroup;
+>   	if (!memcg->use_hierarchy)
+>   		goto out;
+> +	cgroup = memcg->css.cgroup;
+>
+>   	while (cgroup->parent) {
+>   		cgroup = cgroup->parent;
+>
+Seriously, this saves nothing.
 
-For being able to bind ata devices against acpi devices, scsi_bus_type
-needs to be set as bus in struct acpi_bus_type. So add wrapper to
-scsi_lib to accomplish that.
-
-Signed-off-by: Holger Macht <holger@homac.de>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/scsi/scsi_lib.c |   17 +++++++++++++++++
- include/scsi/scsi.h     |   10 ++++++++++
- 2 files changed, 27 insertions(+)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 6dfb978..08f1e29 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -68,6 +68,23 @@ static struct scsi_host_sg_pool scsi_sg_pools[] = {
- 
- struct kmem_cache *scsi_sdb_cache;
- 
-+#ifdef CONFIG_ACPI
-+#include <acpi/acpi_bus.h>
-+
-+int scsi_register_acpi_bus_type(struct acpi_bus_type *bus)
-+{
-+        bus->bus = &scsi_bus_type;
-+        return register_acpi_bus_type(bus);
-+}
-+EXPORT_SYMBOL_GPL(scsi_register_acpi_bus_type);
-+
-+void scsi_unregister_acpi_bus_type(struct acpi_bus_type *bus)
-+{
-+	unregister_acpi_bus_type(bus);
-+}
-+EXPORT_SYMBOL_GPL(scsi_unregister_acpi_bus_type);
-+#endif
-+
- /*
-  * When to reinvoke queueing after a resource shortage. It's 3 msecs to
-  * not change behaviour from the previous unplug mechanism, experimentation
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index f34a5a8..4527b3a 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -214,6 +214,16 @@ scsi_command_size(const unsigned char *cmnd)
- 		scsi_varlen_cdb_length(cmnd) : COMMAND_SIZE(cmnd[0]);
- }
- 
-+#ifdef CONFIG_ACPI
-+struct acpi_bus_type;
-+
-+extern int
-+scsi_register_acpi_bus_type(struct acpi_bus_type *bus);
-+
-+extern void
-+scsi_unregister_acpi_bus_type(struct acpi_bus_type *bus);
-+#endif
-+
- /*
-  *  SCSI Architecture Model (SAM) Status codes. Taken from SAM-3 draft
-  *  T10/1561-D Revision 4 Draft dated 7th November 2002.
--- 
-1.7.10
 
