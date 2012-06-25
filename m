@@ -1,220 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab2FYWiF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 18:38:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53696 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757658Ab2FYWiC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 18:38:02 -0400
+	id S1757834Ab2FYWjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 18:39:18 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:50150 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756145Ab2FYWjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 18:39:17 -0400
+Message-ID: <4FE8E7EB.2020804@parallels.com>
+Date: Tue, 26 Jun 2012 02:36:27 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4oE8nHmu1KBXSX=YjQGfD89v2fqL=96THz98uZ4Va_rQ@mail.gmail.com>
-References: <1340650789-3326-1-git-send-email-yinghai@kernel.org>
-	<CAErSpo4oE8nHmu1KBXSX=YjQGfD89v2fqL=96THz98uZ4Va_rQ@mail.gmail.com>
-Date: Mon, 25 Jun 2012 15:38:02 -0700
-X-Google-Sender-Auth: xJhlHcfPnwiiG7G_unTx7LZHCGo
-Message-ID: <CAE9FiQXhGLwSH4gq7L9DrhVAXcDu_NbjLA5QkCDOEqaFO09m7w@mail.gmail.com>
-Subject: Re: [PATCH] PCI, X86: busnum/node boot command line for pci dev node setting.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, lenb@kernel.org, x86@kernel.org,
-        Ulrich Drepper <drepper@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Pekka Enberg" <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 09/11] memcg: propagate kmem limiting information to children
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-10-git-send-email-glommer@parallels.com> <20120625182907.GF3869@google.com>
+In-Reply-To: <20120625182907.GF3869@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.9.3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 1:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Mon, Jun 25, 2012 at 12:59 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> Some intel new sandybridge or newer two sockets system do support support numa
->> for pci devices. But BIOS does not provide _PXM under those root bus in DSDT.
->>
->> Add boot command line, so user could have chance to input node info before
->> BIOS guys figure out to add _PXM.
->>
->> Fold fix from Ulrich to use ";" instead of ",".
->> | The problem is the pci= parameter
->> | handling uses ',' to separate parameters and therefore the second PCI
->> | root information, separated by a comma, is interpreted as a new pci=
->> | parameter.
->>
->> -v3: According to Bjorn and Ingo, change to use "user input first" policy
->>     so it could cover wrong _PXM case.
->> -v4: Folded change from Ulrich to record pointer of busnum_node string.
->>
->> Reported-by: Ulrich Drepper <drepper@gmail.com>
->> Tested-by: Ulrich Drepper <drepper@gmail.com>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
->>  Documentation/kernel-parameters.txt |    5 +++++
->>  arch/x86/include/asm/pci_x86.h      |    3 +++
->>  arch/x86/pci/acpi.c                 |   22 +++++++++++++---------
->>  arch/x86/pci/common.c               |   36 ++++++++++++++++++++++++++++++++++++
->>  4 files changed, 57 insertions(+), 9 deletions(-)
->>
->> Index: linux-2.6/Documentation/kernel-parameters.txt
->> ===================================================================
->> --- linux-2.6.orig/Documentation/kernel-parameters.txt
->> +++ linux-2.6/Documentation/kernel-parameters.txt
->> @@ -2068,6 +2068,11 @@ bytes respectively. Such letter suffixes
->>                                hardware access methods are allowed. Use this
->>                                if you experience crashes upon bootup and you
->>                                suspect they are caused by the BIOS.
->> +               busnum_node=    [X86] Set node for root bus.
->> +                               Format:
->> +                               <bus>:<node>[;...]
->> +                               Specifies node for bus, will override bios _PXM
->> +                               or probed value from hostbridge.
+On 06/25/2012 10:29 PM, Tejun Heo wrote:
+> Feeling like a nit pervert but..
 >
-> I liked the previous argument format that included "pci".  Now we're
-> assuming the only bus type important enough to care about NUMA
-> information is PCI.
-
-which one?
-
+> On Mon, Jun 25, 2012 at 06:15:26PM +0400, Glauber Costa wrote:
+>> @@ -287,7 +287,11 @@ struct mem_cgroup {
+>>   	 * Should the accounting and control be hierarchical, per subtree?
+>>   	 */
+>>   	bool use_hierarchy;
+>> -	bool kmem_accounted;
+>> +	/*
+>> +	 * bit0: accounted by this cgroup
+>> +	 * bit1: accounted by a parent.
+>> +	 */
+>> +	volatile unsigned long kmem_accounted;
 >
-> This should also work on ia64, which also uses ACPI.  For that matter,
-> it'd be nice if it worked on *any* NUMA architecture, though I don't
-> see any  PCI NUMA support at all for anything but x86 and ia64.
+> Is the volatile declaration really necessary?  Why is it necessary?
+> Why no comment explaining it?
 
-ia64 platform should be well tested with Linux?
+Seems to be required by set_bit and friends. gcc will complain if it is 
+not volatile (take a look at the bit function headers)
 
->
->>                conf1           [X86] Force use of PCI Configuration
->>                                Mechanism 1.
->>                conf2           [X86] Force use of PCI Configuration
->> Index: linux-2.6/arch/x86/pci/common.c
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/pci/common.c
->> +++ linux-2.6/arch/x86/pci/common.c
->> @@ -494,6 +494,39 @@ int __init pcibios_init(void)
->>        return 0;
->>  }
->>
->> +static const char *busnum_node_param;
 >> +
->> +static void remember_busnum_node(const char *str)
->> +{
->> +       busnum_node_param = str;
+>> +		for_each_mem_cgroup_tree(iter, memcg) {
+>> +			struct mem_cgroup *parent;
 >
-> Can you convince me this is safe?  pci_setup() is an early_param, so
-> it looks to me like we might be saving a pointer to initdata in this
-> call path:
->
->    setup_arch
->      parse_early_param
->        strlcpy(tmp_cmdline, boot_command_line)
->        parse_early_options(__initdata tmp_cmdline)
->          parse_args
->            do_early_param
->              ...
->              pci_setup (early_param)
->                pcibios_setup
->                  remember_busnum_node
->
-> And then we use that saved pointer to parse the string at host bridge
-> add-time, which might be after initdata has been freed.
-
-ok, that will need one separate buffer.
+> Blank line between decl and body please.
+ok.
 
 >
->> +}
->> +
->> +int get_user_busnum_node(int busnum)
->> +{
->> +       int bus, node, count;
->> +       const char *p = busnum_node_param;
->> +
->> +       if (!p)
->> +               return -1;
->> +
->> +       while (*p) {
->> +               count = 0;
->> +               if (sscanf(p, "%x:%x%n", &bus, &node, &count) != 2) {
->> +                       printk(KERN_ERR "PCI: Can't parse busnum_node input: %s\n",
->> +                                       p);
->> +                       break;
->> +               }
->> +               if (bus == busnum)
->> +                       return node;
->> +               p += count;
->> +               if (*p != ';')
->> +                       break;
->> +               p++;
->> +       }
->> +
->> +       return -1;
->> +}
->> +
->>  char * __devinit  pcibios_setup(char *str)
->>  {
->>        if (!strcmp(str, "off")) {
->> @@ -579,6 +612,9 @@ char * __devinit  pcibios_setup(char *st
->>        } else if (!strcmp(str, "nocrs")) {
->>                pci_probe |= PCI_ROOT_NO_CRS;
->>                return NULL;
->> +       } else if (!strncmp(str, "busnum_node=", 12)) {
->> +               remember_busnum_node(str + 12);
->> +               return NULL;
->>        } else if (!strcmp(str, "earlydump")) {
->>                pci_early_dump_regs = 1;
->>                return NULL;
->> Index: linux-2.6/arch/x86/include/asm/pci_x86.h
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/include/asm/pci_x86.h
->> +++ linux-2.6/arch/x86/include/asm/pci_x86.h
->> @@ -46,6 +46,9 @@ enum pci_bf_sort_state {
->>        pci_dmi_bf,
->>  };
->>
->> +/* pci-common.c */
->> +int get_user_busnum_node(int busnum);
->> +
->>  /* pci-i386.c */
->>
->>  void pcibios_resource_survey(void);
->> Index: linux-2.6/arch/x86/pci/acpi.c
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/pci/acpi.c
->> +++ linux-2.6/arch/x86/pci/acpi.c
->> @@ -453,7 +453,7 @@ struct pci_bus * __devinit pci_acpi_scan
->>        struct pci_sysdata *sd;
->>        int node;
->>  #ifdef CONFIG_ACPI_NUMA
->> -       int pxm;
->> +       int pxm = -1;
->>  #endif
->>
->>        if (domain && !pci_domains_supported) {
->> @@ -463,16 +463,20 @@ struct pci_bus * __devinit pci_acpi_scan
->>                return NULL;
->>        }
->>
->> -       node = -1;
->> +       node = get_user_busnum_node(busnum);
->> +       if (node == -1) {
->>  #ifdef CONFIG_ACPI_NUMA
->> -       pxm = acpi_get_pxm(device->handle);
->> -       if (pxm >= 0)
->> -               node = pxm_to_node(pxm);
->> -       if (node != -1)
->> -               set_mp_bus_to_node(busnum, node);
->> -       else
->> -#endif
->> +               pxm = acpi_get_pxm(device->handle);
->> +               if (pxm >= 0)
->> +                       node = pxm_to_node(pxm);
+>> +			if (iter == memcg)
+>> +				continue;
+>> +			/*
+>> +			 * We should only have our parent bit cleared if none of
+>> +			 * ouri parents are accounted. The transversal order of
 >
-> The code above (everything except the calls to set_mp_bus_to_node()
-> and get_mp_bus_to_node(), which are x86-specific) should be the same
-> between x86 and ia64.  Can you rationalize them?  It'd be better if
-> they used the same #ifdefs and the same code structure.
+>                                ^ type
+>
+>> +			 * our iter function forces us to always look at the
+>> +			 * parents.
+>
+> Also, it's okay here but the text filling in comments and patch
+> descriptions tend to be quite inconsistent.  If you're on emacs, alt-q
+> is your friend and I'm sure vim can do text filling pretty nicely too.
+>
+>> +			 */
+>> +			parent = parent_mem_cgroup(iter);
+>> +			while (parent && (parent != memcg)) {
+>> +				if (test_bit(KMEM_ACCOUNTED_THIS, &parent->kmem_accounted))
+>> +					goto noclear;
+>> +					
+>> +				parent = parent_mem_cgroup(parent);
+>> +			}
+>
+> Better written in for (;;)?  Also, if we're breaking on parent ==
+> memcg, can we ever hit NULL parent in the above loop?
 
-this patch does not change set_mp_bus_to_node/get_mp_bus_to_node...
-only let user_busnum_node override them.
+I can simplify to test parent != memcg only, indeed it is not expected 
+to be NULL (but if it happens to be due to any kind of bug, we protect 
+against NULL-dereference, that is why I like to write this way)
 
-Yinghai
+>> +			continue;
+>> +		}
+>> +	}
+>> +out:
+>> +	mutex_unlock(&set_limit_mutex);
+>
+> Can we please branch on val != RECOURSE_MAX first?  I'm not even sure
+> whether the above conditionals are correct.  If the user updates an
+> existing kmem limit, the first test_and_set_bit() returns non-zero, so
+> the code proceeds onto clearing KMEM_ACCOUNTED_THIS, which succeeds
+> but val == RESOURCE_MAX fails so it doesn't do anything.  If the user
+> changes it again, it will set ACCOUNTED_THIS again.  So, changing an
+> existing kmem limit toggles KMEM_ACCOUNTED_THIS, which just seems
+> wacky to me.
+>
+
+I will take a look at that tomorrow as well.
+
+
+
