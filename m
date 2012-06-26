@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035Ab2FZOaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 10:30:09 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34169 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757553Ab2FZOaH (ORCPT
+	id S1757630Ab2FZOc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 10:32:28 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:64146 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab2FZOc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 10:30:07 -0400
-Date: Tue, 26 Jun 2012 10:30:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: chao xie <xiechao.linux@gmail.com>
-cc: linux-pm@vger.kernel.org, <linux-kernel@vger.kernel.org>, <rjw@sisk.pl>,
-        <pavel@ucw.cz>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: pm runtime and system suspend resume
-In-Reply-To: <CAK9wHMRiTapv7LGtLES4_gR4-DWxWm7CU+L2Yw0e+tRUCN0wyA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1206261017440.1636-100000@iolanthe.rowland.org>
+	Tue, 26 Jun 2012 10:32:27 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 26 Jun 2012 07:32:32 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Anton Arapov <anton@redhat.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Kerneloops.org defunct?
+Message-ID: <20120626143232.GB14890@roeck-us.net>
+References: <201106211534.10366.roucaries.bastien@gmail.com>
+ <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+ <20110826173517.7321c086@lxorguk.ukuu.org.uk>
+ <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+ <20120625180536.GA29261@roeck-us.net>
+ <4FE8A9C0.3050802@linux.intel.com>
+ <20120625191233.GA29324@roeck-us.net>
+ <20120626071430.GA16299@bandura.brq.redhat.com>
+ <4FE9B646.9050706@linux.intel.com>
+ <20120626142558.GA20573@bandura.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120626142558.GA20573@bandura.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jun 2012, chao xie wrote:
+On Tue, Jun 26, 2012 at 04:25:58PM +0200, Anton Arapov wrote:
+> On Tue, Jun 26, 2012 at 06:16:54AM -0700, Arjan van de Ven wrote:
+> > On 6/26/2012 12:14 AM, Anton Arapov wrote:
+> > >   All in all, it seems to be optimistic so far, and I hope we will
+> > > have some web gui this summer. Although we don't have much oopses
+> > > reported yet and changing the ip address of kerneloops.org, as
+> > > mentioned before, might help.
+> > this is the problem indeed. When Fedora stopped submitting oopses to
+> > kerneloops.org, the project became suddenly of much much less value.
+> > (this was well before the kernel.org issues)
+>   I was a bit afraid that Fedora was the major contributor. Also I'm 
+> not quite sure why Fedora stopped to submitting the reports, don't
+> remember we've changed anything in that respect.
+> 
+Guess our replies overlapped. If that is in fact the case, can you help to get
+it addressed ?
 
-> If we want to separate clocks off and phy off, what should we do?
-
-Why do you want to separate them?
-
-The Runtime PM framework doesn't have any notion of multiple low-power 
-states.  It recognizes only two possibilities: active and suspended.
-
-If turning the clocks on and off is very quick, you can simply have the
-driver turn them on before each I/O operation and turn them off when
-the operation is finished.
-
-> in fact, in the driver, at some time, it can shutdown clock, and at
-> some time, it can shut down phy too. So what i want to do it make
-> runtime_idle to shut down the clocks while in runtime_suspend to
-> shutdown the clocks and phy.
-
-The runtime_idle routine is not supposed to turn anything off.  All it 
-should do is decide whether or not to call pm_runtime_suspend.  The 
-actual work of turning things on and off belongs in the driver's (or 
-subsystem's or PM domain's) runtime_resume and runtime_suspend 
-routines.
-
-> So when the driver is in idle, and i can call pm_runtime_put which
-> will call runtime_idle to shutdown the clocks, while when the driver
-> want to turn off phy, it means it will enter deeper idle, so i need
-> call pm_runtime_put_sync_suspend.
-
-You can do that if you want, but it is not how the Runtime PM framework 
-was intended to work.  Instead of calling pm_runtime_put, why not just 
-turn off the clocks?
-
-Or why not turn off the clocks at the same time as the phy?
-
-> The question is if when driver calls pm_runtime_put_sync_suspend, the
-> driver has already called pm_runtime_put, the usaga_count is 0 now, so
-> driver has to call pm_runtime_get and then call
-> pm_runtime_put_sync_suspend.
-
-If you know the usage count is 0 already, you can just call
-pm_runtime_suspend directly.
-
-> PM runtime provide runtime_idle and runtime_suspend, but the device
-> status has only two kinds of status, active or no-active. It confuses
-> me.
-
-Idle means "the device is active but the usage count is 0".  The 
-purpose of the runtime_idle callback is to let your driver know that it 
-can start a suspend if it wants to.
-
-> It means that the pm runtime can not support multiple level of
-> power mode for device.
-
-That's right.
-
->  actually, i think it has provided two kinds of
-> callback runtime_idle and runtime_suspend, and it should maintain at
-> least 3 state, idle, suspend, active for the device.
-
-No, that's not how it was designed.
-
-Alan Stern
-
+Guenter
