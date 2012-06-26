@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756Ab2FZSAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 14:00:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60215 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab2FZSAl (ORCPT
+	id S932120Ab2FZSDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 14:03:17 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:9391 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729Ab2FZSDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 14:00:41 -0400
-Date: Tue, 26 Jun 2012 11:01:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 06/11] memcg: kmem controller infrastructure
-Message-Id: <20120626110142.b7cf6d7c.akpm@linux-foundation.org>
-In-Reply-To: <4FE9CEBB.80108@parallels.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
-	<1340633728-12785-7-git-send-email-glommer@parallels.com>
-	<20120625161720.ae13ae90.akpm@linux-foundation.org>
-	<4FE9CEBB.80108@parallels.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jun 2012 14:03:15 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6754"; a="204823691"
+X-IronPort-AV: E=Sophos;i="4.77,478,1336374000"; 
+   d="scan'208";a="334907847"
+Date: Tue, 26 Jun 2012 11:03:11 -0700
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+To: "Ren, Cloud" <cjren@qca.qualcomm.com>
+CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <qca-linux-team@qualcomm.com>,
+        <nic-devel@qualcomm.com>, xiong <xiong@qca.qualcomm.com>
+Subject: Re: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
+Message-ID: <20120626180311.GC5070@tux>
+References: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jun 2012 19:01:15 +0400 Glauber Costa <glommer@parallels.com> wrote:
-
-> On 06/26/2012 03:17 AM, Andrew Morton wrote:
-> >> +	memcg_uncharge_kmem(memcg, size);
-> >> >+	mem_cgroup_put(memcg);
-> >> >+}
-> >> >+EXPORT_SYMBOL(__mem_cgroup_free_kmem_page);
-> >> >  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-> >> >
-> >> >  #if defined(CONFIG_INET) && defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
-> >> >@@ -5645,3 +5751,69 @@ static int __init enable_swap_account(char *s)
-> >> >  __setup("swapaccount=", enable_swap_account);
-> >> >
-> >> >  #endif
-> >> >+
-> >> >+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> > gargh.  CONFIG_MEMCG_KMEM, please!
-> >
+On Tue, Jun 26, 2012 at 12:33:06PM -0300, Ren, Cloud wrote:
+> From: xiong <xiong@qca.qualcomm.com>
 > 
-> Here too. I like it as much as you do.
+> some people report atl1c could cause system hang with following
+> kernel trace info:
+> ---------------------------------------
+> WARNING: at.../net/sched/sch_generic.c:258
+> dev_watchdog+0x1db/0x1d0()
+> ...
+> NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+> ...
+> ---------------------------------------
+> This is caused by netif_stop_queue calling when cable Link is down
+> but netif_wake_queue isn't called when cable Link is resume.
 > 
-> But that is consistent with the rest of the file, and I'd rather have
-> it this way.
+> Signed-off-by: xiong <xiong@qca.qualcomm.com>
+> Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
 
-There's not much point in being consistent with something which is so
-unpleasant.  I'm on a little campaign to rename
-CONFIG_CGROUP_MEM_RES_CTLR to CONFIG_MEMCG, only nobody has taken my
-bait yet.  Be first!
+If this fixes  a system hang then this could be a stable
+fix -- that is, this should be propagated to older stable
+kernels, no?
 
+If so then please add to the commit log a line like this:
+
+Cc: stable@vger.kernel.org [3.4]
+
+Note: this is for the commit log! Right above the line below
+that has "---"
+
+  Luis
