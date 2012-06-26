@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab2FZEJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 00:09:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41818 "EHLO
+	id S1753632Ab2FZEL7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 00:11:59 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38093 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab2FZEJO (ORCPT
+	with ESMTP id S1750809Ab2FZEL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 00:09:14 -0400
-Date: Mon, 25 Jun 2012 21:09:11 -0700 (PDT)
+	Tue, 26 Jun 2012 00:11:57 -0400
+Date: Mon, 25 Jun 2012 21:11:55 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Glauber Costa <glommer@parallels.com>
@@ -17,11 +17,11 @@ cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
         Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
         devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>, Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 02/11] memcg: Reclaim when more than one page needed.
-In-Reply-To: <1340633728-12785-3-git-send-email-glommer@parallels.com>
-Message-ID: <alpine.DEB.2.00.1206252106430.26640@chino.kir.corp.google.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-3-git-send-email-glommer@parallels.com>
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 03/11] memcg: change defines to an enum
+In-Reply-To: <1340633728-12785-4-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1206252110470.26640@chino.kir.corp.google.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-4-git-send-email-glommer@parallels.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -32,73 +32,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Mon, 25 Jun 2012, Glauber Costa wrote:
 
 > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9304db2..8e601e8 100644
+> index 8e601e8..9352d40 100644
 > --- a/mm/memcontrol.c
 > +++ b/mm/memcontrol.c
-> @@ -2158,8 +2158,16 @@ enum {
->  	CHARGE_OOM_DIE,		/* the current is killed because of OOM */
+> @@ -387,9 +387,12 @@ enum charge_type {
 >  };
 >  
-> +/*
-> + * We need a number that is small enough to be likely to have been
-> + * reclaimed even under pressure, but not too big to trigger unnecessary 
-
-Whitespace.
-
-> + * retries
-> + */
-> +#define NR_PAGES_TO_RETRY 2
+>  /* for encoding cft->private value on file */
+> -#define _MEM			(0)
+> -#define _MEMSWAP		(1)
+> -#define _OOM_TYPE		(2)
+> +enum res_type {
+> +	_MEM,
+> +	_MEMSWAP,
+> +	_OOM_TYPE,
+> +};
 > +
+>  #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
+>  #define MEMFILE_TYPE(val)	((val) >> 16 & 0xffff)
+>  #define MEMFILE_ATTR(val)	((val) & 0xffff)
 
-Should be 1 << PAGE_ALLOC_COSTLY_ORDER?  Where does this number come from?  
-The changelog doesn't specify.
-
->  static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
-> -				unsigned int nr_pages, bool oom_check)
-> +				unsigned int nr_pages, unsigned int min_pages,
-> +				bool oom_check)
->  {
->  	unsigned long csize = nr_pages * PAGE_SIZE;
->  	struct mem_cgroup *mem_over_limit;
-> @@ -2182,18 +2190,18 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  	} else
->  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
->  	/*
-> -	 * nr_pages can be either a huge page (HPAGE_PMD_NR), a batch
-> -	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
-> -	 *
->  	 * Never reclaim on behalf of optional batching, retry with a
->  	 * single page instead.
->  	 */
-> -	if (nr_pages == CHARGE_BATCH)
-> +	if (nr_pages > min_pages)
->  		return CHARGE_RETRY;
->  
->  	if (!(gfp_mask & __GFP_WAIT))
->  		return CHARGE_WOULDBLOCK;
->  
-> +	if (gfp_mask & __GFP_NORETRY)
-> +		return CHARGE_NOMEM;
-> +
->  	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
->  	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
->  		return CHARGE_RETRY;
-> @@ -2206,7 +2214,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  	 * unlikely to succeed so close to the limit, and we fall back
->  	 * to regular pages anyway in case of failure.
->  	 */
-> -	if (nr_pages == 1 && ret)
-> +	if (nr_pages <= NR_PAGES_TO_RETRY && ret)
->  		return CHARGE_RETRY;
->  
->  	/*
-> @@ -2341,7 +2349,8 @@ again:
->  			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
->  		}
->  
-> -		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
-> +		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, nr_pages,
-> +		    oom_check);
->  		switch (ret) {
->  		case CHARGE_OK:
->  			break;
+Shouldn't everything that does MEMFILE_TYPE() now be using type 
+enum res_type rather than int?
