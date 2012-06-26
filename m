@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab2FZO3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 10:29:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:17917 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757907Ab2FZO3Q convert rfc822-to-8bit (ORCPT
+	id S1757961Ab2FZO3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 10:29:38 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54270 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757667Ab2FZO3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 10:29:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="116164557"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "Yanmin Zhang <yanmin_zhang@linux.intel.com>
-	(yanmin_zhang@linux.intel.com)" <yanmin_zhang@linux.intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Subject: [PATCH] i2c_dw: deadlock happening when system is trying to suspend
-Thread-Topic: [PATCH] i2c_dw: deadlock happening when system is trying to
- suspend
-Thread-Index: Ac1TqAs88tDkH1x9TJStda6PpccI5Q==
-Date: Tue, 26 Jun 2012 14:29:13 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A0EE76A@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Jun 2012 10:29:36 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 26 Jun 2012 07:29:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Anton Arapov <anton@redhat.com>,
+        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Kerneloops.org defunct?
+Message-ID: <20120626142949.GA14890@roeck-us.net>
+References: <20110601212432.2677b03a.rdunlap@xenotime.net>
+ <201106211534.10366.roucaries.bastien@gmail.com>
+ <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+ <20110826173517.7321c086@lxorguk.ukuu.org.uk>
+ <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+ <20120625180536.GA29261@roeck-us.net>
+ <4FE8A9C0.3050802@linux.intel.com>
+ <20120625191233.GA29324@roeck-us.net>
+ <20120626071430.GA16299@bandura.brq.redhat.com>
+ <4FE9B646.9050706@linux.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE9B646.9050706@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] i2c_dw: deadlock happening when system is trying to suspend
+On Tue, Jun 26, 2012 at 06:16:54AM -0700, Arjan van de Ven wrote:
+> On 6/26/2012 12:14 AM, Anton Arapov wrote:
+> >   All in all, it seems to be optimistic so far, and I hope we will
+> > have some web gui this summer. Although we don't have much oopses
+> > reported yet and changing the ip address of kerneloops.org, as
+> > mentioned before, might help.
+> 
+> this is the problem indeed. When Fedora stopped submitting oopses to
+> kerneloops.org, the project became suddenly of much much less value.
+> (this was well before the kernel.org issues)
+> 
+Is this still an issue ? I thought Anton's change was made to the Fedora
+package, though I may be wrong. Either case, Anton might have some influence at
+Fedora.
 
-In i2c_dw code, there is a race condition that causes pm suspend
-thread blocking there always. The scenerio is as below:
-
-PM thread:
-suspend -->
-pm_suspend -->
-enter_state -->
-dpm_suspend_start(will call i2c_dw_pci_suspend(),
-and the dw_i2c_dev->lock is hold)
-...
-suspend_enter -->
-dpm_suspend_noirq -->
-suspend_device_irqs -->
-synchronize_irq()
-
-synchronize_irq will wait for any pending irq is handled, and
-the correpsonding irq thread is finished.
-
-In this case, there is a i2c device interrupt is pending, the irq
-thread do the below things:
-IRQ thread:
-i2c_smbus_read_byte_data -->
-i2c_smbus_xfer -->
-i2c_transfer -->
-i2c_dw_xfer -->
-down()
-
-The irq thread blocked at down dw_i2c_dev->lock, because in PM thread,
-it has been hold after calling i2c_dw_pci_suspend(), but PM thread is
-waiting for IRQ thread, then deadlock happened.
-
-The solution is moving the down() action after pm_runtime_get_sync().
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- drivers/i2c/busses/i2c-designware-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 1e48bec..748ecb1 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -512,8 +512,8 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 
-        dev_dbg(dev->dev, "%s: msgs: %d\n", __func__, num);
- 
--       mutex_lock(&dev->lock);
-        pm_runtime_get_sync(dev->dev);
-+       mutex_lock(&dev->lock);
- 
-        INIT_COMPLETION(dev->cmd_complete);
-        dev->msgs = msgs;
--- 
-1.7.0.4
+Guenter
