@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758955Ab2FZSRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 14:17:42 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:38132 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758938Ab2FZSRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 14:17:39 -0400
-Message-ID: <4FE9FC1B.6080301@parallels.com>
-Date: Tue, 26 Jun 2012 22:14:51 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1758791Ab2FZSUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 14:20:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60181 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab2FZSUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 14:20:17 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 06/11] memcg: kmem controller infrastructure
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-7-git-send-email-glommer@parallels.com> <20120625161720.ae13ae90.akpm@linux-foundation.org> <4FE9CEBB.80108@parallels.com> <20120626110142.b7cf6d7c.akpm@linux-foundation.org>
-In-Reply-To: <20120626110142.b7cf6d7c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.9.3]
+In-Reply-To: <20120626081754.GY27816@cmpxchg.org>
+References: <20120529220636.AAA66A0308@akpm.mtv.corp.google.com>
+	<CAE9FiQVEq5j1zoKS31fgfG_3xZSyfqsjdDorDku-Sgj6BTShEg@mail.gmail.com>
+	<CAE9FiQXR+3k4QmOJe59xom+JW5JZAP3znRXQwdyqV5LMEPCw2g@mail.gmail.com>
+	<20120623091752.GK27816@cmpxchg.org>
+	<CAE9FiQXYG0=XFAzZStExBTNqdnRPMSjASNydM45GC_G6qfuNkA@mail.gmail.com>
+	<20120623220616.GS27816@cmpxchg.org>
+	<CAE9FiQWoR_CJd8GD5i5jeFm=_ghUsdTwx8LbP8DnwgdEHo64uQ@mail.gmail.com>
+	<20120626081754.GY27816@cmpxchg.org>
+Date: Tue, 26 Jun 2012 11:20:16 -0700
+X-Google-Sender-Auth: qO2fRShExnWLbM7DFoPuWg2OuOI
+Message-ID: <CAE9FiQWVEDHKeRN3+t39Hch8wpNdjsv15yTyVVLGRdK=yw2n4g@mail.gmail.com>
+Subject: Re: [patch 046/181] mm: remove sparsemem allocation details from the
+ bootmem allocator
+From: Yinghai Lu <yinghai@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        davem@davemloft.net, shangw@linux.vnet.ibm.com, tj@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7b3393597bacdb04c36426c8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 10:01 PM, Andrew Morton wrote:
-> On Tue, 26 Jun 2012 19:01:15 +0400 Glauber Costa <glommer@parallels.com> wrote:
->
->> On 06/26/2012 03:17 AM, Andrew Morton wrote:
->>>> +	memcg_uncharge_kmem(memcg, size);
->>>>> +	mem_cgroup_put(memcg);
->>>>> +}
->>>>> +EXPORT_SYMBOL(__mem_cgroup_free_kmem_page);
->>>>>   #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
->>>>>
->>>>>   #if defined(CONFIG_INET) && defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
->>>>> @@ -5645,3 +5751,69 @@ static int __init enable_swap_account(char *s)
->>>>>   __setup("swapaccount=", enable_swap_account);
->>>>>
->>>>>   #endif
->>>>> +
->>>>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>> gargh.  CONFIG_MEMCG_KMEM, please!
->>>
->>
->> Here too. I like it as much as you do.
->>
->> But that is consistent with the rest of the file, and I'd rather have
->> it this way.
->
-> There's not much point in being consistent with something which is so
-> unpleasant.  I'm on a little campaign to rename
-> CONFIG_CGROUP_MEM_RES_CTLR to CONFIG_MEMCG, only nobody has taken my
-> bait yet.  Be first!
->
+--047d7b3393597bacdb04c36426c8
+Content-Type: text/plain; charset=ISO-8859-1
 
-If you are okay with a preparation mechanical patch to convert the whole 
-file, I can change mine too.
+On Tue, Jun 26, 2012 at 1:17 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> No use in reverting it, as the bootmem version was already broken
+> before, when the limit was removed in f5bf18f "bootmem/sparsemem:
+> remove limit constraint in alloc_bootmem_section".
+>
+> I'm okay with exporting and using ___alloc_bootmem_node_nopanic() in
+> 3.5.
 
-But you'll be responsible for arguing with whoever stepping up opposing 
-this =p
+Good. Assume that is Acked-by you.
 
+Andrew,
+
+Can you push attached -v2 patch to Linus?
+
+Thanks
+
+Yinghai
+
+--047d7b3393597bacdb04c36426c8
+Content-Type: application/octet-stream; name="fix_usemap_goal_v2.patch"
+Content-Disposition: attachment; filename="fix_usemap_goal_v2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h3xav8s00
+
+U3ViamVjdDogW1BBVENIXSBtbTogZml4IGdvYWwgY2FsY3VsYXRpbmcgd2l0aCB1c2VtYXAKClBB
+R0VfU0VDVElPTl9NQVNLIHNob3VsZCBiZSB1c2VkIHdpdGggcGZuIGluc3RlYWQgb2YgcGEuCgpB
+bHNvIHJlc3RvcmUgdGhlIG9sZCBiZWhhdm9pcjoKCWxpbWl0IHRoZSBhbGxvY2F0aW5nIHRvIHNh
+bWUgc2VjdGlvbiBhdCBmaXJzdC4KCW5lZWQgdG8gZXhwb3NlIF9fYWxsb2NfYm9vdG1lbV9ub2Rl
+X25vcGFuaWMgd2l0aCBsaW1pdC4KCi12MjogYWRkIGxpbWl0IG9mIHNhbWUgc2VjdGlvbgoKU2ln
+bmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBpbmNsdWRl
+L2xpbnV4L2Jvb3RtZW0uaCB8ICAgIDUgKysrKysKIG1tL2Jvb3RtZW0uYyAgICAgICAgICAgIHwg
+ICAgMiArLQogbW0vbm9ib290bWVtLmMgICAgICAgICAgfCAgICAyICstCiBtbS9zcGFyc2UuYyAg
+ICAgICAgICAgICB8ICAgMjIgKysrKysrKysrKysrKysrKy0tLS0tLQogNCBmaWxlcyBjaGFuZ2Vk
+LCAyMyBpbnNlcnRpb25zKCspLCA4IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9tbS9z
+cGFyc2UuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9tbS9zcGFyc2UuYworKysgbGlu
+dXgtMi42L21tL3NwYXJzZS5jCkBAIC0yNzUsOCArMjc1LDkgQEAgc3RhdGljIHVuc2lnbmVkIGxv
+bmcgKiBfX2luaXQKIHNwYXJzZV9lYXJseV91c2VtYXBzX2FsbG9jX3BnZGF0X3NlY3Rpb24oc3Ry
+dWN0IHBnbGlzdF9kYXRhICpwZ2RhdCwKIAkJCQkJIHVuc2lnbmVkIGxvbmcgc2l6ZSkKIHsKLQlw
+Z19kYXRhX3QgKmhvc3RfcGdkYXQ7Ci0JdW5zaWduZWQgbG9uZyBnb2FsOworCXVuc2lnbmVkIGxv
+bmcgZ29hbCwgbGltaXQ7CisJdW5zaWduZWQgbG9uZyAqcDsKKwlpbnQgbmlkOwogCS8qCiAJICog
+QSBwYWdlIG1heSBjb250YWluIHVzZW1hcHMgZm9yIG90aGVyIHNlY3Rpb25zIHByZXZlbnRpbmcg
+dGhlCiAJICogcGFnZSBiZWluZyBmcmVlZCBhbmQgbWFraW5nIGEgc2VjdGlvbiB1bnJlbW92YWJs
+ZSB3aGlsZQpAQCAtMjg3LDEwICsyODgsMTkgQEAgc3BhcnNlX2Vhcmx5X3VzZW1hcHNfYWxsb2Nf
+cGdkYXRfc2VjdGlvbgogCSAqIGZyb20gdGhlIHNhbWUgc2VjdGlvbiBhcyB0aGUgcGdkYXQgd2hl
+cmUgcG9zc2libGUgdG8gYXZvaWQKIAkgKiB0aGlzIHByb2JsZW0uCiAJICovCi0JZ29hbCA9IF9f
+cGEocGdkYXQpICYgUEFHRV9TRUNUSU9OX01BU0s7Ci0JaG9zdF9wZ2RhdCA9IE5PREVfREFUQShl
+YXJseV9wZm5fdG9fbmlkKGdvYWwgPj4gUEFHRV9TSElGVCkpOwotCXJldHVybiBfX2FsbG9jX2Jv
+b3RtZW1fbm9kZV9ub3BhbmljKGhvc3RfcGdkYXQsIHNpemUsCi0JCQkJCSAgICBTTVBfQ0FDSEVf
+QllURVMsIGdvYWwpOworCWdvYWwgPSBfX3BhKHBnZGF0KSAmIChQQUdFX1NFQ1RJT05fTUFTSyA8
+PCBQQUdFX1NISUZUKTsKKwlsaW1pdCA9IGdvYWwgKyAoMVVMIDw8IFBBX1NFQ1RJT05fU0hJRlQp
+OworCW5pZCA9IGVhcmx5X3Bmbl90b19uaWQoZ29hbCA+PiBQQUdFX1NISUZUKTsKKworYWdhaW46
+CisJcCA9IF9fX2FsbG9jX2Jvb3RtZW1fbm9kZV9ub3BhbmljKE5PREVfREFUQShuaWQpLCBzaXpl
+LAorCQkJCQkgIFNNUF9DQUNIRV9CWVRFUywgZ29hbCwgbGltaXQpOworCWlmICghcCAmJiBsaW1p
+dCkgeworCQlsaW1pdCA9IDA7CisJCWdvdG8gYWdhaW47CisJfQorCisJcmV0dXJuIHA7CiB9CiAK
+IHN0YXRpYyB2b2lkIF9faW5pdCBjaGVja191c2VtYXBfc2VjdGlvbl9ucihpbnQgbmlkLCB1bnNp
+Z25lZCBsb25nICp1c2VtYXApCkluZGV4OiBsaW51eC0yLjYvaW5jbHVkZS9saW51eC9ib290bWVt
+LmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9ib290bWVtLmgK
+KysrIGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L2Jvb3RtZW0uaApAQCAtOTEsNiArOTEsMTEgQEAg
+ZXh0ZXJuIHZvaWQgKl9fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaQogCQkJCSAgdW5zaWduZWQg
+bG9uZyBzaXplLAogCQkJCSAgdW5zaWduZWQgbG9uZyBhbGlnbiwKIAkJCQkgIHVuc2lnbmVkIGxv
+bmcgZ29hbCk7Cit2b2lkICpfX19hbGxvY19ib290bWVtX25vZGVfbm9wYW5pYyhwZ19kYXRhX3Qg
+KnBnZGF0LAorCQkJCSAgdW5zaWduZWQgbG9uZyBzaXplLAorCQkJCSAgdW5zaWduZWQgbG9uZyBh
+bGlnbiwKKwkJCQkgIHVuc2lnbmVkIGxvbmcgZ29hbCwKKwkJCQkgIHVuc2lnbmVkIGxvbmcgbGlt
+aXQpOwogZXh0ZXJuIHZvaWQgKl9fYWxsb2NfYm9vdG1lbV9sb3codW5zaWduZWQgbG9uZyBzaXpl
+LAogCQkJCSB1bnNpZ25lZCBsb25nIGFsaWduLAogCQkJCSB1bnNpZ25lZCBsb25nIGdvYWwpOwpJ
+bmRleDogbGludXgtMi42L21tL2Jvb3RtZW0uYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3Jp
+Zy9tbS9ib290bWVtLmMKKysrIGxpbnV4LTIuNi9tbS9ib290bWVtLmMKQEAgLTY5OCw3ICs2OTgs
+NyBAQCB2b2lkICogX19pbml0IF9fYWxsb2NfYm9vdG1lbSh1bnNpZ25lZCBsCiAJcmV0dXJuIF9f
+X2FsbG9jX2Jvb3RtZW0oc2l6ZSwgYWxpZ24sIGdvYWwsIGxpbWl0KTsKIH0KIAotc3RhdGljIHZv
+aWQgKiBfX2luaXQgX19fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaWMocGdfZGF0YV90ICpwZ2Rh
+dCwKK3ZvaWQgKiBfX2luaXQgX19fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaWMocGdfZGF0YV90
+ICpwZ2RhdCwKIAkJCQl1bnNpZ25lZCBsb25nIHNpemUsIHVuc2lnbmVkIGxvbmcgYWxpZ24sCiAJ
+CQkJdW5zaWduZWQgbG9uZyBnb2FsLCB1bnNpZ25lZCBsb25nIGxpbWl0KQogewpJbmRleDogbGlu
+dXgtMi42L21tL25vYm9vdG1lbS5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL21tL25v
+Ym9vdG1lbS5jCisrKyBsaW51eC0yLjYvbW0vbm9ib290bWVtLmMKQEAgLTI3NCw3ICsyNzQsNyBA
+QCB2b2lkICogX19pbml0IF9fYWxsb2NfYm9vdG1lbSh1bnNpZ25lZCBsCiAJcmV0dXJuIF9fX2Fs
+bG9jX2Jvb3RtZW0oc2l6ZSwgYWxpZ24sIGdvYWwsIGxpbWl0KTsKIH0KIAotc3RhdGljIHZvaWQg
+KiBfX2luaXQgX19fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaWMocGdfZGF0YV90ICpwZ2RhdCwK
+K3ZvaWQgKiBfX2luaXQgX19fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaWMocGdfZGF0YV90ICpw
+Z2RhdCwKIAkJCQkJCSAgIHVuc2lnbmVkIGxvbmcgc2l6ZSwKIAkJCQkJCSAgIHVuc2lnbmVkIGxv
+bmcgYWxpZ24sCiAJCQkJCQkgICB1bnNpZ25lZCBsb25nIGdvYWwsCg==
+--047d7b3393597bacdb04c36426c8--
