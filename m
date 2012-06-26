@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2FZJEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 05:04:39 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36608 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab2FZJEg (ORCPT
+	id S1754517Ab2FZJFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 05:05:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35383 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab2FZJFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 05:04:36 -0400
-Message-ID: <4FE97B20.6000809@linaro.org>
-Date: Tue, 26 Jun 2012 10:04:32 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 26 Jun 2012 05:05:49 -0400
+Date: Tue, 26 Jun 2012 02:05:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Glauber Costa <glommer@parallels.com>
+cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>
+Subject: Re: [PATCH 11/11] protect architectures where THREAD_SIZE >= PAGE_SIZE
+ against fork bombs
+In-Reply-To: <4FE9765D.2050301@parallels.com>
+Message-ID: <alpine.DEB.2.00.1206260203400.16020@chino.kir.corp.google.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-12-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206252157000.30072@chino.kir.corp.google.com> <4FE96358.6080601@parallels.com>
+ <alpine.DEB.2.00.1206260143450.16020@chino.kir.corp.google.com> <4FE9765D.2050301@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Subject: Re: [PATCH 08/14] mfd: Add IRQ domain support for the AB8500
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-9-git-send-email-lee.jones@linaro.org> <20120614183231.GA30185@sirena.org.uk> <4FDEEEBD.5070108@linaro.org> <20120618102003.GB12029@n2100.arm.linux.org.uk> <20120618185638.GY3974@opensource.wolfsonmicro.com> <4FE1C952.5000306@linaro.org> <CACRpkdYszGAixL_2CiPLRJ2Pasq_GwxnR1np+y83miOXhanNQg@mail.gmail.com>
-In-Reply-To: <CACRpkdYszGAixL_2CiPLRJ2Pasq_GwxnR1np+y83miOXhanNQg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/06/12 08:37, Linus Walleij wrote:
-> On Wed, Jun 20, 2012 at 3:00 PM, Lee Jones<lee.jones@linaro.org>  wrote:
->> On 18/06/12 19:56, Mark Brown wrote:
->>>
->>> Yes, that's correct.  I'm surprised the code runs without crashing...
->>
->> Oddly the code ran perfectly.
->
-> So how did you test it?
->
-> The only way to generate an IRQ on the AB8500 with the mainline code is
-> to push the power button, that should generate an event from the
-> driver in drivers/input/misc/ab8500-ponkey.c that you can listen to
-> by doing cat on the proper /dev/input/eventN file.
->
-> Please test this scenario before and after the patch and you have some
-> indication that the IRQdomain is working.
+On Tue, 26 Jun 2012, Glauber Costa wrote:
 
-Yep, works perfectly fall and rise:
+> > Right, because I'm sure that __GFP_KMEMCG will be used in additional
+> > places outside of this patchset and it will be a shame if we have to
+> > always add #ifdef's.  I see no reason why we would care if __GFP_KMEMCG
+> > was used when CONFIG_CGROUP_MEM_RES_CTLR_KMEM=n with the semantics that it
+> > as in this patchset.  It's much cleaner by making it 0x0 when disabled.
+> > 
+> 
+> What I can do, instead, is to WARN_ON conditionally to the config option in
+> the page allocator, and make sure no one is actually passing the flag in that
+> case.
+> 
 
->            CPU0       CPU1
->   6:          0          2    ab8500  ab8500-ponkey-dbf
->   7:          0          2    ab8500  ab8500-ponkey-dbr
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I don't think adding a conditional to the page allocator's fastpath when 
+CONFIG_CGROUP_MEM_RES_CTLR_KMEM=n is appropriate.  I don't understand why 
+this can't be 0x0 for such a configuration, __GFP_KMEM certainly means 
+nothing when we don't have it enabled so how is this different at all from 
+kmemcheck?
