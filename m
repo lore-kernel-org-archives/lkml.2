@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab2FZBws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 21:52:48 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40907 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757862Ab2FZBwr (ORCPT
+	id S1758114Ab2FZB4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 21:56:08 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:36352 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757862Ab2FZB4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 21:52:47 -0400
+	Mon, 25 Jun 2012 21:56:06 -0400
+Date: Mon, 25 Jun 2012 18:55:51 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: sfr@canb.auug.org.au
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        broonie@opensource.wolfsonmicro.com, rnayak@ti.com,
+        viresh.kumar@linaro.org, amit.kucheria@linaro.org,
+        linus.walleij@stericsson.com, shawn.guo@freescale.com,
+        mkl@pengutronix.de, sr@denx.de, pawel.moll@arm.com,
+        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
+        arnd.bergmann@linaro.org, olof@lixom.net
+Subject: linux-next: adding the common clk tree
+Message-ID: <20120626015551.GW4402@gmail.com>
 MIME-Version: 1.0
-Date: Mon, 25 Jun 2012 21:52:46 -0400
-Message-ID: <CAH0O0Mx+-QY9Wx4wZpO2vZNViV0UWAEns7AwBXwEh96brCzuug@mail.gmail.com>
-Subject: Kernel not detecting all of physical RAM in 1st generation Apple TV
-From: Bharath Ramesh <bramesh.dev@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am trying to get a minimal kernel config running on a 1st generation
-Apple TV to compile the kernel so that I can have it detect all of the
-256MB of RAM the device has. A brief summary to get Linux booting on
-the 1st generation Apple TV requires the use of the atv-bootloader
-project [1]. The 1st generation Apple TV uses EFI and the
-atv-bootloader project translates EFI structures to standard PC BIOS
-structures. The issue I am facing is that kernel doesnt always detect
-the entire 256MB of RAM that the Apple TV has. With a very minimal
-change in the kernel config I can cause the kernel not to detect the
-entire 256MB of RAM. I have test config along with the respective
-dmesg output which shows this issue. This was not the case with the
-earlier 2.6.24 kernel that I am running, the 2.6.24 kernel is a Ubuntu
-8.04 distribution kernel. The following config and dmesg is using
-kernel.org source.
+Hi Stephen,
 
-config-3.2.18-nouveau-256M: http://pastebin.com/9V8dSED3
-config-3.2.18-nouveau-64M: http://pastebin.com/CsUK0yy3
-config.3.2.18-nouveau-256M-64M.diff: http://pastebin.com/MkYbQf5V
-dmesg.3.2.18-nouveau-256M: http://pastebin.com/UUYBzqm8
-dmesg.3.2.18-nouveau-64M: http://pastebin.com/FDntUsfd
-dmesg.3.2.18-nouveau-256M-64M.diff: http://pastebin.com/2myAa9Z0
+Would you please add the clk-next branch of the common clock tree to
+linux-next?
 
-Any help in debugging this issue that I can get the kernel to always
-detect all of the RAM would be greatly appreciated. I am not
-subscribed to the list, would greatly appreciate it if I am copied in
-the response.
+git://git.linaro.org/people/mturquette/linux.git clk-next
 
-Thanks,
+Thanks much!
 
-Bharath
+For all of those Cc'd, I just wanted to say that I'm changing the way I
+manage clk-next.  The clk-next branch now WILL be rebased, and it's only
+purpose is to make it easy to test things in linux-next.  You can base
+work on it, but be prepare for breakage and shifting commit ids.
 
-[1] http://code.google.com/p/atv-bootloader/
+If you don't want breakage and shifting commit ids then you might want
+to use my clk-fixes branch (stable) and my clk-3.x branch (stable).  As
+patches go through the linux-next cycle and appear stable I'll migrate
+them over to clk-3.x which won't ever be rebased.  This is the branch
+I'll send to Linus.  clk-next is simply comprised of merging clk-fixes,
+clk-3.x and whatever unstable patches I have laying around.
+
+Regards,
+Mike
