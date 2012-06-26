@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab2FZKtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 06:49:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47758 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751931Ab2FZKtT (ORCPT
+	id S1754366Ab2FZKvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 06:51:40 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:59173 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752422Ab2FZKvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 06:49:19 -0400
-Date: Tue, 26 Jun 2012 11:49:17 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT] regulator: s5m8767: Convert ot
- regulator_list_voltage_linear
-Message-ID: <20120626104917.GQ30406@opensource.wolfsonmicro.com>
-References: <1340000727.18659.7.camel@phoenix>
+	Tue, 26 Jun 2012 06:51:38 -0400
+Message-ID: <4FE99432.8030300@ti.com>
+Date: Tue, 26 Jun 2012 16:21:30 +0530
+From: Shubhrajyoti <shubhrajyoti@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eHmdSDY+kY2au76U"
-Content-Disposition: inline
-In-Reply-To: <1340000727.18659.7.camel@phoenix>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Felipe Balbi <balbi@ti.com>, ben-linux@fluff.org,
+        Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 00/17] Big OMAP I2C Cleanup
+References: <1339691067-919-1-git-send-email-balbi@ti.com> <20120614175950.GE14419@pengutronix.de>
+In-Reply-To: <20120614175950.GE14419@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 14 June 2012 11:29 PM, Wolfram Sang wrote:
+>> 	- removed dev_err() which was introduced on patch 09/17
+> To prevent the list being flooded, I would appreciate if you could wait
+> a few days to collect reviews before resending. It will take some time
+> until I pick this series anyhow, because I want people to have time to
+> donate Tested-by tags.
+Felipe thats a good cleanup.
+The series look good to me.
 
---eHmdSDY+kY2au76U
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Also draining interrupt I had some queries.
+Looks good to me.
 
-On Mon, Jun 18, 2012 at 02:25:27PM +0800, Axel Lin wrote:
-> In current code, .list_voltage and .set_voltage_sel callbacks for BUCK7 and
-> BUCK8 return -EINVAL.
+I have tested it after rebasing.
+Tested-by : Shubhrajyoti <shubhrajyoti@ti.com>
 
-Applied, thanks.
 
---eHmdSDY+kY2au76U
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP6ZOlAAoJEBus8iNuMP3dojAP/A7McCw7yPSNkjVjbuCGNSgX
-h9G/LWHOi+Mp2sQajRxndC+ft1iGaEXFdnSO3aK1dHMNvvYcdBQSnfqFh24wOytU
-ZYfW9tGKRW+GekW9/7PYlafRilSFWxDWiOzx0AxANZk9A95z4EoIvaAO86okk1Bl
-c55Tp/5Qzv2S0O4zWUhOOJHMf4qtJwqjQgkF5rJIZo2gtmuaPN+aUwOZwlDZoFoI
-W0iMTnd9ulJ2/ONuvXYlGU3z94pkR/eThrm+8b11czvfo7YuliFJydbu8YqUhH4Z
-cWI+Tn6D47R8+mNFsC9pk2PLmBJWn6wVzOEWY6nVFer7bjS9q+Lfs0EdccpgzzSS
-VStLV4gZnbcnmgdJ2IKP7DROTmR6/6l2VAXfMI87oq0o+fAYNwMWJ9tEaUajuqzC
-ijxzmxO2KyBYKrw640Fh9OZpzOfz+YF6+Ib2LoB4JZlqQLjHK+WYBbiwjwH98pYh
-z/68eax6vw4afdxfM3/XExVShRwrmR2PpQofHiREnRVjhQx/e8+6jUCzAToYfpS/
-M1dh7NsE++1VKRVInOkJkRoooZuyIR/SodKZjaHA4ILVlbP18D93KfG7/TFlAYqW
-ljgsUBUighcxgdCP6hKfmH2LyPT4uTwsBOk2+WeoiPKDHErKIqi9Aw2w+uX+xgRJ
-gEZGwZstrSrw+AvRw3aW
-=+W/D
------END PGP SIGNATURE-----
-
---eHmdSDY+kY2au76U--
