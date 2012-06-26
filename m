@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758501Ab2FZIJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 04:09:46 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:2447 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757100Ab2FZIJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 04:09:43 -0400
-Message-ID: <1340698181.2197.14.camel@x61.thuisdomein>
-Subject: Re: [PATCH] avr32: Remove unused asm/numnodes.h
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 26 Jun 2012 10:09:41 +0200
-In-Reply-To: <20120626073255.GB7866@samfundet.no>
-References: <1339174815.30984.8.camel@x61.thuisdomein>
-	 <20120626073255.GB7866@samfundet.no>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1758539Ab2FZIKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 04:10:00 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40538 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758513Ab2FZIJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 04:09:55 -0400
+Message-ID: <4FE96DAF.3050208@parallels.com>
+Date: Tue, 26 Jun 2012 12:07:11 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: RFC:  Easy-Reclaimable LRU list
+References: <4FE012CD.6010605@kernel.org> <4FE82555.2010704@parallels.com> <4FE8FE70.6050107@kernel.org>
+In-Reply-To: <4FE8FE70.6050107@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 26 Jun 2012 08:09:42.0031 (UTC) FILETIME=[0A2761F0:01CD5373]
-X-RcptDomain: vger.kernel.org
+X-Originating-IP: [109.173.9.3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hans-Christian,
+On 06/26/2012 04:12 AM, Minchan Kim wrote:
+> On 06/25/2012 05:46 PM, Glauber Costa wrote:
+>
+>> On 06/19/2012 09:49 AM, Minchan Kim wrote:
+>>> Hi everybody!
+>>>
+>>> Recently, there are some efforts to handle system memory pressure.
+>>>
+>>> 1) low memory notification - [1]
+>>> 2) fallocate(VOLATILE) - [2]
+>>> 3) fadvise(NOREUSE) - [3]
+>>>
+>>> For them, I would like to add new LRU list, aka "Ereclaimable" which
+>>> is opposite of "unevictable".
+>>> Reclaimable LRU list includes_easy_  reclaimable pages.
+>>> For example, easy reclaimable pages are following as.
+>>>
+>>> 1. invalidated but remained LRU list.
+>>> 2. pageout pages for reclaim(PG_reclaim pages)
+>>> 3. fadvise(NOREUSE)
+>>> 4. fallocate(VOLATILE)
+>>>
+>>> Their pages shouldn't stir normal LRU list and compaction might not
+>>> migrate them, even.
+>> What about other things moving memory like CMA ?
+>
+>
+> Sorry for not being able to understand your point.
+> Can you elaborate a bit more?
+>
 
-On Tue, 2012-06-26 at 09:32 +0200, Hans-Christian Egtvedt wrote:
-> Around Fri 08 Jun 2012 19:00:15 +0200 or thereabout, Paul Bolle wrote:
-> > This is handled with config options now.
-> 
-> Yes, but AVR32 doesn't have those bits in arch/avr32/Kconfig,
+Well, maybe I didn't =)
+I was just wondering why exactly it is that troubles your scheme with 
+compaction, and if such restriction would also apply to memory movement
+schemes like CMA.
 
-Correct. Currently only 11 of 26 architectures set the Kconfig symbol
-NODES_SHIFT. avr32 is not one of those 11. 
-
->  hence removing
-> the NODES_SHIFT definition will reduce it to 0 in include/Linux/numa.h. I
-> suspect it is already done...
-
-Sure, NODES_SHIFT will be defined as 0 in numa.h for avr32, because
-CONFIG_NODES_SHIFT will never be defined for avr32.
-
-Or do you mean that some file is actually using avr32's asm/numnodes.h?
-How does that work?
-
-
-Paul Bolle
 
