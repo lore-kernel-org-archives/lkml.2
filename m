@@ -1,377 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab2FZX0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 19:26:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64785 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab2FZXZi (ORCPT
+	id S1755390Ab2FZX1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 19:27:06 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46656 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab2FZX1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 19:25:38 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 3/7] pstore: Add persistent function tracing
-Date: Tue, 26 Jun 2012 16:23:25 -0700
-Message-Id: <1340753009-12483-3-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20120626232210.GA11549@lizard>
-References: <20120626232210.GA11549@lizard>
+	Tue, 26 Jun 2012 19:27:03 -0400
+Date: Tue, 26 Jun 2012 16:26:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch V2 0/7] Per cpu thread hotplug infrastructure
+Message-ID: <20120626232620.GA24468@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120615140217.933711648@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120615140217.933711648@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062623-6148-0000-0000-00000718398F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this support kernel can save function call chain log into a
-persistent ram buffer that can be decoded and dumped after reboot
-through pstore filesystem. It can be used to determine what function
-was last called before a reset or panic.
+On Fri, Jun 15, 2012 at 02:13:19PM -0000, Thomas Gleixner wrote:
+> The following series implements the infrastructure for parking and
+> unparking kernel threads to avoid the full teardown and fork on cpu
+> hotplug operations along with management infrastructure for hotplug
+> and users.
+> 
+> Changes since V1:
+> 
+>  - Addressed the review comments
+>  - Fixed a missing state update in parkme (reported by Paul)
+>  - Simplified rcu_yield()
+>  - Added Pauls RCU conversion
+> 
+> Full diffstat below. Due to the RCU cleanup we now remove more code
+> than we add. :)
 
-We store the log in a binary format and then decode it at read time.
+;-)
 
-p.s.
-Mostly the code comes from trace_persistent.c driver found in the
-Android git tree, written by Colin Cross <ccross@android.com>
-(according to sign-off history). I reworked the driver a little bit,
-and ported it to pstore.
+With the exception of a build error for CONFIG_SMP=y:
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- fs/pstore/Kconfig      |   12 ++++++
- fs/pstore/Makefile     |    1 +
- fs/pstore/ftrace.c     |   35 +++++++++++++++
- fs/pstore/inode.c      |  111 ++++++++++++++++++++++++++++++++++++++++++++++--
- fs/pstore/internal.h   |   43 +++++++++++++++++++
- fs/pstore/platform.c   |    2 +-
- include/linux/pstore.h |    9 ++++
- 7 files changed, 208 insertions(+), 5 deletions(-)
- create mode 100644 fs/pstore/ftrace.c
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
-index d044de6..d39bb5c 100644
---- a/fs/pstore/Kconfig
-+++ b/fs/pstore/Kconfig
-@@ -19,6 +19,18 @@ config PSTORE_CONSOLE
- 	  When the option is enabled, pstore will log all kernel
- 	  messages, even if no oops or panic happened.
- 
-+config PSTORE_FTRACE
-+	bool "Persistent function tracer"
-+	depends on PSTORE
-+	depends on FUNCTION_TRACER
-+	help
-+	  With this option kernel traces function calls into a persistent
-+	  ram buffer that can be decoded and dumped after reboot through
-+	  pstore filesystem. It can be used to determine what function
-+	  was last called before a reset or panic.
-+
-+	  If unsure, say N.
-+
- config PSTORE_RAM
- 	tristate "Log panic/oops to a RAM buffer"
- 	depends on PSTORE
-diff --git a/fs/pstore/Makefile b/fs/pstore/Makefile
-index 278a44e..4c9095c 100644
---- a/fs/pstore/Makefile
-+++ b/fs/pstore/Makefile
-@@ -5,6 +5,7 @@
- obj-y += pstore.o
- 
- pstore-objs += inode.o platform.o
-+obj-$(CONFIG_PSTORE_FTRACE)	+= ftrace.o
- 
- ramoops-objs += ram.o ram_core.o
- obj-$(CONFIG_PSTORE_RAM)	+= ramoops.o
-diff --git a/fs/pstore/ftrace.c b/fs/pstore/ftrace.c
-new file mode 100644
-index 0000000..a130d48
---- /dev/null
-+++ b/fs/pstore/ftrace.c
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright 2012  Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/compiler.h>
-+#include <linux/irqflags.h>
-+#include <linux/percpu.h>
-+#include <linux/smp.h>
-+#include <linux/atomic.h>
-+#include <asm/barrier.h>
-+#include "internal.h"
-+
-+void notrace pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
-+{
-+	struct pstore_ftrace_record rec = {};
-+
-+	if (unlikely(oops_in_progress))
-+		return;
-+
-+	rec.ip = ip;
-+	rec.parent_ip = parent_ip;
-+	pstore_ftrace_encode_cpu(&rec, raw_smp_processor_id());
-+	psinfo->write_buf(PSTORE_TYPE_FTRACE, 0, NULL, 0, (void *)&rec,
-+			  sizeof(rec), psinfo);
-+}
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 45bff54..4ab572e 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -27,6 +27,7 @@
- #include <linux/list.h>
- #include <linux/string.h>
- #include <linux/mount.h>
-+#include <linux/seq_file.h>
- #include <linux/ramfs.h>
- #include <linux/parser.h>
- #include <linux/sched.h>
-@@ -52,18 +53,117 @@ struct pstore_private {
- 	char	data[];
- };
- 
-+struct pstore_ftrace_seq_data {
-+	const void *ptr;
-+	size_t off;
-+	size_t size;
-+};
-+
-+#define REC_SIZE sizeof(struct pstore_ftrace_record)
-+
-+static void *pstore_ftrace_seq_start(struct seq_file *s, loff_t *pos)
-+{
-+	struct pstore_private *ps = s->private;
-+	struct pstore_ftrace_seq_data *data;
-+
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return NULL;
-+
-+	data->off = ps->size % REC_SIZE;
-+	data->off += *pos * REC_SIZE;
-+	if (data->off + REC_SIZE > ps->size) {
-+		kfree(data);
-+		return NULL;
-+	}
-+
-+	return data;
-+
-+}
-+
-+static void pstore_ftrace_seq_stop(struct seq_file *s, void *v)
-+{
-+	kfree(v);
-+}
-+
-+static void *pstore_ftrace_seq_next(struct seq_file *s, void *v, loff_t *pos)
-+{
-+	struct pstore_private *ps = s->private;
-+	struct pstore_ftrace_seq_data *data = v;
-+
-+	data->off += REC_SIZE;
-+	if (data->off + REC_SIZE > ps->size)
-+		return NULL;
-+
-+	(*pos)++;
-+	return data;
-+}
-+
-+static int pstore_ftrace_seq_show(struct seq_file *s, void *v)
-+{
-+	struct pstore_private *ps = s->private;
-+	struct pstore_ftrace_seq_data *data = v;
-+	struct pstore_ftrace_record *rec = (void *)(ps->data + data->off);
-+
-+	seq_printf(s, "%d %08lx  %08lx  %pf <- %pF\n",
-+		pstore_ftrace_decode_cpu(rec), rec->ip, rec->parent_ip,
-+		(void *)rec->ip, (void *)rec->parent_ip);
-+
-+	return 0;
-+}
-+
-+static const struct seq_operations pstore_ftrace_seq_ops = {
-+	.start	= pstore_ftrace_seq_start,
-+	.next	= pstore_ftrace_seq_next,
-+	.stop	= pstore_ftrace_seq_stop,
-+	.show	= pstore_ftrace_seq_show,
-+};
-+
- static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
- 						size_t count, loff_t *ppos)
- {
--	struct pstore_private *ps = file->private_data;
-+	struct seq_file *sf = file->private_data;
-+	struct pstore_private *ps = sf->private;
- 
-+	if (ps->type == PSTORE_TYPE_FTRACE)
-+		return seq_read(file, userbuf, count, ppos);
- 	return simple_read_from_buffer(userbuf, count, ppos, ps->data, ps->size);
- }
- 
-+static int pstore_file_open(struct inode *inode, struct file *file)
-+{
-+	struct pstore_private *ps = inode->i_private;
-+	struct seq_file *sf;
-+	int err;
-+	const struct seq_operations *sops = NULL;
-+
-+	if (ps->type == PSTORE_TYPE_FTRACE)
-+		sops = &pstore_ftrace_seq_ops;
-+
-+	err = seq_open(file, sops);
-+	if (err < 0)
-+		return err;
-+
-+	sf = file->private_data;
-+	sf->private = ps;
-+
-+	return 0;
-+}
-+
-+static loff_t pstore_file_llseek(struct file *file, loff_t off, int origin)
-+{
-+	struct seq_file *sf = file->private_data;
-+
-+	if (sf->op)
-+		return seq_lseek(file, off, origin);
-+	return default_llseek(file, off, origin);
-+}
-+
- static const struct file_operations pstore_file_operations = {
--	.open	= simple_open,
--	.read	= pstore_file_read,
--	.llseek	= default_llseek,
-+	.open		= pstore_file_open,
-+	.read		= pstore_file_read,
-+	.llseek		= pstore_file_llseek,
-+	.release	= seq_release,
- };
- 
- /*
-@@ -215,6 +315,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
- 	case PSTORE_TYPE_CONSOLE:
- 		sprintf(name, "console-%s", psname);
- 		break;
-+	case PSTORE_TYPE_FTRACE:
-+		sprintf(name, "ftrace-%s", psname);
-+		break;
- 	case PSTORE_TYPE_MCE:
- 		sprintf(name, "mce-%s-%lld", psname, id);
- 		break;
-diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-index 3bde461..958c48d 100644
---- a/fs/pstore/internal.h
-+++ b/fs/pstore/internal.h
-@@ -1,6 +1,49 @@
-+#ifndef __PSTORE_INTERNAL_H__
-+#define __PSTORE_INTERNAL_H__
-+
-+#include <linux/pstore.h>
-+
-+#if NR_CPUS <= 2 && defined(CONFIG_ARM_THUMB)
-+#define PSTORE_CPU_IN_IP 0x1
-+#elif NR_CPUS <= 4 && defined(CONFIG_ARM)
-+#define PSTORE_CPU_IN_IP 0x3
-+#endif
-+
-+struct pstore_ftrace_record {
-+	unsigned long ip;
-+	unsigned long parent_ip;
-+#ifndef PSTORE_CPU_IN_IP
-+	unsigned int cpu;
-+#endif
-+};
-+
-+static inline void
-+pstore_ftrace_encode_cpu(struct pstore_ftrace_record *rec, unsigned int cpu)
-+{
-+#ifndef PSTORE_CPU_IN_IP
-+	rec->cpu = cpu;
-+#else
-+	rec->ip |= cpu;
-+#endif
-+}
-+
-+static inline unsigned int
-+pstore_ftrace_decode_cpu(struct pstore_ftrace_record *rec)
-+{
-+#ifndef PSTORE_CPU_IN_IP
-+	return rec->cpu;
-+#else
-+	return rec->ip & PSTORE_CPU_IN_IP;
-+#endif
-+}
-+
-+extern struct pstore_info *psinfo;
-+
- extern void	pstore_set_kmsg_bytes(int);
- extern void	pstore_get_records(int);
- extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
- 			      char *data, size_t size,
- 			      struct timespec time, struct pstore_info *psi);
- extern int	pstore_is_mounted(void);
-+
-+#endif
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index ef5ca8a..29996e8 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -61,7 +61,7 @@ static DECLARE_WORK(pstore_work, pstore_dowork);
-  * calls to pstore_register()
-  */
- static DEFINE_SPINLOCK(pstore_lock);
--static struct pstore_info *psinfo;
-+struct pstore_info *psinfo;
- 
- static char *backend;
- 
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index b107484..120443b 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -30,6 +30,7 @@ enum pstore_type_id {
- 	PSTORE_TYPE_DMESG	= 0,
- 	PSTORE_TYPE_MCE		= 1,
- 	PSTORE_TYPE_CONSOLE	= 2,
-+	PSTORE_TYPE_FTRACE	= 3,
- 	PSTORE_TYPE_UNKNOWN	= 255
- };
- 
-@@ -57,6 +58,14 @@ struct pstore_info {
- 	void		*data;
- };
- 
-+
-+#ifdef CONFIG_PSTORE_FTRACE
-+extern void pstore_ftrace_call(unsigned long ip, unsigned long parent_ip);
-+#else
-+static inline void pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
-+{ }
-+#endif
-+
- #ifdef CONFIG_PSTORE
- extern int pstore_register(struct pstore_info *);
- #else
--- 
-1.7.10.4
+I finally tracked down a hang, which turned out to be an unrelated bug
+of mine that happened to be triggered more reliably with these patches
+applied, hence the delay.  Sigh!
+
+For CONFIG_SMP=y:
+
+softirq.c:(.text+0xa6d3): undefined reference to `smpboot_thread_check_parking'
+softirq.c:(.init.text+0x4aa): undefined reference to `smpboot_register_percpu_thread'
+softirq.c:(.text+0xb763): undefined reference to `smpboot_thread_check_parking'
+softirq.c:(.init.text+0x48e): undefined reference to `smpboot_register_percpu_thread'
+
+My approach would be to make smpboot.o be unconditionally created by
+kernel/Makefile and to use conditional compilation as needed.  The real
+question is whether we want to allow parking in !SMP kernels.  I cannot
+see why we wouldn't -- there might be other reasons to park besides
+CPU hotplug.  Thoughts?
+
+							Thanx, Paul
+
+> Thanks,
+> 
+> 	tglx
+> ---
+>  drivers/infiniband/hw/ehca/ehca_irq.c |  240 ++++++++-------------
+>  drivers/infiniband/hw/ehca/ehca_irq.h |    5 
+>  include/linux/kthread.h               |   11 
+>  include/linux/smpboot.h               |   40 +++
+>  kernel/cpu.c                          |   10 
+>  kernel/kthread.c                      |  184 ++++++++++++++--
+>  kernel/rcutree.c                      |   12 -
+>  kernel/rcutree.h                      |   15 -
+>  kernel/rcutree_plugin.h               |  375 +++++-----------------------------
+>  kernel/rcutree_trace.c                |    3 
+>  kernel/smpboot.c                      |  206 ++++++++++++++++++
+>  kernel/smpboot.h                      |    4 
+>  kernel/softirq.c                      |   84 +------
+>  kernel/watchdog.c                     |  232 ++++++---------------
+>  14 files changed, 678 insertions(+), 743 deletions(-)
+> 
 
