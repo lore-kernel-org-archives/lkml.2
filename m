@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2FZNCd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 09:02:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18763 "EHLO mx1.redhat.com"
+	id S1756859Ab2FZNHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 09:07:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62034 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756430Ab2FZNCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 09:02:31 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Cc: "Richard W.M. Jones" <rjones@redhat.com>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
-References: <4FDEC3C2.4060909@secunet.com>
-	<20120625113457.GA1289@amd.home.annexia.org>
-	<x49r4t3z6s4.fsf@segfault.boston.devel.redhat.com>
-	<4FE951A0.8040900@secunet.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 26 Jun 2012 09:02:27 -0400
-In-Reply-To: <4FE951A0.8040900@secunet.com> (Torsten Hilbrich's message of
-	"Tue, 26 Jun 2012 08:07:28 +0200")
-Message-ID: <x49ehp2tee4.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756432Ab2FZNHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 09:07:17 -0400
+Message-ID: <4FE9B3B4.1050305@redhat.com>
+Date: Tue, 26 Jun 2012 09:05:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Rik van Riel <riel@surriel.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
+        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org, danielfsantos@att.net
+Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
+ rbtree
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>      <1340315835-28571-2-git-send-email-riel@surriel.com>     <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>    <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>   <1340375872.18025.77.camel@twins> <4FE4922D.8070501@surriel.com>  <1340652578.21991.18.camel@twins> <4FE8DD80.9040108@redhat.com> <1340699507.21991.32.camel@twins>
+In-Reply-To: <1340699507.21991.32.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Torsten Hilbrich <torsten.hilbrich@secunet.com> writes:
+On 06/26/2012 04:31 AM, Peter Zijlstra wrote:
 
-> Am 25.06.2012 18:38, schrieb Jeff Moyer:
->> "Richard W.M. Jones" <rjones@redhat.com> writes:
->> 
->>> On Mon, Jun 18, 2012 at 07:59:30AM +0200, Torsten Hilbrich wrote:
->>>> Hello,
->>>>
->>>> a software that tries to mount each existing partition as ext3 file system started to fail when updating from v3.3.7 to v3.3.8.
->>>>
->>>> The applications then hangs-up in the mount syscall, here is a snapshot of its stack at this moment:
->>>
->>> We just ran into what we think is the same problem.
->>>
->>> Note that ext4 fails like this for any 1024 byte sized filesystem (of
->>> zeroes) that you try to mount.  It's really nothing to do with
->>> extended partitions.
->>>
->>> Here is a very simple reproducer + stack trace:
->>>
->>>   https://bugzilla.redhat.com/show_bug.cgi?id=835019#c4
->>>
->>> I will try out the patch suggested later on in this thread.
->> 
->> Please try the attached patch instead.  The patch I had originally
->> posted for this allowed marking the first buffer beyond EOD as
->> uptodate.  This isn't correct.  The patch I've attached below fixes the
->> infinite loop in __getblk_slow.
+> If you look at your patch 1, __vma_unlink has an adjust_free_gap() right
+> next to the rb_augment_erase(), vma_adjust() has 3 adjust_free_gap()
+> calls right next to each other.
 >
-> This patch also fixes the ext3 mount problem on extented partition.
+> All these will do an entire path walk back to the root. I would think we
+> could save quite a bit of updating by not having them all walk back to
+> the root. No point in re-computing the top levels if you know the next
+> update will change them again anyway.
 
-Great news, thanks for testing, guys!  I'll follow up with another patch
-posting this morning.
+The problem is, unless we look at the augmented data at
+rotate time, we do not know when it is safe to stop
+iterating up the tree.
 
-Cheers,
-Jeff
+-- 
+All rights reversed
