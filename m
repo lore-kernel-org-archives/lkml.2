@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab2FZPdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 11:33:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23357 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757736Ab2FZPdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 11:33:24 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tj@kernel.org, hch@infradead.org,
-        vgoyal@redhat.com, dm-devel@redhat.com
-Subject: Re: [RFC PATCH] block: all callers should check blkdev_issue_flush's return
-References: <1340724445-3314-1-git-send-email-snitzer@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 26 Jun 2012 11:33:10 -0400
-In-Reply-To: <1340724445-3314-1-git-send-email-snitzer@redhat.com> (Mike
-	Snitzer's message of "Tue, 26 Jun 2012 11:27:25 -0400")
-Message-ID: <x498vfarsuh.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1758604Ab2FZPnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 11:43:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58864 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757943Ab2FZPno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 11:43:44 -0400
+Message-ID: <4FE9D8AC.6010809@twiddle.net>
+Date: Tue, 26 Jun 2012 08:43:40 -0700
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Myron Stowe <myron.stowe@redhat.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org, ink@jurassic.park.msu.ru,
+        mattst88@gmail.com, linux@arm.linux.org.uk, starvik@axis.com,
+        jesper.nilsson@axis.com, tony.luck@intel.com, fenghua.yu@intel.com,
+        monstr@monstr.eu, ralf@linux-mips.org,
+        yasutake.koichi@jp.panasonic.com, jejb@parisc-linux.org, deller@gmx.de,
+        benh@kernel.crashing.org, paulus@samba.org, lethal@linux-sh.org,
+        davem@davemloft.net, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        chris@zankel.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/16] alpha/PCI: Factor 'pcibios_setup()' out of alpha
+References: <20120626033045.16434.17412.stgit@amt.stowe> <20120626033109.16434.92644.stgit@amt.stowe>
+In-Reply-To: <20120626033109.16434.92644.stgit@amt.stowe>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Snitzer <snitzer@redhat.com> writes:
+On 06/25/2012 08:31 PM, Myron Stowe wrote:
+> The PCI core provides a generic (__weak) 'pcibios_setup()' routine
+> that can be used by all architectures as a default.  Drop alpha's
+> architecture specific version in favor of that as it does not need to be
+> over-ridden.
+> 
+> No functional change.
+> 
+> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> ---
+> 
+>  arch/alpha/kernel/pci.c |    6 ------
+>  1 files changed, 0 insertions(+), 6 deletions(-)
 
-> It is concerning that a FLUSH may fail but the blkdev_issue_flush
-> callers assume it will always succeed.
->
-> Each blkdev_issue_flush caller should come to terms with the reality
-> that a FLUSH may fail -- the file_operations' .fsync methods in
-> particular.  nilfs2 is the only filesystem that checks
-> blkdev_issue_flush's return.
+Acked-by: Richard Henderson <rth@twiddle.net>
 
-Yeah, as it stands, it looks like in many cases fsync won't return an
-error if a flush fails.  That's bad.
+
+r~
