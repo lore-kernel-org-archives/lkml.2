@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab2FZAfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 20:35:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39387 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756821Ab2FZAfL convert rfc822-to-8bit (ORCPT
+	id S1757902Ab2FZAjF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 20:39:05 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45941 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756821Ab2FZAjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 20:35:11 -0400
+	Mon, 25 Jun 2012 20:39:03 -0400
+X-AuditID: 9c930197-b7c94ae0000037ff-15-4fe904a4d4db
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, psuriset@linux.vnet.ibm.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] perf kvm: fix segfault with default guest arguments
+References: <1340599286-89757-1-git-send-email-dsahern@gmail.com>
+	<877guvwzt1.fsf@sejong.aot.lge.com> <4FE85EB6.80908@gmail.com>
+	<4FE8B656.4080201@gmail.com>
+Date: Tue, 26 Jun 2012 09:35:14 +0900
+In-Reply-To: <4FE8B656.4080201@gmail.com> (David Ahern's message of "Mon, 25
+	Jun 2012 13:04:54 -0600")
+Message-ID: <87395ix64d.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120626000148.GA3896@kroah.com>
-References: <4FE4AD09020000780008B77F@nat28.tlf.novell.com>
- <CAPXgP13nd7k3v3YGcW9F45L8LhT5tctw64jaooUwQ8=ypfVH+g@mail.gmail.com>
- <4FE829CD020000780008B9DB@nat28.tlf.novell.com> <20120625192007.GA1005@kroah.com>
- <CAPXgP11rkrk5LBYswPf_3nOD2e2oYnvWgbFb81NYgjta67Dj3w@mail.gmail.com> <20120626000148.GA3896@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Tue, 26 Jun 2012 02:34:49 +0200
-Message-ID: <CAPXgP10iHmADRGQ8TvmWG3-LB7PhoVFcRTF7PDPq29CWQNu65w@mail.gmail.com>
-Subject: Re: [PATCH] syslog: fill buffer with more than a single message for SYSLOG_ACTION_READ
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jan Beulich <JBeulich@suse.com>, yuanhan.liu@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 2:01 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Jun 25, 2012 at 09:35:03PM +0200, Kay Sievers wrote:
->> On Mon, Jun 25, 2012 at 9:20 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+On Mon, 25 Jun 2012 13:04:54 -0600, David Ahern wrote:
+> On 6/25/12 6:51 AM, David Ahern wrote:
+>> On 6/25/12 2:39 AM, Namhyung Kim wrote
+>>>
+>>> I don't know about the kvm, but isn't there a possibility that the same
+>>> thing happends on other types of event too - i.e. comm, fork, exit..?
 >>
->> > Ok, so I'm confused, you want me to apply this patch and then revert a
->> > different one?  Which one, 4a77a5a06ec66ed05199b301e7c25f42f979afdc?
->>
->> b56a39ac conflicts and is replaced with that patch.
->> 4a77a5a0 should stay, as it fixes an actual problem, even with the old
->> code, I think.
+>> COMM, FORK, EXIT events cannot be generated in the guest of a guest;
+>> host machine is always non-NULL.
 >
-> Ok, I'm even more confused now.  Maybe I just need more coffee.
+> s/guest of a guest/context of a guest/
 >
-> Can you list what exactly I should do here?  Should I apply this patch?
-> Revert some other patch?  Which one(s)?
+> [That's I what get for rushing an email as I run out the door this morning.]
 
-Revert b56a39ac (return -EINVAL) and apply the patch from Jan. The
-problem b56a39ac solved , is replaced by other logic in Jan's patch.
+:) Thanks for the correction!
 
-Kay
+Thanks,
+Namhyung
