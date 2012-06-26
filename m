@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab2FZAWX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 20:22:23 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:3245 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758016Ab2FZAWW (ORCPT
+	id S1758136Ab2FZAXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 20:23:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59231 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757167Ab2FZAXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 20:22:22 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-132.messagelabs.com!1340670141!12492441!1
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 31/33] staging: comedi: cb_das16_cs: use the BIP_RANGE helper macro
-Date: Mon, 25 Jun 2012 17:22:18 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 25 Jun 2012 20:23:12 -0400
+Date: Mon, 25 Jun 2012 17:23:07 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
+Message-ID: <20120626002307.GA4389@kroah.com>
+References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
+ <20120625150722.8cd4f45d.akpm@linux-foundation.org>
+ <20120625235531.GB3652@kroah.com>
+ <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Message-ID: <201206251722.18665.hartleys@visionengravers.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BIP_RANGE(a) macro can be used instead of the RANGE(a,b)
-macro when -a == b. And it's a bit clearer that this is a bipolar
-range.
+On Mon, Jun 25, 2012 at 05:01:11PM -0700, Linus Torvalds wrote:
+> On Mon, Jun 25, 2012 at 4:55 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> >
+> > Stephen and Ingo, I understand that your tests now would require
+> > multiple printk() lines, but this affects what, 10 boxes in the world
+> > that run these tests (I'm not trying to be mean, just understand the
+> > issues).  The fixes that now are in place fix problems for many more
+> > systems, and provide the infrastructure for proper logging that people
+> > have been screaming at us for over 10 years to accomplish.
+> 
+> I disagree violently.
+> 
+> I think we absolutely should apply Steven's patch.
+> 
+> Why? Because the buffering does not help *anything*, and it's
+> surprising, and it breaks one of our main debugging tools. There's no
+> upside to it.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_das16_cs.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+Ok, but I thought you wanted the "properly handle continuations" that we
+now have in the kernel.  I must be mistaken.
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index 68e6436..0d303d1 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -90,12 +90,13 @@ struct das16cs_private {
- 
- static struct pcmcia_device *cur_dev;
- 
--static const struct comedi_lrange das16cs_ai_range = { 4, {
--							   RANGE(-10, 10),
--							   RANGE(-5, 5),
--							   RANGE(-2.5, 2.5),
--							   RANGE(-1.25, 1.25),
--							   }
-+static const struct comedi_lrange das16cs_ai_range = {
-+	4, {
-+		BIP_RANGE(10),
-+		BIP_RANGE(5),
-+		BIP_RANGE(2.5),
-+		BIP_RANGE(1.25),
-+	}
- };
- 
- static irqreturn_t das16cs_interrupt(int irq, void *d)
--- 
-1.7.11
+> The fact that we found *one* case where it broke within days of it
+> being introduced is not the issue. Fixing that one case is irrelevant.
+> It's the unknown number of other cases that did similar thngs that
+> matter.
+> 
+> If there are other places that print out partial lines, they may have
+> this problem too. Don't buffer.
+> 
+> And if there are *not* other places that print out partial lines, then
+> buffering doesn't help. Don't buffer.
+> 
+> Notice? Buffering partial lines is never *ever* the right thing to do
+> for something like printk.
+> 
+> If you want to merge the partial lines, do it at the *logging* stage,
+> not at the printout stage. Nobody cares if you buffer the stuff that
+> actually makes it to "dmesg". But buffering the stuff before it makes
+> it to the screen is just wrong.
 
+Ok, Kay, does Stephen's patch work for you as well?  I'll go boot a box
+with it and look at the output, but that will take 30 minutes or so...
+
+greg k-h
