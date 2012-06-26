@@ -1,780 +1,788 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab2FZDkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 23:40:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2889 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab2FZDkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 23:40:31 -0400
-Message-ID: <4FE92F99.6020402@redhat.com>
-Date: Tue, 26 Jun 2012 11:42:17 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: habanero@linux.vnet.ibm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, krkumar2@in.ibm.com,
-        tahm@linux.vnet.ibm.com, akong@redhat.com, davem@davemloft.net,
-        shemminger@vyatta.com, mashirle@us.ibm.com
-Subject: Re: [net-next RFC V3 PATCH 4/6] tuntap: multiqueue support
-References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120625061018.6765.76633.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120625082553.GC18229@redhat.com>
-In-Reply-To: <20120625082553.GC18229@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754980Ab2FZDs3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 23:48:29 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:12207 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2FZDs1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 23:48:27 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-10-4fe931099337
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Subhash Jadavani'" <subhashj@codeaurora.org>, linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        "'Maya Erez'" <merez@codeaurora.org>,
+        "'S, Venkatraman'" <svenkatr@ti.com>,
+        "'Saugata Das'" <saugata.das@linaro.org>
+References: <007b01cd4d15$40673510$c1359f30$%jun@samsung.com>
+ <001201cd52ac$368857d0$a3990770$@codeaurora.org>
+In-reply-to: <001201cd52ac$368857d0$a3990770$@codeaurora.org>
+Subject: RE: [PATCH RESEND v7 2/3] mmc: core: Support packed write command for
+ eMMC4.5 device
+Date: Tue, 26 Jun 2012 12:48:24 +0900
+Message-id: <001101cd534e$8a054c90$9e0fe5b0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AQJIve/o/bnpzc2PFlwTN/n3eQGuPJYT2bDQgAD6WEA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAV1Ow5f+BovWKFpc3jWHzeLI/35G
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKm3mhjLLi4k7HiyJOpTA2Mq/oYuxg5OSQETCS2fzjP
+	BmGLSVy4tx7I5uIQEljEKPGt8yI7hPOHUeLYzw1gHWwCWhJ/37xhBrFFBLwl/jx7zgpSxCyw
+	lVFiXuthdpCEkECBRNuOM2BFnAK2ErfXHACLCwvES/w695UFxGYRUJVo3jyFFcTmBar58xCi
+	hldAUOLH5HtANRxAQ9UlpkzJBQkzC8hLbF7zlhkkLAEUfvRXF8QUEbCS+DElD6JCRGLfi3eM
+	ExiFZiGZMwthziwkc2Yh6VjAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzikn0nvYFzV
+	YHGIUYCDUYmHd6PqS38h1sSy4srcQ4wSHMxKIry7b7zwF+JNSaysSi3Kjy8qzUktPsQozcGi
+	JM7bZH3BX0ggPbEkNTs1tSC1CCbLxMEp1cCYVXmYP/bAR6One8yXWasmTFD+p+D6cn/z9QzR
+	8r9HN32oMTERPLv92MqzvL4hNiVLrUKXC03yYj305oJwfnigz/vsL7E/t/Z7stwTc/HdFS86
+	+90c0/t3bt59vf6KhwIrW4BN7433JtbF/yYYizuZcKUEGAkLBMdKaZ9+PNdBwbXvkRNL/1El
+	luKMREMt5qLiRABdnbhwZQIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 04:25 PM, Michael S. Tsirkin wrote:
-> On Mon, Jun 25, 2012 at 02:10:18PM +0800, Jason Wang wrote:
->> This patch adds multiqueue support for tap device. This is done by abstracting
->> each queue as a file/socket and allowing multiple sockets to be attached to the
->> tuntap device (an array of tun_file were stored in the tun_struct). Userspace
->> could write and read from those files to do the parallel packet
->> sending/receiving.
->>
->> Unlike the previous single queue implementation, the socket and device were
->> loosely coupled, each of them were allowed to go away first. In order to let the
->> tx path lockless, netif_tx_loch_bh() is replaced by RCU/NETIF_F_LLTX to
->> synchronize between data path and system call.
-> Don't use LLTX/RCU. It's not worth it.
-> Use something like netif_set_real_num_tx_queues.
->
->> The tx queue selecting is first based on the recorded rxq index of an skb, it
->> there's no such one, then choosing based on rx hashing (skb_get_rxhash()).
->>
->> Signed-off-by: Jason Wang<jasowang@redhat.com>
-> Interestingly macvtap switched to hashing first:
-> ef0002b577b52941fb147128f30bd1ecfdd3ff6d
-> (the commit log is corrupted but see what it
-> does in the patch).
-> Any idea why?
+Hi Subhash,
 
-Yes, so tap should be changed to behave same as macvtap. I remember the 
-reason we do that is to make sure the packet of a single flow to be 
-queued to a fixed socket/virtqueues. As 10g cards like ixgbe choose the 
-rx queue for a flow based on the last tx queue where the packets of that 
-flow comes. So if we are using recored rx queue in macvtap, the queue 
-index of a flow would change as vhost thread moves amongs processors.
+Subhash Jadavani <subhashj@codeaurora.org> wrote:
+> Hi Seungwon,
+> 
+> Please one comment inline below related to large sector size handling for packed commands.
+> 
+> Regards,
+> Subhash
+> 
+> > -----Original Message-----
+> > From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
+> > owner@vger.kernel.org] On Behalf Of Seungwon Jeon
+> > Sent: Monday, June 18, 2012 11:13 AM
+> > To: linux-mmc@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org; 'Chris Ball'; 'Maya Erez'; 'Subhash Jadavani';
+> > 'S, Venkatraman'
+> > Subject: [PATCH RESEND v7 2/3] mmc: core: Support packed write command
+> > for eMMC4.5 device
+> >
+> > This patch supports packed write command of eMMC4.5 device.
+> > Several writes can be grouped in packed command and all data of the
+> > individual commands can be sent in a single transfer on the bus.
+> >
+> > Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+> > ---
+> >  drivers/mmc/card/block.c   |  406
+> > +++++++++++++++++++++++++++++++++++++++++---
+> >  drivers/mmc/card/queue.c   |   45 +++++-
+> >  drivers/mmc/card/queue.h   |   12 ++
+> >  drivers/mmc/core/mmc_ops.c |    1 +
+> >  include/linux/mmc/core.h   |    4 +
+> >  5 files changed, 441 insertions(+), 27 deletions(-)
+> >
+> > diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c index
+> > 7e3f453..eb99e35 100644
+> > --- a/drivers/mmc/card/block.c
+> > +++ b/drivers/mmc/card/block.c
+> > @@ -58,6 +58,12 @@ MODULE_ALIAS("mmc:block");  #define
+> > INAND_CMD38_ARG_SECTRIM1 0x81  #define INAND_CMD38_ARG_SECTRIM2
+> > 0x88
+> >
+> > +#define mmc_req_rel_wr(req)	(((req->cmd_flags & REQ_FUA) || \
+> > +			(req->cmd_flags & REQ_META)) && \
+> > +			(rq_data_dir(req) == WRITE))
+> > +#define PACKED_CMD_VER		0x01
+> > +#define PACKED_CMD_WR		0x02
+> > +
+> >  static DEFINE_MUTEX(block_mutex);
+> >
+> >  /*
+> > @@ -123,9 +129,21 @@ enum mmc_blk_status {
+> >  	MMC_BLK_NOMEDIUM,
+> >  };
+> >
+> > +enum {
+> > +	MMC_PACKED_N_IDX = -1,
+> > +	MMC_PACKED_N_ZERO,
+> > +	MMC_PACKED_N_SINGLE,
+> > +};
+> > +
+> >  module_param(perdev_minors, int, 0444);
+> > MODULE_PARM_DESC(perdev_minors, "Minors numbers to allocate per
+> > device");
+> >
+> > +static inline void mmc_blk_clear_packed(struct mmc_queue_req *mqrq) {
+> > +	mqrq->packed_cmd = MMC_PACKED_NONE;
+> > +	mqrq->packed_num = MMC_PACKED_N_ZERO;
+> > +}
+> > +
+> >  static struct mmc_blk_data *mmc_blk_get(struct gendisk *disk)  {
+> >  	struct mmc_blk_data *md;
+> > @@ -1081,12 +1099,61 @@ static int mmc_blk_err_check(struct mmc_card
+> > *card,
+> >  	if (!brq->data.bytes_xfered)
+> >  		return MMC_BLK_RETRY;
+> >
+> > +	if (mq_mrq->packed_cmd != MMC_PACKED_NONE) {
+> > +		if (unlikely(brq->data.blocks << 9 != brq->data.bytes_xfered))
+> > +			return MMC_BLK_PARTIAL;
+> > +		else
+> > +			return MMC_BLK_SUCCESS;
+> > +	}
+> > +
+> >  	if (blk_rq_bytes(req) != brq->data.bytes_xfered)
+> >  		return MMC_BLK_PARTIAL;
+> >
+> >  	return MMC_BLK_SUCCESS;
+> >  }
+> >
+> > +static int mmc_blk_packed_err_check(struct mmc_card *card,
+> > +				    struct mmc_async_req *areq)
+> > +{
+> > +	struct mmc_queue_req *mq_rq = container_of(areq, struct
+> > mmc_queue_req,
+> > +			mmc_active);
+> > +	struct request *req = mq_rq->req;
+> > +	int err, check, status;
+> > +	u8 ext_csd[512];
+> > +
+> > +	mq_rq->packed_retries--;
+> > +	check = mmc_blk_err_check(card, areq);
+> > +	err = get_card_status(card, &status, 0);
+> > +	if (err) {
+> > +		pr_err("%s: error %d sending status command\n",
+> > +				req->rq_disk->disk_name, err);
+> > +		return MMC_BLK_ABORT;
+> > +	}
+> > +
+> > +	if (status & R1_EXP_EVENT) {
+> > +		err = mmc_send_ext_csd(card, ext_csd);
+> > +		if (err) {
+> > +			pr_err("%s: error %d sending ext_csd\n",
+> > +					req->rq_disk->disk_name, err);
+> > +			return MMC_BLK_ABORT;
+> > +		}
+> > +
+> > +		if ((ext_csd[EXT_CSD_EXP_EVENTS_STATUS] &
+> > +					EXT_CSD_PACKED_FAILURE) &&
+> > +				(ext_csd[EXT_CSD_PACKED_CMD_STATUS] &
+> > +				 EXT_CSD_PACKED_GENERIC_ERROR)) {
+> > +			if (ext_csd[EXT_CSD_PACKED_CMD_STATUS] &
+> > +					EXT_CSD_PACKED_INDEXED_ERROR) {
+> > +				mq_rq->packed_fail_idx =
+> > +				  ext_csd[EXT_CSD_PACKED_FAILURE_INDEX] -
+> > 1;
+> > +				return MMC_BLK_PARTIAL;
+> > +			}
+> > +		}
+> > +	}
+> > +
+> > +	return check;
+> > +}
+> > +
+> >  static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
+> >  			       struct mmc_card *card,
+> >  			       int disable_multi,
+> > @@ -1241,10 +1308,197 @@ static void mmc_blk_rw_rq_prep(struct
+> > mmc_queue_req *mqrq,
+> >  	mmc_queue_bounce_pre(mqrq);
+> >  }
+> >
+> > +static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request
+> > +*req) {
+> > +	struct request_queue *q = mq->queue;
+> > +	struct mmc_card *card = mq->card;
+> > +	struct request *cur = req, *next = NULL;
+> > +	struct mmc_blk_data *md = mq->data;
+> > +	bool en_rel_wr = card->ext_csd.rel_param &
+> > EXT_CSD_WR_REL_PARAM_EN;
+> > +	unsigned int req_sectors = 0, phys_segments = 0;
+> > +	unsigned int max_blk_count, max_phys_segs;
+> > +	u8 put_back = 0;
+> > +	u8 max_packed_rw = 0;
+> > +	u8 reqs = 0;
+> > +
+> > +	mmc_blk_clear_packed(mq->mqrq_cur);
+> > +
+> > +	if (!(md->flags & MMC_BLK_CMD23) ||
+> > +			!card->ext_csd.packed_event_en)
+> > +		goto no_packed;
+> > +
+> > +	if ((rq_data_dir(cur) == WRITE) &&
+> > +			(card->host->caps2 & MMC_CAP2_PACKED_WR))
+> > +		max_packed_rw = card->ext_csd.max_packed_writes;
+> > +
+> > +	if (max_packed_rw == 0)
+> > +		goto no_packed;
+> > +
+> > +	if (mmc_req_rel_wr(cur) &&
+> > +			(md->flags & MMC_BLK_REL_WR) &&
+> > +			!en_rel_wr) {
+> > +		goto no_packed;
+> > +	}
+> > +
+> > +	max_blk_count = min(card->host->max_blk_count,
+> > +			card->host->max_req_size >> 9);
+> > +	if (unlikely(max_blk_count > 0xffff))
+> > +		max_blk_count = 0xffff;
+> > +
+> > +	max_phys_segs = queue_max_segments(q);
+> > +	req_sectors += blk_rq_sectors(cur);
+> > +	phys_segments += cur->nr_phys_segments;
+> > +
+> > +	if (rq_data_dir(cur) == WRITE) {
+> > +		req_sectors++;
+> > +		phys_segments++;
+> > +	}
+> > +
+> > +	while (reqs < max_packed_rw - 1) {
+> > +		spin_lock_irq(q->queue_lock);
+> > +		next = blk_fetch_request(q);
+> > +		spin_unlock_irq(q->queue_lock);
+> > +		if (!next)
+> > +			break;
+> > +
+> > +		if (next->cmd_flags & REQ_DISCARD ||
+> > +				next->cmd_flags & REQ_FLUSH) {
+> > +			put_back = 1;
+> > +			break;
+> > +		}
+> > +
+> > +		if (rq_data_dir(cur) != rq_data_dir(next)) {
+> > +			put_back = 1;
+> > +			break;
+> > +		}
+> > +
+> > +		if (mmc_req_rel_wr(next) &&
+> > +				(md->flags & MMC_BLK_REL_WR) &&
+> > +				!en_rel_wr) {
+> > +			put_back = 1;
+> > +			break;
+> > +		}
+> > +
+> > +		req_sectors += blk_rq_sectors(next);
+> > +		if (req_sectors > max_blk_count) {
+> > +			put_back = 1;
+> > +			break;
+> > +		}
+> > +
+> > +		phys_segments +=  next->nr_phys_segments;
+> > +		if (phys_segments > max_phys_segs) {
+> > +			put_back = 1;
+> > +			break;
+> > +		}
+> > +
+> > +		list_add_tail(&next->queuelist, &mq->mqrq_cur->packed_list);
+> > +		cur = next;
+> > +		reqs++;
+> > +	}
+> > +
+> > +	if (put_back) {
+> > +		spin_lock_irq(q->queue_lock);
+> > +		blk_requeue_request(q, next);
+> > +		spin_unlock_irq(q->queue_lock);
+> > +	}
+> > +
+> > +	if (reqs > 0) {
+> > +		list_add(&req->queuelist, &mq->mqrq_cur->packed_list);
+> > +		mq->mqrq_cur->packed_num = ++reqs;
+> > +		mq->mqrq_cur->packed_retries = reqs;
+> > +		return reqs;
+> > +	}
+> > +
+> > +no_packed:
+> > +	mmc_blk_clear_packed(mq->mqrq_cur);
+> > +	return 0;
+> > +}
+> > +
+> > +static void mmc_blk_packed_hdr_wrq_prep(struct mmc_queue_req *mqrq,
+> > +					struct mmc_card *card,
+> > +					struct mmc_queue *mq)
+> > +{
+> > +	struct mmc_blk_request *brq = &mqrq->brq;
+> > +	struct request *req = mqrq->req;
+> > +	struct request *prq;
+> > +	struct mmc_blk_data *md = mq->data;
+> > +	bool do_rel_wr, do_data_tag;
+> > +	u32 *packed_cmd_hdr = mqrq->packed_cmd_hdr;
+> > +	u8 i = 1;
+> > +
+> > +	mqrq->packed_cmd = MMC_PACKED_WRITE;
+> > +	mqrq->packed_blocks = 0;
+> > +	mqrq->packed_fail_idx = MMC_PACKED_N_IDX;
+> > +
+> > +	memset(packed_cmd_hdr, 0, sizeof(mqrq->packed_cmd_hdr));
+> > +	packed_cmd_hdr[0] = (mqrq->packed_num << 16) |
+> > +		(PACKED_CMD_WR << 8) | PACKED_CMD_VER;
+> > +
+> > +	/*
+> > +	 * Argument for each entry of packed group
+> > +	 */
+> > +	list_for_each_entry(prq, &mqrq->packed_list, queuelist) {
+> > +		do_rel_wr = mmc_req_rel_wr(prq) && (md->flags &
+> > MMC_BLK_REL_WR);
+> > +		do_data_tag = (card->ext_csd.data_tag_unit_size) &&
+> > +			(prq->cmd_flags & REQ_META) &&
+> > +			(rq_data_dir(prq) == WRITE) &&
+> > +			((brq->data.blocks * brq->data.blksz) >=
+> > +			 card->ext_csd.data_tag_unit_size);
+> > +		/* Argument of CMD23 */
+> > +		packed_cmd_hdr[(i * 2)] =
+> > +			(do_rel_wr ? MMC_CMD23_ARG_REL_WR : 0) |
+> > +			(do_data_tag ? MMC_CMD23_ARG_TAG_REQ : 0) |
+> > +			blk_rq_sectors(prq);
+> > +		/* Argument of CMD18 or CMD25 */
+> > +		packed_cmd_hdr[((i * 2)) + 1] =
+> > +			mmc_card_blockaddr(card) ?
+> > +			blk_rq_pos(prq) : blk_rq_pos(prq) << 9;
+> > +		mqrq->packed_blocks += blk_rq_sectors(prq);
+> > +		i++;
+> > +	}
+> > +
+> > +	memset(brq, 0, sizeof(struct mmc_blk_request));
+> > +	brq->mrq.cmd = &brq->cmd;
+> > +	brq->mrq.data = &brq->data;
+> > +	brq->mrq.sbc = &brq->sbc;
+> > +	brq->mrq.stop = &brq->stop;
+> > +
+> > +	brq->sbc.opcode = MMC_SET_BLOCK_COUNT;
+> > +	brq->sbc.arg = MMC_CMD23_ARG_PACKED | (mqrq->packed_blocks +
+> > 1);
+> > +	brq->sbc.flags = MMC_RSP_R1 | MMC_CMD_AC;
+> > +
+> > +	brq->cmd.opcode = MMC_WRITE_MULTIPLE_BLOCK;
+> > +	brq->cmd.arg = blk_rq_pos(req);
+> > +	if (!mmc_card_blockaddr(card))
+> > +		brq->cmd.arg <<= 9;
+> > +	brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 |
+> > MMC_CMD_ADTC;
+> > +
+> > +	brq->data.blksz = 512;
+> > +	brq->data.blocks = mqrq->packed_blocks + 1;
+> > +	brq->data.flags |= MMC_DATA_WRITE;
+> > +
+> > +	brq->stop.opcode = MMC_STOP_TRANSMISSION;
+> > +	brq->stop.arg = 0;
+> > +	brq->stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B |
+> > MMC_CMD_AC;
+> > +
+> > +	mmc_set_data_timeout(&brq->data, card);
+> > +
+> > +	brq->data.sg = mqrq->sg;
+> > +	brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
+> > +
+> > +	mqrq->mmc_active.mrq = &brq->mrq;
+> > +	mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
+> > +
+> > +	mmc_queue_bounce_pre(mqrq);
+> > +}
+> > +
+> >  static int mmc_blk_cmd_err(struct mmc_blk_data *md, struct mmc_card
+> > *card,
+> >  			   struct mmc_blk_request *brq, struct request *req,
+> >  			   int ret)
+> >  {
+> > +	struct mmc_queue_req *mq_rq;
+> > +	mq_rq = container_of(brq, struct mmc_queue_req, brq);
+> > +
+> >  	/*
+> >  	 * If this is an SD card and we're writing, we can first
+> >  	 * mark the known good sectors as ok.
+> > @@ -1261,10 +1515,73 @@ static int mmc_blk_cmd_err(struct mmc_blk_data
+> > *md, struct mmc_card *card,
+> >  			ret = blk_end_request(req, 0, blocks << 9);
+> >  		}
+> >  	} else {
+> > -		ret = blk_end_request(req, 0, brq->data.bytes_xfered);
+> > +		if (mq_rq->packed_cmd == MMC_PACKED_NONE)
+> > +			ret = blk_end_request(req, 0, brq->data.bytes_xfered);
+> > +	}
+> > +	return ret;
+> > +}
+> > +
+> > +static int mmc_blk_end_packed_req(struct mmc_queue_req *mq_rq) {
+> > +	struct request *prq;
+> > +	int idx = mq_rq->packed_fail_idx, i = 0;
+> > +	int ret = 0;
+> > +
+> > +	while (!list_empty(&mq_rq->packed_list)) {
+> > +		prq = list_entry_rq(mq_rq->packed_list.next);
+> > +		if (idx == i) {
+> > +			/* retry from error index */
+> > +			mq_rq->packed_num -= idx;
+> > +			mq_rq->req = prq;
+> > +			ret = 1;
+> > +
+> > +			if (mq_rq->packed_num == MMC_PACKED_N_SINGLE)
+> > {
+> > +				list_del_init(&prq->queuelist);
+> > +				mmc_blk_clear_packed(mq_rq);
+> > +			}
+> > +			return ret;
+> > +		}
+> > +		list_del_init(&prq->queuelist);
+> > +		blk_end_request(prq, 0, blk_rq_bytes(prq));
+> > +		i++;
+> >  	}
+> > +
+> > +	mmc_blk_clear_packed(mq_rq);
+> >  	return ret;
+> >  }
+> > +static void mmc_blk_abort_packed_req(struct mmc_queue_req *mq_rq) {
+> > +	struct request *prq;
+> > +
+> > +	while (!list_empty(&mq_rq->packed_list)) {
+> > +		prq = list_entry_rq(mq_rq->packed_list.next);
+> > +		list_del_init(&prq->queuelist);
+> > +		blk_end_request(prq, -EIO, blk_rq_bytes(prq));
+> > +	}
+> > +
+> > +	mmc_blk_clear_packed(mq_rq);
+> > +}
+> > +
+> > +static void mmc_blk_revert_packed_req(struct mmc_queue *mq,
+> > +				      struct mmc_queue_req *mq_rq)
+> > +{
+> > +	struct request *prq;
+> > +	struct request_queue *q = mq->queue;
+> > +
+> > +	while (!list_empty(&mq_rq->packed_list)) {
+> > +		prq = list_entry_rq(mq_rq->packed_list.prev);
+> > +		if (prq->queuelist.prev != &mq_rq->packed_list) {
+> > +			list_del_init(&prq->queuelist);
+> > +			spin_lock_irq(q->queue_lock);
+> > +			blk_requeue_request(mq->queue, prq);
+> > +			spin_unlock_irq(q->queue_lock);
+> > +		} else {
+> > +			list_del_init(&prq->queuelist);
+> > +		}
+> > +	}
+> > +
+> > +	mmc_blk_clear_packed(mq_rq);
+> > +}
+> >
+> >  static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
+> > { @@ -1276,23 +1593,35 @@ static int mmc_blk_issue_rw_rq(struct
+> > mmc_queue *mq, struct request *rqc)
+> >  	struct mmc_queue_req *mq_rq;
+> >  	struct request *req = rqc;
+> >  	struct mmc_async_req *areq;
+> > +	const u8 packed_num = 2;
+> > +	u8 reqs = 0;
+> >
+> >  	if (!rqc && !mq->mqrq_prev->req)
+> >  		return 0;
+> >
+> > +	if (rqc) {
+> > +		/*
+> > +		 * When 4KB native sector is enabled, only 8 blocks
+> > +		 * multiple read or write is allowed
+> > +		 */
+> > +		if ((brq->data.blocks & 0x07) &&
+> 
+> What will be the value of "brq->data.blocks" here? I don't think this has been even initialized here.
+Right, "brq->data.blocks" doesn't have the value.
+This have been already introduced in "mmc: block: Allow disabling 512B sector size emulation"
+but it seems to have the same problem. I'll fix this for next version.
 
-But during test tun/tap, one interesting thing I find is that even ixgbe 
-has recorded the queue index during rx, it seems be lost when tap tries 
-to transmit skbs to userspace.
+> Also this is what specification (6.6.30.2  Native 4KB sector behavior) mandates for large sector size
+> native:
+> 	- Sector counts shall be multiples of 8 (4KB), e.g. in SET_BLOCK_COUNT (CMD23), and
+> CORRECTLY_PRG_SECTORS_NUM field in EXT_CSD
+> 	- Arguments for read commands (CMD17/18) and write commands (CMD24/25) shall always be aligned
+> to 8 (4KB)
+> 
+> So for each entry (which is for each request) in packed command header, you need to make sure that
+> sector count is in multiple of 8 for CMD23 argument and also CMD18/CMD25 arguments (sector address)
+> must be 4KB aligned.
+I'll also apply this.
 
->> ---
->>   drivers/net/tun.c |  371 +++++++++++++++++++++++++++++++++--------------------
->>   1 files changed, 232 insertions(+), 139 deletions(-)
->>
->> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> index 8233b0a..5c26757 100644
->> --- a/drivers/net/tun.c
->> +++ b/drivers/net/tun.c
->> @@ -107,6 +107,8 @@ struct tap_filter {
->>   	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
->>   };
->>
->> +#define MAX_TAP_QUEUES (NR_CPUS<  16 ? NR_CPUS : 16)
-> Why the limit? I am guessing you copied this from macvtap?
-> This is problematic for a number of reasons:
-> 	- will not play well with migration
-> 	- will not work well for a large guest
->
-> Yes, macvtap needs to be fixed too.
->
-> I am guessing what it is trying to prevent is queueing
-> up a huge number of packets?
-> So just divide the default tx queue limit by the # of queues.
->
-> And by the way, for MQ applications maybe we can finally
-> ignore tx queue altogether and limit the total number
-> of bytes queued?
-> To avoid regressions we can make it large like 64M/# queues.
-> Could be a separate patch I think, and for a single queue
-> might need a compatible mode though I am not sure.
->
->> +
->>   struct tun_file {
->>   	struct sock sk;
->>   	struct socket socket;
->> @@ -114,16 +116,18 @@ struct tun_file {
->>   	int vnet_hdr_sz;
->>   	struct tap_filter txflt;
->>   	atomic_t count;
->> -	struct tun_struct *tun;
->> +	struct tun_struct __rcu *tun;
->>   	struct net *net;
->>   	struct fasync_struct *fasync;
->>   	unsigned int flags;
->> +	u16 queue_index;
->>   };
->>
->>   struct tun_sock;
->>
->>   struct tun_struct {
->> -	struct tun_file		*tfile;
->> +	struct tun_file		*tfiles[MAX_TAP_QUEUES];
->> +	unsigned int            numqueues;
->>   	unsigned int 		flags;
->>   	uid_t			owner;
->>   	gid_t			group;
->> @@ -138,80 +142,159 @@ struct tun_struct {
->>   #endif
->>   };
->>
->> -static int tun_attach(struct tun_struct *tun, struct file *file)
->> +static DEFINE_SPINLOCK(tun_lock);
->> +
->> +/*
->> + * tun_get_queue(): calculate the queue index
->> + *     - if skbs comes from mq nics, we can just borrow
->> + *     - if not, calculate from the hash
->> + */
->> +static struct tun_file *tun_get_queue(struct net_device *dev,
->> +				      struct sk_buff *skb)
->>   {
->> -	struct tun_file *tfile = file->private_data;
->> -	int err;
->> +	struct tun_struct *tun = netdev_priv(dev);
->> +	struct tun_file *tfile = NULL;
->> +	int numqueues = tun->numqueues;
->> +	__u32 rxq;
->>
->> -	ASSERT_RTNL();
->> +	BUG_ON(!rcu_read_lock_held());
->>
->> -	netif_tx_lock_bh(tun->dev);
->> +	if (!numqueues)
->> +		goto out;
->>
->> -	err = -EINVAL;
->> -	if (tfile->tun)
->> +	if (numqueues == 1) {
->> +		tfile = rcu_dereference(tun->tfiles[0]);
-> Instead of hacks like this, you can ask for an MQ
-> flag to be set in SETIFF. Then you won't need to
-> handle attach/detach at random times.
-> And most of the scary num_queues checks can go away.
-> You can then also ask userspace about the max # of queues
-> to expect if you want to save some memory.
->
->
->>   		goto out;
->> +	}
->>
->> -	err = -EBUSY;
->> -	if (tun->tfile)
->> +	if (likely(skb_rx_queue_recorded(skb))) {
->> +		rxq = skb_get_rx_queue(skb);
->> +
->> +		while (unlikely(rxq>= numqueues))
->> +			rxq -= numqueues;
->> +
->> +		tfile = rcu_dereference(tun->tfiles[rxq]);
->>   		goto out;
->> +	}
->>
->> -	err = 0;
->> -	tfile->tun = tun;
->> -	tun->tfile = tfile;
->> -	netif_carrier_on(tun->dev);
->> -	dev_hold(tun->dev);
->> -	sock_hold(&tfile->sk);
->> -	atomic_inc(&tfile->count);
->> +	/* Check if we can use flow to select a queue */
->> +	rxq = skb_get_rxhash(skb);
->> +	if (rxq) {
->> +		u32 idx = ((u64)rxq * numqueues)>>  32;
-> This completely confuses me. What's the logic here?
-> How do we even know it's in range?
->
->> +		tfile = rcu_dereference(tun->tfiles[idx]);
->> +		goto out;
->> +	}
->>
->> +	tfile = rcu_dereference(tun->tfiles[0]);
->>   out:
->> -	netif_tx_unlock_bh(tun->dev);
->> -	return err;
->> +	return tfile;
->>   }
->>
->> -static void __tun_detach(struct tun_struct *tun)
->> +static int tun_detach(struct tun_file *tfile, bool clean)
->>   {
->> -	struct tun_file *tfile = tun->tfile;
->> -	/* Detach from net device */
->> -	netif_tx_lock_bh(tun->dev);
->> -	netif_carrier_off(tun->dev);
->> -	tun->tfile = NULL;
->> -	netif_tx_unlock_bh(tun->dev);
->> -
->> -	/* Drop read queue */
->> -	skb_queue_purge(&tfile->socket.sk->sk_receive_queue);
->> -
->> -	/* Drop the extra count on the net device */
->> -	dev_put(tun->dev);
->> -}
->> +	struct tun_struct *tun;
->> +	struct net_device *dev = NULL;
->> +	bool destroy = false;
->>
->> -static void tun_detach(struct tun_struct *tun)
->> -{
->> -	rtnl_lock();
->> -	__tun_detach(tun);
->> -	rtnl_unlock();
->> -}
->> +	spin_lock(&tun_lock);
->>
->> -static struct tun_struct *__tun_get(struct tun_file *tfile)
->> -{
->> -	struct tun_struct *tun = NULL;
->> +	tun = rcu_dereference_protected(tfile->tun,
->> +					lockdep_is_held(&tun_lock));
->> +	if (tun) {
->> +		u16 index = tfile->queue_index;
->> +		BUG_ON(index>= tun->numqueues);
->> +		dev = tun->dev;
->> +
->> +		rcu_assign_pointer(tun->tfiles[index],
->> +				   tun->tfiles[tun->numqueues - 1]);
->> +		tun->tfiles[index]->queue_index = index;
->> +		rcu_assign_pointer(tfile->tun, NULL);
->> +		--tun->numqueues;
->> +		sock_put(&tfile->sk);
->>
->> -	if (atomic_inc_not_zero(&tfile->count))
->> -		tun = tfile->tun;
->> +		if (tun->numqueues == 0&&  !(tun->flags&  TUN_PERSIST))
->> +			destroy = true;
-> Please don't use flags like that. Use dedicated labels and goto there on error.
->
->
->> +	}
->>
->> -	return tun;
->> +	spin_unlock(&tun_lock);
->> +
->> +	synchronize_rcu();
->> +	if (clean)
->> +		sock_put(&tfile->sk);
->> +
->> +	if (destroy) {
->> +		rtnl_lock();
->> +		if (dev->reg_state == NETREG_REGISTERED)
->> +			unregister_netdevice(dev);
->> +		rtnl_unlock();
->> +	}
->> +
->> +	return 0;
->>   }
->>
->> -static struct tun_struct *tun_get(struct file *file)
->> +static void tun_detach_all(struct net_device *dev)
->>   {
->> -	return __tun_get(file->private_data);
->> +	struct tun_struct *tun = netdev_priv(dev);
->> +	struct tun_file *tfile, *tfile_list[MAX_TAP_QUEUES];
->> +	int i, j = 0;
->> +
->> +	spin_lock(&tun_lock);
->> +
->> +	for (i = 0; i<  MAX_TAP_QUEUES&&  tun->numqueues; i++) {
->> +		tfile = rcu_dereference_protected(tun->tfiles[i],
->> +						lockdep_is_held(&tun_lock));
->> +		BUG_ON(!tfile);
->> +		wake_up_all(&tfile->wq.wait);
->> +		tfile_list[j++] = tfile;
->> +		rcu_assign_pointer(tfile->tun, NULL);
->> +		--tun->numqueues;
->> +	}
->> +	BUG_ON(tun->numqueues != 0);
->> +	/* guarantee that any future tun_attach will fail */
->> +	tun->numqueues = MAX_TAP_QUEUES;
->> +	spin_unlock(&tun_lock);
->> +
->> +	synchronize_rcu();
->> +	for (--j; j>= 0; j--)
->> +		sock_put(&tfile_list[j]->sk);
->>   }
->>
->> -static void tun_put(struct tun_struct *tun)
->> +static int tun_attach(struct tun_struct *tun, struct file *file)
->>   {
->> -	struct tun_file *tfile = tun->tfile;
->> +	struct tun_file *tfile = file->private_data;
->> +	int err;
->> +
->> +	ASSERT_RTNL();
->> +
->> +	spin_lock(&tun_lock);
->>
->> -	if (atomic_dec_and_test(&tfile->count))
->> -		tun_detach(tfile->tun);
->> +	err = -EINVAL;
->> +	if (rcu_dereference_protected(tfile->tun, lockdep_is_held(&tun_lock)))
->> +		goto out;
->> +
->> +	err = -EBUSY;
->> +	if (!(tun->flags&  TUN_TAP_MQ)&&  tun->numqueues == 1)
->> +		goto out;
->> +
->> +	if (tun->numqueues == MAX_TAP_QUEUES)
->> +		goto out;
->> +
->> +	err = 0;
->> +	tfile->queue_index = tun->numqueues;
->> +	rcu_assign_pointer(tfile->tun, tun);
->> +	rcu_assign_pointer(tun->tfiles[tun->numqueues], tfile);
->> +	sock_hold(&tfile->sk);
->> +	tun->numqueues++;
->> +
->> +	if (tun->numqueues == 1)
->> +		netif_carrier_on(tun->dev);
->> +
->> +	/* device is allowed to go away first, so no need to hold extra
->> +	 * refcnt. */
->> +
->> +out:
->> +	spin_unlock(&tun_lock);
->> +	return err;
->>   }
->>
->>   /* TAP filtering */
->> @@ -331,16 +414,7 @@ static const struct ethtool_ops tun_ethtool_ops;
->>   /* Net device detach from fd. */
->>   static void tun_net_uninit(struct net_device *dev)
->>   {
->> -	struct tun_struct *tun = netdev_priv(dev);
->> -	struct tun_file *tfile = tun->tfile;
->> -
->> -	/* Inform the methods they need to stop using the dev.
->> -	 */
->> -	if (tfile) {
->> -		wake_up_all(&tfile->wq.wait);
->> -		if (atomic_dec_and_test(&tfile->count))
->> -			__tun_detach(tun);
->> -	}
->> +	tun_detach_all(dev);
->>   }
->>
->>   /* Net device open. */
->> @@ -360,10 +434,10 @@ static int tun_net_close(struct net_device *dev)
->>   /* Net device start xmit */
->>   static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->>   {
->> -	struct tun_struct *tun = netdev_priv(dev);
->> -	struct tun_file *tfile = tun->tfile;
->> +	struct tun_file *tfile = NULL;
->>
->> -	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
->> +	rcu_read_lock();
->> +	tfile = tun_get_queue(dev, skb);
->>
->>   	/* Drop packet if interface is not attached */
->>   	if (!tfile)
->> @@ -381,7 +455,8 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->>
->>   	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue)
->>   	>= dev->tx_queue_len) {
->> -		if (!(tun->flags&  TUN_ONE_QUEUE)) {
->> +		if (!(tfile->flags&  TUN_ONE_QUEUE)&&
-> Which patch moved flags from tun to tfile?
->
->> +		    !(tfile->flags&  TUN_TAP_MQ)) {
->>   			/* Normal queueing mode. */
->>   			/* Packet scheduler handles dropping of further packets. */
->>   			netif_stop_queue(dev);
->> @@ -390,7 +465,7 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->>   			 * error is more appropriate. */
->>   			dev->stats.tx_fifo_errors++;
->>   		} else {
->> -			/* Single queue mode.
->> +			/* Single queue mode or multi queue mode.
->>   			 * Driver handles dropping of all packets itself. */
-> Please don't do this. Stop the queue on overrun as appropriate.
-> ONE_QUEUE is a legacy hack.
->
-> BTW we really should stop queue before we start dropping packets,
-> but that can be a separate patch.
->
->>   			goto drop;
->>   		}
->> @@ -408,9 +483,11 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->>   		kill_fasync(&tfile->fasync, SIGIO, POLL_IN);
->>   	wake_up_interruptible_poll(&tfile->wq.wait, POLLIN |
->>   				   POLLRDNORM | POLLRDBAND);
->> +	rcu_read_unlock();
->>   	return NETDEV_TX_OK;
->>
->>   drop:
->> +	rcu_read_unlock();
->>   	dev->stats.tx_dropped++;
->>   	kfree_skb(skb);
->>   	return NETDEV_TX_OK;
->> @@ -527,16 +604,22 @@ static void tun_net_init(struct net_device *dev)
->>   static unsigned int tun_chr_poll(struct file *file, poll_table * wait)
->>   {
->>   	struct tun_file *tfile = file->private_data;
->> -	struct tun_struct *tun = __tun_get(tfile);
->> +	struct tun_struct *tun = NULL;
->>   	struct sock *sk;
->>   	unsigned int mask = 0;
->>
->> -	if (!tun)
->> +	if (!tfile)
->>   		return POLLERR;
->>
->> -	sk = tfile->socket.sk;
->> +	rcu_read_lock();
->> +	tun = rcu_dereference(tfile->tun);
->> +	if (!tun) {
->> +		rcu_read_unlock();
->> +		return POLLERR;
->> +	}
->> +	rcu_read_unlock();
->>
->> -	tun_debug(KERN_INFO, tun, "tun_chr_poll\n");
->> +	sk =&tfile->sk;
->>
->>   	poll_wait(file,&tfile->wq.wait, wait);
->>
->> @@ -548,10 +631,12 @@ static unsigned int tun_chr_poll(struct file *file, poll_table * wait)
->>   	     sock_writeable(sk)))
->>   		mask |= POLLOUT | POLLWRNORM;
->>
->> -	if (tun->dev->reg_state != NETREG_REGISTERED)
->> +	rcu_read_lock();
->> +	tun = rcu_dereference(tfile->tun);
->> +	if (!tun || tun->dev->reg_state != NETREG_REGISTERED)
->>   		mask = POLLERR;
->> +	rcu_read_unlock();
->>
->> -	tun_put(tun);
->>   	return mask;
->>   }
->>
->> @@ -708,9 +793,12 @@ static ssize_t tun_get_user(struct tun_file *tfile,
->>   		skb_shinfo(skb)->gso_segs = 0;
->>   	}
->>
->> -	tun = __tun_get(tfile);
->> -	if (!tun)
->> +	rcu_read_lock();
->> +	tun = rcu_dereference(tfile->tun);
->> +	if (!tun) {
->> +		rcu_read_unlock();
->>   		return -EBADFD;
->> +	}
->>
->>   	switch (tfile->flags&  TUN_TYPE_MASK) {
->>   	case TUN_TUN_DEV:
->> @@ -720,26 +808,30 @@ static ssize_t tun_get_user(struct tun_file *tfile,
->>   		skb->protocol = eth_type_trans(skb, tun->dev);
->>   		break;
->>   	}
->> -
->> -	netif_rx_ni(skb);
->>   	tun->dev->stats.rx_packets++;
->>   	tun->dev->stats.rx_bytes += len;
->> -	tun_put(tun);
->> +	rcu_read_unlock();
->> +
->> +	netif_rx_ni(skb);
->> +
->>   	return count;
->>
->>   err_free:
->>   	count = -EINVAL;
->>   	kfree_skb(skb);
->>   err:
->> -	tun = __tun_get(tfile);
->> -	if (!tun)
->> +	rcu_read_lock();
->> +	tun = rcu_dereference(tfile->tun);
->> +	if (!tun) {
->> +		rcu_read_unlock();
->>   		return -EBADFD;
->> +	}
->>
->>   	if (drop)
->>   		tun->dev->stats.rx_dropped++;
->>   	if (error)
->>   		tun->dev->stats.rx_frame_errors++;
->> -	tun_put(tun);
->> +	rcu_read_unlock();
->>   	return count;
->>   }
->>
->> @@ -833,12 +925,13 @@ static ssize_t tun_put_user(struct tun_file *tfile,
->>   	skb_copy_datagram_const_iovec(skb, 0, iv, total, len);
->>   	total += skb->len;
->>
->> -	tun = __tun_get(tfile);
->> +	rcu_read_lock();
->> +	tun = rcu_dereference(tfile->tun);
->>   	if (tun) {
->>   		tun->dev->stats.tx_packets++;
->>   		tun->dev->stats.tx_bytes += len;
->> -		tun_put(tun);
->>   	}
->> +	rcu_read_unlock();
->>
->>   	return total;
->>   }
->> @@ -869,28 +962,31 @@ static ssize_t tun_do_read(struct tun_file *tfile,
->>   				break;
->>   			}
->>
->> -			tun = __tun_get(tfile);
->> +			rcu_read_lock();
->> +			tun = rcu_dereference(tfile->tun);
->>   			if (!tun) {
->> -				ret = -EIO;
->> +				ret = -EBADFD;
-> BADFD is for when you get passed something like -1 fd.
-> Here fd is OK, it's just in a bad state so you can not do IO.
->
->
->> +				rcu_read_unlock();
->>   				break;
->>   			}
->>   			if (tun->dev->reg_state != NETREG_REGISTERED) {
->>   				ret = -EIO;
->> -				tun_put(tun);
->> +				rcu_read_unlock();
->>   				break;
->>   			}
->> -			tun_put(tun);
->> +			rcu_read_unlock();
->>
->>   			/* Nothing to read, let's sleep */
->>   			schedule();
->>   			continue;
->>   		}
->>
->> -		tun = __tun_get(tfile);
->> +		rcu_read_lock();
->> +		tun = rcu_dereference(tfile->tun);
->>   		if (tun) {
->>   			netif_wake_queue(tun->dev);
->> -			tun_put(tun);
->>   		}
->> +		rcu_read_unlock();
->>
->>   		ret = tun_put_user(tfile, skb, iv, len);
->>   		kfree_skb(skb);
->> @@ -1038,6 +1134,9 @@ static int tun_flags(struct tun_struct *tun)
->>   	if (tun->flags&  TUN_VNET_HDR)
->>   		flags |= IFF_VNET_HDR;
->>
->> +	if (tun->flags&  TUN_TAP_MQ)
->> +		flags |= IFF_MULTI_QUEUE;
->> +
->>   	return flags;
->>   }
->>
->> @@ -1097,8 +1196,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->>   		err = tun_attach(tun, file);
->>   		if (err<  0)
->>   			return err;
->> -	}
->> -	else {
->> +	} else {
->>   		char *name;
->>   		unsigned long flags = 0;
->>
->> @@ -1142,6 +1240,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->>   		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
->>   			TUN_USER_FEATURES;
->>   		dev->features = dev->hw_features;
->> +		if (ifr->ifr_flags&  IFF_MULTI_QUEUE)
->> +			dev->features |= NETIF_F_LLTX;
->>
->>   		err = register_netdevice(tun->dev);
->>   		if (err<  0)
->> @@ -1154,7 +1254,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->>
->>   		err = tun_attach(tun, file);
->>   		if (err<  0)
->> -			goto failed;
->> +			goto err_free_dev;
->>   	}
->>
->>   	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
->> @@ -1174,6 +1274,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->>   	else
->>   		tun->flags&= ~TUN_VNET_HDR;
->>
->> +	if (ifr->ifr_flags&  IFF_MULTI_QUEUE)
->> +		tun->flags |= TUN_TAP_MQ;
->> +	else
->> +		tun->flags&= ~TUN_TAP_MQ;
->> +
->>   	/* Cache flags from tun device */
->>   	tfile->flags = tun->flags;
->>   	/* Make sure persistent devices do not get stuck in
->> @@ -1187,7 +1292,6 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->>
->>   err_free_dev:
->>   	free_netdev(dev);
->> -failed:
->>   	return err;
->>   }
->>
->> @@ -1264,38 +1368,40 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->>   				(unsigned int __user*)argp);
->>   	}
->>
->> -	rtnl_lock();
->> -
->> -	tun = __tun_get(tfile);
->> -	if (cmd == TUNSETIFF&&  !tun) {
->> +	ret = 0;
->> +	if (cmd == TUNSETIFF) {
->> +		rtnl_lock();
->>   		ifr.ifr_name[IFNAMSIZ-1] = '\0';
->> -
->>   		ret = tun_set_iff(tfile->net, file,&ifr);
->> -
->> +		rtnl_unlock();
->>   		if (ret)
->> -			goto unlock;
->> -
->> +			return ret;
->>   		if (copy_to_user(argp,&ifr, ifreq_len))
->> -			ret = -EFAULT;
->> -		goto unlock;
->> +			return -EFAULT;
->> +		return ret;
->>   	}
->>
->> +	rtnl_lock();
->> +
->> +	rcu_read_lock();
->> +
->>   	ret = -EBADFD;
->> +	tun = rcu_dereference(tfile->tun);
->>   	if (!tun)
->>   		goto unlock;
->> +	else
->> +		ret = 0;
->>
->> -	tun_debug(KERN_INFO, tun, "tun_chr_ioctl cmd %d\n", cmd);
->> -
->> -	ret = 0;
->>   	switch (cmd) {
->>   	case TUNGETIFF:
->>   		ret = tun_get_iff(current->nsproxy->net_ns, tun,&ifr);
->> +		rcu_read_unlock();
->>   		if (ret)
->> -			break;
->> +			goto out;
->>
->>   		if (copy_to_user(argp,&ifr, ifreq_len))
->>   			ret = -EFAULT;
->> -		break;
->> +		goto out;
->>
->>   	case TUNSETNOCSUM:
->>   		/* Disable/Enable checksum */
->> @@ -1357,9 +1463,10 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->>   		/* Get hw address */
->>   		memcpy(ifr.ifr_hwaddr.sa_data, tun->dev->dev_addr, ETH_ALEN);
->>   		ifr.ifr_hwaddr.sa_family = tun->dev->type;
->> +		rcu_read_unlock();
->>   		if (copy_to_user(argp,&ifr, ifreq_len))
->>   			ret = -EFAULT;
->> -		break;
->> +		goto out;
->>
->>   	case SIOCSIFHWADDR:
->>   		/* Set hw address */
->> @@ -1375,9 +1482,9 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->>   	}
->>
->>   unlock:
->> +	rcu_read_unlock();
->> +out:
->>   	rtnl_unlock();
->> -	if (tun)
->> -		tun_put(tun);
->>   	return ret;
->>   }
->>
->> @@ -1517,6 +1624,11 @@ out:
->>   	return ret;
->>   }
->>
->> +static void tun_sock_destruct(struct sock *sk)
->> +{
->> +	skb_queue_purge(&sk->sk_receive_queue);
->> +}
->> +
->>   static int tun_chr_open(struct inode *inode, struct file * file)
->>   {
->>   	struct net *net = current->nsproxy->net_ns;
->> @@ -1540,6 +1652,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
->>   	sock_init_data(&tfile->socket,&tfile->sk);
->>
->>   	tfile->sk.sk_write_space = tun_sock_write_space;
->> +	tfile->sk.sk_destruct = tun_sock_destruct;
->>   	tfile->sk.sk_sndbuf = INT_MAX;
->>   	file->private_data = tfile;
->>
->> @@ -1549,31 +1662,8 @@ static int tun_chr_open(struct inode *inode, struct file * file)
->>   static int tun_chr_close(struct inode *inode, struct file *file)
->>   {
->>   	struct tun_file *tfile = file->private_data;
->> -	struct tun_struct *tun;
->> -
->> -	tun = __tun_get(tfile);
->> -	if (tun) {
->> -		struct net_device *dev = tun->dev;
->> -
->> -		tun_debug(KERN_INFO, tun, "tun_chr_close\n");
->> -
->> -		__tun_detach(tun);
->> -
->> -		/* If desirable, unregister the netdevice. */
->> -		if (!(tun->flags&  TUN_PERSIST)) {
->> -			rtnl_lock();
->> -			if (dev->reg_state == NETREG_REGISTERED)
->> -				unregister_netdevice(dev);
->> -			rtnl_unlock();
->> -		}
->>
->> -		/* drop the reference that netdevice holds */
->> -		sock_put(&tfile->sk);
->> -
->> -	}
->> -
->> -	/* drop the reference that file holds */
->> -	sock_put(&tfile->sk);
->> +	tun_detach(tfile, true);
->>
->>   	return 0;
->>   }
->> @@ -1700,14 +1790,17 @@ static void tun_cleanup(void)
->>    * holding a reference to the file for as long as the socket is in use. */
->>   struct socket *tun_get_socket(struct file *file)
->>   {
->> -	struct tun_struct *tun;
->> +	struct tun_struct *tun = NULL;
->>   	struct tun_file *tfile = file->private_data;
->>   	if (file->f_op !=&tun_fops)
->>   		return ERR_PTR(-EINVAL);
->> -	tun = tun_get(file);
->> -	if (!tun)
->> +	rcu_read_lock();
->> +	tun = rcu_dereference(tfile->tun);
->> +	if (!tun) {
->> +		rcu_read_unlock();
->>   		return ERR_PTR(-EBADFD);
->> -	tun_put(tun);
->> +	}
->> +	rcu_read_unlock();
->>   	return&tfile->socket;
->>   }
->>   EXPORT_SYMBOL_GPL(tun_get_socket);
+Best regard,
+Seungwon Jeon
+> 
+> Regards,
+> Subhash
+> 
+> > +				(card->ext_csd.data_sector_size == 4096)) {
+> > +			pr_err("%s: Transfer size is not 4KB sector size
+> > aligned\n",
+> > +					req->rq_disk->disk_name);
+> > +			mq_rq = mq->mqrq_cur;
+> > +			goto cmd_abort;
+> > +		}
+> > +
+> > +		reqs = mmc_blk_prep_packed_list(mq, rqc);
+> > +	}
+> > +
+> >  	do {
+> >  		if (rqc) {
+> > -			/*
+> > -			 * When 4KB native sector is enabled, only 8 blocks
+> > -			 * multiple read or write is allowed
+> > -			 */
+> > -			if ((brq->data.blocks & 0x07) &&
+> > -			    (card->ext_csd.data_sector_size == 4096)) {
+> > -				pr_err("%s: Transfer size is not 4KB sector size
+> > aligned\n",
+> > -					req->rq_disk->disk_name);
+> > -				goto cmd_abort;
+> > -			}
+> > -			mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
+> > +			if (reqs >= packed_num)
+> > +				mmc_blk_packed_hdr_wrq_prep(mq-
+> > >mqrq_cur,
+> > +						card, mq);
+> > +			else
+> > +				mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0,
+> > mq);
+> >  			areq = &mq->mqrq_cur->mmc_active;
+> >  		} else
+> >  			areq = NULL;
+> > @@ -1313,8 +1642,15 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
+> > *mq, struct request *rqc)
+> >  			 * A block was successfully transferred.
+> >  			 */
+> >  			mmc_blk_reset_success(md, type);
+> > -			ret = blk_end_request(req, 0,
+> > +
+> > +			if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
+> > +				ret = mmc_blk_end_packed_req(mq_rq);
+> > +				break;
+> > +			} else {
+> > +				ret = blk_end_request(req, 0,
+> >  						brq->data.bytes_xfered);
+> > +			}
+> > +
+> >  			/*
+> >  			 * If the blk_end_request function returns non-zero
+> > even
+> >  			 * though all data has been transferred and no errors
+> > @@ -1347,7 +1683,8 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
+> > *mq, struct request *rqc)
+> >  			err = mmc_blk_reset(md, card->host, type);
+> >  			if (!err)
+> >  				break;
+> > -			if (err == -ENODEV)
+> > +			if (err == -ENODEV ||
+> > +				mq_rq->packed_cmd !=
+> > MMC_PACKED_NONE)
+> >  				goto cmd_abort;
+> >  			/* Fall through */
+> >  		}
+> > @@ -1374,25 +1711,46 @@ static int mmc_blk_issue_rw_rq(struct
+> > mmc_queue *mq, struct request *rqc)
+> >  		}
+> >
+> >  		if (ret) {
+> > -			/*
+> > -			 * In case of a incomplete request
+> > -			 * prepare it again and resend.
+> > -			 */
+> > -			mmc_blk_rw_rq_prep(mq_rq, card, disable_multi,
+> > mq);
+> > -			mmc_start_req(card->host, &mq_rq->mmc_active,
+> > NULL);
+> > +			if (mq_rq->packed_cmd == MMC_PACKED_NONE) {
+> > +				/*
+> > +				 * In case of a incomplete request
+> > +				 * prepare it again and resend.
+> > +				 */
+> > +				mmc_blk_rw_rq_prep(mq_rq, card,
+> > +						disable_multi, mq);
+> > +				mmc_start_req(card->host,
+> > +						&mq_rq->mmc_active, NULL);
+> > +			} else {
+> > +				if (!mq_rq->packed_retries)
+> > +					goto cmd_abort;
+> > +				mmc_blk_packed_hdr_wrq_prep(mq_rq, card,
+> > mq);
+> > +				mmc_start_req(card->host,
+> > +						&mq_rq->mmc_active, NULL);
+> > +			}
+> >  		}
+> >  	} while (ret);
+> >
+> >  	return 1;
+> >
+> >   cmd_abort:
+> > -	if (mmc_card_removed(card))
+> > -		req->cmd_flags |= REQ_QUIET;
+> > -	while (ret)
+> > -		ret = blk_end_request(req, -EIO, blk_rq_cur_bytes(req));
+> > +	if (mq_rq->packed_cmd == MMC_PACKED_NONE) {
+> > +		if (mmc_card_removed(card))
+> > +			req->cmd_flags |= REQ_QUIET;
+> > +		while (ret)
+> > +			ret = blk_end_request(req, -EIO,
+> > +					blk_rq_cur_bytes(req));
+> > +	} else {
+> > +		mmc_blk_abort_packed_req(mq_rq);
+> > +	}
+> >
+> >   start_new_req:
+> >  	if (rqc) {
+> > +		/*
+> > +		 * If current request is packed, it needs to put back.
+> > +		 */
+> > +		if (mq->mqrq_cur->packed_cmd != MMC_PACKED_NONE)
+> > +			mmc_blk_revert_packed_req(mq, mq->mqrq_cur);
+> > +
+> >  		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
+> >  		mmc_start_req(card->host, &mq->mqrq_cur->mmc_active,
+> > NULL);
+> >  	}
+> > diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c index
+> > e360a97..165d85a 100644
+> > --- a/drivers/mmc/card/queue.c
+> > +++ b/drivers/mmc/card/queue.c
+> > @@ -175,6 +175,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct
+> > mmc_card *card,
+> >  	if (!mq->queue)
+> >  		return -ENOMEM;
+> >
+> > +	INIT_LIST_HEAD(&mqrq_cur->packed_list);
+> > +	INIT_LIST_HEAD(&mqrq_prev->packed_list);
+> > +
+> >  	mq->mqrq_cur = mqrq_cur;
+> >  	mq->mqrq_prev = mqrq_prev;
+> >  	mq->queue->queuedata = mq;
+> > @@ -375,6 +378,35 @@ void mmc_queue_resume(struct mmc_queue *mq)
+> >  	}
+> >  }
+> >
+> > +static unsigned int mmc_queue_packed_map_sg(struct mmc_queue *mq,
+> > +					    struct mmc_queue_req *mqrq,
+> > +					    struct scatterlist *sg)
+> > +{
+> > +	struct scatterlist *__sg;
+> > +	unsigned int sg_len = 0;
+> > +	struct request *req;
+> > +	enum mmc_packed_cmd cmd;
+> > +
+> > +	cmd = mqrq->packed_cmd;
+> > +
+> > +	if (cmd == MMC_PACKED_WRITE) {
+> > +		__sg = sg;
+> > +		sg_set_buf(__sg, mqrq->packed_cmd_hdr,
+> > +				sizeof(mqrq->packed_cmd_hdr));
+> > +		sg_len++;
+> > +		__sg->page_link &= ~0x02;
+> > +	}
+> > +
+> > +	__sg = sg + sg_len;
+> > +	list_for_each_entry(req, &mqrq->packed_list, queuelist) {
+> > +		sg_len += blk_rq_map_sg(mq->queue, req, __sg);
+> > +		__sg = sg + (sg_len - 1);
+> > +		(__sg++)->page_link &= ~0x02;
+> > +	}
+> > +	sg_mark_end(sg + (sg_len - 1));
+> > +	return sg_len;
+> > +}
+> > +
+> >  /*
+> >   * Prepare the sg list(s) to be handed of to the host driver
+> >   */
+> > @@ -385,12 +417,19 @@ unsigned int mmc_queue_map_sg(struct
+> > mmc_queue *mq, struct mmc_queue_req *mqrq)
+> >  	struct scatterlist *sg;
+> >  	int i;
+> >
+> > -	if (!mqrq->bounce_buf)
+> > -		return blk_rq_map_sg(mq->queue, mqrq->req, mqrq->sg);
+> > +	if (!mqrq->bounce_buf) {
+> > +		if (!list_empty(&mqrq->packed_list))
+> > +			return mmc_queue_packed_map_sg(mq, mqrq, mqrq-
+> > >sg);
+> > +		else
+> > +			return blk_rq_map_sg(mq->queue, mqrq->req, mqrq-
+> > >sg);
+> > +	}
+> >
+> >  	BUG_ON(!mqrq->bounce_sg);
+> >
+> > -	sg_len = blk_rq_map_sg(mq->queue, mqrq->req, mqrq->bounce_sg);
+> > +	if (!list_empty(&mqrq->packed_list))
+> > +		sg_len = mmc_queue_packed_map_sg(mq, mqrq, mqrq-
+> > >bounce_sg);
+> > +	else
+> > +		sg_len = blk_rq_map_sg(mq->queue, mqrq->req, mqrq-
+> > >bounce_sg);
+> >
+> >  	mqrq->bounce_sg_len = sg_len;
+> >
+> > diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h index
+> > d2a1eb4..5e04938 100644
+> > --- a/drivers/mmc/card/queue.h
+> > +++ b/drivers/mmc/card/queue.h
+> > @@ -12,6 +12,11 @@ struct mmc_blk_request {
+> >  	struct mmc_data		data;
+> >  };
+> >
+> > +enum mmc_packed_cmd {
+> > +	MMC_PACKED_NONE = 0,
+> > +	MMC_PACKED_WRITE,
+> > +};
+> > +
+> >  struct mmc_queue_req {
+> >  	struct request		*req;
+> >  	struct mmc_blk_request	brq;
+> > @@ -20,6 +25,13 @@ struct mmc_queue_req {
+> >  	struct scatterlist	*bounce_sg;
+> >  	unsigned int		bounce_sg_len;
+> >  	struct mmc_async_req	mmc_active;
+> > +	struct list_head	packed_list;
+> > +	u32			packed_cmd_hdr[128];
+> > +	unsigned int		packed_blocks;
+> > +	enum mmc_packed_cmd	packed_cmd;
+> > +	int		packed_retries;
+> > +	int		packed_fail_idx;
+> > +	u8		packed_num;
+> >  };
+> >
+> >  struct mmc_queue {
+> > diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+> > index 69370f4..2a2fed8 100644
+> > --- a/drivers/mmc/core/mmc_ops.c
+> > +++ b/drivers/mmc/core/mmc_ops.c
+> > @@ -335,6 +335,7 @@ int mmc_send_ext_csd(struct mmc_card *card, u8
+> > *ext_csd)
+> >  	return mmc_send_cxd_data(card, card->host, MMC_SEND_EXT_CSD,
+> >  			ext_csd, 512);
+> >  }
+> > +EXPORT_SYMBOL_GPL(mmc_send_ext_csd);
+> >
+> >  int mmc_spi_read_ocr(struct mmc_host *host, int highcap, u32 *ocrp)  { diff --
+> > git a/include/linux/mmc/core.h b/include/linux/mmc/core.h index
+> > 1b431c7..d787037 100644
+> > --- a/include/linux/mmc/core.h
+> > +++ b/include/linux/mmc/core.h
+> > @@ -18,6 +18,9 @@ struct mmc_request;
+> >  struct mmc_command {
+> >  	u32			opcode;
+> >  	u32			arg;
+> > +#define MMC_CMD23_ARG_REL_WR	(1 << 31)
+> > +#define MMC_CMD23_ARG_PACKED	((0 << 31) | (1 << 30))
+> > +#define MMC_CMD23_ARG_TAG_REQ	(1 << 29)
+> >  	u32			resp[4];
+> >  	unsigned int		flags;		/* expected response type */
+> >  #define MMC_RSP_PRESENT	(1 << 0)
+> > @@ -143,6 +146,7 @@ extern int mmc_app_cmd(struct mmc_host *, struct
+> > mmc_card *);  extern int mmc_wait_for_app_cmd(struct mmc_host *, struct
+> > mmc_card *,
+> >  	struct mmc_command *, int);
+> >  extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+> > +extern int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd);
+> >
+> >  #define MMC_ERASE_ARG		0x00000000
+> >  #define MMC_SECURE_ERASE_ARG	0x80000000
+> > --
+> > 1.7.0.4
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
