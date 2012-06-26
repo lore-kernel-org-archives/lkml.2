@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab2FZNBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 09:01:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10190 "EHLO mx1.redhat.com"
+	id S1756882Ab2FZNCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 09:02:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18763 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756430Ab2FZNBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 09:01:38 -0400
-Date: Tue, 26 Jun 2012 09:01:34 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Josh Hunt <johunt@akamai.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfq: reenable printing of sync/async queue info to
- blktrace cfqq log messages
-Message-ID: <20120626130134.GB22557@redhat.com>
-References: <1340684923-13167-1-git-send-email-johunt@akamai.com>
+	id S1756430Ab2FZNCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 09:02:31 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Cc: "Richard W.M. Jones" <rjones@redhat.com>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 3.3.8 breaks accidental ext3 mount of extended partition
+References: <4FDEC3C2.4060909@secunet.com>
+	<20120625113457.GA1289@amd.home.annexia.org>
+	<x49r4t3z6s4.fsf@segfault.boston.devel.redhat.com>
+	<4FE951A0.8040900@secunet.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 26 Jun 2012 09:02:27 -0400
+In-Reply-To: <4FE951A0.8040900@secunet.com> (Torsten Hilbrich's message of
+	"Tue, 26 Jun 2012 08:07:28 +0200")
+Message-ID: <x49ehp2tee4.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340684923-13167-1-git-send-email-johunt@akamai.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 09:28:43PM -0700, Josh Hunt wrote:
-> Commit afc24d49c1e5dbeef745c1c1246f5ae6ebd97c71 made the printing of the
-> sync/async queue info only available when you have CONFIG_CFQ_GROUP_IOSCHED
-> enabled. This re-enables it for the case when you do not have that config
-> option set.
-> 
-> Signed-off-by: Josh Hunt <johunt@akamai.com>
+Torsten Hilbrich <torsten.hilbrich@secunet.com> writes:
 
-Looks good to me. sync/async classification is independent of group
-scheduling and printing the queue type in traces helps.
+> Am 25.06.2012 18:38, schrieb Jeff Moyer:
+>> "Richard W.M. Jones" <rjones@redhat.com> writes:
+>> 
+>>> On Mon, Jun 18, 2012 at 07:59:30AM +0200, Torsten Hilbrich wrote:
+>>>> Hello,
+>>>>
+>>>> a software that tries to mount each existing partition as ext3 file system started to fail when updating from v3.3.7 to v3.3.8.
+>>>>
+>>>> The applications then hangs-up in the mount syscall, here is a snapshot of its stack at this moment:
+>>>
+>>> We just ran into what we think is the same problem.
+>>>
+>>> Note that ext4 fails like this for any 1024 byte sized filesystem (of
+>>> zeroes) that you try to mount.  It's really nothing to do with
+>>> extended partitions.
+>>>
+>>> Here is a very simple reproducer + stack trace:
+>>>
+>>>   https://bugzilla.redhat.com/show_bug.cgi?id=835019#c4
+>>>
+>>> I will try out the patch suggested later on in this thread.
+>> 
+>> Please try the attached patch instead.  The patch I had originally
+>> posted for this allowed marking the first buffer beyond EOD as
+>> uptodate.  This isn't correct.  The patch I've attached below fixes the
+>> infinite loop in __getblk_slow.
+>
+> This patch also fixes the ext3 mount problem on extented partition.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Great news, thanks for testing, guys!  I'll follow up with another patch
+posting this morning.
 
-Thanks
-Vivek
-
-> ---
->  block/cfq-iosched.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 3c38536..8307b67 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -383,7 +383,9 @@ CFQ_CFQQ_FNS(wait_busy);
->  
->  #else
->  #define cfq_log_cfqq(cfqd, cfqq, fmt, args...)	\
-> -	blk_add_trace_msg((cfqd)->queue, "cfq%d " fmt, (cfqq)->pid, ##args)
-> +	blk_add_trace_msg((cfqd)->queue, "cfq%d%c " fmt, (cfqq)->pid, \
-> +				cfq_cfqq_sync((cfqq)) ? 'S' : 'A', \
-> +				##args)
->  #define cfq_log_cfqg(cfqd, cfqg, fmt, args...)		do {} while (0)
->  #endif
->  #define cfq_log(cfqd, fmt, args...)	\
-> -- 
-> 1.7.0.4
+Cheers,
+Jeff
