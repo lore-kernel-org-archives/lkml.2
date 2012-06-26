@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2FZKkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 06:40:32 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49076 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752176Ab2FZKkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 06:40:31 -0400
-Date: Tue, 26 Jun 2012 11:40:29 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] regulator: core: Only delay if we successfully set
- the voltage
-Message-ID: <20120626104028.GO30406@opensource.wolfsonmicro.com>
-References: <1340706382-27297-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <CAF+7xWkj+aFc_Kq7PzAoYrUa0tCs1sq7K2=bc-tVXJH4x+7DRw@mail.gmail.com>
+	id S1756547Ab2FZKlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 06:41:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48672 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752176Ab2FZKlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 06:41:00 -0400
+Message-ID: <4FE991B8.2080706@suse.cz>
+Date: Tue, 26 Jun 2012 12:40:56 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120328 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAF+7xWkj+aFc_Kq7PzAoYrUa0tCs1sq7K2=bc-tVXJH4x+7DRw@mail.gmail.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: Re: [PATCH 8/8] kbuild: remove useless warning
+References: <20120505080640.GA13773@merkur.ravnborg.org> <1336205926-13946-8-git-send-email-sam@ravnborg.org>
+In-Reply-To: <1336205926-13946-8-git-send-email-sam@ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 06:30:16PM +0800, Axel Lin wrote:
+On 5.5.2012 10:18, Sam Ravnborg wrote:
+>  ifneq ($(KCPPFLAGS),)
+> -        $(call warn-assign,CPPFLAGS)
+>          KBUILD_CPPFLAGS += $(KCPPFLAGS)
+>  endif
+>  ifneq ($(KAFLAGS),)
+> -        $(call warn-assign,AFLAGS)
+>          KBUILD_AFLAGS += $(KAFLAGS)
+>  endif
+>  ifneq ($(KCFLAGS),)
+> -        $(call warn-assign,CFLAGS)
+>          KBUILD_CFLAGS += $(KCFLAGS)
+>  endif
 
-> >        /* Call set_voltage_time_sel if successfully obtained old_selector */
-> > -       if (_regulator_is_enabled(rdev) && ret == 0 && old_selector >= 0 &&
->                                                                   ^^^^^^^^
->                                                                  We
-> already check ret ==0 here.
+The tests for non-empty can be dropped now.
 
-Your mailer is seriously messing up your formatting - the indentation is
-nothing to do with what you're trying to point at...
+Michal
 
-The checks do need to be reordered here, though - we should check the
-return value first.
