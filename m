@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2FZJSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 05:18:44 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40793 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755305Ab2FZJSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 05:18:42 -0400
-X-IronPort-AV: E=Sophos;i="4.77,476,1336320000"; 
-   d="scan'208";a="5266100"
-Message-ID: <4FE97F7B.2030808@cn.fujitsu.com>
-Date: Tue, 26 Jun 2012 17:23:07 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1756033Ab2FZJUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 05:20:22 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:39093 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754286Ab2FZJUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 05:20:21 -0400
+Message-ID: <4FE97E31.3010201@parallels.com>
+Date: Tue, 26 Jun 2012 13:17:37 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: lenb@kernel.org, linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [PATCH 8/8] release memory resources if hotadd_new_pgdat() failed
-References: <4FE97DD5.6030205@cn.fujitsu.com>
-In-Reply-To: <4FE97DD5.6030205@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/26 17:18:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/26 17:18:54,
-	Serialize complete at 2012/06/26 17:18:54
+To: David Rientjes <rientjes@google.com>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 06/11] memcg: kmem controller infrastructure
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-7-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206260210200.16020@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1206260210200.16020@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should goto error to release memory resource if hotadd_new_pgdat() failed.
+On 06/26/2012 01:12 PM, David Rientjes wrote:
+> On Mon, 25 Jun 2012, Glauber Costa wrote:
+>
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index 83e7ba9..22479eb 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -21,6 +21,7 @@
+>>   #define _LINUX_MEMCONTROL_H
+>>   #include <linux/cgroup.h>
+>>   #include <linux/vm_event_item.h>
+>> +#include <linux/hardirq.h>
+>>
+>>   struct mem_cgroup;
+>>   struct page_cgroup;
+>> @@ -409,6 +410,12 @@ struct sock;
+>>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>>   void sock_update_memcg(struct sock *sk);
+>>   void sock_release_memcg(struct sock *sk);
+>> +
+>> +#define mem_cgroup_kmem_on 1
+>> +bool __mem_cgroup_new_kmem_page(gfp_t gfp, void *handle, int order);
+>> +void __mem_cgroup_commit_kmem_page(struct page *page, void *handle, int order);
+>> +void __mem_cgroup_free_kmem_page(struct page *page, int order);
+>> +#define is_kmem_tracked_alloc (gfp & __GFP_KMEMCG)
+>>   #else
+>>   static inline void sock_update_memcg(struct sock *sk)
+>>   {
+>> @@ -416,6 +423,43 @@ static inline void sock_update_memcg(struct sock *sk)
+>>   static inline void sock_release_memcg(struct sock *sk)
+>>   {
+>>   }
+>> +
+>> +#define mem_cgroup_kmem_on 0
+>> +#define __mem_cgroup_new_kmem_page(a, b, c) false
+>> +#define __mem_cgroup_free_kmem_page(a,b )
+>> +#define __mem_cgroup_commit_kmem_page(a, b, c)
+>> +#define is_kmem_tracked_alloc (false)
+>>   #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+>> +
+>> +static __always_inline
+>> +bool mem_cgroup_new_kmem_page(gfp_t gfp, void *handle, int order)
+>> +{
+>> +	if (!mem_cgroup_kmem_on)
+>> +		return true;
+>> +	if (!is_kmem_tracked_alloc)
+>> +		return true;
+>> +	if (!current->mm)
+>> +		return true;
+>> +	if (in_interrupt())
+>> +		return true;
+>
+> You can't test for current->mm in irq context, so you need to check for
+> in_interrupt() first.
+ >
+Right, thanks.
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- mm/memory_hotplug.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Also, what prevents __mem_cgroup_new_kmem_page()
+> from being called for a kthread that has called use_mm() before
+> unuse_mm()?
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 2a14d35..3796690 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -617,7 +617,7 @@ int __ref add_memory(int nid, u64 start, u64 size)
- 		pgdat = hotadd_new_pgdat(nid, start);
- 		ret = -ENOMEM;
- 		if (!pgdat)
--			goto out;
-+			goto error;
- 		new_pgdat = 1;
- 	}
- 
--- 
-1.7.1
+Nothing, but I also don't see how to prevent that.
+At a first glance, it seems fair to me to say that if a kernel thread 
+uses the mm of a process, it poses as this process for any accounting 
+purpose.
 
