@@ -1,895 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab2FZGBL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 02:01:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59579 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab2FZGBH (ORCPT
+	id S1758202Ab2FZGB2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 02:01:28 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34947 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756894Ab2FZGBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 02:01:07 -0400
-Date: Mon, 25 Jun 2012 23:00:50 -0700
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Message-ID: <tip-8b6e511e51f7e540c8e71022318ee4cc9a4567a7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org, cpw@sgi.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cpw@sgi.com, tglx@linutronix.de
-In-Reply-To: <20120622131459.GC31884@sgi.com>
-References: <20120622131459.GC31884@sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/uv] x86/uv: Work around UV2 BAU hangs
-Git-Commit-ID: 8b6e511e51f7e540c8e71022318ee4cc9a4567a7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 25 Jun 2012 23:00:57 -0700 (PDT)
+	Tue, 26 Jun 2012 02:01:09 -0400
+From: Sherwin Soltani <sherwin@wybc.com>
+To: gregkh@linuxfoundation.org
+Cc: swetland@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Sherwin Soltani <sherwin@wybc.com>
+Subject: [PATCH] drivers: staging: android: binder.c: fix printk macros
+Date: Tue, 26 Jun 2012 02:00:30 -0400
+Message-Id: <1340690430-13016-1-git-send-email-sherwin@wybc.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8b6e511e51f7e540c8e71022318ee4cc9a4567a7
-Gitweb:     http://git.kernel.org/tip/8b6e511e51f7e540c8e71022318ee4cc9a4567a7
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Fri, 22 Jun 2012 08:14:59 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 25 Jun 2012 14:45:05 +0200
+Change printk() messages to pr_* macros.
 
-x86/uv: Work around UV2 BAU hangs
-
-On SGI's UV2 the BAU (Broadcast Assist Unit) driver can hang
-under a heavy load. To cure this:
-
-- Disable the UV2 extended status mode (see UV2_EXT_SHFT), as
-  this mode changes BAU behavior in more ways then just delivering
-  an extra bit of status.  Revert status to just two meaningful bits,
-  like UV1.
-
-- Use no IPI-style resets on UV2.  Just give up the request for
-  whatever the reason it failed and let it be accomplished with
-  the legacy IPI method.
-
-- Use no alternate sending descriptor (the former UV2 workaround
-  bcp->using_desc and handle_uv2_busy() stuff).  Just disable the
-  use of the BAU for a period of time in favor of the legacy IPI
-  method when the h/w bug leaves a descriptor busy.
-
-  -- new tunable: giveup_limit determines the threshold at which a hub is
-     so plugged that it should do all requests with the legacy IPI method for a
-     period of time
-  -- generalize disable_for_congestion() (renamed disable_for_period()) for
-     use whenever a hub should avoid using the BAU for a period of time
-
-Also:
-
- - Fix find_another_by_swack(), which is part of the UV2 bug workaround
-
- - Correct and clarify the statistics (new stats s_overipilimit, s_giveuplimit,
-   s_enters, s_ipifordisabled, s_plugged, s_congested)
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Link: http://lkml.kernel.org/r/20120622131459.GC31884@sgi.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Sherwin Soltani <sherwin@wybc.com>
 ---
- arch/x86/include/asm/uv/uv_bau.h |   28 ++-
- arch/x86/platform/uv/tlb_uv.c    |  387 ++++++++++++++++++--------------------
- 2 files changed, 200 insertions(+), 215 deletions(-)
+ drivers/staging/android/binder.c |   54 +++++++++++++++++++-------------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
 
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index 847c00b..a06983c 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -140,6 +140,9 @@
- #define IPI_RESET_LIMIT			1
- /* after this # consecutive successes, bump up the throttle if it was lowered */
- #define COMPLETE_THRESHOLD		5
-+/* after this # of giveups (fall back to kernel IPI's) disable the use of
-+   the BAU for a period of time */
-+#define GIVEUP_LIMIT			100
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index c283212..574e992 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -124,13 +124,13 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
+ #define binder_debug(mask, x...) \
+ 	do { \
+ 		if (binder_debug_mask & mask) \
+-			printk(KERN_INFO x); \
++			pr_info(x); \
+ 	} while (0)
  
- #define UV_LB_SUBNODEID			0x10
+ #define binder_user_error(x...) \
+ 	do { \
+ 		if (binder_debug_mask & BINDER_DEBUG_USER_ERROR) \
+-			printk(KERN_INFO x); \
++			pr_info(x); \
+ 		if (binder_stop_on_user_error) \
+ 			binder_stop_on_user_error = 2; \
+ 	} while (0)
+@@ -418,7 +418,7 @@ repeat:
+ #if 1
+ 	/* Sanity check */
+ 	if (fdt->fd[fd] != NULL) {
+-		printk(KERN_WARNING "get_unused_fd: slot %d not NULL!\n", fd);
++		pr_warn("get_unused_fd: slot %d not NULL!\n", fd);
+ 		fdt->fd[fd] = NULL;
+ 	}
+ #endif
+@@ -644,7 +644,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+ 		goto free_range;
  
-@@ -166,7 +169,6 @@
- #define FLUSH_RETRY_TIMEOUT		2
- #define FLUSH_GIVEUP			3
- #define FLUSH_COMPLETE			4
--#define FLUSH_RETRY_BUSYBUG		5
+ 	if (vma == NULL) {
+-		printk(KERN_ERR "binder: %d: binder_alloc_buf failed to "
++		pr_err("binder: %d: binder_alloc_buf failed to "
+ 		       "map pages in userspace, no vma\n", proc->pid);
+ 		goto err_no_vma;
+ 	}
+@@ -657,7 +657,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+ 		BUG_ON(*page);
+ 		*page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+ 		if (*page == NULL) {
+-			printk(KERN_ERR "binder: %d: binder_alloc_buf failed "
++			pr_err("binder: %d: binder_alloc_buf failed "
+ 			       "for page at %p\n", proc->pid, page_addr);
+ 			goto err_alloc_page_failed;
+ 		}
+@@ -666,7 +666,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+ 		page_array_ptr = page;
+ 		ret = map_vm_area(&tmp_area, PAGE_KERNEL, &page_array_ptr);
+ 		if (ret) {
+-			printk(KERN_ERR "binder: %d: binder_alloc_buf failed "
++			pr_err("binder: %d: binder_alloc_buf failed "
+ 			       "to map page at %p in kernel\n",
+ 			       proc->pid, page_addr);
+ 			goto err_map_kernel_failed;
+@@ -675,7 +675,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+ 			(uintptr_t)page_addr + proc->user_buffer_offset;
+ 		ret = vm_insert_page(vma, user_page_addr, page[0]);
+ 		if (ret) {
+-			printk(KERN_ERR "binder: %d: binder_alloc_buf failed "
++			pr_err("binder: %d: binder_alloc_buf failed "
+ 			       "to map page at %lx in userspace\n",
+ 			       proc->pid, user_page_addr);
+ 			goto err_vm_insert_page_failed;
+@@ -724,7 +724,7 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
+ 	size_t size;
  
- /*
-  * tuning the action when the numalink network is extremely delayed
-@@ -175,7 +177,7 @@
- 						   microseconds */
- #define CONGESTED_REPS			10	/* long delays averaged over
- 						   this many broadcasts */
--#define CONGESTED_PERIOD		30	/* time for the bau to be
-+#define DISABLED_PERIOD			10	/* time for the bau to be
- 						   disabled, in seconds */
- /* see msg_type: */
- #define MSG_NOOP			0
-@@ -520,7 +522,12 @@ struct ptc_stats {
- 	unsigned long	s_uv2_wars;		/* uv2 workaround, perm. busy */
- 	unsigned long	s_uv2_wars_hw;		/* uv2 workaround, hiwater */
- 	unsigned long	s_uv2_war_waits;	/* uv2 workaround, long waits */
--	unsigned long   s_enters;		/* entries to the driver */
-+	unsigned long	s_overipilimit;		/* over the ipi reset limit */
-+	unsigned long	s_giveuplimit;		/* disables, over giveup limit*/
-+	unsigned long	s_enters;		/* entries to the driver */
-+	unsigned long	s_ipifordisabled;	/* fall back to IPI; disabled */
-+	unsigned long	s_plugged;		/* plugged by h/w bug*/
-+	unsigned long	s_congested;		/* giveup on long wait */
- 	/* destination statistics */
- 	unsigned long	d_alltlb;		/* times all tlb's on this
- 						   cpu were flushed */
-@@ -588,8 +595,7 @@ struct bau_control {
- 	int			ipi_attempts;
- 	int			conseccompletes;
- 	short			nobau;
--	int			baudisabled;
--	int			set_bau_off;
-+	short			baudisabled;
- 	short			cpu;
- 	short			osnode;
- 	short			uvhub_cpu;
-@@ -598,14 +604,16 @@ struct bau_control {
- 	short			cpus_in_socket;
- 	short			cpus_in_uvhub;
- 	short			partition_base_pnode;
--	short			using_desc; /* an index, like uvhub_cpu */
--	unsigned int		inuse_map;
-+	short			busy;       /* all were busy (war) */
- 	unsigned short		message_number;
- 	unsigned short		uvhub_quiesce;
- 	short			socket_acknowledge_count[DEST_Q_SIZE];
- 	cycles_t		send_message;
-+	cycles_t		period_end;
-+	cycles_t		period_time;
- 	spinlock_t		uvhub_lock;
- 	spinlock_t		queue_lock;
-+	spinlock_t		disable_lock;
- 	/* tunables */
- 	int			max_concurr;
- 	int			max_concurr_const;
-@@ -616,9 +624,9 @@ struct bau_control {
- 	int			complete_threshold;
- 	int			cong_response_us;
- 	int			cong_reps;
--	int			cong_period;
--	unsigned long		clocks_per_100_usec;
--	cycles_t		period_time;
-+	cycles_t		disabled_period;
-+	int			period_giveups;
-+	int			giveup_limit;
- 	long			period_requests;
- 	struct hub_and_pnode	*thp;
- };
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 1492170..71b5d5a 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1,7 +1,7 @@
- /*
-  *	SGI UltraViolet TLB flush routines.
-  *
-- *	(c) 2008-2011 Cliff Wickman <cpw@sgi.com>, SGI.
-+ *	(c) 2008-2012 Cliff Wickman <cpw@sgi.com>, SGI.
-  *
-  *	This code is released under the GNU General Public License version 2 or
-  *	later.
-@@ -39,8 +39,6 @@ static int timeout_base_ns[] = {
- static int timeout_us;
- static int nobau;
- static int nobau_perm;
--static int baudisabled;
--static spinlock_t disable_lock;
- static cycles_t congested_cycles;
- 
- /* tunables: */
-@@ -48,12 +46,13 @@ static int max_concurr		= MAX_BAU_CONCURRENT;
- static int max_concurr_const	= MAX_BAU_CONCURRENT;
- static int plugged_delay	= PLUGGED_DELAY;
- static int plugsb4reset		= PLUGSB4RESET;
-+static int giveup_limit		= GIVEUP_LIMIT;
- static int timeoutsb4reset	= TIMEOUTSB4RESET;
- static int ipi_reset_limit	= IPI_RESET_LIMIT;
- static int complete_threshold	= COMPLETE_THRESHOLD;
- static int congested_respns_us	= CONGESTED_RESPONSE_US;
- static int congested_reps	= CONGESTED_REPS;
--static int congested_period	= CONGESTED_PERIOD;
-+static int disabled_period	= DISABLED_PERIOD;
- 
- static struct tunables tunables[] = {
- 	{&max_concurr, MAX_BAU_CONCURRENT}, /* must be [0] */
-@@ -64,7 +63,8 @@ static struct tunables tunables[] = {
- 	{&complete_threshold, COMPLETE_THRESHOLD},
- 	{&congested_respns_us, CONGESTED_RESPONSE_US},
- 	{&congested_reps, CONGESTED_REPS},
--	{&congested_period, CONGESTED_PERIOD}
-+	{&disabled_period, DISABLED_PERIOD},
-+	{&giveup_limit, GIVEUP_LIMIT}
- };
- 
- static struct dentry *tunables_dir;
-@@ -313,7 +313,7 @@ static void bau_process_message(struct msg_desc *mdp, struct bau_control *bcp,
- 		 * Both sockets dump their completed count total into
- 		 * the message's count.
- 		 */
--		smaster->socket_acknowledge_count[mdp->msg_slot] = 0;
-+		*sp = 0;
- 		asp = (struct atomic_short *)&msg->acknowledge_count;
- 		msg_ack_count = atom_asr(socket_ack_count, asp);
- 
-@@ -526,16 +526,15 @@ static int uv1_wait_completion(struct bau_desc *bau_desc,
- }
- 
- /*
-- * UV2 has an extra bit of status in the ACTIVATION_STATUS_2 register.
-+ * UV2 could have an extra bit of status in the ACTIVATION_STATUS_2 register.
-+ * But not currently used.
-  */
- static unsigned long uv2_read_status(unsigned long offset, int rshft, int desc)
- {
- 	unsigned long descriptor_status;
--	unsigned long descriptor_status2;
- 
--	descriptor_status = ((read_lmmr(offset) >> rshft) & UV_ACT_STATUS_MASK);
--	descriptor_status2 = (read_mmr_uv2_status() >> desc) & 0x1UL;
--	descriptor_status = (descriptor_status << 1) | descriptor_status2;
-+	descriptor_status =
-+		((read_lmmr(offset) >> rshft) & UV_ACT_STATUS_MASK) << 1;
- 	return descriptor_status;
- }
- 
-@@ -566,87 +565,11 @@ int normal_busy(struct bau_control *bcp)
-  */
- int handle_uv2_busy(struct bau_control *bcp)
- {
--	int busy_one = bcp->using_desc;
--	int normal = bcp->uvhub_cpu;
--	int selected = -1;
--	int i;
--	unsigned long descriptor_status;
--	unsigned long status;
--	int mmr_offset;
--	struct bau_desc *bau_desc_old;
--	struct bau_desc *bau_desc_new;
--	struct bau_control *hmaster = bcp->uvhub_master;
- 	struct ptc_stats *stat = bcp->statp;
--	cycles_t ttm;
- 
- 	stat->s_uv2_wars++;
--	spin_lock(&hmaster->uvhub_lock);
--	/* try for the original first */
--	if (busy_one != normal) {
--		if (!normal_busy(bcp))
--			selected = normal;
--	}
--	if (selected < 0) {
--		/* can't use the normal, select an alternate */
--		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_1;
--		descriptor_status = read_lmmr(mmr_offset);
--
--		/* scan available descriptors 32-63 */
--		for (i = 0; i < UV_CPUS_PER_AS; i++) {
--			if ((hmaster->inuse_map & (1 << i)) == 0) {
--				status = ((descriptor_status >>
--						(i * UV_ACT_STATUS_SIZE)) &
--						UV_ACT_STATUS_MASK) << 1;
--				if (status != UV2H_DESC_BUSY) {
--					selected = i + UV_CPUS_PER_AS;
--					break;
--				}
--			}
--		}
--	}
--
--	if (busy_one != normal)
--		/* mark the busy alternate as not in-use */
--		hmaster->inuse_map &= ~(1 << (busy_one - UV_CPUS_PER_AS));
--
--	if (selected >= 0) {
--		/* switch to the selected descriptor */
--		if (selected != normal) {
--			/* set the selected alternate as in-use */
--			hmaster->inuse_map |=
--					(1 << (selected - UV_CPUS_PER_AS));
--			if (selected > stat->s_uv2_wars_hw)
--				stat->s_uv2_wars_hw = selected;
--		}
--		bau_desc_old = bcp->descriptor_base;
--		bau_desc_old += (ITEMS_PER_DESC * busy_one);
--		bcp->using_desc = selected;
--		bau_desc_new = bcp->descriptor_base;
--		bau_desc_new += (ITEMS_PER_DESC * selected);
--		*bau_desc_new = *bau_desc_old;
--	} else {
--		/*
--		 * All are busy. Wait for the normal one for this cpu to
--		 * free up.
--		 */
--		stat->s_uv2_war_waits++;
--		spin_unlock(&hmaster->uvhub_lock);
--		ttm = get_cycles();
--		do {
--			cpu_relax();
--		} while (normal_busy(bcp));
--		spin_lock(&hmaster->uvhub_lock);
--		/* switch to the original descriptor */
--		bcp->using_desc = normal;
--		bau_desc_old = bcp->descriptor_base;
--		bau_desc_old += (ITEMS_PER_DESC * bcp->using_desc);
--		bcp->using_desc = (ITEMS_PER_DESC * normal);
--		bau_desc_new = bcp->descriptor_base;
--		bau_desc_new += (ITEMS_PER_DESC * normal);
--		*bau_desc_new = *bau_desc_old; /* copy the entire descriptor */
--	}
--	spin_unlock(&hmaster->uvhub_lock);
--	return FLUSH_RETRY_BUSYBUG;
-+	bcp->busy = 1;
-+	return FLUSH_GIVEUP;
- }
- 
- static int uv2_wait_completion(struct bau_desc *bau_desc,
-@@ -655,7 +578,7 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
- {
- 	unsigned long descriptor_stat;
- 	cycles_t ttm;
--	int desc = bcp->using_desc;
-+	int desc = bcp->uvhub_cpu;
- 	long busy_reps = 0;
- 	struct ptc_stats *stat = bcp->statp;
- 
-@@ -663,24 +586,38 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
- 
- 	/* spin on the status MMR, waiting for it to go idle */
- 	while (descriptor_stat != UV2H_DESC_IDLE) {
--		/*
--		 * Our software ack messages may be blocked because
--		 * there are no swack resources available.  As long
--		 * as none of them has timed out hardware will NACK
--		 * our message and its state will stay IDLE.
--		 */
--		if ((descriptor_stat == UV2H_DESC_SOURCE_TIMEOUT) ||
--		    (descriptor_stat == UV2H_DESC_DEST_PUT_ERR)) {
-+		if ((descriptor_stat == UV2H_DESC_SOURCE_TIMEOUT)) {
-+			/*
-+			 * A h/w bug on the destination side may
-+			 * have prevented the message being marked
-+			 * pending, thus it doesn't get replied to
-+			 * and gets continually nacked until it times
-+			 * out with a SOURCE_TIMEOUT.
-+			 */
- 			stat->s_stimeout++;
- 			return FLUSH_GIVEUP;
--		} else if (descriptor_stat == UV2H_DESC_DEST_STRONG_NACK) {
--			stat->s_strongnacks++;
--			bcp->conseccompletes = 0;
--			return FLUSH_GIVEUP;
- 		} else if (descriptor_stat == UV2H_DESC_DEST_TIMEOUT) {
-+			ttm = get_cycles();
-+
-+			/*
-+			 * Our retries may be blocked by all destination
-+			 * swack resources being consumed, and a timeout
-+			 * pending.  In that case hardware returns the
-+			 * ERROR that looks like a destination timeout.
-+			 * Without using the extended status we have to
-+			 * deduce from the short time that this was a
-+			 * strong nack.
-+			 */
-+			if (cycles_2_us(ttm - bcp->send_message) < timeout_us) {
-+				bcp->conseccompletes = 0;
-+				stat->s_plugged++;
-+				/* FLUSH_RETRY_PLUGGED causes hang on boot */
-+				return FLUSH_GIVEUP;
-+			}
- 			stat->s_dtimeout++;
- 			bcp->conseccompletes = 0;
--			return FLUSH_RETRY_TIMEOUT;
-+			/* FLUSH_RETRY_TIMEOUT causes hang on boot */
-+			return FLUSH_GIVEUP;
- 		} else {
- 			busy_reps++;
- 			if (busy_reps > 1000000) {
-@@ -688,9 +625,8 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
- 				busy_reps = 0;
- 				ttm = get_cycles();
- 				if ((ttm - bcp->send_message) >
--					(bcp->clocks_per_100_usec)) {
-+						bcp->timeout_interval)
- 					return handle_uv2_busy(bcp);
--				}
- 			}
- 			/*
- 			 * descriptor_stat is still BUSY
-@@ -714,7 +650,7 @@ static int wait_completion(struct bau_desc *bau_desc,
- {
- 	int right_shift;
- 	unsigned long mmr_offset;
--	int desc = bcp->using_desc;
-+	int desc = bcp->uvhub_cpu;
- 
- 	if (desc < UV_CPUS_PER_AS) {
- 		mmr_offset = UVH_LB_BAU_SB_ACTIVATION_STATUS_0;
-@@ -793,33 +729,31 @@ static void destination_timeout(struct bau_desc *bau_desc,
- }
- 
- /*
-- * Completions are taking a very long time due to a congested numalink
-- * network.
-+ * Stop all cpus on a uvhub from using the BAU for a period of time.
-+ * This is reversed by check_enable.
-  */
--static void disable_for_congestion(struct bau_control *bcp,
--					struct ptc_stats *stat)
-+static void disable_for_period(struct bau_control *bcp, struct ptc_stats *stat)
- {
--	/* let only one cpu do this disabling */
--	spin_lock(&disable_lock);
--
--	if (!baudisabled && bcp->period_requests &&
--	    ((bcp->period_time / bcp->period_requests) > congested_cycles)) {
--		int tcpu;
--		struct bau_control *tbcp;
--		/* it becomes this cpu's job to turn on the use of the
--		   BAU again */
--		baudisabled = 1;
--		bcp->set_bau_off = 1;
--		bcp->set_bau_on_time = get_cycles();
--		bcp->set_bau_on_time += sec_2_cycles(bcp->cong_period);
-+	int tcpu;
-+	struct bau_control *tbcp;
-+	struct bau_control *hmaster;
-+	cycles_t tm1;
-+
-+	hmaster = bcp->uvhub_master;
-+	spin_lock(&hmaster->disable_lock);
-+	if (!bcp->baudisabled) {
- 		stat->s_bau_disabled++;
-+		tm1 = get_cycles();
- 		for_each_present_cpu(tcpu) {
- 			tbcp = &per_cpu(bau_control, tcpu);
--			tbcp->baudisabled = 1;
-+			if (tbcp->uvhub_master == hmaster) {
-+				tbcp->baudisabled = 1;
-+				tbcp->set_bau_on_time =
-+					tm1 + bcp->disabled_period;
-+			}
+ 	if (proc->vma == NULL) {
+-		printk(KERN_ERR "binder: %d: binder_alloc_buf, no vma\n",
++		pr_err("binder: %d: binder_alloc_buf, no vma\n",
+ 		       proc->pid);
+ 		return NULL;
+ 	}
+@@ -762,7 +762,7 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
  		}
  	}
--
--	spin_unlock(&disable_lock);
-+	spin_unlock(&hmaster->disable_lock);
- }
+ 	if (best_fit == NULL) {
+-		printk(KERN_ERR "binder: %d: binder_alloc_buf size %zd failed, "
++		pr_err("binder: %d: binder_alloc_buf size %zd failed, "
+ 		       "no address space\n", proc->pid, size);
+ 		return NULL;
+ 	}
+@@ -997,7 +997,7 @@ static int binder_inc_node(struct binder_node *node, int strong, int internal,
+ 			    node->internal_strong_refs == 0 &&
+ 			    !(node == binder_context_mgr_node &&
+ 			    node->has_strong_ref)) {
+-				printk(KERN_ERR "binder: invalid inc strong "
++				pr_err("binder: invalid inc strong "
+ 					"node for %d\n", node->debug_id);
+ 				return -EINVAL;
+ 			}
+@@ -1013,7 +1013,7 @@ static int binder_inc_node(struct binder_node *node, int strong, int internal,
+ 			node->local_weak_refs++;
+ 		if (!node->has_weak_ref && list_empty(&node->work.entry)) {
+ 			if (target_list == NULL) {
+-				printk(KERN_ERR "binder: invalid inc weak node "
++				pr_err("binder: invalid inc weak node "
+ 					"for %d\n", node->debug_id);
+ 				return -EINVAL;
+ 			}
+@@ -1276,7 +1276,7 @@ static void binder_send_failed_reply(struct binder_transaction *t,
+ 				target_thread->return_error = error_code;
+ 				wake_up_interruptible(&target_thread->wait);
+ 			} else {
+-				printk(KERN_ERR "binder: reply failed, target "
++				pr_err("binder: reply failed, target "
+ 					"thread, %d:%d, has error code %d "
+ 					"already\n", target_thread->proc->pid,
+ 					target_thread->pid,
+@@ -1331,7 +1331,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 		if (*offp > buffer->data_size - sizeof(*fp) ||
+ 		    buffer->data_size < sizeof(*fp) ||
+ 		    !IS_ALIGNED(*offp, sizeof(void *))) {
+-			printk(KERN_ERR "binder: transaction release %d bad"
++			pr_err("binder: transaction release %d bad"
+ 					"offset %zd, size %zd\n", debug_id,
+ 					*offp, buffer->data_size);
+ 			continue;
+@@ -1342,7 +1342,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 		case BINDER_TYPE_WEAK_BINDER: {
+ 			struct binder_node *node = binder_get_node(proc, fp->binder);
+ 			if (node == NULL) {
+-				printk(KERN_ERR "binder: transaction release %d"
++				pr_err("binder: transaction release %d"
+ 				       " bad node %p\n", debug_id, fp->binder);
+ 				break;
+ 			}
+@@ -1355,7 +1355,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 		case BINDER_TYPE_WEAK_HANDLE: {
+ 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
+ 			if (ref == NULL) {
+-				printk(KERN_ERR "binder: transaction release %d"
++				pr_err("binder: transaction release %d"
+ 				       " bad handle %ld\n", debug_id,
+ 				       fp->handle);
+ 				break;
+@@ -1374,7 +1374,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 			break;
  
- static void count_max_concurr(int stat, struct bau_control *bcp,
-@@ -850,16 +784,30 @@ static void record_send_stats(cycles_t time1, cycles_t time2,
- 			bcp->period_requests++;
- 			bcp->period_time += elapsed;
- 			if ((elapsed > congested_cycles) &&
--			    (bcp->period_requests > bcp->cong_reps))
--				disable_for_congestion(bcp, stat);
-+			    (bcp->period_requests > bcp->cong_reps) &&
-+			    ((bcp->period_time / bcp->period_requests) >
-+							congested_cycles)) {
-+				stat->s_congested++;
-+				disable_for_period(bcp, stat);
-+			}
- 		}
- 	} else
- 		stat->s_requestor--;
- 
- 	if (completion_status == FLUSH_COMPLETE && try > 1)
- 		stat->s_retriesok++;
--	else if (completion_status == FLUSH_GIVEUP)
-+	else if (completion_status == FLUSH_GIVEUP) {
- 		stat->s_giveup++;
-+		if (get_cycles() > bcp->period_end)
-+			bcp->period_giveups = 0;
-+		bcp->period_giveups++;
-+		if (bcp->period_giveups == 1)
-+			bcp->period_end = get_cycles() + bcp->disabled_period;
-+		if (bcp->period_giveups > bcp->giveup_limit) {
-+			disable_for_period(bcp, stat);
-+			stat->s_giveuplimit++;
-+		}
-+	}
- }
- 
- /*
-@@ -903,7 +851,8 @@ static void handle_cmplt(int completion_status, struct bau_desc *bau_desc,
-  * Returns 1 if it gives up entirely and the original cpu mask is to be
-  * returned to the kernel.
-  */
--int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
-+int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp,
-+	struct bau_desc *bau_desc)
- {
- 	int seq_number = 0;
- 	int completion_stat = 0;
-@@ -916,24 +865,23 @@ int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
- 	struct bau_control *hmaster = bcp->uvhub_master;
- 	struct uv1_bau_msg_header *uv1_hdr = NULL;
- 	struct uv2_bau_msg_header *uv2_hdr = NULL;
--	struct bau_desc *bau_desc;
- 
--	if (bcp->uvhub_version == 1)
-+	if (bcp->uvhub_version == 1) {
-+		uv1 = 1;
- 		uv1_throttle(hmaster, stat);
-+	}
- 
- 	while (hmaster->uvhub_quiesce)
- 		cpu_relax();
- 
- 	time1 = get_cycles();
-+	if (uv1)
-+		uv1_hdr = &bau_desc->header.uv1_hdr;
-+	else
-+		uv2_hdr = &bau_desc->header.uv2_hdr;
-+
- 	do {
--		bau_desc = bcp->descriptor_base;
--		bau_desc += (ITEMS_PER_DESC * bcp->using_desc);
--		if (bcp->uvhub_version == 1) {
--			uv1 = 1;
--			uv1_hdr = &bau_desc->header.uv1_hdr;
--		} else
--			uv2_hdr = &bau_desc->header.uv2_hdr;
--		if ((try == 0) || (completion_stat == FLUSH_RETRY_BUSYBUG)) {
-+		if (try == 0) {
- 			if (uv1)
- 				uv1_hdr->msg_type = MSG_REGULAR;
- 			else
-@@ -951,25 +899,24 @@ int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
- 			uv1_hdr->sequence = seq_number;
- 		else
- 			uv2_hdr->sequence = seq_number;
--		index = (1UL << AS_PUSH_SHIFT) | bcp->using_desc;
-+		index = (1UL << AS_PUSH_SHIFT) | bcp->uvhub_cpu;
- 		bcp->send_message = get_cycles();
- 
- 		write_mmr_activation(index);
- 
- 		try++;
- 		completion_stat = wait_completion(bau_desc, bcp, try);
--		/* UV2: wait_completion() may change the bcp->using_desc */
- 
- 		handle_cmplt(completion_stat, bau_desc, bcp, hmaster, stat);
- 
- 		if (bcp->ipi_attempts >= bcp->ipi_reset_limit) {
- 			bcp->ipi_attempts = 0;
-+			stat->s_overipilimit++;
- 			completion_stat = FLUSH_GIVEUP;
+ 		default:
+-			printk(KERN_ERR "binder: transaction release %d bad "
++			pr_err("binder: transaction release %d bad "
+ 			       "object type %lx\n", debug_id, fp->type);
  			break;
  		}
- 		cpu_relax();
- 	} while ((completion_stat == FLUSH_RETRY_PLUGGED) ||
--		 (completion_stat == FLUSH_RETRY_BUSYBUG) ||
- 		 (completion_stat == FLUSH_RETRY_TIMEOUT));
- 
- 	time2 = get_cycles();
-@@ -990,28 +937,33 @@ int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp)
- }
- 
- /*
-- * The BAU is disabled. When the disabled time period has expired, the cpu
-- * that disabled it must re-enable it.
-- * Return 0 if it is re-enabled for all cpus.
-+ * The BAU is disabled for this uvhub. When the disabled time period has
-+ * expired re-enable it.
-+ * Return 0 if it is re-enabled for all cpus on this uvhub.
-  */
- static int check_enable(struct bau_control *bcp, struct ptc_stats *stat)
- {
- 	int tcpu;
- 	struct bau_control *tbcp;
-+	struct bau_control *hmaster;
- 
--	if (bcp->set_bau_off) {
--		if (get_cycles() >= bcp->set_bau_on_time) {
--			stat->s_bau_reenabled++;
--			baudisabled = 0;
--			for_each_present_cpu(tcpu) {
--				tbcp = &per_cpu(bau_control, tcpu);
-+	hmaster = bcp->uvhub_master;
-+	spin_lock(&hmaster->disable_lock);
-+	if (bcp->baudisabled && (get_cycles() >= bcp->set_bau_on_time)) {
-+		stat->s_bau_reenabled++;
-+		for_each_present_cpu(tcpu) {
-+			tbcp = &per_cpu(bau_control, tcpu);
-+			if (tbcp->uvhub_master == hmaster) {
- 				tbcp->baudisabled = 0;
- 				tbcp->period_requests = 0;
- 				tbcp->period_time = 0;
-+				tbcp->period_giveups = 0;
- 			}
--			return 0;
+@@ -1925,10 +1925,10 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
+ 			break;
  		}
-+		spin_unlock(&hmaster->disable_lock);
-+		return 0;
- 	}
-+	spin_unlock(&hmaster->disable_lock);
- 	return -1;
- }
+ 		case BC_ATTEMPT_ACQUIRE:
+-			printk(KERN_ERR "binder: BC_ATTEMPT_ACQUIRE not supported\n");
++			pr_err("binder: BC_ATTEMPT_ACQUIRE not supported\n");
+ 			return -EINVAL;
+ 		case BC_ACQUIRE_RESULT:
+-			printk(KERN_ERR "binder: BC_ACQUIRE_RESULT not supported\n");
++			pr_err("binder: BC_ACQUIRE_RESULT not supported\n");
+ 			return -EINVAL;
  
-@@ -1113,6 +1065,8 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 	struct cpumask *flush_mask;
- 	struct ptc_stats *stat;
- 	struct bau_control *bcp;
-+	unsigned long descriptor_status;
-+	unsigned long status;
+ 		case BC_FREE_BUFFER: {
+@@ -2165,7 +2165,7 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
+ 		} break;
  
- 	bcp = &per_cpu(bau_control, cpu);
- 	stat = bcp->statp;
-@@ -1121,10 +1075,22 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 	if (bcp->nobau)
- 		return cpumask;
- 
-+	if (bcp->busy) {
-+		descriptor_status =
-+			read_lmmr(UVH_LB_BAU_SB_ACTIVATION_STATUS_0);
-+		status = ((descriptor_status >> (bcp->uvhub_cpu *
-+			UV_ACT_STATUS_SIZE)) & UV_ACT_STATUS_MASK) << 1;
-+		if (status == UV2H_DESC_BUSY)
-+			return cpumask;
-+		bcp->busy = 0;
-+	}
-+
- 	/* bau was disabled due to slow response */
- 	if (bcp->baudisabled) {
--		if (check_enable(bcp, stat))
-+		if (check_enable(bcp, stat)) {
-+			stat->s_ipifordisabled++;
- 			return cpumask;
-+		}
- 	}
- 
- 	/*
-@@ -1140,7 +1106,7 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 		stat->s_ntargself++;
- 
- 	bau_desc = bcp->descriptor_base;
--	bau_desc += (ITEMS_PER_DESC * bcp->using_desc);
-+	bau_desc += (ITEMS_PER_DESC * bcp->uvhub_cpu);
- 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
- 	if (set_distrib_bits(flush_mask, bcp, bau_desc, &locals, &remotes))
- 		return NULL;
-@@ -1153,25 +1119,27 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
- 	 * or 1 if it gave up and the original cpumask should be returned.
- 	 */
--	if (!uv_flush_send_and_wait(flush_mask, bcp))
-+	if (!uv_flush_send_and_wait(flush_mask, bcp, bau_desc))
- 		return NULL;
- 	else
- 		return cpumask;
- }
- 
- /*
-- * Search the message queue for any 'other' message with the same software
-- * acknowledge resource bit vector.
-+ * Search the message queue for any 'other' unprocessed message with the
-+ * same software acknowledge resource bit vector as the 'msg' message.
-  */
- struct bau_pq_entry *find_another_by_swack(struct bau_pq_entry *msg,
--			struct bau_control *bcp, unsigned char swack_vec)
-+					   struct bau_control *bcp)
- {
- 	struct bau_pq_entry *msg_next = msg + 1;
-+	unsigned char swack_vec = msg->swack_vec;
- 
- 	if (msg_next > bcp->queue_last)
- 		msg_next = bcp->queue_first;
--	while ((msg_next->swack_vec != 0) && (msg_next != msg)) {
--		if (msg_next->swack_vec == swack_vec)
-+	while (msg_next != msg) {
-+		if ((msg_next->canceled == 0) && (msg_next->replied_to == 0) &&
-+				(msg_next->swack_vec == swack_vec))
- 			return msg_next;
- 		msg_next++;
- 		if (msg_next > bcp->queue_last)
-@@ -1200,32 +1168,30 @@ void process_uv2_message(struct msg_desc *mdp, struct bau_control *bcp)
- 		 * This message was assigned a swack resource, but no
- 		 * reserved acknowlegment is pending.
- 		 * The bug has prevented this message from setting the MMR.
--		 * And no other message has used the same sw_ack resource.
--		 * Do the requested shootdown but do not reply to the msg.
--		 * (the 0 means make no acknowledge)
- 		 */
--		bau_process_message(mdp, bcp, 0);
--		return;
--	}
--
--	/*
--	 * Some message has set the MMR 'pending' bit; it might have been
--	 * another message.  Look for that message.
--	 */
--	other_msg = find_another_by_swack(msg, bcp, msg->swack_vec);
--	if (other_msg) {
--		/* There is another.  Do not ack the current one. */
--		bau_process_message(mdp, bcp, 0);
- 		/*
--		 * Let the natural processing of that message acknowledge
--		 * it. Don't get the processing of sw_ack's out of order.
-+		 * Some message has set the MMR 'pending' bit; it might have
-+		 * been another message.  Look for that message.
- 		 */
--		return;
-+		other_msg = find_another_by_swack(msg, bcp);
-+		if (other_msg) {
-+			/*
-+			 * There is another. Process this one but do not
-+			 * ack it.
-+			 */
-+			bau_process_message(mdp, bcp, 0);
-+			/*
-+			 * Let the natural processing of that other message
-+			 * acknowledge it. Don't get the processing of sw_ack's
-+			 * out of order.
-+			 */
-+			return;
-+		}
- 	}
- 
- 	/*
--	 * There is no other message using this sw_ack, so it is safe to
--	 * acknowledge it.
-+	 * Either the MMR shows this one pending a reply or there is no
-+	 * other message using this sw_ack, so it is safe to acknowledge it.
- 	 */
- 	bau_process_message(mdp, bcp, 1);
- 
-@@ -1330,7 +1296,8 @@ static void __init enable_timeouts(void)
- 		 */
- 		mmr_image |= (1L << SOFTACK_MSHIFT);
- 		if (is_uv2_hub()) {
--			mmr_image |= (1L << UV2_EXT_SHFT);
-+			/* hw bug workaround; do not use extended status */
-+			mmr_image &= ~(1L << UV2_EXT_SHFT);
+ 		default:
+-			printk(KERN_ERR "binder: %d:%d unknown command %d\n",
++			pr_err("binder: %d:%d unknown command %d\n",
+ 			       proc->pid, thread->pid, cmd);
+ 			return -EINVAL;
  		}
- 		write_mmr_misc_control(pnode, mmr_image);
- 	}
-@@ -1379,24 +1346,26 @@ static int ptc_seq_show(struct seq_file *file, void *data)
- 	cpu = *(loff_t *)data;
- 	if (!cpu) {
- 		seq_printf(file,
--		"# cpu bauoff sent stime self locals remotes ncpus localhub ");
-+		 "# cpu bauoff sent stime self locals remotes ncpus localhub ");
- 		seq_printf(file,
- 			"remotehub numuvhubs numuvhubs16 numuvhubs8 ");
- 		seq_printf(file,
--		    "numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries rok ");
-+			"numuvhubs4 numuvhubs2 numuvhubs1 dto snacks retries ");
-+		seq_printf(file,
-+			"rok resetp resett giveup sto bz throt disable ");
- 		seq_printf(file,
--			"resetp resett giveup sto bz throt enters swack recv rtime ");
-+			"enable wars warshw warwaits enters ipidis plugged ");
- 		seq_printf(file,
--			"all one mult none retry canc nocan reset rcan ");
-+			"ipiover glim cong swack recv rtime all one mult ");
- 		seq_printf(file,
--			"disable enable wars warshw warwaits\n");
-+			"none retry canc nocan reset rcan\n");
- 	}
- 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
- 		bcp = &per_cpu(bau_control, cpu);
- 		stat = bcp->statp;
- 		/* source side statistics */
- 		seq_printf(file,
--			   "cpu %d %d %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
-+			"cpu %d %d %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
- 			   cpu, bcp->nobau, stat->s_requestor,
- 			   cycles_2_us(stat->s_time),
- 			   stat->s_ntargself, stat->s_ntarglocals,
-@@ -1407,25 +1376,28 @@ static int ptc_seq_show(struct seq_file *file, void *data)
- 			   stat->s_ntarguvhub8, stat->s_ntarguvhub4,
- 			   stat->s_ntarguvhub2, stat->s_ntarguvhub1,
- 			   stat->s_dtimeout, stat->s_strongnacks);
--		seq_printf(file, "%ld %ld %ld %ld %ld %ld %ld %ld %ld ",
-+		seq_printf(file, "%ld %ld %ld %ld %ld %ld %ld %ld ",
- 			   stat->s_retry_messages, stat->s_retriesok,
- 			   stat->s_resets_plug, stat->s_resets_timeout,
- 			   stat->s_giveup, stat->s_stimeout,
--			   stat->s_busy, stat->s_throttles, stat->s_enters);
-+			   stat->s_busy, stat->s_throttles);
-+		seq_printf(file, "%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
-+			   stat->s_bau_disabled, stat->s_bau_reenabled,
-+			   stat->s_uv2_wars, stat->s_uv2_wars_hw,
-+			   stat->s_uv2_war_waits, stat->s_enters,
-+			   stat->s_ipifordisabled, stat->s_plugged,
-+			   stat->s_overipilimit, stat->s_giveuplimit,
-+			   stat->s_congested);
+@@ -2635,7 +2635,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	unsigned int size = _IOC_SIZE(cmd);
+ 	void __user *ubuf = (void __user *)arg;
  
- 		/* destination side statistics */
- 		seq_printf(file,
--			   "%lx %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
-+			"%lx %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
- 			   read_gmmr_sw_ack(uv_cpu_to_pnode(cpu)),
- 			   stat->d_requestee, cycles_2_us(stat->d_time),
- 			   stat->d_alltlb, stat->d_onetlb, stat->d_multmsg,
- 			   stat->d_nomsg, stat->d_retries, stat->d_canceled,
- 			   stat->d_nocanceled, stat->d_resets,
- 			   stat->d_rcanceled);
--		seq_printf(file, "%ld %ld %ld %ld %ld\n",
--			stat->s_bau_disabled, stat->s_bau_reenabled,
--			stat->s_uv2_wars, stat->s_uv2_wars_hw,
--			stat->s_uv2_war_waits);
+-	/*printk(KERN_INFO "binder_ioctl: %d:%d %x %lx\n", proc->pid, current->pid, cmd, arg);*/
++	/*pr_info("binder_ioctl: %d:%d %x %lx\n", proc->pid, current->pid, cmd, arg);*/
+ 
+ 	ret = wait_event_interruptible(binder_user_error_wait, binder_stop_on_user_error < 2);
+ 	if (ret)
+@@ -2701,13 +2701,13 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		break;
+ 	case BINDER_SET_CONTEXT_MGR:
+ 		if (binder_context_mgr_node != NULL) {
+-			printk(KERN_ERR "binder: BINDER_SET_CONTEXT_MGR already set\n");
++			pr_err("binder: BINDER_SET_CONTEXT_MGR already set\n");
+ 			ret = -EBUSY;
+ 			goto err;
+ 		}
+ 		if (binder_context_mgr_uid != -1) {
+ 			if (binder_context_mgr_uid != current->cred->euid) {
+-				printk(KERN_ERR "binder: BINDER_SET_"
++				pr_err("binder: BINDER_SET_"
+ 				       "CONTEXT_MGR bad uid %d != %d\n",
+ 				       current->cred->euid,
+ 				       binder_context_mgr_uid);
+@@ -2753,7 +2753,7 @@ err:
+ 	mutex_unlock(&binder_lock);
+ 	wait_event_interruptible(binder_user_error_wait, binder_stop_on_user_error < 2);
+ 	if (ret && ret != -ERESTARTSYS)
+-		printk(KERN_INFO "binder: %d:%d ioctl %x %lx returned %d\n", proc->pid, current->pid, cmd, arg, ret);
++		pr_info("binder: %d:%d ioctl %x %lx returned %d\n", proc->pid, current->pid, cmd, arg, ret);
+ 	return ret;
+ }
+ 
+@@ -2829,7 +2829,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
+ #ifdef CONFIG_CPU_CACHE_VIPT
+ 	if (cache_is_vipt_aliasing()) {
+ 		while (CACHE_COLOUR((vma->vm_start ^ (uint32_t)proc->buffer))) {
+-			printk(KERN_INFO "binder_mmap: %d %lx-%lx maps %p bad alignment\n", proc->pid, vma->vm_start, vma->vm_end, proc->buffer);
++			pr_info("binder_mmap: %d %lx-%lx maps %p bad alignment\n", proc->pid, vma->vm_start, vma->vm_end, proc->buffer);
+ 			vma->vm_start += PAGE_SIZE;
+ 		}
  	}
+@@ -2861,7 +2861,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
+ 	proc->vma = vma;
+ 	proc->vma_vm_mm = vma->vm_mm;
+ 
+-	/*printk(KERN_INFO "binder_mmap: %d %lx-%lx maps %p\n",
++	/*pr_info("binder_mmap: %d %lx-%lx maps %p\n",
+ 		 proc->pid, vma->vm_start, vma->vm_end, proc->buffer);*/
  	return 0;
+ 
+@@ -2876,7 +2876,7 @@ err_get_vm_area_failed:
+ err_already_mapped:
+ 	mutex_unlock(&binder_mmap_lock);
+ err_bad_arg:
+-	printk(KERN_ERR "binder_mmap: %d %lx-%lx %s failed %d\n",
++	pr_err("binder_mmap: %d %lx-%lx %s failed %d\n",
+ 	       proc->pid, vma->vm_start, vma->vm_end, failure_string, ret);
+ 	return ret;
  }
-@@ -1439,13 +1411,14 @@ static ssize_t tunables_read(struct file *file, char __user *userbuf,
- 	char *buf;
- 	int ret;
- 
--	buf = kasprintf(GFP_KERNEL, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
--		"max_concur plugged_delay plugsb4reset",
--		"timeoutsb4reset ipi_reset_limit complete_threshold",
--		"congested_response_us congested_reps congested_period",
-+	buf = kasprintf(GFP_KERNEL, "%s %s %s\n%d %d %d %d %d %d %d %d %d %d\n",
-+		"max_concur plugged_delay plugsb4reset timeoutsb4reset",
-+		"ipi_reset_limit complete_threshold congested_response_us",
-+		"congested_reps disabled_period giveup_limit",
- 		max_concurr, plugged_delay, plugsb4reset,
- 		timeoutsb4reset, ipi_reset_limit, complete_threshold,
--		congested_respns_us, congested_reps, congested_period);
-+		congested_respns_us, congested_reps, disabled_period,
-+		giveup_limit);
- 
- 	if (!buf)
- 		return -ENOMEM;
-@@ -1616,7 +1589,8 @@ static ssize_t tunables_write(struct file *file, const char __user *user,
- 		bcp->complete_threshold =	complete_threshold;
- 		bcp->cong_response_us =		congested_respns_us;
- 		bcp->cong_reps =		congested_reps;
--		bcp->cong_period =		congested_period;
-+		bcp->disabled_period =		sec_2_cycles(disabled_period);
-+		bcp->giveup_limit =		giveup_limit;
- 	}
- 	return count;
- }
-@@ -1745,6 +1719,10 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
- 			 *   fairness chaining multilevel count replied_to
- 			 */
- 		} else {
-+			/*
-+			 * BIOS uses legacy mode, but UV2 hardware always
-+			 * uses native mode for selective broadcasts.
-+			 */
- 			uv2_hdr = &bd2->header.uv2_hdr;
- 			uv2_hdr->swack_flag =	1;
- 			uv2_hdr->base_dest_nasid =
-@@ -1896,10 +1874,11 @@ static void __init init_per_cpu_tunables(void)
- 		bcp->complete_threshold		= complete_threshold;
- 		bcp->cong_response_us		= congested_respns_us;
- 		bcp->cong_reps			= congested_reps;
--		bcp->cong_period		= congested_period;
--		bcp->clocks_per_100_usec =	usec_2_cycles(100);
-+		bcp->disabled_period =		sec_2_cycles(disabled_period);
-+		bcp->giveup_limit =		giveup_limit;
- 		spin_lock_init(&bcp->queue_lock);
- 		spin_lock_init(&bcp->uvhub_lock);
-+		spin_lock_init(&bcp->disable_lock);
- 	}
- }
- 
-@@ -2020,7 +1999,6 @@ static int scan_sock(struct socket_desc *sdp, struct uvhub_desc *bdp,
- 		}
- 		bcp->uvhub_master = *hmasterp;
- 		bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->blade_processor_id;
--		bcp->using_desc = bcp->uvhub_cpu;
- 		if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
- 			printk(KERN_EMERG "%d cpus per uvhub invalid\n",
- 				bcp->uvhub_cpu);
-@@ -2123,7 +2101,6 @@ static int __init uv_bau_init(void)
- 	}
- 
- 	nuvhubs = uv_num_possible_blades();
--	spin_lock_init(&disable_lock);
- 	congested_cycles = usec_2_cycles(congested_respns_us);
- 
- 	uv_base_pnode = 0x7fffffff;
+@@ -3031,7 +3031,7 @@ static void binder_deferred_release(struct binder_proc *proc)
+ 		if (t) {
+ 			t->buffer = NULL;
+ 			buffer->transaction = NULL;
+-			printk(KERN_ERR "binder: release proc %d, "
++			pr_err("binder: release proc %d, "
+ 			       "transaction %d, not freed\n",
+ 			       proc->pid, t->debug_id);
+ 			/*BUG();*/
+-- 
+1.7.9.5
+
