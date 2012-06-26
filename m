@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758580Ab2FZQZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 12:25:25 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:18164 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756880Ab2FZQZX (ORCPT
+	id S1758544Ab2FZQ0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 12:26:35 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55044 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756880Ab2FZQ0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 12:25:23 -0400
-Date: Tue, 26 Jun 2012 18:24:52 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: ben-linux@fluff.org, seth.heasley@intel.com, ben@decadent.org.uk,
-        David.Woodhouse@intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olofj@chromium.org, bleung@chromium.org
-Subject: Re: [PATCH 3/3 v2] i2c: i801: enable irq for byte_by_byte 
- transactions
-Message-ID: <20120626182452.18804d77@endymion.delvare>
-In-Reply-To: <20120620153449.5cee35fa@endymion.delvare>
-References: <1325847502-17841-1-git-send-email-djkurtz@chromium.org>
-	<1325847502-17841-4-git-send-email-djkurtz@chromium.org>
-	<20120620153449.5cee35fa@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jun 2012 12:26:34 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 26 Jun 2012 09:26:48 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Anton Arapov <anton@redhat.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Kerneloops.org defunct?
+Message-ID: <20120626162648.GA14941@roeck-us.net>
+References: <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+ <20110826173517.7321c086@lxorguk.ukuu.org.uk>
+ <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+ <20120625180536.GA29261@roeck-us.net>
+ <4FE8A9C0.3050802@linux.intel.com>
+ <20120625191233.GA29324@roeck-us.net>
+ <20120626071430.GA16299@bandura.brq.redhat.com>
+ <4FE9B646.9050706@linux.intel.com>
+ <20120626142949.GA14890@roeck-us.net>
+ <20120626143135.GC20573@bandura.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120626143135.GC20573@bandura.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On Wed, 20 Jun 2012 15:34:49 +0200, Jean Delvare wrote:
-> I'll get at least the I2C block read tested on ICH5.
-
-Some more notes about this patch, now that have done some testing...
-
-> > (...)
-> > +		} else if (priv->count < priv->len - 1) {
+On Tue, Jun 26, 2012 at 04:31:35PM +0200, Anton Arapov wrote:
+> On Tue, Jun 26, 2012 at 07:29:49AM -0700, Guenter Roeck wrote:
+> > On Tue, Jun 26, 2012 at 06:16:54AM -0700, Arjan van de Ven wrote:
+> > > On 6/26/2012 12:14 AM, Anton Arapov wrote:
+> > > >   All in all, it seems to be optimistic so far, and I hope we will
+> > > > have some web gui this summer. Although we don't have much oopses
+> > > > reported yet and changing the ip address of kerneloops.org, as
+> > > > mentioned before, might help.
+> > > 
+> > > this is the problem indeed. When Fedora stopped submitting oopses to
+> > > kerneloops.org, the project became suddenly of much much less value.
+> > > (this was well before the kernel.org issues)
+> > Is this still an issue ? I thought Anton's change was made to the Fedora
+> > package, though I may be wrong. Either case, Anton might have some influence at
+> > Fedora.
 > 
-> Is this just paranoia or do you believe it could actually happen? I
-> admit I don't see how. If it is paranoia then the same should be done
-> for the read part.
+>   My understanding was - kerneloops.org just shutted down gradually,
+> it was slow at the beginning and off now. I didn't expect nor know
+> Fedora stopped reporting.
 
-This is good paranoia and I recommend doing the same for block reads,
-where it is even more important. An array overrun on block write means
-you'll be sending random memory bytes to your I2C device, which is
-already bad. But an array overrun on block read means you'll _trash_
-random memory bytes, with tragic consequences. The bug right below did
-exactly this to me: the block read would never stop, and after a few
-seconds only my machine would die with a different error each time,
-depending on what memory got trashed.
+Maybe it was a combination of factors. I have seen complaints from people that
+kerneloops reports did not show up on kerneloops.org, and complaints that fedora
+stopped submitting requests. Maybe the system was overloaded at times, or maybe
+some default was changed. I noticed that Ubuntu comes with the kerneloops
+daemon installed, but that it is disabled by default. Not really helpful, since
+many typical Ubuntu user will not even know that it exists in the first place.
+Maybe something similar happened with Fedora ?
 
-I ended up testing for both count < len and len <= I2C_SMBUS_BLOCK_MAX,
-for both reads and writes. Probably that's overkill and either should
-be sufficient, but I wanted to play it really safe at first.
+Either case, I think it would be great to get it working again, and then work
+with the main distributions to get reports submitted.
 
-> 
-> > +			outb(priv->data[++priv->count], SMBBLKDAT(priv));
-> > +			outb_p(priv->cmd | I801_START, SMBHSTCNT(priv));
-> 
-> I don't get the I801_START here and above. We are in the middle of the block
-> transaction. The polling-based code only sets I801_START at the
-> beginning, not for every byte, so why would it be different here?
+Thanks,
 
-I confirm this is a serious bug. The patch broke I2C block read on my
-ICH5 machine completely, until I removed these two I801_START.
-
-After fixing this, testing is conclusive on my ICH5 machine (where the
-SMBus interrupt is shared.) BTW, the debug message complaining when
-pcists.ints isn't set should be dropped, in my case the interrupt is
-shared with the sound chip and DVB-T card, and this caused a massive
-flood of this message while I was debugging. The message isn't terribly
-useful anyway IMHO, there's nothing wrong with that case.
-
-Next step for me is testing on my ICH7-M laptop.
-
--- 
-Jean Delvare
+Guenter
