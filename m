@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab2FZCaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 22:30:16 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:17231
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757867Ab2FZCaO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 22:30:14 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275dhz2fh2a8h683h839h944hd25hf0ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 00/13] drivers: hv: kvp
-Thread-Topic: [PATCH 00/13] drivers: hv: kvp
-Thread-Index: AQHNT/NB00SQsXjmDEmcq7JSjap8hpcFX8+AgADv8yCAAAVogIAFjrOA
-Date: Tue, 26 Jun 2012 02:29:49 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1340314200-27078-1-git-send-email-kys@microsoft.com>
- <20120621224737.GA5933@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120622132547.GA2639@kroah.com>
-In-Reply-To: <20120622132547.GA2639@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.53.133]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756258Ab2FZCr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 22:47:57 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33091 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab2FZCry (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 22:47:54 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FE92258.4040900@jp.fujitsu.com>
+Date: Tue, 26 Jun 2012 11:45:44 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+To: Michal Hocko <mhocko@suse.cz>
+CC: Wanpeng Li <liwp.linux@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH v3 3/4] memcg: optimize memcg_get_hierarchical_limit
+References: <1340613872-9581-1-git-send-email-liwp.linux@gmail.com> <4FE834D9.8070903@jp.fujitsu.com> <20120625104357.GB12148@kernel> <20120625110926.GJ19805@tiehlicka.suse.cz>
+In-Reply-To: <20120625110926.GJ19805@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/06/25 20:09), Michal Hocko wrote:
+> On Mon 25-06-12 18:43:57, Wanpeng Li wrote:
+>> On Mon, Jun 25, 2012 at 06:52:25PM +0900, Kamezawa Hiroyuki wrote:
+>>> (2012/06/25 17:44), Wanpeng Li wrote:
+>>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>>>
+>>>> Optimize memcg_get_hierarchical_limit to save cpu cycle.
+>>>>
+>>>> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+>>>
+>>> I can't understand the benefit of this patch to the real world...
+>>>
+>>> So, if you wrote the patch description as "clean up" rather than optimize,
+>>> ok, I'll agree.
+>> OK, I will change to "Cleanup". Thank you Kame.
+>
+> Does this really clean something up?
+>
 
+I just thought unused variable is trash even if it disappears after complie.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, June 22, 2012 9:26 AM
-> To: KY Srinivasan
-> Cc: apw@canonical.com; devel@linuxdriverproject.org; ohering@suse.com;
-> linux-kernel@vger.kernel.org; virtualization@lists.osdl.org
-> Subject: Re: [PATCH 00/13] drivers: hv: kvp
-> 
-> On Fri, Jun 22, 2012 at 01:06:53PM +0000, KY Srinivasan wrote:
-> > Are you still missing it; do you want me to resend the whole set?
-> 
-> Nope, it showed up a few hours later, thanks.  You really should get
-> that fixed...
-
-Greg, some additional testing with VM replication on Windows Server 2012 has revealed some issues with this patch-set. Please drop the patch set, I will  fix the problem and resend it.
-
-Thank you,
-
-K. Y
-
+Thanks,
+-Kame
 
 
