@@ -1,88 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab2FZL4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 07:56:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432Ab2FZL4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 07:56:44 -0400
-Date: Tue, 26 Jun 2012 13:55:14 +0200
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] uprobes: __replace_page() needs munlock_vma_page()
-Message-ID: <20120626115514.GA16794@bandura.brq.redhat.com>
-References: <20120624145936.GA23269@redhat.com>
- <20120624150111.GE23277@redhat.com>
+	id S1756360Ab2FZL5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 07:57:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60362 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab2FZL5c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 07:57:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120624150111.GE23277@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120626111024.GB14279@fieldses.org>
+References: <1340448406-10161-1-git-send-email-linkinjeon@gmail.com>
+	<02B16139-AFD6-4F06-99C0-C406B1A7E1DC@netapp.com>
+	<FE90D2E0-C4C9-44BC-829F-ABE94801AB4C@netapp.com>
+	<20120623155710.GA10787@fieldses.org>
+	<20120623160923.GB10787@fieldses.org>
+	<CAKYAXd80v10car7awm3Y5bzk_nXLj8NLi7C8PxUW15L9-S7pEw@mail.gmail.com>
+	<20120625113025.GB16920@fieldses.org>
+	<CAKYAXd-h5FPZUDwvJdbXXeQtXjUqQE5s9e1CvuOdpQWgqzG8kw@mail.gmail.com>
+	<20120626111024.GB14279@fieldses.org>
+Date: Tue, 26 Jun 2012 20:57:30 +0900
+Message-ID: <CAKYAXd9-ubxP8iQqTWTG-34Vb_yrDU=9f9hsiRk4go_=QDfxmg@mail.gmail.com>
+Subject: Re: [RFC PATCH] nfs: Add NFS3PROC_UMOUNT procedure.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Fields James <bfields@fieldses.org>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Morton Andrew <akpm@linux-foundation.org>,
+        Harrosh Boaz <bharrosh@panasas.com>,
+        "<linux-nfs@vger.kernel.org>" <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 05:01:11PM +0200, Oleg Nesterov wrote:
-> Like do_wp_page(), __replace_page() should do munlock_vma_page()
-> for the case when the old page still has other !VM_LOCKED mappings.
-> Unfortunately this needs mm/internal.h.
-> 
-> Also, move put_page() outside of ptl lock. This doesn't really
-> matter but looks better.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/events/uprobes.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 5db150b..889c62b 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -32,6 +32,7 @@
->  #include <linux/swap.h>		/* try_to_free_swap */
->  #include <linux/ptrace.h>	/* user_enable_single_step */
->  #include <linux/kdebug.h>	/* notifier mechanism */
-> +#include "../../mm/internal.h"	/* munlock_vma_page */
+2012/6/26, Fields James <bfields@fieldses.org>:
+> On Tue, Jun 26, 2012 at 02:51:52PM +0900, Namjae Jeon wrote:
+>> 2012/6/25, Fields James <bfields@fieldses.org>:
+>> > On Sun, Jun 24, 2012 at 02:12:49PM +0900, Namjae Jeon wrote:
+>> >> 2012/6/24, Fields James <bfields@fieldses.org>:
+>> >> > On Sat, Jun 23, 2012 at 11:57:10AM -0400, Fields James wrote:
+>> >> >> On Sat, Jun 23, 2012 at 03:52:20PM +0000, Myklebust, Trond wrote:
+>> >> >> > The other objection is that NFSv3 already has a way to do this
+>> >> >> > via
+>> >> >> > the
+>> >> >> > MOUNT protocol. We already call MOUNTPROC3_UMNT/MOUNTPROC_UMNT on
+>> >> >> > unmount of a filesystem.
+>> >> >> >
+>> >> >> > The problem with this approach is that if the NFS client crashes
+>> >> >> > before
+>> >> >> > it can call this function, then the server never gets notified.
+>> >> >> > That
+>> >> >> > is
+>> >> >> > a problem that your patch has too...
+>> >> >>
+>> >> >> Yes.  Could you instead work on describing *exactly* what the
+>> >> >> original
+>> >> >> problem was that prompted this?
+>> >> >
+>> >> > ("You" here meaning Namjae Jeon, of course).
+>> >> >
+>> >> > And note here we've all read the changelog, that's not what I'm
+>> >> > asking
+>> >> > for.
+>> >> >
+>> >> > I want to know the details of *your* specific case.  "I have X
+>> >> > clients
+>> >> > that I use for Y, periodically I want to unmount the exported
+>> >> > filesystem
+>> >> > to do Z, I tried doing W but it didn't work...".
+>> >> As you remember, We discussed this
+>> >> issue(http://www.spinics.net/lists/linux-nfs/msg29997.html) with you
+>> >> before. you guided me to use exportfs -f call on nfs server.
+>> >> It is hard to use this method on our system
+>> >
+>> > Why is it hard?
+>> Two target are connected by only nfs.. we can't manually hand exportfs
+>> -f..
+>
+> So how can you call umount?
+I am currently checking two approaches.
+1. Add flush cache code in current MOUNTPROC3_UMNT/MOUNTPROC_UMNT.
+ -> I heard from Trond that there already are
+MOUNTPROC3_UMNT/MOUNTPROC_UMNT. So I will try to fix this issue on
+current protocols without many changes. It is not specification
+violation.
+2. Check your suggestion.
+-> I think that your suggestion is very good. it will cover device
+unplug case(automount will try to umount about unplugged device) and
+current busy umount issue.
+If I have one concern, It need to change VFS code. I need your review
+and Ack to commit if I post this patch.
 
-  We have vma_adress() defined in internal.h, under #ifdef CONFIG_TRANSPARENT_HUGEPAGE .
-
-  NAK. :-)
-
-Anton.
-
->  
->  #include <linux/uprobes.h>
->  
-> @@ -141,7 +142,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
->  	pte_t *ptep;
->  	int err;
->  
-> -	/* freeze PageSwapCache() for try_to_free_swap() below */
-> +	/* For try_to_free_swap() and munlock_vma_page() below */
->  	lock_page(page);
->  
->  	err = -EAGAIN;
-> @@ -164,9 +165,12 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
->  	page_remove_rmap(page);
->  	if (!page_mapped(page))
->  		try_to_free_swap(page);
-> -	put_page(page);
->  	pte_unmap_unlock(ptep, ptl);
->  
-> +	if (vma->vm_flags & VM_LOCKED)
-> +		munlock_vma_page(page);
-> +	put_page(page);
-> +
->  	err = 0;
->   unlock:
->  	unlock_page(page);
-> -- 
-> 1.5.5.1
-> 
-> 
+Thanks.
+>
+> --b.
+>
