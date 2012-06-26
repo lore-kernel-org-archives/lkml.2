@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab2FZXbv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 19:31:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37041 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2FZXbu (ORCPT
+	id S1754868Ab2FZXiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 19:38:24 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43176 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab2FZXiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 19:31:50 -0400
-Date: Tue, 26 Jun 2012 16:31:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
-        Greg KH <greg@kroah.com>, linux-mm@kvack.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH -v4 6/6] fault-injection: add notifier error injection
- testing scripts
-Message-Id: <20120626163147.93181e21.akpm@linux-foundation.org>
-In-Reply-To: <1340463502-15341-7-git-send-email-akinobu.mita@gmail.com>
-References: <1340463502-15341-1-git-send-email-akinobu.mita@gmail.com>
-	<1340463502-15341-7-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 26 Jun 2012 19:38:23 -0400
+Message-ID: <4FEA47EA.3000804@gmail.com>
+Date: Tue, 26 Jun 2012 18:38:18 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [GIT PULL] DT fixes for 3.5
+References: <4FDA9261.2070208@gmail.com>
+In-Reply-To: <4FDA9261.2070208@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Jun 2012 23:58:22 +0900
-Akinobu Mita <akinobu.mita@gmail.com> wrote:
+On 06/14/2012 08:39 PM, Rob Herring wrote:
+> Grant,
+> 
+> Please pull. Mainly some documentation updates and 2 fixes:
+> 
+> - An export symbol fix for of_platform_populate from Stephen W.
+> - A fix for the order compatible entries are matched to ensure the
+> first compatible string is matched when there are multiple matches.
+> 
 
-> This adds two testing scripts with notifier error injection
+Ping. If you don't want to pull these for 3.5, can you please pull for
+next and 3.6.
 
-Can we move these into tools/testing/selftests/, so that a "make
-run_tests" runs these tests?
+Rob
 
-Also, I don't think it's appropriate that "fault-injection" be in the
-path - that's an implementation detail.  What we're testing here is
-memory hotplug, pm, cpu hotplug, etc.  So each test would go into, say,
-tools/testing/selftests/cpu-hotplug.
-
-Now, your cpu-hotplug test only tests a tiny part of the cpu-hotplug
-code.  But it is a start, and creates the place where additional tests
-will be placed in the future.
-
-
-If the kernel configuration means that the tests cannot be run, the
-attempt should succeed so that other tests are not disrupted.  I guess
-that printing a warning in this case is useful.
-
-Probably the selftests will require root permissions - we haven't
-really thought about that much.  If these tests require root (I assume
-they do?) then a sensible approach would be to check for that and to
-emit a warning and return "success".
-
-My overall take on the fault-injection code is that there has been a
-disappointing amount of uptake: I don't see many developers using them
-for whitebox testing their stuff.  I guess this patchset addresses
-that, in a way.
+> Rob
+> 
+> The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
+> 
+>   Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://sources.calxeda.com/kernel/linux.git fixes-for-grant
+> 
+> for you to fetch changes up to 107a84e61cdd3406c842a0e4be7efffd3a05dba6:
+> 
+>   of: match by compatible property first (2012-06-14 20:29:40 -0500)
+> 
+> ----------------------------------------------------------------
+> Fabio Estevam (5):
+>       dt: fsl-imx-cspi.txt: Fix comment about GPIOs used for chip selects
+>       dt: fsl-imx-esdhc.txt: Fix gpio number assignment
+>       dt: fsl-mma8450.txt: Add missing 'reg' description
+>       dt: fsl-fec.txt: Fix gpio number assignment
+>       dt: mc13xxx.txt: Fix gpio number assignment
+> 
+> Stephen Warren (1):
+>       of: export of_platform_populate()
+> 
+> Thierry Reding (2):
+>       of: Add Avionic Design vendor prefix
+>       of: match by compatible property first
+> 
+>  .../devicetree/bindings/input/fsl-mma8450.txt      |    1 +
+>  Documentation/devicetree/bindings/mfd/mc13xxx.txt  |    4 +--
+>  .../devicetree/bindings/mmc/fsl-imx-esdhc.txt      |    4 +--
+>  Documentation/devicetree/bindings/net/fsl-fec.txt  |    2 +-
+>  .../devicetree/bindings/spi/fsl-imx-cspi.txt       |    4 +--
+>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>  drivers/of/base.c                                  |   30
+> +++++++++++++++++---
+>  drivers/of/platform.c                              |    1 +
+>  8 files changed, 36 insertions(+), 11 deletions(-)
 
