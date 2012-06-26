@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758475Ab2FZP1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 11:27:53 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:34154 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758418Ab2FZP1u (ORCPT
+	id S1758569Ab2FZP2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 11:28:08 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:32947 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758517Ab2FZP2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 11:27:50 -0400
+	Tue, 26 Jun 2012 11:28:04 -0400
+Date: Tue, 26 Jun 2012 17:27:34 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH 09/16] netvm: Allow skb allocation to use PFMEMALLOC
+ reserves
+Message-ID: <20120626152734.GA6509@breakpoint.cc>
+References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
+ <1340375443-22455-10-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <x49r4t2rul5.fsf@segfault.boston.devel.redhat.com>
-References: <x49r4t2rul5.fsf@segfault.boston.devel.redhat.com>
-Date: Tue, 26 Jun 2012 11:27:50 -0400
-Message-ID: <CA+5PVA6j+deqA9n7ZsZDcSsCKTvHs4B1QMfrL4KvHVWTC=dV7A@mail.gmail.com>
-Subject: Re: [patch] block: fix infinite loop in __getblk_slow
-From: Josh Boyer <jwboyer@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Nick Piggin <npiggin@kernel.dk>,
-        LKML List <linux-kernel@vger.kernel.org>, torsten.hilbrich@secunet.com,
-        Richard Jones <rjones@redhat.com>, stable@vger.kernel.org,
-        Marcos Mello <marcosfrm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340375443-22455-10-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 10:55 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Hi,
->
-> This commit:
->
-> commit 080399aaaf3531f5b8761ec0ac30ff98891e8686
-> Author: Jeff Moyer <jmoyer@redhat.com>
-> Date:   Fri May 11 16:34:10 2012 +0200
->
->     block: don't mark buffers beyond end of disk as mapped
->
-> exposed a bug in __getblk_slow that causes mount to hang as it loops
-> infinitely waiting for a buffer that lies beyond the end of the disk to
-> become uptodate.  The problem was initially reported by Torsten Hilbrich
-> here: https://lkml.org/lkml/2012/6/18/54, and also reported
-> independently here:
-> http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511, and then
-> Richard W.M. Jones and Marcos Mello noted a few separate bugzillas also
-> associated with the same issue.
->
-> The main problem is here, in __getblk_slow:
->
->         for (;;) {
->                 struct buffer_head * bh;
->                 int ret;
->
->                 bh = __find_get_block(bdev, block, size);
->                 if (bh)
->                         return bh;
->
->                 ret = grow_buffers(bdev, block, size);
->                 if (ret < 0)
->                         return NULL;
->                 if (ret == 0)
->                         free_more_memory();
->         }
->
-> __find_get_block does not find the block, since it will not be marked as
-> mapped, and so grow_buffers is called to fill in the buffers for the
-> associated page.  I believe the for (;;) loop is there primarily to
-> retry in the case of memory pressure keeping grow_buffers from
-> succeeding.  However, we also continue to loop for other cases, like the
-> block lying beond the end of the disk.  So, the fix I came up with is to
-> only loop when grow_buffers fails due to memory allocation issues
-> (return value of 0).
->
-> The attached patch was tested by myself, Torsten, and Rich, and was
-> found to resolve the problem in call cases.
->
-> Comments, as always, are appreciated.
+On Fri, Jun 22, 2012 at 03:30:36PM +0100, Mel Gorman wrote:
+> diff --git a/net/core/sock.c b/net/core/sock.c
+> index 5c9ca2b..159dccc 100644
+> --- a/net/core/sock.c
+> +++ b/net/core/sock.c
+> @@ -271,6 +271,9 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
+>  int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
+>  EXPORT_SYMBOL(sysctl_optmem_max);
+>  
+> +struct static_key memalloc_socks = STATIC_KEY_INIT_FALSE;
+> +EXPORT_SYMBOL_GPL(memalloc_socks);
+> +
 
-Is this needed in addition to your earlier patch here:
+This is used via sk_memalloc_socks() by SLAB.
 
-http://article.gmane.org/gmane.linux.kernel/1316228
+>From 3da9ab9972845974da114c5a6624335e6371b2d5 Mon Sep 17 00:00:00 2001
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Tue, 26 Jun 2012 17:18:20 +0200
+Subject: [PATCH] export sk_memalloc_socks() only with CONFIG_NET
 
-or is it a replacement for that?
+|mm/built-in.o: In function `atomic_read':
+|include/asm/atomic.h:25: undefined reference to `memalloc_socks'
+|include/asm/atomic.h:25: undefined reference to `memalloc_socks'
+|include/asm/atomic.h:25: undefined reference to `memalloc_socks'
+|include/asm/atomic.h:25: undefined reference to `memalloc_socks'
+|include/asm/atomic.h:25: undefined reference to `memalloc_socks'
+|mm/built-in.o:include/asm/atomic.h:25: more undefined references to `memalloc_socks' follow
 
-josh
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ include/net/sock.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index db0c20c..767c443 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -659,11 +659,20 @@ static inline bool sock_flag(const struct sock *sk, enum sock_flags flag)
+ 	return test_bit(flag, &sk->sk_flags);
+ }
+ 
++#ifdef CONFIG_NET
+ extern struct static_key memalloc_socks;
+ static inline int sk_memalloc_socks(void)
+ {
+ 	return static_key_false(&memalloc_socks);
+ }
++#else
++
++static inline int sk_memalloc_socks(void)
++{
++	return 0;
++}
++
++#endif
+ 
+ static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
+ {
+-- 
+1.7.10
+
+Sebastian
