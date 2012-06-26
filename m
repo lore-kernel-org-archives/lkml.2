@@ -1,142 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab2FZHyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 03:54:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:21736 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755824Ab2FZHyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 03:54:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="116057153"
-Message-ID: <4FE96A3A.2080307@intel.com>
-Date: Tue, 26 Jun 2012 15:52:26 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Alex Shi <lkml.alex@gmail.com>, Petr Holasek <pholasek@redhat.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: AutoNUMA15
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com> <20120529133627.GA7637@shutemov.name> <20120529154308.GA10790@dhcp-27-244.brq.redhat.com> <20120531180834.GP21339@redhat.com> <CAGjg+kHNe4RkhHKt5JYKDnE2oqs0ZBNUkL_XYOwfDK1S5cxjvw@mail.gmail.com> <20120621145552.GG4954@redhat.com>
-In-Reply-To: <20120621145552.GG4954@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758468Ab2FZIB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 04:01:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63711 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab2FZIBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 04:01:55 -0400
+Message-ID: <1340697707.12992.1.camel@phoenix>
+Subject: [PATCH] regulator: arizona-micsupp: Fix choosing selector in
+ arizona_micsupp_map_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 26 Jun 2012 16:01:47 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 10:55 PM, Andrea Arcangeli wrote:
+ARIZONA_MICSUPP_MAX_SELECTOR is 0x1f
 
-> On Thu, Jun 21, 2012 at 03:29:52PM +0800, Alex Shi wrote:
->>> I released an AutoNUMA15 branch that includes all pending fixes:
->>>
->>> git clone --reference linux -b autonuma15 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
->>>
->>
->> I did a quick testing on our
->> specjbb2005/oltp/hackbench/tbench/netperf-loop/fio/ffsb on NHM EP/EX,
->> Core2 EP, Romely EP machine, In generally no clear performance change
->> found. Is this results expected for this patch set?
-> 
-> hackbench and network benchs won't get benefit (the former
-> overschedule like crazy so there's no way any autonuma balancing can
-> have effect with such an overscheduling and zillion of threads, the
-> latter is I/O dominated usually taking so little RAM it doesn't
-> matter, the memory accesses on the kernel side and DMA issue should
-> dominate it in CPU utilization). Similar issue for filesystem
-> benchmarks like fio.
-> 
-> On all _system_ time dominated kernel benchmarks it is expected not to
-> measure a performance optimization and if you don't measure a
-> regression it's more than enough.
-> 
-> The only benchmarks that gets benefit are userland where the user/nice
-> time in top dominates. AutoNUMA cannot optimize or move kernel memory
-> around, it only optimizes userland computations.
-> 
-> So you should run HPC jobs. The only strange thing here is that
-> specjbb2005 gets a measurable significant boost with AutoNUMA so if
-> you didn't even get a boost with that you may want to verify:
-> 
-> cat /sys/kernel/mm/autonuma/enabled == 1
-> 
-> Also verify:
-> 
-> CONFIG_AUTONUMA_DEFAULT_ENABLED=y
-> 
-> If that's 1 well maybe the memory interconnect is so fast that there's
-> no benefit?
-> 
-> My numa01/02 benchmarks measures the best worst case of the hardware
-> (not software), with -DINVERSE_BIND -DHARD_BIND parameters, you can
-> consider running that to verify.
+When selector is 0 ... 0x1e, we use below equation:
+        (selector * 50000) + 1700000;
+so the voltage range is 1700000 ... 3200000 uV.
 
+When selector is 0x1f:
+        voltage = 3300000 uV.
 
-Could you like to give a url for the benchmarks?
+Thus in the map_voltage callback:
 
-> 
-> Probably there should be a little boot time kernel benchmark to
-> measure the inverse bind vs hard bind performance across the first two
-> nodes, if the difference is nil AutoNUMA should disengage and not even
-> allocate the page_autonuma (now only 12 bytes per page but anyway).
-> 
-> If you can retest with autonuma17 it would help too as there was some
-> performance issue fixed and it'd stress the new autonuma migration lru
-> code:
-> 
-> git clone --reference linux -b autonuma17 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git autonuma17
-> 
-> And the very latest is always at the autonuma branch:
-> 
-> git clone --reference linux -b autonuma git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git autonuma
+If min_uV > 3300000, we should return -EINVAL.
+If min_uV > 3200000, selector should be ARIZONA_MICSUPP_MAX_SELECTOR.
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/arizona-micsupp.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-I got the commit till 2c7535e100805d. and retested specjbb2005 with
-jrockit and openjdk again on my Romely EP(2P * 8 cores * HT, with 64GB
-memory). find the openjdk has about 2% regression, while jrockit has no
-clear change.
+diff --git a/drivers/regulator/arizona-micsupp.c b/drivers/regulator/arizona-micsupp.c
+index 97d85b0..a27421e 100644
+--- a/drivers/regulator/arizona-micsupp.c
++++ b/drivers/regulator/arizona-micsupp.c
+@@ -54,10 +54,13 @@ static int arizona_micsupp_map_voltage(struct regulator_dev *rdev,
+ 	unsigned int voltage;
+ 	int selector;
+ 
++	if (min_uV > 3300000)
++		return -EINVAL;
++
+ 	if (min_uV < 1700000)
+ 		min_uV = 1700000;
+ 
+-	if (min_uV >= 3300000)
++	if (min_uV > 3200000)
+ 		selector = ARIZONA_MICSUPP_MAX_SELECTOR;
+ 	else
+ 		selector = DIV_ROUND_UP(min_uV - 1700000, 50000);
+-- 
+1.7.9.5
 
-
-the testing user 2 instances, each of them are pinned to a node. some
-setting is here:
-  per_jvm_warehouse_rampup = 3.0
-  per_jvm_warehouse_rampdown = 20.0
-  jvm_instances = 2
-  deterministic_random_seed = false
-  ramp_up_seconds = 30
-  measurement_seconds = 240
-  starting_number_warehouses = 1
-  increment_number_warehouses = 1
-  ending_number_warehouses = 34
-  expected_peak_warehouse = 16
-
-openjdk
-java options:
--Xmx8g -Xms8g -Xincgc
-
-jrockit use hugetlb and its options:
--Xmx8g -Xms8g -Xns4g -XXaggressive -Xlargepages -XXlazyUnlocking
--Xgc:genpar -XXtlasize:min=16k,preferred=64k
-
-> 
-> Thanks,
-> Andrea
 
 
