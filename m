@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab2FZPRf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 11:17:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35749 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757370Ab2FZPRe (ORCPT
+	id S1758244Ab2FZPSG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 11:18:06 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:42705 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757370Ab2FZPSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 11:17:34 -0400
-Date: Tue, 26 Jun 2012 08:17:21 -0700
-From: tip-bot for Alex Shi <alex.shi@intel.com>
-Message-ID: <tip-6d80ee50c281d02be090cf429294b32dab0b23b7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        alex.shi@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, alex.shi@intel.com
-In-Reply-To: <1340604507-11214-7-git-send-email-alex.shi@intel.com>
-References: <1340604507-11214-7-git-send-email-alex.shi@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] mm/mmu_gather:
-  enable tlb flush range in generic mmu_gather
-Git-Commit-ID: 6d80ee50c281d02be090cf429294b32dab0b23b7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 26 Jun 2012 11:18:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 26 Jun 2012 08:17:27 -0700 (PDT)
+In-Reply-To: <20120626125953.GA22557@redhat.com>
+References: <CAKA=qzY+u64vVZmbiH4zp_Fij2zejQBFUSNENKF=PZBT0G7xrQ@mail.gmail.com>
+	<20120622204207.GA22063@redhat.com>
+	<CAKA=qzbycm0cjLyiuKaKkD8sxDm5DvX9WVqSxN2QVT2WZOzU0Q@mail.gmail.com>
+	<CAKA=qza_s6zr+wZzfFTVPSzgPQAov=K63jf-SJOTDcrnDELY5w@mail.gmail.com>
+	<CAKA=qzYea71A5VQOQgrqzaZtVFadjhcghgH+Z9n4ivS7vUgW0g@mail.gmail.com>
+	<20120625133047.GA9394@redhat.com>
+	<CAKA=qzbXm7LaDziH=cms1W5X+cwNNRkG0LNFfWKEppr2oht6_w@mail.gmail.com>
+	<20120625211850.GC10916@redhat.com>
+	<CAKA=qzaU=wKLrprgJ4z32tqqyO6W0+SBcaV=ArWAdKh_9c=Zew@mail.gmail.com>
+	<CAKA=qzY+J-Ab8NC-+r1Dw_-giVzC=z8SnxJhSWHF-ud8j3yg6A@mail.gmail.com>
+	<20120626125953.GA22557@redhat.com>
+Date: Tue, 26 Jun 2012 10:18:04 -0500
+Message-ID: <CAKA=qzZ_KhRbH6F4-TWvSAWiJyDsDrz4oUO5WppoMgWNEhyZmg@mail.gmail.com>
+Subject: Re: multi-second application stall in open()
+From: Josh Hunt <joshhunt00@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6d80ee50c281d02be090cf429294b32dab0b23b7
-Gitweb:     http://git.kernel.org/tip/6d80ee50c281d02be090cf429294b32dab0b23b7
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Mon, 25 Jun 2012 14:08:24 +0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 25 Jun 2012 20:53:19 -0700
+On Tue, Jun 26, 2012 at 7:59 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Mon, Jun 25, 2012 at 11:01:48PM -0500, Josh Hunt wrote:
+>
+> [..]
+>> So this really seems like a problem with kblockd not kicking in. I've
+>> instrumented every path in select_queue and it's not getting hit after
+>> schedule dispatch. Everything seems to stall at that point until a new
+>> request comes in.
+>
+> Ok, that's cool. So now we need to find out why queued work is not being
+> scheduled.
+>
+> I think there are some workqueue related trace points. If you enable those
+> along with blktraces, that should give tejun some data to look at.
+>
+> Thanks
+> Vivek
 
-mm/mmu_gather: enable tlb flush range in generic mmu_gather
+Tejun
 
-This patch enabled the tlb flush range support in generic mmu layer.
+Do you have any suggestions on how to debug this?
 
-Most of arch has self tlb flush range support, like ARM/IA64 etc.
-X86 arch has no this support in hardware yet. But another instruction
-'invlpg' can implement this function in some degree. So, enable this
-feather in generic layer for x86 now. and maybe useful for other archs
-in further.
-
-Generic mmu_gather struct is protected by macro
-HAVE_GENERIC_MMU_GATHER. Other archs that has flush range supported
-own self mmu_gather struct. So, now this change is safe for them.
-
-In future we may unify this struct and related functions on multiple
-archs.
-
-Thanks for Peter Zijlstra time and time reminder for multiple
-architecture code safe!
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Link: http://lkml.kernel.org/r/1340604507-11214-7-git-send-email-alex.shi@intel.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- include/asm-generic/tlb.h |    2 ++
- mm/memory.c               |    9 +++++++++
- 2 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index 75e888b..ed6642a 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -86,6 +86,8 @@ struct mmu_gather {
- #ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	struct mmu_table_batch	*batch;
- #endif
-+	unsigned long		start;
-+	unsigned long		end;
- 	unsigned int		need_flush : 1,	/* Did free PTEs */
- 				fast_mode  : 1; /* No batching   */
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index 1b7dc66..32c9943 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -206,6 +206,8 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm)
- 	tlb->mm = mm;
- 
- 	tlb->fullmm     = fullmm;
-+	tlb->start	= -1UL;
-+	tlb->end	= 0;
- 	tlb->need_flush = 0;
- 	tlb->fast_mode  = (num_possible_cpus() == 1);
- 	tlb->local.next = NULL;
-@@ -248,6 +250,8 @@ void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long e
- {
- 	struct mmu_gather_batch *batch, *next;
- 
-+	tlb->start = start;
-+	tlb->end   = end;
- 	tlb_flush_mmu(tlb);
- 
- 	/* keep the page table cache within bounds */
-@@ -1204,6 +1208,11 @@ again:
- 	 */
- 	if (force_flush) {
- 		force_flush = 0;
-+
-+#ifdef HAVE_GENERIC_MMU_GATHER
-+		tlb->start = addr;
-+		tlb->end = end;
-+#endif
- 		tlb_flush_mmu(tlb);
- 		if (addr != end)
- 			goto again;
+I did "perf record -a -e workqueue:*" and grabbed some tracepoint
+data, but it's hard to correlate when these events are occurring in
+the blktrace logs. Will keep investigating.
+-- 
+Josh
