@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758321Ab2FZPVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 11:21:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35820 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757562Ab2FZPVG (ORCPT
+	id S1758210Ab2FZPXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 11:23:14 -0400
+Received: from eastrmfepo101.cox.net ([68.230.241.213]:44722 "EHLO
+	eastrmfepo101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755973Ab2FZPXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 11:21:06 -0400
-Date: Tue, 26 Jun 2012 08:20:50 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-1b6b7c9ff3514772958c075f8c89e42dddf6a4d8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        khali@linux-fr.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        khali@linux-fr.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20120626143246.0c9bf301@endymion.delvare>
-References: <20120626143246.0c9bf301@endymion.delvare>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, cpufeature: Remove stray %s,
-  add -w to mkcapflags.pl
-Git-Commit-ID: 1b6b7c9ff3514772958c075f8c89e42dddf6a4d8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 26 Jun 2012 11:23:11 -0400
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020201.4FE9D1EC.0112,ss=2,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=jbNBfbeyBr8Xe3UBpOVj613ZNUE1iHVw1c9l/m7poXE=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=n-7WShce5W4A:10 a=Pmuobfiy0uQA:10
+ a=IkcTkHD0fZMA:10 a=64xFrotqFBVXJpU0rRKErg==:17 a=xbc-ljF4AAAA:8
+ a=WIofB38Bj2ZvT48Kz6wA:9 a=QEXdDO2ut3YA:10 a=h_GoV_pIF60A:10
+ a=UWBUr3yGWl6VwS7k:21 a=5CIgyGbLoCtIAFjj:21 a=64xFrotqFBVXJpU0rRKErg==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20120626111452.JJ3LK.239184.imail@eastrmwml214>
+Date: Tue, 26 Jun 2012 8:14:52 -0700
+From: "Western.Union" <westernunion180@cox.net>
+Reply-To: wumt_payout_dept155@cafuc.net
+Subject: Claim Your Prize!
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 26 Jun 2012 08:20:56 -0700 (PDT)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1b6b7c9ff3514772958c075f8c89e42dddf6a4d8
-Gitweb:     http://git.kernel.org/tip/1b6b7c9ff3514772958c075f8c89e42dddf6a4d8
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Tue, 26 Jun 2012 07:58:23 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 26 Jun 2012 08:02:48 -0700
-
-x86, cpufeature: Remove stray %s, add -w to mkcapflags.pl
-
-There was a stray %s left from testing, remove it.
-
-Add -w to the #! line (which is parsed by Perl even if the Perl
-interpreter is invoked explicitly on the command line) to catch these
-kinds of errors in the future.
-
-Reported-by: Jean Delvare <khali@linux-fr.org>
-Link: http://lkml.kernel.org/r/20120626143246.0c9bf301@endymion.delvare
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/mkcapflags.pl |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mkcapflags.pl b/arch/x86/kernel/cpu/mkcapflags.pl
-index 0c5b549..c7b3fe2 100644
---- a/arch/x86/kernel/cpu/mkcapflags.pl
-+++ b/arch/x86/kernel/cpu/mkcapflags.pl
-@@ -1,4 +1,4 @@
--#!/usr/bin/perl
-+#!/usr/bin/perl -w
- #
- # Generate the x86_cap_flags[] array from include/asm-x86/cpufeature.h
- #
-@@ -29,7 +29,7 @@ while (defined($line = <IN>)) {
- 			print STDERR "$in: duplicate feature name: $feature\n";
- 			$err++;
- 		}
--		printf OUT "\t%-32s = \"%s\",%s\n", "[$macro]", $feature;
-+		printf OUT "\t%-32s = \"%s\",\n", "[$macro]", $feature;
- 	}
- }
- print OUT "};\n";
+Attention our dear beneficiary, please be 
+informed that  $1.8 Million Dollars has been deposited in our Western Union office and 
+we are instructed to transfer to you $1.8 Million Dollars by the Commonwealth Lottery Board as compesationPrize,Contact 
+your claims agent Mr Roy Charlton via his private mail:  
+(mr.roy.charlton.dept101@cafuc.net)
