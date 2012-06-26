@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab2FZJ1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 05:27:49 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:40011 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755988Ab2FZJ1r convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 05:27:47 -0400
+	id S1756104Ab2FZJ35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 05:29:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43586 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161Ab2FZJ3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 05:29:55 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] acpi, cpuidle: Register with cpuidle even if cpu is onlined after boot (beyond maxcpus)
+Date: Tue, 26 Jun 2012 11:29:44 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>, lenb@kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+References: <4FDB549F.1020002@linaro.org> <201206251553.55867.trenn@suse.de> <4FE88BDE.1050406@linux.vnet.ibm.com>
+In-Reply-To: <4FE88BDE.1050406@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20120626090825.GI30406@opensource.wolfsonmicro.com>
-References: <1340697707.12992.1.camel@phoenix> <20120626090825.GI30406@opensource.wolfsonmicro.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 26 Jun 2012 17:27:26 +0800
-Message-ID: <CAF+7xWnJo3VrZ+iH4BJHkTmo5+D9ttZ1n1Tm0KMPQqK1sKD7wQ@mail.gmail.com>
-Subject: Re: [PATCH] regulator: arizona-micsupp: Fix choosing selector in arizona_micsupp_map_voltage
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206261129.45591.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/26 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Tue, Jun 26, 2012 at 04:01:47PM +0800, Axel Lin wrote:
->
->> +     if (min_uV > 3300000)
->> +             return -EINVAL;
->> +
->
-> This is OK but I think we want to factor this out into the caller as
-> we're implementing this limits check in a lot of places.
+On Monday, June 25, 2012 06:03:42 PM Srivatsa S. Bhat wrote:
+> On 06/25/2012 07:23 PM, Thomas Renninger wrote:
+> 
+> > On Monday, June 25, 2012 01:25:43 PM Srivatsa S. Bhat wrote:
+> >>
+> >> Daniel Lezcano noticed that after booting with maxcpus=X, if we online the
+> >> remaining cpus by writing: echo 1 > /sys/devices/system/cpu/cpuY/online, then
+> >> for the newly onlined cpus, the cpuidle directory is not found under
+> >> /sys/devices/system/cpu/cpuY.
+> >>
+> >> Partly, the reason for this is that acpi restricts the initialization to cpus
+> >> within the maxcpus limit. (See commit 75cbfb9 "ACPI: Do not try to set up acpi
+> >> processor stuff on cores exceeding maxcpus="). The maxcpus= kernel parameter is
+> >> used to restrict the number of cpus brought up during boot. That doesn't mean
+> >> that we should hard restrict the bring up of the remaining cpus later on.
+> > 
+> > Sorry, but IMO it exaclty does mean that (adding more general lists for
+> > further comments).
+> > 
+> > If you can online more cores than maxcpus= via sysfs, this sounds like a bug.
+> > Not the other way around.
+> > 
+> > Compare with Documentation/kernel-parameters.txt:
+> >         maxcpus=        [SMP] Maximum number of processors that an SMP kernel
+> >                         should make use of.  maxcpus=n : n >= 0 limits the
+> >                         kernel to using 'n' processors.  n=0 is a special case,
+> >                         it is equivalent to "nosmp", which also disables
+> >                         the IO APIC.
+> > 
+> > Chances that you run into more problems are high.
+> 
+> 
+> Right, I agree on that. So, IMHO, maxcpus=X doesn't mean that the kernel must and
+> should forbid any new cpus from coming online, but in the interest of avoiding
+> problems/complications in some obscure paths, I guess it makes sense to avoid
+> onlining new cpus beyond maxcpus.
 
-It seems most of the new code are calling list_voltage() in
-map_voltage to ensure
-the selected voltage are still in bound.
-But in this  case, current actually set selector to
-ARIZONA_MICSUPP_MAX_SELECTOR in map_voltage() if
-min_uV >= 3300000. calling list_voltage() still returns valid voltage
-for this case looks wrong to me.
+Yep, for such reasons:
+   - That nobody realizes this to be useful and makes use of it in a productive
+     environment
+   - If I see maxcpus=X in a bugreport's dmesg command line,
+     I want to be sure that's true.
+   - To enforce that things work as documented
 
->
->> -     if (min_uV >= 3300000)
->> +     if (min_uV > 3200000)
->>               selector = ARIZONA_MICSUPP_MAX_SELECTOR;
->>       else
->>               selector = DIV_ROUND_UP(min_uV - 1700000, 50000);
->
-> This doesn't change anything; with version of the if statement will give
-> 3.3V for a voltage between 3.2V and 3.3V as there's no gaps in the
-> selector space so if we're over 3.2V we'll round up to 3.3V.
 
-If min_uV is in the range of: 3250001~3269999,
-current code uses the equation: selector = DIV_ROUND_UP(min_uV -
-1700000, 50000);
-Then selector will be 32.
-Then arizona_micsupp_list_voltage returns -EINVAL for this case.
+Wow, after looking a bit into this I found (Documentation/cpu-hotplug.txt):
 
-With this patch, the selector will be 31 for this case.
+maxcpus=n    Restrict boot time cpus to n. Say if you have 4 cpus, using
+             maxcpus=2 will only boot 2. You can choose to bring the
+             other cpus later online, read FAQ's for more info.
+
+Looks like someone already documented this (IMO broken) behavior.
+I didn't find further info in the FAQs.
+
+> In any case, I was just trying to see why the simple removal of the setup_max_cpus
+> check in acpi_processor_add() wasn't enough to expose the cpuidle directories under
+> the new cpus.. and while debugging that, I came up with this patch. I don't mind
+> if this doesn't get picked up.
+
+> Right, the usecase of why somebody would like to online new cpus beyond maxcpus
+> doesn't look all that solid anyway. So I am OK with leaving the code as it is now.
+
+In the end this is a debug option, I expect everybody is aware of that.
+Yep, let's just leave it...
+
+   Thomas
