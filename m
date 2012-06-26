@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758114Ab2FZB4I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 21:56:08 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:36352 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757862Ab2FZB4G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 21:56:06 -0400
-Date: Mon, 25 Jun 2012 18:55:51 -0700
-From: Mike Turquette <mturquette@ti.com>
-To: sfr@canb.auug.org.au
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        broonie@opensource.wolfsonmicro.com, rnayak@ti.com,
-        viresh.kumar@linaro.org, amit.kucheria@linaro.org,
-        linus.walleij@stericsson.com, shawn.guo@freescale.com,
-        mkl@pengutronix.de, sr@denx.de, pawel.moll@arm.com,
-        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
-        arnd.bergmann@linaro.org, olof@lixom.net
-Subject: linux-next: adding the common clk tree
-Message-ID: <20120626015551.GW4402@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758145Ab2FZCCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 22:02:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4063 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757862Ab2FZCCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 22:02:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="162608967"
+Message-ID: <1340676217.1682.50.camel@rui.sh.intel.com>
+Subject: Re: Still use ACPI backlight control if _DOS doesn't exist
+From: Zhang Rui <rui.zhang@intel.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: len.brown@intel.com, torvalds@linuxfoundation.org,
+        linux-kernel@vger.kernel.org,
+        Igor Murzov <intergalactic.anonymous@gmail.com>,
+        stable@vger.kernel.org
+Date: Tue, 26 Jun 2012 10:03:37 +0800
+In-Reply-To: <1340624336-15048-1-git-send-email-airlied@redhat.com>
+References: <1340624336-15048-1-git-send-email-airlied@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi, Dave,
 
-Would you please add the clk-next branch of the common clock tree to
-linux-next?
+How about this one, which I think is better? :)
+http://marc.info/?l=linux-acpi&m=134015703925079&w=2
 
-git://git.linaro.org/people/mturquette/linux.git clk-next
+can you give it a try?
 
-Thanks much!
+thanks,
+rui
 
-For all of those Cc'd, I just wanted to say that I'm changing the way I
-manage clk-next.  The clk-next branch now WILL be rebased, and it's only
-purpose is to make it easy to test things in linux-next.  You can base
-work on it, but be prepare for breakage and shifting commit ids.
+On 一, 2012-06-25 at 12:38 +0100, Dave Airlie wrote:
+> This is a regression introduced by commit
+> ea9f8856bd6d4ed45885b06a338f7362cd6c60e5
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=43168
+> 
+> Some platforms don't have _DOS control method, but the ACPI
+> backlight still works.
+> We do not want to lose the backlight control ability on these platforms.
+> 
+> [airlied: this is breaking nouveau really badly on 3.4 and after and there is
+> no movement on sending it upstream, so please apply]
+> 
+> Cc: Igor Murzov <intergalactic.anonymous@gmail.com>
+> Cc: stable@vger.kernel.org
+> Cc: len.brown@intel.com
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> ---
+>  drivers/acpi/video.c |   10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> Index: rtd3/drivers/acpi/video.c
+> ===================================================================
+> --- rtd3.orig/drivers/acpi/video.c
+> +++ rtd3/drivers/acpi/video.c
+> @@ -565,8 +565,14 @@ acpi_video_bus_DOS(struct acpi_video_bus
+>  	video->dos_setting = arg0.integer.value;
+>  	status = acpi_evaluate_object(video->device->handle, "_DOS",
+>  		&args, NULL);
+> -	if (ACPI_FAILURE(status))
+> -		return -EIO;
+> +	if (ACPI_FAILURE(status)) {
+> +		/*
+> +		 * some platforms don't have _DOS, but the ACPI
+> +		 * backlight control still works
+> +		 */
+> +		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No _DOS\n"));
+> +		return 0;
+> +	}
+>  
+>  	return 0;
+>  }
 
-If you don't want breakage and shifting commit ids then you might want
-to use my clk-fixes branch (stable) and my clk-3.x branch (stable).  As
-patches go through the linux-next cycle and appear stable I'll migrate
-them over to clk-3.x which won't ever be rebased.  This is the branch
-I'll send to Linus.  clk-next is simply comprised of merging clk-fixes,
-clk-3.x and whatever unstable patches I have laying around.
 
-Regards,
-Mike
