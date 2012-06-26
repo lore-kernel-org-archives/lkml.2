@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab2FZXKI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 19:10:08 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3918 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819Ab2FZXKG (ORCPT
+	id S1754640Ab2FZXPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 19:15:45 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45379 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab2FZXPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 19:10:06 -0400
-Message-ID: <4FEA4102.2080900@spin.net.au>
-Date: Wed, 27 Jun 2012 09:08:50 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: UEFI and custom kernel
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 26 Jun 2012 19:15:44 -0400
+Date: Wed, 27 Jun 2012 00:19:25 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Chris Jones <chrisjones@spin.net.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: UEFI and custom kernel
+Message-ID: <20120627001925.56e350f8@pyramind.ukuu.org.uk>
+In-Reply-To: <4FEA4102.2080900@spin.net.au>
+References: <4FEA4102.2080900@spin.net.au>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.178, required 4, AWL 0.32, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been following the news on UEFI and Secureboot pretty closely. 
-Currently Ubuntu, Fedora and OpenSUSE have pretty in-depth discussion 
-going on the mailing lists about it all.
+On Wed, 27 Jun 2012 09:08:50 +1000
+Chris Jones <chrisjones@spin.net.au> wrote:
 
-Although my technical knowledge about UEFI is pretty vague at current, I 
-know a little bit of what it's about.
+> I've been following the news on UEFI and Secureboot pretty closely. 
+> Currently Ubuntu, Fedora and OpenSUSE have pretty in-depth discussion 
+> going on the mailing lists about it all.
+> 
+> Although my technical knowledge about UEFI is pretty vague at current, I 
+> know a little bit of what it's about.
 
-But getting to my question, how will this effect custom Linux kernels? 
-Or will UEFI support (once added) be simply another kernel module that 
-can just be carried over from official upstream kernel versions into a 
-custom set?
-If custom kernels are going to all be locked out, then this is going to 
-upset a lot of kernel developers, such as I!
+For x86 the UEFI "secure" boot requirement is that the user can disable
+secure boot. For ARM it is that the user *cannot* disable secure boot.
 
+So in the PC space at least it's "business as usual" providing you jump
+that hoop, and hopefully with the tools sorted it'll be viable to sign
+your own kernels and use your own keys.
 
-Regards
-
--- 
-		Chris Jones @ kernel.devproject@gmail.com
-                           and oracle.kerneldev@gmail.com
-
-OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
-Linux kernel developer|Solaris kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux
-Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
-
+Alan
