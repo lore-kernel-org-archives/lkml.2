@@ -1,182 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2FZWCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 18:02:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811Ab2FZWCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 18:02:35 -0400
-Date: Tue, 26 Jun 2012 19:01:56 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 1/4] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120626220155.GA2292@t510.redhat.com>
-References: <cover.1340665087.git.aquini@redhat.com>
- <7f83427b3894af7969c67acc0f27ab5aa68b4279.1340665087.git.aquini@redhat.com>
- <20120626101729.GF8103@csn.ul.ie>
+	id S1754242Ab2FZWDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 18:03:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54011 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab2FZWDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 18:03:10 -0400
+Date: Tue, 26 Jun 2012 15:03:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+Cc: Sherwin Soltani <sherwin@wybc.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, swetland@google.com
+Subject: Re: [PATCH] drivers: staging: android: binder.c: fix printk macros
+Message-ID: <20120626220306.GA14221@kroah.com>
+References: <1340690430-13016-1-git-send-email-sherwin@wybc.com>
+ <1340692980.4177.6.camel@fourier.local.igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120626101729.GF8103@csn.ul.ie>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1340692980.4177.6.camel@fourier.local.igalia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel,
-
-First and foremost, thank you for taking the time to review these bits and
-provide such valuable feedback.
-
-On Tue, Jun 26, 2012 at 11:17:29AM +0100, Mel Gorman wrote:
-> > +/* return 1 if page is part of a guest's memory balloon, 0 otherwise */
-> > +static inline int PageBalloon(struct page *page)
-> > +{
-> > +	return is_balloon_page(page);
-> > +}
-> 
-> bool
-> 
-> Why is there both is_balloon_page and PageBalloon? 
-> 
-> is_ballon_page is so simple it should just be a static inline here
-> 
-> extern struct address_space *balloon_mapping;
-> static inline bool is_balloon_page(page)
-> {
-> 	return page->mapping == balloon_mapping;
-> }
-> 	
-I was thinking about sustain the same syntax other page tests utilize,
-but I rather stick to your suggestion on this one.
-
- 
-> >  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
-> > @@ -312,6 +313,14 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> >  			continue;
-> >  		}
+On Tue, Jun 26, 2012 at 08:43:00AM +0200, Samuel Iglesias Gonsálvez wrote:
+> On Tue, 2012-06-26 at 02:00 -0400, Sherwin Soltani wrote:
+> > Change printk() messages to pr_* macros.
+> > 
+> > Signed-off-by: Sherwin Soltani <sherwin@wybc.com>
+> > ---
+> >  drivers/staging/android/binder.c |   54 +++++++++++++++++++-------------------
+> >  1 file changed, 27 insertions(+), 27 deletions(-)
+> > 
+> > diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+> > index c283212..574e992 100644
+> > --- a/drivers/staging/android/binder.c
+> > +++ b/drivers/staging/android/binder.c
+> > @@ -124,13 +124,13 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
+> >  #define binder_debug(mask, x...) \
+> >  	do { \
+> >  		if (binder_debug_mask & mask) \
+> > -			printk(KERN_INFO x); \
+> > +			pr_info(x); \
+> >  	} while (0)
 > >  
-> > +		/*
-> > +		 * For ballooned pages, we need to isolate them before testing
-> > +		 * for PageLRU, as well as skip the LRU page isolation steps.
-> > +		 */
+> >  #define binder_user_error(x...) \
+> >  	do { \
+> >  		if (binder_debug_mask & BINDER_DEBUG_USER_ERROR) \
+> > -			printk(KERN_INFO x); \
+> > +			pr_info(x); \
+> >  		if (binder_stop_on_user_error) \
+> >  			binder_stop_on_user_error = 2; \
+> >  	} while (0)
+> > @@ -418,7 +418,7 @@ repeat:
+> >  #if 1
+> >  	/* Sanity check */
+> >  	if (fdt->fd[fd] != NULL) {
+> > -		printk(KERN_WARNING "get_unused_fd: slot %d not NULL!\n", fd);
+> > +		pr_warn("get_unused_fd: slot %d not NULL!\n", fd);
+> >  		fdt->fd[fd] = NULL;
+> >  	}
+> >  #endif
+> > @@ -644,7 +644,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+> >  		goto free_range;
+> >  
+> >  	if (vma == NULL) {
+> > -		printk(KERN_ERR "binder: %d: binder_alloc_buf failed to "
+> > +		pr_err("binder: %d: binder_alloc_buf failed to "
+> >  		       "map pages in userspace, no vma\n", proc->pid);
 > 
-> This says what, but not why.
-> 
-> I didn't check the exact mechanics of a balloon page but I expect it's that
-> balloon pages are not on the LRU. If they are on the LRU, that's pretty dumb.
-> 
-> 
-> /*
->  * Balloon pages can be migrated but are not on the LRU. Isolate
->  * them before LRU checks.
->  */
-> 
-> 
-> It would be nicer to do this without gotos
-> 
-> /*
->  * It is possible to migrate LRU pages and balloon pages. Skip
->  * any other type of page
->  */
-> if (is_balloon_page(page)) {
-> 	if (!isolate_balloon_page(page))
-> 		continue;
-> } else if (PageLRU(page)) {
-> 	....
-> }
-> 
-> You will need to shuffle things around a little to make it work properly
-> but if we handle other page types in the future it will be neater
-> overall.
->
-I'm glad you've put things this way on this one. Despite I was thinking on doing it
-the way you suggested, I took the goto approach because I was afraid of doing
-otherwise could be considered as an unnecessary radical surgery on established code.
-Will do it, certainly.
+> Instead of using the "binder: " prefix here and there and now that you
+> have changed to pr_* functions, you can define the pr_fmt macro at the
+> beginning of the file (just before the #include sentences).
 
- 	
-> > +struct address_space *balloon_mapping;
-> > +EXPORT_SYMBOL(balloon_mapping);
-> > +
-> 
-> EXPORT_SYMBOL_GPL?
-> 
-> I don't mind how it is exported as such. I'm idly curious if there are
-> external closed modules that use the driver.
-> 
-To be honest with you, that was picked with no particular case in mind. And, since
-you've raised this question, I'm also curious. However, after giving a thought
-on your feedback, I believe EXPORT_SYMBOL_GPL suits far better.
+That's a good idea, but not necessary for this patch.  A follow-on patch
+perhaps :)
 
-
-> > +/* ballooned page id check */
-> > +int is_balloon_page(struct page *page)
-> > +{
-> > +	struct address_space *mapping = page->mapping;
-> > +	if (mapping == balloon_mapping)
-> > +		return 1;
-> > +	return 0;
-> > +}
-> > +
-> > +/* __isolate_lru_page() counterpart for a ballooned page */
-> > +int isolate_balloon_page(struct page *page)
-> > +{
-> > +	struct address_space *mapping = page->mapping;
-> 
-> This is a publicly visible function and while your current usage looks
-> correct it would not hurt to do something like this;
-> 
-> if (WARN_ON(!is_page_ballon(page))
-> 	return 0;
->
-Excellent point!
- 
-
-> > +	if (mapping->a_ops->invalidatepage) {
-> > +		/*
-> > +		 * We can race against move_to_new_page() and stumble across a
-> > +		 * locked 'newpage'. If we succeed on isolating it, the result
-> > +		 * tends to be disastrous. So, we sanely skip PageLocked here.
-> > +		 */
-> > +		if (likely(!PageLocked(page) && get_page_unless_zero(page))) {
-> 
-> But the page can get locked after this point.
-> 
-> Would it not be better to do a trylock_page() and unlock the page on
-> exit after the isolation completes?
-> 
-Far better, for sure! thanks (again)
-
-
-> > @@ -78,7 +78,10 @@ void putback_lru_pages(struct list_head *l)
-> >  		list_del(&page->lru);
-> >  		dec_zone_page_state(page, NR_ISOLATED_ANON +
-> >  				page_is_file_cache(page));
-> > -		putback_lru_page(page);
-> > +		if (unlikely(PageBalloon(page)))
-> > +			VM_BUG_ON(!putback_balloon_page(page));
-> 
-> Why not BUG_ON?
-> 
-> What shocked me actually is that VM_BUG_ON code is executed on
-> !CONFIG_DEBUG_VM builds and has been since 2.6.36 due to commit [4e60c86bd:
-> gcc-4.6: mm: fix unused but set warnings]. I thought the whole point of
-> VM_BUG_ON was to avoid expensive and usually unnecessary checks. Andi,
-> was this deliberate?
-> 
-> Either way, you always want to call putback_ballon_page() so BUG_ON is
-> more appropriate although gracefully recovering from the situation and a
-> WARN would be better.
-> 
-Shame on me!
- I was lazy enough to not carefully read VM_BUG_ON's definition and get its
-original purpose. Will change it, for sure.
-
-
-Once more, thank you!
+greg k-h
