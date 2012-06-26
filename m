@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab2FZPvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 11:51:21 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:42964
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756880Ab2FZPvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 11:51:20 -0400
-Date: Tue, 26 Jun 2012 11:51:15 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tj@kernel.org, hch@infradead.org,
-        jmoyer@redhat.com, vgoyal@redhat.com, dm-devel@redhat.com
-Subject: Re: [RFC PATCH] block: all callers should check blkdev_issue_flush's
- return
-Message-ID: <20120626155115.GA17242@infradead.org>
-References: <1340724445-3314-1-git-send-email-snitzer@redhat.com>
+	id S1758649Ab2FZPvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 11:51:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756880Ab2FZPvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 11:51:54 -0400
+Message-ID: <4FE9DA1C.1010305@redhat.com>
+Date: Tue, 26 Jun 2012 11:49:48 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340724445-3314-1-git-send-email-snitzer@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Rik van Riel <riel@surriel.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
+        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org, danielfsantos@att.net
+Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
+ rbtree
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>       <1340315835-28571-2-git-send-email-riel@surriel.com>      <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>     <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>    <1340375872.18025.77.camel@twins> <4FE4922D.8070501@surriel.com>   <1340652578.21991.18.camel@twins> <4FE8DD80.9040108@redhat.com>  <1340699507.21991.32.camel@twins> <4FE9B3B4.1050305@redhat.com> <1340718349.21991.81.camel@twins>
+In-Reply-To: <1340718349.21991.81.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 11:27:25AM -0400, Mike Snitzer wrote:
-> It is concerning that a FLUSH may fail but the blkdev_issue_flush
-> callers assume it will always succeed.
-> 
-> Each blkdev_issue_flush caller should come to terms with the reality
-> that a FLUSH may fail -- the file_operations' .fsync methods in
-> particular.  nilfs2 is the only filesystem that checks
-> blkdev_issue_flush's return.
+On 06/26/2012 09:45 AM, Peter Zijlstra wrote:
+> On Tue, 2012-06-26 at 09:05 -0400, Rik van Riel wrote:
+>> On 06/26/2012 04:31 AM, Peter Zijlstra wrote:
+>>
+>>> If you look at your patch 1, __vma_unlink has an adjust_free_gap() right
+>>> next to the rb_augment_erase(), vma_adjust() has 3 adjust_free_gap()
+>>> calls right next to each other.
+>>>
+>>> All these will do an entire path walk back to the root. I would think we
+>>> could save quite a bit of updating by not having them all walk back to
+>>> the root. No point in re-computing the top levels if you know the next
+>>> update will change them again anyway.
+>>
+>> The problem is, unless we look at the augmented data at
+>> rotate time, we do not know when it is safe to stop
+>> iterating up the tree.
+>
+> argh,.. you're using adjust_vma_gap() for insertions instead of
+> rb_augment_insert().
+>
+> I was going on the premise that you're doing updates for augmented data
+> without modifying the tree structure and that doing insert/delete will
+> keep the stuff up-to-date.
+>
+> So now I'm not sure why you do if (insert) adjust_free_gap(insert),
+> since __insert_vm_struct(mm, insert) ->  __vma_link() ->  __vma_link_rb()
+> already does an augment update.
 
-Good spot, but it would be way better if you actually provided patches
-to fix this instead of just adding more compiler warnings.
+I have fixed that in patch 3/11 of this series,
+which I kept separate for this round of submission
+to make it easier for reviewers to see what I
+changed there.
 
+However, doing an insert or delete changes the
+gap size for the _next_ vma, and potentially a
+change in the maximum gap size for the parent
+node, so both insert and delete cause two tree
+walks :(
