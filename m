@@ -1,102 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab2FZVzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 17:55:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35454 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab2FZVzl (ORCPT
+	id S1754123Ab2FZV6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 17:58:30 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37665 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab2FZV62 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 17:55:41 -0400
-Date: Tue, 26 Jun 2012 14:55:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 00/11] kmem controller for memcg: stripped down version
-Message-Id: <20120626145539.eeeab909.akpm@linux-foundation.org>
-In-Reply-To: <4FE9621D.2050002@parallels.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
-	<20120625162745.eabe4f03.akpm@linux-foundation.org>
-	<4FE9621D.2050002@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jun 2012 17:58:28 -0400
+Date: Tue, 26 Jun 2012 16:58:20 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Anders Kaseorg <andersk@MIT.EDU>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dash@vger.kernel.org
+Subject: Re: [PATCH v2] fifo: Do not restart open() if it already found a
+ partner
+Message-ID: <20120626215820.GA18624@burratino>
+References: <1340712298-4583-1-git-send-email-andersk@mit.edu>
+ <20120626202009.GA382@burratino>
+ <alpine.DEB.2.00.1206261656000.3236@dr-wily.mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.DEB.2.00.1206261656000.3236@dr-wily.mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jun 2012 11:17:49 +0400
-Glauber Costa <glommer@parallels.com> wrote:
+Anders Kaseorg wrote:
 
-> On 06/26/2012 03:27 AM, Andrew Morton wrote:
-> > On Mon, 25 Jun 2012 18:15:17 +0400
-> > Glauber Costa <glommer@parallels.com> wrote:
-> >
-> >> What I am proposing with this series is a stripped down version of the
-> >> kmem controller for memcg that would allow us to merge significant parts
-> >> of the infrastructure, while leaving out, for now, the polemic bits about
-> >> the slab while it is being reworked by Cristoph.
-> >>
-> >> Me reasoning for that is that after the last change to introduce a gfp
-> >> flag to mark kernel allocations, it became clear to me that tracking other
-> >> resources like the stack would then follow extremely naturaly. I figured
-> >> that at some point we'd have to solve the issue pointed by David, and avoid
-> >> testing the Slab flag in the page allocator, since it would soon be made
-> >> more generic. I do that by having the callers to explicit mark it.
-> >>
-> >> So to demonstrate how it would work, I am introducing a stack tracker here,
-> >> that is already a functionality per-se: it successfully stops fork bombs to
-> >> happen. (Sorry for doing all your work, Frederic =p ). Note that after all
-> >> memcg infrastructure is deployed, it becomes very easy to track anything.
-> >> The last patch of this series is extremely simple.
-> >>
-> >> The infrastructure is exactly the same we had in memcg, but stripped down
-> >> of the slab parts. And because what we have after those patches is a feature
-> >> per-se, I think it could be considered for merging.
-> >
-> > hm.  None of this new code makes the kernel smaller, faster, easier to
-> > understand or more fun to read!
-> Not sure if this is a general comment - in case I agree - or if targeted 
-> to my statement that this is "stripped down". If so, it is of course 
-> smaller relative to my previous slab accounting patches.
+> Signed-off-by: Anders Kaseorg <andersk@mit.edu>
+> ---
+> Changes from v1:
+> • Change wait_for_partner return from true/false to 0/-ERESTARTSYS.
+> • Mention that the demo program doesn’t always work for some.
+> • Remove some unneeded braces from the demo program’s CHECK() macro.
 
-It's a general comment.  The patch adds overhead: runtime costs and
-maintenance costs.  Do its benefits justify that cost?
+Yep, I don't have anything left to complain about.  Looks obviously
+correct to my inexpert eyes.
 
-> The infrastructure is largely common, but I realized that a future user,
-> tracking the stack, would be a lot simpler and could be done first.
-> 
-> > Presumably we're getting some benefit for all the downside.  When the
-> > time is appropriate, please do put some time into explaining that
-> > benefit, so that others can agree that it is a worthwhile tradeoff.
-> >
-> 
-> Well, for one thing, we stop fork bombs for processes inside cgroups.
-
-"inside cgroups" is a significant limitation!  Is this capability
-important enough to justify adding the new code?  That's unobvious
-(to me).
-
-Are there any other user-facing things which we can do with this
-feature?  Present, or planned?
-
-> I can't speak for everybody here, but AFAIK, tracking the stack through
-> the memory it used, therefore using my proposed kmem controller, was an
-> idea that good quite a bit of traction with the memcg/memory people. 
-> So here you have something that people already asked a lot for, in a
-> shape and interface that seem to be acceptable.
-
-mm, maybe.  Kernel developers tend to look at code from the point of
-view "does it work as designed", "is it clean", "is it efficient", "do
-I understand it", etc.  We often forget to step back and really
-consider whether or not it should be merged at all.
-
-I mean, unless the code is an explicit simplification, we should have
-a very strong bias towards "don't merge".
+Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
