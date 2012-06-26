@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab2FZImf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 04:42:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13479 "EHLO mga09.intel.com"
+	id S1758053Ab2FZImn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 04:42:43 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:41141 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537Ab2FZIme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 04:42:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="158275705"
-Date: Tue, 26 Jun 2012 10:53:32 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Chiwoong Byun <woong.byun@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: Re: [PATCH] mfd: MFD_MAX77686 needs to select REGMAP_I2C and
- IRQ_DOMAIN
-Message-ID: <20120626085332.GB4846@sortiz-mobl>
-References: <1340674008.2942.1.camel@phoenix>
+	id S1756054Ab2FZImj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 04:42:39 -0400
+Message-ID: <4FE9755B.1040905@parallels.com>
+Date: Tue, 26 Jun 2012 12:39:55 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340674008.2942.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Suleiman Souhlal <suleiman@google.com>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 02/11] memcg: Reclaim when more than one page needed.
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-3-git-send-email-glommer@parallels.com> <CABCjUKD0h089StLF8BwVRU-St70Ai9PTw-cjis40_aLLG3MAQQ@mail.gmail.com>
+In-Reply-To: <CABCjUKD0h089StLF8BwVRU-St70Ai9PTw-cjis40_aLLG3MAQQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+On 06/26/2012 03:33 AM, Suleiman Souhlal wrote:
+> On Mon, Jun 25, 2012 at 7:15 AM, Glauber Costa <glommer@parallels.com> wrote:
+>> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
+>>
+>> mem_cgroup_do_charge() was written before slab accounting, and expects
+>> three cases: being called for 1 page, being called for a stock of 32 pages,
+>> or being called for a hugepage.  If we call for 2 or 3 pages (and several
+>> slabs used in process creation are such, at least with the debug options I
+>> had), it assumed it's being called for stock and just retried without reclaiming.
+>>
+>> Fix that by passing down a minsize argument in addition to the csize.
+>>
+>> And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
+>> needed at all (and presumably is since it's there, perhaps to handle
+>> races), then it should be extended to more than PAGE_SIZE, yet how far?
+>> And should there be a retry count limit, of what?  For now retry up to
+>> COSTLY_ORDER (as page_alloc.c does), stay safe with a cond_resched(),
+>> and make sure not to do it if __GFP_NORETRY.
+>
+> The commit description mentions COSTLY_ORDER, but it's not actually
+> used in the patch.
+>
+> -- Suleiman
+>
+Yeah, forgot to update the changelog =(
 
-On Tue, Jun 26, 2012 at 09:26:48AM +0800, Axel Lin wrote:
-> Select REGMAP_I2C to fix below build errors:
-> 
->   CC      drivers/mfd/max77686.o
-> drivers/mfd/max77686.c:43:15: error: variable 'max77686_regmap_config' has initializer but incomplete type
-> drivers/mfd/max77686.c:44:2: error: unknown field 'reg_bits' specified in initializer
-> drivers/mfd/max77686.c:44:2: warning: excess elements in struct initializer [enabled by default]
-> drivers/mfd/max77686.c:44:2: warning: (near initialization for 'max77686_regmap_config') [enabled by default]
-> drivers/mfd/max77686.c:45:2: error: unknown field 'val_bits' specified in initializer
-> drivers/mfd/max77686.c:45:2: warning: excess elements in struct initializer [enabled by default]
-> drivers/mfd/max77686.c:45:2: warning: (near initialization for 'max77686_regmap_config') [enabled by default]
-> drivers/mfd/max77686.c: In function 'max77686_i2c_probe':
-> drivers/mfd/max77686.c:60:2: error: implicit declaration of function 'regmap_init_i2c' [-Werror=implicit-function-declaration]
-> drivers/mfd/max77686.c:60:19: warning: assignment makes pointer from integer without a cast [enabled by default]
-> cc1: some warnings being treated as errors
-> make[2]: *** [drivers/mfd/max77686.o] Error 1
-> make[1]: *** [drivers/mfd] Error 2
-> make: *** [drivers] Error 2
-> 
-> Select IRQ_DOMAIN to fix below build errors:
-I squashed this one with the initial commit, thanks a lot for the patch.
+But much more importantly, are you still happy with those changes?
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
