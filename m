@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab2FZNHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 09:07:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62034 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756432Ab2FZNHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 09:07:17 -0400
-Message-ID: <4FE9B3B4.1050305@redhat.com>
-Date: Tue, 26 Jun 2012 09:05:56 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756832Ab2FZNNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 09:13:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38185 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756132Ab2FZNNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 09:13:08 -0400
+Date: Tue, 26 Jun 2012 14:13:05 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] regulator: core: Check that the selector from
+ map_voltage() is valid
+Message-ID: <20120626131305.GS30406@opensource.wolfsonmicro.com>
+References: <1340706382-27297-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1340706382-27297-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CAF+7xWmR-ogy2k+e5D0og7gUPeb7dVF0ZE61QaVDeQV=6y+PcQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Rik van Riel <riel@surriel.com>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
-        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
-        mel@csn.ul.ie, linux-kernel@vger.kernel.org, danielfsantos@att.net
-Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
- rbtree
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>      <1340315835-28571-2-git-send-email-riel@surriel.com>     <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>    <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>   <1340375872.18025.77.camel@twins> <4FE4922D.8070501@surriel.com>  <1340652578.21991.18.camel@twins> <4FE8DD80.9040108@redhat.com> <1340699507.21991.32.camel@twins>
-In-Reply-To: <1340699507.21991.32.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4dIe/AmYstFUGHTF"
+Content-Disposition: inline
+In-Reply-To: <CAF+7xWmR-ogy2k+e5D0og7gUPeb7dVF0ZE61QaVDeQV=6y+PcQ@mail.gmail.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 04:31 AM, Peter Zijlstra wrote:
 
-> If you look at your patch 1, __vma_unlink has an adjust_free_gap() right
-> next to the rb_augment_erase(), vma_adjust() has 3 adjust_free_gap()
-> calls right next to each other.
->
-> All these will do an entire path walk back to the root. I would think we
-> could save quite a bit of updating by not having them all walk back to
-> the root. No point in re-computing the top levels if you know the next
-> update will change them again anyway.
+--4dIe/AmYstFUGHTF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The problem is, unless we look at the augmented data at
-rotate time, we do not know when it is safe to stop
-iterating up the tree.
+On Tue, Jun 26, 2012 at 08:40:42PM +0800, Axel Lin wrote:
 
--- 
-All rights reversed
+> This patch does not apply to both linux-next tree and regulator tree
+> (for-next branch).
+
+I know, I had an earlier version of the change I'd forgotten I
+committed.  The final version shown in the diff is correct.
+
+--4dIe/AmYstFUGHTF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP6bVWAAoJEBus8iNuMP3dCbwP+wd9W0Xv2OXQyw/X+76Jfg1I
+HiDt/1V2IgEOaNvgPr70LlmV/hnTKcej223Q0s/iUXj5lk8FvtrvaHtgc4kFmS7e
+XEQVuLL6fhD9qYReGHXEcVl4It3pnDvb082onZ3jP6bcWkFZ+ogC5OIGzkhCyO9b
+6Kfuy8hhILe6ErkXXyIrtwcEdpkDaEPeBZnCXN65aCt2uAAHf28CSkyYMiJVeG+S
+kvJ4+Hs5S546kEtnOQiazzOotx9qY0WdGJGx4WBRtO0wQDxf5sQBSbYkX/xC1ueT
+Eo4RVtMPRqLe1Jemu61urY/LhAmPaq9ONgGgNZ25wqhWnges6UFj/0BYId2wVXTO
+Fwe8vHilDRy+W12iAl43RF8f8f+TY89ECWUKYPbgJ2bFiiNsnx1e8ri9ulF8qCw7
+ILG7JJqJj/WzIoDesi9O/qSgB9E1CWjYJ8lSDUjbN8uhjPhjDqOhF306Sn8Sc2lY
+c/CtASb5xzynOE6ZuOuWauplUFyXW/12v8UeYQGHYpu5OAojVAlHF6fTZh0jHLlE
+AwnEjGFDoZJ1VmgT4T2aHmVva2yt0FqIKwJ8BBI5DNROFf6GXAaH2wtdi9eba4lP
+LgjNCCNj3atTvMsbBl5j3oGjYFnKy+flKiDaKpkt3bJDhUvDIxEenB76RzoXbG7Y
+i0RDjlqDKlaKk+I2LUK9
+=ajts
+-----END PGP SIGNATURE-----
+
+--4dIe/AmYstFUGHTF--
