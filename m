@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546Ab2FZOYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 10:24:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59239 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab2FZOYL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 10:24:11 -0400
-Message-ID: <4FE9C606.9070007@gmail.com>
-Date: Tue, 26 Jun 2012 08:24:06 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757649Ab2FZO1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 10:27:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56503 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751739Ab2FZO1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 10:27:14 -0400
+Date: Tue, 26 Jun 2012 16:25:58 +0200
+From: Anton Arapov <anton@redhat.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Kerneloops.org defunct?
+Message-ID: <20120626142558.GA20573@bandura.brq.redhat.com>
+References: <20110601212432.2677b03a.rdunlap@xenotime.net>
+ <201106211534.10366.roucaries.bastien@gmail.com>
+ <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+ <20110826173517.7321c086@lxorguk.ukuu.org.uk>
+ <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+ <20120625180536.GA29261@roeck-us.net>
+ <4FE8A9C0.3050802@linux.intel.com>
+ <20120625191233.GA29324@roeck-us.net>
+ <20120626071430.GA16299@bandura.brq.redhat.com>
+ <4FE9B646.9050706@linux.intel.com>
 MIME-Version: 1.0
-To: Martin Rosenberg <mrosenberg@mozilla.com>
-CC: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: perf report does not get along with perf record -A
-References: <443195725.4576626.1340669457668.JavaMail.root@mozilla.com>
-In-Reply-To: <443195725.4576626.1340669457668.JavaMail.root@mozilla.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE9B646.9050706@linux.intel.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/25/12 6:10 PM, Martin Rosenberg wrote:
-> I'm working under the assumption that if I want to collect statistics from multiple runs of a program, I can do this by running
-> perf record prog; perf record -A prog; perf record -A prog
->
-> I've found that running perf record twice results in perf report hanging, and running it more than twice results in perf report first spewing a message about invalid formats, then crashing.
-> A log of the session, as well as the binary, its input and perf.data can be found at:
->
-> http://www.club.cc.cmu.edu/~mjrosenb/ion/perf_crash.tar.gz
+On Tue, Jun 26, 2012 at 06:16:54AM -0700, Arjan van de Ven wrote:
+> On 6/26/2012 12:14 AM, Anton Arapov wrote:
+> >   All in all, it seems to be optimistic so far, and I hope we will
+> > have some web gui this summer. Although we don't have much oopses
+> > reported yet and changing the ip address of kerneloops.org, as
+> > mentioned before, might help.
+> this is the problem indeed. When Fedora stopped submitting oopses to
+> kerneloops.org, the project became suddenly of much much less value.
+> (this was well before the kernel.org issues)
+  I was a bit afraid that Fedora was the major contributor. Also I'm 
+not quite sure why Fedora stopped to submitting the reports, don't
+remember we've changed anything in that respect.
 
-
-Append has been broken for a long time (v2.6.36 last working version).
-
-git bisect points to:
-
-commit 55b44629f599a2305265ae9c77f9d9bcfd6ddc17
-Author: Thomas Gleixner <tglx@linutronix.de>
-Date:   Tue Nov 30 17:49:46 2010 +0000
-
-     perf session: Use sensible mmap size
-
-     On 64bit we can map the whole file in one go, on 32bit we can at 
-least map
-     32MB and not map/unmap tiny chunks of the file.
-
-     Base the progress bar on 1/16 of the data size.
-
-     Preparatory patch to get rid of the malloc/memcpy/free of trace data.
-
-     Cc: Ingo Molnar <mingo@elte.hu>
-     Cc: Peter Zijlstra <peterz@infradead.org>
-     Cc: Frederic Weisbecker <fweisbec@gmail.com>
-     LKML-Reference: <20101130163820.213687773@linutronix.de>
-     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-:040000 040000 a0d7ddfb30b562a548052b12b142b579aa888886 
-dd4e368cbdf0ba24126afcc0fe42feea3b68f4a7 M	tools
-
-
-The commit right before that one (d65132) dumps some errors, but at 
-least does not hang -- spinning in the event processing.
-
-David
+thanks,
+-
+Anton.
