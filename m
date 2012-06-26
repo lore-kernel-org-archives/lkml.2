@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab2FZGmb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 02:42:31 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:48592 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751293Ab2FZGm2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 02:42:28 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsEMAClZ6U9bdWOb/2dsb2JhbABEhVqoICKIEYEHghgBAQUjBFIQCxgCAiYCAlcGE4gPpX2TGIEgjwWBEgOlNIJh
-X-IronPort-AV: E=Sophos;i="4.77,476,1336341600"; 
-   d="scan'208";a="1008846128"
-Message-ID: <1340692980.4177.6.camel@fourier.local.igalia.com>
-Subject: Re: [PATCH] drivers: staging: android: binder.c: fix printk macros
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Sherwin Soltani <sherwin@wybc.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        swetland@google.com, linux-kernel@vger.kernel.org
-Date: Tue, 26 Jun 2012 08:43:00 +0200
-In-Reply-To: <1340690430-13016-1-git-send-email-sherwin@wybc.com>
-References: <1340690430-13016-1-git-send-email-sherwin@wybc.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S1756445Ab2FZG4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 02:56:55 -0400
+Received: from mail2.unitix.de ([176.9.2.175]:55006 "EHLO mail2.unitix.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553Ab2FZG4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 02:56:54 -0400
+X-Greylist: delayed 486 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Jun 2012 02:56:54 EDT
+Message-ID: <4FE95B45.8030909@arndnet.de>
+Date: Tue, 26 Jun 2012 08:48:37 +0200
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: chris.mason@fusionio.com
+CC: dave@jikos.cz, linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ierdnah@gmail.com
+Subject: Re: [PATCH v2] Btrfs: allow mount -o remount,compress=no
+References: <20120406102232.GH14256@twin.jikos.cz> <1334582871-3670-1-git-send-email-arnd@arndnet.de> <20120416144233.GC20982@twin.jikos.cz>
+In-Reply-To: <20120416144233.GC20982@twin.jikos.cz>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-26 at 02:00 -0400, Sherwin Soltani wrote:
-> Change printk() messages to pr_* macros.
+Hi Chris,
+
+Am 16.04.2012 16:42, schrieb David Sterba:
+> On Mon, Apr 16, 2012 at 03:27:51PM +0200, Arnd Hannemann wrote:
+>> Btrfs allows to turn on compression on a mounted and used filesystem
+>> by issuing mount -o remount,compress=lzo.
+>> This patch allows to turn compression off again
+>> while the filesystem is mounted. As suggested by David Sterba
+>> if the compress-force option was set, it is implicitly cleared
+>> if compression is turned off.
+>>
+>> Signed-off-by: Arnd Hannemann <arnd@arndnet.de>
 > 
-> Signed-off-by: Sherwin Soltani <sherwin@wybc.com>
-> ---
->  drivers/staging/android/binder.c |   54 +++++++++++++++++++-------------------
->  1 file changed, 27 insertions(+), 27 deletions(-)
+> Tested-by: David Sterba <dsterba@suse.cz>
 > 
-> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-> index c283212..574e992 100644
-> --- a/drivers/staging/android/binder.c
-> +++ b/drivers/staging/android/binder.c
-> @@ -124,13 +124,13 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
->  #define binder_debug(mask, x...) \
->  	do { \
->  		if (binder_debug_mask & mask) \
-> -			printk(KERN_INFO x); \
-> +			pr_info(x); \
->  	} while (0)
->  
->  #define binder_user_error(x...) \
->  	do { \
->  		if (binder_debug_mask & BINDER_DEBUG_USER_ERROR) \
-> -			printk(KERN_INFO x); \
-> +			pr_info(x); \
->  		if (binder_stop_on_user_error) \
->  			binder_stop_on_user_error = 2; \
->  	} while (0)
-> @@ -418,7 +418,7 @@ repeat:
->  #if 1
->  	/* Sanity check */
->  	if (fdt->fd[fd] != NULL) {
-> -		printk(KERN_WARNING "get_unused_fd: slot %d not NULL!\n", fd);
-> +		pr_warn("get_unused_fd: slot %d not NULL!\n", fd);
->  		fdt->fd[fd] = NULL;
->  	}
->  #endif
-> @@ -644,7 +644,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
->  		goto free_range;
->  
->  	if (vma == NULL) {
-> -		printk(KERN_ERR "binder: %d: binder_alloc_buf failed to "
-> +		pr_err("binder: %d: binder_alloc_buf failed to "
->  		       "map pages in userspace, no vma\n", proc->pid);
+> worked perfectly, remounting back and forth with compress=lzo =no
+> -force=lzo etc, checked output via 'mount'.
 
-Instead of using the "binder: " prefix here and there and now that you
-have changed to pr_* functions, you can define the pr_fmt macro at the
-beginning of the file (just before the #include sentences).
+How show should we proceed to get above mentioned patch
+(or the similar patch from Andrei Popa) merged?
 
-Regards,
-
-Sam
+Best regards,
+Arnd
 
 
