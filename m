@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab2FZTBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 15:01:42 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43610 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab2FZTBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 15:01:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1340736849-14875-2-git-send-email-yinghai@kernel.org>
-References: <1340736849-14875-1-git-send-email-yinghai@kernel.org> <1340736849-14875-2-git-send-email-yinghai@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 26 Jun 2012 12:01:19 -0700
-X-Google-Sender-Auth: -RsGbQYldX1B_hgQRNmrv_hT9HI
-Message-ID: <CA+55aFzi7tHg=3k8Fmga8XmxFbn6tZLLV97vt67Xx_WtckQo6g@mail.gmail.com>
-Subject: Re: [PATCH -v12 01/15] resources: Split out __allocate_resource()
+	id S1752434Ab2FZTIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 15:08:44 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53071 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751036Ab2FZTIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 15:08:43 -0400
+Date: Tue, 26 Jun 2012 21:08:25 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
 To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        davem@davemloft.net, shangw@linux.vnet.ibm.com, tj@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 046/181] mm: remove sparsemem allocation details from the
+ bootmem allocator
+Message-ID: <20120626190825.GF27816@cmpxchg.org>
+References: <20120529220636.AAA66A0308@akpm.mtv.corp.google.com>
+ <CAE9FiQVEq5j1zoKS31fgfG_3xZSyfqsjdDorDku-Sgj6BTShEg@mail.gmail.com>
+ <CAE9FiQXR+3k4QmOJe59xom+JW5JZAP3znRXQwdyqV5LMEPCw2g@mail.gmail.com>
+ <20120623091752.GK27816@cmpxchg.org>
+ <CAE9FiQXYG0=XFAzZStExBTNqdnRPMSjASNydM45GC_G6qfuNkA@mail.gmail.com>
+ <20120623220616.GS27816@cmpxchg.org>
+ <CAE9FiQWoR_CJd8GD5i5jeFm=_ghUsdTwx8LbP8DnwgdEHo64uQ@mail.gmail.com>
+ <20120626081754.GY27816@cmpxchg.org>
+ <CAE9FiQWVEDHKeRN3+t39Hch8wpNdjsv15yTyVVLGRdK=yw2n4g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQWVEDHKeRN3+t39Hch8wpNdjsv15yTyVVLGRdK=yw2n4g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 11:53 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> It will take bool lock, so we could use it in other functions that
-> hold the resource lock already.
+On Tue, Jun 26, 2012 at 11:20:16AM -0700, Yinghai Lu wrote:
+> On Tue, Jun 26, 2012 at 1:17 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > No use in reverting it, as the bootmem version was already broken
+> > before, when the limit was removed in f5bf18f "bootmem/sparsemem:
+> > remove limit constraint in alloc_bootmem_section".
+> >
+> > I'm okay with exporting and using ___alloc_bootmem_node_nopanic() in
+> > 3.5.
+> 
+> Good. Assume that is Acked-by you.
 
-This is too damn ugly.
+Yes,
 
-These kinds of "conditionally take lock" things are always just bugs
-waiting to happen. Don't do it.
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Just make the rule be that the caller of the __allocate_resource
-helper has to hold the lock. Sure, that means that you need to then
-use split reallocate_resource() into a helper function (ie a static
-__reallocate_resource() that needs to have the lock taken by the
-caller too), but dammit, that's definitely the right thing to do
-anyway.
-
-These kinds of "bool lock" crap things have to die. They are *wrong*.
-They are a sign of bad locking rules.
-
-                  Linus
+Thanks, Yinghai!
