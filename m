@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab2FZO1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 10:27:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52040 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757962Ab2FZO1v (ORCPT
+	id S1758140Ab2FZO3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 10:29:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17917 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757907Ab2FZO3Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 10:27:51 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [Regression] No sound on HP Pavilion dv6, STAC92xx
-References: <87d34mtb3c.fsf@canonical.com> <s5hvcie5faz.wl%tiwai@suse.de>
-Date: Tue, 26 Jun 2012 15:27:48 +0100
-In-Reply-To: <s5hvcie5faz.wl%tiwai@suse.de> (Takashi Iwai's message of "Tue,
-	26 Jun 2012 16:16:36 +0200")
-Message-ID: <878vfatafv.fsf@canonical.com>
-User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.1.50 (gnu/linux)
+	Tue, 26 Jun 2012 10:29:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="116164557"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "Yanmin Zhang <yanmin_zhang@linux.intel.com>
+	(yanmin_zhang@linux.intel.com)" <yanmin_zhang@linux.intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Subject: [PATCH] i2c_dw: deadlock happening when system is trying to suspend
+Thread-Topic: [PATCH] i2c_dw: deadlock happening when system is trying to
+ suspend
+Thread-Index: Ac1TqAs88tDkH1x9TJStda6PpccI5Q==
+Date: Tue, 26 Jun 2012 14:29:13 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A0EE76A@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takashi Iwai <tiwai@suse.de> writes:
+From: liu chuansheng <chuansheng.liu@intel.com>
+Subject: [PATCH] i2c_dw: deadlock happening when system is trying to suspend
 
-> At Tue, 26 Jun 2012 15:13:43 +0100,
-> Luis Henriques wrote:
->> 
->> Hi,
->> 
->> After commit b0791dda813c179e539b0fc1ecd3f5f30f2571e2 ("ALSA: hda/idt
->> - Fix power-map for speaker-pins with some HP laptops") we have
->> several bug reports about not having sound on HP Pavilion laptops.
->> 
->> Here's a link to one of these bug reports:
->> 
->>  http://bugs.launchpad.net/bugs/1013183
->> 
->> After reverting the referred commit, everything seems to be working
->> fine again.
->> 
->> Any ideas/fixes?
->
-> Could you give alsa-info.sh output on both working and non-working
-> kernels?
+In i2c_dw code, there is a race condition that causes pm suspend
+thread blocking there always. The scenerio is as below:
 
-You should be to get the same information in the bug URL.  But I'll
-try to get that info using that script from one of the bug reports.
+PM thread:
+suspend -->
+pm_suspend -->
+enter_state -->
+dpm_suspend_start(will call i2c_dw_pci_suspend(),
+and the dw_i2c_dev->lock is hold)
+...
+suspend_enter -->
+dpm_suspend_noirq -->
+suspend_device_irqs -->
+synchronize_irq()
 
-Thanks
---
-Luis
+synchronize_irq will wait for any pending irq is handled, and
+the correpsonding irq thread is finished.
 
->
->
-> Takashi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+In this case, there is a i2c device interrupt is pending, the irq
+thread do the below things:
+IRQ thread:
+i2c_smbus_read_byte_data -->
+i2c_smbus_xfer -->
+i2c_transfer -->
+i2c_dw_xfer -->
+down()
+
+The irq thread blocked at down dw_i2c_dev->lock, because in PM thread,
+it has been hold after calling i2c_dw_pci_suspend(), but PM thread is
+waiting for IRQ thread, then deadlock happened.
+
+The solution is moving the down() action after pm_runtime_get_sync().
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 1e48bec..748ecb1 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -512,8 +512,8 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+ 
+        dev_dbg(dev->dev, "%s: msgs: %d\n", __func__, num);
+ 
+-       mutex_lock(&dev->lock);
+        pm_runtime_get_sync(dev->dev);
++       mutex_lock(&dev->lock);
+ 
+        INIT_COMPLETION(dev->cmd_complete);
+        dev->msgs = msgs;
+-- 
+1.7.0.4
