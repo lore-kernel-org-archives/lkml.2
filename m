@@ -1,753 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab2FZUdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 16:33:17 -0400
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:56230 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137Ab2FZUdP (ORCPT
+	id S1753834Ab2FZUdn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 16:33:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33259 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab2FZUdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 16:33:15 -0400
-From: Frank Swiderski <fes@google.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, riel@redhat.com,
-        Andrea Arcangeli <aarcange@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, mikew@google.com,
-        Frank Swiderski <fes@google.com>
-Subject: [PATCH] Add a page cache-backed balloon device driver.
-Date: Tue, 26 Jun 2012 13:32:58 -0700
-Message-Id: <1340742778-11282-1-git-send-email-fes@google.com>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 26 Jun 2012 16:33:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzi7tHg=3k8Fmga8XmxFbn6tZLLV97vt67Xx_WtckQo6g@mail.gmail.com>
+References: <1340736849-14875-1-git-send-email-yinghai@kernel.org>
+	<1340736849-14875-2-git-send-email-yinghai@kernel.org>
+	<CA+55aFzi7tHg=3k8Fmga8XmxFbn6tZLLV97vt67Xx_WtckQo6g@mail.gmail.com>
+Date: Tue, 26 Jun 2012 13:33:40 -0700
+X-Google-Sender-Auth: o62JoJ-fz6oAqp_a8oZPbDxB-HE
+Message-ID: <CAE9FiQVBPoEinWC__9DF-oi8T-78YJRn95J=xXdL2GzNoKoCaQ@mail.gmail.com>
+Subject: Re: [PATCH -v12 01/15] resources: Split out __allocate_resource()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b339cc18aadad04c3660338
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This implementation of a virtio balloon driver uses the page cache to
-"store" pages that have been released to the host.  The communication
-(outside of target counts) is one way--the guest notifies the host when
-it adds a page to the page cache, allowing the host to madvise(2) with
-MADV_DONTNEED.  Reclaim in the guest is therefore automatic and implicit
-(via the regular page reclaim).  This means that inflating the balloon
-is similar to the existing balloon mechanism, but the deflate is
-different--it re-uses existing Linux kernel functionality to
-automatically reclaim.
+--047d7b339cc18aadad04c3660338
+Content-Type: text/plain; charset=ISO-8859-1
 
-Signed-off-by: Frank Swiderski <fes@google.com>
----
- drivers/virtio/Kconfig              |   13 +
- drivers/virtio/Makefile             |    1 +
- drivers/virtio/virtio_fileballoon.c |  636 +++++++++++++++++++++++++++++++++++
- include/linux/virtio_balloon.h      |    9 +
- include/linux/virtio_ids.h          |    1 +
- 5 files changed, 660 insertions(+), 0 deletions(-)
- create mode 100644 drivers/virtio/virtio_fileballoon.c
+On Tue, Jun 26, 2012 at 12:01 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Jun 26, 2012 at 11:53 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> It will take bool lock, so we could use it in other functions that
+>> hold the resource lock already.
+>
+> This is too damn ugly.
+>
+> These kinds of "conditionally take lock" things are always just bugs
+> waiting to happen. Don't do it.
+>
+> Just make the rule be that the caller of the __allocate_resource
+> helper has to hold the lock. Sure, that means that you need to then
+> use split reallocate_resource() into a helper function (ie a static
+> __reallocate_resource() that needs to have the lock taken by the
+> caller too), but dammit, that's definitely the right thing to do
+> anyway.
+>
+> These kinds of "bool lock" crap things have to die. They are *wrong*.
+> They are a sign of bad locking rules.
 
-diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
-index f38b17a..cffa2a7 100644
---- a/drivers/virtio/Kconfig
-+++ b/drivers/virtio/Kconfig
-@@ -35,6 +35,19 @@ config VIRTIO_BALLOON
- 
- 	 If unsure, say M.
- 
-+config VIRTIO_FILEBALLOON
-+	tristate "Virtio page cache-backed balloon driver"
-+	select VIRTIO
-+	select VIRTIO_RING
-+	---help---
-+	 This driver supports decreasing and automatically reclaiming the
-+	 memory within a guest VM.  Unlike VIRTIO_BALLOON, this driver instead
-+	 tries to maintain a specific target balloon size using the page cache.
-+	 This allows the guest to implicitly deflate the balloon by flushing
-+	 pages from the cache and touching the page.
-+
-+	 If unsure, say N.
-+
-  config VIRTIO_MMIO
-  	tristate "Platform bus driver for memory mapped virtio devices (EXPERIMENTAL)"
-  	depends on HAS_IOMEM && EXPERIMENTAL
-diff --git a/drivers/virtio/Makefile b/drivers/virtio/Makefile
-index 5a4c63c..7ca0a3f 100644
---- a/drivers/virtio/Makefile
-+++ b/drivers/virtio/Makefile
-@@ -3,3 +3,4 @@ obj-$(CONFIG_VIRTIO_RING) += virtio_ring.o
- obj-$(CONFIG_VIRTIO_MMIO) += virtio_mmio.o
- obj-$(CONFIG_VIRTIO_PCI) += virtio_pci.o
- obj-$(CONFIG_VIRTIO_BALLOON) += virtio_balloon.o
-+obj-$(CONFIG_VIRTIO_FILEBALLOON) += virtio_fileballoon.o
-diff --git a/drivers/virtio/virtio_fileballoon.c b/drivers/virtio/virtio_fileballoon.c
-new file mode 100644
-index 0000000..ff252ec
---- /dev/null
-+++ b/drivers/virtio/virtio_fileballoon.c
-@@ -0,0 +1,636 @@
-+/* Virtio file (page cache-backed) balloon implementation, inspired by
-+ * Dor Loar and Marcelo Tosatti's implementations, and based on Rusty Russel's
-+ * implementation.
-+ *
-+ * This implementation of the virtio balloon driver re-uses the page cache to
-+ * allow memory consumed by inflating the balloon to be reclaimed by linux.  It
-+ * creates and mounts a bare-bones filesystem containing a single inode.  When
-+ * the host requests the balloon to inflate, it does so by "reading" pages at
-+ * offsets into the inode mapping's page_tree.  The host is notified when the
-+ * pages are added to the page_tree, allowing it (the host) to madvise(2) the
-+ * corresponding host memory, reducing the RSS of the virtual machine.  In this
-+ * implementation, the host is only notified when a page is added to the
-+ * balloon.  Reclaim happens under the existing TTFP logic, which flushes unused
-+ * pages in the page cache.  If the host used MADV_DONTNEED, then when the guest
-+ * uses the page, the zero page will be mapped in, allowing automatic (and fast,
-+ * compared to requiring a host notification via a virtio queue to get memory
-+ * back) reclaim.
-+ *
-+ *  Copyright 2008 Rusty Russell IBM Corporation
-+ *  Copyright 2011 Frank Swiderski Google Inc
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+ */
-+#include <linux/backing-dev.h>
-+#include <linux/delay.h>
-+#include <linux/file.h>
-+#include <linux/freezer.h>
-+#include <linux/fs.h>
-+#include <linux/jiffies.h>
-+#include <linux/kthread.h>
-+#include <linux/module.h>
-+#include <linux/mount.h>
-+#include <linux/pagemap.h>
-+#include <linux/slab.h>
-+#include <linux/swap.h>
-+#include <linux/virtio.h>
-+#include <linux/virtio_balloon.h>
-+#include <linux/writeback.h>
-+
-+#define VIRTBALLOON_PFN_ARRAY_SIZE 256
-+
-+struct virtio_balloon {
-+	struct virtio_device *vdev;
-+	struct virtqueue *inflate_vq;
-+
-+	/* Where the ballooning thread waits for config to change. */
-+	wait_queue_head_t config_change;
-+
-+	/* The thread servicing the balloon. */
-+	struct task_struct *thread;
-+
-+	/* Waiting for host to ack the pages we released. */
-+	struct completion acked;
-+
-+	/* The array of pfns we tell the Host about. */
-+	unsigned int num_pfns;
-+	u32 pfns[VIRTBALLOON_PFN_ARRAY_SIZE];
-+
-+	struct virtio_balloon_stat stats[VIRTIO_BALLOON_S_NR];
-+
-+	/* The last page offset read into the mapping's page_tree */
-+	unsigned long last_scan_page_array;
-+
-+	/* The last time a page was reclaimed */
-+	unsigned long last_reclaim;
-+};
-+
-+/* Magic number used for the skeleton filesystem in the call to mount_pseudo */
-+#define BALLOONFS_MAGIC 0x42414c4c
-+
-+static struct virtio_device_id id_table[] = {
-+	{ VIRTIO_ID_FILE_BALLOON, VIRTIO_DEV_ANY_ID },
-+	{ 0 },
-+};
-+
-+/*
-+ * The skeleton filesystem contains a single inode, held by the structure below.
-+ * Using the containing structure below allows easy access to the struct
-+ * virtio_balloon.
-+ */
-+static struct balloon_inode {
-+	struct inode inode;
-+	struct virtio_balloon *vb;
-+} the_inode;
-+
-+/*
-+ * balloon_alloc_inode is called when the single inode for the skeleton
-+ * filesystem is created in init() with the call to new_inode.
-+ */
-+static struct inode *balloon_alloc_inode(struct super_block *sb)
-+{
-+	static bool already_inited;
-+	/* We should only ever be called once! */
-+	BUG_ON(already_inited);
-+	already_inited = true;
-+	inode_init_once(&the_inode.inode);
-+	return &the_inode.inode;
-+}
-+
-+/* Noop implementation of destroy_inode.  */
-+static void balloon_destroy_inode(struct inode *inode)
-+{
-+}
-+
-+static int balloon_sync_fs(struct super_block *sb, int wait)
-+{
-+	return filemap_write_and_wait(the_inode.inode.i_mapping);
-+}
-+
-+static const struct super_operations balloonfs_ops = {
-+	.alloc_inode	= balloon_alloc_inode,
-+	.destroy_inode	= balloon_destroy_inode,
-+	.sync_fs	= balloon_sync_fs,
-+};
-+
-+static const struct dentry_operations balloonfs_dentry_operations = {
-+};
-+
-+/*
-+ * balloonfs_writepage is called when linux needs to reclaim memory held using
-+ * the balloonfs' page cache.
-+ */
-+static int balloonfs_writepage(struct page *page, struct writeback_control *wbc)
-+{
-+	the_inode.vb->last_reclaim = jiffies;
-+	SetPageUptodate(page);
-+	ClearPageDirty(page);
-+	/*
-+	 * If the page isn't being flushed from the page allocator, go ahead and
-+	 * drop it from the page cache anyway.
-+	 */
-+	if (!wbc->for_reclaim)
-+		delete_from_page_cache(page);
-+	unlock_page(page);
-+	return 0;
-+}
-+
-+/* Nearly no-op implementation of readpage */
-+static int balloonfs_readpage(struct file *file, struct page *page)
-+{
-+	SetPageUptodate(page);
-+	unlock_page(page);
-+	return 0;
-+}
-+
-+static const struct address_space_operations balloonfs_aops = {
-+	.writepage	= balloonfs_writepage,
-+	.readpage	= balloonfs_readpage
-+};
-+
-+static struct backing_dev_info balloonfs_backing_dev_info = {
-+	.name		= "balloonfs",
-+	.ra_pages	= 0,
-+	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK
-+};
-+
-+static struct dentry *balloonfs_mount(struct file_system_type *fs_type,
-+			 int flags, const char *dev_name, void *data)
-+{
-+	struct dentry *root;
-+	struct inode *inode;
-+	root = mount_pseudo(fs_type, "balloon:", &balloonfs_ops,
-+			    &balloonfs_dentry_operations, BALLOONFS_MAGIC);
-+	inode = root->d_inode;
-+	inode->i_mapping->a_ops = &balloonfs_aops;
-+	mapping_set_gfp_mask(inode->i_mapping,
-+			     (GFP_HIGHUSER | __GFP_NOMEMALLOC));
-+	inode->i_mapping->backing_dev_info = &balloonfs_backing_dev_info;
-+	return root;
-+}
-+
-+/* The single mounted skeleton filesystem */
-+static struct vfsmount *balloon_mnt __read_mostly;
-+
-+static struct file_system_type balloon_fs_type = {
-+	.name =		"balloonfs",
-+	.mount =	balloonfs_mount,
-+	.kill_sb =	kill_anon_super,
-+};
-+
-+/* Acknowledges a message from the specified virtqueue. */
-+static void balloon_ack(struct virtqueue *vq)
-+{
-+	struct virtio_balloon *vb;
-+	unsigned int len;
-+
-+	vb = virtqueue_get_buf(vq, &len);
-+	if (vb)
-+		complete(&vb->acked);
-+}
-+
-+/*
-+ * Scans the page_tree for the inode's mapping, looking for an offset that is
-+ * currently empty, returning that index (or 0 if it could not fill the
-+ * request).
-+ */
-+static unsigned long find_available_inode_page(struct virtio_balloon *vb)
-+{
-+	unsigned long radix_index, index, max_scan;
-+	struct address_space *mapping = the_inode.inode.i_mapping;
-+
-+	/*
-+	 * This function is a serialized call (only happens on the free-to-host
-+	 * thread), so no locking is necessary here.
-+	 */
-+	index = vb->last_scan_page_array;
-+	max_scan = totalram_pages - vb->last_scan_page_array;
-+
-+	/*
-+	 * Scan starting at the last scanned offset, then wrap around if
-+	 * necessary.
-+	 */
-+	if (index == 0)
-+		index = 1;
-+	rcu_read_lock();
-+	radix_index = radix_tree_next_hole(&mapping->page_tree,
-+					   index, max_scan);
-+	rcu_read_unlock();
-+	/*
-+	 * If we hit the end of the tree, wrap and search up to the original
-+	 * index.
-+	 */
-+	if (radix_index - index >= max_scan) {
-+		if (index != 1) {
-+			rcu_read_lock();
-+			radix_index = radix_tree_next_hole(&mapping->page_tree,
-+							   1, index);
-+			rcu_read_unlock();
-+			if (radix_index - 1 >= index)
-+				radix_index = 0;
-+		} else {
-+			radix_index = 0;
-+		}
-+	}
-+	vb->last_scan_page_array = radix_index;
-+
-+	return radix_index;
-+}
-+
-+/* Notifies the host of pages in the specified virtqueue. */
-+static int tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
-+{
-+	int err;
-+	struct scatterlist sg;
-+
-+	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
-+
-+	init_completion(&vb->acked);
-+
-+	/* We should always be able to add one buffer to an empty queue. */
-+	err = virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL);
-+	if (err  < 0)
-+		return err;
-+	virtqueue_kick(vq);
-+
-+	/* When host has read buffer, this completes via balloon_ack */
-+	wait_for_completion(&vb->acked);
-+	return err;
-+}
-+
-+static void fill_balloon(struct virtio_balloon *vb, size_t num)
-+{
-+	int err;
-+
-+	/* We can only do one array worth at a time. */
-+	num = min(num, ARRAY_SIZE(vb->pfns));
-+
-+	for (vb->num_pfns = 0; vb->num_pfns < num; vb->num_pfns++) {
-+		struct page *page;
-+		unsigned long inode_pfn = find_available_inode_page(vb);
-+		/* Should always be able to find a page. */
-+		BUG_ON(!inode_pfn);
-+		page = read_mapping_page(the_inode.inode.i_mapping, inode_pfn,
-+					 NULL);
-+		if (IS_ERR(page)) {
-+			if (printk_ratelimit())
-+				dev_printk(KERN_INFO, &vb->vdev->dev,
-+					   "Out of puff! Can't get %zu pages\n",
-+					   num);
-+			break;
-+		}
-+
-+		/* Set the page to be dirty */
-+		set_page_dirty(page);
-+
-+		vb->pfns[vb->num_pfns] = page_to_pfn(page);
-+	}
-+
-+	/* Didn't get any?  Oh well. */
-+	if (vb->num_pfns == 0)
-+		return;
-+
-+	/* Notify the host of the pages we just added to the page_tree. */
-+	err = tell_host(vb, vb->inflate_vq);
-+
-+	for (; vb->num_pfns != 0; vb->num_pfns--) {
-+		struct page *page = pfn_to_page(vb->pfns[vb->num_pfns - 1]);
-+		/*
-+		 * Release our refcount on the page so that it can be reclaimed
-+		 * when necessary.
-+		 */
-+		page_cache_release(page);
-+	}
-+	__mark_inode_dirty(&the_inode.inode, I_DIRTY_PAGES);
-+}
-+
-+static inline void update_stat(struct virtio_balloon *vb, int idx,
-+			       u64 val)
-+{
-+	BUG_ON(idx >= VIRTIO_BALLOON_S_NR);
-+	vb->stats[idx].tag = idx;
-+	vb->stats[idx].val = val;
-+}
-+
-+#define pages_to_bytes(x) ((u64)(x) << PAGE_SHIFT)
-+
-+static inline u32 config_pages(struct virtio_balloon *vb);
-+static void update_balloon_stats(struct virtio_balloon *vb)
-+{
-+	unsigned long events[NR_VM_EVENT_ITEMS];
-+	struct sysinfo i;
-+
-+	all_vm_events(events);
-+	si_meminfo(&i);
-+
-+	update_stat(vb, VIRTIO_BALLOON_S_SWAP_IN,
-+		    pages_to_bytes(events[PSWPIN]));
-+	update_stat(vb, VIRTIO_BALLOON_S_SWAP_OUT,
-+		    pages_to_bytes(events[PSWPOUT]));
-+	update_stat(vb, VIRTIO_BALLOON_S_MAJFLT, events[PGMAJFAULT]);
-+	update_stat(vb, VIRTIO_BALLOON_S_MINFLT, events[PGFAULT]);
-+
-+	/* Total and Free Mem */
-+	update_stat(vb, VIRTIO_BALLOON_S_MEMFREE, pages_to_bytes(i.freeram));
-+	update_stat(vb, VIRTIO_BALLOON_S_MEMTOT, pages_to_bytes(i.totalram));
-+}
-+
-+static void virtballoon_changed(struct virtio_device *vdev)
-+{
-+	struct virtio_balloon *vb = vdev->priv;
-+
-+	wake_up(&vb->config_change);
-+}
-+
-+static inline bool config_need_stats(struct virtio_balloon *vb)
-+{
-+	u32 v = 0;
-+
-+	vb->vdev->config->get(vb->vdev,
-+			      offsetof(struct virtio_balloon_config,
-+				       need_stats),
-+			      &v, sizeof(v));
-+	return (v != 0);
-+}
-+
-+static inline u32 config_pages(struct virtio_balloon *vb)
-+{
-+	u32 v = 0;
-+
-+	vb->vdev->config->get(vb->vdev,
-+			      offsetof(struct virtio_balloon_config, num_pages),
-+			      &v, sizeof(v));
-+	return v;
-+}
-+
-+static inline s64 towards_target(struct virtio_balloon *vb)
-+{
-+	struct address_space *mapping = the_inode.inode.i_mapping;
-+	u32 v = config_pages(vb);
-+
-+	return (s64)v - (mapping ? mapping->nrpages : 0);
-+}
-+
-+static void update_balloon_size(struct virtio_balloon *vb)
-+{
-+	struct address_space *mapping = the_inode.inode.i_mapping;
-+	__le32 actual = cpu_to_le32((mapping ? mapping->nrpages : 0));
-+
-+	vb->vdev->config->set(vb->vdev,
-+			      offsetof(struct virtio_balloon_config, actual),
-+			      &actual, sizeof(actual));
-+}
-+
-+static void update_free_and_total(struct virtio_balloon *vb)
-+{
-+	struct sysinfo i;
-+	u32 value;
-+
-+	si_meminfo(&i);
-+
-+	update_balloon_stats(vb);
-+	value = i.totalram;
-+	vb->vdev->config->set(vb->vdev,
-+			      offsetof(struct virtio_balloon_config,
-+				       pages_total),
-+			      &value, sizeof(value));
-+	value = i.freeram;
-+	vb->vdev->config->set(vb->vdev,
-+			      offsetof(struct virtio_balloon_config,
-+				       pages_free),
-+			      &value, sizeof(value));
-+	value = 0;
-+	vb->vdev->config->set(vb->vdev,
-+			      offsetof(struct virtio_balloon_config,
-+				       need_stats),
-+			      &value, sizeof(value));
-+}
-+
-+static int balloon(void *_vballoon)
-+{
-+	struct virtio_balloon *vb = _vballoon;
-+
-+	set_freezable();
-+	while (!kthread_should_stop()) {
-+		s64 diff;
-+		try_to_freeze();
-+		wait_event_interruptible(vb->config_change,
-+					 (diff = towards_target(vb)) > 0
-+					 || config_need_stats(vb)
-+					 || kthread_should_stop()
-+					 || freezing(current));
-+		if (config_need_stats(vb))
-+			update_free_and_total(vb);
-+		if (diff > 0) {
-+			unsigned long reclaim_time = vb->last_reclaim + 2 * HZ;
-+			/*
-+			 * Don't fill the balloon if a page reclaim happened in
-+			 * the past 2 seconds.
-+			 */
-+			if (time_after_eq(reclaim_time, jiffies)) {
-+				/* Inflating too fast--sleep and skip. */
-+				msleep(500);
-+			} else {
-+				fill_balloon(vb, diff);
-+			}
-+		} else if (diff < 0 && config_pages(vb) == 0) {
-+			/*
-+			 * Here we are specifically looking to detect the case
-+			 * where there are pages in the page cache, but the
-+			 * device wants us to go to 0.  This is used in save/
-+			 * restore since the host device doesn't keep track of
-+			 * PFNs, and must flush the page cache on restore
-+			 * (which loses the context of the original device
-+			 * instance).  However, we still suggest syncing the
-+			 * diff so that we can get within the target range.
-+			 */
-+			s64 nr_to_write =
-+				(!config_pages(vb) ? LONG_MAX : -diff);
-+			struct writeback_control wbc = {
-+				.sync_mode = WB_SYNC_ALL,
-+				.nr_to_write = nr_to_write,
-+				.range_start = 0,
-+				.range_end = LLONG_MAX,
-+			};
-+			sync_inode(&the_inode.inode, &wbc);
-+		}
-+		update_balloon_size(vb);
-+	}
-+	return 0;
-+}
-+
-+static ssize_t virtballoon_attr_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf);
-+
-+static DEVICE_ATTR(total_memory, 0644,
-+	virtballoon_attr_show, NULL);
-+
-+static DEVICE_ATTR(free_memory, 0644,
-+	virtballoon_attr_show, NULL);
-+
-+static DEVICE_ATTR(target_pages, 0644,
-+	virtballoon_attr_show, NULL);
-+
-+static DEVICE_ATTR(actual_pages, 0644,
-+	virtballoon_attr_show, NULL);
-+
-+static struct attribute *virtballoon_attrs[] = {
-+	&dev_attr_total_memory.attr,
-+	&dev_attr_free_memory.attr,
-+	&dev_attr_target_pages.attr,
-+	&dev_attr_actual_pages.attr,
-+	NULL
-+};
-+static struct attribute_group virtballoon_attr_group = {
-+	.name	= "virtballoon",
-+	.attrs	= virtballoon_attrs,
-+};
-+
-+static ssize_t virtballoon_attr_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf)
-+{
-+	struct address_space *mapping = the_inode.inode.i_mapping;
-+	struct virtio_device *vdev = container_of(dev, struct virtio_device,
-+						  dev);
-+	struct virtio_balloon *vb = vdev->priv;
-+	unsigned long long value = 0;
-+	if (attr == &dev_attr_total_memory)
-+		value = vb->stats[VIRTIO_BALLOON_S_MEMTOT].val;
-+	else if (attr == &dev_attr_free_memory)
-+		value = vb->stats[VIRTIO_BALLOON_S_MEMFREE].val;
-+	else if (attr == &dev_attr_target_pages)
-+		value = config_pages(vb);
-+	else if (attr == &dev_attr_actual_pages)
-+		value = cpu_to_le32((mapping ? mapping->nrpages : 0));
-+	return sprintf(buf, "%llu\n", value);
-+}
-+
-+static int virtballoon_probe(struct virtio_device *vdev)
-+{
-+	struct virtio_balloon *vb;
-+	struct virtqueue *vq[1];
-+	vq_callback_t *callback = balloon_ack;
-+	const char *name = "inflate";
-+	int err;
-+
-+	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
-+	if (!vb) {
-+		err = -ENOMEM;
-+		goto out;
-+	}
-+
-+	init_waitqueue_head(&vb->config_change);
-+	vb->vdev = vdev;
-+
-+	/* We use one virtqueue: inflate */
-+	err = vdev->config->find_vqs(vdev, 1, vq, &callback, &name);
-+	if (err)
-+		goto out_free_vb;
-+
-+	vb->inflate_vq = vq[0];
-+
-+	err = sysfs_create_group(&vdev->dev.kobj, &virtballoon_attr_group);
-+	if (err) {
-+		pr_err("Failed to create virtballoon sysfs node\n");
-+		goto out_free_vb;
-+	}
-+
-+	vb->last_scan_page_array = 0;
-+	vb->last_reclaim = 0;
-+	the_inode.vb = vb;
-+
-+	vb->thread = kthread_run(balloon, vb, "vballoon");
-+	if (IS_ERR(vb->thread)) {
-+		err = PTR_ERR(vb->thread);
-+		goto out_del_vqs;
-+	}
-+
-+	return 0;
-+
-+out_del_vqs:
-+	vdev->config->del_vqs(vdev);
-+out_free_vb:
-+	kfree(vb);
-+out:
-+	return err;
-+}
-+
-+static void __devexit virtballoon_remove(struct virtio_device *vdev)
-+{
-+	struct virtio_balloon *vb = vdev->priv;
-+
-+	kthread_stop(vb->thread);
-+
-+	sysfs_remove_group(&vdev->dev.kobj, &virtballoon_attr_group);
-+
-+	/* Now we reset the device so we can clean up the queues. */
-+	vdev->config->reset(vdev);
-+
-+	vdev->config->del_vqs(vdev);
-+	kfree(vb);
-+}
-+
-+static struct virtio_driver virtio_balloon_driver = {
-+	.feature_table		= NULL,
-+	.feature_table_size	= 0,
-+	.driver.name		= KBUILD_MODNAME,
-+	.driver.owner		= THIS_MODULE,
-+	.id_table		= id_table,
-+	.probe			= virtballoon_probe,
-+	.remove			= __devexit_p(virtballoon_remove),
-+	.config_changed		= virtballoon_changed,
-+};
-+
-+static int __init init(void)
-+{
-+	int err = register_filesystem(&balloon_fs_type);
-+	if (err)
-+		goto out;
-+
-+	balloon_mnt = kern_mount(&balloon_fs_type);
-+	if (IS_ERR(balloon_mnt)) {
-+		err = PTR_ERR(balloon_mnt);
-+		goto out_filesystem;
-+	}
-+
-+	err = register_virtio_driver(&virtio_balloon_driver);
-+	if (err)
-+		goto out_filesystem;
-+
-+	goto out;
-+
-+out_filesystem:
-+	unregister_filesystem(&balloon_fs_type);
-+
-+out:
-+	return err;
-+}
-+
-+static void __exit fini(void)
-+{
-+	if (balloon_mnt) {
-+		unregister_filesystem(&balloon_fs_type);
-+		balloon_mnt = NULL;
-+	}
-+	unregister_virtio_driver(&virtio_balloon_driver);
-+}
-+module_init(init);
-+module_exit(fini);
-+
-+MODULE_DEVICE_TABLE(virtio, id_table);
-+MODULE_DESCRIPTION("Virtio file (page cache-backed) balloon driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/virtio_balloon.h b/include/linux/virtio_balloon.h
-index 652dc8b..2be9a02 100644
---- a/include/linux/virtio_balloon.h
-+++ b/include/linux/virtio_balloon.h
-@@ -41,6 +41,15 @@ struct virtio_balloon_config
- 	__le32 num_pages;
- 	/* Number of pages we've actually got in balloon. */
- 	__le32 actual;
-+#if defined(CONFIG_VIRTIO_FILEBALLOON) ||\
-+	defined(CONFIG_VIRTIO_FILEBALLOON_MODULE)
-+	/* Total pages on this system. */
-+	__le32 pages_total;
-+	/* Free pages on this system. */
-+	__le32 pages_free;
-+	/* If the device needs pages_total/pages_free updated. */
-+	__le32 need_stats;
-+#endif
- };
- 
- #define VIRTIO_BALLOON_S_SWAP_IN  0   /* Amount of memory swapped in */
-diff --git a/include/linux/virtio_ids.h b/include/linux/virtio_ids.h
-index 7529b85..2f081d7 100644
---- a/include/linux/virtio_ids.h
-+++ b/include/linux/virtio_ids.h
-@@ -37,5 +37,6 @@
- #define VIRTIO_ID_RPMSG		7 /* virtio remote processor messaging */
- #define VIRTIO_ID_SCSI		8 /* virtio scsi */
- #define VIRTIO_ID_9P		9 /* 9p virtio console */
-+#define VIRTIO_ID_FILE_BALLOON	10 /* virtio file-backed balloon */
- 
- #endif /* _LINUX_VIRTIO_IDS_H */
--- 
-1.7.7.3
+You are right, please check updated one.
 
+Thanks
+
+Yinghai
+
+--047d7b339cc18aadad04c3660338
+Content-Type: application/octet-stream; name="probe_resource_1.patch"
+Content-Disposition: attachment; filename="probe_resource_1.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h3xfmagc0
+
+U3ViamVjdDogW1BBVENIXSByZXNvdXJjZXM6IFNwbGl0IG91dCBfX2FsbG9jYXRlX3Jlc291cmNl
+KCkKCkl0IHdpbGwgb3V0IGhvbGQgbG9jaywgc28gd2UgY291bGQgdXNlIGl0IGluIG90aGVyIGZ1
+bmN0aW9ucyB0aGF0CmhvbGQgdGhlIHJlc291cmNlIGxvY2sgYWxyZWFkeS4KCi12MjogYWNjb3Jk
+aW5nIHRvIExpbnVzLCB1c2luZyAiYm9vbCBsb2NrIiBhcyBwYXJhbWV0ZXIKICAgICBha2EgImNv
+bmRpdGlvbmFsbHkgdGFrZSBsb2NrIiBpcyAqd3JvbmcqLgoKU2lnbmVkLW9mZi1ieTogWWluZ2hh
+aSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpDYzogQW5kcmV3IE1vcnRvbiA8YWtwbUBsaW51eC1m
+b3VuZGF0aW9uLm9yZz4KCi0tLQoga2VybmVsL3Jlc291cmNlLmMgfCAgIDQxICsrKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgMzMgaW5zZXJ0
+aW9ucygrKSwgOCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYva2VybmVsL3Jlc291cmNl
+LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcva2VybmVsL3Jlc291cmNlLmMKKysrIGxp
+bnV4LTIuNi9rZXJuZWwvcmVzb3VyY2UuYwpAQCAtNDcwLDcgKzQ3MCw3IEBAIHN0YXRpYyBpbnQg
+ZmluZF9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UKICAqIEBuZXdzaXplOiBuZXcgc2l6ZSBvZiB0
+aGUgcmVzb3VyY2UgZGVzY3JpcHRvcgogICogQGNvbnN0cmFpbnQ6IHRoZSBzaXplIGFuZCBhbGln
+bm1lbnQgY29uc3RyYWludHMgdG8gYmUgbWV0LgogICovCi1pbnQgcmVhbGxvY2F0ZV9yZXNvdXJj
+ZShzdHJ1Y3QgcmVzb3VyY2UgKnJvb3QsIHN0cnVjdCByZXNvdXJjZSAqb2xkLAorc3RhdGljIGlu
+dCBfX3JlYWxsb2NhdGVfcmVzb3VyY2Uoc3RydWN0IHJlc291cmNlICpyb290LCBzdHJ1Y3QgcmVz
+b3VyY2UgKm9sZCwKIAkJCXJlc291cmNlX3NpemVfdCBuZXdzaXplLAogCQkJc3RydWN0IHJlc291
+cmNlX2NvbnN0cmFpbnQgICpjb25zdHJhaW50KQogewpAQCAtNDc4LDcgKzQ3OCw2IEBAIGludCBy
+ZWFsbG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZQogCXN0cnVjdCByZXNvdXJjZSBuZXcg
+PSAqb2xkOwogCXN0cnVjdCByZXNvdXJjZSAqY29uZmxpY3Q7CiAKLQl3cml0ZV9sb2NrKCZyZXNv
+dXJjZV9sb2NrKTsKIAogCWlmICgoZXJyID0gX19maW5kX3Jlc291cmNlKHJvb3QsIG9sZCwgJm5l
+dywgbmV3c2l6ZSwgY29uc3RyYWludCkpKQogCQlnb3RvIG91dDsKQEAgLTUwNCwxMSArNTAzLDIw
+IEBAIGludCByZWFsbG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZQogCQlCVUdfT04oY29u
+ZmxpY3QpOwogCX0KIG91dDoKLQl3cml0ZV91bmxvY2soJnJlc291cmNlX2xvY2spOwogCXJldHVy
+biBlcnI7CiB9CitpbnQgcmVhbGxvY2F0ZV9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UgKnJvb3Qs
+IHN0cnVjdCByZXNvdXJjZSAqb2xkLAorCQkJcmVzb3VyY2Vfc2l6ZV90IG5ld3NpemUsCisJCQlz
+dHJ1Y3QgcmVzb3VyY2VfY29uc3RyYWludCAgKmNvbnN0cmFpbnQpCit7CisJaW50IHJldDsKIAor
+CXdyaXRlX2xvY2soJnJlc291cmNlX2xvY2spOworCXJldCA9IF9fcmVhbGxvY2F0ZV9yZXNvdXJj
+ZShyb290LCBvbGQsIG5ld3NpemUsIGNvbnN0cmFpbnQpOworCXdyaXRlX3VubG9jaygmcmVzb3Vy
+Y2VfbG9jayk7CiAKKwlyZXR1cm4gcmV0OworfQogLyoqCiAgKiBhbGxvY2F0ZV9yZXNvdXJjZSAt
+IGFsbG9jYXRlIGVtcHR5IHNsb3QgaW4gdGhlIHJlc291cmNlIHRyZWUgZ2l2ZW4gcmFuZ2UgJiBh
+bGlnbm1lbnQuCiAgKiAJVGhlIHJlc291cmNlIHdpbGwgYmUgcmVhbGxvY2F0ZWQgd2l0aCBhIG5l
+dyBzaXplIGlmIGl0IHdhcyBhbHJlYWR5IGFsbG9jYXRlZApAQCAtNTIxLDcgKzUyOSw3IEBAIG91
+dDoKICAqIEBhbGlnbmY6IGFsaWdubWVudCBmdW5jdGlvbiwgb3B0aW9uYWwsIGNhbGxlZCBpZiBu
+b3QgTlVMTAogICogQGFsaWduZl9kYXRhOiBhcmJpdHJhcnkgZGF0YSB0byBwYXNzIHRvIHRoZSBA
+YWxpZ25mIGZ1bmN0aW9uCiAgKi8KLWludCBhbGxvY2F0ZV9yZXNvdXJjZShzdHJ1Y3QgcmVzb3Vy
+Y2UgKnJvb3QsIHN0cnVjdCByZXNvdXJjZSAqbmV3LAorc3RhdGljIGludCBfX2FsbG9jYXRlX3Jl
+c291cmNlKHN0cnVjdCByZXNvdXJjZSAqcm9vdCwgc3RydWN0IHJlc291cmNlICpuZXcsCiAJCSAg
+ICAgIHJlc291cmNlX3NpemVfdCBzaXplLCByZXNvdXJjZV9zaXplX3QgbWluLAogCQkgICAgICBy
+ZXNvdXJjZV9zaXplX3QgbWF4LCByZXNvdXJjZV9zaXplX3QgYWxpZ24sCiAJCSAgICAgIHJlc291
+cmNlX3NpemVfdCAoKmFsaWduZikodm9pZCAqLApAQCAtNTQyLDE5ICs1NTAsMzYgQEAgaW50IGFs
+bG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqcgogCWNvbnN0cmFpbnQuYWxpZ25mID0g
+YWxpZ25mOwogCWNvbnN0cmFpbnQuYWxpZ25mX2RhdGEgPSBhbGlnbmZfZGF0YTsKIAotCWlmICgg
+bmV3LT5wYXJlbnQgKSB7CisJaWYgKG5ldy0+cGFyZW50KSB7CiAJCS8qIHJlc291cmNlIGlzIGFs
+cmVhZHkgYWxsb2NhdGVkLCB0cnkgcmVhbGxvY2F0aW5nIHdpdGgKIAkJICAgdGhlIG5ldyBjb25z
+dHJhaW50cyAqLwotCQlyZXR1cm4gcmVhbGxvY2F0ZV9yZXNvdXJjZShyb290LCBuZXcsIHNpemUs
+ICZjb25zdHJhaW50KTsKKwkJcmV0dXJuIF9fcmVhbGxvY2F0ZV9yZXNvdXJjZShyb290LCBuZXcs
+IHNpemUsICZjb25zdHJhaW50KTsKIAl9CiAKLQl3cml0ZV9sb2NrKCZyZXNvdXJjZV9sb2NrKTsK
+IAllcnIgPSBmaW5kX3Jlc291cmNlKHJvb3QsIG5ldywgc2l6ZSwgJmNvbnN0cmFpbnQpOwogCWlm
+IChlcnIgPj0gMCAmJiBfX3JlcXVlc3RfcmVzb3VyY2Uocm9vdCwgbmV3KSkKIAkJZXJyID0gLUVC
+VVNZOwotCXdyaXRlX3VubG9jaygmcmVzb3VyY2VfbG9jayk7CisKIAlyZXR1cm4gZXJyOwogfQor
+aW50IGFsbG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqcm9vdCwgc3RydWN0IHJlc291
+cmNlICpuZXcsCisJCSAgICAgIHJlc291cmNlX3NpemVfdCBzaXplLCByZXNvdXJjZV9zaXplX3Qg
+bWluLAorCQkgICAgICByZXNvdXJjZV9zaXplX3QgbWF4LCByZXNvdXJjZV9zaXplX3QgYWxpZ24s
+CisJCSAgICAgIHJlc291cmNlX3NpemVfdCAoKmFsaWduZikodm9pZCAqLAorCQkJCQkJY29uc3Qg
+c3RydWN0IHJlc291cmNlICosCisJCQkJCQlyZXNvdXJjZV9zaXplX3QsCisJCQkJCQlyZXNvdXJj
+ZV9zaXplX3QpLAorCQkgICAgICB2b2lkICphbGlnbmZfZGF0YSkKK3sKKwlpbnQgcmV0OworCisJ
+d3JpdGVfbG9jaygmcmVzb3VyY2VfbG9jayk7CisJcmV0ID0gX19hbGxvY2F0ZV9yZXNvdXJjZShy
+b290LCBuZXcsIHNpemUsIG1pbiwgbWF4LCBhbGlnbiwKKwkJCQkgICBhbGlnbmYsIGFsaWduZl9k
+YXRhKTsKKwl3cml0ZV91bmxvY2soJnJlc291cmNlX2xvY2spOworCisJcmV0dXJuIHJldDsKK30K
+IAogRVhQT1JUX1NZTUJPTChhbGxvY2F0ZV9yZXNvdXJjZSk7CiAK
+--047d7b339cc18aadad04c3660338--
