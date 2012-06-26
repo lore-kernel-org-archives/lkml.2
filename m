@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab2FZVqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 17:46:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45150 "EHLO mx1.redhat.com"
+	id S1754331Ab2FZVrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 17:47:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4591 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab2FZVqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 17:46:45 -0400
-Message-ID: <4FEA2D85.60002@redhat.com>
-Date: Tue, 26 Jun 2012 17:45:41 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
+	id S1754115Ab2FZVrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 17:47:08 -0400
+Date: Wed, 27 Jun 2012 00:47:10 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Frank Swiderski <fes@google.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
+Cc: Rik van Riel <riel@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Andrea Arcangeli <aarcange@redhat.com>,
         virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mikew@google.com,
         Ying Han <yinghan@google.com>, Rafael Aquini <aquini@redhat.com>
 Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
-References: <1340742778-11282-1-git-send-email-fes@google.com> <4FEA1E2E.4020806@redhat.com> <CAK+C7kWKtoYC=1fBQ45RTFfNc3p2PwZbLMOefMTtzOfsqe_k8w@mail.gmail.com>
+Message-ID: <20120626214709.GA15406@redhat.com>
+References: <1340742778-11282-1-git-send-email-fes@google.com>
+ <4FEA1E2E.4020806@redhat.com>
+ <CAK+C7kWKtoYC=1fBQ45RTFfNc3p2PwZbLMOefMTtzOfsqe_k8w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 In-Reply-To: <CAK+C7kWKtoYC=1fBQ45RTFfNc3p2PwZbLMOefMTtzOfsqe_k8w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 05:31 PM, Frank Swiderski wrote:
-> On Tue, Jun 26, 2012 at 1:40 PM, Rik van Riel<riel@redhat.com>  wrote:
-
->> The code looks good to me, my only worry is the
->> code duplication. We now have 5 balloon drivers,
->> for 4 hypervisors, all implementing everything
->> from scratch...
->
+On Tue, Jun 26, 2012 at 02:31:26PM -0700, Frank Swiderski wrote:
+> On Tue, Jun 26, 2012 at 1:40 PM, Rik van Riel <riel@redhat.com> wrote:
+> > On 06/26/2012 04:32 PM, Frank Swiderski wrote:
+> >>
+> >> This implementation of a virtio balloon driver uses the page cache to
+> >> "store" pages that have been released to the host.  The communication
+> >> (outside of target counts) is one way--the guest notifies the host when
+> >> it adds a page to the page cache, allowing the host to madvise(2) with
+> >> MADV_DONTNEED.  Reclaim in the guest is therefore automatic and implicit
+> >> (via the regular page reclaim).  This means that inflating the balloon
+> >> is similar to the existing balloon mechanism, but the deflate is
+> >> different--it re-uses existing Linux kernel functionality to
+> >> automatically reclaim.
+> >>
+> >> Signed-off-by: Frank Swiderski<fes@google.com>
+> >
+> >
+> > It is a great idea, but how can this memory balancing
+> > possibly work if someone uses memory cgroups inside a
+> > guest?
+> 
+> Thanks and good point--this isn't something that I considered in the
+> implementation.
+> 
+> > Having said that, we currently do not have proper
+> > memory reclaim balancing between cgroups at all, so
+> > requiring that of this balloon driver would be
+> > unreasonable.
+> >
+> > The code looks good to me, my only worry is the
+> > code duplication. We now have 5 balloon drivers,
+> > for 4 hypervisors, all implementing everything
+> > from scratch...
+> 
 > Do you have any recommendations on this?  I could (I think reasonably
 > so) modify the existing virtio_balloon.c and have it change behavior
 > based on a feature bit or other configuration.  I'm not sure that
 > really addresses the root of what you're pointing out--it's still
 > adding a different implementation, but doing so as an extension of an
 > existing one.
+> 
+> fes
 
-Ideally, I believe we would have two balloon
-top parts in a guest (one classical balloon,
-one on the LRU), and four bottom parts (kvm,
-xen, vmware & s390).
+Let's assume it's a feature bit: how would you
+formulate what the feature does *from host point of view*?
 
-That way the virt specific bits of a balloon
-driver would be essentially a ->balloon_page
-and ->release_page callback for pages, as well
-as methods to communicate with the host.
-
-All the management of pages, including stuff
-like putting them on the LRU, or isolating
-them for migration, would be done with the
-same common code, regardless of what virt
-software we are running on.
-
-Of course, that is a substantial amount of
-work and I feel it would be unreasonable to
-block anyone's code on that kind of thing
-(especially considering that your code is good),
-but I do believe the explosion of balloon
-code is a little worrying.
-
+-- 
+MST
