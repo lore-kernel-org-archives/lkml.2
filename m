@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab2FZHMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 03:12:12 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:42290 "EHLO mx2.parallels.com"
+	id S1758238Ab2FZHPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 03:15:07 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:42459 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753804Ab2FZHMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 03:12:09 -0400
-Message-ID: <4FE96024.5030907@parallels.com>
-Date: Tue, 26 Jun 2012 11:09:24 +0400
+	id S1755824Ab2FZHPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 03:15:05 -0400
+Message-ID: <4FE960D6.4040409@parallels.com>
+Date: Tue, 26 Jun 2012 11:12:22 +0400
 From: Glauber Costa <glommer@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
@@ -15,14 +15,14 @@ To: David Rientjes <rientjes@google.com>
 CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         <linux-kernel@vger.kernel.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, "Michal Hocko" <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Christoph Lameter" <cl@linux.com>, <devel@openvz.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 04/11] kmem slab accounting basic infrastructure
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-5-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206252121140.26640@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1206252121140.26640@chino.kir.corp.google.com>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 02/11] memcg: Reclaim when more than one page needed.
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-3-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206252106430.26640@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1206252106430.26640@chino.kir.corp.google.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [109.173.9.3]
@@ -30,68 +30,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 08:22 AM, David Rientjes wrote:
-> On Mon, 25 Jun 2012, Glauber Costa wrote:
+
 >
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 9352d40..6f34b77 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -265,6 +265,10 @@ struct mem_cgroup {
->>   	};
+>> + * retries
+>> + */
+>> +#define NR_PAGES_TO_RETRY 2
+>> +
+>
+> Should be 1 << PAGE_ALLOC_COSTLY_ORDER?  Where does this number come from?
+> The changelog doesn't specify.
+
+Hocko complained about that, and I changed. Where the number comes from, 
+is stated in the comments: it is a number small enough to have high 
+changes of had been freed by the previous reclaim, and yet around the 
+number of pages of a kernel allocation.
+
+Of course there are allocations for nr_pages > 2. But 2 will already 
+service the stack most of the time, and most of the slab caches.
+
+>>   static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>> -				unsigned int nr_pages, bool oom_check)
+>> +				unsigned int nr_pages, unsigned int min_pages,
+>> +				bool oom_check)
+>>   {
+>>   	unsigned long csize = nr_pages * PAGE_SIZE;
+>>   	struct mem_cgroup *mem_over_limit;
+>> @@ -2182,18 +2190,18 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>>   	} else
+>>   		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+>>   	/*
+>> -	 * nr_pages can be either a huge page (HPAGE_PMD_NR), a batch
+>> -	 * of regular pages (CHARGE_BATCH), or a single regular page (1).
+>> -	 *
+>>   	 * Never reclaim on behalf of optional batching, retry with a
+>>   	 * single page instead.
+>>   	 */
+>> -	if (nr_pages == CHARGE_BATCH)
+>> +	if (nr_pages > min_pages)
+>>   		return CHARGE_RETRY;
+>>
+>>   	if (!(gfp_mask & __GFP_WAIT))
+>>   		return CHARGE_WOULDBLOCK;
+>>
+>> +	if (gfp_mask & __GFP_NORETRY)
+>> +		return CHARGE_NOMEM;
+>> +
+>>   	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
+>>   	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+>>   		return CHARGE_RETRY;
+>> @@ -2206,7 +2214,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>>   	 * unlikely to succeed so close to the limit, and we fall back
+>>   	 * to regular pages anyway in case of failure.
+>>   	 */
+>> -	if (nr_pages == 1 && ret)
+>> +	if (nr_pages <= NR_PAGES_TO_RETRY && ret)
+>>   		return CHARGE_RETRY;
 >>
 >>   	/*
->> +	 * the counter to account for kernel memory usage.
->> +	 */
->> +	struct res_counter kmem;
->> +	/*
->>   	 * Per cgroup active and inactive list, similar to the
->>   	 * per zone LRU lists.
->>   	 */
->> @@ -279,6 +283,7 @@ struct mem_cgroup {
->>   	 * Should the accounting and control be hierarchical, per subtree?
->>   	 */
->>   	bool use_hierarchy;
->> +	bool kmem_accounted;
+>> @@ -2341,7 +2349,8 @@ again:
+>>   			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>>   		}
 >>
->>   	bool		oom_lock;
->>   	atomic_t	under_oom;
->> @@ -391,6 +396,7 @@ enum res_type {
->>   	_MEM,
->>   	_MEMSWAP,
->>   	_OOM_TYPE,
->> +	_KMEM,
->>   };
->>
->>   #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
->> @@ -1438,6 +1444,10 @@ done:
->>   		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
->>   		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
->>   		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
->> +	printk(KERN_INFO "kmem: usage %llukB, limit %llukB, failcnt %llu\n",
->> +		res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
->> +		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
->> +		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
->>   }
->>
->>   /*
->> @@ -3879,6 +3889,11 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
->>   		else
->>   			val = res_counter_read_u64(&memcg->memsw, name);
->>   		break;
->> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> +	case _KMEM:
->> +		val = res_counter_read_u64(&memcg->kmem, name);
->> +		break;
->> +#endif
->
-> This shouldn't need an #ifdef, ->kmem is available on all
-> CONFIG_CGROUP_MEM_RES_CTLR kernels.  Same with several of the other
-> instances in this patch.
->
-> Can't these instances be addressed by not adding kmem_cgroup_files without
-> CONFIG_CGROUP_MEM_RES_CTLR_KMEM?
-
-Yes, it can.
+>> -		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
+>> +		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, nr_pages,
+>> +		    oom_check);
+>>   		switch (ret) {
+>>   		case CHARGE_OK:
+>>   			break;
 
 
