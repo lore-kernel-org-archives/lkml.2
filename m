@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab2FZEgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 00:36:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41552 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab2FZEgv (ORCPT
+	id S1756190Ab2FZEh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 00:37:28 -0400
+Received: from prod-mail-xrelay05.akamai.com ([96.6.114.97]:60959 "EHLO
+	prod-mail-xrelay05.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751416Ab2FZEhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 00:36:51 -0400
-Date: Tue, 26 Jun 2012 14:36:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, Fengguang Wu <wfg@linux.intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: linux-next: manual merge of the tip tree with Linus' tree
-Message-Id: <20120626143638.278cd26a1fe00b4161ba7691@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__26_Jun_2012_14_36_38_+1000_q/f/f4qDINiOLVi4"
+	Tue, 26 Jun 2012 00:37:25 -0400
+Message-ID: <4FE93C83.1020909@akamai.com>
+Date: Mon, 25 Jun 2012 23:37:23 -0500
+From: Josh Hunt <johunt@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Josh Hunt <johunt@akamai.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] scsi: propery initialize atomic_t ioerr_cnt
+References: <1339250619-1561-1-git-send-email-johunt@akamai.com>
+In-Reply-To: <1339250619-1561-1-git-send-email-johunt@akamai.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Jun_2012_14_36_38_+1000_q/f/f4qDINiOLVi4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/09/2012 09:03 AM, Josh Hunt wrote:
+> Initialize atomic_t ioerr_cnt as per the guidelines defined in Documentation/atomic_ops.txt
+> 
+> Reported-by: Debabrata Banerjee <dbanerje@akamai.com>
+> Signed-off-by: Josh Hunt <johunt@akamai.com>
+> ---
+>  drivers/scsi/sd.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index 6f0a4c6..8b85703 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -2702,6 +2702,7 @@ static int sd_probe(struct device *dev)
+>  	sdkp->disk = gd;
+>  	sdkp->index = index;
+>  	atomic_set(&sdkp->openers, 0);
+> +	atomic_set(&sdkp->device->ioerr_cnt, 0);
+>  
+>  	if (!sdp->request_queue->rq_timeout) {
+>  		if (sdp->type != TYPE_MOD)
 
-Hi all,
+Ping?
 
-Today's linux-next merge of the tip tree got a conflict in
-include/asm-generic/bug.h between commit 09682c1dd382 ("bug.h: Fix up
-CONFIG_BUG=3Dn implicit function declarations") from Linus' tree and commit
-7b37393f13d5 ("bug.h: Fix x86 !CONFIG_BUG build regression") from the tip
-tree.
+I know these are trivial, but they seem to be correct. If not, I'd be
+interested to understand why.
 
-These are trying to do the same thing, so I used the version from Linus'
-tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__26_Jun_2012_14_36_38_+1000_q/f/f4qDINiOLVi4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP6TxWAAoJEECxmPOUX5FE5osP/2BcJZAUc/O3LQrdIvWYSN/h
-UjS0hT9/o2g5c8KRF2xll6T+fsIwbuU0OfJ4OHe37VtTSUfbu0r8W8I74fSXdEgT
-PYvmoM5rH85gJ3onZgKrkMn2Mq353rLxSPu2YinIjSPKBbT+lH3etrJrPWdRHqHF
-fIP/js4c+jC9xQUn731n+/DakbOQWwsrwaXB7eRpTZVfR65p0xrXeatMgiyXTZ4e
-AYEREmeEuwvkkLx6yaggYaYAh9CtItuYqdZeZMffGOrDbAU4WfcKYSfiyG+xfE5b
-8NRia6Xkw+WzXtFHfLTIw1mKEwYlatclrVctw+JE1TjZEM/j+XIa3+DTiul4HBlA
-yGSvZstysTQHTt9cskGSCIMIZVAU15o+lHQPgvKXhH2fHmiC+4qKIncF+bb3JIT4
-WKTqv9862NPpd+Xzcd7nBRTDb0ebsog3xwVATPx8rt6YFxrgS9nAuwSM7QWzW56z
-6onXgA1HYHZjE5rNyQ4BhOv8C7wArlxE7MuDher8wXJj9k/3PoPnd5n31Ff1PQtN
-ZZzT/oMewC016GAjUTNnhSaRcUHQehKr2EjieyOBcFuaSfGhwrulo7L6FQRgNKO3
-Q9yv3ieOdoU/GWcWZZYyls9HfUOn7DAjKoeZuhwQspGI1uUkk4x1phNRyWCuU+w0
-f+AeeJrnME9KDgdGvGmg
-=jEMC
------END PGP SIGNATURE-----
-
---Signature=_Tue__26_Jun_2012_14_36_38_+1000_q/f/f4qDINiOLVi4--
+Thanks
+Josh
