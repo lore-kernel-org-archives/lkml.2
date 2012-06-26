@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab2FZG5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 02:57:22 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:64149 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756898Ab2FZG5S (ORCPT
+	id S932121Ab2FZG6V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 02:58:21 -0400
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:65471 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757102Ab2FZG5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 02:57:18 -0400
+	Tue, 26 Jun 2012 02:57:21 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>,
@@ -16,9 +16,9 @@ Cc: Iiro Valkonen <iiro.valkonen@atmel.com>,
         Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 04/21 v5] Input: atmel_mxt_ts - warn if sysfs could not be created
-Date: Tue, 26 Jun 2012 14:56:52 +0800
-Message-Id: <1340693829-18665-5-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 19/21 v5] Input: atmel_mxt_ts - use T9 reportid range to init number of mt slots
+Date: Tue, 26 Jun 2012 14:57:07 +0800
+Message-Id: <1340693829-18665-20-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
 References: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
@@ -26,33 +26,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If sysfs entry creation fails, the driver is still usable, so don't
-just abort probe.  Just warn and continue.
+Atmel mxt devices can report one finger for each T9 reportid.
+Therefore, this range can be used to report the max number of MT-B slots
+to userspace instead of assuming a fixed 10.
+
+Note that mxt_initialized() must complete early, since the input_dev
+properties now depend on values in the object table.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 926209c..c72f595 100644
+index 4da12a9..b218b5f 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -1172,13 +1172,10 @@ static int __devinit mxt_probe(struct i2c_client *client,
+@@ -212,8 +212,6 @@
+ /* Touchscreen absolute values */
+ #define MXT_MAX_AREA		0xff
  
- 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
+-#define MXT_MAX_FINGER		10
+-
+ struct mxt_info {
+ 	u8 family_id;
+ 	u8 variant_id;
+@@ -1074,6 +1072,7 @@ static int __devinit mxt_probe(struct i2c_client *client,
+ 	struct mxt_data *data;
+ 	struct input_dev *input_dev;
+ 	int error;
++	unsigned int num_mt_slots;
+ 
+ 	if (!pdata)
+ 		return -EINVAL;
+@@ -1103,6 +1102,10 @@ static int __devinit mxt_probe(struct i2c_client *client,
+ 
+ 	mxt_calc_resolution(data);
+ 
++	error = mxt_initialize(data);
++	if (error)
++		goto err_free_object;
++
+ 	__set_bit(EV_ABS, input_dev->evbit);
+ 	__set_bit(EV_KEY, input_dev->evbit);
+ 	__set_bit(BTN_TOUCH, input_dev->keybit);
+@@ -1116,9 +1119,10 @@ static int __devinit mxt_probe(struct i2c_client *client,
+ 			     0, 255, 0, 0);
+ 
+ 	/* For multi touch */
+-	error = input_mt_init_slots(input_dev, MXT_MAX_FINGER);
++	num_mt_slots = data->T9_reportid_max - data->T9_reportid_min + 1;
++	error = input_mt_init_slots(input_dev, num_mt_slots);
  	if (error)
--		goto err_unregister_device;
-+		dev_warn(&client->dev, "error creating sysfs entries.\n");
+-		goto err_free_mem;
++		goto err_free_object;
+ 	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR,
+ 			     0, MXT_MAX_AREA, 0, 0);
+ 	input_set_abs_params(input_dev, ABS_MT_POSITION_X,
+@@ -1131,10 +1135,6 @@ static int __devinit mxt_probe(struct i2c_client *client,
+ 	input_set_drvdata(input_dev, data);
+ 	i2c_set_clientdata(client, data);
  
- 	return 0;
- 
--err_unregister_device:
--	input_unregister_device(input_dev);
--	input_dev = NULL;
- err_free_irq:
- 	free_irq(client->irq, data);
- err_free_object:
+-	error = mxt_initialize(data);
+-	if (error)
+-		goto err_free_object;
+-
+ 	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
+ 			pdata->irqflags, client->name, data);
+ 	if (error) {
 -- 
 1.7.7.3
 
