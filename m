@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030Ab2FZA5O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 20:57:14 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:41048 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757830Ab2FZA5G (ORCPT
+	id S1757947Ab2FZBNB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 21:13:01 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39592 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757814Ab2FZBM7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 20:57:06 -0400
-X-AuditID: cbfee60d-b7f056d000004fc9-dd-4fe908df1719
-Date: Tue, 26 Jun 2012 00:57:03 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Charger Manager Proposal.
-To: "Tc, Jenny" <jenny.tc@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Anton Vorontsov (cbouatmailru@gmail.com)" <cbouatmailru@gmail.com>,
-        "Anton Vorontsov (anton.vorontsov@linaro.org)" 
-	<anton.vorontsov@linaro.org>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120626005055283@myungjoo.ham
-Msgkey: 20120626005055283@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120626005055283@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <27205114.39211340672223116.JavaMail.weblogic@epv6ml01>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMIsWRmVeSWpSXmKPExsVy+t/tmbr3OV76G+yfZWZxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyfnT/Yi7Ypljxvnc+ewPjEYUuRk4OIQF1iUVLTrKB2BICJhK9
-	/6exQNhiEhfurQeKcwHVzGeU6Du3ihkkwSKgKvHxyA7WLkYODjYBPYmZn5NBwsICahInbn1k
-	ArFFBFQkprZ8ZwLpZRboZ5Zo27+HCWKZksSafa/AFvAKCEqcnPkEapmqxKe5X5kg4moSv7f8
-	ZoaIS0jMmn6BFcLmlZjR/hSqXk5i2tc1UDXSEudnbWCEOXrx98dQcX6JY7d3MIHcCdL75H4w
-	zJjdm79A/SsgMfXMQahWLYlfCy5Axfkk1ix8C7aKWUBRYkr3Q3YIW0viy499bKjO5wCynSXe
-	zPWfwCgzC0lmFpLuWUi6kdUsYGRZxSiaWpBcUJyUnmqsV5yYW1yal66XnJ+7iREctc94dzDO
-	bbA4xCjAwajEw2vA8NJfiDWxrLgy9xCjBAezkgjv7hsv/IV4UxIrq1KL8uOLSnNSiw8xSnOw
-	KInzTrG+4C8kkJ5YkpqdmlqQWgSTZeLglGpg5Do2R4bhepP9HbOOW0s7jkj+2NgsoRC+dMJ5
-	xlu1lr9Yp7jXPVCYkH9zG3efXPbladHZcmW2VmyyMhPC/He1SAo0qd7S+ybRXyshvHz6p1Bl
-	1Wa9v0+1u76Kds82FRY2KLS+cuvU1JT2QxL6+Srz1lvwxDsGhx1ZM52t5OahG1EulRvZOsOU
-	WIozEg21mIuKEwHOm5e11gIAAA==
-X-TM-AS-MML: No
+	Mon, 25 Jun 2012 21:12:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FE8F90B.2010303@gmail.com>
+References: <1340655832-30447-1-git-send-email-aletes.xgr@gmail.com>
+	<4FE8F90B.2010303@gmail.com>
+Date: Mon, 25 Jun 2012 22:12:58 -0300
+Message-ID: <CAAAP30Gad9-NjBq+b9R9qEw1tT-gEvsYCUPXAE5V74ANk_LnTA@mail.gmail.com>
+Subject: Re: [RFC 2/2] usb: gadget: composite: parse dt overrides
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5Q0vVk2002044
 
-> MyungJoo,
-> 
-> I would like to align with the charger-manager activities and would like to propose few changes for charger-manager. The changes I would like to have in the charger manager is 
-> 
-> 	* Manage charging based on a battery profile - Each battery  can have a different  profile and the charging should be done based on this profile. So there should be a mechanism inside the charger-manager to read the battery profile. To start with we can make it available as platform data for the charger-manager.
+On Mon, Jun 25, 2012 at 8:49 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 06/25/2012 03:23 PM, Alexandre Pereira da Silva wrote:
+>> Grab the devicetree node properties to override VendorId, ProductId,
+>> bcdDevice, Manucacturer, Product and SerialNumber
+>>
+>> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+>> ---
+>>  drivers/usb/gadget/composite.c |   31 +++++++++++++++++++++++++++++++
+>>  1 file changed, 31 insertions(+)
+>
+> Are these bindings documented? I think they should be less generic.
+> Perhaps prefixed with 'usb-'.
 
-Yes, each instance of charger-manager devices represents a battery (or a set of batteries controlled as a single battery.) Thus, the profile can be described in struct charger_desc. What do you need additionally there?
+Not yet, I will in the final series. This was just to see it had big
+issues because the final one needs to change lots of files.
+I will add some prefix to them.
 
-> 	* The charge parameters (CC and CV) needs to be changed as per the batter profile. The battery profile will have a different CC and CV for different  temperature zone. So charger-manager needs to listen  battery Temperature change events (using power_supply_changed events from FG?)  and modify the CC and CV.
+About the documentation, should I include it in all of the controllers
+bindings or should I add a common file to describe the gadget drivers
+binding?
 
-Then, my suggestion is that
-Plan A.
-  1. Add a pair of CC and CV regulators at struct charger_desc, independently defined in struct charger_desc from charger_desc.charger_regulators as charger_regulators are to enable/disable chargers attached to the battery described by struct charger_desc.
-  2. Add an array of { temperature (min), CC-value, CV-value, hysterisis-temp } with temperature = - MAX for "default" value.
-Plan B.
-  1. Add an array of { temperature (min), callback, hysterisis-temp}
+>>
+>> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+>> index 390749b..f3b480e 100644
+>> --- a/drivers/usb/gadget/composite.c
+>> +++ b/drivers/usb/gadget/composite.c
+>> @@ -17,6 +17,7 @@
+>>  #include <linux/module.h>
+>>  #include <linux/device.h>
+>>  #include <linux/utsname.h>
+>> +#include <linux/of.h>
+>>
+>>  #include <linux/usb/composite.h>
+>>  #include <asm/unaligned.h>
+>> @@ -1423,6 +1424,7 @@ static int composite_bind(struct usb_gadget *gadget)
+>>  {
+>>       struct usb_composite_dev        *cdev;
+>>       int                             status = -ENOMEM;
+>> +     struct device_node              *np = gadget->dev.of_node;
+>>
+>>       cdev = kzalloc(sizeof *cdev, GFP_KERNEL);
+>>       if (!cdev)
+>> @@ -1470,6 +1472,35 @@ static int composite_bind(struct usb_gadget *gadget)
+>>
+>>       cdev->desc = *composite->dev;
+>>
+>> +     /* grab overrides from devicetree */
+>
+> Reading the code, it looks more like the DT entries are defaults rather
+> than overrides.
 
-If CC/CV values are the only ones to be controlled by temperature, Plan A is fine. However, if we are going to need more, Plan B may be more appropriate.
+Actually, it's mixed. The DT overrides the hard coded defaults. And
+module parameters can override both. I think the safest path is to
+keep them like this, so a DT would not break existing code.
 
-> 	* It's good to have a hybrid (Software and Hardware mode) full detection logic. This give more flexibility to define the charge full detection thresholds. So charger-manager can listen to charge-full detection from charger-hardware and can start a thread to verify the thresholds from software. 
-
-You can do this with cm_notify_event() and fullbatt_vchk() though we may need more parameters to control the behavior of fullbatt_vchk().
-
-> 	* Need to have a maintenance upper voltage threshold. The upper threshold needs to be less than the Battery FULL voltage threshold and this can part of battery profile. This approach helps to increase the battery life.
-
-Could you please elaborate this one more? What do you do with "upper threshold"?
-
-> 
-> I would like to start implementing these features for charger manager. But I would like to align with your planned charger-manager activities so that we don't end up in duplicating the effort. Please let me know your suggestions on this.
-> 
-> -jtc
-
-Another update or modification on-going is:
-	- Integrating with extcon subsystem
-	- Add current-limit for each charger
-You can see the according patches at 
-http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/charger-manager-for-next
-
-
-Thanks. And sorry for late reply; we had the office moved which cut the internetaccess for a while.
-
-
-Cheers!
-MyungJoo.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>> +     if (np) {
+>> +             u32 reg;
+>> +
+>> +             if (!idVendor &&
+>> +                     of_property_read_u32(np, "vendor_id", &reg) == 0)
+>> +                     idVendor = reg;
+>
+> if (!idVendor)
+>        of_property_read_u32(np, "vendor_id", &idVendor);
+>
+> Rob
