@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab2FZUUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 16:20:20 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:63044 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab2FZUUR convert rfc822-to-8bit (ORCPT
+	id S1753557Ab2FZUXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 16:23:54 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:56950 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751554Ab2FZUXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 16:20:17 -0400
-Date: Tue, 26 Jun 2012 15:20:09 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Anders Kaseorg <andersk@MIT.EDU>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dash@vger.kernel.org
-Subject: Re: [PATCH] fifo: Do not restart open() if it already found a partner
-Message-ID: <20120626202009.GA382@burratino>
-References: <1340712298-4583-1-git-send-email-andersk@mit.edu>
+	Tue, 26 Jun 2012 16:23:51 -0400
+Message-ID: <1340742224.2644.1.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Ren, Cloud" <cjren@qca.qualcomm.com>
+CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <qca-linux-team@qualcomm.com>,
+        <nic-devel@qualcomm.com>, xiong <xiong@qca.qualcomm.com>
+Date: Tue, 26 Jun 2012 21:23:44 +0100
+In-Reply-To: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
+References: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1340712298-4583-1-git-send-email-andersk@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2012-06-26 at 12:33 -0300, Ren, Cloud wrote:
+> From: xiong <xiong@qca.qualcomm.com>
+> 
+> some people report atl1c could cause system hang with following
+> kernel trace info:
+> ---------------------------------------
+> WARNING: at.../net/sched/sch_generic.c:258
+> dev_watchdog+0x1db/0x1d0()
+> ...
+> NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+> ...
+> ---------------------------------------
+> This is caused by netif_stop_queue calling when cable Link is down
+> but netif_wake_queue isn't called when cable Link is resume.
+> 
+> Signed-off-by: xiong <xiong@qca.qualcomm.com>
+> Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
+> ---
+>  drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+> index 85717cb..c2736c4 100644
+> --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+> +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+> @@ -351,6 +351,8 @@ static void atl1c_common_task(struct work_struct *work)
+>  		atl1c_irq_disable(adapter);
+>  		atl1c_check_link_status(adapter);
+>  		atl1c_irq_enable(adapter);
+> +		if (netif_queue_stopped(netdev) && netif_carrier_ok(netdev))
+> +			netif_wake_queue(netdev);
+>  	}
+>  }
+>  
 
-Anders Kaseorg wrote:
+Why explicitly stop/start the queue when the link changes?  That's what
+link_watch is for.
 
-> The following test demonstrates the EINTR that was wrongly thrown from
-> the parent’s open().  Change .sa_flags = 0 to .sa_flags = SA_RESTART
-> to see a deadlock instead, in which the restarted open() waits for a
-> second reader that will never come.
+Ben.
 
-Nice.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-To recap, reading a fifo without a writer (resp. when writing a fifo
-without a reader), fifo_open() without O_NONBLOCK waits for the other
-end to be opened:
-
-	if (!pipe->writers) {
-		if ((filp->f_flags & O_NONBLOCK)) {
-			...
-		} else {
-			wait_for_partner(inode, &pipe->w_counter);
-
-The wait_for_partner() function waits for the pipe to be opened.
-It is interruptible.  Inlining a little for clarity[*]:
-
-	int cur = pipe->w_counter;
-
-	while (cur == pipe->w_counter) {
-		DEFINE_WAIT(wait);
-
-		prepare_to_wait(&pipe->wait, &wait, TASK_INTERRUPTIBLE);
-		pipe_unlock(pipe);
-		schedule();
-		finish_wait(&pipe->wait, &wait);
-		pipe_lock(pipe);
-
-		if (signal_pending(current))
-			break;
-	}
-
-In the window while i_mutex is unlocked, it is possible for the fifo
-to be opened for writing and closed again.  That's fine --- open()
-should succeed as long as someone has successfully opened the pipe for
-writing.  And similarly, if a writer opens the pipe and a signal
-arrives, we should let open() succeed.  The rest of fifo_open() is
-quick and the signal will still be promptly delivered afterwards.  So
-this looks like a good patch.
-
-Two small details:
-
- 1. I wasn't able to get your testcase to reliably fail (on 3.0.36).
-    Sometimes it would produce EINTR quickly and sometimes it prefers
-    to spew out dots.  Perhaps a note would help avoid confusing people
-    that want to see if their kernel is affected.
-
- 2. The return value convention surprised me a little:
-
- -static void wait_for_partner(struct inode* inode, unsigned int *cnt)
- +static bool wait_for_partner(struct inode* inode, unsigned int *cnt)
-
-It would be easier to guess the sense at a glance if it returned an
-int (e.g., 0 or -ERESTARTSYS) so the caller could look like
-
-	if (wait_for_partner(inode, &pipe->w_counter))
-		/* wait failed */
-		...
-
-Documentation/CodingStyle says more about that in chapter 16.
-
-Except for those two details,
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
-
-Thanks for a pleasant read.
-
-[*] This is almost the same as
-
-	int dummy;
-	wait_event_interruptible(&pipe->wait, pipe->w_counter != cur, dummy);
-
-except that we keep i_mutex held when placing the current task on the
-waitqueue.  There's probably some simplification possible, but that's
-a story for another day.
