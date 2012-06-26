@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab2FZMnC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 08:43:02 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:17169 "EHLO mx2.netapp.com"
+	id S1756788Ab2FZMpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 08:45:41 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:56742 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756792Ab2FZMnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 08:43:00 -0400
-X-IronPort-AV: E=Sophos;i="4.77,477,1336374000"; 
-   d="scan'208";a="658052752"
-Message-ID: <4FE9AE52.10800@netapp.com>
-Date: Tue, 26 Jun 2012 08:42:58 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
+	id S1755928Ab2FZMpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 08:45:39 -0400
+Message-ID: <4FE9AE57.4090007@parallels.com>
+Date: Tue, 26 Jun 2012 16:43:03 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Andre Tomt <andre@tomt.net>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Howells <dhowells@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in __key_instantiate_and_link(): unable to handle kernel
- paging request at 0000632e6472616f
-References: <20120601034114.GA9248@localhost> <4FDBF056.7040404@tomt.net>   <4FDCD3C7.5080503@tomt.net> <1339876739.8267.96.camel@lade.trondhjem.org>  <4FDEEF38.8030101@tomt.net> <1340026127.2451.7.camel@lade.trondhjem.org> <4FDF533A.2090901@netapp.com> <4FE215FE.6010406@netapp.com> <4FE96399.8040608@tomt.net>
-In-Reply-To: <4FE96399.8040608@tomt.net>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: "Regression" with cd3d09527537
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 03:24 AM, Andre Tomt wrote:
-> On 20. juni 2012 20:27, Bryan Schumaker wrote:
->> Hi Andre,
->>
->> Have you had a chance to test my patch (below) yet?
-> 
-> I reverted from using keyutils yesterday, verified the problem had returned, then patched the same kernel with just this patch - so far its been running fine for 15 hours. Without the patch it would fall over within 1-2 hours.
-> 
-> So thumbs up from me
-> 
-> Sorry about the delay, once I got it working with keyutils I suddenly got very, very lazy ;-)
+Hi,
 
-Cool, thanks for checking this!  You can go back to whichever method you like better now :).
+I've recently started seeing a lockdep warning at the end of *every* 
+"init 0" issued in my machine. Actually, reboots are fine, and that's 
+probably why I've never seen it earlier. The log is quite extensively, 
+but shows the following dependency chain:
 
-- Bryan
+[   83.982111] -> #4 (cpu_hotplug.lock){+.+.+.}:
+[...]
+[   83.982111] -> #3 (jump_label_mutex){+.+...}:
+[...]
+[   83.982111] -> #2 (sk_lock-AF_INET){+.+.+.}:
+[...]
+[   83.982111] -> #1 (&sig->cred_guard_mutex){+.+.+.}:
+[...]
+[   83.982111] -> #0 (cgroup_mutex){+.+.+.}:
 
+I've recently fixed bugs with the lock ordering imposed by cpusets
+on cpu_hotplug.lock through jump_label_mutex, and initially thought it 
+to be the same kind of issue. But that was not the case.
+
+I've omitted the full backtrace for readability, but I run this with all 
+cgroups disabled but the cpuset, so it can't be sock memcg (after my 
+initial reaction of "oh, fuck, not again"). That jump_label is there for 
+years, and it comes from the code that disables socket timestamps.
+(net_enable_timestamp)
+
+After a couple of days of extensive debugging, with git bisect failing 
+to pinpoint a culprit, I've got to that patch
+"cgroup: always lock threadgroup during migration" as the one that would
+trigger the bug.
+
+The problem is, what this patch does is start calling threadgroup_lock
+everytime, instead of conditionally. In that sense, it of course did not 
+create the bug, only made it (fortunately) always visible.
+
+Thing is, I honestly don't know what would be a fix for this bug.
+We could hold the threadgroup_lock before the cgroup_lock, but that 
+would hold it for way too long.
+
+This is just another incarnation of the cgroup_lock creating nasty 
+dependencies with virtually everything else, because we hold it for 
+everything we do. I fear we'll fix this, and another one will just wake 
+up any time.
+
+What do you think, Tejun?
