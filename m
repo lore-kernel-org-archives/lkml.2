@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab2FZJRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 05:17:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46837 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850Ab2FZJRr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 05:17:47 -0400
-Date: Tue, 26 Jun 2012 02:17:45 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Glauber Costa <glommer@parallels.com>
-cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>, Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 02/11] memcg: Reclaim when more than one page needed.
-In-Reply-To: <4FE97C20.8010500@parallels.com>
-Message-ID: <alpine.DEB.2.00.1206260214310.16020@chino.kir.corp.google.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-3-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206252106430.26640@chino.kir.corp.google.com> <4FE960D6.4040409@parallels.com>
- <alpine.DEB.2.00.1206260146010.16020@chino.kir.corp.google.com> <4FE97C20.8010500@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755929Ab2FZJSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 05:18:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:43378 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755159Ab2FZJSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 05:18:16 -0400
+X-IronPort-AV: E=Sophos;i="4.77,476,1336320000"; 
+   d="scan'208";a="5266095"
+Message-ID: <4FE97F60.90101@cn.fujitsu.com>
+Date: Tue, 26 Jun 2012 17:22:40 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: lenb@kernel.org, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH 7/8] auto bind the memory device which is hotpluged before
+ the driver is loaded
+References: <4FE97DD5.6030205@cn.fujitsu.com>
+In-Reply-To: <4FE97DD5.6030205@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/26 17:18:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/26 17:18:28,
+	Serialize complete at 2012/06/26 17:18:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jun 2012, Glauber Costa wrote:
+If the memory device is hotpluged before the driver is loaded, the
+user cannot see this device under the directory /sys/bus/acpi/devices/,
+and the user cannot bind it by hand after the driver is loaded.
+This patch introduces a new feature to bind such device when is driver
+is being loaded.
 
-> > Nope, have you checked the output of /sys/kernel/slab/.../order when
-> > running slub?  On my workstation 127 out of 316 caches have order-2 or
-> > higher by default.
-> > 
-> 
-> Well, this is still on the side of my argument, since this is still a majority
-> of them being low ordered.
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ drivers/acpi/acpi_memhotplug.c |   37 ++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 36 insertions(+), 1 deletions(-)
 
-Ok, so what happens if I pass slub_min_order=2 on the command line?  We 
-never retry?
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 148c88a..a682657 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -52,6 +52,9 @@ MODULE_LICENSE("GPL");
+ #define MEMORY_POWER_ON_STATE	1
+ #define MEMORY_POWER_OFF_STATE	2
+ 
++static bool auto_probe;
++module_param(auto_probe, bool, S_IRUGO | S_IWUSR);
++
+ static int acpi_memory_device_add(struct acpi_device *device);
+ static int acpi_memory_device_remove(struct acpi_device *device, int type);
+ 
+@@ -515,12 +518,44 @@ acpi_memory_register_notify_handler(acpi_handle handle,
+ 				    u32 level, void *ctxt, void **retv)
+ {
+ 	acpi_status status;
+-
++	struct acpi_memory_device *mem_device = NULL;
++	unsigned long long current_status;
+ 
+ 	status = is_memory_device(handle);
+ 	if (ACPI_FAILURE(status))
+ 		return AE_OK;	/* continue */
+ 
++	if (auto_probe) {
++		if (acpi_memory_get_device(handle, &mem_device))
++			goto install;
++
++		/* Get device present/absent information from the _STA */
++		status = acpi_evaluate_integer(mem_device->device->handle,
++					       "_STA", NULL, &current_status);
++		if (ACPI_FAILURE(status))
++			goto install;
++
++		/*
++		 * Check for device status. Device should be
++		 * present/enabled/functioning.
++		 */
++		if (!((current_status & ACPI_STA_DEVICE_PRESENT)
++		      && (current_status & ACPI_STA_DEVICE_ENABLED)
++		      && (current_status & ACPI_STA_DEVICE_FUNCTIONING)))
++			goto install;
++
++		/* We have bound this device while we register the dirver */
++		if (mem_device->state == MEMORY_POWER_ON_STATE)
++			goto install;
++
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++				  "\nauto probe memory device\n"));
++
++		if (acpi_memory_enable_device(mem_device))
++			pr_err(PREFIX "Cannot enable memory device\n");
++	}
++
++install:
+ 	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+ 					     acpi_memory_device_notify, NULL);
+ 	/* continue */
+-- 
+1.7.1
 
-> The code here does not necessarily have to retry -
-> if I understand it correctly - we just retry for very small allocations
-> because that is where our likelihood of succeeding is.
-> 
-
-Well, the comment for NR_PAGES_TO_RETRY says
-
-	/*
-	 * We need a number that is small enough to be likely to have been
-	 * reclaimed even under pressure, but not too big to trigger unnecessary 
-	 * retries
-	 */
-
-and mmzone.h says
-
-	/*
-	 * PAGE_ALLOC_COSTLY_ORDER is the order at which allocations are deemed
-	 * costly to service.  That is between allocation orders which should
-	 * coalesce naturally under reasonable reclaim pressure and those which
-	 * will not.
-	 */
-	#define PAGE_ALLOC_COSTLY_ORDER 3
-
-so I'm trying to reconcile which one is correct.
