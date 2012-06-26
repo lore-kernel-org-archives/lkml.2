@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2FZXiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 19:38:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43176 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754644Ab2FZXiX (ORCPT
+	id S1754988Ab2FZXpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 19:45:42 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40480 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab2FZXpi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 19:38:23 -0400
-Message-ID: <4FEA47EA.3000804@gmail.com>
-Date: Tue, 26 Jun 2012 18:38:18 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 26 Jun 2012 19:45:38 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [GIT PULL] DT fixes for 3.5
-References: <4FDA9261.2070208@gmail.com>
-In-Reply-To: <4FDA9261.2070208@gmail.com>
+In-Reply-To: <4FEA2D85.60002@redhat.com>
+References: <1340742778-11282-1-git-send-email-fes@google.com>
+	<4FEA1E2E.4020806@redhat.com>
+	<CAK+C7kWKtoYC=1fBQ45RTFfNc3p2PwZbLMOefMTtzOfsqe_k8w@mail.gmail.com>
+	<4FEA2D85.60002@redhat.com>
+Date: Tue, 26 Jun 2012 16:45:36 -0700
+Message-ID: <CAK+C7kVHeUz7nUV1vtSHrK6vXorLsZoos82NFm0P0Ux0rEOZGQ@mail.gmail.com>
+Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
+From: Frank Swiderski <fes@google.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mikew@google.com,
+        Ying Han <yinghan@google.com>, Rafael Aquini <aquini@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 08:39 PM, Rob Herring wrote:
-> Grant,
-> 
-> Please pull. Mainly some documentation updates and 2 fixes:
-> 
-> - An export symbol fix for of_platform_populate from Stephen W.
-> - A fix for the order compatible entries are matched to ensure the
-> first compatible string is matched when there are multiple matches.
-> 
+On Tue, Jun 26, 2012 at 2:45 PM, Rik van Riel <riel@redhat.com> wrote:
+> On 06/26/2012 05:31 PM, Frank Swiderski wrote:
+>>
+>> On Tue, Jun 26, 2012 at 1:40 PM, Rik van Riel<riel@redhat.com>  wrote:
+>
+>
+>>> The code looks good to me, my only worry is the
+>>> code duplication. We now have 5 balloon drivers,
+>>> for 4 hypervisors, all implementing everything
+>>> from scratch...
+>>
+>>
+>> Do you have any recommendations on this?  I could (I think reasonably
+>> so) modify the existing virtio_balloon.c and have it change behavior
+>> based on a feature bit or other configuration.  I'm not sure that
+>> really addresses the root of what you're pointing out--it's still
+>> adding a different implementation, but doing so as an extension of an
+>> existing one.
+>
+>
+> Ideally, I believe we would have two balloon
+> top parts in a guest (one classical balloon,
+> one on the LRU), and four bottom parts (kvm,
+> xen, vmware & s390).
+>
+> That way the virt specific bits of a balloon
+> driver would be essentially a ->balloon_page
+> and ->release_page callback for pages, as well
+> as methods to communicate with the host.
+>
+> All the management of pages, including stuff
+> like putting them on the LRU, or isolating
+> them for migration, would be done with the
+> same common code, regardless of what virt
+> software we are running on.
+>
+> Of course, that is a substantial amount of
+> work and I feel it would be unreasonable to
+> block anyone's code on that kind of thing
+> (especially considering that your code is good),
+> but I do believe the explosion of balloon
+> code is a little worrying.
+>
 
-Ping. If you don't want to pull these for 3.5, can you please pull for
-next and 3.6.
+Hm, that makes a lot of sense.  That would be a few patches definitely
+worth doing, IMHO.  I'm not entirely sure how I feel about inflating
+the balloon drivers in the meantime.  Sigh, and I didn't even mean
+that as a pun.
 
-Rob
-
-> Rob
-> 
-> The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
-> 
->   Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://sources.calxeda.com/kernel/linux.git fixes-for-grant
-> 
-> for you to fetch changes up to 107a84e61cdd3406c842a0e4be7efffd3a05dba6:
-> 
->   of: match by compatible property first (2012-06-14 20:29:40 -0500)
-> 
-> ----------------------------------------------------------------
-> Fabio Estevam (5):
->       dt: fsl-imx-cspi.txt: Fix comment about GPIOs used for chip selects
->       dt: fsl-imx-esdhc.txt: Fix gpio number assignment
->       dt: fsl-mma8450.txt: Add missing 'reg' description
->       dt: fsl-fec.txt: Fix gpio number assignment
->       dt: mc13xxx.txt: Fix gpio number assignment
-> 
-> Stephen Warren (1):
->       of: export of_platform_populate()
-> 
-> Thierry Reding (2):
->       of: Add Avionic Design vendor prefix
->       of: match by compatible property first
-> 
->  .../devicetree/bindings/input/fsl-mma8450.txt      |    1 +
->  Documentation/devicetree/bindings/mfd/mc13xxx.txt  |    4 +--
->  .../devicetree/bindings/mmc/fsl-imx-esdhc.txt      |    4 +--
->  Documentation/devicetree/bindings/net/fsl-fec.txt  |    2 +-
->  .../devicetree/bindings/spi/fsl-imx-cspi.txt       |    4 +--
->  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
->  drivers/of/base.c                                  |   30
-> +++++++++++++++++---
->  drivers/of/platform.c                              |    1 +
->  8 files changed, 36 insertions(+), 11 deletions(-)
-
+fes
