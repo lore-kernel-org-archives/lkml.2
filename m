@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab2FZTr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 15:47:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554Ab2FZTrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 15:47:55 -0400
-Date: Tue, 26 Jun 2012 22:46:34 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, akong@redhat.com,
-        habanero@linux.vnet.ibm.com, tahm@linux.vnet.ibm.com,
-        haixiao@juniper.net, jwhan@filewood.snu.ac.kr,
-        ernesto.martin@viasat.com, mashirle@us.ibm.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        krkumar2@in.ibm.com, shemminger@vyatta.com, edumazet@google.com
-Subject: Re: [PATCH 5/6] tuntap: per queue 64 bit stats\
-Message-ID: <20120626194634.GA14054@redhat.com>
-References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com>
- <1340625563-9300-6-git-send-email-jasowang@redhat.com>
- <1340628765.10893.46.camel@edumazet-glaptop>
- <4FE95015.7000707@redhat.com>
+	id S1752928Ab2FZTv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 15:51:56 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:35364 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab2FZTvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 15:51:55 -0400
+Date: Tue, 26 Jun 2012 21:51:50 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH -v2 1/2] x86, microcode: Sanitize per-cpu microcode
+ reloading interface
+Message-ID: <20120626195150.GC28495@aftab.osrc.amd.com>
+References: <1340280437-7718-1-git-send-email-bp@amd64.org>
+ <1340280437-7718-2-git-send-email-bp@amd64.org>
+ <1340380019.18025.82.camel@twins>
+ <20120626194043.GB28495@aftab.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FE95015.7000707@redhat.com>
+In-Reply-To: <20120626194043.GB28495@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 02:00:53PM +0800, Jason Wang wrote:
-> On 06/25/2012 08:52 PM, Eric Dumazet wrote:
-> >On Mon, 2012-06-25 at 19:59 +0800, Jason Wang wrote:
-> >>As we've added multiqueue support for tun/tap, this patch convert the statistics
-> >>to use per-queue 64 bit statistics.
-> >LLTX means you can have several cpus calling TX path in parallel.
-> >
-> >So tx stats are wrong (even before this patch), and racy after this
-> >patch (if several cpu access same queue, it seems to be possible)
-> >
-> >        u64_stats_update_begin(&tfile->stats.tx_syncp);
-> >        tfile->stats.tx_packets++;
-> >        tfile->stats.tx_bytes += total;
-> >        u64_stats_update_end(&tfile->stats.tx_syncp);
-> >
-> >This can break horribly if several cpus run this code using same 'tfile'
-> >pointer.
+On Tue, Jun 26, 2012 at 09:40:43PM +0200, Borislav Petkov wrote:
+> > +	put_online_cpus();
+> > +
+> > +	if (pebs_broken == x86_pmu.pebs_broken)
 > 
-> Yes, looks like it's hard to use NETIF_F_LLTX without breaking the
-> u64 statistics, may worth to use tx lock and alloc_netdev_mq().
-
-Or make them per cpu as most everyone did.
-
-
-> >I suggest this patch comes before 'tuntap: multiqueue support' in the
-> >serie.
+> This is strange, why not:
 > 
-> Sure, thanks.
-> >
-> >
-> >
+> 	if (pebs_broken && x86_pmu.pebs_broken)
+> 
+> ?
+> 
+> > +		return;
+
+Ah, nevermind, I see what you're doing here.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
