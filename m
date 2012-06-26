@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab2FZXZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 19:25:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51431 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2FZXZe (ORCPT
+	id S1755019Ab2FZXZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 19:25:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab2FZXZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 19:25:34 -0400
+	Tue, 26 Jun 2012 19:25:40 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -23,9 +23,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 2/7] pstore: Introduce write_buf backend callback
-Date: Tue, 26 Jun 2012 16:23:24 -0700
-Message-Id: <1340753009-12483-2-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 4/7] tracing/function: Introduce persistent trace option
+Date: Tue, 26 Jun 2012 16:23:26 -0700
+Message-Id: <1340753009-12483-4-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <20120626232210.GA11549@lizard>
 References: <20120626232210.GA11549@lizard>
@@ -33,62 +33,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For function tracing we need to stop using pstore.buf directly, since
-in a tracing callback we can't use spinlocks, and thus we can't safely
-use the global buffer.
+This patch introduces 'func_ptrace' option, now available in
+/sys/kernel/debug/tracing/options when function tracer
+is selected.
 
-With write_buf callback, backends no longer need to access pstore.buf
-directly, and thus we can pass any buffers (e.g. allocated on stack).
+The patch also adds some tiny code that calls back to pstore
+to record the trace. The callback is no-op when PSTORE=n.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- fs/pstore/platform.c   |   10 ++++++++++
- include/linux/pstore.h |    4 ++++
- 2 files changed, 14 insertions(+)
+ kernel/trace/trace_functions.c |   25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 6b3ff04..ef5ca8a 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -188,6 +188,14 @@ static void pstore_register_console(void)
- static void pstore_register_console(void) {}
- #endif
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index c7b0c6a..269627c 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -13,6 +13,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/uaccess.h>
+ #include <linux/ftrace.h>
++#include <linux/pstore.h>
+ #include <linux/fs.h>
  
-+static int pstore_write_compat(enum pstore_type_id type,
-+			       enum kmsg_dump_reason reason,
-+			       u64 *id, unsigned int part,
-+			       size_t size, struct pstore_info *psi)
-+{
-+	return psi->write_buf(type, reason, id, part, psinfo->buf, size, psi);
-+}
+ #include "trace.h"
+@@ -74,6 +75,14 @@ function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip)
+ 	preempt_enable_notrace();
+ }
+ 
++/* Our two options */
++enum {
++	TRACE_FUNC_OPT_STACK	= 0x1,
++	TRACE_FUNC_OPT_PSTORE	= 0x2,
++};
 +
- /*
-  * platform specific persistent storage driver registers with
-  * us here. If pstore is already mounted, call the platform
-@@ -212,6 +220,8 @@ int pstore_register(struct pstore_info *psi)
- 		return -EINVAL;
- 	}
++static struct tracer_flags func_flags;
++
+ static void
+ function_trace_call(unsigned long ip, unsigned long parent_ip)
+ {
+@@ -97,6 +106,12 @@ function_trace_call(unsigned long ip, unsigned long parent_ip)
+ 	disabled = atomic_inc_return(&data->disabled);
  
-+	if (!psi->write)
-+		psi->write = pstore_write_compat;
- 	psinfo = psi;
- 	mutex_init(&psinfo->read_mutex);
- 	spin_unlock(&pstore_lock);
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index 1bd014b..b107484 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -48,6 +48,10 @@ struct pstore_info {
- 	int		(*write)(enum pstore_type_id type,
- 			enum kmsg_dump_reason reason, u64 *id,
- 			unsigned int part, size_t size, struct pstore_info *psi);
-+	int		(*write_buf)(enum pstore_type_id type,
-+			enum kmsg_dump_reason reason, u64 *id,
-+			unsigned int part, const char *buf, size_t size,
-+			struct pstore_info *psi);
- 	int		(*erase)(enum pstore_type_id type, u64 id,
- 			struct pstore_info *psi);
- 	void		*data;
+ 	if (likely(disabled == 1)) {
++		/*
++		 * So far tracing doesn't support multiple buffers, so
++		 * we make an explicit call for now.
++		 */
++		if (unlikely(func_flags.val & TRACE_FUNC_OPT_PSTORE))
++			pstore_ftrace_call(ip, parent_ip);
+ 		pc = preempt_count();
+ 		trace_function(tr, ip, parent_ip, flags, pc);
+ 	}
+@@ -158,15 +173,13 @@ static struct ftrace_ops trace_stack_ops __read_mostly =
+ 	.flags = FTRACE_OPS_FL_GLOBAL,
+ };
+ 
+-/* Our two options */
+-enum {
+-	TRACE_FUNC_OPT_STACK = 0x1,
+-};
+-
+ static struct tracer_opt func_opts[] = {
+ #ifdef CONFIG_STACKTRACE
+ 	{ TRACER_OPT(func_stack_trace, TRACE_FUNC_OPT_STACK) },
+ #endif
++#ifdef CONFIG_PSTORE_FTRACE
++	{ TRACER_OPT(func_pstore, TRACE_FUNC_OPT_PSTORE) },
++#endif
+ 	{ } /* Always set a last empty entry */
+ };
+ 
+@@ -219,6 +232,8 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
+ 
+ 		return 0;
+ 	}
++	if (bit == TRACE_FUNC_OPT_PSTORE)
++		return 0;
+ 
+ 	return -EINVAL;
+ }
 -- 
 1.7.10.4
 
