@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab2FZG6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 02:58:13 -0400
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:62288 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab2FZG5V (ORCPT
+	id S1758171Ab2FZG73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 02:59:29 -0400
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:57132 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757395Ab2FZG5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Jun 2012 02:57:21 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -16,9 +16,9 @@ Cc: Iiro Valkonen <iiro.valkonen@atmel.com>,
         Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 21/21 v5] Input: atmel_mxt_ts - parse T6 reports
-Date: Tue, 26 Jun 2012 14:57:09 +0800
-Message-Id: <1340693829-18665-22-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 09/21 v5] Input: atmel_mxt_ts - print all instances when dumping objects
+Date: Tue, 26 Jun 2012 14:56:57 +0800
+Message-Id: <1340693829-18665-10-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
 References: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
@@ -26,77 +26,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The normal messages sent after boot or NVRAM update are T6 reports,
-containing a status, and the config memory checksum.  Parse them and dump
-a useful info message.
-
-This patch tested on an MXT224E.
+For objects with multiple instances, dump them all, prepending each with
+its "Instance #".
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   21 ++++++++++++++-------
- 1 files changed, 14 insertions(+), 7 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   30 +++++++++++++++++++++---------
+ 1 files changed, 21 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index f9a9be9..8350bcc 100644
+index c8cfd7b..25d3dd5 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -248,6 +248,7 @@ struct mxt_data {
- 	unsigned int max_y;
+@@ -883,7 +883,7 @@ static ssize_t mxt_object_show(struct device *dev,
+ 	struct mxt_data *data = dev_get_drvdata(dev);
+ 	struct mxt_object *object;
+ 	int count = 0;
+-	int i, j;
++	int i, j, k;
+ 	int error;
+ 	u8 val;
+ 	u8 *obuf;
+@@ -903,18 +903,30 @@ static ssize_t mxt_object_show(struct device *dev,
+ 		count += scnprintf(buf + count, PAGE_SIZE - count,
+ 				"T%u:\n", object->type);
  
- 	/* Cached parameters from object table */
-+	u8 T6_reportid;
- 	u8 T9_reportid_min;
- 	u8 T9_reportid_max;
- };
-@@ -555,8 +556,6 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 	struct device *dev = &data->client->dev;
- 	int id;
- 	u8 reportid;
--	u8 max_reportid;
--	u8 min_reportid;
- 	bool update_input = false;
+-		error = __mxt_read_reg(data->client, object->start_address,
+-				object->size + 1, obuf);
+-		if (error)
+-			break;
++		for (j = 0; j < object->instances + 1; j++) {
++			u16 size = object->size + 1;
++			u16 addr = object->start_address + j * size;
++
++			error = __mxt_read_reg(data->client, addr, size, obuf);
++			if (error)
++				break;
  
- 	do {
-@@ -567,11 +566,15 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+-		for (j = 0; j < object->size + 1; j++) {
+-			val = obuf[j];
++			if (object->instances > 0)
++				count += scnprintf(buf + count,
++						PAGE_SIZE - count,
++						"Instance %u\n", j);
  
- 		reportid = message.reportid;
++			for (k = 0; k < object->size + 1; k++) {
++				val = obuf[k];
++
++				count += scnprintf(buf + count,
++						PAGE_SIZE - count,
++						"\t[%2u]: %02x (%d)\n",
++						k, val, val);
++			}
+ 			count += scnprintf(buf + count, PAGE_SIZE - count,
+-					"\t[%2d]: %02x (%d)\n", j, val, val);
++					"\n");
+ 		}
+-		count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
+ 	}
  
--		max_reportid = data->T9_reportid_max;
--		min_reportid = data->T9_reportid_min;
--		id = reportid - min_reportid;
--
--		if (reportid >= min_reportid && reportid <= max_reportid) {
-+		if (reportid == data->T6_reportid) {
-+			unsigned csum = message.message[1] |
-+					(message.message[2] << 8) |
-+					(message.message[3] << 16);
-+			dev_dbg(dev, "Status: %02x Config Checksum: %06x\n",
-+				message.message[0], csum);
-+		} else if (reportid >= data->T9_reportid_min &&
-+			    reportid <= data->T9_reportid_max) {
-+			id = reportid - data->T9_reportid_min;
- 			mxt_input_touchevent(data, &message, id);
- 			update_input = true;
- 		} else {
-@@ -749,6 +752,9 @@ static int mxt_get_object_table(struct mxt_data *data)
- 			 object->instances + 1, min_id, max_id);
- 
- 		switch (object->type) {
-+		case MXT_GEN_COMMAND_T6:
-+			data->T6_reportid = min_id;
-+			break;
- 		case MXT_TOUCH_MULTI_T9:
- 			data->T9_reportid_min = min_id;
- 			data->T9_reportid_max = max_id;
-@@ -1008,6 +1014,7 @@ static ssize_t mxt_update_fw_store(struct device *dev,
- 		/* Destroy old object table and any cached fields */
- 		kfree(data->object_table);
- 		data->object_table = NULL;
-+		data->T6_reportid = 0;
- 		data->T9_reportid_min = 0;
- 		data->T9_reportid_max = 0;
- 
+ 	kfree(obuf);
 -- 
 1.7.7.3
 
