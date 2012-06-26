@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2FZFYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 01:24:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61296 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab2FZFYr (ORCPT
+	id S1757180Ab2FZF1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 01:27:30 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43142 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab2FZF12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 01:24:47 -0400
-Date: Mon, 25 Jun 2012 22:24:44 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 09/11] memcg: propagate kmem limiting information to
- children
-In-Reply-To: <20120625162352.51997c5a.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1206252224350.30072@chino.kir.corp.google.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-10-git-send-email-glommer@parallels.com> <20120625162352.51997c5a.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 26 Jun 2012 01:27:28 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FE947C0.6040304@jp.fujitsu.com>
+Date: Tue, 26 Jun 2012 14:25:20 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Wanpeng Li <liwp.linux@gmail.com>
+CC: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] memcg: cleanup useless LRU_ALL_EVICTABLE
+References: <1340622934-13091-1-git-send-email-liwp.linux@gmail.com>
+In-Reply-To: <1340622934-13091-1-git-send-email-liwp.linux@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jun 2012, Andrew Morton wrote:
+(2012/06/25 20:15), Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> 
+> Since LRU_ALL_EVICTABLE is useless, just remove it.
+> 
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
 
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -287,7 +287,11 @@ struct mem_cgroup {
-> >  	 * Should the accounting and control be hierarchical, per subtree?
-> >  	 */
-> >  	bool use_hierarchy;
-> > -	bool kmem_accounted;
-> > +	/*
-> > +	 * bit0: accounted by this cgroup
-> > +	 * bit1: accounted by a parent.
-> > +	 */
-> > +	volatile unsigned long kmem_accounted;
+Thank you for your patience.
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+hmm..but this may noe be related to memcg ;)
+
+
+> ---
+>   include/linux/mmzone.h |    1 -
+>   1 file changed, 1 deletion(-)
 > 
-> I suggest
-> 
-> 	unsigned long kmem_accounted;	/* See KMEM_ACCOUNTED_*, below */
-> 
-> >  	bool		oom_lock;
-> >  	atomic_t	under_oom;
-> > @@ -340,6 +344,9 @@ struct mem_cgroup {
-> >  #endif
-> >  };
-> >  
-> > +#define KMEM_ACCOUNTED_THIS	0
-> > +#define KMEM_ACCOUNTED_PARENT	1
-> 
-> And then document the fields here.
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 68c569f..8b10c35 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -209,7 +209,6 @@ struct lruvec {
+>   /* Mask used at gathering information at once (see memcontrol.c) */
+>   #define LRU_ALL_FILE (BIT(LRU_INACTIVE_FILE) | BIT(LRU_ACTIVE_FILE))
+>   #define LRU_ALL_ANON (BIT(LRU_INACTIVE_ANON) | BIT(LRU_ACTIVE_ANON))
+> -#define LRU_ALL_EVICTABLE (LRU_ALL_FILE | LRU_ALL_ANON)
+>   #define LRU_ALL	     ((1 << NR_LRU_LISTS) - 1)
+>   
+>   /* Isolate clean file */
 > 
 
-In hex, please?
+
+
