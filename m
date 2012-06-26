@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758750Ab2FZQgI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 12:36:08 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37052 "EHLO
+	id S1758730Ab2FZQgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 12:36:05 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:39316 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758706Ab2FZQfy (ORCPT
+	with ESMTP id S1758703Ab2FZQfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 12:35:54 -0400
+	Tue, 26 Jun 2012 12:35:53 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: eparis@redhat.com, viro@zeniv.linux.org.uk
 Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 8/9] audit: optimize audit_compare_dname_path
-Date: Tue, 26 Jun 2012 12:35:36 -0400
-Message-Id: <1340728537-25599-9-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v4 7/9] audit: make audit_compare_dname_path use parent_len helper
+Date: Tue, 26 Jun 2012 12:35:35 -0400
+Message-Id: <1340728537-25599-8-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340728537-25599-1-git-send-email-jlayton@redhat.com>
 References: <1340728537-25599-1-git-send-email-jlayton@redhat.com>
@@ -21,120 +21,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the cases where we already know the length of the parent, pass it as
-a parm so we don't need to recompute it. In the cases where we don't
-know the length, pass in AUDIT_NAME_FULL (-1) to indicate that it should
-be determined.
+From: Eric Paris <eparis@redhat.com>
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
- kernel/audit.h       |    5 ++++-
- kernel/audit_watch.c |    3 ++-
- kernel/auditfilter.c |   16 +++++++++++-----
- kernel/auditsc.c     |    8 +++-----
- 4 files changed, 20 insertions(+), 12 deletions(-)
+ kernel/auditfilter.c |   27 +++++++--------------------
+ 1 files changed, 7 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/audit.h b/kernel/audit.h
-index ee31316..34af33c 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -74,10 +74,13 @@ static inline int audit_hash_ino(u32 ino)
- 	return (ino & (AUDIT_INODE_BUCKETS-1));
- }
- 
-+/* Indicates that audit should log the full pathname. */
-+#define AUDIT_NAME_FULL -1
-+
- extern int audit_match_class(int class, unsigned syscall);
- extern int audit_comparator(const u32 left, const u32 op, const u32 right);
- extern int parent_len(const char *path);
--extern int audit_compare_dname_path(const char *dname, const char *path);
-+extern int audit_compare_dname_path(const char *dname, const char *path, int plen);
- extern struct sk_buff *	    audit_make_reply(int pid, int seq, int type,
- 					     int done, int multi,
- 					     const void *payload, int size);
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index 44f3b31..793d0c8 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -265,7 +265,8 @@ static void audit_update_watch(struct audit_parent *parent,
- 	/* Run all of the watches on this parent looking for the one that
- 	 * matches the given dname */
- 	list_for_each_entry_safe(owatch, nextw, &parent->watches, wlist) {
--		if (audit_compare_dname_path(dname, owatch->path))
-+		if (audit_compare_dname_path(dname, owatch->path,
-+					     AUDIT_NAME_FULL))
- 			continue;
- 
- 		/* If the update involves invalidating rules, do the inode-based
 diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index f47ba18..1e0899d 100644
+index f9c48d0..f47ba18 100644
 --- a/kernel/auditfilter.c
 +++ b/kernel/auditfilter.c
-@@ -1228,11 +1228,17 @@ int parent_len(const char *path)
- 	return p - path;
- }
- 
--/* Compare given dentry name with last component in given path,
-- * return of 0 indicates a match. */
--int audit_compare_dname_path(const char *dname, const char *path)
-+/**
-+ * audit_compare_dname_path - compare given dentry name with last component in
-+ * 			      given path. Return of 0 indicates a match.
-+ * @dname:	dentry name that we're comparing
-+ * @path:	full pathname that we're comparing
-+ * @parentlen:	length of the parent if known. Passing in AUDIT_NAME_FULL
-+ * 		here indicates that we must compute this value.
-+ */
-+int audit_compare_dname_path(const char *dname, const char *path, int parentlen)
+@@ -1232,32 +1232,19 @@ int parent_len(const char *path)
+  * return of 0 indicates a match. */
+ int audit_compare_dname_path(const char *dname, const char *path)
  {
--	int dlen, pathlen, parentlen;
-+	int dlen, pathlen;
+-	int dlen, plen;
++	int dlen, pathlen, parentlen;
  	const char *p;
  
- 	dlen = strlen(dname);
-@@ -1240,7 +1246,7 @@ int audit_compare_dname_path(const char *dname, const char *path)
- 	if (pathlen < dlen)
- 		return 1;
- 
--	parentlen = parent_len(path);
-+	parentlen = parentlen == AUDIT_NAME_FULL ? parent_len(path) : parentlen;
- 	if (pathlen - parentlen != dlen)
- 		return 1;
- 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 34d7ab2..f4cdefe 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -81,9 +81,6 @@
-  * a name dynamically and also add those to the list anchored by names_list. */
- #define AUDIT_NAMES	5
- 
--/* Indicates that audit should log the full pathname. */
--#define AUDIT_NAME_FULL -1
+-	if (!dname || !path)
+-		return 1;
 -
- /* no execve audit message should be longer than this (userspace limits) */
- #define MAX_EXECVE_AUDIT_LEN 7500
+ 	dlen = strlen(dname);
+-	plen = strlen(path);
+-	if (plen < dlen)
++	pathlen = strlen(path);
++	if (pathlen < dlen)
+ 		return 1;
  
-@@ -2232,7 +2229,7 @@ void __audit_inode_child(const struct inode *parent,
- 			continue;
+-	/* disregard trailing slashes */
+-	p = path + plen - 1;
+-	while ((*p == '/') && (p > path))
+-		p--;
+-
+-	/* find last path component */
+-	p = p - dlen + 1;
+-	if (p < path)
++	parentlen = parent_len(path);
++	if (pathlen - parentlen != dlen)
+ 		return 1;
+-	else if (p > path) {
+-		if (*--p != '/')
+-			return 1;
+-		else
+-			p++;
+-	}
++
++	p = path + parentlen;
  
- 		if (n->ino == parent->i_ino &&
--		    !audit_compare_dname_path(dname, n->name)) {
-+		    !audit_compare_dname_path(dname, n->name, n->name_len)) {
- 			found_parent = n->name;
- 			goto add_names;
- 		}
-@@ -2245,7 +2242,8 @@ void __audit_inode_child(const struct inode *parent,
- 
- 		/* strcmp() is the more likely scenario */
- 		if (!strcmp(dname, n->name) ||
--		     !audit_compare_dname_path(dname, n->name)) {
-+		    !audit_compare_dname_path(dname, n->name,
-+						AUDIT_NAME_FULL)) {
- 			if (inode)
- 				audit_copy_inode(n, dentry, inode);
- 			else
+ 	return strncmp(p, dname, dlen);
+ }
 -- 
 1.7.7.6
 
