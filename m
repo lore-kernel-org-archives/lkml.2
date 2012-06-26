@@ -1,123 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab2FZSUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 14:20:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60181 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2FZSUR (ORCPT
+	id S1757736Ab2FZSdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 14:33:53 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60015 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2FZSdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 14:20:17 -0400
+	Tue, 26 Jun 2012 14:33:52 -0400
+Date: Tue, 26 Jun 2012 19:33:49 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alex Hung <alex.hung@canonical.com>
+Cc: corentincj@iksaif.net, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] eeepc-wmi: change wireless key event to toggle all
+ wireless devices.
+Message-ID: <20120626183349.GB29375@srcf.ucam.org>
+References: <1340162788-531-1-git-send-email-alex.hung@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <20120626081754.GY27816@cmpxchg.org>
-References: <20120529220636.AAA66A0308@akpm.mtv.corp.google.com>
-	<CAE9FiQVEq5j1zoKS31fgfG_3xZSyfqsjdDorDku-Sgj6BTShEg@mail.gmail.com>
-	<CAE9FiQXR+3k4QmOJe59xom+JW5JZAP3znRXQwdyqV5LMEPCw2g@mail.gmail.com>
-	<20120623091752.GK27816@cmpxchg.org>
-	<CAE9FiQXYG0=XFAzZStExBTNqdnRPMSjASNydM45GC_G6qfuNkA@mail.gmail.com>
-	<20120623220616.GS27816@cmpxchg.org>
-	<CAE9FiQWoR_CJd8GD5i5jeFm=_ghUsdTwx8LbP8DnwgdEHo64uQ@mail.gmail.com>
-	<20120626081754.GY27816@cmpxchg.org>
-Date: Tue, 26 Jun 2012 11:20:16 -0700
-X-Google-Sender-Auth: qO2fRShExnWLbM7DFoPuWg2OuOI
-Message-ID: <CAE9FiQWVEDHKeRN3+t39Hch8wpNdjsv15yTyVVLGRdK=yw2n4g@mail.gmail.com>
-Subject: Re: [patch 046/181] mm: remove sparsemem allocation details from the
- bootmem allocator
-From: Yinghai Lu <yinghai@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        davem@davemloft.net, shangw@linux.vnet.ibm.com, tj@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b3393597bacdb04c36426c8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340162788-531-1-git-send-email-alex.hung@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b3393597bacdb04c36426c8
-Content-Type: text/plain; charset=ISO-8859-1
+Is this the expected behaviour (ie, is this what happens on Windows as 
+well)?
 
-On Tue, Jun 26, 2012 at 1:17 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> No use in reverting it, as the bootmem version was already broken
-> before, when the limit was removed in f5bf18f "bootmem/sparsemem:
-> remove limit constraint in alloc_bootmem_section".
->
-> I'm okay with exporting and using ___alloc_bootmem_node_nopanic() in
-> 3.5.
-
-Good. Assume that is Acked-by you.
-
-Andrew,
-
-Can you push attached -v2 patch to Linus?
-
-Thanks
-
-Yinghai
-
---047d7b3393597bacdb04c36426c8
-Content-Type: application/octet-stream; name="fix_usemap_goal_v2.patch"
-Content-Disposition: attachment; filename="fix_usemap_goal_v2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3xav8s00
-
-U3ViamVjdDogW1BBVENIXSBtbTogZml4IGdvYWwgY2FsY3VsYXRpbmcgd2l0aCB1c2VtYXAKClBB
-R0VfU0VDVElPTl9NQVNLIHNob3VsZCBiZSB1c2VkIHdpdGggcGZuIGluc3RlYWQgb2YgcGEuCgpB
-bHNvIHJlc3RvcmUgdGhlIG9sZCBiZWhhdm9pcjoKCWxpbWl0IHRoZSBhbGxvY2F0aW5nIHRvIHNh
-bWUgc2VjdGlvbiBhdCBmaXJzdC4KCW5lZWQgdG8gZXhwb3NlIF9fYWxsb2NfYm9vdG1lbV9ub2Rl
-X25vcGFuaWMgd2l0aCBsaW1pdC4KCi12MjogYWRkIGxpbWl0IG9mIHNhbWUgc2VjdGlvbgoKU2ln
-bmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBpbmNsdWRl
-L2xpbnV4L2Jvb3RtZW0uaCB8ICAgIDUgKysrKysKIG1tL2Jvb3RtZW0uYyAgICAgICAgICAgIHwg
-ICAgMiArLQogbW0vbm9ib290bWVtLmMgICAgICAgICAgfCAgICAyICstCiBtbS9zcGFyc2UuYyAg
-ICAgICAgICAgICB8ICAgMjIgKysrKysrKysrKysrKysrKy0tLS0tLQogNCBmaWxlcyBjaGFuZ2Vk
-LCAyMyBpbnNlcnRpb25zKCspLCA4IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9tbS9z
-cGFyc2UuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9tbS9zcGFyc2UuYworKysgbGlu
-dXgtMi42L21tL3NwYXJzZS5jCkBAIC0yNzUsOCArMjc1LDkgQEAgc3RhdGljIHVuc2lnbmVkIGxv
-bmcgKiBfX2luaXQKIHNwYXJzZV9lYXJseV91c2VtYXBzX2FsbG9jX3BnZGF0X3NlY3Rpb24oc3Ry
-dWN0IHBnbGlzdF9kYXRhICpwZ2RhdCwKIAkJCQkJIHVuc2lnbmVkIGxvbmcgc2l6ZSkKIHsKLQlw
-Z19kYXRhX3QgKmhvc3RfcGdkYXQ7Ci0JdW5zaWduZWQgbG9uZyBnb2FsOworCXVuc2lnbmVkIGxv
-bmcgZ29hbCwgbGltaXQ7CisJdW5zaWduZWQgbG9uZyAqcDsKKwlpbnQgbmlkOwogCS8qCiAJICog
-QSBwYWdlIG1heSBjb250YWluIHVzZW1hcHMgZm9yIG90aGVyIHNlY3Rpb25zIHByZXZlbnRpbmcg
-dGhlCiAJICogcGFnZSBiZWluZyBmcmVlZCBhbmQgbWFraW5nIGEgc2VjdGlvbiB1bnJlbW92YWJs
-ZSB3aGlsZQpAQCAtMjg3LDEwICsyODgsMTkgQEAgc3BhcnNlX2Vhcmx5X3VzZW1hcHNfYWxsb2Nf
-cGdkYXRfc2VjdGlvbgogCSAqIGZyb20gdGhlIHNhbWUgc2VjdGlvbiBhcyB0aGUgcGdkYXQgd2hl
-cmUgcG9zc2libGUgdG8gYXZvaWQKIAkgKiB0aGlzIHByb2JsZW0uCiAJICovCi0JZ29hbCA9IF9f
-cGEocGdkYXQpICYgUEFHRV9TRUNUSU9OX01BU0s7Ci0JaG9zdF9wZ2RhdCA9IE5PREVfREFUQShl
-YXJseV9wZm5fdG9fbmlkKGdvYWwgPj4gUEFHRV9TSElGVCkpOwotCXJldHVybiBfX2FsbG9jX2Jv
-b3RtZW1fbm9kZV9ub3BhbmljKGhvc3RfcGdkYXQsIHNpemUsCi0JCQkJCSAgICBTTVBfQ0FDSEVf
-QllURVMsIGdvYWwpOworCWdvYWwgPSBfX3BhKHBnZGF0KSAmIChQQUdFX1NFQ1RJT05fTUFTSyA8
-PCBQQUdFX1NISUZUKTsKKwlsaW1pdCA9IGdvYWwgKyAoMVVMIDw8IFBBX1NFQ1RJT05fU0hJRlQp
-OworCW5pZCA9IGVhcmx5X3Bmbl90b19uaWQoZ29hbCA+PiBQQUdFX1NISUZUKTsKKworYWdhaW46
-CisJcCA9IF9fX2FsbG9jX2Jvb3RtZW1fbm9kZV9ub3BhbmljKE5PREVfREFUQShuaWQpLCBzaXpl
-LAorCQkJCQkgIFNNUF9DQUNIRV9CWVRFUywgZ29hbCwgbGltaXQpOworCWlmICghcCAmJiBsaW1p
-dCkgeworCQlsaW1pdCA9IDA7CisJCWdvdG8gYWdhaW47CisJfQorCisJcmV0dXJuIHA7CiB9CiAK
-IHN0YXRpYyB2b2lkIF9faW5pdCBjaGVja191c2VtYXBfc2VjdGlvbl9ucihpbnQgbmlkLCB1bnNp
-Z25lZCBsb25nICp1c2VtYXApCkluZGV4OiBsaW51eC0yLjYvaW5jbHVkZS9saW51eC9ib290bWVt
-LmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9saW51eC9ib290bWVtLmgK
-KysrIGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L2Jvb3RtZW0uaApAQCAtOTEsNiArOTEsMTEgQEAg
-ZXh0ZXJuIHZvaWQgKl9fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaQogCQkJCSAgdW5zaWduZWQg
-bG9uZyBzaXplLAogCQkJCSAgdW5zaWduZWQgbG9uZyBhbGlnbiwKIAkJCQkgIHVuc2lnbmVkIGxv
-bmcgZ29hbCk7Cit2b2lkICpfX19hbGxvY19ib290bWVtX25vZGVfbm9wYW5pYyhwZ19kYXRhX3Qg
-KnBnZGF0LAorCQkJCSAgdW5zaWduZWQgbG9uZyBzaXplLAorCQkJCSAgdW5zaWduZWQgbG9uZyBh
-bGlnbiwKKwkJCQkgIHVuc2lnbmVkIGxvbmcgZ29hbCwKKwkJCQkgIHVuc2lnbmVkIGxvbmcgbGlt
-aXQpOwogZXh0ZXJuIHZvaWQgKl9fYWxsb2NfYm9vdG1lbV9sb3codW5zaWduZWQgbG9uZyBzaXpl
-LAogCQkJCSB1bnNpZ25lZCBsb25nIGFsaWduLAogCQkJCSB1bnNpZ25lZCBsb25nIGdvYWwpOwpJ
-bmRleDogbGludXgtMi42L21tL2Jvb3RtZW0uYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3Jp
-Zy9tbS9ib290bWVtLmMKKysrIGxpbnV4LTIuNi9tbS9ib290bWVtLmMKQEAgLTY5OCw3ICs2OTgs
-NyBAQCB2b2lkICogX19pbml0IF9fYWxsb2NfYm9vdG1lbSh1bnNpZ25lZCBsCiAJcmV0dXJuIF9f
-X2FsbG9jX2Jvb3RtZW0oc2l6ZSwgYWxpZ24sIGdvYWwsIGxpbWl0KTsKIH0KIAotc3RhdGljIHZv
-aWQgKiBfX2luaXQgX19fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaWMocGdfZGF0YV90ICpwZ2Rh
-dCwKK3ZvaWQgKiBfX2luaXQgX19fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaWMocGdfZGF0YV90
-ICpwZ2RhdCwKIAkJCQl1bnNpZ25lZCBsb25nIHNpemUsIHVuc2lnbmVkIGxvbmcgYWxpZ24sCiAJ
-CQkJdW5zaWduZWQgbG9uZyBnb2FsLCB1bnNpZ25lZCBsb25nIGxpbWl0KQogewpJbmRleDogbGlu
-dXgtMi42L21tL25vYm9vdG1lbS5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL21tL25v
-Ym9vdG1lbS5jCisrKyBsaW51eC0yLjYvbW0vbm9ib290bWVtLmMKQEAgLTI3NCw3ICsyNzQsNyBA
-QCB2b2lkICogX19pbml0IF9fYWxsb2NfYm9vdG1lbSh1bnNpZ25lZCBsCiAJcmV0dXJuIF9fX2Fs
-bG9jX2Jvb3RtZW0oc2l6ZSwgYWxpZ24sIGdvYWwsIGxpbWl0KTsKIH0KIAotc3RhdGljIHZvaWQg
-KiBfX2luaXQgX19fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaWMocGdfZGF0YV90ICpwZ2RhdCwK
-K3ZvaWQgKiBfX2luaXQgX19fYWxsb2NfYm9vdG1lbV9ub2RlX25vcGFuaWMocGdfZGF0YV90ICpw
-Z2RhdCwKIAkJCQkJCSAgIHVuc2lnbmVkIGxvbmcgc2l6ZSwKIAkJCQkJCSAgIHVuc2lnbmVkIGxv
-bmcgYWxpZ24sCiAJCQkJCQkgICB1bnNpZ25lZCBsb25nIGdvYWwsCg==
---047d7b3393597bacdb04c36426c8--
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
