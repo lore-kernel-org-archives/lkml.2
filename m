@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758722Ab2FZQ7C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 12:59:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46032 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758433Ab2FZQ7A (ORCPT
+	id S1758763Ab2FZQ7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 12:59:23 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34985 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758433Ab2FZQ7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 12:59:00 -0400
-Date: Tue, 26 Jun 2012 09:58:55 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-Message-ID: <20120626165855.GA1851@kroah.com>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
- <20120625150722.8cd4f45d.akpm@linux-foundation.org>
- <20120625235531.GB3652@kroah.com>
- <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
- <20120626002307.GA4389@kroah.com>
- <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
- <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
- <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
- <1340726856.977.6.camel@mop>
+	Tue, 26 Jun 2012 12:59:21 -0400
+Message-ID: <4FE9EA65.4020005@acm.org>
+Date: Tue, 26 Jun 2012 11:59:17 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340726856.977.6.camel@mop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Srinivas_G_Gowda@Dell.com
+CC: tcminyard@gmail.com, linux-kernel@vger.kernel.org, openipmi@mvista.com
+Subject: Re: [PATCH] ipmi: setting OS name as Linux in BMC
+References: <4FE9A3EB.50505@dell.com> <4FE9B827.80300@dell.com> <4FE9BBA4.8070407@acm.org> <4FE9DD1D.9020803@dell.com>
+In-Reply-To: <4FE9DD1D.9020803@dell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 06:07:36PM +0200, Kay Sievers wrote:
-> On Mon, 2012-06-25 at 18:40 -0700, Linus Torvalds wrote:
-> > On Mon, Jun 25, 2012 at 5:56 PM, Kay Sievers <kay@vrfy.org> wrote:
-> > >
-> > > Buffering has nice effects though:
-> > > It makes continuation lines appear as one record in the buffer, not as
-> > > n individual prints with n headers.
-> > 
-> > As I already mentioned, buffering for *logging* is different from
-> > buffering for *printing*.
-> > 
-> > I think it might be a great idea to buffer for logging in order to
-> > generate one individual buffer record there.
-> > 
-> > But it needs to be printed as it is generated.
-> 
-> That's a good idea.
-> 
-> Something like this could work - only minimally tested at this moment.
+On 06/26/2012 11:02 AM, Srinivas_G_Gowda@Dell.com wrote:
+> Corey, Thanks for the comments. I was looking at the way BMC presence 
+> is detected. Thought it would be appropriate that BMC is told about 
+> the OS information -- Soon after ipmi_si driver detects 
+> BMC(Get_Device_ID) and before the driver starts doing anything useful. 
+> Looked like a quick clean getaway..! Looking at the ipmi_msghandler, I 
+> don't see how we will be able to do this during the driver 
+> initialization process. I could probably do it inside 
+> ipmi_register_smi in ipmi_msghandler. But I still prefer doing this in 
+> ipmi_si itself. Please let me know your thoughts on this. Thanks, G 
 
-Hm, this doesn't boot for me, just hangs at startup :(
+The trouble is that there are other interfaces (that are unfortunately 
+not in the mainstream kernel, but that's a different story) that would 
+not benefit from this if you put it in ipmi_si.  That's a low-level 
+interface, this is a higher-level function and belongs.
 
+Look at get_guid() called from ipmi_register_smi() in 
+ipmi_msghandler.c.  It's not that hard.
+
+-corey
