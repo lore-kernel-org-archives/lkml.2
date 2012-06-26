@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab2FZQ6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 12:58:44 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:55333 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758433Ab2FZQ6m convert rfc822-to-8bit (ORCPT
+	id S1758722Ab2FZQ7C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 12:59:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46032 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758433Ab2FZQ7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 12:58:42 -0400
+	Tue, 26 Jun 2012 12:59:00 -0400
+Date: Tue, 26 Jun 2012 09:58:55 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
+Message-ID: <20120626165855.GA1851@kroah.com>
+References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
+ <20120625150722.8cd4f45d.akpm@linux-foundation.org>
+ <20120625235531.GB3652@kroah.com>
+ <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
+ <20120626002307.GA4389@kroah.com>
+ <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
+ <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
+ <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
+ <1340726856.977.6.camel@mop>
 MIME-Version: 1.0
-In-Reply-To: <1340700008.21991.35.camel@twins>
-References: <20120626011815.11323.5533.stgit@dungbeetle.mtv.corp.google.com>
-	<1340700008.21991.35.camel@twins>
-Date: Tue, 26 Jun 2012 09:58:41 -0700
-Message-ID: <CAKUOC8Uy_YeoMW_S_JZbZUr1i_3mJGNfrNs676rc_o28WJGhjA@mail.gmail.com>
-Subject: Re: [PATCH] sched: fix fork() error path to not crash.
-From: Salman Qazi <sqazi@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340726856.977.6.camel@mop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 1:40 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Mon, 2012-06-25 at 18:18 -0700, Salman Qazi wrote:
->> In dup_task_struct, if arch_dup_task_struct fails, the clean up
->> code fails to clean up correctly.  That's because the clean up
->> code depends on unininitalized ti->task pointer.  We fix this
->> by making sure that the task and thread_info know about each other
->> before we attempt to take the error path.
->>
->> Signed-off-by: Salman Qazi <sqazi@google.com>
->
-> Cute, however did you find that?
+On Tue, Jun 26, 2012 at 06:07:36PM +0200, Kay Sievers wrote:
+> On Mon, 2012-06-25 at 18:40 -0700, Linus Torvalds wrote:
+> > On Mon, Jun 25, 2012 at 5:56 PM, Kay Sievers <kay@vrfy.org> wrote:
+> > >
+> > > Buffering has nice effects though:
+> > > It makes continuation lines appear as one record in the buffer, not as
+> > > n individual prints with n headers.
+> > 
+> > As I already mentioned, buffering for *logging* is different from
+> > buffering for *printing*.
+> > 
+> > I think it might be a great idea to buffer for logging in order to
+> > generate one individual buffer record there.
+> > 
+> > But it needs to be printed as it is generated.
+> 
+> That's a good idea.
+> 
+> Something like this could work - only minimally tested at this moment.
 
-Our test infrastructure folks have developed a fault injection
-framework geared towards detecting bugs triggered by memory allocation
-failures in random places.
+Hm, this doesn't boot for me, just hangs at startup :(
+
