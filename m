@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab2FZN4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 09:56:16 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:33296 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757060Ab2FZN4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 09:56:15 -0400
-Date: Tue, 26 Jun 2012 14:56:13 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1206261455320.18392@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757171Ab2FZODt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 10:03:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52963 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756830Ab2FZODs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 10:03:48 -0400
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH] UDF: Remove unnecessary variable "offset" from udf_fill_inode
+Date: Tue, 26 Jun 2012 19:33:11 +0530
+Message-Id: <1340719391-3081-1-git-send-email-ashish.sangwan2@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The variable "offset" is not needed. Remove it.
 
-Hi Linus,
+Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ fs/udf/inode.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-just two changes, one udl endian fix, one nouveau memory corruption on 
-some GPUs.
+diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+index 873e1ba..fafaad7 100644
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -1247,7 +1247,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+ {
+ 	struct fileEntry *fe;
+ 	struct extendedFileEntry *efe;
+-	int offset;
+ 	struct udf_sb_info *sbi = UDF_SB(inode->i_sb);
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
+ 	unsigned int link_count;
+@@ -1359,7 +1358,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+ 		iinfo->i_lenEAttr = le32_to_cpu(fe->lengthExtendedAttr);
+ 		iinfo->i_lenAlloc = le32_to_cpu(fe->lengthAllocDescs);
+ 		iinfo->i_checkpoint = le32_to_cpu(fe->checkpoint);
+-		offset = sizeof(struct fileEntry) + iinfo->i_lenEAttr;
+ 	} else {
+ 		inode->i_blocks = le64_to_cpu(efe->logicalBlocksRecorded) <<
+ 		    (inode->i_sb->s_blocksize_bits - 9);
+@@ -1381,8 +1379,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+ 		iinfo->i_lenEAttr = le32_to_cpu(efe->lengthExtendedAttr);
+ 		iinfo->i_lenAlloc = le32_to_cpu(efe->lengthAllocDescs);
+ 		iinfo->i_checkpoint = le32_to_cpu(efe->checkpoint);
+-		offset = sizeof(struct extendedFileEntry) +
+-							iinfo->i_lenEAttr;
+ 	}
+ 
+ 	switch (fe->icbTag.fileType) {
+-- 
+1.7.2.3
 
-Dave.
-
-The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
-
-  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 9bd0c15fcfb42f6245447c53347d65ad9e72080b:
-
-  drm/nouveau/fbcon: using nv_two_heads is not a good idea (2012-06-26 12:16:43 +0100)
-
-----------------------------------------------------------------
-Ben Skeggs (1):
-      drm/nouveau/fbcon: using nv_two_heads is not a good idea
-
-Dave Airlie (1):
-      drm/udl: Make sure to get correct endian keys from vendor descriptor
-
- drivers/gpu/drm/nouveau/nouveau_fbcon.c |    2 +-
- drivers/gpu/drm/udl/udl_main.c          |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
