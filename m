@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab2FZHIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 03:08:38 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:58652 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab2FZHIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 03:08:36 -0400
-Message-ID: <4FE95FE8.3060406@linux.vnet.ibm.com>
-Date: Tue, 26 Jun 2012 15:08:24 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757513Ab2FZHLZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 03:11:25 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:42220 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753375Ab2FZHLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 03:11:24 -0400
+Message-ID: <4FE95FF0.3000300@parallels.com>
+Date: Tue, 26 Jun 2012 11:08:32 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+To: David Rientjes <rientjes@google.com>
+CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 01/10] zcache: fix preemptable memory allocation in atomic
- context
-References: <4FE0392E.3090300@linux.vnet.ibm.com> <4FE36D32.3030408@linux.vnet.ibm.com> <20120623030052.GA18440@kroah.com> <4FE86C1D.2020302@linux.vnet.ibm.com> <20120625141145.GA32567@kroah.com>
-In-Reply-To: <20120625141145.GA32567@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 05/11] Add a __GFP_KMEMCG flag
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-6-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206252123230.26640@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1206252123230.26640@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12062607-2674-0000-0000-000005065524
+X-Originating-IP: [109.173.9.3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 10:11 PM, Greg Kroah-Hartman wrote:
-
-> On Mon, Jun 25, 2012 at 08:48:13AM -0500, Seth Jennings wrote:
->> On 06/22/2012 10:00 PM, Greg Kroah-Hartman wrote:
->>> On Thu, Jun 21, 2012 at 01:51:30PM -0500, Seth Jennings wrote:
->>>> I just noticed you sent this patchset to Andrew, but the
->>>> staging tree is maintained by Greg.  You're going to want to
->>>> send these patches to him.
->>>>
->>>> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>
->>> After this series is redone, right?  As it is, this submission didn't
->>> look ok, so I'm hoping a second round is forthcoming...
->>
->> Yes. That is the cleanest way since there are dependencies
->> among the patches.  You could pull 04-08 and be ok, but you
->> might just prefer a repost.
-> 
-> I do prefer a repost, thanks.
-
-
-Sorry for the delay reply since i was on my vacation. I will
-post the v2 soon. Thank you all!
+On 06/26/2012 08:25 AM, David Rientjes wrote:
+> On Mon, 25 Jun 2012, Glauber Costa wrote:
+>
+>> >This flag is used to indicate to the callees that this allocation will be
+>> >serviced to the kernel. It is not supposed to be passed by the callers
+>> >of kmem_cache_alloc, but rather by the cache core itself.
+>> >
+> Not sure what "serviced to the kernel" means, does this mean that the
+> memory will not be accounted for to the root memcg?
+>
+In this context, it means that is a kernel allocation, not a userspace 
+one (but in process context, of course), *and* it is to be accounted a
+specific memcg.
 
