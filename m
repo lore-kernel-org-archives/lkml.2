@@ -1,125 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758642Ab2FZQCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 12:02:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52581 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757594Ab2FZQCf (ORCPT
+	id S1758681Ab2FZQDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 12:03:04 -0400
+Received: from ausc60ps301.us.dell.com ([143.166.148.206]:20981 "EHLO
+	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757003Ab2FZQDC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 12:02:35 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [Regression] No sound on HP Pavilion dv6, STAC92xx
-References: <87d34mtb3c.fsf@canonical.com> <s5hvcie5faz.wl%tiwai@suse.de>
-	<s5hk3yu5ct9.wl%tiwai@suse.de> <s5hd34m5av0.wl%tiwai@suse.de>
-Date: Tue, 26 Jun 2012 17:02:30 +0100
-In-Reply-To: <s5hd34m5av0.wl%tiwai@suse.de> (Takashi Iwai's message of "Tue,
-	26 Jun 2012 17:52:35 +0200")
-Message-ID: <87hatyrrhl.fsf@canonical.com>
-User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.1.50 (gnu/linux)
+	Tue, 26 Jun 2012 12:03:02 -0400
+X-Loopcount0: from 10.175.216.251
+From: <Srinivas_G_Gowda@Dell.com>
+To: <minyard@acm.org>
+CC: <tcminyard@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <openipmi@mvista.com>
+Date: Tue, 26 Jun 2012 21:32:37 +0530
+Subject: Re: [PATCH] ipmi: setting OS name as Linux in BMC
+Thread-Topic: [PATCH] ipmi: setting OS name as Linux in BMC
+Thread-Index: Ac1TtSb8hhSjARgkTFSfXDXQC6sUNg==
+Message-ID: <4FE9DD1D.9020803@dell.com>
+References: <4FE9A3EB.50505@dell.com> <4FE9B827.80300@dell.com>
+ <4FE9BBA4.8070407@acm.org>
+In-Reply-To: <4FE9BBA4.8070407@acm.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131
+ Thunderbird/10.0
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
+On 06/26/2012 07:09 PM, Corey Minyard wrote:
+> The idea here is fine, but it's probably more appropriate to do this in 
+> ipmi_msghandler.c, not ipmi_si_intf.c, since the latter only handles 
+> some interface types.
+> 
+> -corey
+> 
+> On 06/26/2012 08:24 AM, Srinivas_G_Gowda@Dell.com wrote:
+>> There is an option in IPMI Spec using which BMC can be made aware
+>> of the OS name that it is talking to.
+>> IPMI_Spec-IPMI2_0E4_061209  -  ref - 22.14a ,  [Set System Info]
+>>
+>> This patch will update the OS name as "Linux" in BMC during
+>> IPMI Driver initialization. In the current patch, declaration of
+>> the OS name is done only for the Volatile param.
+>>
+>> Signed-off-by: Srinivas Gowda G<Srinivas_G_Gowda@dell.com>
+>> ---
+>>   drivers/char/ipmi/ipmi_si_intf.c |   72 ++++++++++++++++++++++++++++++++++++++
+>>   include/linux/ipmi_msgdefs.h     |    1 +
+>>   2 files changed, 73 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+>> index 1e638ff..df995b4 100644
+>> --- a/drivers/char/ipmi/ipmi_si_intf.c
+>> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+>> @@ -2709,6 +2709,71 @@ static int try_get_dev_id(struct smi_info *smi_info)
+>>   	return rv;
+>>   }
+>>
+>> +/*
+>> + * Set the Operating System Name as "Linux" using "Set System Info" command.
+>> + * Only setting Volatile variable - Parameter 4
+>> + */
+>> +static int try_set_system_info_os_name(struct smi_info *smi_info)
+>> +{
+>> +	unsigned char         msg[11];
+>> +	unsigned char         *resp;
+>> +	unsigned char         param_select;
+>> +	unsigned char	      set_selector;		
+>> +	unsigned char         string_encode;
+>> +	unsigned char         str_len;
+>> +	unsigned long         resp_len;
+>> +	int                   rv = 0;
+>> +
+>> +	resp = kmalloc(IPMI_MAX_MSG_LENGTH, GFP_KERNEL);
+>> +	if (!resp)
+>> +		return -ENOMEM;
+>> +
+>> +	param_select = 4;	/* parameter number for volatile OS name */
+>> +	set_selector = 0;	/* set selector, block 0 */
+>> +	string_encode = 0;	/* ASCII Encoding */
+>> +	str_len = 5;		/* length of ASCII string - "Linux" */
+>> +
+>> +	msg[0] = IPMI_NETFN_APP_REQUEST<<  2;
+>> +	msg[1] = IPMI_SET_SYSTEM_INFO;
+>> +	msg[2] = param_select;
+>> +	msg[3] = set_selector;
+>> +	msg[4] = string_encode;	
+>> +	msg[5] = str_len;
+>> +	msg[6] =  'L';	
+>> +	msg[7] =  'i';	
+>> +	msg[8] =  'n';	
+>> +	msg[9] =  'u';	
+>> +	msg[10] = 'x';	
+>> +
+>> +	smi_info->handlers->start_transaction(smi_info->si_sm, msg, 11);
+>> +
+>> +	rv = wait_for_msg_done(smi_info);
+>> +	if (rv)
+>> +		goto out;
+>> +
+>> +	resp_len = smi_info->handlers->get_result(smi_info->si_sm,
+>> +						  resp, IPMI_MAX_MSG_LENGTH);
+>> +
+>> +	if (resp_len<  3 ||
+>> +			resp[0] != (IPMI_NETFN_APP_REQUEST | 1)<<  2 ||
+>> +			resp[1] != IPMI_SET_SYSTEM_INFO   ||
+>> +			resp[2] != 0) {
+>> +		if (resp_len == 3 )
+>> +			 rv = resp[2];
+>> +		printk(KERN_WARNING PFX "Failed to set OS name as Linux: 0x%X\n", rv);
+>> +
+>> +		rv = -EINVAL;
+>> +		goto out;
+>> +	}
+>> +	else
+>> +		/* Volatile Opertaing System name */
+>> +		printk(KERN_INFO PFX "OS Name successfully set as Linux\n");
+>> +
+>> + out:
+>> +	kfree(resp);
+>> +	return rv;
+>> +}
+>> +
+>>   static int try_enable_event_buffer(struct smi_info *smi_info)
+>>   {
+>>   	unsigned char         msg[3];
+>> @@ -3216,6 +3281,13 @@ static int try_smi_init(struct smi_info *new_smi)
+>>   	new_smi->intf_num = smi_num;
+>>   	smi_num++;
+>>
+>> +	/*
+>> + 	 * Set the OS in BMC as "Linux" using "Set System Info" Command
+>> + 	 */
+>> +	rv = try_set_system_info_os_name(new_smi);
+>> +	if(rv)
+>> +		printk(KERN_WARNING PFX "Could not set OS Name in BMC\n");
+>> +		
+>>   	rv = try_enable_event_buffer(new_smi);
+>>   	if (rv == 0)
+>>   		new_smi->has_event_buffer = 1;
+>> diff --git a/include/linux/ipmi_msgdefs.h b/include/linux/ipmi_msgdefs.h
+>> index df97e6e..b5ea664 100644
+>> --- a/include/linux/ipmi_msgdefs.h
+>> +++ b/include/linux/ipmi_msgdefs.h
+>> @@ -57,6 +57,7 @@
+>>   #define IPMI_GET_BMC_GLOBAL_ENABLES_CMD	0x2f
+>>   #define IPMI_READ_EVENT_MSG_BUFFER_CMD	0x35
+>>   #define IPMI_GET_CHANNEL_INFO_CMD	0x42
+>> +#define IPMI_SET_SYSTEM_INFO		0x58
+>>
+>>   /* Bit for BMC global enables. */
+>>   #define IPMI_BMC_RCV_MSG_INTR     0x01
+> 
 
-Takashi Iwai <tiwai@suse.de> writes:
+Corey,
+Thanks for the comments.
 
-> At Tue, 26 Jun 2012 17:10:26 +0200,
-> Takashi Iwai wrote:
->> 
->> At Tue, 26 Jun 2012 16:16:36 +0200,
->> Takashi Iwai wrote:
->> > 
->> > At Tue, 26 Jun 2012 15:13:43 +0100,
->> > Luis Henriques wrote:
->> > > 
->> > > Hi,
->> > > 
->> > > After commit b0791dda813c179e539b0fc1ecd3f5f30f2571e2 ("ALSA: hda/idt
->> > > - Fix power-map for speaker-pins with some HP laptops") we have
->> > > several bug reports about not having sound on HP Pavilion laptops.
->> > > 
->> > > Here's a link to one of these bug reports:
->> > > 
->> > >  http://bugs.launchpad.net/bugs/1013183
->> > > 
->> > > After reverting the referred commit, everything seems to be working
->> > > fine again.
->> > > 
->> > > Any ideas/fixes?
->> > 
->> > Could you give alsa-info.sh output on both working and non-working
->> > kernels?
->> 
->> Also, does it really happen with the upstream kernels (vanilla 3.2.y
->> and Linus tree) without ubuntu changes?  If yes, I'd need alsa-info.sh
->> outputs on these, too.
->
-> Never mind, I found the culprit.
-> The fixed patch for 3.5 kernel is below.
->
-> For 3.4 and older kernels, another patch is necessary.  Will put in
-> another post.
->
+I was looking at the way BMC presence is detected. 
+Thought it would be appropriate that BMC is told about the OS information 
+ -- Soon after ipmi_si driver detects BMC(Get_Device_ID) and before the driver starts doing anything useful. Looked like a quick clean getaway..!    
 
-Great, thanks a lot for your help.  I was trying to gather the data
-from bug reporters, but I guess I can abort that.
+Looking at the ipmi_msghandler, I don't see how we will be able to do this during the driver initialization process. I could probably do it inside ipmi_register_smi in ipmi_msghandler. But I still prefer doing this in ipmi_si itself. Please let me know your thoughts on this.  
 
-I'll try to get someone testing the patch.
 
-Cheers,
---
-Luis
-
->
-> Takashi
->
-> ---
-> From: Takashi Iwai <tiwai@suse.de>
-> Subject: [PATCH] ALSA: hda - Fix power-map regression for HP dv6 & co
->
-> The recent fix for power-map controls (commit b0791dda813) caused
-> regressions on some other HP laptops.  They have fixed pins but these
-> pins are exposed as jack-detectable.  Thus the driver tries to control
-> the power-map dynamically per jack detection where it never gets on.
->
-> This patch adds the check of connection and it assumes the no jack
-> detection is available for fixed pins no matter what pin capability
-> says.
->
-> BugLink: http://bugs.launchpad.net/bugs/1013183
-> Reported-by: Luis Henriques <luis.henriques@canonical.com>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  sound/pci/hda/patch_sigmatel.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-> index 7db8228..0767528 100644
-> --- a/sound/pci/hda/patch_sigmatel.c
-> +++ b/sound/pci/hda/patch_sigmatel.c
-> @@ -4367,7 +4367,7 @@ static int stac92xx_init(struct hda_codec *codec)
->  					 AC_PINCTL_IN_EN);
->  	for (i = 0; i < spec->num_pwrs; i++)  {
->  		hda_nid_t nid = spec->pwr_nids[i];
-> -		int pinctl, def_conf;
-> +		unsigned int pinctl, def_conf;
->  
->  		def_conf = snd_hda_codec_get_pincfg(codec, nid);
->  		def_conf = get_defcfg_connect(def_conf);
-> @@ -4376,6 +4376,11 @@ static int stac92xx_init(struct hda_codec *codec)
->  			stac_toggle_power_map(codec, nid, 0);
->  			continue;
->  		}
-> +		if (def_conf == AC_JACK_PORT_FIXED) {
-> +			/* no need for jack detection for fixed pins */
-> +			stac_toggle_power_map(codec, nid, 1);
-> +			continue;
-> +		}
->  		/* power on when no jack detection is available */
->  		/* or when the VREF is used for controlling LED */
->  		if (!spec->hp_detect ||
+Thanks,
+G 
