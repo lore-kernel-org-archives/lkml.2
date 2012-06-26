@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab2FZDOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 23:14:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48011 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab2FZDON (ORCPT
+	id S1756655Ab2FZDPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 23:15:54 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35132 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755420Ab2FZDPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 23:14:13 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FE9284F.5040001@jp.fujitsu.com>
-Date: Tue, 26 Jun 2012 12:11:11 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, thp: abort compaction if migration page cannot be
- charged to memcg
-References: <alpine.DEB.2.00.1206202351030.28770@chino.kir.corp.google.com> <4FE8CCCD.7080503@redhat.com> <alpine.DEB.2.00.1206251726040.1895@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1206251726040.1895@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Jun 2012 23:15:53 -0400
+Date: Tue, 26 Jun 2012 13:15:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Per Ellefsen <Per.Ellefsen@stericsson.com>,
+        =?UTF-8?B?IlNqdXIgQnLDpm5kZWxhbmQi?= 
+	<sjur.brandeland@stericsson.com>,
+        Kim Lilliestierna <kim.xx.lilliestierna@stericsson.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120626131543.21e4338894b19f5e02f8bdde@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Jun_2012_13_15_43_+1000_wf+z6PNgcGMJe05v"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/26 9:32), David Rientjes wrote:
-> On Mon, 25 Jun 2012, Rik van Riel wrote:
->
->> The patch makes sense, however I wonder if it would make
->> more sense in the long run to allow migrate/compaction to
->> temporarily exceed the memcg memory limit for a cgroup,
->> because the original page will get freed again soon anyway.
->>
->> That has the potential to improve compaction success, and
->> reduce compaction related CPU use.
->>
->
-> Yeah, Kame brought up the same point with a sample patch by allowing the
-> temporary charge for the new page.  It would certainly solve this problem
-> in a way that we don't have to even touch compaction, it's disappointing
-> that we have to charge memory to do a page migration.  I'm not so sure
-> about the approach of temporarily allowing the excess charge, however,
-> since it would scale with the number of cpus doing compaction or
-> migration, which could end up with PAGE_SIZE * nr_cpu_ids.
->
+--Signature=_Tue__26_Jun_2012_13_15_43_+1000_wf+z6PNgcGMJe05v
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't think it's problem. Even if there are 4096 cpus, it's only 16MB
-on that system, which tends to have terabytes of memory.
-(We already have 32pages of per-cpu-cache....)
+Hi all,
 
-I'd like to post that patch with updating to mmotm.
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/caif/caif_hsi.c between commits 3935600a7f34 ("caif-hsi:
+Bugfix - Piggyback'ed embedded CAIF frame lost") and 1fdc7630b2cb
+("caif-hsi: Add missing return in error path") from the net tree and
+commits 4e7bb59d49fb ("caif-hsi: Removed dead code") and c41254006377
+("caif-hsi: Add rtnl support") from the net-next tree.
 
-> I haven't looked at it (yet), but I'm hoping that there's a way to avoid
-> charging the temporary page at all until after move_to_new_page()
-> succeeds, i.e. find a way to uncharge page before charging newpage.
+I fixed them up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Hmm...this code has been verrry racy and we did many mis-accounting.
-So, I'd like to start from a safe way.
+diff --cc drivers/net/caif/caif_hsi.c
+index 4a27adb,1c2bd01..0000000
+--- a/drivers/net/caif/caif_hsi.c
++++ b/drivers/net/caif/caif_hsi.c
+@@@ -693,8 -678,8 +678,6 @@@ static void cfhsi_rx_done(struct cfhsi=20
+  			 */
+  			memcpy(rx_buf, (u8 *)piggy_desc,
+  					CFHSI_DESC_SHORT_SZ);
+- 			if (desc_pld_len =3D=3D -EPROTO)
+- 				goto out_of_sync;
+ -			/* Mark no embedded frame here */
+ -			piggy_desc->offset =3D 0;
+  		}
+  	}
+ =20
 
-THanks,
--Kame
+--Signature=_Tue__26_Jun_2012_13_15_43_+1000_wf+z6PNgcGMJe05v
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJP6SlfAAoJEECxmPOUX5FE3sMP/3UqdcTeF+hXfffFOhTflLTy
+dJYT8zzIuwPNUcwqO4KJ10WBZAjtzla8QdTa7gH6/rLP8eAUJuz7p4qF1i/W4U7z
+v+c0Uvy8tGXIbxltnkZgw3FNiOYPhneT1c2Ru3EfKsdJqd4CZfQ94aVe0/SyV/QR
+JJhgk727sMhg7ojpLQMPCQRNfIoIBN28UqftWWJx3caK6ksx0ETJgWEiZMHVjmK6
+x/CwVU/yb93yvf5WX534c2gQrIMxojw9Wyui3g44ri+repPe4R0C1mqi9dllhfw0
+fjf5d6h1nLcNdypJVNdwY9j5OKIfoEqEwr+9fBK+jtiD7z40VT0Tl5F46pQpKap1
+wIMQ7HVGBO+gPx+CEfG1Yg5ovkuoOFmzasscVrwmO9R/o50bgCOcyC8ZQhE7/zbf
+YvwlP6rL8JNrzXIMVI2+1UU86jB88Z4eZdwwyofb3muW2ozcbzKm0bvMhDC/RaR7
+h36c8Je5TLAtxs3116AER3GsXBbnWvwSPwYbbWZmgyFsfm617Ky/gsbMBfHITzTQ
+TQDZ2uUT0tAXmeLYYiUFFO3CrV2tnp6g6NEbfzhDxdUhBgtzaipA+p65y8sVw62f
+dGq3odeyIRGQvwawckr0AZwdeZsnJ5RBtWfrpWbKR8wxCnKCicha0yT8nqhvazme
+ASHLPhNivvEe8A/P7rTy
+=DiNS
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__26_Jun_2012_13_15_43_+1000_wf+z6PNgcGMJe05v--
