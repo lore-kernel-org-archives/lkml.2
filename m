@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab2FZFxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 01:53:34 -0400
-Received: from linux-sh.org ([111.68.239.195]:51906 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757744Ab2FZFxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 01:53:31 -0400
-Date: Tue, 26 Jun 2012 14:51:29 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Myron Stowe <myron.stowe@redhat.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, rth@twiddle.net,
-        ink@jurassic.park.msu.ru, mattst88@gmail.com, linux@arm.linux.org.uk,
-        starvik@axis.com, jesper.nilsson@axis.com, tony.luck@intel.com,
-        fenghua.yu@intel.com, monstr@monstr.eu, ralf@linux-mips.org,
-        yasutake.koichi@jp.panasonic.com, jejb@parisc-linux.org, deller@gmx.de,
-        benh@kernel.crashing.org, paulus@samba.org, davem@davemloft.net,
-        cmetcalf@tilera.com, gxt@mprc.pku.edu.cn, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, chris@zankel.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/16] sh/PCI: Factor 'pcibios_setup()' out of sh
-Message-ID: <20120626055129.GF24033@linux-sh.org>
-References: <20120626033045.16434.17412.stgit@amt.stowe>
- <20120626033158.16434.94698.stgit@amt.stowe>
+	id S1757983Ab2FZFxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 01:53:39 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59226 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757744Ab2FZFxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 01:53:36 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FE94DD3.5060404@jp.fujitsu.com>
+Date: Tue, 26 Jun 2012 14:51:15 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120626033158.16434.94698.stgit@amt.stowe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        devel@openvz.org, Tejun Heo <tj@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 08/11] memcg: disable kmem code when not in use.
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-9-git-send-email-glommer@parallels.com>
+In-Reply-To: <1340633728-12785-9-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 09:31:58PM -0600, Myron Stowe wrote:
-> The PCI core provides a generic (__weak) 'pcibios_setup()' routine that can
-> be used by all architectures as a default.  Drop sh's architecture specific
-> version in favor of that as it does not need to be over-ridden.
+(2012/06/25 23:15), Glauber Costa wrote:
+> We can use jump labels to patch the code in or out
+> when not used.
 > 
-> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> Because the assignment: memcg->kmem_accounted = true
+> is done after the jump labels increment, we guarantee
+> that the root memcg will always be selected until
+> all call sites are patched (see mem_cgroup_kmem_enabled).
+> This guarantees that no mischarges are applied.
+> 
+> Jump label decrement happens when the last reference
+> count from the memcg dies. This will only happen when
+> the caches are all dead.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
 
-Acked-by: Paul Mundt <lethal@linux-sh.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
