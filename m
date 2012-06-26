@@ -1,33 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab2FZOp0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 10:45:26 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:43650 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756894Ab2FZOpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 10:45:25 -0400
-Date: Tue, 26 Jun 2012 09:46:59 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Chen Baozi <baozich@gmail.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xfs: Fix comment typo of xfs_open_devices()
-Message-ID: <20120626144659.GR10196@sgi.com>
-References: <1340721305-3602-1-git-send-email-baozich@gmail.com>
+	id S1757904Ab2FZOsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 10:48:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35481 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757591Ab2FZOsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 10:48:39 -0400
+Message-ID: <4FE9CBA4.3020601@zytor.com>
+Date: Tue, 26 Jun 2012 07:48:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340721305-3602-1-git-send-email-baozich@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jean Delvare <khali@linux-fr.org>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org, JBeulich@suse.com,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, cpufeature:   Catch duplicate CPU feature
+ strings
+References: <4FE34BCB.5050305@linux.intel.com> <tip-55f6cb9d0b364e7e8cb65b51193f5e4743c44fde@git.kernel.org> <20120626143246.0c9bf301@endymion.delvare>
+In-Reply-To: <20120626143246.0c9bf301@endymion.delvare>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 10:35:05PM +0800, Chen Baozi wrote:
-> Since "get_sb_bdev()" has been changed to "mount_bdev()", fix
-> the comment accordingly.
-> 
-> Signed-off-by: Chen Baozi <baozich@gmail.com>
+On 06/26/2012 05:32 AM, Jean Delvare wrote:
+>
+> You added an extra %s in the string, can't think of a good reason for
+> it. perl -w would have told you, I think we should add it.
+>
 
-Looks good.  Thanks Chen!
-Reviewed-by: Ben Myers <bpm@sgi.com>
+Ah yes, a leftover from testing.
+
+> Other than this, the code looks good and the improvement reasonable, so
+> you can add:
+>
+> Acked-by: Jean Delvare <khali@linux-fr.org>
+>
+
+Should probably be reviewed-by: but nevertheless...
+
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
+
 
