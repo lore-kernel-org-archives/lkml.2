@@ -1,155 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab2FZLIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 07:08:21 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:40403 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab2FZLIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 07:08:19 -0400
-Message-ID: <4FE997DE.9020107@linux.vnet.ibm.com>
-Date: Tue, 26 Jun 2012 16:37:10 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755791Ab2FZLKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 07:10:34 -0400
+Received: from fieldses.org ([174.143.236.118]:55621 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754103Ab2FZLKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 07:10:31 -0400
+Date: Tue, 26 Jun 2012 07:10:24 -0400
+From: Fields James <bfields@fieldses.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Morton Andrew <akpm@linux-foundation.org>,
+        Harrosh Boaz <bharrosh@panasas.com>,
+        "<linux-nfs@vger.kernel.org>" <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [RFC PATCH] nfs: Add NFS3PROC_UMOUNT procedure.
+Message-ID: <20120626111024.GB14279@fieldses.org>
+References: <1340448406-10161-1-git-send-email-linkinjeon@gmail.com>
+ <02B16139-AFD6-4F06-99C0-C406B1A7E1DC@netapp.com>
+ <FE90D2E0-C4C9-44BC-829F-ABE94801AB4C@netapp.com>
+ <20120623155710.GA10787@fieldses.org>
+ <20120623160923.GB10787@fieldses.org>
+ <CAKYAXd80v10car7awm3Y5bzk_nXLj8NLi7C8PxUW15L9-S7pEw@mail.gmail.com>
+ <20120625113025.GB16920@fieldses.org>
+ <CAKYAXd-h5FPZUDwvJdbXXeQtXjUqQE5s9e1CvuOdpQWgqzG8kw@mail.gmail.com>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Linux PM mailing list <linux-pm@vger.kernel.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [linux-pm] [PATCH] acpi, cpuidle: Register with cpuidle even
- if cpu is onlined after boot (beyond maxcpus)
-References: <4FDB549F.1020002@linaro.org> <201206251553.55867.trenn@suse.de> <4FE88BDE.1050406@linux.vnet.ibm.com>	<201206261129.45591.trenn@suse.de> <4FE983E0.2050802@linaro.org>	<4FE987BB.4020508@linux.vnet.ibm.com> <4FE99206.8060109@linaro.org>
-In-Reply-To: <4FE99206.8060109@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12062611-5564-0000-0000-00000356F410
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd-h5FPZUDwvJdbXXeQtXjUqQE5s9e1CvuOdpQWgqzG8kw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 04:12 PM, Daniel Lezcano wrote:
-> On 06/26/2012 11:58 AM, Srivatsa S. Bhat wrote:
->> On 06/26/2012 03:11 PM, Daniel Lezcano wrote:
->>> On 06/26/2012 11:29 AM, Thomas Renninger wrote:
->>>> On Monday, June 25, 2012 06:03:42 PM Srivatsa S. Bhat wrote:
->>>>> On 06/25/2012 07:23 PM, Thomas Renninger wrote:
->>>>>
->>>>>> On Monday, June 25, 2012 01:25:43 PM Srivatsa S. Bhat wrote:
->>>>>>>
->>>>>>> Daniel Lezcano noticed that after booting with maxcpus=X, if we online the
->>>>>>> remaining cpus by writing: echo 1 > /sys/devices/system/cpu/cpuY/online, then
->>>>>>> for the newly onlined cpus, the cpuidle directory is not found under
->>>>>>> /sys/devices/system/cpu/cpuY.
->>>>>>>
->>>>>>> Partly, the reason for this is that acpi restricts the initialization to cpus
->>>>>>> within the maxcpus limit. (See commit 75cbfb9 "ACPI: Do not try to set up acpi
->>>>>>> processor stuff on cores exceeding maxcpus="). The maxcpus= kernel parameter is
->>>>>>> used to restrict the number of cpus brought up during boot. That doesn't mean
->>>>>>> that we should hard restrict the bring up of the remaining cpus later on.
->>>>>>
->>>>>> Sorry, but IMO it exaclty does mean that (adding more general lists for
->>>>>> further comments).
->>>>>>
->>>>>> If you can online more cores than maxcpus= via sysfs, this sounds like a bug.
->>>>>> Not the other way around.
->>>>>>
->>>>>> Compare with Documentation/kernel-parameters.txt:
->>>>>>         maxcpus=        [SMP] Maximum number of processors that an SMP kernel
->>>>>>                         should make use of.  maxcpus=n : n >= 0 limits the
->>>>>>                         kernel to using 'n' processors.  n=0 is a special case,
->>>>>>                         it is equivalent to "nosmp", which also disables
->>>>>>                         the IO APIC.
->>>>>>
->>>>>> Chances that you run into more problems are high.
->>>>>
->>>>>
->>>>> Right, I agree on that. So, IMHO, maxcpus=X doesn't mean that the kernel must and
->>>>> should forbid any new cpus from coming online, but in the interest of avoiding
->>>>> problems/complications in some obscure paths, I guess it makes sense to avoid
->>>>> onlining new cpus beyond maxcpus.
->>>>
->>>> Yep, for such reasons:
->>>>    - That nobody realizes this to be useful and makes use of it in a productive
->>>>      environment
->>>>    - If I see maxcpus=X in a bugreport's dmesg command line,
->>>>      I want to be sure that's true.
->>>>    - To enforce that things work as documented
->>>>
->>>>
->>>> Wow, after looking a bit into this I found (Documentation/cpu-hotplug.txt):
->>>>
->>>> maxcpus=n    Restrict boot time cpus to n. Say if you have 4 cpus, using
->>>>              maxcpus=2 will only boot 2. You can choose to bring the
->>>>              other cpus later online, read FAQ's for more info.
->>>>
->>>> Looks like someone already documented this (IMO broken) behavior.
->>>> I didn't find further info in the FAQs.
->>>>
->>>>> In any case, I was just trying to see why the simple removal of the setup_max_cpus
->>>>> check in acpi_processor_add() wasn't enough to expose the cpuidle directories under
->>>>> the new cpus.. and while debugging that, I came up with this patch. I don't mind
->>>>> if this doesn't get picked up.
->>>>
->>>>> Right, the usecase of why somebody would like to online new cpus beyond maxcpus
->>>>> doesn't look all that solid anyway. So I am OK with leaving the code as it is now.
->>>>
->>>> In the end this is a debug option, I expect everybody is aware of that.
->>>> Yep, let's just leave it...
->>>
->>> In this case, let's remove the intel_idle_cpu_init stuff in
->>> acpi_cpu_soft_notify, no ?
->>>
->>
->> Why? And how would that help? The intel_idle_cpu_init() call is essential if intel_idle
->> driver is being used instead of acpi idle.
+On Tue, Jun 26, 2012 at 02:51:52PM +0900, Namjae Jeon wrote:
+> 2012/6/25, Fields James <bfields@fieldses.org>:
+> > On Sun, Jun 24, 2012 at 02:12:49PM +0900, Namjae Jeon wrote:
+> >> 2012/6/24, Fields James <bfields@fieldses.org>:
+> >> > On Sat, Jun 23, 2012 at 11:57:10AM -0400, Fields James wrote:
+> >> >> On Sat, Jun 23, 2012 at 03:52:20PM +0000, Myklebust, Trond wrote:
+> >> >> > The other objection is that NFSv3 already has a way to do this via
+> >> >> > the
+> >> >> > MOUNT protocol. We already call MOUNTPROC3_UMNT/MOUNTPROC_UMNT on
+> >> >> > unmount of a filesystem.
+> >> >> >
+> >> >> > The problem with this approach is that if the NFS client crashes
+> >> >> > before
+> >> >> > it can call this function, then the server never gets notified. That
+> >> >> > is
+> >> >> > a problem that your patch has too...
+> >> >>
+> >> >> Yes.  Could you instead work on describing *exactly* what the original
+> >> >> problem was that prompted this?
+> >> >
+> >> > ("You" here meaning Namjae Jeon, of course).
+> >> >
+> >> > And note here we've all read the changelog, that's not what I'm asking
+> >> > for.
+> >> >
+> >> > I want to know the details of *your* specific case.  "I have X clients
+> >> > that I use for Y, periodically I want to unmount the exported
+> >> > filesystem
+> >> > to do Z, I tried doing W but it didn't work...".
+> >> As you remember, We discussed this
+> >> issue(http://www.spinics.net/lists/linux-nfs/msg29997.html) with you
+> >> before. you guided me to use exportfs -f call on nfs server.
+> >> It is hard to use this method on our system
+> >
+> > Why is it hard?
+> Two target are connected by only nfs.. we can't manually hand exportfs -f..
+
+So how can you call umount?
+
+--b.
+
+> And I should make each new App on client / server to call exportfs -f.
+> >
+> > Could you hack umount to do the equivalent of "exportfs -f" before
+> > calling the umount?
+> Good Idea! I will check your suggestion.
 > 
-> AFAIU, this code is not called after onlining a cpu greater than maxcpus
-> and Thomas thinks that system with cpu hotplug at runtime are not sold.
-> 
-
-No, the point that Thomas is making is, if you boot with maxcpus=X, it looks
-odd if you want to online more cpus later on. And allowing that is scary
-because those code paths may not be well-tested or even designed to do that.
-
-But one thing is crystal clear about the maxcpus semantics: if you say maxcpus=X
-while booting, the kernel must not even *attempt* to initialize *anything* for
-the remaining cpus, as far as possible. For all you know, the user might have
-discovered a problem (which will cause a crash during init) and hence is setting
-maxcpus to a smaller value than available, to just be able to still have a usable
-system.
-
-> The problem I see with this code is acpi and intel-idle are tied
-> together now. I would like to break this dependency and use the notifier
-> to handle the cpu hotplug directly in intel-idle.
-> 
-
-Ok, that's a different problem, unrelated to maxcpus. And in that context, what
-you are proposing (breaking that dependency) looks good to me.
-
-> It is hard to test my patch as there is not such system and maxcpus is
-> not correctly handled here. I can use your patch to test my patch but
-> anyway ... I am just asking if that would make sense to remove this
-> portion of code instead :)
-> 
-
-> If we want to keep this code untouched, I can try my patch and maybe
-> Thomas will agreed to test it also on a cpu-online-runtime-system if he
-> has one.
-> 
-
-Again, to reiterate, we all agree that we can offline/online existing cpus
-on a running system. We can also (perhaps) do physical cpu hotplug, and
-we want to support it in Linux, if such hardware exists. What doesn't really
-make much sense is a "usecase" where you boot the kernel with maxcpus=X and
-then try to online more cpus than that. Saying no to that looks safe and is
-preferred, than trying to "handle" it, because we cannot guarantee that it
-will work in all cases anyway.
-
-But in a separate context (unrelated to maxcpus), moving the intel idle stuff
-into intel idle code (from acpi idle) looks like a sensible thing to do. But
-then, dependency between the two must be handled properly (ie., low-level acpi
-init must happen first, followed by intel idle init, for a hotplugged cpu).
-
-Regards,
-Srivatsa S. Bhat
-
+> >
+> >> and nomally the user is
+> >> thinking it is problem device busy happen after umounting.
+> >>
+> >> The details of specific case.
+> >> 1. There are two target or two PC. and Client want to access files of
+> >> usb device on server.
+> >> 2. the client try to mount usb mount point using nfs on sever after
+> >> plugging usb device.
+> >> 3. we try to umount mount point directory on client.
+> >> 4. and when we try to umount usb device mount directory server, device
+> >> busy message occured like this (umount: can't umount /mnt: Device or
+> >> resource busy)
+> >
+> > Right, so I don't think you want protocol modifications.  They take a
+> > few years to get hammered out and then make it into implementations, and
+> > they won't help a great deal with your problem anyway.  (Because of
+> > problems like the possibility of lost "unmount" calls that Trond
+> > mentions.)
+> >
+> > Either modify umount itself to flush the export cache before attempting
+> > the unmount, or if that doesn't work perhaps you could patch the kernel
+> > to notify nfsd on unmount and let it attemt to clear its caches before
+> > deciding whether the filesystem is busy.
+> After checking your suggestion I will share with you.
+> Thanks a lot. James.
+> >
+> > --b.
+> >
