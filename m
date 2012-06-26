@@ -1,85 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2FZESs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 00:18:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47827 "EHLO
+	id S1755051Ab2FZEWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 00:22:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49507 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab2FZESr (ORCPT
+	with ESMTP id S1751322Ab2FZEWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 00:18:47 -0400
-From: Olof Johansson <olof@lixom.net>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, samsung-soc@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] gpio: samsung: add flags specifier to device-tree binding
-Date: Mon, 25 Jun 2012 21:18:21 -0700
-Message-Id: <1340684301-16836-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
+	Tue, 26 Jun 2012 00:22:41 -0400
+Date: Mon, 25 Jun 2012 21:22:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Glauber Costa <glommer@parallels.com>
+cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 04/11] kmem slab accounting basic infrastructure
+In-Reply-To: <1340633728-12785-5-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1206252121140.26640@chino.kir.corp.google.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-5-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a flags field to the gpio specifier for Samsung. I didn't
-want to add yet another field in the already quite long specifier, so
-I decided to compress it together with the Pull Up/Down settings instead.
+On Mon, 25 Jun 2012, Glauber Costa wrote:
 
-This is needed to, for example, have a gpio-keys input that is active low.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9352d40..6f34b77 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -265,6 +265,10 @@ struct mem_cgroup {
+>  	};
+>  
+>  	/*
+> +	 * the counter to account for kernel memory usage.
+> +	 */
+> +	struct res_counter kmem;
+> +	/*
+>  	 * Per cgroup active and inactive list, similar to the
+>  	 * per zone LRU lists.
+>  	 */
+> @@ -279,6 +283,7 @@ struct mem_cgroup {
+>  	 * Should the accounting and control be hierarchical, per subtree?
+>  	 */
+>  	bool use_hierarchy;
+> +	bool kmem_accounted;
+>  
+>  	bool		oom_lock;
+>  	atomic_t	under_oom;
+> @@ -391,6 +396,7 @@ enum res_type {
+>  	_MEM,
+>  	_MEMSWAP,
+>  	_OOM_TYPE,
+> +	_KMEM,
+>  };
+>  
+>  #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
+> @@ -1438,6 +1444,10 @@ done:
+>  		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
+>  		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
+>  		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
+> +	printk(KERN_INFO "kmem: usage %llukB, limit %llukB, failcnt %llu\n",
+> +		res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
+> +		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
+> +		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
+>  }
+>  
+>  /*
+> @@ -3879,6 +3889,11 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+>  		else
+>  			val = res_counter_read_u64(&memcg->memsw, name);
+>  		break;
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +	case _KMEM:
+> +		val = res_counter_read_u64(&memcg->kmem, name);
+> +		break;
+> +#endif
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- Documentation/devicetree/bindings/gpio/gpio-samsung.txt | 9 +++++----
- drivers/gpio/gpio-samsung.c                             | 5 ++++-
- 2 files changed, 9 insertions(+), 5 deletions(-)
+This shouldn't need an #ifdef, ->kmem is available on all 
+CONFIG_CGROUP_MEM_RES_CTLR kernels.  Same with several of the other 
+instances in this patch.
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-samsung.txt b/Documentation/devicetree/bindings/gpio/gpio-samsung.txt
-index 8f50fe5..c873e80 100644
---- a/Documentation/devicetree/bindings/gpio/gpio-samsung.txt
-+++ b/Documentation/devicetree/bindings/gpio/gpio-samsung.txt
-@@ -11,14 +11,15 @@ Required properties:
-      <[phandle of the gpio controller node]
-       [pin number within the gpio controller]
-       [mux function]
--      [pull up/down]
-+      [flags and pull up/down]
-       [drive strength]>
- 
-   Values for gpio specifier:
-   - Pin number: is a value between 0 to 7.
--  - Pull Up/Down: 0 - Pull Up/Down Disabled.
--                  1 - Pull Down Enabled.
--                  3 - Pull Up Enabled.
-+  - Flags and Pull Up/Down: 0 - Pull Up/Down Disabled.
-+                            1 - Pull Down Enabled.
-+                            3 - Pull Up Enabled.
-+          Bit 16 (0x00010000) - Input is active low.
-   - Drive Strength: 0 - 1x,
-                     1 - 3x,
-                     2 - 2x,
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index b6453d0..92f7b2b 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -2681,11 +2681,14 @@ static int exynos_gpio_xlate(struct gpio_chip *gc,
- 
- 	if (s3c_gpio_cfgpin(pin, S3C_GPIO_SFN(gpiospec->args[1])))
- 		pr_warn("gpio_xlate: failed to set pin function\n");
--	if (s3c_gpio_setpull(pin, gpiospec->args[2]))
-+	if (s3c_gpio_setpull(pin, gpiospec->args[2] & 0xffff))
- 		pr_warn("gpio_xlate: failed to set pin pull up/down\n");
- 	if (s5p_gpio_set_drvstr(pin, gpiospec->args[3]))
- 		pr_warn("gpio_xlate: failed to set pin drive strength\n");
- 
-+	if (flags)
-+		*flags = gpiospec->args[2] >> 16;
-+
- 	return gpiospec->args[0];
- }
- 
--- 
-1.7.10.1.488.g05fbf7a
+Can't these instances be addressed by not adding kmem_cgroup_files without 
+CONFIG_CGROUP_MEM_RES_CTLR_KMEM?
 
+>  	default:
+>  		BUG();
+>  	}
+> @@ -3916,8 +3931,26 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+>  			break;
+>  		if (type == _MEM)
+>  			ret = mem_cgroup_resize_limit(memcg, val);
+> -		else
+> +		else if (type == _MEMSWAP)
+>  			ret = mem_cgroup_resize_memsw_limit(memcg, val);
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +		else if (type == _KMEM) {
+> +			ret = res_counter_set_limit(&memcg->kmem, val);
+> +			if (ret)
+> +				break;
+> +			/*
+> +			 * Once enabled, can't be disabled. We could in theory
+> +			 * disable it if we haven't yet created any caches, or
+> +			 * if we can shrink them all to death.
+> +			 *
+> +			 * But it is not worth the trouble
+> +			 */
+> +			if (!memcg->kmem_accounted && val != RESOURCE_MAX)
+> +				memcg->kmem_accounted = true;
+> +		}
+> +#endif
+> +		else
+> +			return -EINVAL;
+>  		break;
+>  	case RES_SOFT_LIMIT:
+>  		ret = res_counter_memparse_write_strategy(buffer, &val);
+> @@ -3982,12 +4015,20 @@ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
+>  	case RES_MAX_USAGE:
+>  		if (type == _MEM)
+>  			res_counter_reset_max(&memcg->res);
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +		else if (type == _KMEM)
+> +			res_counter_reset_max(&memcg->kmem);
+> +#endif
+>  		else
+>  			res_counter_reset_max(&memcg->memsw);
+>  		break;
+>  	case RES_FAILCNT:
+>  		if (type == _MEM)
+>  			res_counter_reset_failcnt(&memcg->res);
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +		else if (type == _KMEM)
+> +			res_counter_reset_failcnt(&memcg->kmem);
+> +#endif
+>  		else
+>  			res_counter_reset_failcnt(&memcg->memsw);
+>  		break;
+> @@ -4549,6 +4590,33 @@ static int mem_cgroup_oom_control_write(struct cgroup *cgrp,
+>  }
+>  
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +static struct cftype kmem_cgroup_files[] = {
+> +	{
+> +		.name = "kmem.limit_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
+> +		.write_string = mem_cgroup_write,
+> +		.read = mem_cgroup_read,
+> +	},
+> +	{
+> +		.name = "kmem.usage_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
+> +		.read = mem_cgroup_read,
+> +	},
+> +	{
+> +		.name = "kmem.failcnt",
+> +		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
+> +		.trigger = mem_cgroup_reset,
+> +		.read = mem_cgroup_read,
+> +	},
+> +	{
+> +		.name = "kmem.max_usage_in_bytes",
+> +		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
+> +		.trigger = mem_cgroup_reset,
+> +		.read = mem_cgroup_read,
+> +	},
+> +	{},
+> +};
+> +
+>  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>  {
+>  	return mem_cgroup_sockets_init(memcg, ss);
+> @@ -4892,6 +4960,12 @@ mem_cgroup_create(struct cgroup *cont)
+>  		int cpu;
+>  		enable_swap_cgroup();
+>  		parent = NULL;
+> +
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +		WARN_ON(cgroup_add_cftypes(&mem_cgroup_subsys,
+> +					   kmem_cgroup_files));
+> +#endif
+> +
+>  		if (mem_cgroup_soft_limit_tree_init())
+>  			goto free_out;
+>  		root_mem_cgroup = memcg;
+> @@ -4910,6 +4984,7 @@ mem_cgroup_create(struct cgroup *cont)
+>  	if (parent && parent->use_hierarchy) {
+>  		res_counter_init(&memcg->res, &parent->res);
+>  		res_counter_init(&memcg->memsw, &parent->memsw);
+> +		res_counter_init(&memcg->kmem, &parent->kmem);
+>  		/*
+>  		 * We increment refcnt of the parent to ensure that we can
+>  		 * safely access it on res_counter_charge/uncharge.
+> @@ -4920,6 +4995,7 @@ mem_cgroup_create(struct cgroup *cont)
+>  	} else {
+>  		res_counter_init(&memcg->res, NULL);
+>  		res_counter_init(&memcg->memsw, NULL);
+> +		res_counter_init(&memcg->kmem, NULL);
+>  	}
+>  	memcg->last_scanned_node = MAX_NUMNODES;
+>  	INIT_LIST_HEAD(&memcg->oom_notify);
