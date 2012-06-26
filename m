@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab2FZW2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 18:28:19 -0400
-Received: from mta-1.ms.rz.rwth-aachen.de ([134.130.7.72]:63383 "EHLO
-	mta-1.ms.rz.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750811Ab2FZW2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 18:28:18 -0400
-X-Greylist: delayed 1800 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Jun 2012 18:28:18 EDT
-MIME-version: 1.0
-X-IronPort-AV: E=Sophos;i="4.77,480,1336341600";
- d="asc'?scan'208";a="182424209"
-Date: Tue, 26 Jun 2012 23:58:06 +0200
-From: Carsten Otto <otto@informatik.rwth-aachen.de>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Alex Hung <alex.hung@canonical.com>, corentincj@iksaif.net, mjg@redhat.com,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asus-wmi: use ASUS_WMI_METHODID_DSTS2 as default DSTS ID.
-Message-id: <20120626215806.GM21479@carsten-otto>
-Reply-to: Carsten Otto <otto@informatik.rwth-aachen.de>
-Mail-followup-to: Jonathan Nieder <jrnieder@gmail.com>,
- Alex Hung <alex.hung@canonical.com>, corentincj@iksaif.net, mjg@redhat.com,
- acpi4asus-user@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
- linux-kernel@vger.kernel.org
-References: <1340164055-1062-1-git-send-email-alex.hung@canonical.com>
- <20120626213958.GA17871@burratino>
-Content-type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature"; boundary=H14uD12u8nekTETJ
-Content-disposition: inline
-In-reply-to: <20120626213958.GA17871@burratino>
-X-GnuGP-Key: http://c-otto.de/pubkey.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754489Ab2FZW27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 18:28:59 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:4281
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751702Ab2FZW25 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 18:28:57 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -14
+X-BigFish: VS-14(zz98dI9371I1503M148cI542M1432Izz1202hzz8275dhz2fh2a8h683h839h944hd25hf0ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 00/13] drivers: hv: kvp
+Thread-Topic: [PATCH 00/13] drivers: hv: kvp
+Thread-Index: AQHNT/NB00SQsXjmDEmcq7JSjap8hpcFX8+AgADv8yCAAAVogIAFjrOAgAFErgCAAAhKEA==
+Date: Tue, 26 Jun 2012 22:11:55 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9155ED64A@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1340314200-27078-1-git-send-email-kys@microsoft.com>
+ <20120621224737.GA5933@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120622132547.GA2639@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120626213954.GA4840@kroah.com>
+In-Reply-To: <20120626213954.GA4840@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.53.133]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---H14uD12u8nekTETJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Dear all,
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Tuesday, June 26, 2012 5:40 PM
+> To: KY Srinivasan
+> Cc: apw@canonical.com; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; ohering@suse.com; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 00/13] drivers: hv: kvp
+> 
+> On Tue, Jun 26, 2012 at 02:29:49AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Friday, June 22, 2012 9:26 AM
+> > > To: KY Srinivasan
+> > > Cc: apw@canonical.com; devel@linuxdriverproject.org; ohering@suse.com;
+> > > linux-kernel@vger.kernel.org; virtualization@lists.osdl.org
+> > > Subject: Re: [PATCH 00/13] drivers: hv: kvp
+> > >
+> > > On Fri, Jun 22, 2012 at 01:06:53PM +0000, KY Srinivasan wrote:
+> > > > Are you still missing it; do you want me to resend the whole set?
+> > >
+> > > Nope, it showed up a few hours later, thanks.  You really should get
+> > > that fixed...
+> >
+> > Greg, some additional testing with VM replication on Windows Server
+> > 2012 has revealed some issues with this patch-set. Please drop the
+> > patch set, I will  fix the problem and resend it.
+> 
+> Thanks for letting me know, now dropped.
+> 
+> But, for the next round, I suggest you run this patchset by the netdev
+> developers, as I think you are doing things in an "odd" way for some of
+> the ip determination.
 
-On Tue, Jun 26, 2012 at 04:39:58PM -0500, Jonathan Nieder wrote:
-> After applying the patch described above to 3.2.21, multimedia keys
-> work.
+Will do. Just curious;  can you be more explicit on what part appeared "odd"
+to you.
 
-To be precise, only some of the Fn keys work. I will update the
-bug report at http://bugs.debian.org/679158 now. Please contact me if
-you need further information,
+Regards,
 
-Best regards,
---=20
-Carsten Otto           otto@informatik.rwth-aachen.de
-LuFG Informatik 2      http://verify.rwth-aachen.de/otto/
-RWTH Aachen            phone: +49 241 80-21211
+K. Y
 
---H14uD12u8nekTETJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAk/qMG4ACgkQjUF4jpCSQBSAgACcCMt9vlw7LpBiTYeOg7h1BcL9
-w4AAnjxUNN+IdbTMHuSptAimUerxpvLr
-=fc5r
------END PGP SIGNATURE-----
-
---H14uD12u8nekTETJ--
