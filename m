@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680Ab2FZQzg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 12:55:36 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:33093 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758079Ab2FZQzf (ORCPT
+	id S1758694Ab2FZQ6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 12:58:44 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:55333 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758433Ab2FZQ6m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 12:55:35 -0400
-Date: Tue, 26 Jun 2012 18:55:13 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 04/16] mm: allow PF_MEMALLOC from softirq context
-Message-ID: <20120626165513.GD6509@breakpoint.cc>
-References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
- <1340375443-22455-5-git-send-email-mgorman@suse.de>
+	Tue, 26 Jun 2012 12:58:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340375443-22455-5-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1340700008.21991.35.camel@twins>
+References: <20120626011815.11323.5533.stgit@dungbeetle.mtv.corp.google.com>
+	<1340700008.21991.35.camel@twins>
+Date: Tue, 26 Jun 2012 09:58:41 -0700
+Message-ID: <CAKUOC8Uy_YeoMW_S_JZbZUr1i_3mJGNfrNs676rc_o28WJGhjA@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix fork() error path to not crash.
+From: Salman Qazi <sqazi@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 03:30:31PM +0100, Mel Gorman wrote:
-> This is needed to allow network softirq packet processing to make
-> use of PF_MEMALLOC.
+On Tue, Jun 26, 2012 at 1:40 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Mon, 2012-06-25 at 18:18 -0700, Salman Qazi wrote:
+>> In dup_task_struct, if arch_dup_task_struct fails, the clean up
+>> code fails to clean up correctly.  That's because the clean up
+>> code depends on unininitalized ti->task pointer.  We fix this
+>> by making sure that the task and thread_info know about each other
+>> before we attempt to take the error path.
+>>
+>> Signed-off-by: Salman Qazi <sqazi@google.com>
+>
+> Cute, however did you find that?
 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index b6c0727..5c6d9c6 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2265,7 +2265,11 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
->  	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
->  		if (gfp_mask & __GFP_MEMALLOC)
->  			alloc_flags |= ALLOC_NO_WATERMARKS;
-> -		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
-> +		else if (in_serving_softirq() && (current->flags & PF_MEMALLOC))
-> +			alloc_flags |= ALLOC_NO_WATERMARKS;
-> +		else if (!in_interrupt() &&
-> +				((current->flags & PF_MEMALLOC) ||
-> +				 unlikely(test_thread_flag(TIF_MEMDIE))))
->  			alloc_flags |= ALLOC_NO_WATERMARKS;
->  	}
-
-You allocate in RX path with __GFP_MEMALLOC and your sk->sk_allocation has
-also __GFP_MEMALLOC set. That means you should get ALLOC_NO_WATERMARKS in
-alloc_flags. Is this to done to avoid GFP annotations in skb_share_check() and
-friends on your __netif_receive_skb() path?
-
-Sebastian
+Our test infrastructure folks have developed a fault injection
+framework geared towards detecting bugs triggered by memory allocation
+failures in random places.
