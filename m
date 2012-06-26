@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab2FZVrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 17:47:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4591 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754115Ab2FZVrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 17:47:08 -0400
-Date: Wed, 27 Jun 2012 00:47:10 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Frank Swiderski <fes@google.com>
-Cc: Rik van Riel <riel@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mikew@google.com,
-        Ying Han <yinghan@google.com>, Rafael Aquini <aquini@redhat.com>
-Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
-Message-ID: <20120626214709.GA15406@redhat.com>
-References: <1340742778-11282-1-git-send-email-fes@google.com>
- <4FEA1E2E.4020806@redhat.com>
- <CAK+C7kWKtoYC=1fBQ45RTFfNc3p2PwZbLMOefMTtzOfsqe_k8w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK+C7kWKtoYC=1fBQ45RTFfNc3p2PwZbLMOefMTtzOfsqe_k8w@mail.gmail.com>
+	id S1754353Ab2FZVzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 17:55:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35454 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754227Ab2FZVzl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 17:55:41 -0400
+Date: Tue, 26 Jun 2012 14:55:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 00/11] kmem controller for memcg: stripped down version
+Message-Id: <20120626145539.eeeab909.akpm@linux-foundation.org>
+In-Reply-To: <4FE9621D.2050002@parallels.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
+	<20120625162745.eabe4f03.akpm@linux-foundation.org>
+	<4FE9621D.2050002@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 02:31:26PM -0700, Frank Swiderski wrote:
-> On Tue, Jun 26, 2012 at 1:40 PM, Rik van Riel <riel@redhat.com> wrote:
-> > On 06/26/2012 04:32 PM, Frank Swiderski wrote:
-> >>
-> >> This implementation of a virtio balloon driver uses the page cache to
-> >> "store" pages that have been released to the host.  The communication
-> >> (outside of target counts) is one way--the guest notifies the host when
-> >> it adds a page to the page cache, allowing the host to madvise(2) with
-> >> MADV_DONTNEED.  Reclaim in the guest is therefore automatic and implicit
-> >> (via the regular page reclaim).  This means that inflating the balloon
-> >> is similar to the existing balloon mechanism, but the deflate is
-> >> different--it re-uses existing Linux kernel functionality to
-> >> automatically reclaim.
-> >>
-> >> Signed-off-by: Frank Swiderski<fes@google.com>
-> >
-> >
-> > It is a great idea, but how can this memory balancing
-> > possibly work if someone uses memory cgroups inside a
-> > guest?
-> 
-> Thanks and good point--this isn't something that I considered in the
-> implementation.
-> 
-> > Having said that, we currently do not have proper
-> > memory reclaim balancing between cgroups at all, so
-> > requiring that of this balloon driver would be
-> > unreasonable.
-> >
-> > The code looks good to me, my only worry is the
-> > code duplication. We now have 5 balloon drivers,
-> > for 4 hypervisors, all implementing everything
-> > from scratch...
-> 
-> Do you have any recommendations on this?  I could (I think reasonably
-> so) modify the existing virtio_balloon.c and have it change behavior
-> based on a feature bit or other configuration.  I'm not sure that
-> really addresses the root of what you're pointing out--it's still
-> adding a different implementation, but doing so as an extension of an
-> existing one.
-> 
-> fes
+On Tue, 26 Jun 2012 11:17:49 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-Let's assume it's a feature bit: how would you
-formulate what the feature does *from host point of view*?
+> On 06/26/2012 03:27 AM, Andrew Morton wrote:
+> > On Mon, 25 Jun 2012 18:15:17 +0400
+> > Glauber Costa <glommer@parallels.com> wrote:
+> >
+> >> What I am proposing with this series is a stripped down version of the
+> >> kmem controller for memcg that would allow us to merge significant parts
+> >> of the infrastructure, while leaving out, for now, the polemic bits about
+> >> the slab while it is being reworked by Cristoph.
+> >>
+> >> Me reasoning for that is that after the last change to introduce a gfp
+> >> flag to mark kernel allocations, it became clear to me that tracking other
+> >> resources like the stack would then follow extremely naturaly. I figured
+> >> that at some point we'd have to solve the issue pointed by David, and avoid
+> >> testing the Slab flag in the page allocator, since it would soon be made
+> >> more generic. I do that by having the callers to explicit mark it.
+> >>
+> >> So to demonstrate how it would work, I am introducing a stack tracker here,
+> >> that is already a functionality per-se: it successfully stops fork bombs to
+> >> happen. (Sorry for doing all your work, Frederic =p ). Note that after all
+> >> memcg infrastructure is deployed, it becomes very easy to track anything.
+> >> The last patch of this series is extremely simple.
+> >>
+> >> The infrastructure is exactly the same we had in memcg, but stripped down
+> >> of the slab parts. And because what we have after those patches is a feature
+> >> per-se, I think it could be considered for merging.
+> >
+> > hm.  None of this new code makes the kernel smaller, faster, easier to
+> > understand or more fun to read!
+> Not sure if this is a general comment - in case I agree - or if targeted 
+> to my statement that this is "stripped down". If so, it is of course 
+> smaller relative to my previous slab accounting patches.
 
--- 
-MST
+It's a general comment.  The patch adds overhead: runtime costs and
+maintenance costs.  Do its benefits justify that cost?
+
+> The infrastructure is largely common, but I realized that a future user,
+> tracking the stack, would be a lot simpler and could be done first.
+> 
+> > Presumably we're getting some benefit for all the downside.  When the
+> > time is appropriate, please do put some time into explaining that
+> > benefit, so that others can agree that it is a worthwhile tradeoff.
+> >
+> 
+> Well, for one thing, we stop fork bombs for processes inside cgroups.
+
+"inside cgroups" is a significant limitation!  Is this capability
+important enough to justify adding the new code?  That's unobvious
+(to me).
+
+Are there any other user-facing things which we can do with this
+feature?  Present, or planned?
+
+> I can't speak for everybody here, but AFAIK, tracking the stack through
+> the memory it used, therefore using my proposed kmem controller, was an
+> idea that good quite a bit of traction with the memcg/memory people. 
+> So here you have something that people already asked a lot for, in a
+> shape and interface that seem to be acceptable.
+
+mm, maybe.  Kernel developers tend to look at code from the point of
+view "does it work as designed", "is it clean", "is it efficient", "do
+I understand it", etc.  We often forget to step back and really
+consider whether or not it should be merged at all.
+
+I mean, unless the code is an explicit simplification, we should have
+a very strong bias towards "don't merge".
