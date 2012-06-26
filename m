@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2FZW33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 18:29:29 -0400
-Received: from mail4.aviatnet.com ([192.147.115.31]:50428 "EHLO
-	mail4.aviatnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab2FZW3O (ORCPT
+	id S1754559Ab2FZWdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 18:33:37 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36078 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789Ab2FZWde convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 18:29:14 -0400
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Jun 2012 18:29:14 EDT
-Subject: [PATCH] rtc: ds1307: Register offset moved to chip description
-From: Austin Boyle <Austin.Boyle@aviatnet.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: <rtc-linux@googlegroups.com>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Jun 2012 10:24:02 +1200
-Message-ID: <1340749442.3241.4046.camel@pc786-ubu.gnet.global.vpn>
+	Tue, 26 Jun 2012 18:33:34 -0400
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.16.1.81]
+In-Reply-To: <20120621202435.16865.1340.stgit@amt.stowe>
+References: <20120621202415.16865.6226.stgit@amt.stowe> <20120621202435.16865.1340.stgit@amt.stowe>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 26 Jun 2012 16:33:12 -0600
+Message-ID: <CAErSpo5yNxjjBVaTXjAKCY4SfRWj7uXK2cS3BtkugmoF4fYn6g@mail.gmail.com>
+Subject: Re: [PATCH 3/9] arm/PCI: move final fixup quirks from __init to __devinit
+To: Myron Stowe <myron.stowe@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux@arm.linux.org.uk, ralf@linux-mips.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtc: ds1307: Register offset moved to chip description
+On Thu, Jun 21, 2012 at 2:24 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
+> The PCI subsystem's final fixups are executed once during boot, after the
+> pci-device is found.  As long as the system does not support hot-plug,
+> specifying __init is fine.
+>
+> With hot-plug, either physically based hot-plug events or pseudo hot-plug
+> events such as "echo 1 > /sys/bus/pci/rescan", it is possible to remove a
+> PCI bus during run time and have it rediscovered which will require the
+> call of the fixups again in order for the device to function properly.
+>
+> This patch prepares specific quirk(s) for use with hot-plug events.
+>
+> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> ---
+>
+>  arch/arm/mach-iop32x/n2100.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/arm/mach-iop32x/n2100.c b/arch/arm/mach-iop32x/n2100.c
+> index 5a7ae91..04c4110 100644
+> --- a/arch/arm/mach-iop32x/n2100.c
+> +++ b/arch/arm/mach-iop32x/n2100.c
+> @@ -126,7 +126,7 @@ static struct hw_pci n2100_pci __initdata = {
+>  * the ->broken_parity_status flag for both ports so that the r8169
+>  * driver knows it should ignore error interrupts.
+>  */
+> -static void n2100_fixup_r8169(struct pci_dev *dev)
+> +static void __devinit n2100_fixup_r8169(struct pci_dev *dev)
 
-From: Austin Boyle <Austin.Boyle@aviatnet.com>
+These actually move functions from normal text to __devinit, not from
+__init to __devinit.
 
-Register offset is added to chip description instead of being hard-coded
-into probe function.
+That should be safe for most quirks (although enable, suspend, resume,
+and resume_early quirks can be called after we free initmem, even if
+we have CONFIG_HOTPLUG=n), but given the discussion about whether we
+should even bother with __devinit any more, I think I'll hold off on
+these for now.  If we were to get rid of __devinit, these would all
+have to revert to being normal text.
 
-Based on v3.5-rc4
-
-Cc: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Austin Boyle <Austin.Boyle@aviatnet.com>
-
----
-
-diff --git a/a/drivers/rtc/rtc-ds1307.c b/b/drivers/rtc/rtc-ds1307.c
-index 836710c..abf837b 100644
---- a/a/drivers/rtc/rtc-ds1307.c
-+++ b/b/drivers/rtc/rtc-ds1307.c
-@@ -122,6 +122,7 @@ struct ds1307 {
- 
- struct chip_desc {
- 	unsigned		alarm:1;
-+	u8			offset;
- 	u16			nvram_offset;
- 	u16			nvram_size;
- 	u16			trickle_charger_reg;
-@@ -149,6 +150,9 @@ static const struct chip_desc chips[last_ds_type] = {
- 	[ds_1388] = {
- 		.trickle_charger_reg = 0x0a,
- 	},
-+	[ds_1388] = {
-+		.offset		= 1, /* seconds field starts at 1 */
-+	},
- 	[ds_3231] = {
- 		.alarm		= 1,
- 	},
-@@ -646,6 +650,7 @@ static int __devinit ds1307_probe(struct i2c_client *client,
- 
- 	ds1307->client	= client;
- 	ds1307->type	= id->driver_data;
-+	ds1307->offset	= chip->offset;
- 
- 	if (pdata && pdata->trickle_charger_setup && chip->trickle_charger_reg)
- 		i2c_smbus_write_byte_data(client, chip->trickle_charger_reg,
-@@ -768,9 +773,6 @@ static int __devinit ds1307_probe(struct i2c_client *client,
- 						  hour);
- 		}
- 		break;
--	case ds_1388:
--		ds1307->offset = 1; /* Seconds starts at 1 */
--		break;
- 	default:
- 		break;
- 	}
-
+>  {
+>        if (dev->bus->number == 0 &&
+>            (dev->devfn == PCI_DEVFN(1, 0) ||
+>
