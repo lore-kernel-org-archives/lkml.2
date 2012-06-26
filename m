@@ -1,74 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab2FZUXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 16:23:54 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:56950 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751554Ab2FZUXv (ORCPT
+	id S1753521Ab2FZUZR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 16:25:17 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:47245 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab2FZUZP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 16:23:51 -0400
-Message-ID: <1340742224.2644.1.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "Ren, Cloud" <cjren@qca.qualcomm.com>
-CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <qca-linux-team@qualcomm.com>,
-        <nic-devel@qualcomm.com>, xiong <xiong@qca.qualcomm.com>
-Date: Tue, 26 Jun 2012 21:23:44 +0100
-In-Reply-To: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
-References: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jun 2012 16:25:15 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+In-Reply-To: <1340445863-16111-5-git-send-email-amwang@redhat.com>
+References: <1340445863-16111-1-git-send-email-amwang@redhat.com>
+	<1340445863-16111-5-git-send-email-amwang@redhat.com>
+Date: Tue, 26 Jun 2012 22:25:14 +0200
+X-Google-Sender-Auth: LfOQQWtD2vCJOLDYESUdyg98VYQ
+Message-ID: <CAMuHMdXkMBSkkXosJkd47n+RznpMBhzBGyLshA+gwdmZ=4dm6A@mail.gmail.com>
+Subject: Re: [PATCH 04/12] frv: remove km_type definitions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-26 at 12:33 -0300, Ren, Cloud wrote:
-> From: xiong <xiong@qca.qualcomm.com>
-> 
-> some people report atl1c could cause system hang with following
-> kernel trace info:
-> ---------------------------------------
-> WARNING: at.../net/sched/sch_generic.c:258
-> dev_watchdog+0x1db/0x1d0()
-> ...
-> NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-> ...
-> ---------------------------------------
-> This is caused by netif_stop_queue calling when cable Link is down
-> but netif_wake_queue isn't called when cable Link is resume.
-> 
-> Signed-off-by: xiong <xiong@qca.qualcomm.com>
-> Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
+On Sat, Jun 23, 2012 at 12:04 PM, Cong Wang <amwang@redhat.com> wrote:
+> Signed-off-by: Cong Wang <amwang@redhat.com>
 > ---
->  drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> index 85717cb..c2736c4 100644
-> --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> @@ -351,6 +351,8 @@ static void atl1c_common_task(struct work_struct *work)
->  		atl1c_irq_disable(adapter);
->  		atl1c_check_link_status(adapter);
->  		atl1c_irq_enable(adapter);
-> +		if (netif_queue_stopped(netdev) && netif_carrier_ok(netdev))
-> +			netif_wake_queue(netdev);
->  	}
->  }
->  
+>  arch/frv/include/asm/kmap_types.h |   24 +-----------------------
+>  1 files changed, 1 insertions(+), 23 deletions(-)
+>
+> diff --git a/arch/frv/include/asm/kmap_types.h b/arch/frv/include/asm/kmap_types.h
+> index f8e16b2..43901f2 100644
+> --- a/arch/frv/include/asm/kmap_types.h
+> +++ b/arch/frv/include/asm/kmap_types.h
+> @@ -2,28 +2,6 @@
+>  #ifndef _ASM_KMAP_TYPES_H
+>  #define _ASM_KMAP_TYPES_H
+>
+> -enum km_type {
+> -       /* arch specific kmaps - change the numbers attached to these at your peril */
+> -       __KM_CACHE,             /* cache flush page attachment point */
+> -       __KM_PGD,               /* current page directory */
+> -       __KM_ITLB_PTD,          /* current instruction TLB miss page table lookup */
+> -       __KM_DTLB_PTD,          /* current data TLB miss page table lookup */
+> -
+> -       /* general kmaps */
+> -        KM_BOUNCE_READ,
+> -        KM_SKB_SUNRPC_DATA,
+> -        KM_SKB_DATA_SOFTIRQ,
+> -        KM_USER0,
+> -        KM_USER1,
+> -       KM_BIO_SRC_IRQ,
+> -       KM_BIO_DST_IRQ,
+> -       KM_PTE0,
+> -       KM_PTE1,
+> -       KM_IRQ0,
+> -       KM_IRQ1,
+> -       KM_SOFTIRQ0,
+> -       KM_SOFTIRQ1,
+> -       KM_TYPE_NR
+> -};
+> +#define KM_TYPE_NR 17
+>
+>  #endif
 
-Why explicitly stop/start the queue when the link changes?  That's what
-link_watch is for.
+"enum km_type" and "__KM_CACHE" are still used in
+arch/frv/include/asm/highmem.h:
 
-Ben.
+In file included from include/linux/highmem.h:34:0,
+                 from include/linux/pagemap.h:10,
+                 from include/linux/mempolicy.h:80,
+                 from init/main.c:49:
+arch/frv/include/asm/highmem.h:115:136: warning: 'enum km_type'
+declared inside parameter list [enabled by default]
+arch/frv/include/asm/highmem.h:115:136: warning: its scope is only
+this definition or declaration, which is probably not what you want
+[enabled by default]
+arch/frv/include/asm/highmem.h:115:144: error: parameter 2 ('type')
+has incomplete type
+arch/frv/include/asm/highmem.h:115:92: warning: function declaration
+isn't a prototype [-Wstrict-prototypes]
+arch/frv/include/asm/highmem.h: In function 'kmap_atomic_primary':
+arch/frv/include/asm/highmem.h:123:144: error: '__KM_CACHE' undeclared
+(first use in this function)
+arch/frv/include/asm/highmem.h:123:144: note: each undeclared
+identifier is reported only once for each function it appears in
+In file included from include/linux/highmem.h:34:0,
+                 from include/linux/pagemap.h:10,
+                 from include/linux/mempolicy.h:80,
+                 from init/main.c:49:
+arch/frv/include/asm/highmem.h: At top level:
+arch/frv/include/asm/highmem.h:146:132: warning: 'enum km_type'
+declared inside parameter list [enabled by default]
+arch/frv/include/asm/highmem.h:146:140: error: parameter 2 ('type')
+has incomplete type
+arch/frv/include/asm/highmem.h:146:91: warning: function declaration
+isn't a prototype [-Wstrict-prototypes]
+arch/frv/include/asm/highmem.h: In function 'kunmap_atomic_primary':
+arch/frv/include/asm/highmem.h:149:84: error: '__KM_CACHE' undeclared
+(first use in this function)
+make[1]: *** [init/main.o] Error 1
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+http://kisskb.ellerman.id.au/kisskb/buildresult/6592702/
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
