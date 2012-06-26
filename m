@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab2FZTyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 15:54:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32986 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab2FZTyj (ORCPT
+	id S1753486Ab2FZTzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 15:55:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65498 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab2FZTzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 15:54:39 -0400
-Date: Tue, 26 Jun 2012 12:54:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH v4 2/2] memcg: change mem_control_xxx to mem_cgroup_xxx
-Message-Id: <20120626125437.26050bb0.akpm@linux-foundation.org>
-In-Reply-To: <1340622959-13136-1-git-send-email-liwp.linux@gmail.com>
-References: <1340622959-13136-1-git-send-email-liwp.linux@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jun 2012 15:55:15 -0400
+Date: Tue, 26 Jun 2012 12:55:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Jan Beulich <JBeulich@suse.com>, yuanhan.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] syslog: fill buffer with more than a single message for
+ SYSLOG_ACTION_READ
+Message-ID: <20120626195511.GA2959@kroah.com>
+References: <4FE4AD09020000780008B77F@nat28.tlf.novell.com>
+ <CAPXgP13nd7k3v3YGcW9F45L8LhT5tctw64jaooUwQ8=ypfVH+g@mail.gmail.com>
+ <4FE829CD020000780008B9DB@nat28.tlf.novell.com>
+ <20120625192007.GA1005@kroah.com>
+ <CAPXgP11rkrk5LBYswPf_3nOD2e2oYnvWgbFb81NYgjta67Dj3w@mail.gmail.com>
+ <20120626000148.GA3896@kroah.com>
+ <CAPXgP10iHmADRGQ8TvmWG3-LB7PhoVFcRTF7PDPq29CWQNu65w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP10iHmADRGQ8TvmWG3-LB7PhoVFcRTF7PDPq29CWQNu65w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jun 2012 19:15:59 +0800
-Wanpeng Li <liwp.linux@gmail.com> wrote:
-
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Tue, Jun 26, 2012 at 02:34:49AM +0200, Kay Sievers wrote:
+> On Tue, Jun 26, 2012 at 2:01 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Jun 25, 2012 at 09:35:03PM +0200, Kay Sievers wrote:
+> >> On Mon, Jun 25, 2012 at 9:20 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >>
+> >> > Ok, so I'm confused, you want me to apply this patch and then revert a
+> >> > different one?  Which one, 4a77a5a06ec66ed05199b301e7c25f42f979afdc?
+> >>
+> >> b56a39ac conflicts and is replaced with that patch.
+> >> 4a77a5a0 should stay, as it fixes an actual problem, even with the old
+> >> code, I think.
+> >
+> > Ok, I'm even more confused now.  Maybe I just need more coffee.
+> >
+> > Can you list what exactly I should do here?  Should I apply this patch?
+> > Revert some other patch?  Which one(s)?
 > 
-> Unify memcg functions to mem_cgroup_xxx.
+> Revert b56a39ac (return -EINVAL) and apply the patch from Jan. The
+> problem b56a39ac solved , is replaced by other logic in Jan's patch.
 
-How about we unify memcg functions to memcg_xxx?
+Ok, now done, there's nothing else needed here, right?
 
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3999,7 +3999,7 @@ static int mem_cgroup_move_charge_write(struct cgroup *cgrp,
->  #endif
->  
->  #ifdef CONFIG_NUMA
-> -static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
-> +static int mem_cgroup_numa_stat_show(struct cgroup *cont, struct cftype *cft,
->  				      struct seq_file *m)
+thanks,
 
-memcg_numa_stat_show(), etc.
-
-
+greg k-h
