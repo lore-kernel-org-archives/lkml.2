@@ -1,105 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab2FZHE5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 03:04:57 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:45083 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab2FZHE4 (ORCPT
+	id S1757349Ab2FZHIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 03:08:38 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:58652 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab2FZHIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 03:04:56 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org
-Cc: Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 10/21 v5] Input: atmel_mxt_ts - return errors from i2c layer
-Date: Tue, 26 Jun 2012 14:56:58 +0800
-Message-Id: <1340693829-18665-11-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
-References: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
+	Tue, 26 Jun 2012 03:08:36 -0400
+Message-ID: <4FE95FE8.3060406@linux.vnet.ibm.com>
+Date: Tue, 26 Jun 2012 15:08:24 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 01/10] zcache: fix preemptable memory allocation in atomic
+ context
+References: <4FE0392E.3090300@linux.vnet.ibm.com> <4FE36D32.3030408@linux.vnet.ibm.com> <20120623030052.GA18440@kroah.com> <4FE86C1D.2020302@linux.vnet.ibm.com> <20120625141145.GA32567@kroah.com>
+In-Reply-To: <20120625141145.GA32567@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062607-2674-0000-0000-000005065524
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c layer can report a variety of errors, including -ENXIO for an i2c
-NAK.  Instead of treating them all as -EIO, pass the actual i2c layer
-error up to the caller.
+On 06/25/2012 10:11 PM, Greg Kroah-Hartman wrote:
 
-However, still report as -EIO the unlikely case that a transaction was
-partially completed, and no error message was returned from i2c_*().
+> On Mon, Jun 25, 2012 at 08:48:13AM -0500, Seth Jennings wrote:
+>> On 06/22/2012 10:00 PM, Greg Kroah-Hartman wrote:
+>>> On Thu, Jun 21, 2012 at 01:51:30PM -0500, Seth Jennings wrote:
+>>>> I just noticed you sent this patchset to Andrew, but the
+>>>> staging tree is maintained by Greg.  You're going to want to
+>>>> send these patches to him.
+>>>>
+>>>> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>>
+>>> After this series is redone, right?  As it is, this submission didn't
+>>> look ok, so I'm hoping a second round is forthcoming...
+>>
+>> Yes. That is the cleanest way since there are dependencies
+>> among the patches.  You could pull 04-08 and be ok, but you
+>> might just prefer a repost.
+> 
+> I do prefer a repost, thanks.
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   28 ++++++++++++++++++++--------
- 1 files changed, 20 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 25d3dd5..3672553 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -396,6 +396,7 @@ static int __mxt_read_reg(struct i2c_client *client,
- {
- 	struct i2c_msg xfer[2];
- 	u8 buf[2];
-+	int ret;
- 
- 	buf[0] = reg & 0xff;
- 	buf[1] = (reg >> 8) & 0xff;
-@@ -412,12 +413,17 @@ static int __mxt_read_reg(struct i2c_client *client,
- 	xfer[1].len = len;
- 	xfer[1].buf = val;
- 
--	if (i2c_transfer(client->adapter, xfer, 2) != 2) {
--		dev_err(&client->dev, "%s: i2c transfer failed\n", __func__);
--		return -EIO;
-+	ret = i2c_transfer(client->adapter, xfer, 2);
-+	if (ret == 2) {
-+		ret = 0;
-+	} else {
-+		if (ret >= 0)
-+			ret = -EIO;
-+		dev_err(&client->dev, "%s: i2c transfer failed (%d)\n",
-+			__func__, ret);
- 	}
- 
--	return 0;
-+	return ret;
- }
- 
- static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
-@@ -428,17 +434,23 @@ static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
- static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
- {
- 	u8 buf[3];
-+	int ret;
- 
- 	buf[0] = reg & 0xff;
- 	buf[1] = (reg >> 8) & 0xff;
- 	buf[2] = val;
- 
--	if (i2c_master_send(client, buf, 3) != 3) {
--		dev_err(&client->dev, "%s: i2c send failed\n", __func__);
--		return -EIO;
-+	ret = i2c_master_send(client, buf, 3);
-+	if (ret == 3) {
-+		ret = 0;
-+	} else {
-+		if (ret >= 0)
-+			ret = -EIO;
-+		dev_err(&client->dev, "%s: i2c send failed (%d)\n",
-+			__func__, ret);
- 	}
- 
--	return 0;
-+	return ret;
- }
- 
- static int mxt_read_object_table(struct i2c_client *client,
--- 
-1.7.7.3
+Sorry for the delay reply since i was on my vacation. I will
+post the v2 soon. Thank you all!
 
