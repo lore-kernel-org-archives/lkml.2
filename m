@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892Ab2FZS4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 14:56:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37365 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab2FZS4P (ORCPT
+	id S932281Ab2FZS4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 14:56:53 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:30466 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932283Ab2FZS4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 14:56:15 -0400
+	Tue, 26 Jun 2012 14:56:01 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -18,101 +18,56 @@ Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v12 14/15] PCI: More strict checking of valid range for bridge
-Date: Tue, 26 Jun 2012 11:54:08 -0700
-Message-Id: <1340736849-14875-15-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v12 13/15] PCI, pciehp: Remove not needed bus number range checking
+Date: Tue, 26 Jun 2012 11:54:07 -0700
+Message-Id: <1340736849-14875-14-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1340736849-14875-1-git-send-email-yinghai@kernel.org>
 References: <1340736849-14875-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found one sick system with two sibling bridge have overlaping range from BIOS.
-00:02.1 bus range is 0x30-0x30
-00:02.2 bus range is 0x30-0x3f, and it have two children under it.
+Found hotplug adding one EM with bridge fail, bios only leave one bus range
+ for slot.
 
-RHEL 6.2 kernel, will just 00:02.1 have child bus 0x30, and bridge 00:02.2 will
-not have.
+[ 1169.621444] pciehp: No bus number available for hot-added bridge 0000:55:00.0
+[ 1169.633277] pcieport 0000:40:03.0: PCI bridge to [bus 55-55]
 
-before this patch, this patchset will have 00:02.1 to have bus 0x30,
-and 00:02.2 will have reallocate range bus 01.
-but 00:02.1 will have scaned at first, so later it will have two fake devices.
+With busn_res tracking and allocating, we don't need that checking anymore.
 
-To fix the problem, We need to check with unscaned sibling bridge about range
-overlapping.
-If there is overlapping found, will mark both sides to be broken.
-So we could prevent one side take too big range.
+Parent bridges' bus number will be extended safely.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c |   45 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 44 insertions(+), 1 deletions(-)
+ drivers/pci/hotplug-pci.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 93b61b8..118fe5b 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -743,6 +743,48 @@ static int __devinit pci_bridge_probe_busn_res(struct pci_bus *bus,
- 	return ret;
- }
+diff --git a/drivers/pci/hotplug-pci.c b/drivers/pci/hotplug-pci.c
+index 6258dc2..2221a27 100644
+--- a/drivers/pci/hotplug-pci.c
++++ b/drivers/pci/hotplug-pci.c
+@@ -7,18 +7,8 @@
+ int __ref pci_hp_add_bridge(struct pci_dev *dev)
+ {
+ 	struct pci_bus *parent = dev->bus;
+-	int pass, busnr, start = parent->busn_res.start;
+-	int end = parent->busn_res.end;
++	int pass, busnr = parent->busn_res.start;
  
-+static int __devinit pci_bridge_check_busn_broken_with_unscaned(
-+				struct pci_bus *bus,
-+				struct pci_dev *dev,
-+				int secondary, int subordinate)
-+{
-+	u32 buses2;
-+	int broken = 0;
-+	struct pci_dev *dev2;
-+	int secondary2, subordinate2;
-+	int common_start, common_end;
-+
-+	/* need to check with not scaned sibling bridges */
-+	list_for_each_entry(dev2, &bus->devices, bus_list) {
-+		if (dev2->hdr_type != PCI_HEADER_TYPE_BRIDGE &&
-+		    dev2->hdr_type != PCI_HEADER_TYPE_CARDBUS)
-+			continue;
-+		if (dev2->subordinate)
-+			continue;
-+		if (dev2 == dev)
-+			continue;
-+
-+		pci_read_config_dword(dev2, PCI_PRIMARY_BUS, &buses2);
-+		secondary2 = (buses2 >> 8) & 0xFF;
-+		subordinate2 = (buses2 >> 16) & 0xFF;
-+
-+		/* overlapping between them ? */
-+		common_start = max(secondary, secondary2);
-+		common_end = min(subordinate, subordinate2);
-+		if (common_start <= common_end) {
-+			/*
-+			 * Temporarily disable forwarding of the
-+			 * configuration cycles on this sibling bridge
-+			 */
-+			pci_write_config_dword(dev2, PCI_PRIMARY_BUS,
-+					       buses2 & ~0xffffff);
-+			broken = 1;
-+		}
-+	}
-+
-+	return broken;
-+}
-+
- static int __devinit pci_bridge_check_busn_broken(struct pci_bus *bus,
- 				struct pci_dev *dev,
- 				int secondary, int subordinate)
-@@ -763,7 +805,8 @@ static int __devinit pci_bridge_check_busn_broken(struct pci_bus *bus,
- 
- 	release_resource(&busn_res);
- 
--	return 0;
-+	return pci_bridge_check_busn_broken_with_unscaned(bus, dev,
-+					secondary, subordinate);
- }
- 
- static unsigned int __devinit __pci_scan_child_bus(struct pci_bus *bus,
+-	for (busnr = start; busnr <= end; busnr++) {
+-		if (!pci_find_bus(pci_domain_nr(parent), busnr))
+-			break;
+-	}
+-	if (busnr-- > end) {
+-		printk(KERN_ERR "No bus number available for hot-added bridge %s\n",
+-				pci_name(dev));
+-		return -1;
+-	}
+ 	for (pass = 0; pass < 2; pass++)
+ 		busnr = pci_scan_bridge(parent, dev, busnr, pass);
+ 	if (!dev->subordinate)
 -- 
 1.7.7
 
