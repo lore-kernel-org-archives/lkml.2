@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560Ab2FZIcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 04:32:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58227 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758525Ab2FZIcR convert rfc822-to-8bit (ORCPT
+	id S1758575Ab2FZIiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 04:38:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48505 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758434Ab2FZIiH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 04:32:17 -0400
-Message-ID: <1340699507.21991.32.camel@twins>
+	Tue, 26 Jun 2012 04:38:07 -0400
+Message-ID: <1340699831.21991.34.camel@twins>
 Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
  rbtree
 From: Peter Zijlstra <peterz@infradead.org>
@@ -15,8 +15,8 @@ To: Rik van Riel <riel@redhat.com>
 Cc: Rik van Riel <riel@surriel.com>, linux-mm@kvack.org,
         akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
         kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
-        mel@csn.ul.ie, linux-kernel@vger.kernel.org, danielfsantos@att.net
-Date: Tue, 26 Jun 2012 10:31:47 +0200
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org
+Date: Tue, 26 Jun 2012 10:37:11 +0200
 In-Reply-To: <4FE8DD80.9040108@redhat.com>
 References: <1340315835-28571-1-git-send-email-riel@surriel.com>
 	     <1340315835-28571-2-git-send-email-riel@surriel.com>
@@ -33,28 +33,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 2012-06-25 at 17:52 -0400, Rik van Riel wrote:
-> The downside? This makes the rbtree code somewhat more
-> complex, vs. the brute force walk up the tree the current
-> augmented rbtree code does. 
+> > The thing you propose, the double search, once for len, and once for len
+> > +align-1 doesn't guarantee you'll find a hole. All holes of len might be
+> > mis-aligned but the len+align-1 search might overlook a hole of suitable
+> > size and alignment, you'd have to search the entire range: [len, len
+> > +align-1], and that's somewhat silly.
+> 
+> This may still be good enough. 
 
-Something like that should be in the git history of that code. See
-b945d6b2554d55 ("rbtree: Undo augmented trees performance damage and
-regression").
+OK, as long as this is clearly mentioned in a comment near there.
 
-I removed that because it adds overhead to the scheduler fast paths, but
-if we can all agree to move lib/rbtree.c into inlines in
-include/linux/rbtree.h (possibly utilizing Daniel Santos' magic) then we
-could do this again.
-
-Anyway, doing the updates in the insertion/deletion might speed up
-those, but you still have the regular modifications what don't do
-insert/delete to think about.
-
-If you look at your patch 1, __vma_unlink has an adjust_free_gap() right
-next to the rb_augment_erase(), vma_adjust() has 3 adjust_free_gap()
-calls right next to each other.
-
-All these will do an entire path walk back to the root. I would think we
-could save quite a bit of updating by not having them all walk back to
-the root. No point in re-computing the top levels if you know the next
-update will change them again anyway.
+It just annoys me that I cannot come up with anything better :-)
