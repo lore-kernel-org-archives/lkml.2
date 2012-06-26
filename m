@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758932Ab2FZSIQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 14:08:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58536 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757928Ab2FZSIN (ORCPT
+	id S1758926Ab2FZSRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 14:17:30 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:34065 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757879Ab2FZSR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 14:08:13 -0400
-Date: Tue, 26 Jun 2012 11:08:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 06/11] memcg: kmem controller infrastructure
-Message-ID: <20120626180805.GQ3869@google.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
- <1340633728-12785-7-git-send-email-glommer@parallels.com>
- <20120625161720.ae13ae90.akpm@linux-foundation.org>
- <4FE9CEBB.80108@parallels.com>
- <20120626110142.b7cf6d7c.akpm@linux-foundation.org>
+	Tue, 26 Jun 2012 14:17:29 -0400
+Date: Tue, 26 Jun 2012 11:06:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Alexey Vlasov <renton@renton.name>, linux-kernel@vger.kernel.org
+Subject: Re: Attaching a process to cgroups
+Message-ID: <20120626180620.GK2397@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120619185856.GC31797@beaver>
+ <1340195298.15707.3.camel@marge.simpson.net>
+ <20120621075428.GE31797@beaver>
+ <1340266982.29752.37.camel@marge.simpson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120626110142.b7cf6d7c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1340266982.29752.37.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062618-6148-0000-0000-000007162FC8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 11:01:42AM -0700, Andrew Morton wrote:
-> On Tue, 26 Jun 2012 19:01:15 +0400 Glauber Costa <glommer@parallels.com> wrote:
-> 
-> > On 06/26/2012 03:17 AM, Andrew Morton wrote:
-> > >> +	memcg_uncharge_kmem(memcg, size);
-> > >> >+	mem_cgroup_put(memcg);
-> > >> >+}
-> > >> >+EXPORT_SYMBOL(__mem_cgroup_free_kmem_page);
-> > >> >  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-> > >> >
-> > >> >  #if defined(CONFIG_INET) && defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
-> > >> >@@ -5645,3 +5751,69 @@ static int __init enable_swap_account(char *s)
-> > >> >  __setup("swapaccount=", enable_swap_account);
-> > >> >
-> > >> >  #endif
-> > >> >+
-> > >> >+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> > > gargh.  CONFIG_MEMCG_KMEM, please!
-> > >
+On Thu, Jun 21, 2012 at 10:23:02AM +0200, Mike Galbraith wrote:
+> On Thu, 2012-06-21 at 11:54 +0400, Alexey Vlasov wrote: 
+> > On Wed, Jun 20, 2012 at 02:28:18PM +0200, Mike Galbraith wrote:
+> > > 
+> > > kernel/cgroup.c::cgroup_attach_task()
+> > > {
+> > > ...
+> > > 	synchronize_rcu();
+> > > ...
+> > > }
 > > 
-> > Here too. I like it as much as you do.
-> > 
-> > But that is consistent with the rest of the file, and I'd rather have
-> > it this way.
+> > So nothing can be done here? (I mean if only I knew how to fix it I
+> > wouldn't ask about it ;)
 > 
-> There's not much point in being consistent with something which is so
-> unpleasant.  I'm on a little campaign to rename
-> CONFIG_CGROUP_MEM_RES_CTLR to CONFIG_MEMCG, only nobody has taken my
-> bait yet.  Be first!
+> Sure, kill the obnoxious thing, it's sitting right in the middle of the
+> userspace interface.
+> 
+> I banged on it a while back (wrt explosive android patches), extracted
+> RCU from the userspace interface.  It seemed to work great, much faster,
+> couldn't make it explode.  I wouldn't bet anything I wasn't willing to
+> immediately part with that the result was really really safe though ;-)
 
-+1.
+Or replace it with synchronize_rcu_expedited().  You can "get lucky"
+for quite some time removing synchronize_rcu() calls!
 
-Block cgroup recently did blkio / blkiocg / blkio_cgroup -> blkcg.
-Join the cool crowd!  :P
+							Thanx, Paul
 
--- 
-tejun
