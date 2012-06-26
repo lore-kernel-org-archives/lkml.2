@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2FZSDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 14:03:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:9391 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab2FZSDP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 14:03:15 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6754"; a="204823691"
-X-IronPort-AV: E=Sophos;i="4.77,478,1336374000"; 
-   d="scan'208";a="334907847"
-Date: Tue, 26 Jun 2012 11:03:11 -0700
-From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-To: "Ren, Cloud" <cjren@qca.qualcomm.com>
-CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <qca-linux-team@qualcomm.com>,
-        <nic-devel@qualcomm.com>, xiong <xiong@qca.qualcomm.com>
-Subject: Re: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
-Message-ID: <20120626180311.GC5070@tux>
-References: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
+	id S1758908Ab2FZSHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 14:07:52 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758849Ab2FZSHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 14:07:51 -0400
+Message-ID: <4FE9FA6F.3090808@nod.at>
+Date: Tue, 26 Jun 2012 20:07:43 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [172.30.39.5]
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: add a rule to just create one file for kernel
+ doc
+References: <1340732427-3747-1-git-send-email-sebastian@breakpoint.cc>
+In-Reply-To: <1340732427-3747-1-git-send-email-sebastian@breakpoint.cc>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigC7E5F18F092CDCE3460A6AE6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 12:33:06PM -0300, Ren, Cloud wrote:
-> From: xiong <xiong@qca.qualcomm.com>
-> 
-> some people report atl1c could cause system hang with following
-> kernel trace info:
-> ---------------------------------------
-> WARNING: at.../net/sched/sch_generic.c:258
-> dev_watchdog+0x1db/0x1d0()
-> ...
-> NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-> ...
-> ---------------------------------------
-> This is caused by netif_stop_queue calling when cable Link is down
-> but netif_wake_queue isn't called when cable Link is resume.
-> 
-> Signed-off-by: xiong <xiong@qca.qualcomm.com>
-> Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigC7E5F18F092CDCE3460A6AE6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-If this fixes  a system hang then this could be a stable
-fix -- that is, this should be propagated to older stable
-kernels, no?
+Am 26.06.2012 19:40, schrieb Sebastian Andrzej Siewior:
+> If you are chaning the file and you want to verify that it looks good i=
+t
+> is helpfull to just re-run for the single file instead of running the
+> complete htmldocs target.
+>=20
+> With this patch one can run
+> |	make drivers/mtd/ubi/wl.html
+> and create the output just for this file.
+>=20
+> Cc: Richard Weinberger <richard@nod.at>
+> Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 
-If so then please add to the commit log a line like this:
+Acked-by: Richard Weinberger <richard@nod.at>
 
-Cc: stable@vger.kernel.org [3.4]
 
-Note: this is for the commit log! Right above the line below
-that has "---"
+--------------enigC7E5F18F092CDCE3460A6AE6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-  Luis
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJP6fp0AAoJEN9758yqZn9efNgH/1nJJSZYSFARQnN9sCgfJjWy
+0HwmmIaP7GjITOmq+JL8F/mpXFkQ7HRgbaK0FjZ/1d4+Fljm5FplMcZVqflS8F5o
+YQ3yJ+puknb3ShpQwmkxF6Pf/oC8Ge5Sa/1ZvSJlFqYY+tefcD67WGl4pp1jwT3U
+5InOTg7IBo7cs2TjfdBe9qo9gZzd6tN6mvZoq3TF5fIGhJnPRUhYv3Yn/5ONU4AJ
+muvmwOstF3VdD5qAY8T5ls6pEW/7xQj7TVKeQNKD4dtxbjrau76QwRONWG/h2+Jo
+40JF4PnsCTj3IR/pGL3HIhoZWKQ3Tio4Q8Aloy2mQBUTcd1LyL2cYvzaUbaXTVQ=
+=e/BZ
+-----END PGP SIGNATURE-----
+
+--------------enigC7E5F18F092CDCE3460A6AE6--
