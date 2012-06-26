@@ -1,129 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758055Ab2FZOzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 10:55:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757325Ab2FZOzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 10:55:44 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>, Nick Piggin <npiggin@kernel.dk>
-Cc: LKML List <linux-kernel@vger.kernel.org>, torsten.hilbrich@secunet.com,
-        Richard Jones <rjones@redhat.com>, stable@vger.kernel.org,
-        Marcos Mello <marcosfrm@gmail.com>
-Subject: [patch] block: fix infinite loop in __getblk_slow
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 26 Jun 2012 10:55:34 -0400
-Message-ID: <x49r4t2rul5.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758104Ab2FZO5A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 10:57:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:54784 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757004Ab2FZO47 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 10:56:59 -0400
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: phy: Fix Kconfig dependency for Phy drivers
+Date: Tue, 26 Jun 2012 11:56:48 -0300
+Message-Id: <1340722608-997-1-git-send-email-aletes.xgr@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+USB phy layer driver are only built if usb host is selected, but they
+are used too by USB_GADGET drivers
 
-This commit:
+Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+---
+ drivers/usb/Makefile    |    2 +-
+ drivers/usb/phy/Kconfig |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-commit 080399aaaf3531f5b8761ec0ac30ff98891e8686
-Author: Jeff Moyer <jmoyer@redhat.com>
-Date:   Fri May 11 16:34:10 2012 +0200
-
-    block: don't mark buffers beyond end of disk as mapped
-
-exposed a bug in __getblk_slow that causes mount to hang as it loops
-infinitely waiting for a buffer that lies beyond the end of the disk to
-become uptodate.  The problem was initially reported by Torsten Hilbrich
-here: https://lkml.org/lkml/2012/6/18/54, and also reported
-independently here:
-http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511, and then
-Richard W.M. Jones and Marcos Mello noted a few separate bugzillas also
-associated with the same issue.
-
-The main problem is here, in __getblk_slow:
-
-        for (;;) {
-                struct buffer_head * bh;
-                int ret;
-
-                bh = __find_get_block(bdev, block, size);
-                if (bh)
-                        return bh;
-
-                ret = grow_buffers(bdev, block, size);
-                if (ret < 0)
-                        return NULL;
-                if (ret == 0)
-                        free_more_memory();
-        }
-
-__find_get_block does not find the block, since it will not be marked as
-mapped, and so grow_buffers is called to fill in the buffers for the
-associated page.  I believe the for (;;) loop is there primarily to
-retry in the case of memory pressure keeping grow_buffers from
-succeeding.  However, we also continue to loop for other cases, like the
-block lying beond the end of the disk.  So, the fix I came up with is to
-only loop when grow_buffers fails due to memory allocation issues
-(return value of 0).
-
-The attached patch was tested by myself, Torsten, and Rich, and was
-found to resolve the problem in call cases.
-
-Comments, as always, are appreciated.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Reported-and-Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Tested-by: Richard W.M. Jones <rjones@redhat.com>
-Cc: Stable <stable@vger.kernel.org>
-
---
-Stable Notes: this patch requires backport to 3.0, 3.2 and 3.3.
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 838a9cf..c7062c8 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1036,6 +1036,9 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
- static struct buffer_head *
- __getblk_slow(struct block_device *bdev, sector_t block, int size)
- {
-+	int ret;
-+	struct buffer_head *bh;
-+
- 	/* Size must be multiple of hard sectorsize */
- 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
- 			(size < 512 || size > PAGE_SIZE))) {
-@@ -1048,20 +1051,21 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
- 		return NULL;
- 	}
+diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
+index c691eea..f5ed3d7 100644
+--- a/drivers/usb/Makefile
++++ b/drivers/usb/Makefile
+@@ -46,7 +46,7 @@ obj-$(CONFIG_USB_MICROTEK)	+= image/
+ obj-$(CONFIG_USB_SERIAL)	+= serial/
  
--	for (;;) {
--		struct buffer_head * bh;
--		int ret;
-+retry:
-+	bh = __find_get_block(bdev, block, size);
-+	if (bh)
-+		return bh;
+ obj-$(CONFIG_USB)		+= misc/
+-obj-$(CONFIG_USB)		+= phy/
++obj-$(CONFIG_USB_COMMON)	+= phy/
+ obj-$(CONFIG_EARLY_PRINTK_DBGP)	+= early/
  
-+	ret = grow_buffers(bdev, block, size);
-+	if (ret == 0) {
-+		free_more_memory();
-+		goto retry;
-+	} else if (ret > 0) {
- 		bh = __find_get_block(bdev, block, size);
- 		if (bh)
- 			return bh;
--
--		ret = grow_buffers(bdev, block, size);
--		if (ret < 0)
--			return NULL;
--		if (ret == 0)
--			free_more_memory();
- 	}
-+	return NULL;
- }
+ obj-$(CONFIG_USB_ATM)		+= atm/
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index 3cfabcb..e7cf84f 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -2,11 +2,11 @@
+ # Physical Layer USB driver configuration
+ #
+ comment "USB Physical Layer drivers"
+-	depends on USB
++	depends on USB || USB_GADGET
  
- /*
+ config USB_ISP1301
+ 	tristate "NXP ISP1301 USB transceiver support"
+-	depends on USB
++	depends on USB || USB_GADGET
+ 	depends on I2C
+ 	help
+ 	  Say Y here to add support for the NXP ISP1301 USB transceiver driver.
+-- 
+1.7.10
+
