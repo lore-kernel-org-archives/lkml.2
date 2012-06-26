@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab2FZIvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 04:51:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33764 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab2FZIvd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 04:51:33 -0400
-Message-ID: <4FE9780E.5050403@openvz.org>
-Date: Tue, 26 Jun 2012 12:51:26 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120608 Firefox/10.0.5 Iceape/2.7.5
+	id S1754002Ab2FZIvs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 04:51:48 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:60574 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753547Ab2FZIvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 04:51:47 -0400
+Message-ID: <4FE9781D.9000500@mev.co.uk>
+Date: Tue, 26 Jun 2012 09:51:41 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
 MIME-Version: 1.0
-To: Akhilesh Kumar <akhilesh.lxr@gmail.com>
-CC: "david@fromorbit.com" <david@fromorbit.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: ashmem_shrink with long term stable kernel [3.0.36]
-References: <CADArhcAxf3g=SLgDaJJMpzNpL_X7fbVbL1jzBYiyjPQFxXLYTA@mail.gmail.com>
-In-Reply-To: <CADArhcAxf3g=SLgDaJJMpzNpL_X7fbVbL1jzBYiyjPQFxXLYTA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 07/33] staging: comedi: cb_das16_cs: remove some useless
+ comments
+References: <201206251610.38013.hartleys@visionengravers.com>
+In-Reply-To: <201206251610.38013.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Akhilesh Kumar wrote:
-> Hi All,
+On 2012-06-26 00:10, H Hartley Sweeten wrote:
+> --- a/drivers/staging/comedi/drivers/cb_das16_cs.c
+> +++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+> @@ -19,6 +19,13 @@
+>       along with this program; if not, write to the Free Software
+>       Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 >
-> During mm performance testing sometimes we observed below kernel messages
->
-> shrink_slab: ashmem_shrink+0x0/0x114 negative objects to delete nr=-2133936901
-> shrink_slab: ashmem_shrink+0x0/0x114 negative objects to delete nr=-2139256767
-> shrink_slab: ashmem_shrink+0x0/0x114 negative objects to delete nr=-2079333971
-> shrink_slab: ashmem_shrink+0x0/0x114 negative objects to delete nr=-2096156269
-> shrink_slab: ashmem_shrink+0x0/0x114 negative objects to delete nr=-20658392
->
->   After debugging is we fount below patch mm/vmscan
-> http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commitdiff;h=635697c663f38106063d5659f0cf2e45afcd4bb5
-> Since patch fix critical issue and same is not integrated with long term stable kernel (3.0.36)
-> and  we are using below patch with long term stable kernel (3.0.36) is there any side effects ?
+> +    PCMCIA support code for the is adapted from the dummy_cs.c driver
+> +    of the Linux PCMCIA Card Services package.
 
-Nothing special, your patch should work fine.
+That sentence no sense!  But the original sentence it was moved from was 
+wrong in a different way.  I suggest starting it with "PCMCIA support 
+code for this driver ..."
 
-> @@ -248,10 +248,12 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->
->          list_for_each_entry(shrinker, &shrinker_list, list) {
->                  unsigned long long delta;
-> -               unsigned long total_scan;
-> -               unsigned long max_pass;
-> +               long total_scan;
-> +               long max_pass;
->
->                  max_pass = do_shrinker_shrink(shrinker, shrink, 0);
-> +               if (max_pass <= 0)
-> +                       continue;
->                  delta = (4 * nr_pages_scanned) / shrinker->seeks;
->                  delta *= max_pass;
->                  do_div(delta, lru_pages + 1);
-> --
-> Please review and share ur comments.
-> Thanks,
-> Akhilesh
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
