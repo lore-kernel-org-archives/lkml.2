@@ -1,176 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758732Ab2FZQh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 12:37:56 -0400
+	id S1758601Ab2FZQfr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 12:35:47 -0400
 Received: from mail-yx0-f174.google.com ([209.85.213.174]:33496 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757591Ab2FZQfr (ORCPT
+	with ESMTP id S1757591Ab2FZQfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 12:35:47 -0400
+	Tue, 26 Jun 2012 12:35:44 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: eparis@redhat.com, viro@zeniv.linux.org.uk
 Cc: linux-audit@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/9] audit: reverse arguments to audit_inode_child
-Date: Tue, 26 Jun 2012 12:35:31 -0400
-Message-Id: <1340728537-25599-4-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v4 0/9] audit: overhaul audit_names handling to allow for retrying on path-based syscalls
+Date: Tue, 26 Jun 2012 12:35:28 -0400
+Message-Id: <1340728537-25599-1-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1340728537-25599-1-git-send-email-jlayton@redhat.com>
-References: <1340728537-25599-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the callers get called with an inode and dentry in the reverse
-order. The compiler then has to reshuffle the arg registers and/or
-stack in order to pass them on to audit_inode_child.
+I recently posted a set of patches to have the kernel retry the lookup
+and call when path-based syscalls would ordinarily return ESTALE. Al
+took a look and pointed out that this would break the fragile logic that
+handles the audit_names for syscall auditing.
 
-Reverse those arguments for a micro-optimization.
+This patchset comprises a number of incremental changes that should make
+it ok to retry on a path-based syscall. The main caveat is that the retry
+mustn't redo the getname() on the strings involved.
 
-Reported-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
+Unfortunately, we don't have anything that really describes what the
+correct behavior is for this stuff, so I'm shooting here for "no
+discernable difference" on a retry.
+
+This seems to do the right thing in the cases that I've tested; mostly
+the normal case where things succeed or fail for some reason and where
+the syscall is retried after an ESTALE error.
+
+Review is of course appreciated. There are some fixes in here too for
+some subtle bugs in the existing code. Some of these patches may also
+help performance in some cases, but I haven't measured it for that.
+
+I'd like to see this patchset go into 3.6 if at all possible.
+
+Eric Paris (1):
+  audit: make audit_compare_dname_path use parent_len helper
+
+Jeff Layton (8):
+  audit: remove unnecessary NULL ptr checks from do_path_lookup
+  audit: pass in dentry to audit_copy_inode wherever possible
+  audit: reverse arguments to audit_inode_child
+  audit: add a new "type" field to audit_names struct
+  audit: set the name_len in audit_inode for parent lookups
+  audit: remove dirlen argument to audit_compare_dname_path
+  audit: optimize audit_compare_dname_path
+  audit: overhaul __audit_inode_child to accomodate retrying
+
  fs/btrfs/ioctl.c         |    2 +-
- fs/namei.c               |    2 +-
- include/linux/audit.h    |   14 +++++++-------
- include/linux/fsnotify.h |    8 ++++----
- kernel/auditsc.c         |    8 ++++----
- 5 files changed, 17 insertions(+), 17 deletions(-)
+ fs/namei.c               |   20 +++-----
+ fs/open.c                |    4 +-
+ fs/xattr.c               |    8 ++--
+ include/linux/audit.h    |   36 ++++++++++-----
+ include/linux/fsnotify.h |    8 ++--
+ ipc/mqueue.c             |    8 ++--
+ kernel/audit.h           |    7 ++-
+ kernel/audit_watch.c     |    3 +-
+ kernel/auditfilter.c     |   65 +++++++++++++++++---------
+ kernel/auditsc.c         |  115 +++++++++++++++++++++++++++------------------
+ 11 files changed, 165 insertions(+), 111 deletions(-)
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 0e92e57..90c67b0 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -592,7 +592,7 @@ static int btrfs_may_delete(struct inode *dir,struct dentry *victim,int isdir)
- 		return -ENOENT;
- 
- 	BUG_ON(victim->d_parent->d_inode != dir);
--	audit_inode_child(victim, dir);
-+	audit_inode_child(dir, victim);
- 
- 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
- 	if (error)
-diff --git a/fs/namei.c b/fs/namei.c
-index 5f6a34d..8539f8f 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1998,7 +1998,7 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
- 		return -ENOENT;
- 
- 	BUG_ON(victim->d_parent->d_inode != dir);
--	audit_inode_child(victim, dir);
-+	audit_inode_child(dir, victim);
- 
- 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
- 	if (error)
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 22f292a..51eca54 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -461,8 +461,8 @@ extern void __audit_syscall_exit(int ret_success, long ret_value);
- extern void __audit_getname(const char *name);
- extern void audit_putname(const char *name);
- extern void __audit_inode(const char *name, const struct dentry *dentry);
--extern void __audit_inode_child(const struct dentry *dentry,
--				const struct inode *parent);
-+extern void __audit_inode_child(const struct inode *parent,
-+				const struct dentry *dentry);
- extern void __audit_seccomp(unsigned long syscall, long signr, int code);
- extern void __audit_ptrace(struct task_struct *t);
- 
-@@ -501,10 +501,10 @@ static inline void audit_inode(const char *name, const struct dentry *dentry) {
- 	if (unlikely(!audit_dummy_context()))
- 		__audit_inode(name, dentry);
- }
--static inline void audit_inode_child(const struct dentry *dentry,
--				     const struct inode *parent) {
-+static inline void audit_inode_child(const struct inode *parent,
-+				     const struct dentry *dentry) {
- 	if (unlikely(!audit_dummy_context()))
--		__audit_inode_child(dentry, parent);
-+		__audit_inode_child(parent, dentry);
- }
- void audit_core_dumps(long signr);
- 
-@@ -630,9 +630,9 @@ extern int audit_signals;
- #define audit_getname(n) do { ; } while (0)
- #define audit_putname(n) do { ; } while (0)
- #define __audit_inode(n,d) do { ; } while (0)
--#define __audit_inode_child(i,p) do { ; } while (0)
-+#define __audit_inode_child(p,d) do { ; } while (0)
- #define audit_inode(n,d) do { (void)(d); } while (0)
--#define audit_inode_child(i,p) do { ; } while (0)
-+#define audit_inode_child(p,d) do { ; } while (0)
- #define audit_core_dumps(i) do { ; } while (0)
- #define audit_seccomp(i,s,c) do { ; } while (0)
- #define auditsc_get_stamp(c,t,s) (0)
-diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
-index a6dfe69..9c28471 100644
---- a/include/linux/fsnotify.h
-+++ b/include/linux/fsnotify.h
-@@ -109,7 +109,7 @@ static inline void fsnotify_move(struct inode *old_dir, struct inode *new_dir,
- 
- 	if (source)
- 		fsnotify(source, FS_MOVE_SELF, moved->d_inode, FSNOTIFY_EVENT_INODE, NULL, 0);
--	audit_inode_child(moved, new_dir);
-+	audit_inode_child(new_dir, moved);
- }
- 
- /*
-@@ -155,7 +155,7 @@ static inline void fsnotify_inoderemove(struct inode *inode)
-  */
- static inline void fsnotify_create(struct inode *inode, struct dentry *dentry)
- {
--	audit_inode_child(dentry, inode);
-+	audit_inode_child(inode, dentry);
- 
- 	fsnotify(inode, FS_CREATE, dentry->d_inode, FSNOTIFY_EVENT_INODE, dentry->d_name.name, 0);
- }
-@@ -168,7 +168,7 @@ static inline void fsnotify_create(struct inode *inode, struct dentry *dentry)
- static inline void fsnotify_link(struct inode *dir, struct inode *inode, struct dentry *new_dentry)
- {
- 	fsnotify_link_count(inode);
--	audit_inode_child(new_dentry, dir);
-+	audit_inode_child(dir, new_dentry);
- 
- 	fsnotify(dir, FS_CREATE, inode, FSNOTIFY_EVENT_INODE, new_dentry->d_name.name, 0);
- }
-@@ -181,7 +181,7 @@ static inline void fsnotify_mkdir(struct inode *inode, struct dentry *dentry)
- 	__u32 mask = (FS_CREATE | FS_ISDIR);
- 	struct inode *d_inode = dentry->d_inode;
- 
--	audit_inode_child(dentry, inode);
-+	audit_inode_child(inode, dentry);
- 
- 	fsnotify(inode, mask, d_inode, FSNOTIFY_EVENT_INODE, dentry->d_name.name, 0);
- }
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 5c45b9b..12b007b 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -2176,9 +2176,9 @@ out:
- }
- 
- /**
-- * audit_inode_child - collect inode info for created/removed objects
-- * @dentry: dentry being audited
-+ * __audit_inode_child - collect inode info for created/removed objects
-  * @parent: inode of dentry parent
-+ * @dentry: dentry being audited
-  *
-  * For syscalls that create or remove filesystem objects, audit_inode
-  * can only collect information for the filesystem object's parent.
-@@ -2188,8 +2188,8 @@ out:
-  * must be hooked prior, in order to capture the target inode during
-  * unsuccessful attempts.
-  */
--void __audit_inode_child(const struct dentry *dentry,
--			 const struct inode *parent)
-+void __audit_inode_child(const struct inode *parent,
-+			 const struct dentry *dentry)
- {
- 	struct audit_context *context = current->audit_context;
- 	const char *found_parent = NULL, *found_child = NULL;
 -- 
 1.7.7.6
 
