@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab2FZG4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 02:56:55 -0400
-Received: from mail2.unitix.de ([176.9.2.175]:55006 "EHLO mail2.unitix.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab2FZG4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 02:56:54 -0400
-X-Greylist: delayed 486 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Jun 2012 02:56:54 EDT
-Message-ID: <4FE95B45.8030909@arndnet.de>
-Date: Tue, 26 Jun 2012 08:48:37 +0200
-From: Arnd Hannemann <arnd@arndnet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: chris.mason@fusionio.com
-CC: dave@jikos.cz, linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ierdnah@gmail.com
-Subject: Re: [PATCH v2] Btrfs: allow mount -o remount,compress=no
-References: <20120406102232.GH14256@twin.jikos.cz> <1334582871-3670-1-git-send-email-arnd@arndnet.de> <20120416144233.GC20982@twin.jikos.cz>
-In-Reply-To: <20120416144233.GC20982@twin.jikos.cz>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757873Ab2FZG5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 02:57:25 -0400
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:65471 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756593Ab2FZG5T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 02:57:19 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org
+Cc: Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 01/21 v5] Input: atmel_mxt_ts - derive phys from i2c client adapter
+Date: Tue, 26 Jun 2012 14:56:49 +0800
+Message-Id: <1340693829-18665-2-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
+References: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+This allows userspace to more easily distinguish which bus a particular
+atmel_mxt_ts device is attached to.
 
-Am 16.04.2012 16:42, schrieb David Sterba:
-> On Mon, Apr 16, 2012 at 03:27:51PM +0200, Arnd Hannemann wrote:
->> Btrfs allows to turn on compression on a mounted and used filesystem
->> by issuing mount -o remount,compress=lzo.
->> This patch allows to turn compression off again
->> while the filesystem is mounted. As suggested by David Sterba
->> if the compress-force option was set, it is implicitly cleared
->> if compression is turned off.
->>
->> Signed-off-by: Arnd Hannemann <arnd@arndnet.de>
-> 
-> Tested-by: David Sterba <dsterba@suse.cz>
-> 
-> worked perfectly, remounting back and forth with compress=lzo =no
-> -force=lzo etc, checked output via 'mount'.
+The resulting phys will be something like:
+ i2c-1-0067/input0
 
-How show should we proceed to get above mentioned patch
-(or the similar patch from Andrei Popa) merged?
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Best regards,
-Arnd
-
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 42e6450..b1108ca 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -250,6 +250,7 @@ struct mxt_finger {
+ struct mxt_data {
+ 	struct i2c_client *client;
+ 	struct input_dev *input_dev;
++	char phys[64];		/* device physical location */
+ 	const struct mxt_platform_data *pdata;
+ 	struct mxt_object *object_table;
+ 	struct mxt_info info;
+@@ -1106,6 +1107,10 @@ static int __devinit mxt_probe(struct i2c_client *client,
+ 	}
+ 
+ 	input_dev->name = "Atmel maXTouch Touchscreen";
++	snprintf(data->phys, sizeof(data->phys), "i2c-%u-%04x/input0",
++		 client->adapter->nr, client->addr);
++	input_dev->phys = data->phys;
++
+ 	input_dev->id.bustype = BUS_I2C;
+ 	input_dev->dev.parent = &client->dev;
+ 	input_dev->open = mxt_input_open;
+-- 
+1.7.7.3
 
