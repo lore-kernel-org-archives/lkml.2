@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab2FZAlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 20:41:14 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44190 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab2FZAlN convert rfc822-to-8bit (ORCPT
+	id S1758001Ab2FZAtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 20:49:14 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:38490 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757804Ab2FZAsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 20:41:13 -0400
+	Mon, 25 Jun 2012 20:48:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120626002307.GA4389@kroah.com>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com> <20120625150722.8cd4f45d.akpm@linux-foundation.org>
- <20120625235531.GB3652@kroah.com> <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
- <20120626002307.GA4389@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 25 Jun 2012 17:40:51 -0700
-X-Google-Sender-Auth: IcrmdnPtqCF9ELkFyyvJxeUb8cE
-Message-ID: <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
+In-Reply-To: <20120626002908.GA14279@fieldses.org>
+References: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
+	<1339815965-1171-2-git-send-email-filbranden@gmail.com>
+	<20120618200131.GA12351@fieldses.org>
+	<CABe66sW0k4N_7vMduOZMRak-U4A+6E7i+fiGwKEVBazJ1npBeg@mail.gmail.com>
+	<20120626002908.GA14279@fieldses.org>
+Date: Mon, 25 Jun 2012 20:48:49 -0400
+Message-ID: <CABe66sV=coC3=-CU1uDrCfN7aucKg59emTZZS=kL41OwYyrNBw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] locks: prevent side-effects of locks_release_private
+ before file_lock is initialized
+From: Filipe Brandenburger <filbranden@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 5:23 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
->
-> Ok, but I thought you wanted the "properly handle continuations" that we
-> now have in the kernel.  I must be mistaken.
+Hi Bruce,
 
-We had that before too. It has nothing to do with merging the data,
-and the problem was just an outright *bug* in the initial record-based
-implementation. Nothing to do with buffering.
+I was just reviewing this set of patches today... I think if the idea
+is not to call fl->fl_lmops->lm_release_private(fl) when the file_lock
+struct was not used, then I'd prefer to introduce an exported
+__locks_free_lock() function that would do it in order not to expose
+the kmem_cache implementation and allow other implementations to do
+it.
 
-Line continuations should happen if the previous printk didn't end
-with a '\n', and if the next one doesn't have a level. That was always
-the rule. It's a simple rule, and it works.
+But I was reading the code and thinking a little more about it and now
+I think the correct behavior should be to always call
+fl->fl_lmops->lm_release_private(fl) (if the pointers are not NULL)
+and have that function behave appropriately if the file_lock struct
+was not used.
 
-Now, we can (and Key did) tweak the rule a little bit for cases that
-never actually happen in practice.
+What made me think of that was a use of fl_ops (it's not directly
+fl_lmops, but still I think it would be nice to keep a similar
+interface) where nfs4_fl_lock_ops.fl_release_private =
+nfs4_fl_release_lock and nfs4_fl_release_lock calls
+nfs4_put_lock_state which frees some lists and decrements the usage
+counter... Not calling fl->fl_ops->fl_release_private(fl) in that
+particular case would be clearly wrong...
 
-So sure, add the "we only continue on the same line if we're the same
-process as the last process that did the printk" rule to the above
-rule. In practice it really doesn't matter, since partial lines are
-rare to begin with. And taking interrupt depth into account is another
-nice tweak. But it's a tweak, it's not important. Nobody really cares,
-but you can try to do a bit better.
+So I was thinking of tracking whether the lease was assigned, probably
+setting the flag in vfs_setlease(), and then changing
+lease_release_private_callback() to check whether the flag was set and
+only resetting the F_SETOWN and F_SETSIG information if the flag was
+set...
 
-And none of the above has to do with *buffering*. The above rules are
-100% the same whether you buffer or not.
+What do you think of that idea?
 
-Sure, with buffering, you can handle the insane cases and try to get
-interspersed partial lines to do the right thing. And Kay did that.
-And it turns out to (a) never matter and (b) cause problems for
-debugging. So just saying "stop doing it" is the no-brainer solution.
-Don't buffer printouts to the display, because bad things may happen
-before the buffer is flushed.
+I just got a quick diff which outlines what I'm thinking of, I haven't
+tested it yet, I'll try to build it and run it to see if it passes the
+testcase. But please let me know what you think of it.
 
-                             Linus
+Cheers,
+Fil
+
+------- >8 cut here -------
+
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 814c51d..242ac84 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -429,7 +429,7 @@ static void lease_break_callback(struct file_lock *fl)
+
+ static void lease_release_private_callback(struct file_lock *fl)
+ {
+-       if (!fl->fl_file)
++       if (!fl->fl_file || !fl->fl_lease_inuse)
+                return;
+
+        f_delown(fl->fl_file);
+@@ -1513,6 +1513,9 @@ int vfs_setlease(struct file *filp, long arg,
+struct file_lock **lease)
+        error = __vfs_setlease(filp, arg, lease);
+        unlock_flocks();
+
++       if (!error)
++               lease->fl_lease_inuse = 1;
++
+        return error;
+ }
+ EXPORT_SYMBOL_GPL(vfs_setlease);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 17fd887..2c577a9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1176,6 +1176,7 @@ struct file_lock {
+        struct list_head fl_block;      /* circular list of blocked processes */
+        fl_owner_t fl_owner;
+        unsigned int fl_flags;
++       unsigned char fl_lease_inuse;
+        unsigned char fl_type;
+        unsigned int fl_pid;
+        struct pid *fl_nspid;
