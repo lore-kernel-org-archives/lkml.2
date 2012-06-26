@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758381Ab2FZHUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 03:20:35 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:35376 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757142Ab2FZHUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 03:20:32 -0400
-Message-ID: <4FE9621D.2050002@parallels.com>
-Date: Tue, 26 Jun 2012 11:17:49 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1758420Ab2FZHUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 03:20:46 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10890 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757100Ab2FZHUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 03:20:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 26 Jun 2012 00:20:31 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>, <olof@lixom.net>, <ccross@android.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <pgaikwad@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] ARM: tegra: dma: rename driver name for clock to "tegra-apbdma".
+Date: Tue, 26 Jun 2012 12:48:32 +0530
+Message-ID: <1340695112-28270-2-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1340695112-28270-1-git-send-email-ldewangan@nvidia.com>
+References: <1340695112-28270-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 00/11] kmem controller for memcg: stripped down version
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org>
-In-Reply-To: <20120625162745.eabe4f03.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.9.3]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 03:27 AM, Andrew Morton wrote:
-> On Mon, 25 Jun 2012 18:15:17 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
->
->> What I am proposing with this series is a stripped down version of the
->> kmem controller for memcg that would allow us to merge significant parts
->> of the infrastructure, while leaving out, for now, the polemic bits about
->> the slab while it is being reworked by Cristoph.
->>
->> Me reasoning for that is that after the last change to introduce a gfp
->> flag to mark kernel allocations, it became clear to me that tracking other
->> resources like the stack would then follow extremely naturaly. I figured
->> that at some point we'd have to solve the issue pointed by David, and avoid
->> testing the Slab flag in the page allocator, since it would soon be made
->> more generic. I do that by having the callers to explicit mark it.
->>
->> So to demonstrate how it would work, I am introducing a stack tracker here,
->> that is already a functionality per-se: it successfully stops fork bombs to
->> happen. (Sorry for doing all your work, Frederic =p ). Note that after all
->> memcg infrastructure is deployed, it becomes very easy to track anything.
->> The last patch of this series is extremely simple.
->>
->> The infrastructure is exactly the same we had in memcg, but stripped down
->> of the slab parts. And because what we have after those patches is a feature
->> per-se, I think it could be considered for merging.
->
-> hm.  None of this new code makes the kernel smaller, faster, easier to
-> understand or more fun to read!
-Not sure if this is a general comment - in case I agree - or if targeted 
-to my statement that this is "stripped down". If so, it is of course 
-smaller relative to my previous slab accounting patches.
+Rename the driver name of the clock entry of Tegra APBDMA to
+tegra-apbdma from of tegra-dma.
 
-The infrastructure is largely common, but I realized that a future user,
-tracking the stack, would be a lot simpler and could be done first.
+This name is more aligned towards the movement of dmaengine based
+new DMA driver.
 
-> Presumably we're getting some benefit for all the downside.  When the
-> time is appropriate, please do put some time into explaining that
-> benefit, so that others can agree that it is a worthwhile tradeoff.
->
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/mach-tegra/dma.c            |    2 +-
+ arch/arm/mach-tegra/tegra2_clocks.c  |    2 +-
+ arch/arm/mach-tegra/tegra30_clocks.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Well, for one thing, we stop fork bombs for processes inside cgroups.
-I think the justification for that was already given when you asked 
-people about reasoning for merging Frederic's process tracking cgroup.
-
-Just that wasn't merged because people were largely unhappy with the 
-form it took. I can't speak for everybody here, but AFAIK, tracking the 
-stack through the memory it used, therefore using my proposed kmem 
-controller, was an idea that good quite a bit of traction with the 
-memcg/memory people. So here you have something that people already 
-asked a lot for, in a shape and interface that seem to be acceptable.
-
+diff --git a/arch/arm/mach-tegra/dma.c b/arch/arm/mach-tegra/dma.c
+index 2698d7d..29c5114 100644
+--- a/arch/arm/mach-tegra/dma.c
++++ b/arch/arm/mach-tegra/dma.c
+@@ -714,7 +714,7 @@ int __init tegra_dma_init(void)
+ 
+ 	bitmap_fill(channel_usage, NV_DMA_MAX_CHANNELS);
+ 
+-	c = clk_get_sys("tegra-dma", NULL);
++	c = clk_get_sys("tegra-apbdma", NULL);
+ 	if (IS_ERR(c)) {
+ 		pr_err("Unable to get clock for APB DMA\n");
+ 		ret = PTR_ERR(c);
+diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
+index b59315c..91281ab 100644
+--- a/arch/arm/mach-tegra/tegra2_clocks.c
++++ b/arch/arm/mach-tegra/tegra2_clocks.c
+@@ -2149,7 +2149,7 @@ static struct clk tegra_clk_emc = {
+ 	}
+ 
+ static struct clk tegra_list_clks[] = {
+-	PERIPH_CLK("apbdma",	"tegra-dma",		NULL,	34,	0,	108000000, mux_pclk,			0),
++	PERIPH_CLK("apbdma",	"tegra-apbdma",		NULL,	34,	0,	108000000, mux_pclk,			0),
+ 	PERIPH_CLK("rtc",	"rtc-tegra",		NULL,	4,	0,	32768,     mux_clk_32k,			PERIPH_NO_RESET),
+ 	PERIPH_CLK("timer",	"timer",		NULL,	5,	0,	26000000,  mux_clk_m,			0),
+ 	PERIPH_CLK("i2s1",	"tegra20-i2s.0",	NULL,	11,	0x100,	26000000,  mux_pllaout0_audio2x_pllp_clkm,	MUX | DIV_U71),
+diff --git a/arch/arm/mach-tegra/tegra30_clocks.c b/arch/arm/mach-tegra/tegra30_clocks.c
+index e33fe4b..d622423 100644
+--- a/arch/arm/mach-tegra/tegra30_clocks.c
++++ b/arch/arm/mach-tegra/tegra30_clocks.c
+@@ -2871,7 +2871,7 @@ static struct clk tegra30_clk_twd = {
+ 		},					\
+ 	}
+ struct clk tegra_list_clks[] = {
+-	PERIPH_CLK("apbdma",	"tegra-dma",		NULL,	34,	0,	26000000,  mux_clk_m,			0),
++	PERIPH_CLK("apbdma",	"tegra-apbdma",		NULL,	34,	0,	26000000,  mux_clk_m,			0),
+ 	PERIPH_CLK("rtc",	"rtc-tegra",		NULL,	4,	0,	32768,     mux_clk_32k,			PERIPH_NO_RESET | PERIPH_ON_APB),
+ 	PERIPH_CLK("kbc",	"tegra-kbc",		NULL,	36,	0,	32768,     mux_clk_32k,			PERIPH_NO_RESET | PERIPH_ON_APB),
+ 	PERIPH_CLK("timer",	"timer",		NULL,	5,	0,	26000000,  mux_clk_m,			0),
+-- 
+1.7.1.1
 
