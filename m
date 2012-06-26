@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab2FZJRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 05:17:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49768 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754798Ab2FZJRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 05:17:31 -0400
-X-IronPort-AV: E=Sophos;i="4.77,476,1336320000"; 
-   d="scan'208";a="5266089"
-Message-ID: <4FE97F34.9090209@cn.fujitsu.com>
-Date: Tue, 26 Jun 2012 17:21:56 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1755960Ab2FZJRt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 05:17:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46837 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2FZJRr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 05:17:47 -0400
+Date: Tue, 26 Jun 2012 02:17:45 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Glauber Costa <glommer@parallels.com>
+cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Tejun Heo <tj@kernel.org>, Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 02/11] memcg: Reclaim when more than one page needed.
+In-Reply-To: <4FE97C20.8010500@parallels.com>
+Message-ID: <alpine.DEB.2.00.1206260214310.16020@chino.kir.corp.google.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-3-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206252106430.26640@chino.kir.corp.google.com> <4FE960D6.4040409@parallels.com>
+ <alpine.DEB.2.00.1206260146010.16020@chino.kir.corp.google.com> <4FE97C20.8010500@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: lenb@kernel.org, linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [PATCH 6/8] bind the memory device when the driver is being loaded
-References: <4FE97DD5.6030205@cn.fujitsu.com>
-In-Reply-To: <4FE97DD5.6030205@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/26 17:17:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/26 17:17:44,
-	Serialize complete at 2012/06/26 17:17:44
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We introduce acpi_hotmem_initialized to avoid strange add_memory fail message.
-The stranged add_memory fail message is printed in register_memory_resource().
-We have removed this message in the previous patch, so we can remove
-it(it is very useful to the next patch).
+On Tue, 26 Jun 2012, Glauber Costa wrote:
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- drivers/acpi/acpi_memhotplug.c |   12 ------------
- 1 files changed, 0 insertions(+), 12 deletions(-)
+> > Nope, have you checked the output of /sys/kernel/slab/.../order when
+> > running slub?  On my workstation 127 out of 316 caches have order-2 or
+> > higher by default.
+> > 
+> 
+> Well, this is still on the side of my argument, since this is still a majority
+> of them being low ordered.
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 2e5d5ab..148c88a 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -87,8 +87,6 @@ struct acpi_memory_device {
- 	struct list_head res_list;
- };
- 
--static int acpi_hotmem_initialized;
--
- static acpi_status
- acpi_memory_get_resource(struct acpi_resource *resource, void *context)
- {
-@@ -463,15 +461,6 @@ static int acpi_memory_device_add(struct acpi_device *device)
- 
- 	printk(KERN_DEBUG "%s \n", acpi_device_name(device));
- 
--	/*
--	 * Early boot code has recognized memory area by EFI/E820.
--	 * If DSDT shows these memory devices on boot, hotplug is not necessary
--	 * for them. So, it just returns until completion of this driver's
--	 * start up.
--	 */
--	if (!acpi_hotmem_initialized)
--		return 0;
--
- 	if (!acpi_memory_check_device(mem_device)) {
- 		/* call add_memory func */
- 		result = acpi_memory_enable_device(mem_device);
-@@ -578,7 +567,6 @@ static int __init acpi_memory_device_init(void)
- 		return -ENODEV;
- 	}
- 
--	acpi_hotmem_initialized = 1;
- 	return 0;
- }
- 
--- 
-1.7.1
+Ok, so what happens if I pass slub_min_order=2 on the command line?  We 
+never retry?
 
+> The code here does not necessarily have to retry -
+> if I understand it correctly - we just retry for very small allocations
+> because that is where our likelihood of succeeding is.
+> 
+
+Well, the comment for NR_PAGES_TO_RETRY says
+
+	/*
+	 * We need a number that is small enough to be likely to have been
+	 * reclaimed even under pressure, but not too big to trigger unnecessary 
+	 * retries
+	 */
+
+and mmzone.h says
+
+	/*
+	 * PAGE_ALLOC_COSTLY_ORDER is the order at which allocations are deemed
+	 * costly to service.  That is between allocation orders which should
+	 * coalesce naturally under reasonable reclaim pressure and those which
+	 * will not.
+	 */
+	#define PAGE_ALLOC_COSTLY_ORDER 3
+
+so I'm trying to reconcile which one is correct.
