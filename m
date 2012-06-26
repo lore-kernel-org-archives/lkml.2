@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab2FZRFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 13:05:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56257 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758126Ab2FZRFw (ORCPT
+	id S1758814Ab2FZRGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 13:06:05 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:10213 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758499Ab2FZRGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 13:05:52 -0400
-Message-ID: <4FE9EBEC.9040208@wwwdotorg.org>
-Date: Tue, 26 Jun 2012 11:05:48 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 26 Jun 2012 13:06:01 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-209.messagelabs.com!1340730358!6540795!6
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] staging: comedi: cd_das16_cs: additional cleanup
+Date: Tue, 26 Jun 2012 10:05:34 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] pinctrl: Add one-register-per-pin type device tree based
- pinctrl driver
-References: <20120611135826.GB12766@atomide.com> <4FDA6FCD.1020605@wwwdotorg.org> <20120615094938.GQ12766@atomide.com> <4FDB6000.5080703@wwwdotorg.org> <20120618055036.GU12766@atomide.com> <20120619135600.GX12766@atomide.com> <4FE39C86.5070901@wwwdotorg.org> <20120622083955.GZ12766@atomide.com> <4FE4AC40.8080400@wwwdotorg.org> <20120626134319.GA3483@atomide.com>
-In-Reply-To: <20120626134319.GA3483@atomide.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206261005.35947.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 07:43 AM, Tony Lindgren wrote:
-...
-> Subject: [PATCH] pinctrl: Add one-register-per-pin type device tree based pinctrl driver
-> 
-> Add one-register-per-pin type device tree based pinctrl driver.
-> 
-> This driver has been tested on omap2+ series of processors,
-> where there is either an 8 or 16-bit padconf register for each pin.
-> Support for other similar pinmux controllers can be added.
+Fix a couple minor issues in cb_das16_cs driver that were
+pointed out by Ian Abbott.
 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt
+This is an incremental patch to the series:
 
-> +/* board specific .dts file */
-> +
-> +&pmx_core {
+[PATCH 00/33] staging: comedi: cb_das16_cs: cleanup the driver
 
-> +	board_pins: pinmux_board_pins {
-> +		pinctrl-single,pins = <
-> +			0x6c 0xf	/* csi21_dx3 OUTPUT | MODE7 */
-> +			0x6e 0xf	/* csi21_dy3 OUTPUT | MODE7 */
-> +			0x70 0xf	/* csi21_dx4 OUTPUT | MODE7 */
-> +			0x72 0xf	/* csi21_dy4 OUTPUT | MODE7 */
+H Hartley Sweeten (2):
+  staging: comedi: cb_das16_cs: reword the comment about PCMCIA support
+  staging: comedi: cb_das16_cs: remove unneeded default case in analog
+    in read
 
-If you're removing the pinconf mask, I think the comments in the example
-should reflect just setting a particular mux function, and remove any
-references to pinconf settings in that field. While the binding can be
-abused to do that, I think the docs shouldn't encourage it:-)
+ drivers/staging/comedi/drivers/cb_das16_cs.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Other than that, the binding looks reasonable to me, given what it's
-intended to do.
+-- 
+1.7.11
 
-However, I'd still like Grant and Rob (and any other DT experts) to
-explicitly sign off on this binding, because it's doing exactly
-something that was rejected at Linaro Connect in February (albeit the
-binding is slightly more oriented at specifically being for pinmux
-rather than a fully general "blast in these register values", but that
-distinction seems minor to me).
