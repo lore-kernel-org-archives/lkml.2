@@ -1,189 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab2FZOEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 10:04:40 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52485 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757292Ab2FZOEi (ORCPT
+	id S1757515Ab2FZOG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 10:06:29 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58622 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab2FZOG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 10:04:38 -0400
-Message-ID: <4FE9C172.5060306@gmail.com>
-Date: Tue, 26 Jun 2012 09:04:34 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mitch Bradley <wmb@firmworks.com>
-CC: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>
-Subject: Re: [RFC 2/2] usb: gadget: composite: parse dt overrides
-References: <1340655832-30447-1-git-send-email-aletes.xgr@gmail.com> <4FE8F90B.2010303@gmail.com> <4FE94AE3.9010000@firmworks.com>
-In-Reply-To: <4FE94AE3.9010000@firmworks.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jun 2012 10:06:27 -0400
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Subject: [PATCH v3] spi/pl022: add devicetree support
+Date: Tue, 26 Jun 2012 11:05:36 -0300
+Message-Id: <1340719537-627-1-git-send-email-aletes.xgr@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 12:38 AM, Mitch Bradley wrote:
-> On 6/25/2012 1:49 PM, Rob Herring wrote:
->> On 06/25/2012 03:23 PM, Alexandre Pereira da Silva wrote:
->>> Grab the devicetree node properties to override VendorId, ProductId,
->>> bcdDevice, Manucacturer, Product and SerialNumber
->>>
->>> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
->>> ---
->>>   drivers/usb/gadget/composite.c |   31 +++++++++++++++++++++++++++++++
->>>   1 file changed, 31 insertions(+)
->>
->> Are these bindings documented? I think they should be less generic.
->> Perhaps prefixed with 'usb-'.
-> 
-> There is precedent for the following properties in the USB node, namely
-> the device tree that has been used on OLPC systems for the past several
-> years.  Also, I think that Sun machines from the same timeframe use the
-> same property names, based on the fact that Sun is using my USB 2.0 OFW
-> driver code.
+Add the chipselect array and cur_cs properties to pl022 main structure
 
-Thanks, I wasn't aware of that.
+Add a wrapper function to decide if the cs should be controlled by the
+cs_control callback or the chipselect gpio
 
-> Here's a listing of the properties of a representative USB child device,
-> in this case a USB FLASH drive.
-> 
-> configuration#           00000001
-> bulk-out-size            00000200
-> bulk-out-pipe            00000001
-> bulk-in-size             00000200
-> bulk-in-pipe             00000001
-> serial$                  200435137016ae938861
-> device$                  Cruzer Mini
-> vendor$                  SanDisk Corporation
-> compatible               usb781,5150.20
->                          usb781,5150
->                          usbif781,class8.6.50
->                          usbif781,class8.6
->                          usbif781,class8
->                          usbif,class8.6.50
->                          usbif,class8.6
->                          usbif,class8
->                          usb,device
-> vendor-id                00000781
-> device-id                00005150
-> release                  00000020
-> name                     scsi
-> class                    00000008
-> subclass                 00000006
-> protocol                 00000050
-> high-speed
-> assigned-address         00000002
-> reg                      00000003 00000000
-> #size-cells              00000000
-> #address-cells           00000001
-> 
-> Note that:
-> 
-> a) The separator in "vendor-id" is hyphen, not underscore, in keeping
-> with the established property naming convention (except for the
-> unfortunate "device_type").
-> 
-> b) There is no "usb," prefix, since the presence of this in a device
-> node that is a child of a USB bus implicitly identifies the kind of ID.
->  "vendor-id" and "device-id" in PCI bus child devices is similarly
-> un-prefixed.
+Populate chipselect property from cs-gpios
 
-Okay.
+Populate master->dev.of_node, so the spi bus can find child spi
+devices and register them
 
-> c) Some of these property names are defined in
-> http://www.openfirmware.org/ofwg/bindings/usb/usb-1_0.ps
-> 
+At pl022 setup, fill chip_data structure from dt nodes, if not provided
+by platform.
 
-We should refer back to this as appropriate, but document what is not
-standard. Having an example is useful as well. The original doc was
-about describing a device to the host. This case is describing the
-device to the device. Perhaps these are the same, but if there are
-differences we need to capture that.
+Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Tested-by: Roland Stigge <stigge@antcom.de>
+---
+Applies to v3.5-rc4
 
-Rob
+Changes since v2:
+* Use IS_ENABLED instead of #ifdef
+* Remove bogus const change
 
-> 
-> 
-> 
->>
->>>
->>> diff --git a/drivers/usb/gadget/composite.c
->>> b/drivers/usb/gadget/composite.c
->>> index 390749b..f3b480e 100644
->>> --- a/drivers/usb/gadget/composite.c
->>> +++ b/drivers/usb/gadget/composite.c
->>> @@ -17,6 +17,7 @@
->>>   #include <linux/module.h>
->>>   #include <linux/device.h>
->>>   #include <linux/utsname.h>
->>> +#include <linux/of.h>
->>>
->>>   #include <linux/usb/composite.h>
->>>   #include <asm/unaligned.h>
->>> @@ -1423,6 +1424,7 @@ static int composite_bind(struct usb_gadget
->>> *gadget)
->>>   {
->>>       struct usb_composite_dev    *cdev;
->>>       int                status = -ENOMEM;
->>> +    struct device_node        *np = gadget->dev.of_node;
->>>
->>>       cdev = kzalloc(sizeof *cdev, GFP_KERNEL);
->>>       if (!cdev)
->>> @@ -1470,6 +1472,35 @@ static int composite_bind(struct usb_gadget
->>> *gadget)
->>>
->>>       cdev->desc = *composite->dev;
->>>
->>> +    /* grab overrides from devicetree */
->>
->> Reading the code, it looks more like the DT entries are defaults rather
->> than overrides.
->>
->>> +    if (np) {
->>> +        u32 reg;
->>> +
->>> +        if (!idVendor &&
->>> +            of_property_read_u32(np, "vendor_id", &reg) == 0)
->>> +            idVendor = reg;
->>
->> if (!idVendor)
->>     of_property_read_u32(np, "vendor_id", &idVendor);
->>
->> Rob
->>
->>> +
->>> +        if (!idProduct &&
->>> +            of_property_read_u32(np, "product_id", &reg) == 0)
->>> +            idProduct = reg;
->>> +
->>> +        if (!bcdDevice &&
->>> +            of_property_read_u32(np, "bcd_device", &reg) == 0)
->>> +            bcdDevice = reg;
->>> +
->>> +        if (!iManufacturer)
->>> +            of_property_read_string(np, "manufacturer",
->>> +                &iManufacturer);
->>> +
->>> +        if (!iProduct)
->>> +            of_property_read_string(np, "product",
->>> +                &iProduct);
->>> +
->>> +        if (!iSerialNumber)
->>> +            of_property_read_string(np, "serial_number",
->>> +                &iSerialNumber);
->>> +    }
->>> +
->>>       /* standardized runtime overrides for device ID data */
->>>       if (idVendor)
->>>           cdev->desc.idVendor = cpu_to_le16(idVendor);
->> _______________________________________________
->> devicetree-discuss mailing list
->> devicetree-discuss@lists.ozlabs.org
->> https://lists.ozlabs.org/listinfo/devicetree-discuss
->>
-> 
+Changes since v1:
+* return EPROBE_DEFFER if gpios are not initialized yet
+
+Thanks Thierry Reding for reviewing and improvements suggestions
+
+ .../devicetree/bindings/spi/spi_pl022.txt          |   15 +++
+ drivers/spi/spi-pl022.c                            |  115 ++++++++++++++++----
+ 2 files changed, 111 insertions(+), 19 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/spi/spi_pl022.txt b/Documentation/devicetree/bindings/spi/spi_pl022.txt
+index 306ec3f..b089ec7 100644
+--- a/Documentation/devicetree/bindings/spi/spi_pl022.txt
++++ b/Documentation/devicetree/bindings/spi/spi_pl022.txt
+@@ -6,7 +6,22 @@ Required properties:
+ - interrupts : Should contain SPI controller interrupt
+ 
+ Optional properties:
++- pl022,num-chipselects : total number of chipselects
+ - cs-gpios : should specify GPIOs used for chipselects.
+   The gpios will be referred to as reg = <index> in the SPI child nodes.
+   If unspecified, a single SPI device without a chip select can be used.
+ 
++SPI slave nodes must be children of the SPI master node and can
++contain the following properties.
++See include/linux/amba/pl022.h for more details
++
++- pl022,hierarchy : master or slave interface
++- pl022,interface : interface type
++- pl022,slave-tx-disable : disconnect tx line in slave mode
++- pl022,com-mode : polling, interrupt or dma
++- pl022,rx-level-trig : Rx FIFO watermark level
++- pl022,tx-level-trig : Tx FIFO watermark level
++- pl022,ctrl-len : Microwire interface: Control length
++- pl022,wait-state : Microwire interface: Wait state
++- pl022,duplex : Microwire interface: Full/Half duplex
++
+diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+index 400ae21..fa11d0f 100644
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -40,6 +40,8 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/scatterlist.h>
+ #include <linux/pm_runtime.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
+ 
+ /*
+  * This macro is used to define some register default values.
+@@ -389,6 +391,8 @@ struct pl022 {
+ 	char				*dummypage;
+ 	bool				dma_running;
+ #endif
++	int cur_cs;
++	int chipselect[0];
+ };
+ 
+ /**
+@@ -433,6 +437,14 @@ static void null_cs_control(u32 command)
+ 	pr_debug("pl022: dummy chip select control, CS=0x%x\n", command);
+ }
+ 
++static void pl022_cs_control(struct pl022 *pl022, u32 command)
++{
++	if (gpio_is_valid(pl022->cur_cs))
++		gpio_set_value(pl022->cur_cs, command);
++	else
++		pl022->cur_chip->cs_control(command);
++}
++
+ /**
+  * giveback - current spi_message is over, schedule next message and call
+  * callback of this message. Assumes that caller already
+@@ -479,7 +491,7 @@ static void giveback(struct pl022 *pl022)
+ 		if (next_msg && next_msg->spi != pl022->cur_msg->spi)
+ 			next_msg = NULL;
+ 		if (!next_msg || pl022->cur_msg->state == STATE_ERROR)
+-			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
++			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+ 		else
+ 			pl022->next_msg_cs_active = true;
+ 
+@@ -813,8 +825,7 @@ static void dma_callback(void *data)
+ 	/* Update total bytes transferred */
+ 	msg->actual_length += pl022->cur_transfer->len;
+ 	if (pl022->cur_transfer->cs_change)
+-		pl022->cur_chip->
+-			cs_control(SSP_CHIP_DESELECT);
++		pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+ 
+ 	/* Move to next transfer */
+ 	msg->state = next_transfer(pl022);
+@@ -1247,8 +1258,7 @@ static irqreturn_t pl022_interrupt_handler(int irq, void *dev_id)
+ 		/* Update total bytes transferred */
+ 		msg->actual_length += pl022->cur_transfer->len;
+ 		if (pl022->cur_transfer->cs_change)
+-			pl022->cur_chip->
+-				cs_control(SSP_CHIP_DESELECT);
++			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+ 		/* Move to next transfer */
+ 		msg->state = next_transfer(pl022);
+ 		tasklet_schedule(&pl022->pump_transfers);
+@@ -1333,7 +1343,7 @@ static void pump_transfers(unsigned long data)
+ 
+ 		/* Reselect chip select only if cs_change was requested */
+ 		if (previous->cs_change)
+-			pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
++			pl022_cs_control(pl022, SSP_CHIP_SELECT);
+ 	} else {
+ 		/* STATE_START */
+ 		message->state = STATE_RUNNING;
+@@ -1372,7 +1382,7 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
+ 
+ 	/* Enable target chip, if not already active */
+ 	if (!pl022->next_msg_cs_active)
+-		pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
++		pl022_cs_control(pl022, SSP_CHIP_SELECT);
+ 
+ 	if (set_up_next_transfer(pl022, pl022->cur_transfer)) {
+ 		/* Error path */
+@@ -1424,12 +1434,12 @@ static void do_polling_transfer(struct pl022 *pl022)
+ 			if (previous->delay_usecs)
+ 				udelay(previous->delay_usecs);
+ 			if (previous->cs_change)
+-				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
++				pl022_cs_control(pl022, SSP_CHIP_SELECT);
+ 		} else {
+ 			/* STATE_START */
+ 			message->state = STATE_RUNNING;
+ 			if (!pl022->next_msg_cs_active)
+-				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
++				pl022_cs_control(pl022, SSP_CHIP_SELECT);
+ 		}
+ 
+ 		/* Configuration Changing Per Transfer */
+@@ -1461,7 +1471,7 @@ static void do_polling_transfer(struct pl022 *pl022)
+ 		/* Update total byte transferred */
+ 		message->actual_length += pl022->cur_transfer->len;
+ 		if (pl022->cur_transfer->cs_change)
+-			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
++			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+ 		/* Move to next transfer */
+ 		message->state = next_transfer(pl022);
+ 	}
+@@ -1490,6 +1500,7 @@ static int pl022_transfer_one_message(struct spi_master *master,
+ 
+ 	/* Setup the SPI using the per chip configuration */
+ 	pl022->cur_chip = spi_get_ctldata(msg->spi);
++	pl022->cur_cs = pl022->chipselect[msg->spi->chip_select];
+ 
+ 	restore_state(pl022);
+ 	flush(pl022);
+@@ -1761,12 +1772,14 @@ static const struct pl022_config_chip pl022_default_chip_info = {
+ static int pl022_setup(struct spi_device *spi)
+ {
+ 	struct pl022_config_chip const *chip_info;
++	struct pl022_config_chip chip_info_dt;
+ 	struct chip_data *chip;
+ 	struct ssp_clock_params clk_freq = { .cpsdvsr = 0, .scr = 0};
+ 	int status = 0;
+ 	struct pl022 *pl022 = spi_master_get_devdata(spi->master);
+ 	unsigned int bits = spi->bits_per_word;
+ 	u32 tmp;
++	struct device_node *np = spi->dev.of_node;
+ 
+ 	if (!spi->max_speed_hz)
+ 		return -EINVAL;
+@@ -1789,10 +1802,36 @@ static int pl022_setup(struct spi_device *spi)
+ 	chip_info = spi->controller_data;
+ 
+ 	if (chip_info == NULL) {
+-		chip_info = &pl022_default_chip_info;
+-		/* spi_board_info.controller_data not is supplied */
+-		dev_dbg(&spi->dev,
+-			"using default controller_data settings\n");
++		if (np) {
++			chip_info_dt = pl022_default_chip_info;
++
++			of_property_read_u32(np, "pl022,hierarchy",
++				&chip_info_dt.hierarchy);
++			of_property_read_u32(np, "pl022,interface",
++				&chip_info_dt.iface);
++			chip_info_dt.slave_tx_disable =
++				of_property_read_bool(np,
++					"pl022,slave-tx-disable");
++			of_property_read_u32(np, "pl022,com-mode",
++				&chip_info_dt.com_mode);
++			of_property_read_u32(np, "pl022,rx-level-trig",
++				&chip_info_dt.rx_lev_trig);
++			of_property_read_u32(np, "pl022,tx-level-trig",
++				&chip_info_dt.tx_lev_trig);
++			of_property_read_u32(np, "pl022,ctrl-len",
++				&chip_info_dt.ctrl_len);
++			of_property_read_u32(np, "pl022,wait-state",
++				&chip_info_dt.wait_state);
++			of_property_read_u32(np, "pl022,duplex",
++				&chip_info_dt.duplex);
++
++			chip_info = &chip_info_dt;
++		} else {
++			chip_info = &pl022_default_chip_info;
++			/* spi_board_info.controller_data not is supplied */
++			dev_dbg(&spi->dev,
++				"using default controller_data settings\n");
++		}
+ 	} else
+ 		dev_dbg(&spi->dev,
+ 			"using user supplied controller_data settings\n");
+@@ -1835,8 +1874,9 @@ static int pl022_setup(struct spi_device *spi)
+ 	chip->xfer_type = chip_info->com_mode;
+ 	if (!chip_info->cs_control) {
+ 		chip->cs_control = null_cs_control;
+-		dev_warn(&spi->dev,
+-			 "chip select function is NULL for this chip\n");
++		if (!gpio_is_valid(pl022->chipselect[spi->chip_select]))
++			dev_warn(&spi->dev,
++				 "chip select function is NULL for this chip\n");
+ 	} else
+ 		chip->cs_control = chip_info->cs_control;
+ 
+@@ -1988,7 +2028,8 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+ 	struct pl022_ssp_controller *platform_info = adev->dev.platform_data;
+ 	struct spi_master *master;
+ 	struct pl022 *pl022 = NULL;	/*Data for this driver */
+-	int status = 0;
++	struct device_node *np = adev->dev.of_node;
++	int status = 0, i, num_cs;
+ 
+ 	dev_info(&adev->dev,
+ 		 "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
+@@ -1998,8 +2039,14 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+ 		goto err_no_pdata;
+ 	}
+ 
++	num_cs = platform_info->num_chipselect;
++#if IS_ENABLED(CONFIG_OF)
++	of_property_read_u32(np, "pl022,num-chipselects", &num_cs);
++#endif
++
+ 	/* Allocate master with space for data */
+-	master = spi_alloc_master(dev, sizeof(struct pl022));
++	master = spi_alloc_master(dev,
++		sizeof(struct pl022) + sizeof(int) * num_cs);
+ 	if (master == NULL) {
+ 		dev_err(&adev->dev, "probe - cannot alloc SPI master\n");
+ 		status = -ENOMEM;
+@@ -2017,13 +2064,40 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+ 	 * on this board
+ 	 */
+ 	master->bus_num = platform_info->bus_id;
+-	master->num_chipselect = platform_info->num_chipselect;
++	master->num_chipselect = num_cs;
+ 	master->cleanup = pl022_cleanup;
+ 	master->setup = pl022_setup;
+ 	master->prepare_transfer_hardware = pl022_prepare_transfer_hardware;
+ 	master->transfer_one_message = pl022_transfer_one_message;
+ 	master->unprepare_transfer_hardware = pl022_unprepare_transfer_hardware;
+ 	master->rt = platform_info->rt;
++	master->dev.of_node = dev->of_node;
++
++#if IS_ENABLED(CONFIG_OF)
++	for (i = 0; i < num_cs; i++) {
++		int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
++
++		if (cs_gpio == -EPROBE_DEFER) {
++			status = -EPROBE_DEFER;
++			goto err_no_gpio;
++		}
++
++		pl022->chipselect[i] = cs_gpio;
++
++		if (gpio_is_valid(cs_gpio)) {
++			if (gpio_request(cs_gpio, "ssp-pl022"))
++				dev_err(&adev->dev,
++					"could not request %d gpio\n", cs_gpio);
++			else if (gpio_direction_output(cs_gpio, 1))
++				dev_err(&adev->dev,
++					"could set gpio %d as output\n",
++					cs_gpio);
++		}
++	}
++#else
++	for (i = 0; i < num_cs; i++)
++		pl022->chipselect[i] = -EINVAL;
++#endif
+ 
+ 	/*
+ 	 * Supports mode 0-3, loopback, and active low CS. Transfers are
+@@ -2130,6 +2204,9 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+  err_no_ioremap:
+ 	amba_release_regions(adev);
+  err_no_ioregion:
++ #if IS_ENABLED(CONFIG_OF)
++ err_no_gpio:
++ #endif
+ 	spi_master_put(master);
+  err_no_master:
+  err_no_pdata:
+-- 
+1.7.10
 
