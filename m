@@ -1,114 +1,753 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2FZU0k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 16:26:40 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:50854 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab2FZU0j (ORCPT
+	id S1753709Ab2FZUdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 16:33:17 -0400
+Received: from mail-bk0-f74.google.com ([209.85.214.74]:56230 "EHLO
+	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab2FZUdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 16:26:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6754"; a="202480514"
-X-IronPort-AV: E=Sophos;i="4.77,478,1336374000"; 
-   d="scan'208";a="121513322"
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-To: Ben Hutchings <bhutchings@solarflare.com>,
-        "Ren, Cloud" <cjren@qca.qualcomm.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>
-Subject: RE: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
-Thread-Topic: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
-Thread-Index: AQHNU23awMaUWTNR4USicRkgHiyKw5cNgacA//+K4RCAAABWoA==
-Date: Tue, 26 Jun 2012 20:26:37 +0000
-Message-ID: <157393863283F442885425D2C454285623DB4993@NASANEXD02A.na.qualcomm.com>
-References: <1340724786-3819-1-git-send-email-cjren@qca.qualcomm.com>
- <1340742224.2644.1.camel@bwh-desktop.uk.solarflarecom.com>
- <157393863283F442885425D2C454285623DB4982@NASANEXD02A.na.qualcomm.com>
-In-Reply-To: <157393863283F442885425D2C454285623DB4982@NASANEXD02A.na.qualcomm.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [199.106.115.219]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Tue, 26 Jun 2012 16:33:15 -0400
+From: Frank Swiderski <fes@google.com>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, riel@redhat.com,
+        Andrea Arcangeli <aarcange@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, mikew@google.com,
+        Frank Swiderski <fes@google.com>
+Subject: [PATCH] Add a page cache-backed balloon device driver.
+Date: Tue, 26 Jun 2012 13:32:58 -0700
+Message-Id: <1340742778-11282-1-git-send-email-fes@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5QKQjKg007519
 
-Sorry, my mean , another fix is to remove netif_stop_queue when cable link is down.
+This implementation of a virtio balloon driver uses the page cache to
+"store" pages that have been released to the host.  The communication
+(outside of target counts) is one way--the guest notifies the host when
+it adds a page to the page cache, allowing the host to madvise(2) with
+MADV_DONTNEED.  Reclaim in the guest is therefore automatic and implicit
+(via the regular page reclaim).  This means that inflating the balloon
+is similar to the existing balloon mechanism, but the deflate is
+different--it re-uses existing Linux kernel functionality to
+automatically reclaim.
 
-Thanks
-Xiong
-> -----Original Message-----
-> From: Huang, Xiong
-> Sent: Wednesday, June 27, 2012 4:25
-> To: Ben Hutchings; Ren, Cloud
-> Cc: davem@davemloft.net; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; qca-linux-team; nic-devel
-> Subject: RE: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
-> 
-> Yes, another fix to remove netif_stop_queue when cable link is down.
-> 
-> -Xiong
-> 
-> > -----Original Message-----
-> > From: Ben Hutchings [mailto:bhutchings@solarflare.com]
-> > Sent: Wednesday, June 27, 2012 4:24
-> > To: Ren, Cloud
-> > Cc: davem@davemloft.net; netdev@vger.kernel.org; linux-
-> > kernel@vger.kernel.org; qca-linux-team; nic-devel; Huang, Xiong
-> > Subject: Re: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed
-> > out
-> >
-> > On Tue, 2012-06-26 at 12:33 -0300, Ren, Cloud wrote:
-> > > From: xiong <xiong@qca.qualcomm.com>
-> > >
-> > > some people report atl1c could cause system hang with following
-> > > kernel trace info:
-> > > ---------------------------------------
-> > > WARNING: at.../net/sched/sch_generic.c:258
-> > > dev_watchdog+0x1db/0x1d0()
-> > > ...
-> > > NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out ...
-> > > ---------------------------------------
-> > > This is caused by netif_stop_queue calling when cable Link is down
-> > > but netif_wake_queue isn't called when cable Link is resume.
-> > >
-> > > Signed-off-by: xiong <xiong@qca.qualcomm.com>
-> > > Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
-> > > ---
-> > >  drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    2 ++
-> > >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> > > b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> > > index 85717cb..c2736c4 100644
-> > > --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> > > +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> > > @@ -351,6 +351,8 @@ static void atl1c_common_task(struct work_struct
-> > *work)
-> > >  		atl1c_irq_disable(adapter);
-> > >  		atl1c_check_link_status(adapter);
-> > >  		atl1c_irq_enable(adapter);
-> > > +		if (netif_queue_stopped(netdev) && netif_carrier_ok(netdev))
-> > > +			netif_wake_queue(netdev);
-> > >  	}
-> > >  }
-> > >
-> >
-> > Why explicitly stop/start the queue when the link changes?  That's
-> > what link_watch is for.
-> >
-> > Ben.
-> >
-> > --
-> > Ben Hutchings, Staff Engineer, Solarflare Not speaking for my
-> > employer; that's the marketing department's job.
-> > They asked us to note that Solarflare product names are trademarked.
+Signed-off-by: Frank Swiderski <fes@google.com>
+---
+ drivers/virtio/Kconfig              |   13 +
+ drivers/virtio/Makefile             |    1 +
+ drivers/virtio/virtio_fileballoon.c |  636 +++++++++++++++++++++++++++++++++++
+ include/linux/virtio_balloon.h      |    9 +
+ include/linux/virtio_ids.h          |    1 +
+ 5 files changed, 660 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/virtio/virtio_fileballoon.c
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
+index f38b17a..cffa2a7 100644
+--- a/drivers/virtio/Kconfig
++++ b/drivers/virtio/Kconfig
+@@ -35,6 +35,19 @@ config VIRTIO_BALLOON
+ 
+ 	 If unsure, say M.
+ 
++config VIRTIO_FILEBALLOON
++	tristate "Virtio page cache-backed balloon driver"
++	select VIRTIO
++	select VIRTIO_RING
++	---help---
++	 This driver supports decreasing and automatically reclaiming the
++	 memory within a guest VM.  Unlike VIRTIO_BALLOON, this driver instead
++	 tries to maintain a specific target balloon size using the page cache.
++	 This allows the guest to implicitly deflate the balloon by flushing
++	 pages from the cache and touching the page.
++
++	 If unsure, say N.
++
+  config VIRTIO_MMIO
+  	tristate "Platform bus driver for memory mapped virtio devices (EXPERIMENTAL)"
+  	depends on HAS_IOMEM && EXPERIMENTAL
+diff --git a/drivers/virtio/Makefile b/drivers/virtio/Makefile
+index 5a4c63c..7ca0a3f 100644
+--- a/drivers/virtio/Makefile
++++ b/drivers/virtio/Makefile
+@@ -3,3 +3,4 @@ obj-$(CONFIG_VIRTIO_RING) += virtio_ring.o
+ obj-$(CONFIG_VIRTIO_MMIO) += virtio_mmio.o
+ obj-$(CONFIG_VIRTIO_PCI) += virtio_pci.o
+ obj-$(CONFIG_VIRTIO_BALLOON) += virtio_balloon.o
++obj-$(CONFIG_VIRTIO_FILEBALLOON) += virtio_fileballoon.o
+diff --git a/drivers/virtio/virtio_fileballoon.c b/drivers/virtio/virtio_fileballoon.c
+new file mode 100644
+index 0000000..ff252ec
+--- /dev/null
++++ b/drivers/virtio/virtio_fileballoon.c
+@@ -0,0 +1,636 @@
++/* Virtio file (page cache-backed) balloon implementation, inspired by
++ * Dor Loar and Marcelo Tosatti's implementations, and based on Rusty Russel's
++ * implementation.
++ *
++ * This implementation of the virtio balloon driver re-uses the page cache to
++ * allow memory consumed by inflating the balloon to be reclaimed by linux.  It
++ * creates and mounts a bare-bones filesystem containing a single inode.  When
++ * the host requests the balloon to inflate, it does so by "reading" pages at
++ * offsets into the inode mapping's page_tree.  The host is notified when the
++ * pages are added to the page_tree, allowing it (the host) to madvise(2) the
++ * corresponding host memory, reducing the RSS of the virtual machine.  In this
++ * implementation, the host is only notified when a page is added to the
++ * balloon.  Reclaim happens under the existing TTFP logic, which flushes unused
++ * pages in the page cache.  If the host used MADV_DONTNEED, then when the guest
++ * uses the page, the zero page will be mapped in, allowing automatic (and fast,
++ * compared to requiring a host notification via a virtio queue to get memory
++ * back) reclaim.
++ *
++ *  Copyright 2008 Rusty Russell IBM Corporation
++ *  Copyright 2011 Frank Swiderski Google Inc
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ */
++#include <linux/backing-dev.h>
++#include <linux/delay.h>
++#include <linux/file.h>
++#include <linux/freezer.h>
++#include <linux/fs.h>
++#include <linux/jiffies.h>
++#include <linux/kthread.h>
++#include <linux/module.h>
++#include <linux/mount.h>
++#include <linux/pagemap.h>
++#include <linux/slab.h>
++#include <linux/swap.h>
++#include <linux/virtio.h>
++#include <linux/virtio_balloon.h>
++#include <linux/writeback.h>
++
++#define VIRTBALLOON_PFN_ARRAY_SIZE 256
++
++struct virtio_balloon {
++	struct virtio_device *vdev;
++	struct virtqueue *inflate_vq;
++
++	/* Where the ballooning thread waits for config to change. */
++	wait_queue_head_t config_change;
++
++	/* The thread servicing the balloon. */
++	struct task_struct *thread;
++
++	/* Waiting for host to ack the pages we released. */
++	struct completion acked;
++
++	/* The array of pfns we tell the Host about. */
++	unsigned int num_pfns;
++	u32 pfns[VIRTBALLOON_PFN_ARRAY_SIZE];
++
++	struct virtio_balloon_stat stats[VIRTIO_BALLOON_S_NR];
++
++	/* The last page offset read into the mapping's page_tree */
++	unsigned long last_scan_page_array;
++
++	/* The last time a page was reclaimed */
++	unsigned long last_reclaim;
++};
++
++/* Magic number used for the skeleton filesystem in the call to mount_pseudo */
++#define BALLOONFS_MAGIC 0x42414c4c
++
++static struct virtio_device_id id_table[] = {
++	{ VIRTIO_ID_FILE_BALLOON, VIRTIO_DEV_ANY_ID },
++	{ 0 },
++};
++
++/*
++ * The skeleton filesystem contains a single inode, held by the structure below.
++ * Using the containing structure below allows easy access to the struct
++ * virtio_balloon.
++ */
++static struct balloon_inode {
++	struct inode inode;
++	struct virtio_balloon *vb;
++} the_inode;
++
++/*
++ * balloon_alloc_inode is called when the single inode for the skeleton
++ * filesystem is created in init() with the call to new_inode.
++ */
++static struct inode *balloon_alloc_inode(struct super_block *sb)
++{
++	static bool already_inited;
++	/* We should only ever be called once! */
++	BUG_ON(already_inited);
++	already_inited = true;
++	inode_init_once(&the_inode.inode);
++	return &the_inode.inode;
++}
++
++/* Noop implementation of destroy_inode.  */
++static void balloon_destroy_inode(struct inode *inode)
++{
++}
++
++static int balloon_sync_fs(struct super_block *sb, int wait)
++{
++	return filemap_write_and_wait(the_inode.inode.i_mapping);
++}
++
++static const struct super_operations balloonfs_ops = {
++	.alloc_inode	= balloon_alloc_inode,
++	.destroy_inode	= balloon_destroy_inode,
++	.sync_fs	= balloon_sync_fs,
++};
++
++static const struct dentry_operations balloonfs_dentry_operations = {
++};
++
++/*
++ * balloonfs_writepage is called when linux needs to reclaim memory held using
++ * the balloonfs' page cache.
++ */
++static int balloonfs_writepage(struct page *page, struct writeback_control *wbc)
++{
++	the_inode.vb->last_reclaim = jiffies;
++	SetPageUptodate(page);
++	ClearPageDirty(page);
++	/*
++	 * If the page isn't being flushed from the page allocator, go ahead and
++	 * drop it from the page cache anyway.
++	 */
++	if (!wbc->for_reclaim)
++		delete_from_page_cache(page);
++	unlock_page(page);
++	return 0;
++}
++
++/* Nearly no-op implementation of readpage */
++static int balloonfs_readpage(struct file *file, struct page *page)
++{
++	SetPageUptodate(page);
++	unlock_page(page);
++	return 0;
++}
++
++static const struct address_space_operations balloonfs_aops = {
++	.writepage	= balloonfs_writepage,
++	.readpage	= balloonfs_readpage
++};
++
++static struct backing_dev_info balloonfs_backing_dev_info = {
++	.name		= "balloonfs",
++	.ra_pages	= 0,
++	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK
++};
++
++static struct dentry *balloonfs_mount(struct file_system_type *fs_type,
++			 int flags, const char *dev_name, void *data)
++{
++	struct dentry *root;
++	struct inode *inode;
++	root = mount_pseudo(fs_type, "balloon:", &balloonfs_ops,
++			    &balloonfs_dentry_operations, BALLOONFS_MAGIC);
++	inode = root->d_inode;
++	inode->i_mapping->a_ops = &balloonfs_aops;
++	mapping_set_gfp_mask(inode->i_mapping,
++			     (GFP_HIGHUSER | __GFP_NOMEMALLOC));
++	inode->i_mapping->backing_dev_info = &balloonfs_backing_dev_info;
++	return root;
++}
++
++/* The single mounted skeleton filesystem */
++static struct vfsmount *balloon_mnt __read_mostly;
++
++static struct file_system_type balloon_fs_type = {
++	.name =		"balloonfs",
++	.mount =	balloonfs_mount,
++	.kill_sb =	kill_anon_super,
++};
++
++/* Acknowledges a message from the specified virtqueue. */
++static void balloon_ack(struct virtqueue *vq)
++{
++	struct virtio_balloon *vb;
++	unsigned int len;
++
++	vb = virtqueue_get_buf(vq, &len);
++	if (vb)
++		complete(&vb->acked);
++}
++
++/*
++ * Scans the page_tree for the inode's mapping, looking for an offset that is
++ * currently empty, returning that index (or 0 if it could not fill the
++ * request).
++ */
++static unsigned long find_available_inode_page(struct virtio_balloon *vb)
++{
++	unsigned long radix_index, index, max_scan;
++	struct address_space *mapping = the_inode.inode.i_mapping;
++
++	/*
++	 * This function is a serialized call (only happens on the free-to-host
++	 * thread), so no locking is necessary here.
++	 */
++	index = vb->last_scan_page_array;
++	max_scan = totalram_pages - vb->last_scan_page_array;
++
++	/*
++	 * Scan starting at the last scanned offset, then wrap around if
++	 * necessary.
++	 */
++	if (index == 0)
++		index = 1;
++	rcu_read_lock();
++	radix_index = radix_tree_next_hole(&mapping->page_tree,
++					   index, max_scan);
++	rcu_read_unlock();
++	/*
++	 * If we hit the end of the tree, wrap and search up to the original
++	 * index.
++	 */
++	if (radix_index - index >= max_scan) {
++		if (index != 1) {
++			rcu_read_lock();
++			radix_index = radix_tree_next_hole(&mapping->page_tree,
++							   1, index);
++			rcu_read_unlock();
++			if (radix_index - 1 >= index)
++				radix_index = 0;
++		} else {
++			radix_index = 0;
++		}
++	}
++	vb->last_scan_page_array = radix_index;
++
++	return radix_index;
++}
++
++/* Notifies the host of pages in the specified virtqueue. */
++static int tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
++{
++	int err;
++	struct scatterlist sg;
++
++	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
++
++	init_completion(&vb->acked);
++
++	/* We should always be able to add one buffer to an empty queue. */
++	err = virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL);
++	if (err  < 0)
++		return err;
++	virtqueue_kick(vq);
++
++	/* When host has read buffer, this completes via balloon_ack */
++	wait_for_completion(&vb->acked);
++	return err;
++}
++
++static void fill_balloon(struct virtio_balloon *vb, size_t num)
++{
++	int err;
++
++	/* We can only do one array worth at a time. */
++	num = min(num, ARRAY_SIZE(vb->pfns));
++
++	for (vb->num_pfns = 0; vb->num_pfns < num; vb->num_pfns++) {
++		struct page *page;
++		unsigned long inode_pfn = find_available_inode_page(vb);
++		/* Should always be able to find a page. */
++		BUG_ON(!inode_pfn);
++		page = read_mapping_page(the_inode.inode.i_mapping, inode_pfn,
++					 NULL);
++		if (IS_ERR(page)) {
++			if (printk_ratelimit())
++				dev_printk(KERN_INFO, &vb->vdev->dev,
++					   "Out of puff! Can't get %zu pages\n",
++					   num);
++			break;
++		}
++
++		/* Set the page to be dirty */
++		set_page_dirty(page);
++
++		vb->pfns[vb->num_pfns] = page_to_pfn(page);
++	}
++
++	/* Didn't get any?  Oh well. */
++	if (vb->num_pfns == 0)
++		return;
++
++	/* Notify the host of the pages we just added to the page_tree. */
++	err = tell_host(vb, vb->inflate_vq);
++
++	for (; vb->num_pfns != 0; vb->num_pfns--) {
++		struct page *page = pfn_to_page(vb->pfns[vb->num_pfns - 1]);
++		/*
++		 * Release our refcount on the page so that it can be reclaimed
++		 * when necessary.
++		 */
++		page_cache_release(page);
++	}
++	__mark_inode_dirty(&the_inode.inode, I_DIRTY_PAGES);
++}
++
++static inline void update_stat(struct virtio_balloon *vb, int idx,
++			       u64 val)
++{
++	BUG_ON(idx >= VIRTIO_BALLOON_S_NR);
++	vb->stats[idx].tag = idx;
++	vb->stats[idx].val = val;
++}
++
++#define pages_to_bytes(x) ((u64)(x) << PAGE_SHIFT)
++
++static inline u32 config_pages(struct virtio_balloon *vb);
++static void update_balloon_stats(struct virtio_balloon *vb)
++{
++	unsigned long events[NR_VM_EVENT_ITEMS];
++	struct sysinfo i;
++
++	all_vm_events(events);
++	si_meminfo(&i);
++
++	update_stat(vb, VIRTIO_BALLOON_S_SWAP_IN,
++		    pages_to_bytes(events[PSWPIN]));
++	update_stat(vb, VIRTIO_BALLOON_S_SWAP_OUT,
++		    pages_to_bytes(events[PSWPOUT]));
++	update_stat(vb, VIRTIO_BALLOON_S_MAJFLT, events[PGMAJFAULT]);
++	update_stat(vb, VIRTIO_BALLOON_S_MINFLT, events[PGFAULT]);
++
++	/* Total and Free Mem */
++	update_stat(vb, VIRTIO_BALLOON_S_MEMFREE, pages_to_bytes(i.freeram));
++	update_stat(vb, VIRTIO_BALLOON_S_MEMTOT, pages_to_bytes(i.totalram));
++}
++
++static void virtballoon_changed(struct virtio_device *vdev)
++{
++	struct virtio_balloon *vb = vdev->priv;
++
++	wake_up(&vb->config_change);
++}
++
++static inline bool config_need_stats(struct virtio_balloon *vb)
++{
++	u32 v = 0;
++
++	vb->vdev->config->get(vb->vdev,
++			      offsetof(struct virtio_balloon_config,
++				       need_stats),
++			      &v, sizeof(v));
++	return (v != 0);
++}
++
++static inline u32 config_pages(struct virtio_balloon *vb)
++{
++	u32 v = 0;
++
++	vb->vdev->config->get(vb->vdev,
++			      offsetof(struct virtio_balloon_config, num_pages),
++			      &v, sizeof(v));
++	return v;
++}
++
++static inline s64 towards_target(struct virtio_balloon *vb)
++{
++	struct address_space *mapping = the_inode.inode.i_mapping;
++	u32 v = config_pages(vb);
++
++	return (s64)v - (mapping ? mapping->nrpages : 0);
++}
++
++static void update_balloon_size(struct virtio_balloon *vb)
++{
++	struct address_space *mapping = the_inode.inode.i_mapping;
++	__le32 actual = cpu_to_le32((mapping ? mapping->nrpages : 0));
++
++	vb->vdev->config->set(vb->vdev,
++			      offsetof(struct virtio_balloon_config, actual),
++			      &actual, sizeof(actual));
++}
++
++static void update_free_and_total(struct virtio_balloon *vb)
++{
++	struct sysinfo i;
++	u32 value;
++
++	si_meminfo(&i);
++
++	update_balloon_stats(vb);
++	value = i.totalram;
++	vb->vdev->config->set(vb->vdev,
++			      offsetof(struct virtio_balloon_config,
++				       pages_total),
++			      &value, sizeof(value));
++	value = i.freeram;
++	vb->vdev->config->set(vb->vdev,
++			      offsetof(struct virtio_balloon_config,
++				       pages_free),
++			      &value, sizeof(value));
++	value = 0;
++	vb->vdev->config->set(vb->vdev,
++			      offsetof(struct virtio_balloon_config,
++				       need_stats),
++			      &value, sizeof(value));
++}
++
++static int balloon(void *_vballoon)
++{
++	struct virtio_balloon *vb = _vballoon;
++
++	set_freezable();
++	while (!kthread_should_stop()) {
++		s64 diff;
++		try_to_freeze();
++		wait_event_interruptible(vb->config_change,
++					 (diff = towards_target(vb)) > 0
++					 || config_need_stats(vb)
++					 || kthread_should_stop()
++					 || freezing(current));
++		if (config_need_stats(vb))
++			update_free_and_total(vb);
++		if (diff > 0) {
++			unsigned long reclaim_time = vb->last_reclaim + 2 * HZ;
++			/*
++			 * Don't fill the balloon if a page reclaim happened in
++			 * the past 2 seconds.
++			 */
++			if (time_after_eq(reclaim_time, jiffies)) {
++				/* Inflating too fast--sleep and skip. */
++				msleep(500);
++			} else {
++				fill_balloon(vb, diff);
++			}
++		} else if (diff < 0 && config_pages(vb) == 0) {
++			/*
++			 * Here we are specifically looking to detect the case
++			 * where there are pages in the page cache, but the
++			 * device wants us to go to 0.  This is used in save/
++			 * restore since the host device doesn't keep track of
++			 * PFNs, and must flush the page cache on restore
++			 * (which loses the context of the original device
++			 * instance).  However, we still suggest syncing the
++			 * diff so that we can get within the target range.
++			 */
++			s64 nr_to_write =
++				(!config_pages(vb) ? LONG_MAX : -diff);
++			struct writeback_control wbc = {
++				.sync_mode = WB_SYNC_ALL,
++				.nr_to_write = nr_to_write,
++				.range_start = 0,
++				.range_end = LLONG_MAX,
++			};
++			sync_inode(&the_inode.inode, &wbc);
++		}
++		update_balloon_size(vb);
++	}
++	return 0;
++}
++
++static ssize_t virtballoon_attr_show(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf);
++
++static DEVICE_ATTR(total_memory, 0644,
++	virtballoon_attr_show, NULL);
++
++static DEVICE_ATTR(free_memory, 0644,
++	virtballoon_attr_show, NULL);
++
++static DEVICE_ATTR(target_pages, 0644,
++	virtballoon_attr_show, NULL);
++
++static DEVICE_ATTR(actual_pages, 0644,
++	virtballoon_attr_show, NULL);
++
++static struct attribute *virtballoon_attrs[] = {
++	&dev_attr_total_memory.attr,
++	&dev_attr_free_memory.attr,
++	&dev_attr_target_pages.attr,
++	&dev_attr_actual_pages.attr,
++	NULL
++};
++static struct attribute_group virtballoon_attr_group = {
++	.name	= "virtballoon",
++	.attrs	= virtballoon_attrs,
++};
++
++static ssize_t virtballoon_attr_show(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	struct address_space *mapping = the_inode.inode.i_mapping;
++	struct virtio_device *vdev = container_of(dev, struct virtio_device,
++						  dev);
++	struct virtio_balloon *vb = vdev->priv;
++	unsigned long long value = 0;
++	if (attr == &dev_attr_total_memory)
++		value = vb->stats[VIRTIO_BALLOON_S_MEMTOT].val;
++	else if (attr == &dev_attr_free_memory)
++		value = vb->stats[VIRTIO_BALLOON_S_MEMFREE].val;
++	else if (attr == &dev_attr_target_pages)
++		value = config_pages(vb);
++	else if (attr == &dev_attr_actual_pages)
++		value = cpu_to_le32((mapping ? mapping->nrpages : 0));
++	return sprintf(buf, "%llu\n", value);
++}
++
++static int virtballoon_probe(struct virtio_device *vdev)
++{
++	struct virtio_balloon *vb;
++	struct virtqueue *vq[1];
++	vq_callback_t *callback = balloon_ack;
++	const char *name = "inflate";
++	int err;
++
++	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
++	if (!vb) {
++		err = -ENOMEM;
++		goto out;
++	}
++
++	init_waitqueue_head(&vb->config_change);
++	vb->vdev = vdev;
++
++	/* We use one virtqueue: inflate */
++	err = vdev->config->find_vqs(vdev, 1, vq, &callback, &name);
++	if (err)
++		goto out_free_vb;
++
++	vb->inflate_vq = vq[0];
++
++	err = sysfs_create_group(&vdev->dev.kobj, &virtballoon_attr_group);
++	if (err) {
++		pr_err("Failed to create virtballoon sysfs node\n");
++		goto out_free_vb;
++	}
++
++	vb->last_scan_page_array = 0;
++	vb->last_reclaim = 0;
++	the_inode.vb = vb;
++
++	vb->thread = kthread_run(balloon, vb, "vballoon");
++	if (IS_ERR(vb->thread)) {
++		err = PTR_ERR(vb->thread);
++		goto out_del_vqs;
++	}
++
++	return 0;
++
++out_del_vqs:
++	vdev->config->del_vqs(vdev);
++out_free_vb:
++	kfree(vb);
++out:
++	return err;
++}
++
++static void __devexit virtballoon_remove(struct virtio_device *vdev)
++{
++	struct virtio_balloon *vb = vdev->priv;
++
++	kthread_stop(vb->thread);
++
++	sysfs_remove_group(&vdev->dev.kobj, &virtballoon_attr_group);
++
++	/* Now we reset the device so we can clean up the queues. */
++	vdev->config->reset(vdev);
++
++	vdev->config->del_vqs(vdev);
++	kfree(vb);
++}
++
++static struct virtio_driver virtio_balloon_driver = {
++	.feature_table		= NULL,
++	.feature_table_size	= 0,
++	.driver.name		= KBUILD_MODNAME,
++	.driver.owner		= THIS_MODULE,
++	.id_table		= id_table,
++	.probe			= virtballoon_probe,
++	.remove			= __devexit_p(virtballoon_remove),
++	.config_changed		= virtballoon_changed,
++};
++
++static int __init init(void)
++{
++	int err = register_filesystem(&balloon_fs_type);
++	if (err)
++		goto out;
++
++	balloon_mnt = kern_mount(&balloon_fs_type);
++	if (IS_ERR(balloon_mnt)) {
++		err = PTR_ERR(balloon_mnt);
++		goto out_filesystem;
++	}
++
++	err = register_virtio_driver(&virtio_balloon_driver);
++	if (err)
++		goto out_filesystem;
++
++	goto out;
++
++out_filesystem:
++	unregister_filesystem(&balloon_fs_type);
++
++out:
++	return err;
++}
++
++static void __exit fini(void)
++{
++	if (balloon_mnt) {
++		unregister_filesystem(&balloon_fs_type);
++		balloon_mnt = NULL;
++	}
++	unregister_virtio_driver(&virtio_balloon_driver);
++}
++module_init(init);
++module_exit(fini);
++
++MODULE_DEVICE_TABLE(virtio, id_table);
++MODULE_DESCRIPTION("Virtio file (page cache-backed) balloon driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/virtio_balloon.h b/include/linux/virtio_balloon.h
+index 652dc8b..2be9a02 100644
+--- a/include/linux/virtio_balloon.h
++++ b/include/linux/virtio_balloon.h
+@@ -41,6 +41,15 @@ struct virtio_balloon_config
+ 	__le32 num_pages;
+ 	/* Number of pages we've actually got in balloon. */
+ 	__le32 actual;
++#if defined(CONFIG_VIRTIO_FILEBALLOON) ||\
++	defined(CONFIG_VIRTIO_FILEBALLOON_MODULE)
++	/* Total pages on this system. */
++	__le32 pages_total;
++	/* Free pages on this system. */
++	__le32 pages_free;
++	/* If the device needs pages_total/pages_free updated. */
++	__le32 need_stats;
++#endif
+ };
+ 
+ #define VIRTIO_BALLOON_S_SWAP_IN  0   /* Amount of memory swapped in */
+diff --git a/include/linux/virtio_ids.h b/include/linux/virtio_ids.h
+index 7529b85..2f081d7 100644
+--- a/include/linux/virtio_ids.h
++++ b/include/linux/virtio_ids.h
+@@ -37,5 +37,6 @@
+ #define VIRTIO_ID_RPMSG		7 /* virtio remote processor messaging */
+ #define VIRTIO_ID_SCSI		8 /* virtio scsi */
+ #define VIRTIO_ID_9P		9 /* 9p virtio console */
++#define VIRTIO_ID_FILE_BALLOON	10 /* virtio file-backed balloon */
+ 
+ #endif /* _LINUX_VIRTIO_IDS_H */
+-- 
+1.7.7.3
+
