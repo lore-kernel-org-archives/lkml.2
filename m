@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab2FZMdB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 08:33:01 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:11278 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755928Ab2FZMc7 (ORCPT
+	id S1756753Ab2FZMlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 08:41:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57508 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab2FZMlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 08:32:59 -0400
-Date: Tue, 26 Jun 2012 14:32:46 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        JBeulich@suse.com, khali@linux-fr.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, cpufeature:   Catch duplicate CPU feature
- strings
-Message-ID: <20120626143246.0c9bf301@endymion.delvare>
-In-Reply-To: <tip-55f6cb9d0b364e7e8cb65b51193f5e4743c44fde@git.kernel.org>
-References: <4FE34BCB.5050305@linux.intel.com>
-	<tip-55f6cb9d0b364e7e8cb65b51193f5e4743c44fde@git.kernel.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jun 2012 08:41:04 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <1340706382-27297-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1340706382-27297-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1340706382-27297-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 26 Jun 2012 20:40:42 +0800
+Message-ID: <CAF+7xWmR-ogy2k+e5D0og7gUPeb7dVF0ZE61QaVDeQV=6y+PcQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] regulator: core: Check that the selector from
+ map_voltage() is valid
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jun 2012 09:14:29 -0700, tip-bot for H. Peter Anvin wrote:
-> Commit-ID:  55f6cb9d0b364e7e8cb65b51193f5e4743c44fde
-> Gitweb:     http://git.kernel.org/tip/55f6cb9d0b364e7e8cb65b51193f5e4743c44fde
-> Author:     H. Peter Anvin <hpa@linux.intel.com>
-> AuthorDate: Fri, 22 Jun 2012 11:47:15 -0700
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Mon, 25 Jun 2012 09:02:13 -0700
-> 
-> x86, cpufeature: Catch duplicate CPU feature strings
-> 
-> We had a case of duplicate CPU feature strings, a user space ABI
-> violation, for almost two years.  Make it a build error so that
-> doesn't happen again.
-> 
-> Link: http://lkml.kernel.org/r/4FE34BCB.5050305@linux.intel.com
-> Cc: Jan Beulich <JBeulich@suse.com>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> ---
->  arch/x86/kernel/cpu/mkcapflags.pl |   23 ++++++++++++++++++-----
->  1 files changed, 18 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mkcapflags.pl b/arch/x86/kernel/cpu/mkcapflags.pl
-> index dfea390..0c5b549 100644
-> --- a/arch/x86/kernel/cpu/mkcapflags.pl
-> +++ b/arch/x86/kernel/cpu/mkcapflags.pl
-> @@ -11,22 +11,35 @@ open(OUT, "> $out\0") or die "$0: cannot create: $out: $!\n";
->  print OUT "#include <asm/cpufeature.h>\n\n";
->  print OUT "const char * const x86_cap_flags[NCAPINTS*32] = {\n";
->  
-> +%features = ();
-> +$err = 0;
-> +
->  while (defined($line = <IN>)) {
->  	if ($line =~ /^\s*\#\s*define\s+(X86_FEATURE_(\S+))\s+(.*)$/) {
->  		$macro = $1;
-> -		$feature = $2;
-> +		$feature = "\L$2";
->  		$tail = $3;
->  		if ($tail =~ /\/\*\s*\"([^"]*)\".*\*\//) {
-> -			$feature = $1;
-> +			$feature = "\L$1";
->  		}
->  
-> -		if ($feature ne '') {
-> -			printf OUT "\t%-32s = \"%s\",\n",
-> -				"[$macro]", "\L$feature";
-> +		next if ($feature eq '');
-> +
-> +		if ($features{$feature}++) {
-> +			print STDERR "$in: duplicate feature name: $feature\n";
-> +			$err++;
->  		}
-> +		printf OUT "\t%-32s = \"%s\",%s\n", "[$macro]", $feature;
+2012/6/26 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> Lots of regulator drivers have checks in their map_voltage() functions
+> to verify that the result of the mapping is in the range originally
+> specified. Factor these out in the core and provide a bit of extra
+> defensiveness for other drivers by doing the check in the core.
+>
+> Since we're now doing a list_voltage() earlier move the current mapping
+> back to a voltage out into the set_voltage() call to save redoing it.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Hi Mark,
+This patch does not apply to both linux-next tree and regulator tree
+(for-next branch).
 
-You added an extra %s in the string, can't think of a good reason for
-it. perl -w would have told you, I think we should add it.
+I got below diff in drivers/regulator/core.c.rej.
 
-Other than this, the code looks good and the improvement reasonable, so
-you can add:
+--- drivers/regulator/core.c
++++ drivers/regulator/core.c
+@@ -2119,10 +2128,8 @@
+ 		}
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+ 		if (ret >= 0) {
+-			if (min_uV < rdev->desc->ops->list_voltage(rdev,
+-								   ret) &&
+-			    max_uV > rdev->desc->ops->list_voltage(rdev,
+-								   ret)) {
++			best_val = rdev->desc->ops->list_voltage(rdev, ret);
++			if (min_uV <= best_val && max_uV >= best_val) {
+ 				selector = ret;
+ 				ret = rdev->desc->ops->set_voltage_sel(rdev,
+ 								       ret);
 
-after fixing it.
-
->  	}
->  }
->  print OUT "};\n";
->  
->  close(IN);
->  close(OUT);
-> +
-> +if ($err) {
-> +	unlink($out);
-> +	exit(1);
-> +}
-> +
-> +exit(0);
-
-
--- 
-Jean Delvare
+Regards,
+Axel
