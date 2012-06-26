@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab2FZJwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 05:52:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52498 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751453Ab2FZJwy (ORCPT
+	id S1755838Ab2FZJ7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 05:59:22 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41077 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080Ab2FZJ7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 05:52:54 -0400
-Date: Tue, 26 Jun 2012 10:52:47 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: arizona-micsupp: Fix choosing selector in
- arizona_micsupp_map_voltage
-Message-ID: <20120626095247.GK30406@opensource.wolfsonmicro.com>
-References: <1340697707.12992.1.camel@phoenix>
- <20120626090825.GI30406@opensource.wolfsonmicro.com>
- <CAF+7xWnJo3VrZ+iH4BJHkTmo5+D9ttZ1n1Tm0KMPQqK1sKD7wQ@mail.gmail.com>
+	Tue, 26 Jun 2012 05:59:20 -0400
+Message-ID: <4FE987BB.4020508@linux.vnet.ibm.com>
+Date: Tue, 26 Jun 2012 15:28:19 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jITzwD3HDGXid3BE"
-Content-Disposition: inline
-In-Reply-To: <CAF+7xWnJo3VrZ+iH4BJHkTmo5+D9ttZ1n1Tm0KMPQqK1sKD7wQ@mail.gmail.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Thomas Renninger <trenn@suse.de>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>, lenb@kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi, cpuidle: Register with cpuidle even if cpu is onlined
+ after boot (beyond maxcpus)
+References: <4FDB549F.1020002@linaro.org> <201206251553.55867.trenn@suse.de> <4FE88BDE.1050406@linux.vnet.ibm.com> <201206261129.45591.trenn@suse.de> <4FE983E0.2050802@linaro.org>
+In-Reply-To: <4FE983E0.2050802@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12062609-9574-0000-0000-0000034E47EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/26/2012 03:11 PM, Daniel Lezcano wrote:
+> On 06/26/2012 11:29 AM, Thomas Renninger wrote:
+>> On Monday, June 25, 2012 06:03:42 PM Srivatsa S. Bhat wrote:
+>>> On 06/25/2012 07:23 PM, Thomas Renninger wrote:
+>>>
+>>>> On Monday, June 25, 2012 01:25:43 PM Srivatsa S. Bhat wrote:
+>>>>>
+>>>>> Daniel Lezcano noticed that after booting with maxcpus=X, if we online the
+>>>>> remaining cpus by writing: echo 1 > /sys/devices/system/cpu/cpuY/online, then
+>>>>> for the newly onlined cpus, the cpuidle directory is not found under
+>>>>> /sys/devices/system/cpu/cpuY.
+>>>>>
+>>>>> Partly, the reason for this is that acpi restricts the initialization to cpus
+>>>>> within the maxcpus limit. (See commit 75cbfb9 "ACPI: Do not try to set up acpi
+>>>>> processor stuff on cores exceeding maxcpus="). The maxcpus= kernel parameter is
+>>>>> used to restrict the number of cpus brought up during boot. That doesn't mean
+>>>>> that we should hard restrict the bring up of the remaining cpus later on.
+>>>>
+>>>> Sorry, but IMO it exaclty does mean that (adding more general lists for
+>>>> further comments).
+>>>>
+>>>> If you can online more cores than maxcpus= via sysfs, this sounds like a bug.
+>>>> Not the other way around.
+>>>>
+>>>> Compare with Documentation/kernel-parameters.txt:
+>>>>         maxcpus=        [SMP] Maximum number of processors that an SMP kernel
+>>>>                         should make use of.  maxcpus=n : n >= 0 limits the
+>>>>                         kernel to using 'n' processors.  n=0 is a special case,
+>>>>                         it is equivalent to "nosmp", which also disables
+>>>>                         the IO APIC.
+>>>>
+>>>> Chances that you run into more problems are high.
+>>>
+>>>
+>>> Right, I agree on that. So, IMHO, maxcpus=X doesn't mean that the kernel must and
+>>> should forbid any new cpus from coming online, but in the interest of avoiding
+>>> problems/complications in some obscure paths, I guess it makes sense to avoid
+>>> onlining new cpus beyond maxcpus.
+>>
+>> Yep, for such reasons:
+>>    - That nobody realizes this to be useful and makes use of it in a productive
+>>      environment
+>>    - If I see maxcpus=X in a bugreport's dmesg command line,
+>>      I want to be sure that's true.
+>>    - To enforce that things work as documented
+>>
+>>
+>> Wow, after looking a bit into this I found (Documentation/cpu-hotplug.txt):
+>>
+>> maxcpus=n    Restrict boot time cpus to n. Say if you have 4 cpus, using
+>>              maxcpus=2 will only boot 2. You can choose to bring the
+>>              other cpus later online, read FAQ's for more info.
+>>
+>> Looks like someone already documented this (IMO broken) behavior.
+>> I didn't find further info in the FAQs.
+>>
+>>> In any case, I was just trying to see why the simple removal of the setup_max_cpus
+>>> check in acpi_processor_add() wasn't enough to expose the cpuidle directories under
+>>> the new cpus.. and while debugging that, I came up with this patch. I don't mind
+>>> if this doesn't get picked up.
+>>
+>>> Right, the usecase of why somebody would like to online new cpus beyond maxcpus
+>>> doesn't look all that solid anyway. So I am OK with leaving the code as it is now.
+>>
+>> In the end this is a debug option, I expect everybody is aware of that.
+>> Yep, let's just leave it...
+> 
+> In this case, let's remove the intel_idle_cpu_init stuff in
+> acpi_cpu_soft_notify, no ?
+> 
 
---jITzwD3HDGXid3BE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Why? And how would that help? The intel_idle_cpu_init() call is essential if intel_idle
+driver is being used instead of acpi idle.
 
-On Tue, Jun 26, 2012 at 05:27:26PM +0800, Axel Lin wrote:
+Regards,
+Srivatsa S. Bhat
 
-Your mailer is doing something *really* odd with word wrapping, please
-fix it.  It looks like it's just randomly wrapping lines rather than
-flowing paragraphs.
-
-> 2012/6/26 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-
-> > This is OK but I think we want to factor this out into the caller as
-> > we're implementing this limits check in a lot of places.
-
-> It seems most of the new code are calling list_voltage() in
-> map_voltage to ensure
-> the selected voltage are still in bound.
-> for this case looks wrong to me.
-> But in this  case, current actually set selector to
-> ARIZONA_MICSUPP_MAX_SELECTOR in map_voltage() if
-> min_uV >= 3300000. calling list_voltage() still returns valid voltage
-
-Which we then immediately check against min_uV so as far as I can tell
-we're fine here even with no code modifications.
-
-> If min_uV is in the range of: 3250001~3269999,
-> current code uses the equation: selector = DIV_ROUND_UP(min_uV -
-> 1700000, 50000);
-> Then selector will be 32.
-> Then arizona_micsupp_list_voltage returns -EINVAL for this case.
-
-OK, please submit a separate change for this.  It would sometimes help
-if your changelog entries were clearer, while you do normally provide a
-lot of detail but you often don't highlight which are the important
-details or miss critical ones about why your change is important.  Your
-original changelog for this makes it look like this is just a change
-being made for taste reasons since it doesn't mention the error case.
-
---jITzwD3HDGXid3BE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP6YZcAAoJEBus8iNuMP3d8aMP/3qscgLCfkNFkpCbuM4brO+9
-UHW6TYMkl/tOqiKAVxz3FHtfxw9GBxJe+52dRckFKAjFPLz5qbF4mas5SHnfRnPP
-RcYyDVFTekts1+igz42zik0fOMVlDpU1LSkbRS5h7R387KlT+guX3KAj3nV2b1LC
-lztrB9MuEQguqg1Nr54LUgwTTtf2h4Uh6NvQZTI4e/UUNb9WOlyRKnv/cGGLkb9B
-QjxR45JlfBaOW4UzdmJpvGC4Vv6lRiIiIMPDZYJ07+OLxGqzopoKmn2HrReZzVpD
-kxcHbWs3GjMidguNmFUwzkSNPfYhuYC3tFdVrN91Y4BDxoPFgROotL/BH25B+IBr
-x3KSivo/1266XFKWmwkr3uTRr0zN5uSQ6zyotoBj/0vZyYEK4xoLM+d2a3uaG2RY
-m1/fXHle/sFdwR3ZUsVHQNhTuESOChedjisYKctRd4Q+mZAMNo4d234EshUJl87A
-ZIkYFwEv4IwCyTdKabwfs48tNFZYFCEP5AMR0KfGcOQr8Qy8fVbAZBvSxDVl01sI
-sAx4NhXXmKJrIEodYk/XxzfnFC6XpJGcFGf8Yo1SpIx9KFCqKFfJPfUQvhKflgpu
-JJ7yinb3H+n4UIpOvXEJ0Vftznfnf+bbu9KjLuKzOLgr6n5HtOhDJCGRPAUbLyC6
-k0yb8B7x4QZBKjG3/2k4
-=WRbg
------END PGP SIGNATURE-----
-
---jITzwD3HDGXid3BE--
