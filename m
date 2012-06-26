@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845Ab2FZRQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 13:16:51 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33718 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758499Ab2FZRQt (ORCPT
+	id S1758864Ab2FZRVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 13:21:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44389 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758524Ab2FZRVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 13:16:49 -0400
-Date: Tue, 26 Jun 2012 18:16:33 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
-Message-ID: <20120626171632.GA22977@n2100.arm.linux.org.uk>
-References: <20110823221314.GL3895@n2100.arm.linux.org.uk> <CAOS58YNtQEuke=Ko9J2oNGMECjabzxj=Nrg1o64X1JC3YRmJuw@mail.gmail.com> <20110825121416.GB8883@n2100.arm.linux.org.uk> <20110825121710.GK3286@htj.dyndns.org> <20110825122543.GC8883@n2100.arm.linux.org.uk> <20110825123542.GM3286@htj.dyndns.org> <20110825130414.GE8883@n2100.arm.linux.org.uk> <20110825130907.GO3286@htj.dyndns.org> <20110825145558.GF8883@n2100.arm.linux.org.uk> <CACBanvqp52q0c6SxsSFqZwfn45Knt-CYgg-AcOJrtaQ-Lim+YQ@mail.gmail.com>
+	Tue, 26 Jun 2012 13:21:21 -0400
+Date: Tue, 26 Jun 2012 18:21:10 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        William Cohen <wcohen@redhat.com>
+Subject: Re: [PATCH] oprofile, perf: Use per-cpu framework
+Message-ID: <20120626172109.GT27996@mudshark.cambridge.arm.com>
+References: <1339168564-30008-1-git-send-email-will.deacon@arm.com>
+ <20120615154359.GE12031@mudshark.cambridge.arm.com>
+ <20120615161635.GV1478@erda.amd.com>
+ <20120615161954.GF12031@mudshark.cambridge.arm.com>
+ <20120622144231.GJ24632@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACBanvqp52q0c6SxsSFqZwfn45Knt-CYgg-AcOJrtaQ-Lim+YQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120622144231.GJ24632@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 09:39:14AM -0700, Mandeep Singh Baines wrote:
-> Hi Russell,
-> 
-> We are seeing this on ARM with a 3.4 kernel. How was it eventually
-> resolved? This patch isn't in any tree and I can't find any patch in
-> linus/master or in any ARM tree that looks like it fixes this.
+On Fri, Jun 22, 2012 at 03:42:31PM +0100, Robert Richter wrote:
+> Will,
 
-It's still work in progress.
+Hi Robert,
+
+> I just realized I wrote a patch some time ago that introduces per_cpu
+> variables, see below. Please give it a try to, I will then queue it
+> for v3.6.
+
+Your patch seems fine with and without CONFIG_CPUMASK_OFFSTACK, so:
+
+Acked-by: Will Deacon <will.deacon@arm.com>
+
+Cheers,
+
+Will
