@@ -1,117 +1,814 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab2FZC6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 22:58:42 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:38563 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab2FZC6c (ORCPT
+	id S1756242Ab2FZDNk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 23:13:40 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51621 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754833Ab2FZDNh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 22:58:32 -0400
-Message-ID: <1340679504.16381.23.camel@ThinkPad-T420>
-Subject: Re: [PATCH SLUB 1/2] duplicate the cache name in saved_alias list
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
-        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
-Date: Tue, 26 Jun 2012 10:58:24 +0800
-In-Reply-To: <4FE84741.9000703@parallels.com>
-References: <1340617984.13778.37.camel@ThinkPad-T420>
-	 <4FE84741.9000703@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12062602-9574-0000-0000-0000034D1196
+	Mon, 25 Jun 2012 23:13:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1336815645-29625-2-git-send-email-amit.kachhap@linaro.org>
+References: <1336815645-29625-1-git-send-email-amit.kachhap@linaro.org> <1336815645-29625-2-git-send-email-amit.kachhap@linaro.org>
+From: Rob Lee <rob.lee@linaro.org>
+Date: Mon, 25 Jun 2012 22:12:55 -0500
+Message-ID: <CAMXH7KHMccn71-4-6QSZ8k98QZhF2yNXpDkZ5Cs4nf5Y-wd3gw@mail.gmail.com>
+Subject: Re: [PATCH v4 1/5] thermal: Add generic cpufreq cooling implementation
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, akpm@linux-foundation.org,
+        linux-samsung-soc@vger.kernel.org, durgadoss.r@intel.com,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, linux-acpi@vger.kernel.org,
+        khali@linux-fr.org, linaro-dev@lists.linaro.org, rui.zhang@intel.com,
+        guenter.roeck@ericsson.com, lenb@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-25 at 15:10 +0400, Glauber Costa wrote:
-> On 06/25/2012 01:53 PM, Li Zhong wrote:
-> > SLUB duplicates the cache name in kmem_cache_create(). However if the
-> > cache could be merged to others during early booting, the name pointer
-> > is saved in saved_alias list, and the string needs to be kept valid
-> > before slab_sysfs_init() is called.
-> >
-> > This patch tries to duplicate the cache name in saved_alias list, so
-> > that the cache name could be safely kfreed after calling
-> > kmem_cache_create(), if that name is kmalloced.
-> >
-> > Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> > ---
-> >   mm/slub.c |    6 ++++++
-> >   1 files changed, 6 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index 8c691fa..3dc8ed5 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -5373,6 +5373,11 @@ static int sysfs_slab_alias(struct kmem_cache *s,
-> > const char *name)
-> >
-> >   	al->s = s;
-> >   	al->name = name;
-> > +	al->name = kstrdup(name, GFP_KERNEL);
-> > +	if (!al->name) {
-> > +		kfree(al);
-> > +		return -ENOMEM;
-> > +	}
-> >   	al->next = alias_list;
-> >   	alias_list = al;
-> >   	return 0;
-> > @@ -5409,6 +5414,7 @@ static int __init slab_sysfs_init(void)
-> >   		if (err)
-> >   			printk(KERN_ERR "SLUB: Unable to add boot slab alias"
-> >   					" %s to sysfs\n", s->name);
-> > +		kfree(al->name);
-> >   		kfree(al);
-> >   	}
-> >
-> >
-> 
-> What's unsafe about the current state of affairs ?
-> Whenever we alias, we'll increase the reference counter.
-> kmem_cache_destroy will only actually destroy the structure whenever 
-> that refcnt reaches zero.
-> 
-> This means that kfree shouldn't happen until then. So what is exactly 
-> that you are seeing?
+Hey Amit,
 
-Maybe I didn't describe it clearly ... It is only about the name string
-passed into kmem_cache_create() during early boot. 
+I was just re-organizing the imx thermal driver that uses this cpu
+cooling interface and noticed a couple of small issues here.   If
+these suggestions are agreed upon and if it's too late for these
+issues be changed with this patchset, I can submit them separately
+unless you'd prefer to.
 
-kmem_cache_create() checks whether it is mergeable before creating one.
-If not mergeable, the name is duplicated: n = kstrdup(name, GFP_KERNEL);
+On Sat, May 12, 2012 at 4:40 AM, Amit Daniel Kachhap
+<amit.kachhap@linaro.org> wrote:
+> This patch adds support for generic cpu thermal cooling low level
+> implementations using frequency scaling up/down based on the registration
+> parameters. Different cpu related cooling devices can be registered by the
+> user and the binding of these cooling devices to the corresponding
+> trip points can be easily done as the registration APIs return the
+> cooling device pointer. The user of these APIs are responsible for
+> passing clipping frequency . The drivers can also register to recieve
+> notification about any cooling action called.
+>
+> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> ---
+>  Documentation/thermal/cpu-cooling-api.txt |   60 ++++
+>  drivers/thermal/Kconfig                   |   11 +
+>  drivers/thermal/Makefile                  |    3 +-
+>  drivers/thermal/cpu_cooling.c             |  483 +++++++++++++++++++++++++++++
+>  include/linux/cpu_cooling.h               |   99 ++++++
+>  5 files changed, 655 insertions(+), 1 deletions(-)
+>  create mode 100644 Documentation/thermal/cpu-cooling-api.txt
+>  create mode 100644 drivers/thermal/cpu_cooling.c
+>  create mode 100644 include/linux/cpu_cooling.h
+>
+> diff --git a/Documentation/thermal/cpu-cooling-api.txt b/Documentation/thermal/cpu-cooling-api.txt
+> new file mode 100644
+> index 0000000..557adb8
+> --- /dev/null
+> +++ b/Documentation/thermal/cpu-cooling-api.txt
+> @@ -0,0 +1,60 @@
+> +CPU cooling APIs How To
+> +===================================
+> +
+> +Written by Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> +
+> +Updated: 12 May 2012
+> +
+> +Copyright (c)  2012 Samsung Electronics Co., Ltd(http://www.samsung.com)
+> +
+> +0. Introduction
+> +
+> +The generic cpu cooling(freq clipping, cpuhotplug etc) provides
+> +registration/unregistration APIs to the caller. The binding of the cooling
+> +devices to the trip point is left for the user. The registration APIs returns
+> +the cooling device pointer.
+> +
+> +1. cpu cooling APIs
+> +
+> +1.1 cpufreq registration/unregistration APIs
+> +1.1.1 struct thermal_cooling_device *cpufreq_cooling_register(
+> +       struct freq_clip_table *tab_ptr, unsigned int tab_size)
+> +
+> +    This interface function registers the cpufreq cooling device with the name
+> +    "thermal-cpufreq-%x". This api can support multiple instances of cpufreq
+> +    cooling devices.
+> +
+> +    tab_ptr: The table containing the maximum value of frequency to be clipped
+> +    for each cooling state.
+> +       .freq_clip_max: Value of frequency to be clipped for each allowed
+> +        cpus.
+> +       .temp_level: Temperature level at which the frequency clamping will
+> +       happen.
+> +       .mask_val: cpumask of the allowed cpu's
+> +    tab_size: the total number of cpufreq cooling states.
+> +
+> +1.1.2 void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
+> +
+> +    This interface function unregisters the "thermal-cpufreq-%x" cooling device.
+> +
+> +    cdev: Cooling device pointer which has to be unregistered.
+> +
+> +
+> +1.2 CPU cooling action notifier register/unregister interface
+> +1.2.1 int cputherm_register_notifier(struct notifier_block *nb,
+> +       unsigned int list)
+> +
+> +    This interface registers a driver with cpu cooling layer. The driver will
+> +    be notified when any cpu cooling action is called.
+> +
+> +    nb: notifier function to register
+> +    list: CPUFREQ_COOLING_START or CPUFREQ_COOLING_STOP
+> +
+> +1.2.2 int cputherm_unregister_notifier(struct notifier_block *nb,
+> +       unsigned int list)
+> +
+> +    This interface registers a driver with cpu cooling layer. The driver will
+> +    be notified when any cpu cooling action is called.
+> +
+> +    nb: notifier function to register
+> +    list: CPUFREQ_COOLING_START or CPUFREQ_COOLING_STOP
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index 514a691..d9c529f 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -19,6 +19,17 @@ config THERMAL_HWMON
+>        depends on HWMON=y || HWMON=THERMAL
+>        default y
+>
+> +config CPU_THERMAL
 
-If it is mergeable, it calls sysfs_slab_alias(). If the sysfs is ready
-(slab_state == SYSFS ), then the name is duplicated (or dropped if no
-SYSFS support ) in sysfs_create_link() for use. 
+Perhaps the name CPU_COOLING or CPUFREQ_COOLING would more accurately
+describe this functionality?  I like the latter since now this
+mechanism only supports cooling by using cpufreq.
 
-For the above cases, we could safely kfree the name string after calling
-cache create. 
+> +       bool "generic cpu cooling support"
 
-However, During early boot, before sysfs is ready ( slab_state <
-SYSFS ), the sysfs_slab_alias() saves the pointer of name in the
-alias_list. And those entries in the list are added to sysfs later after
-slab_sysfs_init() is called. So we need to keep the name string valid
-until slab_sysfs_init() is called to set up the sysfs stuff. By
-duplicating the name string here also, we are able to kfree the name
-string after calling the cache create. 
+If we use CPUFREQ_COOLING, then perhaps this could say:
 
-> 
-> Now, if you ask me, keeping the name around in user-visible files like 
-> /proc/slabinfo for caches that are removed already can be a bit 
-> confusing (that is because we don't add aliases to the slab_cache list)
-> 
-> If you want to touch this, one thing you can do is to keep a list of 
-> names bundled in an alias. If an alias is removed, you free that name. 
-> If that name is the representative name of the bundle, you move to the 
-> next one.
-> 
+bool "cpu cooling through cpufreq frequency limiting"
 
+> +       depends on THERMAL && CPU_FREQ
+> +       help
+> +         This implements the generic cpu cooling mechanism through frequency
+> +         reduction, cpu hotplug and any other ways of reducing temperature. An
+> +         ACPI version of this already exists(drivers/acpi/processor_thermal.c).
+> +         This will be useful for platforms using the generic thermal interface
+> +         and not the ACPI interface.
+> +         If you want this support, you should say Y or M here.
+> +
 
+Currently, only the "frequency reduction" method exists so perhaps
+it's best to remove mention of "cpu hotplug and any other ways of
+reducing temperature"?  Here'as a version for cpufreq only:
 
+config CPUFREQ_COOLING
+	bool "cpu cooling through cpufreq frequency limiting"
+	depends on THERMAL && CPU_FREQ
+	help
+	  This implements a generic cpu cooling mechanism through cpufreq
+	  frequency limiting. An ACPI version of this already exists
+	  (drivers/acpi/processor_thermal.c).  This will be useful for
+	  platforms using the generic thermal interface and not the ACPI
+	  interface.
+	  If you want this support, you should say Y or M here.
+
+>  config SPEAR_THERMAL
+>        bool "SPEAr thermal sensor driver"
+>        depends on THERMAL
+> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+> index a9fff0b..30c456c 100644
+> --- a/drivers/thermal/Makefile
+> +++ b/drivers/thermal/Makefile
+> @@ -3,4 +3,5 @@
+>  #
+>
+>  obj-$(CONFIG_THERMAL)          += thermal_sys.o
+> -obj-$(CONFIG_SPEAR_THERMAL)            += spear_thermal.o
+> \ No newline at end of file
+> +obj-$(CONFIG_CPU_THERMAL)       += cpu_cooling.o
+> +obj-$(CONFIG_SPEAR_THERMAL)            += spear_thermal.o
+> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+> new file mode 100644
+> index 0000000..c40d9a0
+> --- /dev/null
+> +++ b/drivers/thermal/cpu_cooling.c
+> @@ -0,0 +1,483 @@
+> +/*
+> + *  linux/drivers/thermal/cpu_cooling.c
+> + *
+> + *  Copyright (C) 2012 Samsung Electronics Co., Ltd(http://www.samsung.com)
+> + *  Copyright (C) 2012  Amit Daniel <amit.kachhap@linaro.org>
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; version 2 of the License.
+> + *
+> + *  This program is distributed in the hope that it will be useful, but
+> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + *  General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License along
+> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + */
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/thermal.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/cpufreq.h>
+> +#include <linux/err.h>
+> +#include <linux/slab.h>
+> +#include <linux/cpu.h>
+> +#include <linux/cpu_cooling.h>
+> +
+> +/**
+> + * struct cpufreq_cooling_device
+> + * @id: unique integer value corresponding to each cpufreq_cooling_device
+> + *     registered.
+> + * @cool_dev: thermal_cooling_device pointer to keep track of the the
+> + *     egistered cooling device.
+> + * @tab_ptr: freq_clip_table table containing the maximum value of frequency to
+> + *     be set for different cooling state.
+> + * @tab_size: integer value representing a count of the above table.
+> + * @cpufreq_state: integer value representing the current state of cpufreq
+> + *     cooling devices.
+> + * @allowed_cpus: all the cpus involved for this cpufreq_cooling_device.
+> + * @node: list_head to link all cpufreq_cooling_device together.
+> + *
+> + * This structure is required for keeping information of each
+> + * cpufreq_cooling_device registered as a list whose head is represented by
+> + * cooling_cpufreq_list. In order to prevent corruption of this list a
+> + * mutex lock cooling_cpufreq_lock is used.
+> + */
+> +struct cpufreq_cooling_device {
+> +       int id;
+> +       struct thermal_cooling_device *cool_dev;
+> +       struct freq_clip_table *tab_ptr;
+> +       unsigned int tab_size;
+> +       unsigned int cpufreq_state;
+> +       struct cpumask allowed_cpus;
+> +       struct list_head node;
+> +};
+> +static LIST_HEAD(cooling_cpufreq_list);
+> +static DEFINE_MUTEX(cooling_cpufreq_lock);
+> +static DEFINE_IDR(cpufreq_idr);
+> +
+> +/*per cpu variable to store the previous max frequency allowed*/
+> +static DEFINE_PER_CPU(unsigned int, max_policy_freq);
+> +
+> +/*notify_table passes value to the CPUFREQ_ADJUST callback function.*/
+> +#define NOTIFY_INVALID NULL
+> +static struct freq_clip_table *notify_table;
+> +
+> +/*Head of the blocking notifier chain to inform about frequency clamping*/
+> +static BLOCKING_NOTIFIER_HEAD(cputherm_state_notifier_list);
+> +
+> +/**
+> + * get_idr - function to get a unique id.
+> + * @idr: struct idr * handle used to create a id.
+> + * @id: int * value generated by this function.
+> + */
+> +static int get_idr(struct idr *idr, int *id)
+> +{
+> +       int err;
+> +again:
+> +       if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
+> +               return -ENOMEM;
+> +
+> +       mutex_lock(&cooling_cpufreq_lock);
+> +       err = idr_get_new(idr, NULL, id);
+> +       mutex_unlock(&cooling_cpufreq_lock);
+> +
+> +       if (unlikely(err == -EAGAIN))
+> +               goto again;
+> +       else if (unlikely(err))
+> +               return err;
+> +
+> +       *id = *id & MAX_ID_MASK;
+> +       return 0;
+> +}
+> +
+> +/**
+> + * release_idr - function to free the unique id.
+> + * @idr: struct idr * handle used for creating the id.
+> + * @id: int value representing the unique id.
+> + */
+> +static void release_idr(struct idr *idr, int id)
+> +{
+> +       mutex_lock(&cooling_cpufreq_lock);
+> +       idr_remove(idr, id);
+> +       mutex_unlock(&cooling_cpufreq_lock);
+> +}
+> +
+> +/**
+> + * cputherm_register_notifier - Register a notifier with cpu cooling interface.
+> + * @nb:        struct notifier_block * with callback info.
+> + * @list: integer value for which notification is needed. possible values are
+> + *     CPUFREQ_COOLING_START and CPUFREQ_COOLING_STOP.
+> + *
+> + * This exported function registers a driver with cpu cooling layer. The driver
+> + * will be notified when any cpu cooling action is called.
+> + */
+> +int cputherm_register_notifier(struct notifier_block *nb, unsigned int list)
+> +{
+> +       int ret = 0;
+> +
+> +       switch (list) {
+> +       case CPUFREQ_COOLING_START:
+> +       case CPUFREQ_COOLING_STOP:
+> +               ret = blocking_notifier_chain_register(
+> +                               &cputherm_state_notifier_list, nb);
+> +               break;
+> +       default:
+> +               ret = -EINVAL;
+> +       }
+> +       return ret;
+> +}
+> +EXPORT_SYMBOL(cputherm_register_notifier);
+> +
+> +/**
+> + * cputherm_unregister_notifier - Un-register a notifier.
+> + * @nb:        struct notifier_block * with callback info.
+> + * @list: integer value for which notification is needed. values possible are
+> + *     CPUFREQ_COOLING_START or CPUFREQ_COOLING_STOP.
+> + *
+> + * This exported function un-registers a driver with cpu cooling layer.
+> + */
+> +int cputherm_unregister_notifier(struct notifier_block *nb, unsigned int list)
+> +{
+> +       int ret = 0;
+> +
+> +       switch (list) {
+> +       case CPUFREQ_COOLING_START:
+> +       case CPUFREQ_COOLING_STOP:
+> +               ret = blocking_notifier_chain_unregister(
+> +                               &cputherm_state_notifier_list, nb);
+> +               break;
+> +       default:
+> +               ret = -EINVAL;
+> +       }
+> +       return ret;
+> +}
+> +EXPORT_SYMBOL(cputherm_unregister_notifier);
+> +
+> +/*Below codes defines functions to be used for cpufreq as cooling device*/
+> +
+> +/**
+> + * is_cpufreq_valid - function to check if a cpu has frequency transition policy.
+> + * @cpu: cpu for which check is needed.
+> + */
+> +static int is_cpufreq_valid(int cpu)
+> +{
+> +       struct cpufreq_policy policy;
+> +       return !cpufreq_get_policy(&policy, cpu);
+> +}
+> +
+> +/**
+> + * cpufreq_apply_cooling - function to apply frequency clipping.
+> + * @cpufreq_device: cpufreq_cooling_device pointer containing frequency
+> + *     clipping data.
+> + * @cooling_state: value of the cooling state.
+> + */
+> +static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
+> +                               unsigned long cooling_state)
+> +{
+> +       unsigned int event, cpuid, state;
+> +       struct freq_clip_table *th_table, *table_ptr;
+> +       const struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
+> +       struct cpufreq_cooling_device *cpufreq_ptr;
+> +
+> +       if (cooling_state > cpufreq_device->tab_size)
+> +               return -EINVAL;
+> +
+> +       /*Check if the old cooling action is same as new cooling action*/
+> +       if (cpufreq_device->cpufreq_state == cooling_state)
+> +               return 0;
+> +
+> +       /*pass cooling table info to the cpufreq_thermal_notifier callback*/
+> +       notify_table = NOTIFY_INVALID;
+> +
+> +       if (cooling_state > 0) {
+> +               th_table = &(cpufreq_device->tab_ptr[cooling_state - 1]);
+> +               notify_table = th_table;
+> +       }
+> +
+> +       /*check if any lower clip frequency active in other cpufreq_device's*/
+> +       list_for_each_entry(cpufreq_ptr, &cooling_cpufreq_list, node) {
+> +
+> +               state = cpufreq_ptr->cpufreq_state;
+> +               if (state == 0 || cpufreq_ptr == cpufreq_device)
+> +                       continue;
+> +
+> +               if (!cpumask_equal(&cpufreq_ptr->allowed_cpus,
+> +                               &cpufreq_device->allowed_cpus))
+> +                       continue;
+> +
+> +               table_ptr = &(cpufreq_ptr->tab_ptr[state - 1]);
+> +               if (notify_table == NULL ||
+> +                               (table_ptr->freq_clip_max <
+> +                               notify_table->freq_clip_max))
+> +                       notify_table =  table_ptr;
+> +       }
+> +
+> +       cpufreq_device->cpufreq_state = cooling_state;
+> +
+> +       if (notify_table != NOTIFY_INVALID) {
+> +               event = CPUFREQ_COOLING_START;
+> +               maskPtr = notify_table->mask_val;
+> +       } else {
+> +               event = CPUFREQ_COOLING_STOP;
+> +       }
+> +
+> +       blocking_notifier_call_chain(&cputherm_state_notifier_list,
+> +                                               event, notify_table);
+> +
+> +       for_each_cpu(cpuid, maskPtr) {
+> +               if (is_cpufreq_valid(cpuid))
+> +                       cpufreq_update_policy(cpuid);
+> +       }
+> +
+> +       notify_table = NOTIFY_INVALID;
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + * cpufreq_thermal_notifier - notifier callback for cpufreq policy change.
+> + * @nb:        struct notifier_block * with callback info.
+> + * @event: value showing cpufreq event for which this function invoked.
+> + * @data: callback-specific data
+> + */
+> +static int cpufreq_thermal_notifier(struct notifier_block *nb,
+> +                                       unsigned long event, void *data)
+> +{
+> +       struct cpufreq_policy *policy = data;
+> +       unsigned long max_freq = 0;
+> +
+> +       if (event != CPUFREQ_ADJUST)
+> +               return 0;
+> +
+> +       if (notify_table != NOTIFY_INVALID) {
+> +               max_freq = notify_table->freq_clip_max;
+> +
+> +               if (!per_cpu(max_policy_freq, policy->cpu))
+> +                       per_cpu(max_policy_freq, policy->cpu) = policy->max;
+> +       } else {
+> +               if (per_cpu(max_policy_freq, policy->cpu)) {
+> +                       max_freq = per_cpu(max_policy_freq, policy->cpu);
+> +                       per_cpu(max_policy_freq, policy->cpu) = 0;
+> +               } else {
+> +                       max_freq = policy->max;
+> +               }
+> +       }
+> +
+> +       /* Never exceed user_policy.max*/
+> +       if (max_freq > policy->user_policy.max)
+> +               max_freq = policy->user_policy.max;
+> +
+> +       if (policy->max != max_freq)
+> +               cpufreq_verify_within_limits(policy, 0, max_freq);
+> +
+> +       return 0;
+> +}
+> +
+> +/*
+> + * cpufreq cooling device callback functions are defined below
+> + */
+> +
+> +/**
+> + * cpufreq_get_max_state - callback function to get the max cooling state.
+> + * @cdev: thermal cooling device pointer.
+> + * @state: fill this variable with the max cooling state.
+> + */
+> +static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
+> +                                unsigned long *state)
+> +{
+> +       int ret = -EINVAL;
+> +       struct cpufreq_cooling_device *cpufreq_device;
+> +
+> +       mutex_lock(&cooling_cpufreq_lock);
+> +       list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+> +               if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
+> +                       *state = cpufreq_device->tab_size;
+> +                       ret = 0;
+> +                       break;
+> +               }
+> +       }
+> +       mutex_unlock(&cooling_cpufreq_lock);
+> +       return ret;
+> +}
+> +
+> +/**
+> + * cpufreq_get_cur_state - callback function to get the current cooling state.
+> + * @cdev: thermal cooling device pointer.
+> + * @state: fill this variable with the current cooling state.
+> + */
+> +static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
+> +                                unsigned long *state)
+> +{
+> +       int ret = -EINVAL;
+> +       struct cpufreq_cooling_device *cpufreq_device;
+> +
+> +       mutex_lock(&cooling_cpufreq_lock);
+> +       list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+> +               if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
+> +                       *state = cpufreq_device->cpufreq_state;
+> +                       ret = 0;
+> +                       break;
+> +               }
+> +       }
+> +       mutex_unlock(&cooling_cpufreq_lock);
+> +       return ret;
+> +}
+> +
+> +/**
+> + * cpufreq_set_cur_state - callback function to set the current cooling state.
+> + * @cdev: thermal cooling device pointer.
+> + * @state: set this variable to the current cooling state.
+> + */
+> +static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
+> +                                unsigned long state)
+> +{
+> +       int ret = -EINVAL;
+> +       struct cpufreq_cooling_device *cpufreq_device;
+> +
+> +       mutex_lock(&cooling_cpufreq_lock);
+> +       list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+> +               if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
+> +                       ret = 0;
+> +                       break;
+> +               }
+> +       }
+> +       if (!ret)
+> +               ret = cpufreq_apply_cooling(cpufreq_device, state);
+> +
+> +       mutex_unlock(&cooling_cpufreq_lock);
+> +
+> +       return ret;
+> +}
+> +
+> +/*Bind cpufreq callbacks to thermal cooling device ops*/
+> +static struct thermal_cooling_device_ops const cpufreq_cooling_ops = {
+> +       .get_max_state = cpufreq_get_max_state,
+> +       .get_cur_state = cpufreq_get_cur_state,
+> +       .set_cur_state = cpufreq_set_cur_state,
+> +};
+> +
+> +/*Notifier for cpufreq policy change*/
+> +static struct notifier_block thermal_cpufreq_notifier_block = {
+> +       .notifier_call = cpufreq_thermal_notifier,
+> +};
+> +
+> +/**
+> + * cpufreq_cooling_register - function to create cpufreq cooling device.
+> + * @tab_ptr: table ptr containing the maximum value of frequency to be clipped
+> + *     for each cooling state.
+> + * @tab_size: count of entries in the above table.
+> + *     happen.
+> + */
+> +struct thermal_cooling_device *cpufreq_cooling_register(
+> +       struct freq_clip_table *tab_ptr, unsigned int tab_size)
+> +{
+> +       struct thermal_cooling_device *cool_dev;
+> +       struct cpufreq_cooling_device *cpufreq_dev = NULL;
+> +       struct freq_clip_table *clip_tab;
+> +       unsigned int cpufreq_dev_count = 0;
+> +       char dev_name[THERMAL_NAME_LENGTH];
+> +       int ret = 0, id = 0, i;
+> +
+> +       if (tab_ptr == NULL || tab_size == 0)
+> +               return ERR_PTR(-EINVAL);
+> +
+> +       list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
+> +               cpufreq_dev_count++;
+> +
+> +       cpufreq_dev = kzalloc(sizeof(struct cpufreq_cooling_device),
+> +                       GFP_KERNEL);
+> +       if (!cpufreq_dev)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       /*Verify that all the entries of freq_clip_table are present*/
+> +       for (i = 0; i < tab_size; i++) {
+> +               clip_tab = ((struct freq_clip_table *)&tab_ptr[i]);
+> +               if (!clip_tab->freq_clip_max || !clip_tab->mask_val
+> +                                       || !clip_tab->temp_level) {
+> +                       kfree(cpufreq_dev);
+> +                       return ERR_PTR(-EINVAL);
+> +               }
+> +               /*
+> +                *Consolidate all the cpumask for all the individual entries
+> +                *of the trip table. This is useful in resetting all the
+> +                *clipped frequencies to the normal level for each cpufreq
+> +                *cooling device.
+> +                */
+> +               cpumask_or(&cpufreq_dev->allowed_cpus,
+> +                       &cpufreq_dev->allowed_cpus, clip_tab->mask_val);
+> +       }
+> +
+> +       cpufreq_dev->tab_ptr = tab_ptr;
+> +       cpufreq_dev->tab_size = tab_size;
+> +
+> +       ret = get_idr(&cpufreq_idr, &cpufreq_dev->id);
+> +       if (ret) {
+> +               kfree(cpufreq_dev);
+> +               return ERR_PTR(-EINVAL);
+> +       }
+> +
+> +       sprintf(dev_name, "thermal-cpufreq-%d", cpufreq_dev->id);
+> +
+> +       cool_dev = thermal_cooling_device_register(dev_name, cpufreq_dev,
+> +                                               &cpufreq_cooling_ops);
+> +       if (!cool_dev) {
+> +               release_idr(&cpufreq_idr, cpufreq_dev->id);
+> +               kfree(cpufreq_dev);
+> +               return ERR_PTR(-EINVAL);
+> +       }
+> +       cpufreq_dev->id = id;
+> +       cpufreq_dev->cool_dev = cool_dev;
+> +       mutex_lock(&cooling_cpufreq_lock);
+> +       list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list);
+> +
+> +       /*Register the notifier for first cpufreq cooling device*/
+> +       if (cpufreq_dev_count == 0)
+> +               cpufreq_register_notifier(&thermal_cpufreq_notifier_block,
+> +                                               CPUFREQ_POLICY_NOTIFIER);
+> +
+> +       mutex_unlock(&cooling_cpufreq_lock);
+> +       return cool_dev;
+> +}
+> +EXPORT_SYMBOL(cpufreq_cooling_register);
+> +
+> +/**
+> + * cpufreq_cooling_unregister - function to remove cpufreq cooling device.
+> + * @cdev: thermal cooling device pointer.
+> + */
+> +void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
+> +{
+> +       struct cpufreq_cooling_device *cpufreq_dev = NULL;
+> +       unsigned int cpufreq_dev_count = 0;
+> +
+> +       mutex_lock(&cooling_cpufreq_lock);
+> +       list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node) {
+> +               if (cpufreq_dev && cpufreq_dev->cool_dev == cdev)
+> +                       break;
+> +               cpufreq_dev_count++;
+> +       }
+> +
+> +       if (!cpufreq_dev || cpufreq_dev->cool_dev != cdev) {
+> +               mutex_unlock(&cooling_cpufreq_lock);
+> +               return;
+> +       }
+> +
+> +       list_del(&cpufreq_dev->node);
+> +
+> +       /*Unregister the notifier for the last cpufreq cooling device*/
+> +       if (cpufreq_dev_count == 1) {
+> +               cpufreq_unregister_notifier(&thermal_cpufreq_notifier_block,
+> +                                       CPUFREQ_POLICY_NOTIFIER);
+> +       }
+> +       mutex_unlock(&cooling_cpufreq_lock);
+> +       thermal_cooling_device_unregister(cpufreq_dev->cool_dev);
+> +       release_idr(&cpufreq_idr, cpufreq_dev->id);
+> +       kfree(cpufreq_dev);
+> +}
+> +EXPORT_SYMBOL(cpufreq_cooling_unregister);
+> diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
+> new file mode 100644
+> index 0000000..ed6c096
+> --- /dev/null
+> +++ b/include/linux/cpu_cooling.h
+> @@ -0,0 +1,99 @@
+> +/*
+> + *  linux/include/linux/cpu_cooling.h
+> + *
+> + *  Copyright (C) 2012 Samsung Electronics Co., Ltd(http://www.samsung.com)
+> + *  Copyright (C) 2012  Amit Daniel <amit.kachhap@linaro.org>
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; version 2 of the License.
+> + *
+> + *  This program is distributed in the hope that it will be useful, but
+> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + *  General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License along
+> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + */
+> +
+> +#ifndef __CPU_COOLING_H__
+> +#define __CPU_COOLING_H__
+> +
+> +#include <linux/thermal.h>
+> +
+> +#define CPUFREQ_COOLING_START          0
+> +#define CPUFREQ_COOLING_STOP           1
+> +
+> +/**
+> + * struct freq_clip_table
+> + * @freq_clip_max: maximum frequency allowed for this cooling state.
+> + * @temp_level: Temperature level at which the temperature clipping will
+> + *     happen.
+> + * @mask_val: cpumask of the allowed cpu's where the clipping will take place.
+> + *
+> + * This structure is required to be filled and passed to the
+> + * cpufreq_cooling_unregister function.
+> + */
+> +struct freq_clip_table {
+> +       unsigned int freq_clip_max;
+> +       unsigned int temp_level;
+> +       const struct cpumask *mask_val;
+> +};
+> +
+> +/**
+> + * cputherm_register_notifier - Register a notifier with cpu cooling interface.
+> + * @nb:        struct notifier_block * with callback info.
+> + * @list: integer value for which notification is needed. possible values are
+> + *     CPUFREQ_COOLING_TYPE and CPUHOTPLUG_COOLING_TYPE.
+
+CPUFREQ_COOLING_TYPE and CPUHOTPLUG_COOLING_TYPE should be changed to
+CPUFREQ_COOLING_START CPUFREQ_COOLING_STOP, right?
+
+> + *
+> + * This exported function registers a driver with cpu cooling layer. The driver
+> + * will be notified when any cpu cooling action is called.
+> + */
+> +int cputherm_register_notifier(struct notifier_block *nb, unsigned int list);
+> +
+> +/**
+> + * cputherm_unregister_notifier - Un-register a notifier.
+> + * @nb:        struct notifier_block * with callback info.
+> + * @list: integer value for which notification is needed. values possible are
+> + *     CPUFREQ_COOLING_TYPE.
+
+Should be changed to CPUFREQ_COOLING_START, CPUFREQ_COOLING_STOP, right?
+
+> + *
+> + * This exported function un-registers a driver with cpu cooling layer.
+> + */
+> +int cputherm_unregister_notifier(struct notifier_block *nb, unsigned int list);
+> +
+> +#ifdef CONFIG_CPU_FREQ
+
+Consider changing this to "#ifdef CPU_THERMAL"  A platform thermal
+driver may want to always call this function as its cpu cooling
+mechanism but it should still function without the cpu_cooling being
+enabled.  In this case, the platform thermal driver would only provide
+temperature readings and critical trip point handling.  But if the
+platform happened may have CONFIG_CPU_FREQ enabled, a build error
+would occur in the current implementation.
+
+(the CONFIG_CPU_FREQ requirement will be met by CPU_THERMAL being
+enabled since it also implies CONFIG_CPU_FREQ being enabled per the
+Kconfig dependency)
+
+> +/**
+> + * cpufreq_cooling_register - function to create cpufreq cooling device.
+> + * @tab_ptr: table ptr containing the maximum value of frequency to be clipped
+> + *     for each cooling state.
+> + * @tab_size: count of entries in the above table.
+> + * @mask_val: cpumask containing the allowed cpu's where frequency clipping can
+> + *     happen.
+> + */
+> +struct thermal_cooling_device *cpufreq_cooling_register(
+> +       struct freq_clip_table *tab_ptr, unsigned int tab_size);
+> +
+> +/**
+> + * cpufreq_cooling_unregister - function to remove cpufreq cooling device.
+> + * @cdev: thermal cooling device pointer.
+> + */
+> +void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
+> +#else /*!CONFIG_CPU_FREQ*/
+
+Modify comment if above suggestion is taken.
+
+> +static inline struct thermal_cooling_device *cpufreq_cooling_register(
+> +       struct freq_clip_table *tab_ptr, unsigned int tab_size);
+> +{
+> +       return NULL;
+> +}
+> +static inline void cpufreq_cooling_unregister(
+> +               struct thermal_cooling_device *cdev)
+> +{
+> +       return;
+> +}
+> +#endif /*CONFIG_CPU_FREQ*/
+
+Modify comment if above suggestion is taken.
+
+> +
+> +#endif /* __CPU_COOLING_H__ */
+> --
+> 1.7.1
+>
+>
+> _______________________________________________
+> linaro-dev mailing list
+> linaro-dev@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-dev
