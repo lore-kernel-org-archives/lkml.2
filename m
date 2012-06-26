@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab2FZUrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 16:47:07 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:31279 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab2FZUrE (ORCPT
+	id S1754246Ab2FZUrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 16:47:11 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:46386 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab2FZUrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 16:47:04 -0400
+	Tue, 26 Jun 2012 16:47:08 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: lenb@kernel.org, linux-acpi@vger.kernel.org
 Cc: bhelgaas@google.com, shuahkhan@gmail.com, liuj97@gmail.com,
         andi@firstfloor.org, isimatu.yasuaki@jp.fujitsu.com,
         linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v6 4/6] ACPI: Add _OST support for ACPI memory hotplug
-Date: Tue, 26 Jun 2012 14:42:52 -0600
-Message-Id: <1340743374-18535-5-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v6 5/6] ACPI: Add _OST support for ACPI container hotplug
+Date: Tue, 26 Jun 2012 14:42:53 -0600
+Message-Id: <1340743374-18535-6-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340743374-18535-1-git-send-email-toshi.kani@hp.com>
 References: <1340743374-18535-1-git-send-email-toshi.kani@hp.com>
@@ -22,91 +22,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed acpi_memory_device_notify() to call ACPI _OST method
-when ACPI memory hotplug operation has completed.
+Changed container_notify_cb() to call ACPI _OST method when ACPI
+container hotplug operation has completed. Slightly restructured
+the code with the same logic except that the hot-add case will
+fail a request whenever device is set. This makes the error check
+to be more comprehensive.
+
+The function sets eject_pending bit for an eject request since it
+does not initiate hot-remove operation. This bit is checked by the
+sysfs eject handler to determine if the request is originated from
+an ACPI eject notification.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- drivers/acpi/acpi_memhotplug.c |   43 +++++++++++++++++++++++++++++----------
- 1 files changed, 32 insertions(+), 11 deletions(-)
+ drivers/acpi/container.c |   43 ++++++++++++++++++++++++++++---------------
+ 1 files changed, 28 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index d985713..06c55cd 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -341,7 +341,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- {
- 	struct acpi_memory_device *mem_device;
- 	struct acpi_device *device;
+diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+index 45cd03b..01a986d 100644
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -158,9 +158,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 	int result;
+ 	int present;
+ 	acpi_status status;
 -
+-
+-	present = is_device_present(handle);
 +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
  
- 	switch (event) {
+ 	switch (type) {
  	case ACPI_NOTIFY_BUS_CHECK:
-@@ -354,15 +354,20 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- 					  "\nReceived DEVICE CHECK notification for device\n"));
- 		if (acpi_memory_get_device(handle, &mem_device)) {
- 			printk(KERN_ERR PREFIX "Cannot find driver data\n");
--			return;
+@@ -169,32 +167,47 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 		printk(KERN_WARNING "Container driver received %s event\n",
+ 		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+ 		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
++
++		present = is_device_present(handle);
+ 		status = acpi_bus_get_device(handle, &device);
+-		if (present) {
+-			if (ACPI_FAILURE(status) || !device) {
+-				result = container_device_add(&device, handle);
+-				if (!result)
+-					kobject_uevent(&device->dev.kobj,
+-						       KOBJ_ONLINE);
+-				else
+-					printk(KERN_WARNING
+-					       "Failed to add container\n");
+-			}
+-		} else {
++		if (!present) {
+ 			if (ACPI_SUCCESS(status)) {
+ 				/* device exist and this is a remove request */
++				device->flags.eject_pending = 1;
+ 				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
++				return;
+ 			}
 +			break;
- 		}
- 
--		if (!acpi_memory_check_device(mem_device)) {
--			if (acpi_memory_enable_device(mem_device))
--				printk(KERN_ERR PREFIX
--					    "Cannot enable memory device\n");
-+		if (acpi_memory_check_device(mem_device))
++		}
++
++		if (!ACPI_FAILURE(status) || device)
 +			break;
 +
-+		if (acpi_memory_enable_device(mem_device)) {
-+			pr_err(PREFIX "Cannot enable memory device\n");
++		result = container_device_add(&device, handle);
++		if (result) {
++			pr_warn("Failed to add container\n");
 +			break;
  		}
 +
++		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
 +		ost_code = ACPI_OST_SC_SUCCESS;
  		break;
 +
  	case ACPI_NOTIFY_EJECT_REQUEST:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 				  "\nReceived EJECT REQUEST notification for device\n"));
-@@ -383,19 +388,35 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- 		 * TBD: Can also be disabled by Callback registration
- 		 *      with generic sysfs driver
- 		 */
--		if (acpi_memory_disable_device(mem_device))
--			printk(KERN_ERR PREFIX
--				    "Disable memory device\n");
-+		if (acpi_memory_disable_device(mem_device)) {
-+			pr_err(PREFIX "Disable memory device\n");
-+			/*
-+			 * If _EJ0 was called but failed, _OST is not
-+			 * necessary.
-+			 */
-+			if (mem_device->state == MEMORY_INVALID_STATE)
-+				return;
-+
-+			break;
-+		}
-+
- 		/*
- 		 * TBD: Invoke acpi_bus_remove to cleanup data structures
- 		 */
--		break;
-+
-+		/* _EJ0 succeeded; _OST is not necessary */
-+		return;
+ 		if (!acpi_bus_get_device(handle, &device) && device) {
++			device->flags.eject_pending = 1;
+ 			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
++			return;
+ 		}
+ 		break;
 +
  	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 				  "Unsupported event [0x%x]\n", event));
 -		break;
-+
 +		/* non-hotplug event; possibly handled by other handler */
 +		return;
  	}
- 
++
 +	/* Inform firmware that the hotplug operation has completed */
-+	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
++	(void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
  	return;
  }
  
