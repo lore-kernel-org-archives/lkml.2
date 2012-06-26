@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab2FZMuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 08:50:55 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58910 "EHLO mx2.parallels.com"
+	id S1756801Ab2FZNAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 09:00:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12142 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756333Ab2FZMux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 08:50:53 -0400
-Message-ID: <4FE9AF88.5070803@parallels.com>
-Date: Tue, 26 Jun 2012 16:48:08 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756132Ab2FZM77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 08:59:59 -0400
+Date: Tue, 26 Jun 2012 08:59:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Josh Hunt <joshhunt00@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: multi-second application stall in open()
+Message-ID: <20120626125953.GA22557@redhat.com>
+References: <CAKA=qzY+u64vVZmbiH4zp_Fij2zejQBFUSNENKF=PZBT0G7xrQ@mail.gmail.com>
+ <20120622204207.GA22063@redhat.com>
+ <CAKA=qzbycm0cjLyiuKaKkD8sxDm5DvX9WVqSxN2QVT2WZOzU0Q@mail.gmail.com>
+ <CAKA=qza_s6zr+wZzfFTVPSzgPQAov=K63jf-SJOTDcrnDELY5w@mail.gmail.com>
+ <CAKA=qzYea71A5VQOQgrqzaZtVFadjhcghgH+Z9n4ivS7vUgW0g@mail.gmail.com>
+ <20120625133047.GA9394@redhat.com>
+ <CAKA=qzbXm7LaDziH=cms1W5X+cwNNRkG0LNFfWKEppr2oht6_w@mail.gmail.com>
+ <20120625211850.GC10916@redhat.com>
+ <CAKA=qzaU=wKLrprgJ4z32tqqyO6W0+SBcaV=ArWAdKh_9c=Zew@mail.gmail.com>
+ <CAKA=qzY+J-Ab8NC-+r1Dw_-giVzC=z8SnxJhSWHF-ud8j3yg6A@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Frederic Weisbecker <fweisbec@redhat.com>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 11/11] protect architectures where THREAD_SIZE >= PAGE_SIZE
- against fork bombs
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-12-git-send-email-glommer@parallels.com> <4FE89807.50708@redhat.com> <20120625183818.GH3869@google.com>
-In-Reply-To: <20120625183818.GH3869@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKA=qzY+J-Ab8NC-+r1Dw_-giVzC=z8SnxJhSWHF-ud8j3yg6A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 10:38 PM, Tejun Heo wrote:
-> On Mon, Jun 25, 2012 at 06:55:35PM +0200, Frederic Weisbecker wrote:
->> On 06/25/2012 04:15 PM, Glauber Costa wrote:
->>
->>> Because those architectures will draw their stacks directly from
->>> the page allocator, rather than the slab cache, we can directly
->>> pass __GFP_KMEMCG flag, and issue the corresponding free_pages.
->>>
->>> This code path is taken when the architecture doesn't define
->>> CONFIG_ARCH_THREAD_INFO_ALLOCATOR (only ia64 seems to), and has
->>> THREAD_SIZE >= PAGE_SIZE. Luckily, most - if not all - of the
->>> remaining architectures fall in this category.
->>>
->>> This will guarantee that every stack page is accounted to the memcg
->>> the process currently lives on, and will have the allocations to fail
->>> if they go over limit.
->>>
->>> For the time being, I am defining a new variant of THREADINFO_GFP, not
->>> to mess with the other path. Once the slab is also tracked by memcg,
->>> we can get rid of that flag.
->>>
->>> Tested to successfully protect against :(){ :|:& };:
->>>
->>> Signed-off-by: Glauber Costa <glommer@parallels.com>
->>> CC: Christoph Lameter <cl@linux.com>
->>> CC: Pekka Enberg <penberg@cs.helsinki.fi>
->>> CC: Michal Hocko <mhocko@suse.cz>
->>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>> CC: Johannes Weiner <hannes@cmpxchg.org>
->>> CC: Suleiman Souhlal <suleiman@google.com>
->>
->>
->> Acked-by: Frederic Weisbecker <fweisbec@redhat.com>
->
-> Frederic, does this (with proper slab accounting added later) achieve
-> what you wanted with the task counter?
->
+On Mon, Jun 25, 2012 at 11:01:48PM -0500, Josh Hunt wrote:
 
-A note: Frederic may confirm, but I think he doesn't even need
-the slab accounting to follow to achieve that goal.
+[..]
+> So this really seems like a problem with kblockd not kicking in. I've
+> instrumented every path in select_queue and it's not getting hit after
+> schedule dispatch. Everything seems to stall at that point until a new
+> request comes in.
 
+Ok, that's cool. So now we need to find out why queued work is not being
+scheduled.
 
+I think there are some workqueue related trace points. If you enable those
+along with blktraces, that should give tejun some data to look at.
 
+Thanks
+Vivek
