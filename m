@@ -1,202 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126Ab2FZA07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 20:26:59 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63966 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756821Ab2FZA06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 20:26:58 -0400
-X-AuditID: 9c93016f-b7cbdae0000024ac-b7-4fe901cff931
-Message-ID: <4FE901D1.9090400@kernel.org>
-Date: Tue, 26 Jun 2012 09:26:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758154Ab2FZA3R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 20:29:17 -0400
+Received: from fieldses.org ([174.143.236.118]:60691 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756821Ab2FZA3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jun 2012 20:29:15 -0400
+Date: Mon, 25 Jun 2012 20:29:08 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Filipe Brandenburger <filbranden@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] locks: prevent side-effects of
+ locks_release_private before file_lock is initialized
+Message-ID: <20120626002908.GA14279@fieldses.org>
+References: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
+ <1339815965-1171-2-git-send-email-filbranden@gmail.com>
+ <20120618200131.GA12351@fieldses.org>
+ <CABe66sW0k4N_7vMduOZMRak-U4A+6E7i+fiGwKEVBazJ1npBeg@mail.gmail.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Mel Gorman <mgorman@suse.de>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: RFC:  Easy-Reclaimable LRU list
-References: <4FE012CD.6010605@kernel.org> <20120625102435.GD8271@suse.de>
-In-Reply-To: <20120625102435.GD8271@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABe66sW0k4N_7vMduOZMRak-U4A+6E7i+fiGwKEVBazJ1npBeg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 07:24 PM, Mel Gorman wrote:
-
-> On Tue, Jun 19, 2012 at 02:49:01PM +0900, Minchan Kim wrote:
->> Hi everybody!
->>
->> Recently, there are some efforts to handle system memory pressure.
->>
->> 1) low memory notification - [1]
->> 2) fallocate(VOLATILE) - [2]
->> 3) fadvise(NOREUSE) - [3]
->>
->> For them, I would like to add new LRU list, aka "Ereclaimable" which is opposite of "unevictable".
->> Reclaimable LRU list includes _easy_ reclaimable pages.
->> For example, easy reclaimable pages are following as. 
->>
->> 1. invalidated but remained LRU list.
->> 2. pageout pages for reclaim(PG_reclaim pages)
->> 3. fadvise(NOREUSE)
->> 4. fallocate(VOLATILE)
->>
->> Their pages shouldn't stir normal LRU list and compaction might not migrate them, even.
+On Tue, Jun 19, 2012 at 10:39:55PM -0400, Filipe Brandenburger wrote:
+> Hi,
 > 
-> Why would compaction not migrate them? We might still want to migrate
-> NORESUSE or VOLATILE pages.
-
-
-It might.
-
+> On Mon, Jun 18, 2012 at 4:01 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > But clearest might be to separate allocation and initialization and
+> > delay the latter till we know we're going to need it?
 > 
->> Reclaimer can reclaim Ereclaimable pages before normal lru list and will avoid unnecessary
->> swapout in anon pages in easy-reclaimable LRU list.
->> It also can make admin measure how many we have available pages at the moment without latency.
+> I started playing with this second idea of yours... Unfortunately
+> having fl_lmops unset before it's fully initialized doesn't really
+> work because its methods are needed by vfs_setlease()... also, that
+> would change the API for other users of that function...
 > 
-> That's not true for PG_reclaim pages as those pages cannot be discarded
-> until writeback completes.
-
+> But I thought of a way of setting a flag to mark the struct as
+> uninitialized and then have vfs_setlease() clear that flag once it
+> decides to use that struct. If it doesn't and changes the flp pointer
+> to the one that was in use before, then it doesn't clear that flag
+> which means the locks_free_lock() function will not do any calls into
+> fl_lmops which might have side effects on the process...
 > 
-
-> One reason why I tried moving PG_reclaim pages to a separate list was
-> to avoid excessive scanning when writing back to slow devices. If those
-> pages were moved to an "easy-reclaimable" LRU list then the value would
-> be reduced as scanning would still occur. It might make it worse because
-> the whole Ereclaimable list would be scanned for pages that cannot be
-> reclaimed at all before moving to another LRU list.
-
-
-I should have written more clear.
-I mean following as
-
-end_page_writeback(struct page *)
-{
-	if (PageReclaim(page))
-		move_ereclaim_lru_list(page);
-}
-
-So Ereclaimable LRU list can have a discardable pages.
+> Here's the patch:
 > 
-
-> This separate list does not exist today because it required a page bit to
-> implement and I did not want it to be a 64-bit only feature. You will
-> probably hit the same problem.
-
-
-True. Others already pointed it out in this thread.
-And I post a idea.
-
-Copy/Paste
-
-"
-Maybe and it could be a serious problem on 32 bit machine.
-I didn't dive into that but I guess we can reuse PG_reclaim bit.
-PG_reclaim is always used by with !PageActive and Ereclaimable LRU list doesn't have 
-active LRU list. so we can change following as
-
-- #define PG_reclaim
-+ #define PG_Ereclaim
-
-SetPageReclaim(page)
-{
-	page->flags |= (PG_Ereclaim|PG_active);
-}
-
-TestPageReclaim(page)
-{
-	if (((page->flags && PG_Ereclaim|PG_active)) == (PG_Ereclaim|PG_active)) 
-		return true;
-	return false;
-}
-
-SetPageEreclaim(page)
-{
-	page->flags |= PG_Ereclaim;
-}
-"
-
 > 
-> The setting of the page bit is also going to be a problem but you may be
-> able to lazily move pages to the EReclaimable list in the same way
-> unevictable pages are handled.
-
-
-First of all, I don't consider lazy moving like unevictable.
-We can move VOLATILE/NOREUSE pages into EReclaiabmle LRU list in backgroud by using workqueue.
-Please tell me the scenario if we consider lazy moving.
-
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 17fd887..8da1217 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1129,6 +1129,7 @@ static inline int file_check_writeable(struct file *filp)
+>  #define FL_SLEEP       128     /* A blocking lock */
+>  #define FL_DOWNGRADE_PENDING   256 /* Lease is being downgraded */
+>  #define FL_UNLOCK_PENDING      512 /* Lease is being broken */
+> +#define FL_LEASE_UNINITIALIZED 1024 /* Lease was not fully initialized yet */
 > 
->> It's very important in recent mobile systems because page reclaim/writeback is very critical
->> of application latency. Of course, it could affect normal desktop, too.
->> With it, we can calculate fast-available pages more exactly with NR_FREE_PAGES + NR_ERECLAIMABLE_PAGES,
->> for example. If it's below threshold we defined, we could trigger 1st level notification
->> if we really need prototying low memory notification.
->>
+>  /*
+>   * Special return value from posix_lock_file() and vfs_lock_file() for
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 814c51d..a995cc9 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -195,6 +195,8 @@ EXPORT_SYMBOL_GPL(locks_alloc_lock);
 > 
-> If PG_reclaim pages are on this list, then that calculation will not be
-> helpful.
+>  void locks_release_private(struct file_lock *fl)
+>  {
+> +       if (fl->fl_flags & FL_LEASE_UNINITIALIZED)
+> +               return;
 
+I don't know, it bugs me a little to muck up common lock code with
+an odd exception for the lease code.
 
-PG_reclaim pages would be not in Ereclaimable LRU list like I mentioned above.
+Let's just go with your first patch and free the thing by hand (but add
+a comment explaining why).
 
+Then come back and figure out how to make the interface clearer once
+we've got the bug fixed.
+
+>         if (fl->fl_ops) {
+>                 if (fl->fl_ops->fl_release_private)
+>                         fl->fl_ops->fl_release_private(fl);
+> @@ -454,7 +456,7 @@ static int lease_init(struct file *filp, int type,
+> struct file_lock *fl)
+>         fl->fl_pid = current->tgid;
 > 
->> We may change madvise(DONTNEED) implementation instead of zapping page immediately.
->> If memory pressure doesn't happen, pages are in memory so we can avoid so many minor fault.
->> Of course, we can discard instead of swap out if system memory pressure happens.
->> We might implement it madvise(VOLATILE) instead of DONTNEED, but anyway it's off-topic in this thread.
->>
->> As a another example, we can implement CFLRU(Clean-First LRU) which reclaims unmapped-clean cache page firstly.
+>         fl->fl_file = filp;
+> -       fl->fl_flags = FL_LEASE;
+> +       fl->fl_flags = FL_LEASE | FL_LEASE_UNINITIALIZED;
+>         fl->fl_start = 0;
+>         fl->fl_end = OFFSET_MAX;
+>         fl->fl_ops = NULL;
+> @@ -1406,6 +1408,7 @@ int generic_add_lease(struct file *filp, long
+> arg, struct file_lock **flp)
+>         if (!leases_enable)
+>                 goto out;
 > 
-> That alters ageing of pages significantly. It means that workloads that
-> are using read heavily will have their pages discarded first.\
-
+> +       lease->fl_flags &= ~FL_LEASE_UNINITIALIZED;
+>         locks_insert_lock(before, lease);
+>         return 0;
 > 
-
->> The rationale is that in non-rotation device, read/write cost is much asynchronous.
 > 
-> While this is true that does not justify throwing away unmapped clean
-> page cache first every time.
-
-
-That's true. That is workload I have a concern.
-We need balancing unmmapped/mapped pages so sometime, some mapped pages would be moved into
-unevictable LRU list with unmapping all of pte. I believe It could mitigate the problem,
-but not perfect, I admit. Maybe we need some knob for admin to tune it.
-Anyway, it's a big concern for me and one of careful test for regression.
-
 > 
->> Read is very fast while write is very slow so it would be a gain while we can avoid writeback of dirty pages
->> if possible although we need several reads. It can be implemented easily with Ereclaimable pages, too.
->>
->> Anyway, it's just a brain-storming phase and never implemented yet but decide posting before it's too late.
->> I hope listen others opinion before get into the code.
->>
+> Unfortunately, at this point I have more questions than answers...
+> * Is this a good idea?
+> * Is it good to store this as an extra flag? Or would it be
+> preferrable to add an extra boolean field to the file_lock struct
+> instead?
+> * Is FL_LEASE_UNINITIALIZED a good name for this flag?
+> * Should this flag be set only in lease_init()? Or also functions such
+> as flock_make_lock()? Potentially everything that is freed with
+> locks_free_lock() might need it...
+> * Should the flag be cleared in generic_add_lease() only? Or should
+> __vfs_setlease() compare the original value of the lease pointer with
+> the one returned by generic_setlease() (or filp->f_op->setlease() if
+> it's set) and then clear the flag itself?
 > 
-> Care is needed. I think you'll only be able to use this list for
-> NORESUSE, VOLATILE and invalidated pages. If you add PG_reclaim it not be
-> "easily-reclaimable" and if you add clean unmapped pages then there will
-> be regressions in workloads that are read-intensive.
+> Also, looking at lease_alloc(), I noticed that it calls
+> locks_free_lock() if lease_init() fails, but lease_init() can only
+> fail right at the beginning if assign_type() fails, but at that point
+> can it be guaranteed that fl_lmops (and fl_ops for that matter) are
+> properly populated or are at least NULL? Maybe locks_alloc_lock()
+> should initialize the file_lock struct with a flag indicating that
+> it's not fully initialized at that point yet...
+
+locks_alloc_lock() uses kmem_cache_zalloc(), so this is ok--the memory
+is zeroed.
+
+> Another thing I noticed (after Bruce pointed me to that code) is that
+> fs/nfsd/nfs4state.c:nfs4_setlease() seems to suffer from the leak bug
+> that was fixed by the commits which introduced this issue, it's not
+> checking whether vfs_setlease() is returning a different file_lock
+> struct than the one it allocated and in that case it's not freeing the
+> one it passed.
+
+The v4 code shouldn't ever hit the case where two leases are "merged",
+but that should be made more obvious.
+
+--b.
+
+> But I'd say it's probably best to figure out a fix for
+> that one only after this one is fixed to avoid introducing the
+> regression there as well.
 > 
-
-
-Thanks for the feedback, Mel.
-
--- 
-Kind regards,
-Minchan Kim
+> Cheers,
+> Filipe
