@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab2FZAMG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 20:12:06 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:28368 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757958Ab2FZAMD (ORCPT
+	id S1758060Ab2FZAMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 20:12:32 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48570 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757958Ab2FZAMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 20:12:03 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-160.messagelabs.com!1340669521!6880181!3
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 22/33] staging: comedi: cb_das16_cs: probe for the device first
-Date: Mon, 25 Jun 2012 17:11:56 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 25 Jun 2012 20:12:30 -0400
+X-AuditID: 9c930197-b7c94ae0000037ff-e9-4fe8fe6d34d3
+Message-ID: <4FE8FE70.6050107@kernel.org>
+Date: Tue, 26 Jun 2012 09:12:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Glauber Costa <glommer@parallels.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: RFC:  Easy-Reclaimable LRU list
+References: <4FE012CD.6010605@kernel.org> <4FE82555.2010704@parallels.com>
+In-Reply-To: <4FE82555.2010704@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206251711.57432.hartleys@visionengravers.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the attach of the comedi_driver, the device type probe
-can fail. We should do the probe before requesting the irq
-for the driver.
+On 06/25/2012 05:46 PM, Glauber Costa wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_das16_cs.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+> On 06/19/2012 09:49 AM, Minchan Kim wrote:
+>> Hi everybody!
+>>
+>> Recently, there are some efforts to handle system memory pressure.
+>>
+>> 1) low memory notification - [1]
+>> 2) fallocate(VOLATILE) - [2]
+>> 3) fadvise(NOREUSE) - [3]
+>>
+>> For them, I would like to add new LRU list, aka "Ereclaimable" which
+>> is opposite of "unevictable".
+>> Reclaimable LRU list includes_easy_  reclaimable pages.
+>> For example, easy reclaimable pages are following as.
+>>
+>> 1. invalidated but remained LRU list.
+>> 2. pageout pages for reclaim(PG_reclaim pages)
+>> 3. fadvise(NOREUSE)
+>> 4. fallocate(VOLATILE)
+>>
+>> Their pages shouldn't stir normal LRU list and compaction might not
+>> migrate them, even.
+> What about other things moving memory like CMA ?
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index 2d8ec68..20d77cf 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -454,6 +454,13 @@ static int das16cs_attach(struct comedi_device *dev,
- 	if (!link)
- 		return -EIO;
- 
-+	dev->board_ptr = das16cs_probe(dev, link);
-+	if (!dev->board_ptr)
-+		return -EIO;
-+	thisboard = comedi_board(dev);
-+
-+	dev->board_name = thisboard->name;
-+
- 	dev->iobase = link->resource[0]->start;
- 	dev_dbg(dev->class_dev, "I/O base=0x%04lx\n", dev->iobase);
- 
-@@ -461,23 +468,14 @@ static int das16cs_attach(struct comedi_device *dev,
- 	for (i = 0; i < 48; i += 2)
- 		dev_dbg(dev->class_dev, "%04x\n", inw(dev->iobase + i));
- 
--
- 	ret = request_irq(link->irq, das16cs_interrupt,
- 			  IRQF_SHARED, "cb_das16_cs", dev);
- 	if (ret < 0)
- 		return ret;
--
- 	dev->irq = link->irq;
- 
- 	dev_dbg(dev->class_dev, "irq=%u\n", dev->irq);
- 
--	dev->board_ptr = das16cs_probe(dev, link);
--	if (!dev->board_ptr)
--		return -EIO;
--	thisboard = comedi_board(dev);
--
--	dev->board_name = thisboard->name;
--
- 	if (alloc_private(dev, sizeof(struct das16cs_private)) < 0)
- 		return -ENOMEM;
- 
+
+Sorry for not being able to understand your point.
+Can you elaborate a bit more?
+
 -- 
-1.7.11
-
+Kind regards,
+Minchan Kim
