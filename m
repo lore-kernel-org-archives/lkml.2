@@ -1,132 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab2FZUdn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 16:33:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33259 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab2FZUdl (ORCPT
+	id S1753772Ab2FZUeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 16:34:08 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39344 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab2FZUeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 16:33:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzi7tHg=3k8Fmga8XmxFbn6tZLLV97vt67Xx_WtckQo6g@mail.gmail.com>
-References: <1340736849-14875-1-git-send-email-yinghai@kernel.org>
-	<1340736849-14875-2-git-send-email-yinghai@kernel.org>
-	<CA+55aFzi7tHg=3k8Fmga8XmxFbn6tZLLV97vt67Xx_WtckQo6g@mail.gmail.com>
-Date: Tue, 26 Jun 2012 13:33:40 -0700
-X-Google-Sender-Auth: o62JoJ-fz6oAqp_a8oZPbDxB-HE
-Message-ID: <CAE9FiQVBPoEinWC__9DF-oi8T-78YJRn95J=xXdL2GzNoKoCaQ@mail.gmail.com>
-Subject: Re: [PATCH -v12 01/15] resources: Split out __allocate_resource()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7b339cc18aadad04c3660338
+	Tue, 26 Jun 2012 16:34:07 -0400
+Date: Tue, 26 Jun 2012 22:34:00 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andi Kleen <andi@firstfloor.org>, Rafael Aquini <aquini@redhat.com>,
+        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 1/4] mm: introduce compaction and migration for virtio ballooned pages
+Message-ID: <20120626203400.GA11413@one.firstfloor.org>
+References: <cover.1340665087.git.aquini@redhat.com> <7f83427b3894af7969c67acc0f27ab5aa68b4279.1340665087.git.aquini@redhat.com> <20120626101729.GF8103@csn.ul.ie> <20120626165258.GY11413@one.firstfloor.org> <20120626201513.GJ8103@csn.ul.ie>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120626201513.GJ8103@csn.ul.ie>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b339cc18aadad04c3660338
-Content-Type: text/plain; charset=ISO-8859-1
+> How is the compiler meant to optimise away "cond" if it's a function
+> call?
 
-On Tue, Jun 26, 2012 at 12:01 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Jun 26, 2012 at 11:53 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> It will take bool lock, so we could use it in other functions that
->> hold the resource lock already.
->
-> This is too damn ugly.
->
-> These kinds of "conditionally take lock" things are always just bugs
-> waiting to happen. Don't do it.
->
-> Just make the rule be that the caller of the __allocate_resource
-> helper has to hold the lock. Sure, that means that you need to then
-> use split reallocate_resource() into a helper function (ie a static
-> __reallocate_resource() that needs to have the lock taken by the
-> caller too), but dammit, that's definitely the right thing to do
-> anyway.
->
-> These kinds of "bool lock" crap things have to die. They are *wrong*.
-> They are a sign of bad locking rules.
+Inlines can be optimized away.  These tests are usually inlines.
 
-You are right, please check updated one.
+> What did I miss? If nothing, then I will revert this particular change
+> and Rafael will need to be sure his patch is not using VM_BUG_ON to call
+> a function with side-effects.
 
-Thanks
+Do you have an example where the code is actually different,
+or are you just speculating?
 
-Yinghai
+FWIW for my config both generates the same code:
 
---047d7b339cc18aadad04c3660338
-Content-Type: application/octet-stream; name="probe_resource_1.patch"
-Content-Disposition: attachment; filename="probe_resource_1.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3xfmagc0
+size vmlinux-andi-vmbug vmlinux-vmbug-nothing 
+   text    data     bss     dec     hex filename
+11809704        1457352 1159168 14426224         dc2070 vmlinux-andi-vmbug
+11809704        1457352 1159168 14426224         dc2070 vmlinux-vmbug-nothing
 
-U3ViamVjdDogW1BBVENIXSByZXNvdXJjZXM6IFNwbGl0IG91dCBfX2FsbG9jYXRlX3Jlc291cmNl
-KCkKCkl0IHdpbGwgb3V0IGhvbGQgbG9jaywgc28gd2UgY291bGQgdXNlIGl0IGluIG90aGVyIGZ1
-bmN0aW9ucyB0aGF0CmhvbGQgdGhlIHJlc291cmNlIGxvY2sgYWxyZWFkeS4KCi12MjogYWNjb3Jk
-aW5nIHRvIExpbnVzLCB1c2luZyAiYm9vbCBsb2NrIiBhcyBwYXJhbWV0ZXIKICAgICBha2EgImNv
-bmRpdGlvbmFsbHkgdGFrZSBsb2NrIiBpcyAqd3JvbmcqLgoKU2lnbmVkLW9mZi1ieTogWWluZ2hh
-aSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpDYzogQW5kcmV3IE1vcnRvbiA8YWtwbUBsaW51eC1m
-b3VuZGF0aW9uLm9yZz4KCi0tLQoga2VybmVsL3Jlc291cmNlLmMgfCAgIDQxICsrKysrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgMzMgaW5zZXJ0
-aW9ucygrKSwgOCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYva2VybmVsL3Jlc291cmNl
-LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcva2VybmVsL3Jlc291cmNlLmMKKysrIGxp
-bnV4LTIuNi9rZXJuZWwvcmVzb3VyY2UuYwpAQCAtNDcwLDcgKzQ3MCw3IEBAIHN0YXRpYyBpbnQg
-ZmluZF9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UKICAqIEBuZXdzaXplOiBuZXcgc2l6ZSBvZiB0
-aGUgcmVzb3VyY2UgZGVzY3JpcHRvcgogICogQGNvbnN0cmFpbnQ6IHRoZSBzaXplIGFuZCBhbGln
-bm1lbnQgY29uc3RyYWludHMgdG8gYmUgbWV0LgogICovCi1pbnQgcmVhbGxvY2F0ZV9yZXNvdXJj
-ZShzdHJ1Y3QgcmVzb3VyY2UgKnJvb3QsIHN0cnVjdCByZXNvdXJjZSAqb2xkLAorc3RhdGljIGlu
-dCBfX3JlYWxsb2NhdGVfcmVzb3VyY2Uoc3RydWN0IHJlc291cmNlICpyb290LCBzdHJ1Y3QgcmVz
-b3VyY2UgKm9sZCwKIAkJCXJlc291cmNlX3NpemVfdCBuZXdzaXplLAogCQkJc3RydWN0IHJlc291
-cmNlX2NvbnN0cmFpbnQgICpjb25zdHJhaW50KQogewpAQCAtNDc4LDcgKzQ3OCw2IEBAIGludCBy
-ZWFsbG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZQogCXN0cnVjdCByZXNvdXJjZSBuZXcg
-PSAqb2xkOwogCXN0cnVjdCByZXNvdXJjZSAqY29uZmxpY3Q7CiAKLQl3cml0ZV9sb2NrKCZyZXNv
-dXJjZV9sb2NrKTsKIAogCWlmICgoZXJyID0gX19maW5kX3Jlc291cmNlKHJvb3QsIG9sZCwgJm5l
-dywgbmV3c2l6ZSwgY29uc3RyYWludCkpKQogCQlnb3RvIG91dDsKQEAgLTUwNCwxMSArNTAzLDIw
-IEBAIGludCByZWFsbG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZQogCQlCVUdfT04oY29u
-ZmxpY3QpOwogCX0KIG91dDoKLQl3cml0ZV91bmxvY2soJnJlc291cmNlX2xvY2spOwogCXJldHVy
-biBlcnI7CiB9CitpbnQgcmVhbGxvY2F0ZV9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UgKnJvb3Qs
-IHN0cnVjdCByZXNvdXJjZSAqb2xkLAorCQkJcmVzb3VyY2Vfc2l6ZV90IG5ld3NpemUsCisJCQlz
-dHJ1Y3QgcmVzb3VyY2VfY29uc3RyYWludCAgKmNvbnN0cmFpbnQpCit7CisJaW50IHJldDsKIAor
-CXdyaXRlX2xvY2soJnJlc291cmNlX2xvY2spOworCXJldCA9IF9fcmVhbGxvY2F0ZV9yZXNvdXJj
-ZShyb290LCBvbGQsIG5ld3NpemUsIGNvbnN0cmFpbnQpOworCXdyaXRlX3VubG9jaygmcmVzb3Vy
-Y2VfbG9jayk7CiAKKwlyZXR1cm4gcmV0OworfQogLyoqCiAgKiBhbGxvY2F0ZV9yZXNvdXJjZSAt
-IGFsbG9jYXRlIGVtcHR5IHNsb3QgaW4gdGhlIHJlc291cmNlIHRyZWUgZ2l2ZW4gcmFuZ2UgJiBh
-bGlnbm1lbnQuCiAgKiAJVGhlIHJlc291cmNlIHdpbGwgYmUgcmVhbGxvY2F0ZWQgd2l0aCBhIG5l
-dyBzaXplIGlmIGl0IHdhcyBhbHJlYWR5IGFsbG9jYXRlZApAQCAtNTIxLDcgKzUyOSw3IEBAIG91
-dDoKICAqIEBhbGlnbmY6IGFsaWdubWVudCBmdW5jdGlvbiwgb3B0aW9uYWwsIGNhbGxlZCBpZiBu
-b3QgTlVMTAogICogQGFsaWduZl9kYXRhOiBhcmJpdHJhcnkgZGF0YSB0byBwYXNzIHRvIHRoZSBA
-YWxpZ25mIGZ1bmN0aW9uCiAgKi8KLWludCBhbGxvY2F0ZV9yZXNvdXJjZShzdHJ1Y3QgcmVzb3Vy
-Y2UgKnJvb3QsIHN0cnVjdCByZXNvdXJjZSAqbmV3LAorc3RhdGljIGludCBfX2FsbG9jYXRlX3Jl
-c291cmNlKHN0cnVjdCByZXNvdXJjZSAqcm9vdCwgc3RydWN0IHJlc291cmNlICpuZXcsCiAJCSAg
-ICAgIHJlc291cmNlX3NpemVfdCBzaXplLCByZXNvdXJjZV9zaXplX3QgbWluLAogCQkgICAgICBy
-ZXNvdXJjZV9zaXplX3QgbWF4LCByZXNvdXJjZV9zaXplX3QgYWxpZ24sCiAJCSAgICAgIHJlc291
-cmNlX3NpemVfdCAoKmFsaWduZikodm9pZCAqLApAQCAtNTQyLDE5ICs1NTAsMzYgQEAgaW50IGFs
-bG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqcgogCWNvbnN0cmFpbnQuYWxpZ25mID0g
-YWxpZ25mOwogCWNvbnN0cmFpbnQuYWxpZ25mX2RhdGEgPSBhbGlnbmZfZGF0YTsKIAotCWlmICgg
-bmV3LT5wYXJlbnQgKSB7CisJaWYgKG5ldy0+cGFyZW50KSB7CiAJCS8qIHJlc291cmNlIGlzIGFs
-cmVhZHkgYWxsb2NhdGVkLCB0cnkgcmVhbGxvY2F0aW5nIHdpdGgKIAkJICAgdGhlIG5ldyBjb25z
-dHJhaW50cyAqLwotCQlyZXR1cm4gcmVhbGxvY2F0ZV9yZXNvdXJjZShyb290LCBuZXcsIHNpemUs
-ICZjb25zdHJhaW50KTsKKwkJcmV0dXJuIF9fcmVhbGxvY2F0ZV9yZXNvdXJjZShyb290LCBuZXcs
-IHNpemUsICZjb25zdHJhaW50KTsKIAl9CiAKLQl3cml0ZV9sb2NrKCZyZXNvdXJjZV9sb2NrKTsK
-IAllcnIgPSBmaW5kX3Jlc291cmNlKHJvb3QsIG5ldywgc2l6ZSwgJmNvbnN0cmFpbnQpOwogCWlm
-IChlcnIgPj0gMCAmJiBfX3JlcXVlc3RfcmVzb3VyY2Uocm9vdCwgbmV3KSkKIAkJZXJyID0gLUVC
-VVNZOwotCXdyaXRlX3VubG9jaygmcmVzb3VyY2VfbG9jayk7CisKIAlyZXR1cm4gZXJyOwogfQor
-aW50IGFsbG9jYXRlX3Jlc291cmNlKHN0cnVjdCByZXNvdXJjZSAqcm9vdCwgc3RydWN0IHJlc291
-cmNlICpuZXcsCisJCSAgICAgIHJlc291cmNlX3NpemVfdCBzaXplLCByZXNvdXJjZV9zaXplX3Qg
-bWluLAorCQkgICAgICByZXNvdXJjZV9zaXplX3QgbWF4LCByZXNvdXJjZV9zaXplX3QgYWxpZ24s
-CisJCSAgICAgIHJlc291cmNlX3NpemVfdCAoKmFsaWduZikodm9pZCAqLAorCQkJCQkJY29uc3Qg
-c3RydWN0IHJlc291cmNlICosCisJCQkJCQlyZXNvdXJjZV9zaXplX3QsCisJCQkJCQlyZXNvdXJj
-ZV9zaXplX3QpLAorCQkgICAgICB2b2lkICphbGlnbmZfZGF0YSkKK3sKKwlpbnQgcmV0OworCisJ
-d3JpdGVfbG9jaygmcmVzb3VyY2VfbG9jayk7CisJcmV0ID0gX19hbGxvY2F0ZV9yZXNvdXJjZShy
-b290LCBuZXcsIHNpemUsIG1pbiwgbWF4LCBhbGlnbiwKKwkJCQkgICBhbGlnbmYsIGFsaWduZl9k
-YXRhKTsKKwl3cml0ZV91bmxvY2soJnJlc291cmNlX2xvY2spOworCisJcmV0dXJuIHJldDsKK30K
-IAogRVhQT1JUX1NZTUJPTChhbGxvY2F0ZV9yZXNvdXJjZSk7CiAK
---047d7b339cc18aadad04c3660338--
+-Andi
