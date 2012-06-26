@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab2FZNTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 09:19:03 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:13473 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756333Ab2FZNTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 09:19:01 -0400
-Message-ID: <4FE9B6C2.7010006@tilera.com>
-Date: Tue, 26 Jun 2012 09:18:58 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757037Ab2FZNU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 09:20:59 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:33021 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756591Ab2FZNU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 09:20:58 -0400
+Date: Tue, 26 Jun 2012 14:20:55 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120626132055.GI8103@csn.ul.ie>
+References: <cover.1340665087.git.aquini@redhat.com>
+ <7f83427b3894af7969c67acc0f27ab5aa68b4279.1340665087.git.aquini@redhat.com>
+ <4FE9B677.8040409@redhat.com>
 MIME-Version: 1.0
-To: Myron Stowe <myron.stowe@redhat.com>
-CC: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>, <rth@twiddle.net>,
-        <ink@jurassic.park.msu.ru>, <mattst88@gmail.com>,
-        <linux@arm.linux.org.uk>, <starvik@axis.com>,
-        <jesper.nilsson@axis.com>, <tony.luck@intel.com>,
-        <fenghua.yu@intel.com>, <monstr@monstr.eu>, <ralf@linux-mips.org>,
-        <yasutake.koichi@jp.panasonic.com>, <jejb@parisc-linux.org>,
-        <deller@gmx.de>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <lethal@linux-sh.org>, <davem@davemloft.net>, <gxt@mprc.pku.edu.cn>,
-        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <x86@kernel.org>, <chris@zankel.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/16] tile/PCI: Factor 'pcibios_setup()' out of tile
-References: <20120626033045.16434.17412.stgit@amt.stowe> <20120626033218.16434.50584.stgit@amt.stowe>
-In-Reply-To: <20120626033218.16434.50584.stgit@amt.stowe>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4FE9B677.8040409@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/25/2012 11:32 PM, Myron Stowe wrote:
-> The PCI core provides a generic (__weak) 'pcibios_setup()' routine
-> that can be used by all architectures as a default.  Drop tile's
-> architecture specific version in favor of that as it does not need to be
-> over-ridden.
->
-> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-> ---
->
->  arch/tile/kernel/pci.c |   10 ----------
->  1 files changed, 0 insertions(+), 10 deletions(-)
+On Tue, Jun 26, 2012 at 09:17:43AM -0400, Rik van Riel wrote:
+> On 06/25/2012 07:25 PM, Rafael Aquini wrote:
+> >This patch introduces helper functions that teach compaction and migration bits
+> >how to cope with pages which are part of a guest memory balloon, in order to
+> >make them movable by memory compaction procedures.
+> >
+> >Signed-off-by: Rafael Aquini<aquini@redhat.com>
+> 
+> The function fill_balloon in drivers/virtio/virtio_balloon.c
+> should probably add __GFP_MOVABLE to the gfp mask for alloc_pages,
+> to keep the pageblock where balloon pages are allocated marked
+> as movable.
+> 
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-
-In our internal tree we have x86-like support for "pci=off" here.  When I
-push that I can just push it as a new function to override the removed one,
-so I'm happy with your change as proposed.  But perhaps it would make sense
-to move the support for "pci=off" to common code, since multiple
-architectures handle this the same way?
+You're right, but patch 3 is already doing that at the same time the
+migration primitives are introduced. It does mean the full series has to
+be applied to do anything but I think it's bisect safe.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
-
+Mel Gorman
+SUSE Labs
