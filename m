@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab2FZXYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 19:24:55 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57450 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357Ab2FZXYy (ORCPT
+	id S1754823Ab2FZXZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 19:25:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51431 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab2FZXZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 19:24:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <1340739159-26314-1-git-send-email-bfreed@chromium.org>
-References: <1340739159-26314-1-git-send-email-bfreed@chromium.org>
-Date: Tue, 26 Jun 2012 16:24:52 -0700
-X-Google-Sender-Auth: DaXSOlijU5YPTv_lpO7aNFlD6rc
-Message-ID: <CAGXu5jJWpOBqDf8mAgES_FajcyP0J5RjQTOM2O3GU4mqu_L9Xw@mail.gmail.com>
-Subject: Re: [PATCH v5] pstore/ram: Add ramoops support for the Flattened
- Device Tree.
-From: Kees Cook <keescook@chromium.org>
-To: Bryan Freed <bfreed@chromium.org>
-Cc: linux-kernel@vger.kernel.org, olof@lixom.net, marco.stornelli@gmail.com,
-        grant.likely@secretlab.ca, anton.vorontsov@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Tue, 26 Jun 2012 19:25:31 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: [PATCH 1/7] tracing: Fix initialization failure path in tracing_set_tracer()
+Date: Tue, 26 Jun 2012 16:23:23 -0700
+Message-Id: <1340753009-12483-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20120626232210.GA11549@lizard>
+References: <20120626232210.GA11549@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 12:32 PM, Bryan Freed <bfreed@chromium.org> wrote:
-> When called with a non-zero of_node, fill out a new ramoops_platform_data
-> with data from the specified Flattened Device Tree node.
-> Update ramoops documentation with the new FDT interface.
-> Update devicetree/binding documentation with pstore/ramoops.txt.
->
-> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+If tracer->init() fails, current code will leave current_tracer pointing
+to an unusable tracer, which at best makes 'current_tracer' report
+inaccurate value.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+Fix the issue by pointing current_tracer to nop tracer, and only update
+current_tracer with the new one after all the initialization succeeds.
 
--Kees
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a7fa070..7647d33 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3172,10 +3172,10 @@ static int tracing_set_tracer(const char *buf)
+ 	}
+ 	destroy_trace_option_files(topts);
+ 
+-	current_trace = t;
++	current_trace = &nop_trace;
+ 
+-	topts = create_trace_option_files(current_trace);
+-	if (current_trace->use_max_tr) {
++	topts = create_trace_option_files(t);
++	if (t->use_max_tr) {
+ 		int cpu;
+ 		/* we need to make per cpu buffer sizes equivalent */
+ 		for_each_tracing_cpu(cpu) {
+@@ -3195,6 +3195,7 @@ static int tracing_set_tracer(const char *buf)
+ 			goto out;
+ 	}
+ 
++	current_trace = t;
+ 	trace_branch_enable(tr);
+  out:
+ 	mutex_unlock(&trace_types_lock);
 -- 
-Kees Cook
-Chrome OS Security
+1.7.10.4
+
