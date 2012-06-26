@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab2FZLuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 07:50:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754457Ab2FZLuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 07:50:10 -0400
-Message-ID: <1340711393.12269.15.camel@cr0>
-Subject: Re: [PATCH 00/12] kmap_atomic cleanup for 3.6
-From: Cong Wang <amwang@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        dhowells <dhowells@redhat.com>
-Date: Tue, 26 Jun 2012 19:49:53 +0800
-In-Reply-To: <1340698655.21991.24.camel@twins>
-References: <1340445863-16111-1-git-send-email-amwang@redhat.com>
-	 <201206251518.08791.arnd@arndb.de> <1340645735.18025.88.camel@twins>
-	 <201206252043.53231.arnd@arndb.de> <1340698655.21991.24.camel@twins>
+	id S1756383Ab2FZLvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 07:51:39 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:1268 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755268Ab2FZLvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 07:51:37 -0400
+Message-ID: <1340711491.2197.16.camel@x61.thuisdomein>
+Subject: Re: [PATCH] OMAP7XX:  Remove omap730.h and omap850.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 26 Jun 2012 13:51:31 +0200
+In-Reply-To: <20120626112524.GF31393@atomide.com>
+References: <1340013485.5611.6.camel@x61.thuisdomein>
+	 <20120626112524.GF31393@atomide.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
+X-OriginalArrivalTime: 26 Jun 2012 11:51:32.0550 (UTC) FILETIME=[07D76660:01CD5392]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-26 at 10:17 +0200, Peter Zijlstra wrote:
-> On Mon, 2012-06-25 at 20:43 +0000, Arnd Bergmann wrote:
-> > How about putting that constant into asm/highmem.h then, and adding a
-> > default like
-> > 
-> > #ifndef KM_TYPE_NR
-> > #define KM_TYPE_NR 8
-> > #endif
-> > 
-> > in linux/highmem.h? Then FRV and anything else that needs it can override
-> > the value and the other ones don't need to bother.
+On Tue, 2012-06-26 at 04:25 -0700, Tony Lindgren wrote:
+> * Paul Bolle <pebolle@tiscali.nl> [120618 03:02]: 
+> > 1) A related cleanup could be to remove cpu_is_omap730 and
+> > cpu_is_omap850, as both macros seem unused.
 > 
-> At least put in a hand-wavy argument supporting whatever one number
-> that's being put in. That way a reader at least as some incling as to
-> where it comes from and what needs checking if it turns out its wrong.
+> Yes seems like we could do that. Care to do a patch for that?
 
-Ok, I will do it in a separated patch.
+Sure, no problem. I hope to submit it shortly.
 
-Thanks!
+
+Paul Bolle
 
