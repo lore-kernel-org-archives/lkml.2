@@ -1,219 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099Ab2F0XKT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 19:10:19 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47969 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757688Ab2F0XKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 19:10:16 -0400
-Message-ID: <4FEB9239.6080408@parallels.com>
-Date: Thu, 28 Jun 2012 03:07:37 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Cgroups <cgroups@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: "Regression" with cd3d09527537
-References: <4FE9AE57.4090007@parallels.com> <20120627230823.GU15811@google.com>
-In-Reply-To: <20120627230823.GU15811@google.com>
-Content-Type: multipart/mixed;
-	boundary="------------080306080409070400080908"
-X-Originating-IP: [109.173.9.3]
+	id S1758031Ab2F0XOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 19:14:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60242 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754433Ab2F0XOT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 19:14:19 -0400
+Message-ID: <1340838807.10063.90.camel@twins>
+Subject: Re: [PATCH 08/20] mm: Optimize fullmm TLB flushing
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>, Alex Shi <alex.shi@intel.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Ralf Baechle <ralf@linux-mips.org>, Kyle McMartin <kyle@mcmartin.ca>,
+        James Bottomley <jejb@parisc-linux.org>,
+        Chris Zankel <chris@zankel.net>
+Date: Thu, 28 Jun 2012 01:13:27 +0200
+In-Reply-To: <1340838154.10063.86.camel@twins>
+References: <20120627211540.459910855@chello.nl>
+	 <20120627212831.137126018@chello.nl>
+	 <CA+55aFwZoVK76ue7tFveV0XZpPUmoCVXJx8550OxPm+XKCSSZA@mail.gmail.com>
+	 <1340838154.10063.86.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------080306080409070400080908
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-
-On 06/28/2012 03:08 AM, Tejun Heo wrote:
-> On Tue, Jun 26, 2012 at 04:43:03PM +0400, Glauber Costa wrote:
->> Hi,
->>
->> I've recently started seeing a lockdep warning at the end of *every*
->> "init 0" issued in my machine. Actually, reboots are fine, and
->> that's probably why I've never seen it earlier. The log is quite
->> extensively, but shows the following dependency chain:
->>
->> [   83.982111] -> #4 (cpu_hotplug.lock){+.+.+.}:
->> [...]
->> [   83.982111] -> #3 (jump_label_mutex){+.+...}:
->> [...]
->> [   83.982111] -> #2 (sk_lock-AF_INET){+.+.+.}:
->> [...]
->> [   83.982111] -> #1 (&sig->cred_guard_mutex){+.+.+.}:
->> [...]
->> [   83.982111] -> #0 (cgroup_mutex){+.+.+.}:
->>
->> I've recently fixed bugs with the lock ordering imposed by cpusets
->> on cpu_hotplug.lock through jump_label_mutex, and initially thought
->> it to be the same kind of issue. But that was not the case.
->>
->> I've omitted the full backtrace for readability, but I run this with
->> all cgroups disabled but the cpuset, so it can't be sock memcg
->> (after my initial reaction of "oh, fuck, not again"). That
->> jump_label is there for years, and it comes from the code that
->> disables socket timestamps.
->> (net_enable_timestamp)
+On Thu, 2012-06-28 at 01:02 +0200, Peter Zijlstra wrote:
+> On Wed, 2012-06-27 at 15:26 -0700, Linus Torvalds wrote:
+> > On Wed, Jun 27, 2012 at 2:15 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > > This originated from s390 which does something similar and would allow
+> > > s390 to use the generic TLB flushing code.
+> > >
+> > > The idea is to flush the mm wide cache and tlb a priory and not bother
+> > > with multiple flushes if the batching isn't large enough.
+> > >
+> > > This can be safely done since there cannot be any concurrency on this
+> > > mm, its either after the process died (exit) or in the middle of
+> > > execve where the thread switched to the new mm.
+> > 
+> > I think we actually *used* to do the final TLB flush from within the
+> > context of the process that died. That doesn't seem to ever be the
+> > case any more, but it does worry me a bit. Maybe a
+> > 
+> >    VM_BUG_ON(current->active_mm == mm);
+> > 
+> > or something for the fullmm case?
 > 
-> Yeah, there are multiple really large locks at play here - jump label,
-> threadgroup and cgroup_mutex.  It isn't pretty.  Can you please post
-> the full lockdep dump?  The above only shows single locking chain.
-> I'd like to see the other.
-> 
-> Thanks.
-> 
+> OK, added it and am rebooting the test box..
 
+That triggered.. is this a problem though, at this point userspace is
+very dead so it shouldn't matter, right?
 
+Will have to properly think about it tomorrow, its been 1am, brain is
+mostly sleeping already.
 
---------------080306080409070400080908
-Content-Type: text/plain; charset="UTF-8"; name="REBOOT-BUG"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="REBOOT-BUG"
+------------[ cut here ]------------
+kernel BUG at /home/root/src/linux-2.6/mm/memory.c:221!
+invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Modules linked in:
+CPU 13 
+Pid: 132, comm: modprobe Not tainted 3.5.0-rc4-01507-g912ca15-dirty #180 Supermicro X8DTN/X8DTN
+RIP: 0010:[<ffffffff811511bf>]  [<ffffffff811511bf>] tlb_gather_mmu+0x9f/0xb0
+RSP: 0018:ffff880235b2bd78  EFLAGS: 00010246
+RAX: ffff880235b18000 RBX: ffff880235b2bdc0 RCX: ffff880235b18000
+RDX: 0000000000000000 RSI: 0000000000000100 RDI: 0000000000000000
+RBP: ffff880235b2bd98 R08: 0000000000000018 R09: 0000000000000004
+R10: ffffffff81eedfc0 R11: 0000000000000084 R12: ffff8804356b8000
+R13: 0000000000000001 R14: ffff880235b185f0 R15: ffff880235b18000
+FS:  0000000000000000(0000) GS:ffff880237ce0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00000038ce8ae150 CR3: 0000000436ad6000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process modprobe (pid: 132, threadinfo ffff880235b2a000, task ffff880235b18000)
+Stack:
+ ffff880235b2bd98 0000000000000000 ffff8804356b8000 ffff8804356b8060
+ ffff880235b2be38 ffffffff8115ad38 ffff880235b2be38 ffff880235b4e000
+ ffff880235b4e630 ffff8804356b8000 0000000100000000 ffff880235b2bdd8
+Call Trace:
+ [<ffffffff8115ad38>] exit_mmap+0x98/0x150
+ [<ffffffff810bf98e>] ? exit_numa+0xae/0xe0
+ [<ffffffff81078b74>] mmput+0x84/0x120
+ [<ffffffff81080ce8>] exit_mm+0x108/0x130
+ [<ffffffff81081388>] do_exit+0x678/0x950
+ [<ffffffff811a3ad6>] ? alloc_fd+0xd6/0x120
+ [<ffffffff811791c0>] ? kmem_cache_free+0x20/0x130
+ [<ffffffff810819af>] do_group_exit+0x3f/0xa0
+ [<ffffffff81081a27>] sys_exit_group+0x17/0x20
+ [<ffffffff81980ed2>] system_call_fastpath+0x16/0x1b
+Code: 10 74 1a 65 48 8b 04 25 80 ba 00 00 4c 3b a0 90 02 00 00 74 16 4c 89 e7 e8 5f 39 f2 ff 48 8b 5d e8 4c 8b 65 f0 4c 8b 6d f8 c9 c3 <0f> 0b 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 
+RIP  [<ffffffff811511bf>] tlb_gather_mmu+0x9f/0xb0
+ RSP <ffff880235b2bd78>
+---[ end trace f99f121b09c974f8 ]---
 
-[   72.027124] ======================================================
-[   72.027617] [ INFO: possible circular locking dependency detected ]
-[   72.027617] 3.5.0-rc4+ #145 Not tainted
-[   72.027617] -------------------------------------------------------
-[   72.027617] systemd-shutdow/1 is trying to acquire lock:
-[   72.027617]  (cgroup_mutex){+.+.+.}, at: [<ffffffff810a3990>] cgroup_lock+0x17/0x19
-[   72.027617] 
-[   72.027617] but task is already holding lock:
-[   72.027617]  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8104ac9b>] cpu_hotplug_begin+0x2c/0x53
-[   72.027617] 
-[   72.027617] which lock already depends on the new lock.
-[   72.027617] 
-[   72.027617] 
-[   72.027617] the existing dependency chain (in reverse order) is:
-[   72.027617] 
-[   72.027617] -> #4 (cpu_hotplug.lock){+.+.+.}:
-[   72.027617]        [<ffffffff81094028>] lock_acquire+0x8c/0xfc
-[   72.027617]        [<ffffffff81513a7f>] __mutex_lock_common+0x47/0x344
-[   72.027617]        [<ffffffff81513e4f>] mutex_lock_nested+0x2f/0x36
-[   72.027617]        [<ffffffff8104ad40>] get_online_cpus+0x2e/0x42
-[   72.027617]        [<ffffffff81012662>] arch_jump_label_transform+0x17/0x4d
-[   72.027617]        [<ffffffff810f2c16>] __jump_label_update+0x3a/0x52
-[   72.027617]        [<ffffffff810f2cbd>] jump_label_update+0x8f/0x9b
-[   72.027617]        [<ffffffff810f304e>] static_key_slow_inc+0x49/0x5d
-[   72.027617]        [<ffffffff81b158ef>] activate_jump_labels+0x19/0x35
-[   72.027617]        [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
-[   72.027617]        [<ffffffff81b03d2b>] kernel_init+0x157/0x1db
-[   72.027617]        [<ffffffff8151e3b4>] kernel_thread_helper+0x4/0x10
-[   72.027617] 
-[   72.027617] -> #3 (jump_label_mutex){+.+...}:
-[   72.027617]        [<ffffffff81094028>] lock_acquire+0x8c/0xfc
-[   72.027617]        [<ffffffff81513a7f>] __mutex_lock_common+0x47/0x344
-[   72.027617]        [<ffffffff81513e4f>] mutex_lock_nested+0x2f/0x36
-[   72.027617]        [<ffffffff810f2d6a>] jump_label_lock+0x17/0x19
-[   72.027617]        [<ffffffff810f3055>] static_key_slow_inc+0x50/0x5d
-[   72.027617]        [<ffffffff81427c40>] net_enable_timestamp+0x5d/0x61
-[   72.027617]        [<ffffffff8141c8dd>] sock_enable_timestamp+0x36/0x3b
-[   72.027617]        [<ffffffff8141cd9d>] sock_setsockopt+0x363/0x57a
-[   72.027617]        [<ffffffff81418d99>] sys_setsockopt+0x6d/0xa6
-[   72.027617]        [<ffffffff8151cf69>] system_call_fastpath+0x16/0x1b
-[   72.027617] 
-[   72.027617] -> #2 (sk_lock-AF_INET){+.+.+.}:
-[   72.027617]        [<ffffffff81094028>] lock_acquire+0x8c/0xfc
-[   72.027617]        [<ffffffff8141b423>] lock_sock_nested+0x70/0x80
-[   72.027617]        [<ffffffff81462ee9>] lock_sock+0xb/0xd
-[   72.027617]        [<ffffffff81466fba>] tcp_close+0x1e/0x303
-[   72.027617]        [<ffffffff814841ae>] inet_release+0xc2/0xcd
-[   72.027617]        [<ffffffff81417307>] sock_release+0x1f/0x74
-[   72.027617]        [<ffffffff81417383>] sock_close+0x27/0x2b
-[   72.027617]        [<ffffffff81140adb>] fput+0x10b/0x20a
-[   72.027617]        [<ffffffff8113d89c>] filp_close+0x6f/0x7a
-[   72.027617]        [<ffffffff8113ddb3>] sys_close+0xdb/0x11a
-[   72.027617]        [<ffffffff81145c11>] setup_new_exec+0x286/0x2b2
-[   72.027617]        [<ffffffff8118407c>] load_elf_binary+0x343/0x1813
-[   72.027617]        [<ffffffff811443f2>] search_binary_handler+0xd3/0x2d3
-[   72.027617]        [<ffffffff8114580e>] do_execve_common.isra.31+0x296/0x393
-[   72.027617]        [<ffffffff81145926>] do_execve+0x1b/0x1d
-[   72.027617]        [<ffffffff810169fe>] sys_execve+0x43/0x5a
-[   72.027617]        [<ffffffff8151d42c>] stub_execve+0x6c/0xc0
-[   72.027617] 
-[   72.027617] -> #1 (&sig->cred_guard_mutex){+.+.+.}:
-[   72.027617]        [<ffffffff81094028>] lock_acquire+0x8c/0xfc
-[   72.027617]        [<ffffffff81513a7f>] __mutex_lock_common+0x47/0x344
-[   72.027617]        [<ffffffff81513e4f>] mutex_lock_nested+0x2f/0x36
-[   72.027617]        [<ffffffff810a8091>] attach_task_by_pid+0x14d/0x4d1
-[   72.027617]        [<ffffffff810a8440>] cgroup_tasks_write+0x13/0x15
-[   72.027617]        [<ffffffff810a7c1c>] cgroup_file_write+0x101/0x25f
-[   72.027617]        [<ffffffff8113f724>] vfs_write+0xa0/0x102
-[   72.027617]        [<ffffffff8113f938>] sys_write+0x43/0x70
-[   72.027617]        [<ffffffff8151cf69>] system_call_fastpath+0x16/0x1b
-[   72.027617] 
-[   72.027617] -> #0 (cgroup_mutex){+.+.+.}:
-[   72.027617]        [<ffffffff810938a8>] __lock_acquire+0x9b0/0xd0c
-[   72.027617]        [<ffffffff81094028>] lock_acquire+0x8c/0xfc
-[   72.027617]        [<ffffffff81513a7f>] __mutex_lock_common+0x47/0x344
-[   72.027617]        [<ffffffff81513e4f>] mutex_lock_nested+0x2f/0x36
-[   72.027617]        [<ffffffff810a3990>] cgroup_lock+0x17/0x19
-[   72.027617]        [<ffffffff810ab456>] cpuset_update_active_cpus+0x13/0x6f
-[   72.027617]        [<ffffffff8106f6c9>] cpuset_cpu_inactive+0x1a/0x23
-[   72.027617]        [<ffffffff815197ad>] notifier_call_chain+0x6c/0x97
-[   72.027617]        [<ffffffff8106b14a>] __raw_notifier_call_chain+0xe/0x10
-[   72.027617]        [<ffffffff8104ac43>] __cpu_notify+0x20/0x37
-[   72.027617]        [<ffffffff814f2ec1>] _cpu_down+0x7d/0x240
-[   72.027617]        [<ffffffff8104afb1>] disable_nonboot_cpus+0x67/0x11b
-[   72.027617]        [<ffffffff8105bac8>] kernel_power_off+0x48/0x6c
-[   72.027617]        [<ffffffff8105c297>] sys_reboot+0x137/0x1ca
-[   72.027617]        [<ffffffff8151cf69>] system_call_fastpath+0x16/0x1b
-[   72.027617] 
-[   72.027617] other info that might help us debug this:
-[   72.027617] 
-[   72.027617] Chain exists of:
-[   72.027617]   cgroup_mutex --> jump_label_mutex --> cpu_hotplug.lock
-[   72.027617] 
-[   72.027617]  Possible unsafe locking scenario:
-[   72.027617] 
-[   72.027617]        CPU0                    CPU1
-[   72.027617]        ----                    ----
-[   72.027617]   lock(cpu_hotplug.lock);
-[   72.027617]                                lock(jump_label_mutex);
-[   72.027617]                                lock(cpu_hotplug.lock);
-[   72.027617]   lock(cgroup_mutex);
-[   72.027617] 
-[   72.027617]  *** DEADLOCK ***
-[   72.027617] 
-[   72.027617] 3 locks held by systemd-shutdow/1:
-[   72.027617]  #0:  (reboot_mutex){+.+.+.}, at: [<ffffffff8105c222>] sys_reboot+0xc2/0x1ca
-[   72.027617]  #1:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8104adb9>] cpu_maps_update_begin+0x17/0x19
-[   72.027617]  #2:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8104ac9b>] cpu_hotplug_begin+0x2c/0x53
-[   72.027617] 
-[   72.027617] stack backtrace:
-[   72.027617] Pid: 1, comm: systemd-shutdow Not tainted 3.5.0-rc4+ #145
-[   72.027617] Call Trace:
-[   72.027617]  [<ffffffff8150dc86>] print_circular_bug+0x1f8/0x209
-[   72.027617]  [<ffffffff810938a8>] __lock_acquire+0x9b0/0xd0c
-[   72.027617]  [<ffffffff81515f3a>] ? _raw_spin_unlock_irq+0x2d/0x36
-[   72.027617]  [<ffffffff81094028>] lock_acquire+0x8c/0xfc
-[   72.027617]  [<ffffffff810a3990>] ? cgroup_lock+0x17/0x19
-[   72.027617]  [<ffffffff81513a7f>] __mutex_lock_common+0x47/0x344
-[   72.027617]  [<ffffffff810a3990>] ? cgroup_lock+0x17/0x19
-[   72.027617]  [<ffffffff810a3990>] ? cgroup_lock+0x17/0x19
-[   72.027617]  [<ffffffff81513e4f>] mutex_lock_nested+0x2f/0x36
-[   72.027617]  [<ffffffff8127c37b>] ? __bitmap_weight+0x33/0x7f
-[   72.027617]  [<ffffffff810a3990>] cgroup_lock+0x17/0x19
-[   72.027617]  [<ffffffff810ab456>] cpuset_update_active_cpus+0x13/0x6f
-[   72.027617]  [<ffffffff8106f6c9>] cpuset_cpu_inactive+0x1a/0x23
-[   72.027617]  [<ffffffff815197ad>] notifier_call_chain+0x6c/0x97
-[   72.027617]  [<ffffffff8106b14a>] __raw_notifier_call_chain+0xe/0x10
-[   72.027617]  [<ffffffff8104ac43>] __cpu_notify+0x20/0x37
-[   72.027617]  [<ffffffff814f2ec1>] _cpu_down+0x7d/0x240
-[   72.027617]  [<ffffffff8150cfe1>] ? printk+0x61/0x63
-[   72.027617]  [<ffffffff8104afb1>] disable_nonboot_cpus+0x67/0x11b
-[   72.027617]  [<ffffffff8105bac8>] kernel_power_off+0x48/0x6c
-[   72.027617]  [<ffffffff8105c297>] sys_reboot+0x137/0x1ca
-[   72.027617]  [<ffffffff81094044>] ? lock_acquire+0xa8/0xfc
-[   72.027617]  [<ffffffff811420ae>] ? iterate_supers+0x83/0xc4
-[   72.027617]  [<ffffffff81515f09>] ? _raw_spin_unlock_bh+0x31/0x35
-[   72.027617]  [<ffffffff81093f55>] ? lock_release+0x160/0x1a7
-[   72.027617]  [<ffffffff8151cf95>] ? sysret_check+0x22/0x5d
-[   72.027617]  [<ffffffff810944a7>] ? trace_hardirqs_on_caller+0x117/0x173
-[   72.027617]  [<ffffffff8127ac3e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   72.027617]  [<ffffffff8151cf69>] system_call_fastpath+0x16/0x1b
-
-
---------------080306080409070400080908--
