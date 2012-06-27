@@ -1,114 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab2F0XOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 19:14:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60242 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab2F0XOT convert rfc822-to-8bit (ORCPT
+	id S932255Ab2F0XSB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 19:18:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33064 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab2F0XR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 19:14:19 -0400
-Message-ID: <1340838807.10063.90.camel@twins>
-Subject: Re: [PATCH 08/20] mm: Optimize fullmm TLB flushing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>, Alex Shi <alex.shi@intel.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, Paul Mundt <lethal@linux-sh.org>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Ralf Baechle <ralf@linux-mips.org>, Kyle McMartin <kyle@mcmartin.ca>,
-        James Bottomley <jejb@parisc-linux.org>,
-        Chris Zankel <chris@zankel.net>
-Date: Thu, 28 Jun 2012 01:13:27 +0200
-In-Reply-To: <1340838154.10063.86.camel@twins>
-References: <20120627211540.459910855@chello.nl>
-	 <20120627212831.137126018@chello.nl>
-	 <CA+55aFwZoVK76ue7tFveV0XZpPUmoCVXJx8550OxPm+XKCSSZA@mail.gmail.com>
-	 <1340838154.10063.86.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 27 Jun 2012 19:17:59 -0400
+Date: Wed, 27 Jun 2012 16:17:56 -0700
+From: Cyclonus J <cyclonusj@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jason Garrett-Glaser <jason@x264.com>, xen-devel@lists.xensource.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
+Subject: Re: [Xen-devel] [PATCH] x86 fixes for 3.3 impacting distros (v1).
+Message-ID: <20120627231755.GA1021@gmail.com>
+References: <1328888091-9692-1-git-send-email-konrad.wilk@oracle.com>
+ <CABS55+BFrDUV-WR=nx+d6+ZJngpuZnh41DZ3NYU4adFqaxqaNA@mail.gmail.com>
+ <20120510153457.GB6389@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120510153457.GB6389@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 01:02 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-06-27 at 15:26 -0700, Linus Torvalds wrote:
-> > On Wed, Jun 27, 2012 at 2:15 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > This originated from s390 which does something similar and would allow
-> > > s390 to use the generic TLB flushing code.
+On Thu, May 10, 2012 at 11:34:57AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Tue, Feb 21, 2012 at 06:53:35PM -0800, Jason Garrett-Glaser wrote:
+> > On Fri, Feb 10, 2012 at 7:34 AM, Konrad Rzeszutek Wilk
+> > <konrad.wilk@oracle.com> wrote:
+> > > The attached patch fixes RH BZ #742032, #787403, and #745574
+> > > and touch x86 subsystem.
 > > >
-> > > The idea is to flush the mm wide cache and tlb a priory and not bother
-> > > with multiple flushes if the batching isn't large enough.
+> > > The patch description gives a very good overview of the problem and
+> > > one solution. The one solution it chooses is not the most architecturally
+> > > sound but it does not cause performance degradation. If this your
+> > > first time reading this, please read the patch first and then come back to
+> > > this cover letter as I've some perf numbers and more detailed explanation here.
 > > >
-> > > This can be safely done since there cannot be any concurrency on this
-> > > mm, its either after the process died (exit) or in the middle of
-> > > execve where the thread switched to the new mm.
+> > > A bit of overview of the __page_change_attr_set_clr:
+> > >
+> > > Its purpose is to change page attributes from one type to another.
+> > > It is important to understand that the entrance that code:
+> > > __page_change_attr_set_clr is guarded by cpa_lock spin-lock - which makes
+> > > that whole code be single threaded.
+> > >
+> > > Albeit it seems that if debug mode is turned on, it can run in parallel. The
+> > > effect of using the posted patch is that __page_change_attr_set_clr() will be
+> > > affected when we change caching attributes on 4KB pages and/or the NX flag.
+> > >
+> > > The execution of __page_change_attr_set_clr is concentrated in
+> > > (looked for ioremap_* and set_pages_*):
+> > >  - during bootup ("Write protecting the ..")
+> > >  - suspend/resume and graphic adapters evicting their buffers from the card
+> > >   to RAM (which is usually done during suspend but can be done via the
+> > >   'evict' attribute in debugfs)
+> > >  - when setting the memory for the cursor (AGP cards using i8xx chipset) -
+> > >   done during bootup and startup of Xserver.
+> > >  - setting up memory for Intel GTT scratch (i9xx) page (done during bootup)
+> > >  - payload (purgatory code) for kexec (done during kexec -l).
+> > >  - ioremap_* during PCI devices load - InfiniBand and video cards like to use
+> > >   ioremap_wc.
+> > >  - Intel, radeon, nouveau running into memory pressure and evicting pages from
+> > >   their GEM/TTM pool (once an hour or so if compiling a lot with only 4GB).
+> > >
+> > > These are the cases I found when running on baremetal (and Xen) using a normal
+> > > Fedora Core 16 distro.
+> > >
+> > > The alternate solution to the problem I am trying to solve, which is much
+> > > more architecturally sound (but has some perf disadvantages) is to wrap
+> > > the pte_flags with paravirt call everywhere. For that these patches two patches:
+> > > http://darnok.org/results/baseline_pte_flags_pte_attrs/0001-x86-paravirt-xen-Introduce-pte_flags.patch
+> > > http://darnok.org/results/baseline_pte_flags_pte_attrs/0002-x86-paravirt-xen-Optimize-pte_flags-by-marking-it-as.patch
+> > >
+> > > make the pte_flags function (after bootup and patching with alternative asm)
+> > > look as so:
+> > >
+> > >   48 89 f8                     mov    %rdi,%rax
+> > >   66 66 66 90                  data32 data32 xchg %ax,%ax
+> > >
+> > > [the 66 66 .. is 'nop']. Looks good right? Well, it does work very well on Intel
+> > > (used an i3 2100), but on AMD A8-3850 it hits a performance wall - that I found out
+> > > is a result of CONFIG_FUNCTION_TRACER (too many nops??) being compiled in (but the tracer
+> > > is set to the default 'nop'). If I disable that specific config option the numbers
+> > > are the same as the baseline (with CONFIG_FUNCTION_TRACER disabled) on the AMD box.
+> > > Interestingly enough I only see these on AMD machines - not on the Intel ones.
 > > 
-> > I think we actually *used* to do the final TLB flush from within the
-> > context of the process that died. That doesn't seem to ever be the
-> > case any more, but it does worry me a bit. Maybe a
-> > 
-> >    VM_BUG_ON(current->active_mm == mm);
-> > 
-> > or something for the fullmm case?
+> > The AMD software optimization manual says that -- at least on some
+> > chips -- too many prefixes forces the instruction decoder into a slow
+> > mode (basically microcoded) where it takes literally dozens of cycles
+> > for a single instruction.  I believe more than 2 prefixes will do
+> > this; check the manual itself for specifics.
 > 
-> OK, added it and am rebooting the test box..
+> I've been digging in to this during my "free" time to figure out what
+> is going on. Sadly, haven't progressed much besides writting a set of patches
+> that would add the 'notrace' to the pvops calls and playing with
+> those patches.
+> 
+> In other words - still not sure what is happening.
 
-That triggered.. is this a problem though, at this point userspace is
-very dead so it shouldn't matter, right?
+I would like to spend some time looking into this issue as it blocks my
+project in some cases.
 
-Will have to properly think about it tomorrow, its been 1am, brain is
-mostly sleeping already.
+I saw a temporary fix 8eaffa67b43e99ae581622c5133e20b0f48bcef1 went into 3.3 to disable
+PAT support on dom0. May I ask what would be the recommended fix to support PAT on dom0? 
+Will it be a possible solution to make Xen use the same PAT settings as Linux? Sorry, I don't 
+know the background why Xen is doing this differently.
 
-------------[ cut here ]------------
-kernel BUG at /home/root/src/linux-2.6/mm/memory.c:221!
-invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in:
-CPU 13 
-Pid: 132, comm: modprobe Not tainted 3.5.0-rc4-01507-g912ca15-dirty #180 Supermicro X8DTN/X8DTN
-RIP: 0010:[<ffffffff811511bf>]  [<ffffffff811511bf>] tlb_gather_mmu+0x9f/0xb0
-RSP: 0018:ffff880235b2bd78  EFLAGS: 00010246
-RAX: ffff880235b18000 RBX: ffff880235b2bdc0 RCX: ffff880235b18000
-RDX: 0000000000000000 RSI: 0000000000000100 RDI: 0000000000000000
-RBP: ffff880235b2bd98 R08: 0000000000000018 R09: 0000000000000004
-R10: ffffffff81eedfc0 R11: 0000000000000084 R12: ffff8804356b8000
-R13: 0000000000000001 R14: ffff880235b185f0 R15: ffff880235b18000
-FS:  0000000000000000(0000) GS:ffff880237ce0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00000038ce8ae150 CR3: 0000000436ad6000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process modprobe (pid: 132, threadinfo ffff880235b2a000, task ffff880235b18000)
-Stack:
- ffff880235b2bd98 0000000000000000 ffff8804356b8000 ffff8804356b8060
- ffff880235b2be38 ffffffff8115ad38 ffff880235b2be38 ffff880235b4e000
- ffff880235b4e630 ffff8804356b8000 0000000100000000 ffff880235b2bdd8
-Call Trace:
- [<ffffffff8115ad38>] exit_mmap+0x98/0x150
- [<ffffffff810bf98e>] ? exit_numa+0xae/0xe0
- [<ffffffff81078b74>] mmput+0x84/0x120
- [<ffffffff81080ce8>] exit_mm+0x108/0x130
- [<ffffffff81081388>] do_exit+0x678/0x950
- [<ffffffff811a3ad6>] ? alloc_fd+0xd6/0x120
- [<ffffffff811791c0>] ? kmem_cache_free+0x20/0x130
- [<ffffffff810819af>] do_group_exit+0x3f/0xa0
- [<ffffffff81081a27>] sys_exit_group+0x17/0x20
- [<ffffffff81980ed2>] system_call_fastpath+0x16/0x1b
-Code: 10 74 1a 65 48 8b 04 25 80 ba 00 00 4c 3b a0 90 02 00 00 74 16 4c 89 e7 e8 5f 39 f2 ff 48 8b 5d e8 4c 8b 65 f0 4c 8b 6d f8 c9 c3 <0f> 0b 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 
-RIP  [<ffffffff811511bf>] tlb_gather_mmu+0x9f/0xb0
- RSP <ffff880235b2bd78>
----[ end trace f99f121b09c974f8 ]---
+Suggestions?
 
+Thanks,
+CJ
+
+> > 
+> > Jason
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
