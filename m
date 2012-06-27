@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab2F0WE0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:04:26 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:37316 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932273Ab2F0WEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:04:23 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-132.messagelabs.com!1340834656!9847122!9
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 14/19] staging: comedi: adl_pci6208: remove unused variable in the private data
-Date: Wed, 27 Jun 2012 15:04:04 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S932359Ab2F0WEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:04:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35442 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932273Ab2F0WEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 18:04:21 -0400
+Message-ID: <1340834658.1207.261.camel@bling.home>
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Date: Wed, 27 Jun 2012 16:04:18 -0600
+In-Reply-To: <20120627152624.GC21393@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+	 <20120627050937.23698.68442.stgit@bling.home>
+	 <20120627152624.GC21393@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206271504.05073.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'data' variable in the private data struct is not used by the
-driver. Remove it.
+On Wed, 2012-06-27 at 18:26 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > @@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
+> >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> >  }
+> >  
+> > +static void
+> > +irqfd_inject_level(struct work_struct *work)
+> > +{
+> > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > +
+> > +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > +}
+> > +
+> >  /*
+> >   * Race-free decouple logic (ordering is critical)
+> >   */
+> 
+> 
+> Why is it safe to ignore return value here?
+> needs a comment.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/adl_pci6208.c | 1 -
- 1 file changed, 1 deletion(-)
+Well, it seems like you and Gleb came to the conclusion that it's safe,
+but I can really follow from the list thread.  Can you explain and I'll
+add a comment?  Thanks,
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci6208.c b/drivers/staging/comedi/drivers/adl_pci6208.c
-index 18ca400..dcaebfc 100644
---- a/drivers/staging/comedi/drivers/adl_pci6208.c
-+++ b/drivers/staging/comedi/drivers/adl_pci6208.c
-@@ -71,7 +71,6 @@ static const struct pci6208_board pci6208_boards[] = {
- };
- 
- struct pci6208_private {
--	int data;
- 	struct pci_dev *pci_dev;
- 	unsigned int ao_readback[2];
- };
--- 
-1.7.11
+Alex
 
