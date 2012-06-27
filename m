@@ -1,149 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402Ab2F0W2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:28:31 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:47072 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752709Ab2F0W0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:26:35 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 6/8] ARM: LPC32xx: Cleanup USB clock init
-Date: Thu, 28 Jun 2012 00:26:16 +0200
-Message-Id: <1340835978-20331-7-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1340835978-20331-1-git-send-email-stigge@antcom.de>
-References: <1340835978-20331-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S932421Ab2F0W2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:28:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932065Ab2F0W2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 18:28:50 -0400
+Date: Thu, 28 Jun 2012 01:28:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120627222852.GA27885@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+ <20120627050937.23698.68442.stgit@bling.home>
+ <20120627095137.GH17507@redhat.com>
+ <1340830749.1207.236.camel@bling.home>
+ <20120627211413.GE27746@redhat.com>
+ <1340832499.1207.255.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340832499.1207.255.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+On Wed, Jun 27, 2012 at 03:28:19PM -0600, Alex Williamson wrote:
+> On Thu, 2012-06-28 at 00:14 +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jun 27, 2012 at 02:59:09PM -0600, Alex Williamson wrote:
+> > > On Wed, 2012-06-27 at 12:51 +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > > > > In order to inject an interrupt from an external source using an
+> > > > > irqfd, we need to allocate a new irq_source_id.  This allows us to
+> > > > > assert and (later) de-assert an interrupt line independently from
+> > > > > users of KVM_IRQ_LINE and avoid lost interrupts.
+> > > > > 
+> > > > > We also add what may appear like a bit of excessive infrastructure
+> > > > > around an object for storing this irq_source_id.  However, notice
+> > > > > that we only provide a way to assert the interrupt here.  A follow-on
+> > > > > interface will make use of the same irq_source_id to allow de-assert.
+> > > > > 
+> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > ---
+> > > > > 
+> > > > >  Documentation/virtual/kvm/api.txt |    5 ++
+> > > > >  arch/x86/kvm/x86.c                |    1 
+> > > > >  include/linux/kvm.h               |    3 +
+> > > > >  virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
+> > > > >  4 files changed, 99 insertions(+), 5 deletions(-)
+> > > > > 
+> > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > > > > index ea9edce..b216709 100644
+> > > > > --- a/Documentation/virtual/kvm/api.txt
+> > > > > +++ b/Documentation/virtual/kvm/api.txt
+> > > > > @@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
+> > > > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+> > > > >  and kvm_irqfd.gsi.
+> > > > >  
+> > > > > +With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
+> > > > > +the requested irqfd.  This is necessary to share level triggered
+> > > > > +interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+> > > > > +with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+> > > > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> > > > 
+> > > > Note that if my patch removing auto-deassert gets accepted,
+> > > > this is not needed at all: we can just look at the GSI
+> > > > to see if it's level or edge.
+> > > 
+> > > I'm not sure this is a good idea.  I know from vfio that I'm injecting a
+> > > level interrupt regardless of how the guest has the pic/ioapic
+> > > programmed at the time I'm calling this ioctl.  Peeking across address
+> > > spaces to get to the right pin on the right pic/ioapic and see how it's
+> > > currently programmed seems fragile.  Thanks,
+> > > 
+> > > Alex
+> > 
+> > Fragile? If you set eventfd as LEVEL but GSI is really edge then
+> > it all explodes, right? So why give users the option to shoot
+> > themselves in the foot?
+> 
+> If the guest has the ioapic rte set to edge at the time I call KVM_IRQFD
+> to register my level interrupt then it all explodes, right?  I'd rather
+> let the user shoot themselves than play Russian roulette with the guest.
+> Am I misunderstanding what you mean by looking that the GSI to see if
+> it's level or edge?
 
-Move most of usb clock initialization from lpc32xx_udc and ohci-nxp to
-clock.c. Also adds ohci clocks and otg clocks.
+Not sure.
+I simply mean this: if eventfd is bound to irqfd, set level from irqfd
+and clear from eventfd ack notifier.
+There's no need for a special IRQ_LEVEL for this.
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- arch/arm/mach-lpc32xx/clock.c                 |   68 +++++++++++++++++++++++++-
- arch/arm/mach-lpc32xx/include/mach/platform.h |   14 +++++
- 2 files changed, 81 insertions(+), 1 deletion(-)
-
---- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
-+++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
-@@ -739,14 +739,77 @@ static struct clk clk_rtc = {
- 	.get_rate	= local_return_parent_rate,
- };
- 
-+static int local_usb_enable(struct clk *clk, int enable)
-+{
-+	u32 tmp;
-+
-+	if (enable) {
-+		/* Set up I2C pull levels */
-+		tmp = __raw_readl(LPC32XX_CLKPWR_I2C_CLK_CTRL);
-+		tmp |= LPC32XX_CLKPWR_I2CCLK_USBI2CHI_DRIVE;
-+		__raw_writel(tmp, LPC32XX_CLKPWR_I2C_CLK_CTRL);
-+	}
-+
-+	return local_onoff_enable(clk, enable);
-+}
-+
- static struct clk clk_usbd = {
- 	.parent		= &clk_usbpll,
--	.enable		= local_onoff_enable,
-+	.enable		= local_usb_enable,
- 	.enable_reg	= LPC32XX_CLKPWR_USB_CTRL,
- 	.enable_mask	= LPC32XX_CLKPWR_USBCTRL_HCLK_EN,
- 	.get_rate	= local_return_parent_rate,
- };
- 
-+#define OTG_ALWAYS_MASK		(LPC32XX_USB_OTG_OTG_CLOCK_ON | \
-+				 LPC32XX_USB_OTG_I2C_CLOCK_ON)
-+
-+static int local_usb_otg_enable(struct clk *clk, int enable)
-+{
-+	int to = 1000;
-+
-+	if (enable) {
-+		__raw_writel(clk->enable_mask, clk->enable_reg);
-+
-+		while (((__raw_readl(LPC32XX_USB_OTG_CLK_STAT) &
-+			clk->enable_mask) != clk->enable_mask) && (to > 0))
-+			to--;
-+	} else {
-+		__raw_writel(OTG_ALWAYS_MASK, clk->enable_reg);
-+
-+		while (((__raw_readl(LPC32XX_USB_OTG_CLK_STAT) &
-+			OTG_ALWAYS_MASK) != OTG_ALWAYS_MASK) && (to > 0))
-+			to--;
-+	}
-+
-+	if (to)
-+		return 0;
-+	else
-+		return -1;
-+}
-+
-+static struct clk clk_usb_otg_dev = {
-+	.parent		= &clk_usbpll,
-+	.enable		= local_usb_otg_enable,
-+	.enable_reg	= LPC32XX_USB_OTG_CLK_CTRL,
-+	.enable_mask	= LPC32XX_USB_OTG_AHB_M_CLOCK_ON |
-+			  LPC32XX_USB_OTG_OTG_CLOCK_ON |
-+			  LPC32XX_USB_OTG_DEV_CLOCK_ON |
-+			  LPC32XX_USB_OTG_I2C_CLOCK_ON,
-+	.get_rate	= local_return_parent_rate,
-+};
-+
-+static struct clk clk_usb_otg_host = {
-+	.parent		= &clk_usbpll,
-+	.enable		= local_usb_otg_enable,
-+	.enable_reg	= LPC32XX_USB_OTG_CLK_CTRL,
-+	.enable_mask	= LPC32XX_USB_OTG_AHB_M_CLOCK_ON |
-+			  LPC32XX_USB_OTG_OTG_CLOCK_ON |
-+			  LPC32XX_USB_OTG_HOST_CLOCK_ON |
-+			  LPC32XX_USB_OTG_I2C_CLOCK_ON,
-+	.get_rate	= local_return_parent_rate,
-+};
-+
- static int tsc_onoff_enable(struct clk *clk, int enable)
- {
- 	u32 tmp;
-@@ -1145,6 +1208,9 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_INIT("31060000.ethernet", NULL, &clk_net),
- 	CLKDEV_INIT("dev:clcd", NULL, &clk_lcd),
- 	CLKDEV_INIT("31020000.usbd", "ck_usbd", &clk_usbd),
-+	CLKDEV_INIT("31020000.ohci", "ck_usbd", &clk_usbd),
-+	CLKDEV_INIT("31020000.usbd", "ck_usb_otg", &clk_usb_otg_dev),
-+	CLKDEV_INIT("31020000.ohci", "ck_usb_otg", &clk_usb_otg_host),
- 	CLKDEV_INIT("lpc32xx_rtc", NULL, &clk_rtc),
- };
- 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/platform.h
-+++ linux-2.6/arch/arm/mach-lpc32xx/include/mach/platform.h
-@@ -694,4 +694,18 @@
- #define LPC32XX_GPIO_P2_MUX_CLR			_GPREG(0x02C)
- #define LPC32XX_GPIO_P2_MUX_STATE		_GPREG(0x030)
- 
-+/*
-+ * USB Otg Registers
-+ */
-+#define _OTGREG(x)			io_p2v(LPC32XX_USB_OTG_BASE + (x))
-+#define LPC32XX_USB_OTG_CLK_CTRL	_OTGREG(0xFF4)
-+#define LPC32XX_USB_OTG_CLK_STAT	_OTGREG(0xFF8)
-+
-+/* USB OTG CLK CTRL bit defines */
-+#define LPC32XX_USB_OTG_AHB_M_CLOCK_ON	_BIT(4)
-+#define LPC32XX_USB_OTG_OTG_CLOCK_ON	_BIT(3)
-+#define LPC32XX_USB_OTG_I2C_CLOCK_ON	_BIT(2)
-+#define LPC32XX_USB_OTG_DEV_CLOCK_ON	_BIT(1)
-+#define LPC32XX_USB_OTG_HOST_CLOCK_ON	_BIT(0)
-+
- #endif
+-- 
+MST
