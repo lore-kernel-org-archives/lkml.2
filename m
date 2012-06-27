@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758418Ab2F0SPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:15:09 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51163 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756014Ab2F0SPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:15:07 -0400
-Date: Wed, 27 Jun 2012 19:15:03 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: UEFI Secure boot using qemu-kvm
-Message-ID: <20120627181503.GA7775@srcf.ucam.org>
-References: <1340818445.3175.73.camel@dabdike.int.hansenpartnership.com>
+	id S1756983Ab2F0STk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:19:40 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:45779 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753251Ab2F0STi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 14:19:38 -0400
+X-ASG-Debug-ID: 1340821177-03d6a53dc417330001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+Date: Wed, 27 Jun 2012 14:19:35 -0400
+From: Josef Bacik <jbacik@fusionio.com>
+To: Frederik Himpe <fhimpe@telenet.be>
+CC: "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 3.5.0-rc4: kernel BUG at fs/btrfs/inode.c:3758!
+Message-ID: <20120627181934.GA14033@localhost.localdomain>
+X-ASG-Orig-Subj: Re: 3.5.0-rc4: kernel BUG at fs/btrfs/inode.c:3758!
+References: <4FEB41CE.8070205@telenet.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1340818445.3175.73.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4FEB41CE.8070205@telenet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1340821177
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0009 1.0000 -2.0152
+X-Barracuda-Spam-Score: -1.89
+X-Barracuda-Spam-Status: No, SCORE=-1.89 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_SA717, CN_BODY_332
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.101092
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.12 CN_BODY_332            BODY: CN_BODY_332
+	0.00 BSF_SC0_SA717          Custom Rule BSF_SC0_SA717
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 06:34:05PM +0100, James Bottomley wrote:
+On Wed, Jun 27, 2012 at 11:24:30AM -0600, Frederik Himpe wrote:
+> After an unclean shutdown, Linux 3.5-rc4 fails to mount one of my btrfs 
+> file systems. This backtrace can be found in the logs:
 
-> The purpose of this email is to widen the pool of people who are playing
-> with UEFI Secure boot.  The Linux Foundation Technical Advisory Board
-> have been looking into this because it turns out to be rather difficult
-> to lay your hands on real UEFI Secure Boot enabled hardware.
+Fix is in btrfs-next
 
-http://tunnelmountain.net/ is the canonical source, but I believe that 
-these are now out of stock and waiting for Intel to finish the 
-firmware for the replacement.
+http://git.kernel.org/?p=linux/kernel/git/josef/btrfs-next.git;a=summary
 
-> The current state is that I've managed to lock down the secure boot
-> virtual platform with my own PK and KEK and verified that I can generate
-> signed efi binaries that will run on it (and that it will refuse to run
-> unsigned efi binaries).  Finally I've demonstrated that I can sign
-> elilo.efi (this has to be built specially because of the bug in gnu-efi)
-> and have it boot an unsigned linux kernel when the platform is in secure
-> mode (I've booted up to an initrd root prompt).
+Thanks,
 
-It's probably worth noting that booting unsigned kernels violates the 
-expectations of various vendors 
-(http://msdn.microsoft.com/en-us/library/windows/desktop/hh848062%28v=vs.85%29.aspx 
-would be unnecessary if you're supporting unsigned kernels, for 
-example). There's no public cross-vendor guidance on this, but I'm 
-trying to get that rectified.
-
-As well as sbsign there's also https://github.com/vathpela/pesign for 
-anyone stuck relying on nss rather than openssl for awkward regulatory 
-reasons.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Josef 
