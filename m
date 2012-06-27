@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2F0Apv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 20:45:51 -0400
+	id S1755604Ab2F0Apy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 20:45:54 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56752 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab2F0Aps (ORCPT
+	with ESMTP id S1755542Ab2F0Apw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 20:45:48 -0400
-X-AuditID: 9c93016f-b7cbdae0000024ac-ed-4fea57b6941d
+	Tue, 26 Jun 2012 20:45:52 -0400
+X-AuditID: 9c93016f-b7cbdae0000024ac-3e-4fea57bd5d7a
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, kvm@vger.kernel.org
-Subject: [PATCH 2/4] KVM: Use __print_hex() for kvm_emulate_insn tracepoint
-Date: Wed, 27 Jun 2012 09:41:39 +0900
-Message-Id: <1340757701-10711-2-git-send-email-namhyung@kernel.org>
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 4/4] tools lib traceevent: Add support for __print_hex()
+Date: Wed, 27 Jun 2012 09:41:41 +0900
+Message-Id: <1340757701-10711-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1340757701-10711-1-git-send-email-namhyung@kernel.org>
 References: <1340757701-10711-1-git-send-email-namhyung@kernel.org>
@@ -28,95 +28,216 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The kvm_emulate_insn tracepoint used __print_insn()
-for printing its instructions. However it makes the
-format of the event hard to parse as it reveals TP
-internals.
+Since the __print_hex() function is used in print fmt now,
+add corresponding parser routines. This makes the output of
+perf script on the kvm_emulate_insn event not to fail any more.
 
-Fortunately, kernel provides __print_hex for almost
-same purpose, we can use it instead of open coding
-it. The user-space can be changed to parse it later.
+ before:
+      kvm_emulate_insn:     [FAILED TO PARSE] rip=3238197797 ...
 
-That means raw kernel tracing will not be affected
-by this change:
+ after:
+      kvm_emulate_insn:     0:c102fa25:89 10 (prot32)
 
- # cd /sys/kernel/debug/tracing/
- # cat events/kvm/kvm_emulate_insn/format
- name: kvm_emulate_insn
- ID: 29
- format:
-	...
- print fmt: "%x:%llx:%s (%s)%s", REC->csbase, REC->rip, __print_hex(REC->insn, REC->len), \
- __print_symbolic(REC->flags, { 0, "real" }, { (1 << 0) | (1 << 1), "vm16" }, \
- { (1 << 0), "prot16" }, { (1 << 0) | (1 << 2), "prot32" }, { (1 << 0) | (1 << 3), "prot64" }), \
- REC->failed ? " failed" : ""
-
- # echo 1 > events/kvm/kvm_emulate_insn/enable
- # cat trace
- # tracer: nop
- #
- # entries-in-buffer/entries-written: 2183/2183   #P:12
- #
- #                              _-----=> irqs-off
- #                             / _----=> need-resched
- #                            | / _---=> hardirq/softirq
- #                            || / _--=> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
-         qemu-kvm-1782  [002] ...1   140.931636: kvm_emulate_insn: 0:c102fa25:89 10 (prot32)
-         qemu-kvm-1781  [004] ...1   140.931637: kvm_emulate_insn: 0:c102fa25:89 10 (prot32)
-
-Cc: kvm@vger.kernel.org
-Link: http://lkml.kernel.org/n/tip-wfw6y3b9ugtey8snaow9nmg5@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ic6oh4flbu7zfznpv1dgktlu@git.kernel.org
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- arch/x86/kvm/trace.h   |   12 +-----------
- include/trace/ftrace.h |    1 +
- 2 files changed, 2 insertions(+), 11 deletions(-)
+ tools/lib/traceevent/event-parse.c                 |   75 +++++++++++++++++++-
+ tools/lib/traceevent/event-parse.h                 |    7 ++
+ .../perf/util/scripting-engines/trace-event-perl.c |    4 ++
+ .../util/scripting-engines/trace-event-python.c    |    4 ++
+ 4 files changed, 89 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index 911d2641f14c..62d02e3c3ed6 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -710,16 +710,6 @@ TRACE_EVENT(kvm_skinit,
- 		  __entry->rip, __entry->slb)
- );
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 96cafa7a0fc8..ae56377cadd9 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -693,6 +693,10 @@ static void free_arg(struct print_arg *arg)
+ 		free_arg(arg->symbol.field);
+ 		free_flag_sym(arg->symbol.symbols);
+ 		break;
++	case PRINT_HEX:
++		free_arg(arg->hex.field);
++		free_arg(arg->hex.size);
++		break;
+ 	case PRINT_TYPE:
+ 		free(arg->typecast.type);
+ 		free_arg(arg->typecast.item);
+@@ -2293,6 +2297,45 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
+ }
  
--#define __print_insn(insn, ilen) ({		                 \
--	int i;							 \
--	const char *ret = p->buffer + p->len;			 \
--								 \
--	for (i = 0; i < ilen; ++i)				 \
--		trace_seq_printf(p, " %02x", insn[i]);		 \
--	trace_seq_printf(p, "%c", 0);				 \
--	ret;							 \
--	})
--
- #define KVM_EMUL_INSN_F_CR0_PE (1 << 0)
- #define KVM_EMUL_INSN_F_EFL_VM (1 << 1)
- #define KVM_EMUL_INSN_F_CS_D   (1 << 2)
-@@ -786,7 +776,7 @@ TRACE_EVENT(kvm_emulate_insn,
+ static enum event_type
++process_hex(struct event_format *event, struct print_arg *arg, char **tok)
++{
++	struct print_arg *field;
++	enum event_type type;
++	char *token;
++
++	memset(arg, 0, sizeof(*arg));
++	arg->type = PRINT_HEX;
++
++	field = alloc_arg();
++	type = process_arg(event, field, &token);
++
++	if (test_type_token(type, token, EVENT_DELIM, ","))
++		goto out_free;
++
++	arg->hex.field = field;
++
++	free_token(token);
++
++	field = alloc_arg();
++	type = process_arg(event, field, &token);
++
++	if (test_type_token(type, token, EVENT_DELIM, ")"))
++		goto out_free;
++
++	arg->hex.size = field;
++
++	free_token(token);
++	type = read_token_item(tok);
++	return type;
++
++ out_free:
++	free_arg(field);
++	free_token(token);
++	*tok = NULL;
++	return EVENT_ERROR;
++}
++
++static enum event_type
+ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **tok)
+ {
+ 	struct format_field *field;
+@@ -2521,6 +2564,10 @@ process_function(struct event_format *event, struct print_arg *arg,
+ 		is_symbolic_field = 1;
+ 		return process_symbols(event, arg, tok);
+ 	}
++	if (strcmp(token, "__print_hex") == 0) {
++		free_token(token);
++		return process_hex(event, arg, tok);
++	}
+ 	if (strcmp(token, "__get_str") == 0) {
+ 		free_token(token);
+ 		return process_str(event, arg, tok);
+@@ -3038,6 +3085,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 		break;
+ 	case PRINT_FLAGS:
+ 	case PRINT_SYMBOL:
++	case PRINT_HEX:
+ 		break;
+ 	case PRINT_TYPE:
+ 		val = eval_num_arg(data, size, event, arg->typecast.item);
+@@ -3261,8 +3309,9 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 	unsigned long long val, fval;
+ 	unsigned long addr;
+ 	char *str;
++	unsigned char *hex;
+ 	int print;
+-	int len;
++	int i, len;
  
- 	TP_printk("%x:%llx:%s (%s)%s",
- 		  __entry->csbase, __entry->rip,
--		  __print_insn(__entry->insn, __entry->len),
-+		  __print_hex(__entry->insn, __entry->len),
- 		  __print_symbolic(__entry->flags,
- 				   kvm_trace_symbol_emul_flags),
- 		  __entry->failed ? " failed" : ""
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 769724944fc6..c6bc2faaf261 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -571,6 +571,7 @@ static inline void ftrace_test_probe_##call(void)			\
+ 	switch (arg->type) {
+ 	case PRINT_NULL:
+@@ -3327,6 +3376,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 			}
+ 		}
+ 		break;
++	case PRINT_HEX:
++		field = arg->hex.field->field.field;
++		if (!field) {
++			str = arg->hex.field->field.name;
++			field = pevent_find_any_field(event, str);
++			if (!field)
++				die("field %s not found", str);
++			arg->hex.field->field.field = field;
++		}
++		hex = data + field->offset;
++		len = eval_num_arg(data, size, event, arg->hex.size);
++		for (i = 0; i < len; i++) {
++			if (i)
++				trace_seq_putc(s, ' ');
++			trace_seq_printf(s, "%02x", hex[i]);
++		}
++		break;
  
- #undef __print_flags
- #undef __print_symbolic
-+#undef __print_hex
- #undef __get_dynamic_array
- #undef __get_str
+ 	case PRINT_TYPE:
+ 		break;
+@@ -4376,6 +4442,13 @@ static void print_args(struct print_arg *args)
+ 		trace_seq_destroy(&s);
+ 		printf(")");
+ 		break;
++	case PRINT_HEX:
++		printf("__print_hex(");
++		print_args(args->hex.field);
++		printf(", ");
++		print_args(args->hex.size);
++		printf(")");
++		break;
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
+ 		printf("__get_str(%s)", args->string.string);
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index a8121d78a046..527df038a25f 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -226,6 +226,11 @@ struct print_arg_symbol {
+ 	struct print_flag_sym	*symbols;
+ };
  
++struct print_arg_hex {
++	struct print_arg	*field;
++	struct print_arg	*size;
++};
++
+ struct print_arg_dynarray {
+ 	struct format_field	*field;
+ 	struct print_arg	*index;
+@@ -253,6 +258,7 @@ enum print_arg_type {
+ 	PRINT_FIELD,
+ 	PRINT_FLAGS,
+ 	PRINT_SYMBOL,
++	PRINT_HEX,
+ 	PRINT_TYPE,
+ 	PRINT_STRING,
+ 	PRINT_BSTRING,
+@@ -270,6 +276,7 @@ struct print_arg {
+ 		struct print_arg_typecast	typecast;
+ 		struct print_arg_flags		flags;
+ 		struct print_arg_symbol		symbol;
++		struct print_arg_hex		hex;
+ 		struct print_arg_func		func;
+ 		struct print_arg_string		string;
+ 		struct print_arg_op		op;
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index 4c1b3d72a1d2..a579495d35b5 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -209,6 +209,10 @@ static void define_event_symbols(struct event_format *event,
+ 		define_symbolic_values(args->symbol.symbols, ev_name,
+ 				       cur_field_name);
+ 		break;
++	case PRINT_HEX:
++		define_event_symbols(event, ev_name, args->hex.field);
++		define_event_symbols(event, ev_name, args->hex.size);
++		break;
+ 	case PRINT_BSTRING:
+ 	case PRINT_DYNAMIC_ARRAY:
+ 	case PRINT_STRING:
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index acb9795286c4..f5c3485640ad 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -166,6 +166,10 @@ static void define_event_symbols(struct event_format *event,
+ 		define_values(PRINT_SYMBOL, args->symbol.symbols, ev_name,
+ 			      cur_field_name);
+ 		break;
++	case PRINT_HEX:
++		define_event_symbols(event, ev_name, args->hex.field);
++		define_event_symbols(event, ev_name, args->hex.size);
++		break;
+ 	case PRINT_STRING:
+ 		break;
+ 	case PRINT_TYPE:
 -- 
 1.7.10.2
 
