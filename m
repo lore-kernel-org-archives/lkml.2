@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab2F0Lil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 07:38:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20139 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753741Ab2F0Lij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 07:38:39 -0400
-Date: Wed, 27 Jun 2012 14:38:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH] kvm: don't clear level from irqfd
-Message-ID: <20120627113843.GB17922@redhat.com>
-References: <20120627091343.GA17693@redhat.com>
- <20120627100345.GA6533@redhat.com>
- <20120627102024.GA17922@redhat.com>
- <20120627102254.GB6533@redhat.com>
+	id S1755729Ab2F0Lmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 07:42:55 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:35044 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab2F0Lmx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 07:42:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120627102254.GB6533@redhat.com>
+In-Reply-To: <20120626163147.93181e21.akpm@linux-foundation.org>
+References: <1340463502-15341-1-git-send-email-akinobu.mita@gmail.com>
+	<1340463502-15341-7-git-send-email-akinobu.mita@gmail.com>
+	<20120626163147.93181e21.akpm@linux-foundation.org>
+Date: Wed, 27 Jun 2012 20:42:51 +0900
+Message-ID: <CAC5umygD5b3w1Fc6h5__cH-G6zrALZ4Ucvn-vazn+8yLXDw0JQ@mail.gmail.com>
+Subject: Re: [PATCH -v4 6/6] fault-injection: add notifier error injection
+ testing scripts
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+        Greg KH <greg@kroah.com>, linux-mm@kvack.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 01:22:54PM +0300, Gleb Natapov wrote:
-> On Wed, Jun 27, 2012 at 01:20:24PM +0300, Michael S. Tsirkin wrote:
-> > On Wed, Jun 27, 2012 at 01:03:46PM +0300, Gleb Natapov wrote:
-> > > On Wed, Jun 27, 2012 at 12:13:43PM +0300, Michael S. Tsirkin wrote:
-> > > > irqfd sets and clears the level immediately.
-> > > > This used to be necessary for MSI interrupts but isn't anymore.
-> > > > 
-> > > > Note! We never officially supported irqfd for level
-> > > > interrupts but it usually seemed to kind of work,
-> > > > and this change will break it. There are no known
-> > > > real users of that feature though - only old vfio prototypes.
-> > > > Removing this line will make it easier to add
-> > > > real support for level irqfds in the future.
-> > > > 
-> > > Did we officially supported irqfd for ioapic/pic edge interrupts?
-> > > Because those will break to.
-> > 
-> > Hard to say - as Alex points out it was never documented.
-> If we will start dropping everything that was never documented we will
-> hardly have working VMM at the end :)
+2012/6/27 Andrew Morton <akpm@linux-foundation.org>:
+> On Sat, 23 Jun 2012 23:58:22 +0900
+> Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>
+>> This adds two testing scripts with notifier error injection
+>
+> Can we move these into tools/testing/selftests/, so that a "make
+> run_tests" runs these tests?
+>
+> Also, I don't think it's appropriate that "fault-injection" be in the
+> path - that's an implementation detail.  What we're testing here is
+> memory hotplug, pm, cpu hotplug, etc.  So each test would go into, say,
+> tools/testing/selftests/cpu-hotplug.
+>
+> Now, your cpu-hotplug test only tests a tiny part of the cpu-hotplug
+> code.  But it is a start, and creates the place where additional tests
+> will be placed in the future.
+>
+>
+> If the kernel configuration means that the tests cannot be run, the
+> attempt should succeed so that other tests are not disrupted.  I guess
+> that printing a warning in this case is useful.
+>
+> Probably the selftests will require root permissions - we haven't
+> really thought about that much.  If these tests require root (I assume
+> they do?) then a sensible approach would be to check for that and to
+> emit a warning and return "success".
 
-Generally true.
+Thanks for your advice.
 
-However I just realized that this interface does not work
-reliably for ioapic/pic edge either. More or less for the same reason that
-it does not work for edge: we set bit in IRR, try to inject,
-then clear even if injection failed (e.g. because it is low
-priority). Guest will never get an interrupt in this case.
+I'm going to make the following changes on these scripts
 
-So what happened e.g. for Alex's vfio prototype is he never
-hit an interrupt window in light testing.
+1. Change these paths to:
+tools/testing/selftests/{cpu,memory}-hotplug/on-off-test.sh
 
-What we would need to do to fix it is:
-> > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+2. Skip tests and exit(0) with a warning if no root or no sysfs
+so that a "make run_tests" doesn't stop.
 
-Which will fix edge but break level same as this patch.
-But is it worth fixing? Maybe declare it broken and be
-done with it?
+3. Add tests that simply online and offline cpus (or memory blocks)
+and then tests with this notifier error injection features if the
+kernel supports.
 
+> My overall take on the fault-injection code is that there has been a
+> disappointing amount of uptake: I don't see many developers using them
+> for whitebox testing their stuff.  I guess this patchset addresses
+> that, in a way.
 
-> > But at least they actually worked reliably. Hmm.  One way to address
-> > this is to add kvm_trigger_irq which will trigger edge interrupts
-> > unconditionally.
-> > 
-> > Not sure it's worth it though.
-> > 
-> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > ---
-> > > >  virt/kvm/eventfd.c | 1 -
-> > > >  1 file changed, 1 deletion(-)
-> > > > 
-> > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > > > index f59c1e8..4db6b01 100644
-> > > > --- a/virt/kvm/eventfd.c
-> > > > +++ b/virt/kvm/eventfd.c
-> > > > @@ -68,7 +68,6 @@ irqfd_inject(struct work_struct *work)
-> > > >  	struct kvm *kvm = irqfd->kvm;
-> > > >  
-> > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > >  }
-> > > >  
-> > > >  /*
-> > > > -- 
-> > > > MST
-> > > 
-> > > --
-> > > 			Gleb.
-> 
-> --
-> 			Gleb.
+I hope so. the impact of notifier error injection is restricted to
+the particular kernel functionarity and these scripts are easy to run.
+
+On the other hand, fault injection like failslab has a huge impact
+on any kernel components and it often results catastrophe to userspace
+even if no kernel bug.  I am confident that I can find a certain amount
+of kernel bugs with failslab but it requires enough spare time.
