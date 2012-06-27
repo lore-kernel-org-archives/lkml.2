@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab2F0S3L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:29:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42623 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab2F0S3I (ORCPT
+	id S1757935Ab2F0ScS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:32:18 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40147 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752709Ab2F0ScR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:29:08 -0400
-Date: Wed, 27 Jun 2012 11:29:03 -0700
-From: "tj@kernel.org" <tj@kernel.org>
-To: shyju pv <shyju.pv@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Sanil kumar <sanil.kumar@huawei.com>,
-        Masanari Iida <standby24x7@gmail.com>, Li Zefan <lizefan@huawei.com>
-Subject: Re: 3.5-rc3: BUG: Dentry still in use (1) [unmount of cgroup
- cgroup]
-Message-ID: <20120627182903.GP15811@google.com>
-References: <E061084CB90FCE4F89232A6CF839683B32B52291@SZXEML507-MBS.china.huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E061084CB90FCE4F89232A6CF839683B32B52291@SZXEML507-MBS.china.huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 27 Jun 2012 14:32:17 -0400
+Message-ID: <1340821933.3175.77.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: linux-efi mailing list on vger
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        James Bottomley <jejb@parisc-linux.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Colin Watson <cjwatson@ubuntu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 27 Jun 2012 19:32:13 +0100
+In-Reply-To: <4FEB4C2F.40205@zytor.com>
+References: <4FEB4C2F.40205@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 24, 2012 at 07:08:07PM +0000, shyju pv wrote:
-> Hi,
-> Observed a crash on 3.5-rc3 with cgroup tests from LTP(Stable April,2012 release)on Dell Inspiron 1526[Intel(R) Core2Duo T7250, MEM 4GB] and also on another x86 quad core target(4GB RAM).
-> LTP test case: cgroup_regression_test.sh(test 4,7 and 9 crashes randomly when the test cases are executed in order)
-> Shyju
+On Wed, 2012-06-27 at 11:08 -0700, H. Peter Anvin wrote:
+> There are a lot of people working on EFI now, and there seems to be not 
+> enough coordination.
 > 
-> [  532.805905] BUG: Dentry ffff8801164db490{i=491b,n=/} still in use (1) [unmount of cgroup cgrou
+> Could we perhaps get a linux-efi@vger.kernel.org mailing list for this 
+> stuff?
 
-Hmm... fa980ca87d "cgroup: superblock can't be released with active
-dentries" is supposed to have fixed that.  Looking into it.
+Sure ... it suits me because I've been running around trying to send
+patches to people as I kept running into problems bringing up tianocore
+secure boot.
 
-Thanks.
+James
 
--- 
-tejun
+
