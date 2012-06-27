@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab2F0JD0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:03:26 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23235 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755294Ab2F0JDY (ORCPT
+	id S1755879Ab2F0JDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:03:32 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44077 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab2F0JDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:03:24 -0400
-Date: Wed, 27 Jun 2012 12:02:58 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-mmc@vger.kernel.org,
-        David Vrabel <david.vrabel@csr.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch -resend] mmc: ushc: fix an endianness conversion in
- ushc_request()
-Message-ID: <20120627090258.GH31212@elgon.mountain>
+	Wed, 27 Jun 2012 05:03:30 -0400
+X-AuditID: 9c930197-b7b49ae0000027b8-99-4feacc5f7d0c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, mingo@redhat.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: fix wrong hw_breakpoint documentation
+References: <CACV3sbKFcHgai6AzKGrf=LEb67VjZXjMUqMQuXAOUmby7CeiJg@mail.gmail.com>
+Date: Wed, 27 Jun 2012 17:59:34 +0900
+In-Reply-To: <CACV3sbKFcHgai6AzKGrf=LEb67VjZXjMUqMQuXAOUmby7CeiJg@mail.gmail.com>
+	(Jovi Zhang's message of "Wed, 27 Jun 2012 16:39:19 +0800")
+Message-ID: <87fw9hyvt5.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120627085800.GA3007@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ->cmd_idx field is 8 bits, not 16 so the call to cpu_to_le16()
-will probably set cmd_idx to zero here on big endian systems.  My guess
-is that this works because it has been tested on little endian systems
-where the conversion to le16 is a nop.
+Hi, Jovi
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-I don't have a way to test this.
+On Wed, 27 Jun 2012 16:39:19 +0800, Jovi Zhang wrote:
+> From f5f9c3a064482cf3d0fb7ed788c66630bddbfc79 Mon Sep 17 00:00:00 2001
+> From: Jovi Zhang <bookjovi@gmail.com>
+> Date: Wed, 27 Jun 2012 16:09:21 +0800
+> Subject: [PATCH] perf: fix wrong hw_breakpoint documentation
+>
+> read-write access hw_breakpoint event is passed as 'mem:addr',
+> 'mem:0x1000:rw' is parsed as invalid argument currently.
+>
 
-I have added a sentence to the changelog.  I have added David Vrabel to
-the CC list.  This was originally sent to the mailing list on Mon, 21
-Nov 2011 and there was no response.
+It should be a bug in event parser. I guess the patch below will fix it:
 
-diff --git a/drivers/mmc/host/ushc.c b/drivers/mmc/host/ushc.c
-index c0105a2..25932f5 100644
---- a/drivers/mmc/host/ushc.c
-+++ b/drivers/mmc/host/ushc.c
-@@ -278,7 +278,7 @@ static void ushc_request(struct mmc_host *mmc, struct mmc_request *req)
- 	ushc->current_req = req;
+
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 488362e14133..aafca33a8a09 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -76,7 +76,7 @@ num_hex               0x[a-fA-F0-9]+
+ num_raw_hex    [a-fA-F0-9]+
+ name           [a-zA-Z_*?][a-zA-Z0-9_*?]*
+ modifier_event [ukhpGH]{1,8}
+-modifier_bp    [rwx]
++modifier_bp    [rwx]+
  
- 	/* Start cmd with CBW. */
--	ushc->cbw->cmd_idx = cpu_to_le16(req->cmd->opcode);
-+	ushc->cbw->cmd_idx = req->cmd->opcode;
- 	if (req->data)
- 		ushc->cbw->block_size = cpu_to_le16(req->data->blksz);
- 	else
+ %%
+ 
