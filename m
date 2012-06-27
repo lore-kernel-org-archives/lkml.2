@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2F0Sk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:40:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21278 "EHLO mx1.redhat.com"
+	id S1756343Ab2F0Skd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:40:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41854 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752581Ab2F0Sk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:40:26 -0400
-Date: Wed, 27 Jun 2012 20:38:13 +0200
+	id S1752581Ab2F0Skb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 14:40:31 -0400
+Date: Wed, 27 Jun 2012 20:37:57 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -15,9 +15,8 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         linux-security-module@vger.kernel.org,
         linux-kernel <linux-kernel@vger.kernel.org>,
         David Howells <dhowells@redhat.com>
-Subject: [PATCH 3/4] task_work: deal with task_work callbacks adding more
-	work
-Message-ID: <20120627183813.GD23086@redhat.com>
+Subject: [PATCH 2/4] task_work: don't rely on PF_EXITING
+Message-ID: <20120627183757.GC23086@redhat.com>
 References: <1340369098.2464.20.camel@falcor> <20120623092049.GH14083@ZenIV.linux.org.uk> <20120623194505.GI14083@ZenIV.linux.org.uk> <20120623203800.GA10306@redhat.com> <20120623210141.GK14083@ZenIV.linux.org.uk> <20120624041652.GN14083@ZenIV.linux.org.uk> <20120624153310.GB24596@redhat.com> <20120625060357.GT14083@ZenIV.linux.org.uk> <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,64 +27,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shamelessly stolen Al Viro's patch and the changelog, just I didn't
-dare to add the proper From tag.
+task_work_add() checks PF_EXITING to ensure it can't insert the new
+twork after exit_task_work(). This means that the exiting task can
+not use it after exit_signals().
 
-It doesn't matter on normal return to userland path (we'll recheck
-the NOTIFY_RESUME flag anyway), but in case of exit_task_work() we'll
-need that as soon as we get callbacks capable of triggering more
-task_work_add().
+Change task_work_add() and task_work_run() to use the fake
+TWORK_EXITED pointer to synchronize with each other, now we can
+move exit_task_work() down and make task_work_add() more useful.
 
-Suggested-by: Al Viro <viro@ZenIV.linux.org.uk>
+Unfortunately, this means that the exiting task needs to take
+pi_lock unconditionally.
+
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/task_work.c |   33 +++++++++++++++++++++------------
- 1 files changed, 21 insertions(+), 12 deletions(-)
+ include/linux/task_work.h |    6 ++----
+ kernel/task_work.c        |   15 ++++++++-------
+ 2 files changed, 10 insertions(+), 11 deletions(-)
 
+diff --git a/include/linux/task_work.h b/include/linux/task_work.h
+index 03640fb..ef70b01 100644
+--- a/include/linux/task_work.h
++++ b/include/linux/task_work.h
+@@ -1,9 +1,8 @@
+ #ifndef _LINUX_TASK_WORK_H
+ #define _LINUX_TASK_WORK_H
+ 
+-#include <linux/sched.h>
+-
+ struct task_work;
++struct task_struct;
+ typedef void (*task_work_func_t)(struct task_work *);
+ 
+ struct task_work {
+@@ -25,8 +24,7 @@ void task_work_run(void);
+ 
+ static inline void exit_task_work(struct task_struct *task)
+ {
+-	if (unlikely(task->last_twork))
+-		task_work_run();
++	task_work_run();
+ }
+ 
+ #endif	/* _LINUX_TASK_WORK_H */
 diff --git a/kernel/task_work.c b/kernel/task_work.c
-index b2ff3b7..8dfc48c 100644
+index a0a3133..b2ff3b7 100644
 --- a/kernel/task_work.c
 +++ b/kernel/task_work.c
-@@ -76,18 +76,27 @@ void task_work_run(void)
- 	struct task_struct *task = current;
- 	struct task_work *last, *next, *twork;
+@@ -6,6 +6,8 @@
+  * task->last_twork points to the last node in the circular single-linked list.
+  */
  
--	raw_spin_lock_irq(&task->pi_lock);
--	last = task->last_twork;
--	task->last_twork = (task->flags & PF_EXITING) ? TWORK_EXITED : NULL;
--	raw_spin_unlock_irq(&task->pi_lock);
-+	for (;;) {
-+		/*
-+		 * twork->func() can do task_work_add(), do not
-+		 * set TWORK_EXITED until the list becomes empty.
-+		 */
-+		raw_spin_lock_irq(&task->pi_lock);
-+		last = task->last_twork;
-+		if (last)
-+			task->last_twork = NULL;
-+		else if (task->flags & PF_EXITING)
-+			task->last_twork = TWORK_EXITED;
-+		raw_spin_unlock_irq(&task->pi_lock);
++#define TWORK_EXITED	((struct task_work *)1)
++
+ int
+ task_work_add(struct task_struct *task, struct task_work *twork, bool notify)
+ {
+@@ -18,12 +20,11 @@ task_work_add(struct task_struct *task, struct task_work *twork, bool notify)
+ 		return -ENOTSUPP;
+ #endif
+ 	/*
+-	 * We must not insert the new work if the task has already passed
+-	 * exit_task_work(). We rely on do_exit()->raw_spin_unlock_wait()
+-	 * and check PF_EXITING under pi_lock.
++	 * We must not insert the new work if the exiting task has already
++	 * passed task_work_run().
+ 	 */
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+-	if (likely(!(task->flags & PF_EXITING))) {
++	if (likely(task->last_twork != TWORK_EXITED)) {
+ 		last = task->last_twork ?: twork;
+ 		task->last_twork = twork;
+ 		twork->next = last->next;
+@@ -46,7 +47,7 @@ task_work_cancel(struct task_struct *task, task_work_func_t func)
  
--	if (!last)
--		return;
-+		if (!last)
-+			return;
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 	last = task->last_twork;
+-	if (last) {
++	if (last && last != TWORK_EXITED) {
+ 		twork = last;
+ 		do {
+ 			prev = twork;
+@@ -77,10 +78,10 @@ void task_work_run(void)
  
--	next = last->next;
--	do {
--		twork = next;
--		next = twork->next;
--		twork->func(twork);
--	} while (twork != last);
-+		next = last->next;
-+		do {
-+			twork = next;
-+			next = twork->next;
-+			twork->func(twork);
-+		} while (twork != last);
-+	}
- }
+ 	raw_spin_lock_irq(&task->pi_lock);
+ 	last = task->last_twork;
+-	task->last_twork = NULL;
++	task->last_twork = (task->flags & PF_EXITING) ? TWORK_EXITED : NULL;
+ 	raw_spin_unlock_irq(&task->pi_lock);
+ 
+-	if (unlikely(!last))
++	if (!last)
+ 		return;
+ 
+ 	next = last->next;
 -- 
 1.5.5.1
 
