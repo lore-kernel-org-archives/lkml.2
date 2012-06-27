@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990Ab2F0RWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 13:22:43 -0400
-Received: from magic.merlins.org ([209.81.13.136]:51684 "EHLO
-	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab2F0RWl (ORCPT
+	id S1757665Ab2F0RXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 13:23:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42141 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756230Ab2F0RXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 13:22:41 -0400
-Date: Wed, 27 Jun 2012 10:21:30 -0700
-From: Marc MERLIN <marc@merlins.org>
-To: Alexander Block <ablock84@googlemail.com>
-Cc: linux-btrfs@vger.kernel.org, dave@jikos.cz, hch@infradead.org,
-        linux-fsdevel@vger.kernel.org, chris.mason@fusionio.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Allow cross subvolume reflinks (2nd attempt)
-Message-ID: <20120627172130.GD7472@merlins.org>
-References: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
-X-Sysadmin: BOFH
-X-URL: http://marc.merlins.org/
-X-Operating-System: Proudly running Linux
- 3.2.16-amd64-volpreempt-noide-20120410/Debian wheezy/sid
-X-Mailer: Some Outlooks can't quote properly without this header
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-No-Run: Yes
-X-SA-Exim-Connect-IP: 208.54.5.199
-X-SA-Exim-Mail-From: merlin@merlins.org
+	Wed, 27 Jun 2012 13:23:39 -0400
+From: Arvydas Sidorenko <asido4@gmail.com>
+To: mcgrof@qca.qualcomm.com
+Cc: jouni@qca.qualcomm.com, vthiagar@qca.qualcomm.com,
+        senthilb@qca.qualcomm.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, asido4@gmail.com
+Subject: [PATCH] Build fix in drivers/net/wireless/ath/ath9k/main.c
+Date: Wed, 27 Jun 2012 21:19:39 +0200
+Message-Id: <1340824779-5157-1-git-send-email-asido4@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 12:35:11PM +0200, Alexander Block wrote:
-> Hello,
-> 
-> This is the second attempt to bring in cross subvolume reflinks into btrfs.
-> The first attempt was NAKed due to missing vfs mount checks and a clear
-> description of what btrfs subvolumes are and probably also why cross 
-> subvolume reflinks are ok in the case of btrfs. This version of the patch 
-> comes from David and is in SUSE kernels since a long time, so it is tested 
-> and working. The patch also does proper vfs mount checks, so cross mount 
-> point reflinks are not possible with this patch. It only allows cross 
-> reflinks between two subvolumes which are in the same mount point. 
+Commit fad29cd2f59949581050a937786c2c9bc78b2f04 broke the build if
+no CONFIG_ATH9K_BTCOEX_SUPPORT is enabled.
+
+Signed-off-by: Arvydas Sidorenko <asido4@gmail.com>
+---
+ drivers/net/wireless/ath/ath9k/main.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index c14cf5a..e4e73f0 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -151,8 +151,10 @@ static void __ath_cancel_work(struct ath_softc *sc)
+ 	cancel_delayed_work_sync(&sc->tx_complete_work);
+ 	cancel_delayed_work_sync(&sc->hw_pll_work);
  
-Thank you for bringing this back. This would have saved me a lot of
-trouble
-
-I'm not familiar with the code, but here's a big thumbs up from me.
-
-Anyone doing reviews, please consider this :)
-
-Thanks,
-Marc
++#ifdef CONFIG_ATH9K_BTCOEX_SUPPORT
+ 	if (ath9k_hw_mci_is_enabled(sc->sc_ah))
+ 		cancel_work_sync(&sc->mci_work);
++#endif
+ }
+ 
+ static void ath_cancel_work(struct ath_softc *sc)
 -- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/
+1.7.8.6
+
