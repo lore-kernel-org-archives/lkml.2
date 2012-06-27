@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab2F0AeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 20:34:21 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42404 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab2F0AeU (ORCPT
+	id S1754946Ab2F0Af5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 20:35:57 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53109 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab2F0Af4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 20:34:20 -0400
-Message-ID: <4FEA5509.7040000@wwwdotorg.org>
-Date: Tue, 26 Jun 2012 18:34:17 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 26 Jun 2012 20:35:56 -0400
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] DT fixes for 3.5
-References: <4FDA9261.2070208@gmail.com> <4FEA47EA.3000804@gmail.com>
-In-Reply-To: <4FEA47EA.3000804@gmail.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAJL_eksV6R2Je+qoBYAtvZ6pSb8d6HdNiBic7AH0TG3u2R0FzQ@mail.gmail.com>
+References: <CAJL_eku9byV+Uk-5boR52HLEO0D-++2h_y=PeaaQG_PrCuALhQ@mail.gmail.com>
+ <1340060577-9112-1-git-send-email-dhsharp@google.com> <1340293617.27036.177.camel@gandalf.stny.rr.com>
+ <CAJL_ekt-iVgh-GG_PoY_eqobgdUGf_L4TH6zmVa4D9oBgohCsA@mail.gmail.com>
+ <1340407900.27036.275.camel@gandalf.stny.rr.com> <CAJL_eksV6R2Je+qoBYAtvZ6pSb8d6HdNiBic7AH0TG3u2R0FzQ@mail.gmail.com>
+From: David Sharp <dhsharp@google.com>
+Date: Tue, 26 Jun 2012 17:35:34 -0700
+Message-ID: <CAJL_eksSXfq4RVZ_rHagpgex96Jq=QkpiW93hD7M5xoYscq2jQ@mail.gmail.com>
+Subject: Re: [PATCH] ring-buffer: fix uninitialized read_stamp
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 05:38 PM, Rob Herring wrote:
-> On 06/14/2012 08:39 PM, Rob Herring wrote:
->> Grant,
+On Fri, Jun 22, 2012 at 6:27 PM, David Sharp <dhsharp@google.com> wrote:
+> On Fri, Jun 22, 2012 at 4:31 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
 >>
->> Please pull. Mainly some documentation updates and 2 fixes:
->>
->> - An export symbol fix for of_platform_populate from Stephen W.
->> - A fix for the order compatible entries are matched to ensure the
->> first compatible string is matched when there are multiple matches.
->>
-> 
-> Ping. If you don't want to pull these for 3.5, can you please pull for
-> next and 3.6.
+>> Now I think you may understand my patch.
+>
+> Yeah, mostly. At least enough that I think it's worth testing. But Monday.
 
-The of_platform_populate() patch of mine is needed in 3.5 to solve a
-build problem there, if the Tegra AHUB driver is built as a module
-(which admittedly it isn't in tegra_defconfig, but anyway).
+I got around to testing your patch today, and it fixes the issue. No
+bad-looking timestamps in 40 runs, whereas could reproduce within 3
+runs before. Do you want me to send you a fresh patch, or just use the
+one you have?
+
+>>> On Thu, Jun 21, 2012 at 8:56 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>>> > Does something like this work for you. Note, this is totally untested!
+>>> >
+>>> > -- Steve
+>>> >
+>>> > diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+>>> > index ad0239b..5943044 100644
+>>> > --- a/kernel/trace/ring_buffer.c
+>>> > +++ b/kernel/trace/ring_buffer.c
+>>> > @@ -3246,6 +3246,10 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+>>> >        if (cpu_buffer->commit_page == cpu_buffer->reader_page)
+>>> >                goto out;
+>>> >
+>>> > +       /* Don't bother swapping if the ring buffer is empty */
+>>> > +       if (rb_num_of_entries(cpu_buffer) == 0)
+>>> > +               goto out;
+>>> > +
+>>> >        /*
+>>> >         * Reset the reader page to size zero.
+>>> >         */
