@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab2F0BGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 21:06:37 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:46174 "EHLO
+	id S1755891Ab2F0BHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 21:07:00 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:3801 "EHLO
 	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab2F0BGf (ORCPT
+	with ESMTP id S1755464Ab2F0BG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 21:06:35 -0400
+	Tue, 26 Jun 2012 21:06:59 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-160.messagelabs.com!1340759194!7915647!2
-X-Originating-IP: [216.166.12.97]
+X-Msg-Ref: server-7.tower-160.messagelabs.com!1340759218!5251043!1
+X-Originating-IP: [216.166.12.99]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 27/36] staging: comedi: cb_pcidas: fix comments in *_cmdtest functions
-Date: Tue, 26 Jun 2012 18:06:08 -0700
+Subject: [PATCH 28/36] staging: comedi: cb_pcidas: remove 'volatile' on private data variables
+Date: Tue, 26 Jun 2012 18:06:52 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,95 +23,49 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201206261806.09092.hartleys@visionengravers.com>
+Message-ID: <201206261806.52836.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove some cut-and-paste comments from the skel driver in the
-*_cmdtest functions. Shorten some others to fix the checkpatch.pl
-complaints about WARNING: line over 80 characters.
+As indicated by checkpatch.pl, "WARNING: Use of volatile is usually
+wrong: ...". The variables in the private data that are marked
+volatile don't need to be. Remove the volatile.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/cb_pcidas.c | 26 ++++++--------------------
- 1 file changed, 6 insertions(+), 20 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcidas.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 12fb087..95ce546 100644
+index 95ce546..eba39b4 100644
 --- a/drivers/staging/comedi/drivers/cb_pcidas.c
 +++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -809,14 +809,7 @@ static int cb_pcidas_ai_cmdtest(struct comedi_device *dev,
- 	int tmp;
- 	int i, gain, start_chan;
- 
--	/* cmdtest tests a particular command to see if it is valid.
--	 * Using the cmdtest ioctl, a user can create a valid cmd
--	 * and then have it executes by the cmd ioctl.
--	 *
--	 * cmdtest returns 1,2,3,4 or 0, depending on which tests
--	 * the command passes. */
--
--	/* step 1: make sure trigger sources are trivially valid */
-+	/* step 1: trigger sources are trivially valid */
- 
- 	tmp = cmd->start_src;
- 	cmd->start_src &= TRIG_NOW | TRIG_EXT;
-@@ -846,7 +839,7 @@ static int cb_pcidas_ai_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 1;
- 
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/* step 2: trigger sources are unique and mutually compatible */
- 
- 	if (cmd->start_src != TRIG_NOW && cmd->start_src != TRIG_EXT)
- 		err++;
-@@ -872,7 +865,7 @@ static int cb_pcidas_ai_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 2;
- 
--	/* step 3: make sure arguments are trivially compatible */
-+	/* step 3: arguments are trivially compatible */
- 
- 	switch (cmd->start_src) {
- 	case TRIG_EXT:
-@@ -1092,14 +1085,7 @@ static int cb_pcidas_ao_cmdtest(struct comedi_device *dev,
- 	int err = 0;
- 	int tmp;
- 
--	/* cmdtest tests a particular command to see if it is valid.
--	 * Using the cmdtest ioctl, a user can create a valid cmd
--	 * and then have it executes by the cmd ioctl.
--	 *
--	 * cmdtest returns 1,2,3,4 or 0, depending on which tests
--	 * the command passes. */
--
--	/* step 1: make sure trigger sources are trivially valid */
-+	/* step 1: trigger sources are trivially valid */
- 
- 	tmp = cmd->start_src;
- 	cmd->start_src &= TRIG_INT;
-@@ -1129,7 +1115,7 @@ static int cb_pcidas_ao_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 1;
- 
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/* step 2: trigger sources are unique and mutually compatible */
- 
- 	if (cmd->scan_begin_src != TRIG_TIMER &&
- 	    cmd->scan_begin_src != TRIG_EXT)
-@@ -1140,7 +1126,7 @@ static int cb_pcidas_ao_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 2;
- 
--	/* step 3: make sure arguments are trivially compatible */
-+	/* step 3: arguments are trivially compatible */
- 
- 	if (cmd->start_arg != 0) {
- 		cmd->start_arg = 0;
+@@ -357,16 +357,16 @@ struct cb_pcidas_private {
+ 	/*  divisors of master clock for analog input pacing */
+ 	unsigned int divisor1;
+ 	unsigned int divisor2;
+-	volatile unsigned int count;	/*  number of analog input samples remaining */
+-	volatile unsigned int adc_fifo_bits;	/*  bits to write to interrupt/adcfifo register */
+-	volatile unsigned int s5933_intcsr_bits;	/*  bits to write to amcc s5933 interrupt control/status register */
+-	volatile unsigned int ao_control_bits;	/*  bits to write to ao control and status register */
++	unsigned int count;	/*  number of analog input samples remaining */
++	unsigned int adc_fifo_bits;	/*  bits to write to interrupt/adcfifo register */
++	unsigned int s5933_intcsr_bits;	/*  bits to write to amcc s5933 interrupt control/status register */
++	unsigned int ao_control_bits;	/*  bits to write to ao control and status register */
+ 	short ai_buffer[AI_BUFFER_SIZE];
+ 	short ao_buffer[AO_BUFFER_SIZE];
+ 	/*  divisors of master clock for analog output pacing */
+ 	unsigned int ao_divisor1;
+ 	unsigned int ao_divisor2;
+-	volatile unsigned int ao_count;	/*  number of analog output samples remaining */
++	unsigned int ao_count;	/*  number of analog output samples remaining */
+ 	int ao_value[2];	/*  remember what the analog outputs are set to, to allow readback */
+ 	unsigned int caldac_value[NUM_CHANNELS_8800];	/*  for readback of caldac */
+ 	unsigned int trimpot_value[NUM_CHANNELS_8402];	/*  for readback of trimpot */
 -- 
 1.7.11
 
