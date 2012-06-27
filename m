@@ -1,127 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab2F0F1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 01:27:15 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:44868 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab2F0F1N (ORCPT
+	id S1755430Ab2F0F2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 01:28:41 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44215 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab2F0F2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 01:27:13 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApxHAJuY6k9V5qg+PGdsb2JhbABFihWoTINYGQEBAQE3NIIYAQEEATocIwULCANGFCUKGogZCblWFJBNYAOVMYVmjH8
-X-IronPort-AV: E=Sophos;i="4.77,482,1336341600"; 
-   d="scan'208";a="363252993"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 27 Jun 2012 07:30:32 +0200
-To: Dave Airlie <airlied@linux.ie>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm fixes
-Message-ID: <20120627053032.GA518@polaris.bitmath.org>
-References: <alpine.DEB.2.00.1206261455320.18392@skynet.skynet.ie>
+	Wed, 27 Jun 2012 01:28:39 -0400
+X-AuditID: 9c930179-b7cceae000004195-86-4fea9a05eb92
+Message-ID: <4FEA9A0D.4020000@kernel.org>
+Date: Wed, 27 Jun 2012 14:28:45 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1206261455320.18392@skynet.skynet.ie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.drivers.driver-project.devel,gmane.linux.kernel,gmane.linux.kernel.mm
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 2/3] zsmalloc: add generic path and remove x86 dependency
+References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-3-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1340640878-27536-3-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On 06/26/2012 01:14 AM, Seth Jennings wrote:
 
-> just two changes, one udl endian fix, one nouveau memory corruption on 
-> some GPUs.
+> This patch adds generic pages mapping methods that
+> work on all archs in the absence of support for
+> local_tlb_flush_kernel_range() advertised by the
+> arch through __HAVE_LOCAL_TLB_FLUSH_KERNEL_RANGE
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-I have been tracking an elusive memory corruption bug appearing on my
-MacBookAir3,1 (nv50) since -rc0, but unfortunately it seems to be
-different from the one fixed here. The problem is of the random kind,
-which made bisection tricky. It seems the patch below fixes the
-symptoms, but I have no idea why:
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
-index 7f80ed5..bff34f4 100644
---- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-@@ -935,7 +935,6 @@ nouveau_bo_move_init(struct nouveau_channel *chan)
-                {  "COPY", 0, 0xa0b5, nve0_bo_move_copy, nvc0_bo_move_init },
-                { "COPY1", 5, 0x90b8, nvc0_bo_move_copy, nvc0_bo_move_init },
-                { "COPY0", 4, 0x90b5, nvc0_bo_move_copy, nvc0_bo_move_init },
--               {  "COPY", 0, 0x85b5, nva3_bo_move_copy, nv50_bo_move_init },
-                { "CRYPT", 0, 0x74c1, nv84_bo_move_exec, nv50_bo_move_init },
-                {  "M2MF", 0, 0x9039, nvc0_bo_move_m2mf, nvc0_bo_move_init },
-                {  "M2MF", 0, 0x5039, nv50_bo_move_m2mf, nv50_bo_move_init },
+Sorry for handling this issue recently.
+I like the patch.
+Some comment below.
 
-With the patch applied, the log shows this:
+> ---
+>  drivers/staging/zsmalloc/Kconfig         |    4 -
+>  drivers/staging/zsmalloc/zsmalloc-main.c |  136 ++++++++++++++++++++++++------
+>  drivers/staging/zsmalloc/zsmalloc_int.h  |    5 +-
+>  3 files changed, 115 insertions(+), 30 deletions(-)
+> 
+> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+> index a5ab720..9084565 100644
+> --- a/drivers/staging/zsmalloc/Kconfig
+> +++ b/drivers/staging/zsmalloc/Kconfig
+> @@ -1,9 +1,5 @@
+>  config ZSMALLOC
+>  	tristate "Memory allocator for compressed pages"
+> -	# X86 dependency is because of the use of __flush_tlb_one and set_pte
+> -	# in zsmalloc-main.c.
+> -	# TODO: convert these to portable functions
+> -	depends on X86
+>  	default n
+>  	help
+>  	  zsmalloc is a slab-based memory allocator designed to store
+> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> index 10b0d60..14f04d8 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> @@ -470,28 +470,116 @@ static struct page *find_get_zspage(struct size_class *class)
+>  	return page;
+>  }
+>  
+> +#ifdef __HAVE_LOCAL_FLUSH_TLB_KERNEL_RANGE
 
-Jun 27 07:01:15 polaris kernel: [drm] nouveau 0000:02:00.0: MM: using M2MF for buffer copies
 
-Without the patch applied, when the problem appears, the log shows this:
+As you already mentioned, __HAVE_ARCH_LOCAL_XXX
 
-Jun 27 06:50:34 polaris kernel: [drm] nouveau 0000:02:00.0: MM: using COPY for buffer copies
+> +static inline int zs_arch_cpu_up(struct mapping_area *area)
 
-As I start X, and when the stars are in the right position, I get a bunch of errors like these:
 
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF IN
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF 00320251 203afd00 00000000 04000e00
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000829000) subc 0 class 0x5039 mthd 0x0328 data 0x00000000
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: VM: trapped read at 0x00203abe80 on ch 2 [0x00000829] PGRAPH/DISPATCH/M2M_IN reason: VRAM_LIMIT
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF IN
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF 00320151 40442000 00000000 04000000
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000829000) subc 0 class 0x5039 mthd 0x0328 data 0x00000000
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: VM: trapped read at 0x0040410000 on ch 2 [0x00000829] PGRAPH/DISPATCH/M2M_IN reason: NULL_DMAOBJ
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF IN
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF 00320251 203c7600 00000000 04000e00
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000829000) subc 0 class 0x5039 mthd 0x0328 data 0x00000000
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: VM: trapped read at 0x00203c3780 on ch 2 [0x00000829] PGRAPH/DISPATCH/M2M_IN reason: VRAM_LIMIT
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF IN
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF 00320151 40855000 00000000 04000000
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000829000) subc 0 class 0x5039 mthd 0x0328 data 0x00000000
-Jun 27 06:51:52 polaris kernel: [drm] nouveau 0000:02:00.0: VM: trapped read at 0x0040820000 on ch 2 [0x00000829] PGRAPH/DISPATCH/M2M_IN reason: NULL_DMAOBJ
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF OUT
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF 00340241 2014bb80 00000000 05000e00
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000829000) subc 0 class 0x5039 mthd 0x0328 data 0x00000000
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: VM: trapped write at 0x002014ad00 on ch 2 [0x00000829] PGRAPH/DISPATCH/M2M_OUT reason: VRAM_LIMIT
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF OUT
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF 00340241 2014bb80 00000000 05000e00
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000829000) subc 0 class 0x5039 mthd 0x0328 data 0x00000000
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: VM: trapped write at 0x00201770f0 on ch 2 [0x00000829] PGRAPH/DISPATCH/M2M_OUT reason: VRAM_LIMIT
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF IN
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_M2MF 00320251 2019fc00 00000000 04000000
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000829000) subc 0 class 0x5039 mthd 0x0328 data 0x00000000
-Jun 27 06:51:53 polaris kernel: [drm] nouveau 0000:02:00.0: VM: trapped read at 0x002019f000 on ch 2 [0x00000829] PGRAPH/DISPATCH/M2M_IN reason: NULL_DMAOBJ
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: magic set 0:
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408604: 0x2008ca0f
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408608: 0x002008b7
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x0040860c: 0x40000e00
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408610: 0x08b00003
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_TEXTURE - TP0: Unhandled ustatus 0x00000003
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: magic set 1:
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408e04: 0x2009d60f
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408e08: 0x002008b3
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408e0c: 0x40000e00
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408e10: 0x08b00003
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_TEXTURE - TP1: Unhandled ustatus 0x00000003
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - ch 2 (0x0000829000) subc 7 class 0x8697 mthd 0x1414 data 0x00000000
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: VM: trapped read at 0x002008b300 on ch 2 [0x00000829] PGRAPH/TEXTURE/00 reason: VRAM_LIMIT
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: magic set 0:
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408604: 0x20098108
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408608: 0x0020093d
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x0040860c: 0x80000e00
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: 	0x00408610: 0x08f00003
-Jun 27 06:51:56 polaris kernel: [drm] nouveau 0000:02:00.0: PGRAPH - TRAP_TEXTURE - TP0: Unhandled ustatus 0x00000003
+Why should function's name represent arch dependent?
+IMHO, it would be better to use just zs_cpu_up.
 
-Any idea what this could be?
 
-Thanks,
-Henrik
+> +{
+> +	if (area->vm)
+> +		return 0;
+
+
+Just out of curiosity.
+When do we need above check?
+
+> +	area->vm = alloc_vm_area(PAGE_SIZE * 2, NULL);
+> +	if (!area->vm)
+> +		return -ENOMEM;
+> +	return 0;
+> +}
+> +
+> +static inline void zs_arch_cpu_down(struct mapping_area *area)
+
+
+Ditto.
+
+> +{
+> +	if (area->vm)
+> +		free_vm_area(area->vm);
+> +	area->vm = NULL;
+> +}
+> +
+> +static inline void zs_arch_map_object(struct mapping_area *area,
+> +				struct page *pages[2], int off, int size)
+> +{
+> +	BUG_ON(map_vm_area(area->vm, PAGE_KERNEL, &pages));
+
+
+I think we need some comment about why map_vm_area must not fail.
+I used below comment in my patch.
++               /*
++                * map_vm_area never fail because we already allocated
++                * pages for page table in alloc_vm_area.
++                */
+
+> +	area->vm_addr = area->vm->addr;
+> +}
+> +
+> +static inline void zs_arch_unmap_object(struct mapping_area *area,
+> +				struct page *pages[2], int off, int size)
+> +{
+> +	unsigned long addr = (unsigned long)area->vm_addr;
+> +	unsigned long end = addr + (PAGE_SIZE * 2);
+> +
+> +	flush_cache_vunmap(addr, end);
+> +	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
+> +	local_flush_tlb_kernel_range(addr, end);
+> +}
+> +#else
+> +static inline int zs_arch_cpu_up(struct mapping_area *area)
+> +{
+> +	if (area->vm_buf)
+> +		return 0;
+> +	area->vm_buf = (char *)__get_free_pages(GFP_KERNEL, 1);
+
+> +	if (!area->vm_buf)
+
+> +		return -ENOMEM;
+> +	return 0;
+> +}
+> +
+> +static inline void zs_arch_cpu_down(struct mapping_area *area)
+> +{
+> +	if (area->vm_buf)
+> +		free_pages((unsigned long)area->vm_buf, 1);
+> +	area->vm_buf = NULL;
+> +}
+> +
+> +static void zs_arch_map_object(struct mapping_area *area,
+> +				struct page *pages[2], int off, int size)
+
+
+How about just void __zs_map_object?
+Anyway, it's just preference and I am not strong against.
+
+> +{
+> +	int sizes[2];
+> +	char *buf = area->vm_buf + off;
+> +	void *addr;
+> +
+> +	sizes[0] = PAGE_SIZE - off;
+> +	sizes[1] = size - sizes[0];
+> +
+> +	/* copy object to temp buffer */
+> +	addr = kmap_atomic(pages[0]);
+> +	memcpy(buf, addr + off, sizes[0]);
+> +	kunmap_atomic(addr);
+> +	addr = kmap_atomic(pages[1]);
+> +	memcpy(buf + sizes[0], addr, sizes[1]);
+> +	kunmap_atomic(addr);
+> +	area->vm_addr = area->vm_buf;
+> +}
+> +
+> +static void zs_arch_unmap_object(struct mapping_area *area,
+> +				struct page *pages[2], int off, int size)
+> +{
+> +	int sizes[2];
+> +	char *buf = area->vm_buf + off;
+> +	void *addr;
+> +
+> +	sizes[0] = PAGE_SIZE - off;
+> +	sizes[1] = size - sizes[0];
+> +
+> +	/* copy temp buffer to obj*/
+> +	addr = kmap_atomic(pages[0]);
+> +	memcpy(addr + off, buf, sizes[0]);
+> +	kunmap_atomic(addr);
+> +	addr = kmap_atomic(pages[1]);
+> +	memcpy(addr, buf + sizes[0], sizes[1]);
+> +	kunmap_atomic(addr);
+> +}
+> +#endif
+>  
+>  static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
+>  				void *pcpu)
+>  {
+> -	int cpu = (long)pcpu;
+> +	int ret, cpu = (long)pcpu;
+>  	struct mapping_area *area;
+>  
+>  	switch (action) {
+>  	case CPU_UP_PREPARE:
+>  		area = &per_cpu(zs_map_area, cpu);
+> -		if (area->vm)
+> -			break;
+> -		area->vm = alloc_vm_area(2 * PAGE_SIZE, area->vm_ptes);
+> -		if (!area->vm)
+> -			return notifier_from_errno(-ENOMEM);
+> +		ret = zs_arch_cpu_up(area);
+> +		if (ret)
+> +			return notifier_from_errno(ret);
+>  		break;
+>  	case CPU_DEAD:
+>  	case CPU_UP_CANCELED:
+>  		area = &per_cpu(zs_map_area, cpu);
+> -		if (area->vm)
+> -			free_vm_area(area->vm);
+> -		area->vm = NULL;
+> +		zs_arch_cpu_down(area);
+>  		break;
+>  	}
+>  
+> @@ -716,19 +804,14 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle)
+>  		area->vm_addr = kmap_atomic(page);
+>  	} else {
+>  		/* this object spans two pages */
+> -		struct page *nextp;
+> -
+> -		nextp = get_next_page(page);
+> -		BUG_ON(!nextp);
+> +		struct page *pages[2];
+>  
+> +		pages[0] = page;
+> +		pages[1] = get_next_page(page);
+> +		BUG_ON(!pages[1]);
+>  
+> -		set_pte(area->vm_ptes[0], mk_pte(page, PAGE_KERNEL));
+> -		set_pte(area->vm_ptes[1], mk_pte(nextp, PAGE_KERNEL));
+> -
+> -		/* We pre-allocated VM area so mapping can never fail */
+> -		area->vm_addr = area->vm->addr;
+> +		zs_arch_map_object(area, pages, off, class->size);
+>  	}
+> -
+>  	return area->vm_addr + off;
+>  }
+>  EXPORT_SYMBOL_GPL(zs_map_object);
+> @@ -751,13 +834,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>  	off = obj_idx_to_offset(page, obj_idx, class->size);
+>  
+>  	area = &__get_cpu_var(zs_map_area);
+> -	if (off + class->size <= PAGE_SIZE) {
+> +	if (off + class->size <= PAGE_SIZE)
+>  		kunmap_atomic(area->vm_addr);
+> -	} else {
+> -		set_pte(area->vm_ptes[0], __pte(0));
+> -		set_pte(area->vm_ptes[1], __pte(0));
+> -		__flush_tlb_one((unsigned long)area->vm_addr);
+> -		__flush_tlb_one((unsigned long)area->vm_addr + PAGE_SIZE);
+> +	else {
+> +		struct page *pages[2];
+> +
+> +		pages[0] = page;
+> +		pages[1] = get_next_page(page);
+> +		BUG_ON(!pages[1]);
+> +
+> +		zs_arch_unmap_object(area, pages, off, class->size);
+>  	}
+>  	put_cpu_var(zs_map_area);
+>  }
+> diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
+> index 6fd32a9..8a6887e 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc_int.h
+> +++ b/drivers/staging/zsmalloc/zsmalloc_int.h
+> @@ -110,8 +110,11 @@ enum fullness_group {
+>  static const int fullness_threshold_frac = 4;
+>  
+>  struct mapping_area {
+> +#ifdef __HAVE_LOCAL_FLUSH_TLB_KERNEL_RANGE
+>  	struct vm_struct *vm;
+> -	pte_t *vm_ptes[2];
+> +#else
+> +	char *vm_buf;
+> +#endif
+>  	char *vm_addr;
+>  };
+
+
+Need comment about vm_buf and vm_addr.
+
+Thanks, Seth.
+
+-- 
+Kind regards,
+Minchan Kim
