@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab2F0JCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:02:32 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21333 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731Ab2F0JCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:02:30 -0400
-Date: Wed, 27 Jun 2012 12:02:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch -resend] spi/spidev: handle integer wrap in spidev_message()
-Message-ID: <20120627090215.GG31212@elgon.mountain>
+	id S1755774Ab2F0JDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:03:01 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:38761 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751001Ab2F0JC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 05:02:59 -0400
+Message-ID: <4FEACBA4.10202@parallels.com>
+Date: Wed, 27 Jun 2012 13:00:20 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120627085800.GA3007@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Michal Hocko <mhocko@suse.cz>
+CC: Wanpeng Li <liwp.linux@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v2] memcg: unify mem_control_xxx to memcg_xxx
+References: <1340756175-3420-1-git-send-email-liwp.linux@gmail.com> <4FEAC7C6.7030601@parallels.com> <20120627085917.GA5683@tiehlicka.suse.cz>
+In-Reply-To: <20120627085917.GA5683@tiehlicka.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"k_tmp->len" and "total" are unsigned integers.  The first message
-could be close to "bufsiz" (4096) and then the next message could be
-4GB which would cause an integer overflow.
+On 06/27/2012 12:59 PM, Michal Hocko wrote:
+> On Wed 27-06-12 12:43:50, Glauber Costa wrote:
+>> On 06/27/2012 04:16 AM, Wanpeng Li wrote:
+>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>>
+>>> Changelog:
+>>>
+>>> V2 -> V1:
+>>>
+>>> * replace memory_cgroup_xxx by memcg_xxx
+>>>
+>>> Unify memcg functions to memcg_xxx.
+>>
+>>
+>> This patch achieves nothing.
+>> You're changing a couple of function names. Andrew stated goal was
+>> to change *all* function names from mem_cgroup_xxx to memcg_xxx, not
+>> just one or two.
+>
+> No mass things now, please.
+> git grep mem_cgroup_ mm/ include/ | wc -l
+> 863
+>
+> This will be real pain for merging.
+>
+It's either that, or I have my new functions named memcg_ and we live 
+with the inconsistency.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-I don't have a way to test this.  I originally sent this message on Tue,
-18 Oct 2011.  I'm not totally sure what the implications are but it
-seemed like there might be security implications.  I honestly don't
-know.  I never received any feedback on the patch.
+Point is, changing one function name as he did, achieves nothing.
 
-diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index 830adbe..aab05e1 100644
---- a/drivers/spi/spidev.c
-+++ b/drivers/spi/spidev.c
-@@ -241,7 +241,7 @@ static int spidev_message(struct spidev_data *spidev,
- 		k_tmp->len = u_tmp->len;
- 
- 		total += k_tmp->len;
--		if (total > bufsiz) {
-+		if (total > bufsiz || total < k_tmp->len) {
- 			status = -EMSGSIZE;
- 			goto done;
- 		}
+
