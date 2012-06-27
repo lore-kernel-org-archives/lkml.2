@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab2F0JDB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:03:01 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:38761 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab2F0JC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:02:59 -0400
-Message-ID: <4FEACBA4.10202@parallels.com>
-Date: Wed, 27 Jun 2012 13:00:20 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755800Ab2F0JD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:03:26 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23235 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755294Ab2F0JDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 05:03:24 -0400
+Date: Wed, 27 Jun 2012 12:02:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-mmc@vger.kernel.org,
+        David Vrabel <david.vrabel@csr.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch -resend] mmc: ushc: fix an endianness conversion in
+ ushc_request()
+Message-ID: <20120627090258.GH31212@elgon.mountain>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Wanpeng Li <liwp.linux@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2] memcg: unify mem_control_xxx to memcg_xxx
-References: <1340756175-3420-1-git-send-email-liwp.linux@gmail.com> <4FEAC7C6.7030601@parallels.com> <20120627085917.GA5683@tiehlicka.suse.cz>
-In-Reply-To: <20120627085917.GA5683@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627085800.GA3007@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 12:59 PM, Michal Hocko wrote:
-> On Wed 27-06-12 12:43:50, Glauber Costa wrote:
->> On 06/27/2012 04:16 AM, Wanpeng Li wrote:
->>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>>
->>> Changelog:
->>>
->>> V2 -> V1:
->>>
->>> * replace memory_cgroup_xxx by memcg_xxx
->>>
->>> Unify memcg functions to memcg_xxx.
->>
->>
->> This patch achieves nothing.
->> You're changing a couple of function names. Andrew stated goal was
->> to change *all* function names from mem_cgroup_xxx to memcg_xxx, not
->> just one or two.
->
-> No mass things now, please.
-> git grep mem_cgroup_ mm/ include/ | wc -l
-> 863
->
-> This will be real pain for merging.
->
-It's either that, or I have my new functions named memcg_ and we live 
-with the inconsistency.
+The ->cmd_idx field is 8 bits, not 16 so the call to cpu_to_le16()
+will probably set cmd_idx to zero here on big endian systems.  My guess
+is that this works because it has been tested on little endian systems
+where the conversion to le16 is a nop.
 
-Point is, changing one function name as he did, achieves nothing.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+I don't have a way to test this.
 
+I have added a sentence to the changelog.  I have added David Vrabel to
+the CC list.  This was originally sent to the mailing list on Mon, 21
+Nov 2011 and there was no response.
 
+diff --git a/drivers/mmc/host/ushc.c b/drivers/mmc/host/ushc.c
+index c0105a2..25932f5 100644
+--- a/drivers/mmc/host/ushc.c
++++ b/drivers/mmc/host/ushc.c
+@@ -278,7 +278,7 @@ static void ushc_request(struct mmc_host *mmc, struct mmc_request *req)
+ 	ushc->current_req = req;
+ 
+ 	/* Start cmd with CBW. */
+-	ushc->cbw->cmd_idx = cpu_to_le16(req->cmd->opcode);
++	ushc->cbw->cmd_idx = req->cmd->opcode;
+ 	if (req->data)
+ 		ushc->cbw->block_size = cpu_to_le16(req->data->blksz);
+ 	else
