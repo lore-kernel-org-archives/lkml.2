@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab2F0W0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:26:35 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:55273 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752709Ab2F0W0e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:26:34 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 5/8] ARM: LPC32xx: Defconfig update
-Date: Thu, 28 Jun 2012 00:26:15 +0200
-Message-Id: <1340835978-20331-6-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1340835978-20331-1-git-send-email-stigge@antcom.de>
-References: <1340835978-20331-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1757965Ab2F0Wba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:31:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21993 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753987Ab2F0Wb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 18:31:28 -0400
+Date: Thu, 28 Jun 2012 01:31:29 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120627223128.GB27885@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+ <20120627050937.23698.68442.stgit@bling.home>
+ <20120627152624.GC21393@redhat.com>
+ <1340834658.1207.261.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340834658.1207.261.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This defconfig update for LPC32xx adds interrupt and polled gpio keyboard
-drivers.
+On Wed, Jun 27, 2012 at 04:04:18PM -0600, Alex Williamson wrote:
+> On Wed, 2012-06-27 at 18:26 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > > @@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
+> > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > >  }
+> > >  
+> > > +static void
+> > > +irqfd_inject_level(struct work_struct *work)
+> > > +{
+> > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > +
+> > > +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > > +}
+> > > +
+> > >  /*
+> > >   * Race-free decouple logic (ordering is critical)
+> > >   */
+> > 
+> > 
+> > Why is it safe to ignore return value here?
+> > needs a comment.
+> 
+> Well, it seems like you and Gleb came to the conclusion that it's safe,
+> but I can really follow from the list thread.  Can you explain and I'll
+> add a comment?  Thanks,
+> 
+> Alex
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+We merely talked about edge interrupts.
 
----
- arch/arm/configs/lpc32xx_defconfig |    2 ++
- 1 file changed, 2 insertions(+)
-
---- linux-2.6.orig/arch/arm/configs/lpc32xx_defconfig
-+++ linux-2.6/arch/arm/configs/lpc32xx_defconfig
-@@ -18,6 +18,7 @@ CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
- CONFIG_PARTITION_ADVANCED=y
- CONFIG_ARCH_LPC32XX=y
-+CONFIG_KEYBOARD_GPIO_POLLED=y
- CONFIG_PREEMPT=y
- CONFIG_AEABI=y
- CONFIG_ZBOOT_ROM_TEXT=0x0
-@@ -89,6 +90,7 @@ CONFIG_INPUT_MOUSEDEV_SCREEN_X=240
- CONFIG_INPUT_MOUSEDEV_SCREEN_Y=320
- CONFIG_INPUT_EVDEV=y
- # CONFIG_KEYBOARD_ATKBD is not set
-+CONFIG_KEYBOARD_GPIO=y
- CONFIG_KEYBOARD_LPC32XX=y
- # CONFIG_INPUT_MOUSE is not set
- CONFIG_INPUT_TOUCHSCREEN=y
+-- 
+MST
