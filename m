@@ -1,129 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab2F0VrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 17:47:11 -0400
-Received: from mail01.worldserver.net ([217.13.200.41]:40195 "EHLO
-	mail01.worldserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136Ab2F0VrK (ORCPT
+	id S932234Ab2F0VvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 17:51:19 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:15332 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab2F0VvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 17:47:10 -0400
-X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jun 2012 17:47:09 EDT
-From: Olivier Goffart <ogoffart@woboq.com>
-To: avatar@sentelic.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olivier Goffart <ogoffart@woboq.com>
-Subject: [PATCH] Fix sentelic multi-touch driver
-Date: Wed, 27 Jun 2012 22:36:15 +0200
-Message-Id: <1340829375-4995-1-git-send-email-ogoffart@woboq.com>
-X-Mailer: git-send-email 1.7.11.1
+	Wed, 27 Jun 2012 17:51:18 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-160.messagelabs.com!1340833875!8020760!4
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/19] staging: comedi: adl_pci6208: cleanup driver
+Date: Wed, 27 Jun 2012 14:51:08 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206271451.09262.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always report both finger between the sync.  Even if the documentation
-of input-mt says one can only report one at the time, it does not
-work otherwise. This fix scrolling in X11 which flickers a lot.
+Cleanup the adl_pci6208 comedi driver.
 
-Ignore the duplicate or release events. They keep some gestures from
-working (such as the two-finger tap)
+H Hartley Sweeten (19):
+  staging: comedi: adl_pci6208: remove thisboard and devpriv macros
+  staging: comedi: adl_pci6208: refactor pci6208_find_device()
+  staging: comedi: adl_pci6208: remove the boardinfo 'ao_bits'
+  staging: comedi: adl_pci6208: document the register map of the device
+  staging: comedi: adl_pci6208: cleanup pci6208_pci_setup()
+  staging: comedi: adl_pci6208: remove pci6208_pci_setup()
+  staging: comedi: adl_pci6208: pass on the error code from
+    comedi_pci_enable
+  staging: comedi: adl_pci6208: consolidate the attach messages
+  staging: comedi: adl_pci6208: fix the digital i/o subdevice
+  staging: comedi: adl_pci6208: add whitespace to the subdev init
+  staging: comedi: adl_pci6208: return '0' for successful attach
+  staging: comedi: adl_pci6208: remove the bogus pci devices
+  staging: comedi: adl_pci6208: remove some useless comments
+  staging: comedi: adl_pci6208: remove unused variable in the private
+    data
+  staging: comedi: adl_pci6208: fix the ao_readback variable size
+  staging: comedi: adl_pci6208: cleanup pci6208_ao_winsn()
+  staging: comedi: adl_pci6208: cleanup pci6208_ao_rinsn()
+  staging: comedi: adl_pci6208: cleanup pci6208_attach()
+  staging: comedi: adl_pci6208: use the driver_name for the resource
+    name
 
-This seems to fix the problems reported here:
-https://bugzilla.kernel.org/show_bug.cgi?id=43591
+ drivers/staging/comedi/drivers/adl_pci6208.c | 372 +++++++++++----------------
+ 1 file changed, 149 insertions(+), 223 deletions(-)
 
-Signed-off-by: Olivier Goffart <ogoffart@woboq.com>
----
- drivers/input/mouse/sentelic.c | 46 +++++++++++++++++++++++++++++++++++++-----
- drivers/input/mouse/sentelic.h |  3 +++
- 2 files changed, 44 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/input/mouse/sentelic.c b/drivers/input/mouse/sentelic.c
-index 3f5649f..b205857 100644
---- a/drivers/input/mouse/sentelic.c
-+++ b/drivers/input/mouse/sentelic.c
-@@ -731,6 +731,17 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
- 			 */
- 			fgrs = 2;
- 
-+			if (abs_x == 0 && abs_y == 0) {
-+				/*
-+				 * We can ignore multi-finger release events.
-+				 * We notice a finger has left the touchpad
-+				 * when we receive events for the other finger.
-+				 * And for the last finger, we receive
-+				 * single-finger release events.
-+				 */
-+				return PSMOUSE_FULL_PACKET;
-+			}
-+
- 			/* MFMC packet */
- 			if (packet[0] & FSP_PB0_MFMC_FGR2) {
- 				/* 2nd finger */
-@@ -742,10 +753,16 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
- 					 */
- 					fgrs = 1;
- 					fsp_set_slot(dev, 0, false, 0, 0);
-+					fsp_set_slot(dev, 1, fgrs == 1,
-+						     abs_x, abs_y);
-+				} else {
-+					ad->last_mt_fgr = 2;
-+					fsp_set_slot(dev, 0, true,
-+						     ad->finger1_abs_x,
-+						     ad->finger1_abs_y);
-+					fsp_set_slot(dev, 1, fgrs == 2,
-+						     abs_x, abs_y);
- 				}
--				ad->last_mt_fgr = 2;
--
--				fsp_set_slot(dev, 1, fgrs == 2, abs_x, abs_y);
- 			} else {
- 				/* 1st finger */
- 				if (ad->last_mt_fgr == 1) {
-@@ -755,10 +772,29 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
- 					 * the 2nd finger is up
- 					 */
- 					fgrs = 1;
-+					fsp_set_slot(dev, 0, fgrs != 0,
-+						     abs_x, abs_y);
- 					fsp_set_slot(dev, 1, false, 0, 0);
-+				} else {
-+					ad->finger1_abs_x = abs_x;
-+					ad->finger1_abs_y = abs_y;
-+
-+					/*
-+					 * There is a superflous event from the
-+					 * driver when the two fingers are put
-+					 * on the touchpad. Don't set
-+					 * last_mt_fgr if we have not seen the
-+					 * second figner yet, so the previous
-+					 * workarond is not triggered and the
-+					 * superflous event is ignored.
-+					 * This is required to get the two
-+					 * finger tap gesture working.
-+					 */
-+					if (ad->last_mt_fgr != 0)
-+						ad->last_mt_fgr = 1;
-+
-+					return PSMOUSE_FULL_PACKET;
- 				}
--				ad->last_mt_fgr = 1;
--				fsp_set_slot(dev, 0, fgrs != 0, abs_x, abs_y);
- 			}
- 		} else {
- 			/* SFAC packet */
-diff --git a/drivers/input/mouse/sentelic.h b/drivers/input/mouse/sentelic.h
-index aa697ec..7224f84 100644
---- a/drivers/input/mouse/sentelic.h
-+++ b/drivers/input/mouse/sentelic.h
-@@ -117,6 +117,9 @@ struct fsp_data {
- 	unsigned char	last_reg;	/* Last register we requested read from */
- 	unsigned char	last_val;
- 	unsigned int	last_mt_fgr;	/* Last seen finger(multitouch) */
-+
-+	unsigned short finger1_abs_x; /* finger1 absolute position */
-+	unsigned short finger1_abs_y;
- };
- 
- #ifdef CONFIG_MOUSE_PS2_SENTELIC
 -- 
-1.7.11.1
+1.7.11
 
