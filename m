@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab2F0BvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 21:51:18 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:46543 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821Ab2F0BvR (ORCPT
+	id S1756010Ab2F0BwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 21:52:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58074 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755778Ab2F0BwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 21:51:17 -0400
-From: Filipe Brandenburger <filbranden@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Filipe Brandenburger <filbranden@gmail.com>
-Subject: [PATCH v2 1/1] locks: prevent side-effects of locks_release_private before file_lock is initialized
-Date: Tue, 26 Jun 2012 21:50:48 -0400
-Message-Id: <1340761848-1352-1-git-send-email-filbranden@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
-References: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
+	Tue, 26 Jun 2012 21:52:00 -0400
+Message-ID: <1340761909.5330.23.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] dm thin: reinstate missing mempool_free in
+ cell_release_singleton
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Touko Korpela <touko.korpela@iki.fi>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>
+Date: Wed, 27 Jun 2012 02:51:49 +0100
+In-Reply-To: <20120622162127.GA19624@lisko>
+References: <20120622162127.GA19624@lisko>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-vH84KpogmLzEm3A/m/s/"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When calling fcntl(F_SETLEASE) for a second time on the same file descriptor,
-do_fcntl_add_lease will allocate and initialize a new file_lock to pass to
-__vfs_setlease. If that function decides to reuse the existing file_lock, it
-will free the newly allocated one to prevent leaking memory.
 
-However, the newly allocate file_lock was initialized with a valid file
-descriptor pointer and fl_lmops that contains a lm_release_private function,
-so calling locks_free_lock will trigger a call to lease_release_private_callback
-which will clear the fcntl(F_SETOWN) and fcntl(F_SETSIG) settings for the file
-descriptor even though the lease is not really being cleared at that point (as
-only the temporary file_lock is being freed.)
+--=-vH84KpogmLzEm3A/m/s/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This patch will fix this bug by calling kmem_cache_free directly instead of
-locks_free_lock if the file_lock will not be used. This will end up avoiding
-the call to lease_release_private_callback.
+On Fri, 2012-06-22 at 19:21 +0300, Touko Korpela wrote:
+> Greg KH wrote:
+> > On Fri, Jun 22, 2012 at 10:59:48AM -0400, Mike Snitzer wrote:
+> > > Hi Greg,
+> > >=20
+> > > 3.3-stable pulled in upstream commit
+> > > 6f94a4c45a6f744383f9f695dde019998db3df55 (dm thin: fix stacked bi_nex=
+t
+> > > usage)
+> > >=20
+> > > But later in the 3.4 development window it was determined that that
+> > > commit introduced a significant leak.  The following upstream commit
+> > > fixes it (but unfortunately didn't cc: stable).
+> >
+> > 3.3 is end-of-life, so there's not much I can do with the 3.3-stable
+> > tree anymore, sorry.  If there's any other tree I should apply this to
+> > that is active (i.e. 3.0 or 3.4), please let me know.
+>=20
+> Looks like you forgot 3.2 that is affected (since 3.2.14).
 
-This bug was tracked in kernel.org Bugzilla database:
-https://bugzilla.kernel.org/show_bug.cgi?id=43336
+I've added this to the queue for 3.2, thanks.
 
-Signed-off-by: Filipe Brandenburger <filbranden@gmail.com>
----
- fs/locks.c |   22 +++++++++++++++++-----
- 1 files changed, 17 insertions(+), 5 deletions(-)
+Ben.
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 814c51d..2a751d8 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -473,7 +473,10 @@ static struct file_lock *lease_alloc(struct file *filp, int type)
- 
- 	error = lease_init(filp, type, fl);
- 	if (error) {
--		locks_free_lock(fl);
-+		/* Free the lock by hand instead of calling locks_free_lock
-+		 * to prevent the call back to lease_release_private_callback
-+		 */
-+		kmem_cache_free(filelock_cache, fl);
- 		return ERR_PTR(error);
- 	}
- 	return fl;
-@@ -1538,19 +1541,28 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
- 
- 	new = fasync_alloc();
- 	if (!new) {
--		locks_free_lock(fl);
-+		/* Free the lock by hand instead of calling locks_free_lock
-+		 * to prevent the call back to lease_release_private_callback
-+		 */
-+		kmem_cache_free(filelock_cache, fl);
- 		return -ENOMEM;
- 	}
- 	ret = fl;
- 	lock_flocks();
- 	error = __vfs_setlease(filp, arg, &ret);
-+	if (error || ret != fl)
-+		/*
-+		 * Free the lock by hand instead of calling locks_free_lock
-+		 * to prevent the call back to lease_release_private_callback
-+		 * which will unset F_SETOWN and F_SETSIG for the file
-+		 * descriptor but that is not wanted as the lease was not
-+		 * really in use.
-+		 */
-+		kmem_cache_free(filelock_cache, fl);
- 	if (error) {
- 		unlock_flocks();
--		locks_free_lock(fl);
- 		goto out_free_fasync;
- 	}
--	if (ret != fl)
--		locks_free_lock(fl);
- 
- 	/*
- 	 * fasync_insert_entry() returns the old entry if any.
--- 
-1.7.7.6
+--=20
+Ben Hutchings
+Lowery's Law:
+             If it jams, force it. If it breaks, it needed replacing anyway=
+.
 
+--=-vH84KpogmLzEm3A/m/s/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT+pnNee/yOyVhhEJAQqY+xAAnr4mEhuF7iyoI75suZCqw3T0C8p3cNnX
+UXw7sxaIgWaYQfduzd+OgE7+ksj0sYCbfZ8uzz84z6SwQVHXc02YkkTj5qDzMpn4
+TtriRKcLiFgmeF8TfKeyQeR9Hvdz/xppzXkEAgoEyK67CRQRX01CrUKuLUiV5oUK
+J476kf5ve1B4c5WZtwZtoj07Dg0q9juF0vY6lgVC4tN8pqqfAEx2mq6vv4b8NgpT
+UZSgylgX8UrVvzR5+gOLE238b48H+1snP71BUi1mK6hxOT7gcAa0FWq5ICa1uq2p
+as/DDlpqBjI3nnWMxyHfQ5oKhCvXTwdjy5Xrq6+PNk8mk46npInauIfe96NHoprz
+t1aYnMtHge6kkCJZgP8/NeLHwzXOea3ozUljbCdq5R4vM2UntE1eKLCrfS1EvUPF
+/9z9P0CgJDWicVjER5Dps5+UgIS3UTp8GZNhHyttaGRaX/1x8eq6Bkpo+KeY4Ksz
+7Bax3bNCnKjVKU6fpD/JL+LHy+2/wn1THi+wOMMsNDiSxS4VRwIOXzqhn2gla4BW
+CXpI6fNk/HeLHkczJiuJAfR1HR6RJRoGnK2TKasMNsWSGIXYISjNBO+EDVoWjQ44
+NDEJdq9vcX5vAL0C1m9bKLMPKO8XPNVUFRbL0txRO4sfEE9CZ5fP5eFNJQXVjSwH
+/iLmGj+k3ds=
+=MwtK
+-----END PGP SIGNATURE-----
+
+--=-vH84KpogmLzEm3A/m/s/--
