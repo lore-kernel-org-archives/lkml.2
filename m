@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab2F0W0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:26:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47667 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758060Ab2F0W0k (ORCPT
+	id S1758128Ab2F0W0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:26:46 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:55267 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758048Ab2F0W0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:26:40 -0400
-Date: Wed, 27 Jun 2012 15:26:39 -0700 (PDT)
-Message-Id: <20120627.152639.2113059689824053563.davem@davemloft.net>
-To: dan.carpenter@oracle.com
-Cc: ericvh@gmail.com, aneesh.kumar@linux.vnet.ibm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch -resend] 9p: fix min_t() casting in p9pdu_vwritef()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120627090141.GF31212@elgon.mountain>
-References: <20120627085800.GA3007@mwanda>
-	<20120627090141.GF31212@elgon.mountain>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Jun 2012 18:26:38 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 7/8] ARM: LPC32xx: Remove USB and I2C init from phy3250.c
+Date: Thu, 28 Jun 2012 00:26:17 +0200
+Message-Id: <1340835978-20331-8-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1340835978-20331-1-git-send-email-stigge@antcom.de>
+References: <1340835978-20331-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
-Date: Wed, 27 Jun 2012 12:01:41 +0300
+USB and I2C initialization can be removed safely from the board specific
+phy3250.c, now that initialization moved to the generalized clock.c.
 
-> I don't think we're actually likely to hit this limit but if we do
-> then the comparison should be done as size_t.  The original code
-> is equivalent to:
->         len = strlen(sptr) % USHRT_MAX;
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-Applied, thanks Dan.
+---
+ arch/arm/mach-lpc32xx/phy3250.c |   12 ------------
+ 1 file changed, 12 deletions(-)
+
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
++++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
+@@ -248,18 +248,6 @@ static void __init lpc3250_machine_init(
+ 	tmp |= LPC32XX_CLKPWR_LCDCTRL_LCDTYPE_TFT16;
+ 	__raw_writel(tmp, LPC32XX_CLKPWR_LCDCLK_CTRL);
+ 
+-	/* Set up USB power */
+-	tmp = __raw_readl(LPC32XX_CLKPWR_USB_CTRL);
+-	tmp |= LPC32XX_CLKPWR_USBCTRL_HCLK_EN |
+-		LPC32XX_CLKPWR_USBCTRL_USBI2C_EN;
+-	__raw_writel(tmp, LPC32XX_CLKPWR_USB_CTRL);
+-
+-	/* Set up I2C pull levels */
+-	tmp = __raw_readl(LPC32XX_CLKPWR_I2C_CLK_CTRL);
+-	tmp |= LPC32XX_CLKPWR_I2CCLK_USBI2CHI_DRIVE |
+-		LPC32XX_CLKPWR_I2CCLK_I2C2HI_DRIVE;
+-	__raw_writel(tmp, LPC32XX_CLKPWR_I2C_CLK_CTRL);
+-
+ 	lpc32xx_serial_init();
+ 
+ 	/* Test clock needed for UDA1380 initial init */
