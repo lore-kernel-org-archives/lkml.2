@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab2F0UMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 16:12:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023Ab2F0UMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 16:12:21 -0400
-Message-ID: <1340827938.1207.227.camel@bling.home>
-Subject: Re: [PATCH v2 3/6] kvm: Sanitize KVM_IRQFD flags
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Date: Wed, 27 Jun 2012 14:12:18 -0600
-In-Reply-To: <20120627092150.GD17507@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
-	 <20120627050924.23698.65802.stgit@bling.home>
-	 <20120627092150.GD17507@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757664Ab2F0UTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 16:19:03 -0400
+Received: from 124-248-200-90.sunnyvision.com ([124.248.200.90]:51729 "EHLO
+	teamb03.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab2F0US7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 16:18:59 -0400
+X-DKIM: OpenDKIM Filter v2.4.1 teamb03.edmhongkong.com 3280050B84
+X-DKIM: OpenDKIM Filter v2.4.1 teamb01.edmhongkong.com 2ECA54FAB1
+Message-ID: <Xbii@seed.net.tw>
+From: borislamsv2@gmail.com
+Subject: Server Rental Promotion
+X-Mailer: LIfRnUrH9oQyoKwy78alp
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Thu, 28 Jun 2012 04:18:14 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q5RKJakk015062
 
-On Wed, 2012-06-27 at 12:21 +0300, Michael S. Tsirkin wrote:
-> On Tue, Jun 26, 2012 at 11:09:32PM -0600, Alex Williamson wrote:
-> > We only know of one so far.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> 
-> Ugh. So we have a bug: we should have sanitized the fields.
-> If there's buggy userspace that only set the low bit
-> it will break with this change.
-> Is it too late now? Do we need KVM_IRQFD2 which
-> sanitized fields properly? Avi?
+Dear All,
 
-If we take that attitude that we haven't sanitized the bits in the past
-and therefore all other bits are tainted from future use, we might as
-well toss out this ioctl and start over.  There's no way to add
-anything. :-\
+We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
 
-> > ---
-> > 
-> >  virt/kvm/eventfd.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > index c307c24..7d7e2aa 100644
-> > --- a/virt/kvm/eventfd.c
-> > +++ b/virt/kvm/eventfd.c
-> > @@ -340,6 +340,9 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
-> >  int
-> >  kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
-> >  {
-> > +	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
-> > +		return -EINVAL;
-> > +
-> >  	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
-> >  		return kvm_irqfd_deassign(kvm, args);
-> >  
+Dell? PowerEdge? EnterpriseRack Mount Server
+-Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
+-8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
+-500GB, 3.5", 6Gbps SAS x 2
+-Raid 1 Mirroring Protection
 
+Every Dedicated Server Hosting Solution Also Includes: 
+ 
+Software Specification 
+- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
+- Full root-level access 
+- Data Center Facilities 
+- Shared Local & International Bandwidth 
+- 2 IP Addresses Allocation 
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
+- FM200¡§based fire suppression system 
+- 24x7 CRAC Air Conditioning and Humidity Control 
+- 24x7 Security Control 
+- 24x7 Remote Hand Service 
+
+Pls send us email for further information.Thanks,
+
+Boris 
+boris@dedicatedserver.co.hk
+
+If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
 
 
