@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab2F0LgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 07:36:15 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:64351 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab2F0LgO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 07:36:14 -0400
-Date: Wed, 27 Jun 2012 13:36:09 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [PATCH] drm/i915/sprite: Fix mem leak in intel_plane_init()
-Message-ID: <20120627113608.GC5326@phenom.ffwll.local>
-Mail-Followup-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>
-References: <alpine.LNX.2.00.1206270053570.3759@swampdragon.chaosbits.net>
- <20120626171246.4c385996@jbarnes-desktop>
+	id S1756207Ab2F0Lil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 07:38:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20139 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753741Ab2F0Lij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 07:38:39 -0400
+Date: Wed, 27 Jun 2012 14:38:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] kvm: don't clear level from irqfd
+Message-ID: <20120627113843.GB17922@redhat.com>
+References: <20120627091343.GA17693@redhat.com>
+ <20120627100345.GA6533@redhat.com>
+ <20120627102024.GA17922@redhat.com>
+ <20120627102254.GB6533@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120626171246.4c385996@jbarnes-desktop>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120627102254.GB6533@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 05:12:46PM -0700, Jesse Barnes wrote:
-> On Wed, 27 Jun 2012 00:55:37 +0200 (CEST)
-> Jesper Juhl <jj@chaosbits.net> wrote:
-> 
-> > If we ever hit the default case in the switch statement we'll return
-> > from the function without freeing the memory we just allocated to
-> > 'intel_plane' (but that has not been used).
+On Wed, Jun 27, 2012 at 01:22:54PM +0300, Gleb Natapov wrote:
+> On Wed, Jun 27, 2012 at 01:20:24PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jun 27, 2012 at 01:03:46PM +0300, Gleb Natapov wrote:
+> > > On Wed, Jun 27, 2012 at 12:13:43PM +0300, Michael S. Tsirkin wrote:
+> > > > irqfd sets and clears the level immediately.
+> > > > This used to be necessary for MSI interrupts but isn't anymore.
+> > > > 
+> > > > Note! We never officially supported irqfd for level
+> > > > interrupts but it usually seemed to kind of work,
+> > > > and this change will break it. There are no known
+> > > > real users of that feature though - only old vfio prototypes.
+> > > > Removing this line will make it easier to add
+> > > > real support for level irqfds in the future.
+> > > > 
+> > > Did we officially supported irqfd for ioapic/pic edge interrupts?
+> > > Because those will break to.
 > > 
-> > This patch gets rid of the leak by freeing the memory just before we
-> > return.
+> > Hard to say - as Alex points out it was never documented.
+> If we will start dropping everything that was never documented we will
+> hardly have working VMM at the end :)
+
+Generally true.
+
+However I just realized that this interface does not work
+reliably for ioapic/pic edge either. More or less for the same reason that
+it does not work for edge: we set bit in IRR, try to inject,
+then clear even if injection failed (e.g. because it is low
+priority). Guest will never get an interrupt in this case.
+
+So what happened e.g. for Alex's vfio prototype is he never
+hit an interrupt window in light testing.
+
+What we would need to do to fix it is:
+> > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+
+Which will fix edge but break level same as this patch.
+But is it worth fixing? Maybe declare it broken and be
+done with it?
+
+
+> > But at least they actually worked reliably. Hmm.  One way to address
+> > this is to add kvm_trigger_irq which will trigger edge interrupts
+> > unconditionally.
 > > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  drivers/gpu/drm/i915/intel_sprite.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > Not sure it's worth it though.
 > > 
-> > diff --git a/drivers/gpu/drm/i915/intel_sprite.c b/drivers/gpu/drm/i915/intel_sprite.c
-> > index 2a20fb0..c8851ba 100644
-> > --- a/drivers/gpu/drm/i915/intel_sprite.c
-> > +++ b/drivers/gpu/drm/i915/intel_sprite.c
-> > @@ -685,6 +685,7 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe)
-> >  		break;
-> >  
-> >  	default:
-> > +		kfree(intel_plane);
-> >  		return -ENODEV;
-> >  	}
-> >  
-> > @@ -699,4 +700,3 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe)
-> >  
-> >  	return ret;
-> >  }
+> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > ---
+> > > >  virt/kvm/eventfd.c | 1 -
+> > > >  1 file changed, 1 deletion(-)
+> > > > 
+> > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > > > index f59c1e8..4db6b01 100644
+> > > > --- a/virt/kvm/eventfd.c
+> > > > +++ b/virt/kvm/eventfd.c
+> > > > @@ -68,7 +68,6 @@ irqfd_inject(struct work_struct *work)
+> > > >  	struct kvm *kvm = irqfd->kvm;
+> > > >  
+> > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > >  }
+> > > >  
+> > > >  /*
+> > > > -- 
+> > > > MST
+> > > 
+> > > --
+> > > 			Gleb.
 > 
-> Yeah, looks fine.  I just fixed the same thing in a local tree (though
-> by using a goto since I added another path that could fail).
-> 
-> Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Queued for -next, thanks for the patch.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+> --
+> 			Gleb.
