@@ -1,43 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab2F0LtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 07:49:08 -0400
-Received: from gate.crashing.org ([63.228.1.57]:58632 "EHLO gate.crashing.org"
+	id S1756505Ab2F0LuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 07:50:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7445 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753741Ab2F0LtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 07:49:06 -0400
-Message-ID: <1340797732.3732.46.camel@pasglop>
-Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-Cc: linuxppc-dev@lists.ozlabs.org, scottwood@freescale.com,
-        linux-kernel@vger.kernel.org, leoli@freescale.com
-Date: Wed, 27 Jun 2012 21:48:52 +1000
-In-Reply-To: <20120627102138.GB10476@localhost.localdomain>
-References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com>
-	 <1340748634.3732.27.camel@pasglop>
-	 <20120627102138.GB10476@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751903Ab2F0LuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 07:50:18 -0400
+Date: Wed, 27 Jun 2012 14:50:16 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] kvm: don't clear level from irqfd
+Message-ID: <20120627115016.GD6533@redhat.com>
+References: <20120627091343.GA17693@redhat.com>
+ <20120627100345.GA6533@redhat.com>
+ <20120627102024.GA17922@redhat.com>
+ <20120627102254.GB6533@redhat.com>
+ <20120627113843.GB17922@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627113843.GB17922@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-27 at 18:21 +0800, Zhao Chenhui wrote:
-> > What's that CONFIG option for ?
-> > 
-> > Cheers,
-> > Ben.
+On Wed, Jun 27, 2012 at 02:38:43PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 27, 2012 at 01:22:54PM +0300, Gleb Natapov wrote:
+> > On Wed, Jun 27, 2012 at 01:20:24PM +0300, Michael S. Tsirkin wrote:
+> > > On Wed, Jun 27, 2012 at 01:03:46PM +0300, Gleb Natapov wrote:
+> > > > On Wed, Jun 27, 2012 at 12:13:43PM +0300, Michael S. Tsirkin wrote:
+> > > > > irqfd sets and clears the level immediately.
+> > > > > This used to be necessary for MSI interrupts but isn't anymore.
+> > > > > 
+> > > > > Note! We never officially supported irqfd for level
+> > > > > interrupts but it usually seemed to kind of work,
+> > > > > and this change will break it. There are no known
+> > > > > real users of that feature though - only old vfio prototypes.
+> > > > > Removing this line will make it easier to add
+> > > > > real support for level irqfds in the future.
+> > > > > 
+> > > > Did we officially supported irqfd for ioapic/pic edge interrupts?
+> > > > Because those will break to.
+> > > 
+> > > Hard to say - as Alex points out it was never documented.
+> > If we will start dropping everything that was never documented we will
+> > hardly have working VMM at the end :)
 > 
-> This option is to guard the timebase sync routines. It is selected
-> when KEXEC or HOTPLUG_CPU is enabled on Freescale Book-E platforms.
+> Generally true.
+> 
+> However I just realized that this interface does not work
+> reliably for ioapic/pic edge either. More or less for the same reason that
+> it does not work for edge: we set bit in IRR, try to inject,
+> then clear even if injection failed (e.g. because it is low
+> priority). Guest will never get an interrupt in this case.
+> 
+That's not how ioapic/pic edge interrupts work.
 
-Any reason not to just make it unconditional ? That sort of config
-option tend to just confuse things and make bug reports harder to sort
-out.... Also you decrease your test coverage.
+> So what happened e.g. for Alex's vfio prototype is he never
+> hit an interrupt window in light testing.
+> 
+> What we would need to do to fix it is:
+> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> 
+> Which will fix edge but break level same as this patch.
+> But is it worth fixing? Maybe declare it broken and be
+> done with it?
+> 
+> 
+> > > But at least they actually worked reliably. Hmm.  One way to address
+> > > this is to add kvm_trigger_irq which will trigger edge interrupts
+> > > unconditionally.
+> > > 
+> > > Not sure it's worth it though.
+> > > 
+> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > > ---
+> > > > >  virt/kvm/eventfd.c | 1 -
+> > > > >  1 file changed, 1 deletion(-)
+> > > > > 
+> > > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > > > > index f59c1e8..4db6b01 100644
+> > > > > --- a/virt/kvm/eventfd.c
+> > > > > +++ b/virt/kvm/eventfd.c
+> > > > > @@ -68,7 +68,6 @@ irqfd_inject(struct work_struct *work)
+> > > > >  	struct kvm *kvm = irqfd->kvm;
+> > > > >  
+> > > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > >  }
+> > > > >  
+> > > > >  /*
+> > > > > -- 
+> > > > > MST
+> > > > 
+> > > > --
+> > > > 			Gleb.
+> > 
+> > --
+> > 			Gleb.
 
-Cheers,
-Ben.
-
+--
+			Gleb.
