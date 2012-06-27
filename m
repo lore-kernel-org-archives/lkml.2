@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab2F0BIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 21:08:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59421 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab2F0BIQ (ORCPT
+	id S1755983Ab2F0BI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 21:08:26 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:29691 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438Ab2F0BIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 21:08:16 -0400
-Date: Tue, 26 Jun 2012 18:08:13 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 00/11] kmem controller for memcg: stripped down version
-In-Reply-To: <20120626145539.eeeab909.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1206261804160.11287@chino.kir.corp.google.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 26 Jun 2012 21:08:23 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1340759302!7919103!1
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 30/36] staging: comedi: cb_pcidas: change dac bit enums into defines
+Date: Tue, 26 Jun 2012 18:08:17 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206261808.17473.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jun 2012, Andrew Morton wrote:
+The 'bits' for the DAC_CSR register are currently defined as
+enums. All the other registers use defines for the bit definitions.
+Change the dac bit enums to defines to follow the other registers.
 
-> mm, maybe.  Kernel developers tend to look at code from the point of
-> view "does it work as designed", "is it clean", "is it efficient", "do
-> I understand it", etc.  We often forget to step back and really
-> consider whether or not it should be merged at all.
-> 
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/cb_pcidas.c | 24 +++++++++++-------------
+ 1 file changed, 11 insertions(+), 13 deletions(-)
 
-It's appropriate for true memory isolation so that applications cannot 
-cause an excess of slab to be consumed.  This allows other applications to 
-have higher reservations without the risk of incurring a global oom 
-condition as the result of the usage of other memcgs.
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
+index 9e21e68..0188cf1 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas.c
+@@ -140,11 +140,10 @@ analog triggering on 1602 series
+ #define   CAL_EN_BIT	0x4000	/*  read calibration source instead of analog input channel 0 */
+ #define   SERIAL_DATA_IN_BIT	0x8000	/*  serial data stream going to 8800 and 7376 */
+ 
+-#define DAC_CSR	0x8		/*  dac control and status register */
+-enum dac_csr_bits {
+-	DACEN = 0x2,		/*  dac enable */
+-	DAC_MODE_UPDATE_BOTH = 0x80,	/*  update both dacs when dac0 is written */
+-};
++#define DAC_CSR			0x8	/* dac control and status register */
++#define   DACEN			0x02	/* dac enable */
++#define   DAC_MODE_UPDATE_BOTH	0x80	/* update both dacs */
++
+ static inline unsigned int DAC_RANGE(unsigned int channel, unsigned int range)
+ {
+ 	return (range & 0x3) << (8 + 2 * (channel & 0x1));
+@@ -156,14 +155,13 @@ static inline unsigned int DAC_RANGE_MASK(unsigned int channel)
+ };
+ 
+ /* bits for 1602 series only */
+-enum dac_csr_bits_1602 {
+-	DAC_EMPTY = 0x1,	/*  dac fifo empty, read, write clear */
+-	DAC_START = 0x4,	/*  start/arm dac fifo operations */
+-	DAC_PACER_MASK = 0x18,	/*  bits that set dac pacer source */
+-	DAC_PACER_INT = 0x8,	/*  dac internal pacing */
+-	DAC_PACER_EXT_FALL = 0x10,	/*  dac external pacing, falling edge */
+-	DAC_PACER_EXT_RISE = 0x18,	/*  dac external pacing, rising edge */
+-};
++#define   DAC_EMPTY		0x1	/*  fifo empty, read, write clear */
++#define   DAC_START		0x4	/*  start/arm fifo operations */
++#define   DAC_PACER_MASK	0x18	/*  bits that set pacer source */
++#define   DAC_PACER_INT		0x8	/*  int. pacing */
++#define   DAC_PACER_EXT_FALL	0x10	/*  ext. pacing, falling edge */
++#define   DAC_PACER_EXT_RISE	0x18	/*  ext. pacing, rising edge */
++
+ static inline unsigned int DAC_CHAN_EN(unsigned int channel)
+ {
+ 	return 1 << (5 + (channel & 0x1));	/*  enable channel 0 or 1 */
+-- 
+1.7.11
 
-I'm not sure whether it would ever be appropriate to limit the amount of 
-slab for an individual slab cache, however, instead of limiting the sum of 
-all slab for a set of processes.  With cache merging in slub this would 
-seem to be difficult to do correctly.
