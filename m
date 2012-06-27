@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab2F0Om2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 10:42:28 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48204 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756192Ab2F0Om0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 10:42:26 -0400
-Date: Wed, 27 Jun 2012 07:14:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC patch V2 0/7] Per cpu thread hotplug infrastructure
-Message-ID: <20120627141434.GA2418@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120615140217.933711648@linutronix.de>
- <20120626232620.GA24468@linux.vnet.ibm.com>
- <1340790739.10063.5.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340790739.10063.5.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062714-7606-0000-0000-00000184D68D
+	id S1757285Ab2F0Ooy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 10:44:54 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:50905 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756396Ab2F0Oox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 10:44:53 -0400
+Message-ID: <1340808292.16533.46.camel@joe2Laptop>
+Subject: Re: cosmetic printk() issue with lockdep warning in
+ arch/x86/kernel/alternative.c
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartmann <greg@kroah.com>,
+        Lennart Poettering <lennart@poettering.net>
+Date: Wed, 27 Jun 2012 07:44:52 -0700
+In-Reply-To: <CAPXgP117sDoiuA-i3LWFPnj+VN5BbOQrYGM8KXYCqGSan7ZZMg@mail.gmail.com>
+References: <CAPXgP124qFG=QdO4H7qsp1bhY4BOp-PJEz7-4v-Dhi13LW+GDQ@mail.gmail.com>
+	 <20120627060939.GD14913@gmail.com>
+	 <CAPXgP10OLwd2v57qJqoJMTkXrM+7C8uhFoydy6HUEbfPfFVN8Q@mail.gmail.com>
+	 <1340795162.10063.28.camel@twins>
+	 <CAPXgP117sDoiuA-i3LWFPnj+VN5BbOQrYGM8KXYCqGSan7ZZMg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 11:52:19AM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-06-26 at 16:26 -0700, Paul E. McKenney wrote:
-> > there might be other reasons to park besides
-> > CPU hotplug.  Thoughts? 
-> 
-> s2r, freezers and similar stuff?
+On Wed, 2012-06-27 at 13:12 +0200, Kay Sievers wrote:
+> Since yesterday, continuation lines (which are
+> buffered) are flushed immediately to the console too.
 
-OK, so it sounds like the full functionality should be available in
-!SMP kernels, then...
-
-							Thanx, Paul
+Has Greg KH's boot hang been resolved?
 
