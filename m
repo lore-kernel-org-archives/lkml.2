@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2F0UuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 16:50:18 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:33192 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418Ab2F0UuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 16:50:16 -0400
-Message-ID: <4FEB715C.3090102@parallels.com>
-Date: Thu, 28 Jun 2012 00:47:24 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S932203Ab2F0U6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 16:58:11 -0400
+Received: from mga07.intel.com ([143.182.124.22]:24473 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757317Ab2F0U6J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 16:58:09 -0400
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 02/11] memcg: Reclaim when more than one page needed.
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-3-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206252106430.26640@chino.kir.corp.google.com> <4FEADA55.4060409@parallels.com> <alpine.DEB.2.00.1206271246380.22162@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1206271246380.22162@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [109.173.9.3]
+In-Reply-To: <20120627090521.GM31212@elgon.mountain>
+References: <20120627085800.GA3007@mwanda>
+	<20120627090521.GM31212@elgon.mountain>
+Date: Wed, 27 Jun 2012 13:58:06 -0700
+Message-ID: <CABE8wwt-56EzC4Tmh8FyGPS+ftgNz3EAh7qfRxpc9CZizOqQqQ@mail.gmail.com>
+Subject: Re: [patch -resend] [SCSI] isci: add a couple __iomem annotations
+From: Dan Williams <dan.j.williams@intel.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Intel SCU Linux support <intel-linux-scu@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>,
+        Ed Nadolski <edmund.nadolski@intel.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 11:48 PM, David Rientjes wrote:
-> On Wed, 27 Jun 2012, Glauber Costa wrote:
-> 
->>> @@ -2206,7 +2214,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup
->>> *memcg, gfp_t gfp_mask,
->>>>  	 * unlikely to succeed so close to the limit, and we fall back
->>>>  	 * to regular pages anyway in case of failure.
->>>>  	 */
->>>> -	if (nr_pages == 1 && ret)
->>>> +	if (nr_pages <= NR_PAGES_TO_RETRY && ret)
->>>>  		return CHARGE_RETRY;
->>
->> Changed to costly order.
->>
-> 
-> 1 << PAGE_ALLOC_COSTLY_ORDER was the suggestion.
+On Wed, Jun 27, 2012 at 2:05 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> These are __iomem.  Sparse complains if we don't have that.
+>
+> drivers/scsi/isci/phy.c +149 70: warning:
+>        incorrect type in initializer (different address spaces)
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> Sent on Wed, 18 Jan 2012.
+>
 
-That is what I meant - to the costly order suggestion - , should have
-been more explicit.
-
->> One more thing. The original version of this patch included
->> a cond_resched() here, that was also removed. From my re-reading
->> of the code in page_alloc.c and vmscan.c now, I tend to think
->> this is indeed not needed, since any cond_resched()s that might
->> be needed to ensure the safety of the code will be properly
->> inserted by the reclaim code itself, so there is no need for us
->> to include any when we signal that a retry is needed.
->>
-> 
-> For __GFP_WAIT, that sounds like a safe guarantee.
-> 
-
-
+Thanks for nudge, this fell off the radar.  I'll get this into -next
+with the rest of the pending bits.
