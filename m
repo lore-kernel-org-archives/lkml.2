@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890Ab2F0P0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:26:21 -0400
-Received: from antcom.de ([188.40.178.216]:39048 "EHLO chuck.antcom.de"
+	id S1757922Ab2F0P00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:26:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46554 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757413Ab2F0P0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:26:19 -0400
-Message-ID: <4FEB2619.8020000@antcom.de>
-Date: Wed, 27 Jun 2012 17:26:17 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1757413Ab2F0P0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 11:26:23 -0400
+Date: Wed, 27 Jun 2012 18:26:24 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120627152624.GC21393@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+ <20120627050937.23698.68442.stgit@bling.home>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH v7] MTD: LPC32xx SLC NAND driver
-References: <1339064536-20553-1-git-send-email-stigge@antcom.de>  <1340794007.29342.50.camel@sauron.fi.intel.com>  <4FEAF90B.5030809@antcom.de> <1340800392.1799.17.camel@sauron.fi.intel.com>
-In-Reply-To: <1340800392.1799.17.camel@sauron.fi.intel.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627050937.23698.68442.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 02:33 PM, Artem Bityutskiy wrote:
-> On Wed, 2012-06-27 at 14:14 +0200, Roland Stigge wrote:
->> Thanks for the note! I'm sending an incremental patch. There was 
->> actually only one place in the two functions that could fail
->> (return code of lpc32xx_xfer()).
-> 
-> Could you please check the MCL patch as well and re-send it against
-> the l2 tree?
-> 
-> I've squashed your change into the driver and pushed out, thanks!
+On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> @@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
+>  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+>  }
+>  
+> +static void
+> +irqfd_inject_level(struct work_struct *work)
+> +{
+> +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> +
+> +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> +}
+> +
+>  /*
+>   * Race-free decouple logic (ordering is critical)
+>   */
 
-Yes, thanks!
 
-Will post an updated MLC against l2-mtd later today.
-
-Roland
+Why is it safe to ignore return value here?
+needs a comment.
