@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab2F0KBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 06:01:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:32944 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab2F0KBg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 06:01:36 -0400
-Message-ID: <1340791282.10063.8.camel@twins>
-Subject: Re: [PATCH 2/2] perf/x86: Uncore Filter support for SandyBridge-EP
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: eranian@google.com, mingo@elte.hu, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 27 Jun 2012 12:01:22 +0200
-In-Reply-To: <1340780953-21130-2-git-send-email-zheng.z.yan@intel.com>
-References: <1340780953-21130-1-git-send-email-zheng.z.yan@intel.com>
-	 <1340780953-21130-2-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756885Ab2F0KDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 06:03:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753814Ab2F0KDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 06:03:47 -0400
+Date: Wed, 27 Jun 2012 13:03:46 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] kvm: don't clear level from irqfd
+Message-ID: <20120627100345.GA6533@redhat.com>
+References: <20120627091343.GA17693@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627091343.GA17693@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-27 at 15:09 +0800, Yan, Zheng wrote:
-> +struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type,
-> +                                         int cpu)
->  {
->         struct intel_uncore_box *box;
-> +       int size = sizeof(*box);
-> +
-> +       if (type->num_shared_regs)
-> +               size += type->num_shared_regs *
-> +                       sizeof(struct intel_uncore_extra_reg);
+On Wed, Jun 27, 2012 at 12:13:43PM +0300, Michael S. Tsirkin wrote:
+> irqfd sets and clears the level immediately.
+> This used to be necessary for MSI interrupts but isn't anymore.
+> 
+> Note! We never officially supported irqfd for level
+> interrupts but it usually seemed to kind of work,
+> and this change will break it. There are no known
+> real users of that feature though - only old vfio prototypes.
+> Removing this line will make it easier to add
+> real support for level irqfds in the future.
+> 
+Did we officially supported irqfd for ioapic/pic edge interrupts?
+Because those will break to.
+
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  virt/kvm/eventfd.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index f59c1e8..4db6b01 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -68,7 +68,6 @@ irqfd_inject(struct work_struct *work)
+>  	struct kvm *kvm = irqfd->kvm;
 >  
-> -       box = kmalloc_node(sizeof(*box), GFP_KERNEL | __GFP_ZERO,
-> -                          cpu_to_node(cpu));
-> +       box = kmalloc_node(size, GFP_KERNEL | __GFP_ZERO, cpu_to_node(cpu));
->         if (!box)
->                 return NULL;
+>  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+>  }
 >  
-> +       if (type->num_shared_regs) {
-> +               int i;
-> +               box->shared_regs = (struct intel_uncore_extra_reg *)(box + 1);
-> +               for (i = 0; i < type->num_shared_regs; i++)
-> +                       raw_spin_lock_init(&box->shared_regs[i].lock);
-> +       }
-> +
->         uncore_pmu_init_hrtimer(box);
->         atomic_set(&box->refcnt, 1);
->         box->cpu = -1; 
+>  /*
+> -- 
+> MST
 
-Yuck.. that's vile. How about something like this:
-
-
----
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -206,7 +206,7 @@ static void snbep_uncore_put_constraint(
- 		return;
- 
- 	er = &box->shared_regs[reg1->idx];
--	atomic_sub(1, &er->ref);
-+	atomic_dec(&er->ref);
- 	reg1->alloc = 0;
- }
- 
-@@ -862,22 +862,17 @@ struct intel_uncore_box *uncore_alloc_bo
- 					  int cpu)
- {
- 	struct intel_uncore_box *box;
--	int size = sizeof(*box);
--
--	if (type->num_shared_regs)
--		size += type->num_shared_regs *
--			sizeof(struct intel_uncore_extra_reg);
-+	int i, size;
-+       
-+	size = sizeof(*box) + type->num_shared_regs *
-+		sizeof(struct intel_uncore_extra_reg);
- 
- 	box = kmalloc_node(size, GFP_KERNEL | __GFP_ZERO, cpu_to_node(cpu));
- 	if (!box)
- 		return NULL;
- 
--	if (type->num_shared_regs) {
--		int i;
--		box->shared_regs = (struct intel_uncore_extra_reg *)(box + 1);
--		for (i = 0; i < type->num_shared_regs; i++)
--			raw_spin_lock_init(&box->shared_regs[i].lock);
--	}
-+	for (i = 0; i < type->num_shared_regs; i++)
-+		raw_spin_lock_init(&box->shared_regs[i].lock);
- 
- 	uncore_pmu_init_hrtimer(box);
- 	atomic_set(&box->refcnt, 1);
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -228,11 +228,11 @@ struct intel_uncore_box {
- 	struct perf_event *event_list[UNCORE_PMC_IDX_MAX];
- 	unsigned long active_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
- 	u64 tags[UNCORE_PMC_IDX_MAX];
--	struct intel_uncore_extra_reg *shared_regs;
- 	struct pci_dev *pci_dev;
- 	struct intel_uncore_pmu *pmu;
- 	struct hrtimer hrtimer;
- 	struct list_head list;
-+	struct intel_uncore_extra_reg shared_regs[0];
- };
- 
- #define UNCORE_BOX_FLAG_INITIATED	0
-
+--
+			Gleb.
