@@ -1,86 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab2F0V2X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 17:28:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57428 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754768Ab2F0V2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 17:28:22 -0400
-Message-ID: <1340832499.1207.255.camel@bling.home>
-Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Date: Wed, 27 Jun 2012 15:28:19 -0600
-In-Reply-To: <20120627211413.GE27746@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
-	 <20120627050937.23698.68442.stgit@bling.home>
-	 <20120627095137.GH17507@redhat.com> <1340830749.1207.236.camel@bling.home>
-	 <20120627211413.GE27746@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757779Ab2F0VgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 17:36:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58635 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab2F0VgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 17:36:01 -0400
+From: Olof Johansson <olof@lixom.net>
+To: hpa@zytor.com
+Cc: Marko Kohtala <marko.kohtala@gmail.com>, linux-kernel@vger.kernel.org,
+        mjg@redhat.com, Olof Johansson <olof@lixom.net>
+Subject: [PATCH] efi: add efi_runtime state checking
+Date: Wed, 27 Jun 2012 14:35:57 -0700
+Message-Id: <1340832957-7386-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
+In-Reply-To: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com>
+References: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 00:14 +0300, Michael S. Tsirkin wrote:
-> On Wed, Jun 27, 2012 at 02:59:09PM -0600, Alex Williamson wrote:
-> > On Wed, 2012-06-27 at 12:51 +0300, Michael S. Tsirkin wrote:
-> > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
-> > > > In order to inject an interrupt from an external source using an
-> > > > irqfd, we need to allocate a new irq_source_id.  This allows us to
-> > > > assert and (later) de-assert an interrupt line independently from
-> > > > users of KVM_IRQ_LINE and avoid lost interrupts.
-> > > > 
-> > > > We also add what may appear like a bit of excessive infrastructure
-> > > > around an object for storing this irq_source_id.  However, notice
-> > > > that we only provide a way to assert the interrupt here.  A follow-on
-> > > > interface will make use of the same irq_source_id to allow de-assert.
-> > > > 
-> > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > ---
-> > > > 
-> > > >  Documentation/virtual/kvm/api.txt |    5 ++
-> > > >  arch/x86/kvm/x86.c                |    1 
-> > > >  include/linux/kvm.h               |    3 +
-> > > >  virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
-> > > >  4 files changed, 99 insertions(+), 5 deletions(-)
-> > > > 
-> > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > > > index ea9edce..b216709 100644
-> > > > --- a/Documentation/virtual/kvm/api.txt
-> > > > +++ b/Documentation/virtual/kvm/api.txt
-> > > > @@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
-> > > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
-> > > >  and kvm_irqfd.gsi.
-> > > >  
-> > > > +With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
-> > > > +the requested irqfd.  This is necessary to share level triggered
-> > > > +interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
-> > > > +with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
-> > > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
-> > > 
-> > > Note that if my patch removing auto-deassert gets accepted,
-> > > this is not needed at all: we can just look at the GSI
-> > > to see if it's level or edge.
-> > 
-> > I'm not sure this is a good idea.  I know from vfio that I'm injecting a
-> > level interrupt regardless of how the guest has the pic/ioapic
-> > programmed at the time I'm calling this ioctl.  Peeking across address
-> > spaces to get to the right pin on the right pic/ioapic and see how it's
-> > currently programmed seems fragile.  Thanks,
-> > 
-> > Alex
-> 
-> Fragile? If you set eventfd as LEVEL but GSI is really edge then
-> it all explodes, right? So why give users the option to shoot
-> themselves in the foot?
+This adds an efi_runtime variable indicating whether the
+efi runtime services are available. The only time they are
+expected to not be available is when a 32-bit kernel has been
+booted using 64-but EFI and vice versa.
 
-If the guest has the ioapic rte set to edge at the time I call KVM_IRQFD
-to register my level interrupt then it all explodes, right?  I'd rather
-let the user shoot themselves than play Russian roulette with the guest.
-Am I misunderstanding what you mean by looking that the GSI to see if
-it's level or edge?
+It also adds checking to the two locations where functions are
+called; x86 reboot and efivars.
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Cc: stable@kernel.org # 3.4
+---
+
+Marko,
+
+This should solve the issue for you, I hope. I've verified that it works
+here on my 64-bit EFI / 32-bit kernel systems (first-gen Chromebook).
+
+Peter, let me know if you want this split up across several patches. I
+preserved the previous probe/return behaviour for efivars, I suppose
+it could be switched to -ENXIO return instead but this smaller change
+seemed more suitable for -stable.
+
+
+-Olof
+
+ arch/x86/kernel/reboot.c    | 2 +-
+ arch/x86/platform/efi/efi.c | 6 ++++++
+ drivers/firmware/efivars.c  | 2 +-
+ include/linux/efi.h         | 3 +++
+ 4 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 52190a9..fa5bb6c 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -592,7 +592,7 @@ static void native_machine_emergency_restart(void)
+ 			break;
+ 
+ 		case BOOT_EFI:
+-			if (efi_enabled)
++			if (efi_runtime)
+ 				efi.reset_system(reboot_mode ?
+ 						 EFI_RESET_WARM :
+ 						 EFI_RESET_COLD,
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 2dc29f5..cc2bc12 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -53,6 +53,9 @@
+ int efi_enabled;
+ EXPORT_SYMBOL(efi_enabled);
+ 
++bool efi_runtime;
++EXPORT_SYMBOL(efi_runtime);
++
+ struct efi __read_mostly efi = {
+ 	.mps        = EFI_INVALID_TABLE_ADDR,
+ 	.acpi       = EFI_INVALID_TABLE_ADDR,
+@@ -77,6 +80,7 @@ static efi_system_table_t efi_systab __initdata;
+ static int __init setup_noefi(char *arg)
+ {
+ 	efi_enabled = 0;
++	efi_runtime = 0;
+ 	return 0;
+ }
+ early_param("noefi", setup_noefi);
+@@ -615,6 +619,8 @@ static int __init efi_runtime_init(void)
+ 
+ 	early_iounmap(runtime, sizeof(efi_runtime_services_t));
+ 
++	efi_runtime = 1;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 47408e8..265449a 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -1213,7 +1213,7 @@ efivars_init(void)
+ 	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
+ 	       EFIVARS_DATE);
+ 
+-	if (!efi_enabled)
++	if (!efi_runtime)
+ 		return 0;
+ 
+ 	/* For now we'll register the efi directory at /sys/firmware/efi */
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 103adc6..ac9c28d 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -539,11 +539,14 @@ extern int __init efi_setup_pcdp_console(char *);
+ # ifdef CONFIG_X86
+    extern int efi_enabled;
+    extern bool efi_64bit;
++   extern bool efi_runtime;
+ # else
+ #  define efi_enabled 1
++#  define efi_runtime 1
+ # endif
+ #else
+ # define efi_enabled 0
++# define efi_runtime 0
+ #endif
+ 
+ /*
+-- 
+1.7.10.1.488.g05fbf7a
 
