@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab2F0JDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:03:32 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44077 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab2F0JDa (ORCPT
+	id S1755959Ab2F0JDg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:03:36 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:33122 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755884Ab2F0JDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:03:30 -0400
-X-AuditID: 9c930197-b7b49ae0000027b8-99-4feacc5f7d0c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jovi Zhang <bookjovi@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, mingo@redhat.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: fix wrong hw_breakpoint documentation
-References: <CACV3sbKFcHgai6AzKGrf=LEb67VjZXjMUqMQuXAOUmby7CeiJg@mail.gmail.com>
-Date: Wed, 27 Jun 2012 17:59:34 +0900
-In-Reply-To: <CACV3sbKFcHgai6AzKGrf=LEb67VjZXjMUqMQuXAOUmby7CeiJg@mail.gmail.com>
-	(Jovi Zhang's message of "Wed, 27 Jun 2012 16:39:19 +0800")
-Message-ID: <87fw9hyvt5.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	Wed, 27 Jun 2012 05:03:33 -0400
+Date: Wed, 27 Jun 2012 12:03:23 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Robin Holt <holt@sgi.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Jack Steiner <steiner@sgi.com>
+Subject: [patch -resend] sgi-xp: nested calls to spin_lock_irqsave()
+Message-ID: <20120627090322.GI31212@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627085800.GA3007@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Jovi
+The code here has a nested spin_lock_irqsave().  It's not needed since
+IRQs are already disabled and it causes a problem because it means that
+IRQs won't be enabled again at the end.  The second call to
+spin_lock_irqsave() will overwrite the value of irq_flags and we can't
+restore the proper settings.
 
-On Wed, 27 Jun 2012 16:39:19 +0800, Jovi Zhang wrote:
-> From f5f9c3a064482cf3d0fb7ed788c66630bddbfc79 Mon Sep 17 00:00:00 2001
-> From: Jovi Zhang <bookjovi@gmail.com>
-> Date: Wed, 27 Jun 2012 16:09:21 +0800
-> Subject: [PATCH] perf: fix wrong hw_breakpoint documentation
->
-> read-write access hw_breakpoint event is passed as 'mem:addr',
-> 'mem:0x1000:rw' is parsed as invalid argument currently.
->
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+I have added Jack Steiner to the CC list.  This was originally sent on
+Thu, 15 Dec 2011.
 
-It should be a bug in event parser. I guess the patch below will fix it:
-
-
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 488362e14133..aafca33a8a09 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -76,7 +76,7 @@ num_hex               0x[a-fA-F0-9]+
- num_raw_hex    [a-fA-F0-9]+
- name           [a-zA-Z_*?][a-zA-Z0-9_*?]*
- modifier_event [ukhpGH]{1,8}
--modifier_bp    [rwx]
-+modifier_bp    [rwx]+
+diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
+index 17bbacb..87b251a 100644
+--- a/drivers/misc/sgi-xp/xpc_uv.c
++++ b/drivers/misc/sgi-xp/xpc_uv.c
+@@ -452,9 +452,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
  
- %%
- 
+ 		if (msg->activate_gru_mq_desc_gpa !=
+ 		    part_uv->activate_gru_mq_desc_gpa) {
+-			spin_lock_irqsave(&part_uv->flags_lock, irq_flags);
++			spin_lock(&part_uv->flags_lock);
+ 			part_uv->flags &= ~XPC_P_CACHED_ACTIVATE_GRU_MQ_DESC_UV;
+-			spin_unlock_irqrestore(&part_uv->flags_lock, irq_flags);
++			spin_unlock(&part_uv->flags_lock);
+ 			part_uv->activate_gru_mq_desc_gpa =
+ 			    msg->activate_gru_mq_desc_gpa;
+ 		}
