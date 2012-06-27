@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927Ab2F0Psb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:48:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39396 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756740Ab2F0Psa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:48:30 -0400
-Date: Wed, 27 Jun 2012 17:48:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: linux-mm@kvack.org, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>, CAI Qian <caiqian@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
-Message-ID: <20120627154827.GA4420@tiehlicka.suse.cz>
-References: <2a1a74bf-fbb5-4a6e-b958-44fff8debff2@zmail13.collab.prod.int.phx2.redhat.com>
- <34bb8049-8007-496c-8ffb-11118c587124@zmail13.collab.prod.int.phx2.redhat.com>
+	id S1757937Ab2F0PtC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:49:02 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:65013 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab2F0Ps7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 11:48:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <34bb8049-8007-496c-8ffb-11118c587124@zmail13.collab.prod.int.phx2.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87lij91myw.fsf@rustcorp.com.au>
+References: <1340742778-11282-1-git-send-email-fes@google.com>
+	<20120626214106.GC14054@redhat.com>
+	<87lij91myw.fsf@rustcorp.com.au>
+Date: Wed, 27 Jun 2012 08:48:55 -0700
+Message-ID: <CAK+C7kWRsDcsB-W9m=Hn65xekvb-uOZC4oAMT0z48CC5q00oJw@mail.gmail.com>
+Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
+From: Frank Swiderski <fes@google.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, riel@redhat.com,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mikew@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 26-06-12 23:49:15, Zhouping Liu wrote:
-> hi, all
-> 
-> when I used memory cgroup in latest mainline, the following error occurred:
-> 
-> # mount -t cgroup -o memory xxx /cgroup/
-> # ll /cgroup/memory.memsw.*
-> -rw-r--r--. 1 root root 0 Jun 26 23:17 /cgroup/memory.memsw.failcnt
-> -rw-r--r--. 1 root root 0 Jun 26 23:17 /cgroup/memory.memsw.limit_in_bytes
-> -rw-r--r--. 1 root root 0 Jun 26 23:17 /cgroup/memory.memsw.max_usage_in_bytes
-> -r--r--r--. 1 root root 0 Jun 26 23:17 /cgroup/memory.memsw.usage_in_bytes
-> # cat /cgroup/memory.memsw.*
-> cat: /cgroup/memory.memsw.failcnt: Operation not supported
-> cat: /cgroup/memory.memsw.limit_in_bytes: Operation not supported
-> cat: /cgroup/memory.memsw.max_usage_in_bytes: Operation not supported
-> cat: /cgroup/memory.memsw.usage_in_bytes: Operation not supported
-> 
-> I'm confusing why it can't read memory.memsw.* files.
+On Tue, Jun 26, 2012 at 7:56 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Wed, 27 Jun 2012 00:41:06 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+>> On Tue, Jun 26, 2012 at 01:32:58PM -0700, Frank Swiderski wrote:
+>> > This implementation of a virtio balloon driver uses the page cache to
+>> > "store" pages that have been released to the host.  The communication
+>> > (outside of target counts) is one way--the guest notifies the host when
+>> > it adds a page to the page cache, allowing the host to madvise(2) with
+>> > MADV_DONTNEED.  Reclaim in the guest is therefore automatic and implicit
+>> > (via the regular page reclaim).  This means that inflating the balloon
+>> > is similar to the existing balloon mechanism, but the deflate is
+>> > different--it re-uses existing Linux kernel functionality to
+>> > automatically reclaim.
+>> >
+>> > Signed-off-by: Frank Swiderski <fes@google.com>
+>>
+>> I'm pondering this:
+>>
+>> Should it really be a separate driver/device ID?
+>> If it behaves the same from host POV, maybe it
+>> should be up to the guest how to inflate/deflate
+>> the balloon internally?
+>
+> Well, it shouldn't steal ID 10, either way :)  Either use a completely
+> bogus number, or ask for an id.
+>
+> But AFAICT this should be a an alternate driver of for the same device:
+> it's not really a separate device, is it?
+>
+> Cheers,
+> Rusty.
 
-Those files are exported if CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y even
-if the feature is turned off when any attempt to open the file returns
-EOPNOTSUPP which is exactly what you are seeing.
-This is a deliberate decision see: b6d9270d (memcg: always create memsw
-files if CONFIG_CGROUP_MEM_RES_CTLR_SWAP).
+Apologies, Rusty.  Asking for an ID is in the virtio spec, and I
+completely neglected that step.  Though as you and others have pointed
+out, this probably fits better as a different driver for the same
+device.  Since it changes whether or not the deflate operation is
+necessary, it also seems that how this should look is different
+behavior based on a feature bit in the device.
 
-Does this help to explain your problem? Do you actually see any problem
-with this behavior?
+If that sounds reasonable, then what I'll do with this patch is merge
+it with the existing virtio balloon driver with a feature bit for
+determining which behavior to use.
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+I also think the idea of a generic balloon that the different balloon
+drivers use for the inflate/deflate operations is interesting and
+useful, though I think the suggestion of pending that until later is
+correct.
+
+Sounds reasonable?
+
+Regards,
+fes
