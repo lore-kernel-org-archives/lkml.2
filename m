@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab2F0Ta5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 15:30:57 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34419 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab2F0Ta4 (ORCPT
+	id S1756537Ab2F0TfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 15:35:09 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40404 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754854Ab2F0TfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 15:30:56 -0400
-Date: Wed, 27 Jun 2012 20:30:39 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Cc: Roland Stigge <stigge@antcom.de>, dedekind1@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com
-Subject: Re: [PATCH 1/4] mtd: lpc32xx_slc: Select AMBA_PL08X in Kconfig
-Message-ID: <20120627193039.GF25319@n2100.arm.linux.org.uk>
-References: <1340812275-1197-1-git-send-email-stigge@antcom.de> <20120627191542.GC25319@n2100.arm.linux.org.uk> <CAAAP30Fdr2_tcgMYjCirVPCPTtrUgbeMb=7j=69wGtvJeiLsOA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAAP30Fdr2_tcgMYjCirVPCPTtrUgbeMb=7j=69wGtvJeiLsOA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 27 Jun 2012 15:35:07 -0400
+Message-ID: <1340825704.3175.88.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: UEFI Secure boot using qemu-kvm
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Jonathan Corbet <corbet@lwn.net>
+Date: Wed, 27 Jun 2012 20:35:04 +0100
+In-Reply-To: <20120627181503.GA7775@srcf.ucam.org>
+References: <1340818445.3175.73.camel@dabdike.int.hansenpartnership.com>
+	 <20120627181503.GA7775@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 04:26:18PM -0300, Alexandre Pereira da Silva wrote:
-> On Wed, Jun 27, 2012 at 4:15 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Wed, Jun 27, 2012 at 05:51:12PM +0200, Roland Stigge wrote:
-> >> From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-> >>
-> >> Since this driver depends on the amba pl08x dma driver, select it in Kconfig.
-> >>
-> >> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-> >> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> >> ---
-> >>  drivers/mtd/nand/Kconfig |    1 +
-> >>  1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-> >> index de69978..a9e8b73 100644
-> >> --- a/drivers/mtd/nand/Kconfig
-> >> +++ b/drivers/mtd/nand/Kconfig
-> >> @@ -417,6 +417,7 @@ config MTD_NAND_PXA3xx
-> >>  config MTD_NAND_SLC_LPC32XX
-> >>       tristate "NXP LPC32xx SLC Controller"
-> >>       depends on ARCH_LPC32XX
-> >> +     select AMBA_PL08X
-> >>       help
-> >>         Enables support for NXP's LPC32XX SLC (i.e. for Single Level Cell
-> >>         chips) NAND controller. This is the default for the PHYTEC 3250
-> >
-> > Surely not?  Drivers using DMA engine really should not depend on any
-> > particular DMA engine implementation.
+On Wed, 2012-06-27 at 19:15 +0100, Matthew Garrett wrote:
+> On Wed, Jun 27, 2012 at 06:34:05PM +0100, James Bottomley wrote:
 > 
-> Should the DMA code in this driver be ifdef'd like in spi-pl022.c?
+> > The purpose of this email is to widen the pool of people who are playing
+> > with UEFI Secure boot.  The Linux Foundation Technical Advisory Board
+> > have been looking into this because it turns out to be rather difficult
+> > to lay your hands on real UEFI Secure Boot enabled hardware.
 > 
-> Or just depend on DMA_ENGINE instead?
+> http://tunnelmountain.net/ is the canonical source, but I believe that 
+> these are now out of stock and waiting for Intel to finish the 
+> firmware for the replacement.
+> 
+> > The current state is that I've managed to lock down the secure boot
+> > virtual platform with my own PK and KEK and verified that I can generate
+> > signed efi binaries that will run on it (and that it will refuse to run
+> > unsigned efi binaries).  Finally I've demonstrated that I can sign
+> > elilo.efi (this has to be built specially because of the bug in gnu-efi)
+> > and have it boot an unsigned linux kernel when the platform is in secure
+> > mode (I've booted up to an initrd root prompt).
+> 
+> It's probably worth noting that booting unsigned kernels violates the 
+> expectations of various vendors 
+> (http://msdn.microsoft.com/en-us/library/windows/desktop/hh848062%28v=vs.85%29.aspx 
+> would be unnecessary if you're supporting unsigned kernels, for 
+> example). There's no public cross-vendor guidance on this, but I'm 
+> trying to get that rectified.
+> 
+> As well as sbsign there's also https://github.com/vathpela/pesign for 
+> anyone stuck relying on nss rather than openssl for awkward regulatory 
+> reasons.
 
-Well, the DMA engine API gets stubbed out when no DMA engine is selected,
-so I'm not sure why spi-pl022 needs all those ifdefs (yes, you may wish
-to do that if you want to shrink your driver private struct size.)
+I've tried to build pesign, but I have huge problems with the make
+process; how did you build it?
 
-Provided the driver is capable of working without DMA engine, I don't see
-any reason what so ever to make that driver select or depend on DMA engine
-stuff.
+However, sbsign (with four extra patches I've sent to Jeremy) seems to
+be built and working.
+
+James
+
+
