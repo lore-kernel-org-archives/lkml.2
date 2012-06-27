@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2F0AuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 20:50:12 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:43149 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab2F0AuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 20:50:10 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-209.messagelabs.com!1340758207!7010316!4
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/36] staging: comedi: cb_pcidas: remove forward declarations 6
-Date: Tue, 26 Jun 2012 17:49:58 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	id S1755764Ab2F0Aub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 20:50:31 -0400
+Received: from void.printf.net ([89.145.121.20]:54078 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755579Ab2F0Aua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 20:50:30 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [GIT PULL] MMC fixes for 3.5-rc5
+Date: Tue, 26 Jun 2012 20:50:25 -0400
+Message-ID: <87iped8tny.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206261749.59101.hartleys@visionengravers.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the cb_pcidas_load_counters function to remove the need for
-the forward declaration.
+Hi Linus,
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_pcidas.c | 30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
+Please pull from:
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 2457408..1e5616e 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -447,8 +447,6 @@ struct cb_pcidas_private {
-  */
- #define devpriv ((struct cb_pcidas_private *)dev->private)
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.5-rc5
+
+to receive MMC fixes for 3.5-rc5.  There are no merge conflicts, and the
+patches have been tested in linux-next.  Thanks.
+
+
+The following changes since commit d1346a6cbabf6d377d753f1adc16cb0b305830cc:
+
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2012-06-26 11:26:50 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.5-rc5
+
+for you to fetch changes up to fe85227347738eb9b871bc163e7fb0db8b6cd2a0:
+
+  Revert "mmc: omap_hsmmc: Enable Auto CMD12" (2012-06-26 16:10:30 -0400)
+
+----------------------------------------------------------------
+MMC fixes for 3.5-rc5:
+ - omap_hsmmc: Using AUTO_CMD12 (enabled by default in 3.5-rc1) has
+   been found to cause data corruption on the BeagleBoard xM, but no
+   other OMAP boards so far.  Revert the patch until there's a root
+   cause explanation that makes sense, at which point we might
+   decide to use a blacklist or whitelist.
+ - mmc_block: Fix incorrect data timeouts for the case of multiblock
+   (ACMD22) writes for block-addressed cards.
+
+----------------------------------------------------------------
+Ming Lei (1):
+      Revert "mmc: omap_hsmmc: Enable Auto CMD12"
+
+Subhash Jadavani (1):
+      mmc: block: fix the data timeout issue with ACMD22
+
+ drivers/mmc/card/block.c      |   14 +-------------
+ drivers/mmc/host/omap_hsmmc.c |   15 +++------------
+ 2 files changed, 4 insertions(+), 25 deletions(-)
  
--static void cb_pcidas_load_counters(struct comedi_device *dev, unsigned int *ns,
--				    int round_flags);
- static int caldac_8800_write(struct comedi_device *dev, unsigned int address,
- 			     uint8_t value);
- static int trimpot_7376_write(struct comedi_device *dev, uint8_t value);
-@@ -915,6 +913,20 @@ static int cb_pcidas_ai_cmdtest(struct comedi_device *dev,
- 	return 0;
- }
- 
-+static void cb_pcidas_load_counters(struct comedi_device *dev, unsigned int *ns,
-+				    int rounding_flags)
-+{
-+	i8253_cascade_ns_to_timer_2div(TIMER_BASE, &(devpriv->divisor1),
-+				       &(devpriv->divisor2), ns,
-+				       rounding_flags & TRIG_ROUND_MASK);
-+
-+	/* Write the values of ctr1 and ctr2 into counters 1 and 2 */
-+	i8254_load(devpriv->pacer_counter_dio + ADC8254, 0, 1,
-+		   devpriv->divisor1, 2);
-+	i8254_load(devpriv->pacer_counter_dio + ADC8254, 0, 2,
-+		   devpriv->divisor2, 2);
-+}
-+
- static int cb_pcidas_ai_cmd(struct comedi_device *dev,
- 			    struct comedi_subdevice *s)
- {
-@@ -1444,20 +1456,6 @@ static irqreturn_t cb_pcidas_interrupt(int irq, void *d)
- 	return IRQ_HANDLED;
- }
- 
--static void cb_pcidas_load_counters(struct comedi_device *dev, unsigned int *ns,
--				    int rounding_flags)
--{
--	i8253_cascade_ns_to_timer_2div(TIMER_BASE, &(devpriv->divisor1),
--				       &(devpriv->divisor2), ns,
--				       rounding_flags & TRIG_ROUND_MASK);
--
--	/* Write the values of ctr1 and ctr2 into counters 1 and 2 */
--	i8254_load(devpriv->pacer_counter_dio + ADC8254, 0, 1,
--		   devpriv->divisor1, 2);
--	i8254_load(devpriv->pacer_counter_dio + ADC8254, 0, 2,
--		   devpriv->divisor2, 2);
--}
--
- static void write_calibration_bitstream(struct comedi_device *dev,
- 					unsigned int register_bits,
- 					unsigned int bitstream,
 -- 
-1.7.11
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
