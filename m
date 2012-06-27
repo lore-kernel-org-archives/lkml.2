@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab2F0Q3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 12:29:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39926 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab2F0Q3A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 12:29:00 -0400
-Date: Wed, 27 Jun 2012 18:28:51 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: mturquette@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
-        Viresh Kumar <viresh.linux@gmail.com>
-Subject: Re: [PATCH v2] clk: Add support for rate table based dividers
-Message-ID: <20120627162851.GT1623@pengutronix.de>
-References: <1340794893-20869-1-git-send-email-rnayak@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340794893-20869-1-git-send-email-rnayak@ti.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:23:54 up 4 days,  7:35, 46 users,  load average: 0.92, 1.05, 1.03
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1758137Ab2F0Q3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 12:29:32 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43771 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758110Ab2F0Q3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 12:29:30 -0400
+Message-ID: <1340814569.16533.53.camel@joe2Laptop>
+Subject: Re: linux-next: Tree for Jun 27 (eliminated_printk)
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 27 Jun 2012 09:29:29 -0700
+In-Reply-To: <4FEB340D.3040908@xenotime.net>
+References: <20120627132217.f8bbdd1f467711419123d188@canb.auug.org.au>
+	 <4FEB340D.3040908@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 04:31:33PM +0530, Rajendra Nayak wrote:
-> Some divider clks do not have any obvious relationship
-> between the divider and the value programmed in the
-> register. For instance, say a value of 1 could signify divide
-> by 6 and a value of 2 could signify divide by 4 etc.
-> Also there are dividers where not all values possible
-> based on the bitfield width are valid. For instance
-> a 3 bit wide bitfield can be used to program a value
-> from 0 to 7. However its possible that only 0 to 4
-> are valid values.
+On Wed, 2012-06-27 at 09:25 -0700, Randy Dunlap wrote:
+> On 06/26/2012 08:22 PM, Stephen Rothwell wrote:
 > 
-> All these cases need the platform code to pass a simple
-> table of divider/value tuple, so the framework knows
-> the exact value to be written based on the divider
-> calculation and can also do better error checking.
+> > Hi all,
+> > 
+> > This tree was not built between each merge, but only after merging all
+> > the trees.
+> > 
+> > Changes since 20120626:
 > 
-> This patch adds support for such rate table based
-> dividers.
 > 
-> Also since this means adding a new parameter to the
-> clk_register_divider(), update all existing users of
-> it.
+> 
+> on i386:
+> 
+> drivers/platform/x86/thinkpad_acpi.c: In function 'drv_acpi_handle_init':
+> drivers/platform/x86/thinkpad_acpi.c:684:2: error: implicit declaration of function 'eliminated_printk'
+> 
+> drivers/platform/x86/fujitsu-laptop.c: In function 'call_fext_func':
+> drivers/platform/x86/fujitsu-laptop.c:223:3: error: implicit declaration of function 'eliminated_printk'
+> 
+> 
+> Full randconfig file is attached.
 
-I'm not sure whether we should overload the divider code with another
-type of divider. Maybe it would be better to add a new
-clk-divider-table.c for this? Just an idea, the result may or may not be
-better.
+Thanks Randy.
 
-Sascha
+This patch depends on the first patch in the series
+which hasn't been applied.
+
+https://lkml.org/lkml/2012/6/17/229
+https://lkml.org/lkml/2012/6/17/231
 
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
