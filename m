@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab2F0Fx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 01:53:26 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64338 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab2F0FxZ (ORCPT
+	id S1756150Ab2F0Fxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 01:53:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38814 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab2F0Fxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 01:53:25 -0400
-X-AuditID: 9c930197-b7b43ae00000668c-f1-4fea9fd35d7b
-Message-ID: <4FEA9FDD.6030102@kernel.org>
-Date: Wed, 27 Jun 2012 14:53:33 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 27 Jun 2012 01:53:34 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FEA9FCD.6020405@jp.fujitsu.com>
+Date: Wed, 27 Jun 2012 14:53:17 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Alex Shi <alex.shi@intel.com>
-Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [RFC PATCH 7/12] memory-hotplug : check page type in get_page_bootmem
+References: <4FEA9C88.1070800@jp.fujitsu.com>
+In-Reply-To: <4FEA9C88.1070800@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 01:14 AM, Seth Jennings wrote:
+There is a possibility that get_page_bootmem() is called to the same page many
+times. So when get_page_bootmem is called to the same page, the function only
+increments page->_count.
 
-> This patch adds support for a local_tlb_flush_kernel_range()
-> function for the x86 arch.  This function allows for CPU-local
-> TLB flushing, potentially using invlpg for single entry flushing,
-> using an arch independent function name.
-> 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
+Index: linux-3.5-rc4/mm/memory_hotplug.c
+===================================================================
+--- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-26 13:56:34.371988312 +0900
++++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-26 14:03:37.564697621 +0900
+@@ -95,10 +95,17 @@ static void release_memory_resource(stru
+ static void get_page_bootmem(unsigned long info,  struct page *page,
+ 			     unsigned long type)
+ {
+-	page->lru.next = (struct list_head *) type;
+-	SetPagePrivate(page);
+-	set_page_private(page, info);
+-	atomic_inc(&page->_count);
++	unsigned long page_type;
++
++	page_type = (unsigned long) page->lru.next;
++	if (type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
++	    type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
++		page->lru.next = (struct list_head *) type;
++		SetPagePrivate(page);
++		set_page_private(page, info);
++		atomic_inc(&page->_count);
++	} else
++		atomic_inc(&page->_count);
+ }
 
-Anyway, we don't matter INVLPG_BREAK_EVEN_PAGES's optimization point is 8 or something.
-We do care only it works without big problem.
-I believe after Alex's patch is settle down, we can fix it if it's wrong.
-But it shouldn't prevent merging this patch.
+ /* reference to __meminit __free_pages_bootmem is valid
 
-Acked-by: Minchan Kim <minchan@kernel.org>
-
-Nitpick: I expect you change __HAVE_LOCAL_XXX to __HAVE_ARCH_LOCAL_XXX in next spin. :)
-
-
-> ---
->  arch/x86/include/asm/tlbflush.h |   21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-> index 36a1a2a..92a280b 100644
-> --- a/arch/x86/include/asm/tlbflush.h
-> +++ b/arch/x86/include/asm/tlbflush.h
-> @@ -168,4 +168,25 @@ static inline void flush_tlb_kernel_range(unsigned long start,
->  	flush_tlb_all();
->  }
->  
-> +#define __HAVE_LOCAL_FLUSH_TLB_KERNEL_RANGE
-> +/*
-> + * INVLPG_BREAK_EVEN_PAGES is the number of pages after which single tlb
-> + * flushing becomes more costly than just doing a complete tlb flush.
-> + * While this break even point varies among x86 hardware, tests have shown
-> + * that 8 is a good generic value.
-> +*/
-> +#define INVLPG_BREAK_EVEN_PAGES 8
-> +static inline void local_flush_tlb_kernel_range(unsigned long start,
-> +		unsigned long end)
-> +{
-> +	if (cpu_has_invlpg &&
-> +		(end - start)/PAGE_SIZE <= INVLPG_BREAK_EVEN_PAGES) {
-> +		while (start < end) {
-> +			__flush_tlb_single(start);
-> +			start += PAGE_SIZE;
-> +		}
-> +	} else
-> +		local_flush_tlb();
-> +}
-> +
->  #endif /* _ASM_X86_TLBFLUSH_H */
-
-
-
--- 
-Kind regards,
-Minchan Kim
