@@ -1,123 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2F0O2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 10:28:24 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:64423 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903Ab2F0O2X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 10:28:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMO-S2jPvVZndo3_cM67ZvXXV5y5CKvxe-x6YGfguq3w9mVbAg@mail.gmail.com>
-References: <1339944948-3193-1-git-send-email-namhyung@kernel.org>
-	<20120618090501.GB28824@gmail.com>
-	<87mx3zhekz.fsf@sejong.aot.lge.com>
-	<CAMO-S2jPvVZndo3_cM67ZvXXV5y5CKvxe-x6YGfguq3w9mVbAg@mail.gmail.com>
-Date: Wed, 27 Jun 2012 23:28:22 +0900
-Message-ID: <CAMO-S2j74+=9QJ40-=3Zj9a2M2wnCC474vsm216GP-BB9OWbsg@mail.gmail.com>
-Subject: Re: [PATCH] perf tools: Fix an error on perf-bench document
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756858Ab2F0O3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 10:29:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35760 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753136Ab2F0O3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 10:29:07 -0400
+Message-ID: <1340807344.1207.207.camel@bling.home>
+Subject: Re: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: avi@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Wed, 27 Jun 2012 08:29:04 -0600
+In-Reply-To: <20120627135811.GE6533@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+	 <20120627050952.23698.37235.stgit@bling.home>
+	 <20120627135811.GE6533@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 12:59 AM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
-> On Tue, Jun 19, 2012 at 5:48 PM, Namhyung Kim <namhyung@kernel.org> wrote:
->> Hi, Ingo
->>
->> On Mon, 18 Jun 2012 11:05:01 +0200, Ingo Molnar wrote:
->>> There's several typos all across the perf bench documentation:
->>>
->>> 1)
->>>
->>>        This perf bench command is general framework for benchmark suites.
->>>
->>> s/is general/is a general
->>>
->>
->> Will fix.
->>
->>
->>> 2)
->>>
->>> The output of 'perf bench --help' outputs weird looking
->>> formatting characters like:
->>>
->>>            .ft C
->>>            % perf bench sched pipe                      # with no style specified
->>>            (executing 1000000 pipe operations between two tasks)
->>>                    Total time:5.855 sec
->>>                            5.855061 usecs/op
->>>                            170792 ops/sec
->>>            .ft
->>>
->>
->> I have no idea on this, maybe a problem of asciidoc?
->>
->>
->>> 3)
->>>
->>> This:
->>>
->>>            all: test all suite (pseudo suite)
->>>
->>> s/all suite (psudo suite)/all benchmark suites
->>>
->>> (this should be fixed for perf bench mem as well.)
->>>
->>
->> Will fix.
->>
->>
->>> 4)
->>>
->>> perf bench mem memcpy -h outputs:
->>>
->>>     -l, --length <1MB>    Specify length of memory to copy. available unit: B, MB, GB (upper and lower)
->>>
->>> bad capitalization: s/. a/. A
->>>
->>> s/unit/units
->>>
->>
->> Will fix too.
->>
->>
->>> 5)
->>>
->>> This:
->>>
->>>     -c, --clock           Use CPU clock for measuring
->>>
->>> should probably clarify why the CPU clock matters and what
->>> measurement is done otherwise.
->>>
->>
->> This looks a bit weird. If -c switch was given, it'd use the cycles
->> event not the cpu-clock event. If omitted, it'd use the gtod().
->>
->
-> Very sorry, I misused the terms clock and cycles. The memset uses
-> hardware cycles event, the above naming and description with "clock"
-> is very bad...
-> I will write and send a patch for fix the problem.
+On Wed, 2012-06-27 at 16:58 +0300, Gleb Natapov wrote:
+> On Tue, Jun 26, 2012 at 11:10:08PM -0600, Alex Williamson wrote:
+> > This new ioctl enables an eventfd to be triggered when an EOI is
+> > written for a specified irqchip pin.  By default this is a simple
+> > notification, but we can also tie the eoifd to a level irqfd, which
+> > enables the irqchip pin to be automatically de-asserted on EOI.
+> > This mode is particularly useful for device-assignment applications
+> > where the unmask and notify triggers a hardware unmask.  The default
+> > mode is most applicable to simple notify with no side-effects for
+> > userspace usage, such as Qemu.
+> > 
+> > Here we make use of the reference counting of the _irq_source
+> > object allowing us to share it with an irqfd and cleanup regardless
+> > of the release order.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> > 
+> >  Documentation/virtual/kvm/api.txt |   24 +++++
+> >  arch/x86/kvm/x86.c                |    1 
+> >  include/linux/kvm.h               |   14 +++
+> >  include/linux/kvm_host.h          |   13 +++
+> >  virt/kvm/eventfd.c                |  189 +++++++++++++++++++++++++++++++++++++
+> >  virt/kvm/kvm_main.c               |   11 ++
+> >  6 files changed, 250 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > index b216709..87a2558 100644
+> > --- a/Documentation/virtual/kvm/api.txt
+> > +++ b/Documentation/virtual/kvm/api.txt
+> > @@ -1987,6 +1987,30 @@ interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+> >  with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+> >  KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> >  
+> > +4.77 KVM_EOIFD
+> > +
+> > +Capability: KVM_CAP_EOIFD
+> > +Architectures: x86
+> > +Type: vm ioctl
+> > +Parameters: struct kvm_eoifd (in)
+> > +Returns: 0 on success, -1 on error
+> > +
+> > +KVM_EOIFD allows userspace to receive EOI notification through an
+> > +eventfd for level triggered irqchip interrupts.  Behavior for edge
+> > +triggered interrupts is undefined.  kvm_eoifd.fd specifies the eventfd
+> Lets make it defined. EOI notification can be used by userspace to fix
+> time drift due to lost interrupts. But than userspace needs to know
+> which vcpu did EOI.
 
-I wrote the simple fix for eliminatng wrong usage of "clock":
-https://github.com/mitake/linux/commit/b7836d41deff430c16058ca729120dccfa41e74e
+Hmm, do we need an additional flag and field in kvm_eoifd to filter by
+vCPU then?
 
-This patch assumes the change made by the Namhyung's patch. So I'm
-planning to send this after the Namhyung's patch is applied to tip
-tree. Or should the patches be unified before applied?
+> Also see question below.
+> 
+...
+> > +
+> > +static int kvm_assign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
+> > +{
+> > +	struct eventfd_ctx *eventfd;
+> > +	struct _eoifd *eoifd, *tmp;
+> > +	struct _irq_source *source = NULL;
+> > +
+> > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
+> > +		source = get_irq_source_from_irqfd(kvm, args->irqfd);
+> > +		if (IS_ERR(source))
+> > +			return PTR_ERR(source);
+> > +	}
+> > +
+> Shouldn't you check that eoifd->gsi == irqfd->gsi?
+
+Yes I should.  Thanks,
+
+Alex
 
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
