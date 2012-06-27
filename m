@@ -1,135 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab2F0GBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 02:01:21 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:47613 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab2F0GBT (ORCPT
+	id S1756173Ab2F0GGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 02:06:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60105 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab2F0GGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 02:01:19 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmFGAFeg6k9V5qg+PGdsb2JhbABFihWsJBkBAQEBNzSCGAEBBAEnExwTAQ8FCwgDDgMDAQIvFCUKDA4TiAYJuVQUiyOFKmADlTGFZoNBiT4
-X-IronPort-AV: E=Sophos;i="4.77,482,1336341600"; 
-   d="scan'208";a="69678736"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 27 Jun 2012 08:04:38 +0200
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/21 v5] Input: atmel_mxt_ts - print all instances when
- dumping objects
-Message-ID: <20120627060438.GA788@polaris.bitmath.org>
-References: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
- <1340693829-18665-10-git-send-email-djkurtz@chromium.org>
+	Wed, 27 Jun 2012 02:06:14 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FEAA2C0.5060804@jp.fujitsu.com>
+Date: Wed, 27 Jun 2012 15:05:52 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340693829-18665-10-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <lenb@kernel.org>, <linux-acpi@vger.kernel.org>, <bhelgaas@google.com>,
+        <shuahkhan@gmail.com>, <liuj97@gmail.com>, <andi@firstfloor.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 5/6] ACPI: Add _OST support for ACPI container hotplug
+References: <1340743374-18535-1-git-send-email-toshi.kani@hp.com> <1340743374-18535-6-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1340743374-18535-6-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-> For objects with multiple instances, dump them all, prepending each with
-> its "Instance #".
+2012/06/27 5:42, Toshi Kani wrote:
+> Changed container_notify_cb() to call ACPI _OST method when ACPI
+> container hotplug operation has completed. Slightly restructured
+> the code with the same logic except that the hot-add case will
+> fail a request whenever device is set. This makes the error check
+> to be more comprehensive.
 > 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
+> The function sets eject_pending bit for an eject request since it
+> does not initiate hot-remove operation. This bit is checked by the
+> sysfs eject handler to determine if the request is originated from
+> an ACPI eject notification.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 
-The number of nested for loops is in the red here... How about this
-(untested) version instead?
+Thank you for updating the change log.
 
-Thanks,
-Henrik
-
->From 7e1ae92ac21abb6215df7b0714ca809fb86116c3 Mon Sep 17 00:00:00 2001
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Tue, 26 Jun 2012 14:56:57 +0800
-Subject: [PATCH] Input: atmel_mxt_ts - print all instances when dumping
- objects
-
-For objects with multiple instances, dump them all, prepending each with
-its "Instance #".
-
-[rydberg@euromail.se: break out mxt_print_instance()]
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/touchscreen/atmel_mxt_ts.c | 36 +++++++++++++++++++++++---------
- 1 file changed, 26 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index c8cfd7b..5609372 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -877,6 +877,25 @@ static void mxt_calc_resolution(struct mxt_data *data)
- 	}
- }
- 
-+static int mxt_print_instance(char *buf, int count,
-+			      struct mxt_object *object, int i,
-+			      const u8 *val)
-+{
-+	int j;
-+
-+	if (object->instances > 0)
-+		count += scnprintf(buf + count, PAGE_SIZE - count,
-+				   "Instance %u\n", i);
-+
-+	for (j = 0; j < object->size + 1; j++)
-+		count += scnprintf(buf + count, PAGE_SIZE - count,
-+				   "\t[%2u]: %02x (%d)\n", j, val[j], val[j]);
-+
-+	count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
-+
-+	return count;
-+}
-+
- static ssize_t mxt_object_show(struct device *dev,
- 				    struct device_attribute *attr, char *buf)
- {
-@@ -885,7 +904,6 @@ static ssize_t mxt_object_show(struct device *dev,
- 	int count = 0;
- 	int i, j;
- 	int error;
--	u8 val;
- 	u8 *obuf;
- 
- 	/* Pre-allocate buffer large enough to hold max sized object. */
-@@ -903,18 +921,16 @@ static ssize_t mxt_object_show(struct device *dev,
- 		count += scnprintf(buf + count, PAGE_SIZE - count,
- 				"T%u:\n", object->type);
- 
--		error = __mxt_read_reg(data->client, object->start_address,
--				object->size + 1, obuf);
--		if (error)
--			break;
-+		for (j = 0; j < object->instances + 1; j++) {
-+			u16 size = object->size + 1;
-+			u16 addr = object->start_address + j * size;
- 
--		for (j = 0; j < object->size + 1; j++) {
--			val = obuf[j];
-+			error = __mxt_read_reg(data->client, addr, size, obuf);
-+			if (error)
-+				break;
- 
--			count += scnprintf(buf + count, PAGE_SIZE - count,
--					"\t[%2d]: %02x (%d)\n", j, val, val);
-+			count = mxt_print_instance(buf, count, object, j, obuf);
- 		}
--		count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
- 	}
- 
- 	kfree(obuf);
--- 
-1.7.11
+Reviewed-by: <isimatu.yasuaki@jp.fujitsu.com>
 
