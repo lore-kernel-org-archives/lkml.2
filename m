@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab2F0Skd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:40:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41854 "EHLO mx1.redhat.com"
+	id S1756951Ab2F0Sko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:40:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14132 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752581Ab2F0Skb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:40:31 -0400
-Date: Wed, 27 Jun 2012 20:37:57 +0200
+	id S1756606Ab2F0Skl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 14:40:41 -0400
+Date: Wed, 27 Jun 2012 20:38:28 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -15,8 +15,8 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         linux-security-module@vger.kernel.org,
         linux-kernel <linux-kernel@vger.kernel.org>,
         David Howells <dhowells@redhat.com>
-Subject: [PATCH 2/4] task_work: don't rely on PF_EXITING
-Message-ID: <20120627183757.GC23086@redhat.com>
+Subject: [PATCH 4/4] task_work: kill task_work->data
+Message-ID: <20120627183828.GE23086@redhat.com>
 References: <1340369098.2464.20.camel@falcor> <20120623092049.GH14083@ZenIV.linux.org.uk> <20120623194505.GI14083@ZenIV.linux.org.uk> <20120623203800.GA10306@redhat.com> <20120623210141.GK14083@ZenIV.linux.org.uk> <20120624041652.GN14083@ZenIV.linux.org.uk> <20120624153310.GB24596@redhat.com> <20120625060357.GT14083@ZenIV.linux.org.uk> <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,99 +27,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_work_add() checks PF_EXITING to ensure it can't insert the new
-twork after exit_task_work(). This means that the exiting task can
-not use it after exit_signals().
+Kill task_work->data, this makes sizeof(task_work) == sizeof(rcu_head).
 
-Change task_work_add() and task_work_run() to use the fake
-TWORK_EXITED pointer to synchronize with each other, now we can
-move exit_task_work() down and make task_work_add() more useful.
+Turn cred->rcu into rcu_head/task_work union for keyctl_session_to_parent().
 
-Unfortunately, this means that the exiting task needs to take
-pi_lock unconditionally.
-
+Suggested-by: Al Viro <viro@ZenIV.linux.org.uk>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/task_work.h |    6 ++----
- kernel/task_work.c        |   15 ++++++++-------
- 2 files changed, 10 insertions(+), 11 deletions(-)
+ include/linux/cred.h         |    6 +++++-
+ include/linux/task_work.h    |    4 +---
+ kernel/irq/manage.c          |    2 +-
+ security/keys/keyctl.c       |   31 +++++++++++--------------------
+ security/keys/process_keys.c |    3 +--
+ 5 files changed, 19 insertions(+), 27 deletions(-)
 
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index ebbed2c..a24c353 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -18,6 +18,7 @@
+ #include <linux/selinux.h>
+ #include <linux/atomic.h>
+ #include <linux/uidgid.h>
++#include <linux/task_work.h>
+ 
+ struct user_struct;
+ struct cred;
+@@ -149,7 +150,10 @@ struct cred {
+ 	struct user_struct *user;	/* real user ID subscription */
+ 	struct user_namespace *user_ns; /* user_ns the caps and keyrings are relative to. */
+ 	struct group_info *group_info;	/* supplementary groups for euid/fsgid */
+-	struct rcu_head	rcu;		/* RCU deletion hook */
++	union {
++		struct rcu_head	rcu;	/* RCU deletion hook */
++		struct task_work twork;	/* keyctl_session_to_parent() */
++	};
+ };
+ 
+ extern void __put_cred(struct cred *);
 diff --git a/include/linux/task_work.h b/include/linux/task_work.h
-index 03640fb..ef70b01 100644
+index ef70b01..09e470d 100644
 --- a/include/linux/task_work.h
 +++ b/include/linux/task_work.h
-@@ -1,9 +1,8 @@
- #ifndef _LINUX_TASK_WORK_H
- #define _LINUX_TASK_WORK_H
- 
--#include <linux/sched.h>
--
- struct task_work;
-+struct task_struct;
- typedef void (*task_work_func_t)(struct task_work *);
- 
+@@ -8,14 +8,12 @@ typedef void (*task_work_func_t)(struct task_work *);
  struct task_work {
-@@ -25,8 +24,7 @@ void task_work_run(void);
+ 	struct task_work *next;
+ 	task_work_func_t func;
+-	void *data;
+ };
  
- static inline void exit_task_work(struct task_struct *task)
+ static inline void
+-init_task_work(struct task_work *twork, task_work_func_t func, void *data)
++init_task_work(struct task_work *twork, task_work_func_t func)
  {
--	if (unlikely(task->last_twork))
--		task_work_run();
-+	task_work_run();
+ 	twork->func = func;
+-	twork->data = data;
  }
  
- #endif	/* _LINUX_TASK_WORK_H */
-diff --git a/kernel/task_work.c b/kernel/task_work.c
-index a0a3133..b2ff3b7 100644
---- a/kernel/task_work.c
-+++ b/kernel/task_work.c
-@@ -6,6 +6,8 @@
-  * task->last_twork points to the last node in the circular single-linked list.
-  */
+ int task_work_add(struct task_struct *task, struct task_work *twork, bool);
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 8c54823..d1dd547 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -830,7 +830,7 @@ static int irq_thread(void *data)
  
-+#define TWORK_EXITED	((struct task_work *)1)
-+
- int
- task_work_add(struct task_struct *task, struct task_work *twork, bool notify)
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+ 
+-	init_task_work(&on_exit_work, irq_thread_dtor, NULL);
++	init_task_work(&on_exit_work, irq_thread_dtor);
+ 	task_work_add(current, &on_exit_work, false);
+ 
+ 	while (!irq_wait_for_interrupt(action)) {
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index 0f5b3f0..f221cab 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1456,8 +1456,8 @@ long keyctl_session_to_parent(void)
  {
-@@ -18,12 +20,11 @@ task_work_add(struct task_struct *task, struct task_work *twork, bool notify)
- 		return -ENOTSUPP;
- #endif
- 	/*
--	 * We must not insert the new work if the task has already passed
--	 * exit_task_work(). We rely on do_exit()->raw_spin_unlock_wait()
--	 * and check PF_EXITING under pi_lock.
-+	 * We must not insert the new work if the exiting task has already
-+	 * passed task_work_run().
- 	 */
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
--	if (likely(!(task->flags & PF_EXITING))) {
-+	if (likely(task->last_twork != TWORK_EXITED)) {
- 		last = task->last_twork ?: twork;
- 		task->last_twork = twork;
- 		twork->next = last->next;
-@@ -46,7 +47,7 @@ task_work_cancel(struct task_struct *task, task_work_func_t func)
+ 	struct task_struct *me, *parent;
+ 	const struct cred *mycred, *pcred;
+-	struct task_work *newwork, *oldwork;
+ 	key_ref_t keyring_r;
++	struct task_work *oldwork;
+ 	struct cred *cred;
+ 	int ret;
  
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 	last = task->last_twork;
--	if (last) {
-+	if (last && last != TWORK_EXITED) {
- 		twork = last;
- 		do {
- 			prev = twork;
-@@ -77,10 +78,10 @@ void task_work_run(void)
+@@ -1465,20 +1465,16 @@ long keyctl_session_to_parent(void)
+ 	if (IS_ERR(keyring_r))
+ 		return PTR_ERR(keyring_r);
  
- 	raw_spin_lock_irq(&task->pi_lock);
- 	last = task->last_twork;
--	task->last_twork = NULL;
-+	task->last_twork = (task->flags & PF_EXITING) ? TWORK_EXITED : NULL;
- 	raw_spin_unlock_irq(&task->pi_lock);
+-	ret = -ENOMEM;
+-	newwork = kmalloc(sizeof(struct task_work), GFP_KERNEL);
+-	if (!newwork)
+-		goto error_keyring;
+-
+ 	/* our parent is going to need a new cred struct, a new tgcred struct
+ 	 * and new security data, so we allocate them here to prevent ENOMEM in
+ 	 * our parent */
++	ret = -ENOMEM;
+ 	cred = cred_alloc_blank();
+ 	if (!cred)
+-		goto error_newwork;
++		goto error_keyring;
  
--	if (unlikely(!last))
-+	if (!last)
+ 	cred->tgcred->session_keyring = key_ref_to_ptr(keyring_r);
+-	init_task_work(newwork, key_change_session_keyring, cred);
++	init_task_work(&cred->twork, key_change_session_keyring);
+ 
+ 	me = current;
+ 	rcu_read_lock();
+@@ -1527,24 +1523,19 @@ long keyctl_session_to_parent(void)
+ 
+ 	/* the replacement session keyring is applied just prior to userspace
+ 	 * restarting */
+-	ret = task_work_add(parent, newwork, true);
++	ret = task_work_add(parent, &cred->twork, true);
+ 	if (!ret)
+-		newwork = NULL;
++		cred = NULL;
+ unlock:
+ 	write_unlock_irq(&tasklist_lock);
+ 	rcu_read_unlock();
+-	if (oldwork) {
+-		put_cred(oldwork->data);
+-		kfree(oldwork);
+-	}
+-	if (newwork) {
+-		put_cred(newwork->data);
+-		kfree(newwork);
+-	}
++
++	if (oldwork)
++		put_cred(container_of(oldwork, struct cred, twork));
++	if (cred)
++		put_cred(cred);
+ 	return ret;
+ 
+-error_newwork:
+-	kfree(newwork);
+ error_keyring:
+ 	key_ref_put(keyring_r);
+ 	return ret;
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 4ad54ee..01303c2 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -837,9 +837,8 @@ error:
+ void key_change_session_keyring(struct task_work *twork)
+ {
+ 	const struct cred *old = current_cred();
+-	struct cred *new = twork->data;
++	struct cred *new = container_of(twork, struct cred, twork);
+ 
+-	kfree(twork);
+ 	if (unlikely(current->flags & PF_EXITING)) {
+ 		put_cred(new);
  		return;
- 
- 	next = last->next;
 -- 
 1.5.5.1
 
