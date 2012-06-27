@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab2F0W13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:27:29 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:55281 "EHLO
+	id S932351Ab2F0W1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:27:25 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:55283 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932231Ab2F0W1W (ORCPT
+	with ESMTP id S932330Ab2F0W1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:27:22 -0400
+	Wed, 27 Jun 2012 18:27:23 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com, aletes.xgr@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 8/8] ARM: LPC32xx: Remove unused gpios
-Date: Thu, 28 Jun 2012 00:26:18 +0200
-Message-Id: <1340835978-20331-9-git-send-email-stigge@antcom.de>
+Subject: [PATCH 1/8] ARM: LPC32xx: Init MMC via clock
+Date: Thu, 28 Jun 2012 00:26:11 +0200
+Message-Id: <1340835978-20331-2-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1340835978-20331-1-git-send-email-stigge@antcom.de>
 References: <1340835978-20331-1-git-send-email-stigge@antcom.de>
@@ -23,28 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+This patch moves MMC/SD controller initialization from the board specific file
+phy3250.c to clock.c.
 
-Remove SPI0_CS, MMC_CD and MMC_WP gpios as they moved to devicetree.
-
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- arch/arm/mach-lpc32xx/phy3250.c |    3 ---
- 1 file changed, 3 deletions(-)
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
+---
+ arch/arm/mach-lpc32xx/clock.c   |    6 ++++--
+ arch/arm/mach-lpc32xx/phy3250.c |    5 -----
+ 2 files changed, 4 insertions(+), 7 deletions(-)
+
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
++++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
+@@ -812,11 +812,13 @@ static int mmc_onoff_enable(struct clk *
+ 	u32 tmp;
+ 
+ 	tmp = __raw_readl(LPC32XX_CLKPWR_MS_CTRL) &
+-		~LPC32XX_CLKPWR_MSCARD_SDCARD_EN;
++		~(LPC32XX_CLKPWR_MSCARD_SDCARD_EN |
++		  LPC32XX_CLKPWR_MSCARD_MSDIO_PU_EN);
+ 
+ 	/* If rate is 0, disable clock */
+ 	if (enable != 0)
+-		tmp |= LPC32XX_CLKPWR_MSCARD_SDCARD_EN;
++		tmp |= LPC32XX_CLKPWR_MSCARD_SDCARD_EN |
++			LPC32XX_CLKPWR_MSCARD_MSDIO_PU_EN;
+ 
+ 	__raw_writel(tmp, LPC32XX_CLKPWR_MS_CTRL);
+ 
 --- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
 +++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
-@@ -51,12 +51,9 @@
- /*
-  * Mapped GPIOLIB GPIOs
-  */
--#define SPI0_CS_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 5)
- #define LCD_POWER_GPIO		LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 0)
- #define BKL_POWER_GPIO		LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 4)
- #define MMC_PWR_ENABLE_GPIO	LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 5)
--#define MMC_CD_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 1)
--#define MMC_WP_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 0)
+@@ -262,11 +262,6 @@ static void __init lpc3250_machine_init(
  
- /*
-  * AMBA LCD controller
+ 	lpc32xx_serial_init();
+ 
+-	tmp = __raw_readl(LPC32XX_CLKPWR_MS_CTRL);
+-	tmp |= LPC32XX_CLKPWR_MSCARD_SDCARD_EN |
+-		LPC32XX_CLKPWR_MSCARD_MSDIO_PU_EN;
+-	__raw_writel(tmp, LPC32XX_CLKPWR_MS_CTRL);
+-
+ 	/* Test clock needed for UDA1380 initial init */
+ 	__raw_writel(LPC32XX_CLKPWR_TESTCLK2_SEL_MOSC |
+ 		LPC32XX_CLKPWR_TESTCLK_TESTCLK2_EN,
