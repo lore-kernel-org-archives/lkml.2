@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2F0C6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 22:58:11 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:53069 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865Ab2F0C6K (ORCPT
+	id S1755802Ab2F0DCg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 23:02:36 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48488 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab2F0DCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 22:58:10 -0400
-Date: Wed, 27 Jun 2012 02:58:46 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Rob Landley <rob@landley.net>, Miklos Szeredi <mszeredi@suse.cz>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: kernel-parameters.txt remove
- capability.disable
-Message-ID: <20120627025846.GA13155@mail.hallyn.com>
-References: <20120626013402.GC9997@zod.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120626013402.GC9997@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 26 Jun 2012 23:02:35 -0400
+Date: Wed, 27 Jun 2012 13:02:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: linux-next: build failure after merge of the final tree
+ (device-mapper tree related)
+Message-Id: <20120627130221.803b4144284489498aa9b8af@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__27_Jun_2012_13_02_21_+1000_G9PwA3nNnJfe3b3x"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Josh Boyer (jwboyer@redhat.com):
-> Remove the documentation for capability.disable.  The code supporting this
-> parameter was removed with:
-> 
-> 	commit 5915eb53861c5776cfec33ca4fcc1fd20d66dd27
-> 	Author: Miklos Szeredi <mszeredi@suse.cz>
-> 	Date:   Thu Jul 3 20:56:05 2008 +0200
-> 
->     	security: remove dummy module
-> 
-> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+--Signature=_Wed__27_Jun_2012_13_02_21_+1000_G9PwA3nNnJfe3b3x
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks!
+Hi all,
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-> ---
->  Documentation/kernel-parameters.txt |    6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index a92c5eb..9415bcc 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -446,12 +446,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			possible to determine what the correct size should be.
->  			This option provides an override for these situations.
->  
-> -	capability.disable=
-> -			[SECURITY] Disable capabilities.  This would normally
-> -			be used only if an alternative security model is to be
-> -			configured.  Potentially dangerous and should only be
-> -			used if you are entirely sure of the consequences.
-> -
->  	ccw_timeout_log [S390]
->  			See Documentation/s390/CommonIO for details.
->  
-> -- 
-> 1.7.10.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+drivers/md/persistent-data/dm-space-map-checker.c: In function 'ca_create':
+drivers/md/persistent-data/dm-space-map-checker.c:96:3: error: implicit dec=
+laration of function 'vzalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/md/persistent-data/dm-space-map-checker.c:96:14: warning: assignmen=
+t makes pointer from integer without a cast [enabled by default]
+drivers/md/persistent-data/dm-space-map-checker.c: In function 'ca_destroy':
+drivers/md/persistent-data/dm-space-map-checker.c:106:2: error: implicit de=
+claration of function 'vfree' [-Werror=3Dimplicit-function-declaration]
+drivers/md/persistent-data/dm-space-map-checker.c: In function 'ca_extend':
+drivers/md/persistent-data/dm-space-map-checker.c:139:21: warning: initiali=
+zation makes pointer from integer without a cast [enabled by default]
+
+Caused by commit 30ebb0baeef5 ("If CONFIG_DM_DEBUG_SPACE_MAPS is enabled
+and memory is fragmented and a") from the device-mapper tree.  Presumably
+a missing include of vmalloc.h.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__27_Jun_2012_13_02_21_+1000_G9PwA3nNnJfe3b3x
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP6ne9AAoJEECxmPOUX5FEvMcP/02AVFbEbdLkOBcVhMK444XT
+WsCkbDgG8+rvUhNOmPEW+Bmpk60tuJVzYfvb6yua+XTOVJRK/IrJM5KXxF6atTsr
+6FKrDRJUqmqyLYewUVKhnR4ePH0Fp4Ubc1T9BE0Ar28iffmBWt0l26oCDYr/pbX0
+JyY1k9QNgWIDbaaXpUDQ4PvgVUyGvTrrlsmMOQ+E6rVhYHld0EIzPdRtJD8FqyDl
+l93fGcWZ8Ov2UFULGh6MejNwde/ruRF0rZJR9TRbjMTUsvUoOyY+SWtlFWwC6wse
+CXeIcjSQOWuYZwg3Uqm3jCZghSzsgF2IA2xsb1OnfSCE1FZ0X6CS2CpxdkBUhn7j
+nvFck2q9IR+Hn1oBAFOLSi+djYCZVxC2zjo+aLyM8OOsERRKdogxiyhpiko2eOlF
+8EiNSyEZMcAiBtR4OH6xvliIGM4NCVuJnOA2Qo4h1HOw0PL7bWj350VqeYn9cFsX
+Wfi+9rbVwKqXnH66zbTuR9toniP6t+hfKieEABm2nOmZHvvBGotyjb5wbO4z3O8u
+Yq3d8GcOf3AU0sxF1a7YXLuWKtIH9bt0tyr3V5dygBnAiM5SYouMRiyn5x0ZqWtP
+jwbLz6yiIIRfOAhV2IkuT6SGxbLZU4TJM6CHZauDnqu6SNDVteeOGVTnTHe3lsV4
+PfCkT6KBFgoUIPDm6QFP
+=6/ax
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__27_Jun_2012_13_02_21_+1000_G9PwA3nNnJfe3b3x--
