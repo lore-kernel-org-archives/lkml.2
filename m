@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab2F0QQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 12:16:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61507 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754627Ab2F0QQv (ORCPT
+	id S1757979Ab2F0QRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 12:17:37 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:43089 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246Ab2F0QRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 12:16:51 -0400
+	Wed, 27 Jun 2012 12:17:35 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-209.messagelabs.com!1340813843!6641669!16
+X-Originating-IP: [216.166.12.99]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: cb_pcidas: fix dac08_write_insn()
+Date: Wed, 27 Jun 2012 09:17:17 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <4FE9755B.1040905@parallels.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
-	<1340633728-12785-3-git-send-email-glommer@parallels.com>
-	<CABCjUKD0h089StLF8BwVRU-St70Ai9PTw-cjis40_aLLG3MAQQ@mail.gmail.com>
-	<4FE9755B.1040905@parallels.com>
-Date: Wed, 27 Jun 2012 09:16:51 -0700
-Message-ID: <CABCjUKBJ9UewM=LePC89ZUdk4u4rnZXBNH43yN6qZhT8zcfieQ@mail.gmail.com>
-Subject: Re: [PATCH 02/11] memcg: Reclaim when more than one page needed.
-From: Suleiman Souhlal <suleiman@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206270917.19036.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 1:39 AM, Glauber Costa <glommer@parallels.com> wrote:
-> Yeah, forgot to update the changelog =(
->
-> But much more importantly, are you still happy with those changes?
+As pointed out by Ian Abbott, the comedi INSN_WRITE instructions
+are meant to iterate over, and write, all the data[] passed from
+the comedi core. Modify dac08_write_insn() to work as intended.
 
-Yes, I am OK with those changes.
+Since doc08_write_insn() now returns the proper response to the
+core, make the dac08_write() helper return void.
 
-Thanks,
--- Suleiman
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reported-by: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+
+This is an incremental patch based on the previous series to
+cleanup the cb_pcidas driver.
+
+ drivers/staging/comedi/drivers/cb_pcidas.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
+index 3ba75af..301444e 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas.c
+@@ -659,7 +659,7 @@ static int caldac_read_insn(struct comedi_device *dev,
+ }
+ 
+ /* 1602/16 pregain offset */
+-static int dac08_write(struct comedi_device *dev, unsigned int value)
++static void dac08_write(struct comedi_device *dev, unsigned int value)
+ {
+ 	struct cb_pcidas_private *devpriv = dev->private;
+ 	unsigned long cal_reg;
+@@ -680,14 +680,18 @@ static int dac08_write(struct comedi_device *dev, unsigned int value)
+ 		outw(value, cal_reg);
+ 		udelay(1);
+ 	}
+-	return 1;	/* insn->n */
+ }
+ 
+ static int dac08_write_insn(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s,
+ 			    struct comedi_insn *insn, unsigned int *data)
+ {
+-	return dac08_write(dev, data[0]);
++	int i;
++
++	for (i = 0; i < insn->n; i++)
++		dac08_write(dev, data[i]);
++
++	return insn->n;
+ }
+ 
+ static int dac08_read_insn(struct comedi_device *dev,
+-- 
+1.7.11
+
