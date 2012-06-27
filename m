@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab2F0PAK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:00:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42187 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754204Ab2F0PAI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:00:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJRGBZze+hyoj=XepAU3gfSoxzenR1OW+huqGcmF2k3hwMT4kA@mail.gmail.com>
-References: <20120625212312.GA2345@p4.domain>
-	<CAJRGBZze+hyoj=XepAU3gfSoxzenR1OW+huqGcmF2k3hwMT4kA@mail.gmail.com>
-Date: Wed, 27 Jun 2012 23:00:06 +0800
-Message-ID: <CAJRGBZz50QsoWTxGrFxyxoyiy-0-m9evC83dQdLrwTqZbM7oSA@mail.gmail.com>
-Subject: Re: [patch update-v1] a simple hardware detector for latency as well
- as throughput ver. 0.1.0
-From: Luming Yu <luming.yu@gmail.com>
-To: arnd@arndb.de
-Cc: jcm@jonmasters.org, akpm@linux-foundation.org,
+	id S1757545Ab2F0PAy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:00:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754336Ab2F0PAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 11:00:52 -0400
+Date: Wed, 27 Jun 2012 18:00:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] kvm: don't clear level from irqfd
+Message-ID: <20120627150056.GB21241@redhat.com>
+References: <20120627091343.GA17693@redhat.com>
+ <20120627100345.GA6533@redhat.com>
+ <20120627102024.GA17922@redhat.com>
+ <20120627102254.GB6533@redhat.com>
+ <20120627113843.GB17922@redhat.com>
+ <1340808117.1207.215.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340808117.1207.215.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 25, 2012 at 9:37 PM, Luming Yu <luming.yu@gmail.com> wrote:
-> On Tue, Jun 26, 2012 at 5:23 AM, Luming Yu <luming.yu@gmail.com> wrote:
->> The patch is the fist step to test some basic hardware functions like
->> TSC to help people understand if there is any hardware latency as well
->> as throughput problem exposed on bare metal or left behind by BIOS or
->> interfered by SMI. Currently the patch tests TSC, CPU Frequency, and
->> RDRAND, which is a new CPU instruction to get random number introudced
->> in new CPU like Intel Ivy Bridge, in stop_machine context.
->>
->> The tsc samples (ns) below are from a P4 system. You can change from 0
->> to 1000 in /sys/kernel/debug/hw_atency_test/threshold to TSC sample at ms.
->
-> typo.
->
-> s/ms/us/
->
->>
->> [root@p4 linux]# rmmod hw_latency_test
->> [root@p4 linux]# insmod drivers/misc/hw_latency_test.ko
->> [root@p4 linux]# echo tsc > /sys/kernel/debug/hw_latency_test/current
->> [root@p4 linux]# echo 1 > /sys/kernel/debug/hw_latency_test/enable
->> [root@p4 linux]# cat /sys/kernel/debug/hw_latency_test/sample
->> 1340657264.0434121340   388
->> 1340657264.0935125912   379
->> 1340657265.0436123548   404
->> 1340657265.0937122432   441
->> ....
->> ^C
->> [root@p4 linux]# echo 0 > /sys/kernel/debug/hw_latency_test/enable
->>
->> Signed-off-by: Luming  Yu <luming.yu@intel.com>
->> ---
->> I will add more tests after the first patch gets merged for those guys
->> who want to directly play with new hardware functions, and latency and
->> bandwidth is concern, or simply out of curiosity. The patch is based on
->> hardware latency dector written by Jcm in RT-tree. I assume I can add
->> Jcm's signed off here.
->>
->>
->>  drivers/misc/Kconfig           |    7 +
->>  drivers/misc/Makefile          |    2 +
->>  drivers/misc/hw_latency_test.c |  833 ++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 842 insertions(+), 0 deletions(-)
->>
->>
->> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
->> index c779509..a5216b5 100644
->> --- a/drivers/misc/Kconfig
->> +++ b/drivers/misc/Kconfig
->> @@ -123,6 +123,13 @@ config IBM_ASM
->>          for information on the specific driver level and support statement
->>          for your IBM server.
->>
->> +config HW_LATENCY_TEST
->> +       tristate "Testing module to detect hardware lattency and throughput"
->> +       depends on DEBUG_FS
->> +       depends on RING_BUFFER
->> +       depends on X86
+On Wed, Jun 27, 2012 at 08:41:57AM -0600, Alex Williamson wrote:
+> On Wed, 2012-06-27 at 14:38 +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jun 27, 2012 at 01:22:54PM +0300, Gleb Natapov wrote:
+> > > On Wed, Jun 27, 2012 at 01:20:24PM +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, Jun 27, 2012 at 01:03:46PM +0300, Gleb Natapov wrote:
+> > > > > On Wed, Jun 27, 2012 at 12:13:43PM +0300, Michael S. Tsirkin wrote:
+> > > > > > irqfd sets and clears the level immediately.
+> > > > > > This used to be necessary for MSI interrupts but isn't anymore.
+> > > > > > 
+> > > > > > Note! We never officially supported irqfd for level
+> > > > > > interrupts but it usually seemed to kind of work,
+> > > > > > and this change will break it. There are no known
+> > > > > > real users of that feature though - only old vfio prototypes.
+> > > > > > Removing this line will make it easier to add
+> > > > > > real support for level irqfds in the future.
+> > > > > > 
+> > > > > Did we officially supported irqfd for ioapic/pic edge interrupts?
+> > > > > Because those will break to.
+> > > > 
+> > > > Hard to say - as Alex points out it was never documented.
+> > > If we will start dropping everything that was never documented we will
+> > > hardly have working VMM at the end :)
+> > 
+> > Generally true.
+> > 
+> > However I just realized that this interface does not work
+> > reliably for ioapic/pic edge either. More or less for the same reason that
+> > it does not work for edge: we set bit in IRR, try to inject,
+> > then clear even if injection failed (e.g. because it is low
+> > priority). Guest will never get an interrupt in this case.
+> > 
+> > So what happened e.g. for Alex's vfio prototype is he never
+> > hit an interrupt window in light testing.
+> > 
+> > What we would need to do to fix it is:
+> > > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > 
+> > Which will fix edge but break level same as this patch.
+> > But is it worth fixing? Maybe declare it broken and be
+> > done with it?
+> 
+> Ugh, so if I understand correctly, the case where kvm_set_irq() returns
+> <0, we're broken.
 
-I begun the tool on X86, but bear in mind that use standard kernel interface
-as much as possible. I was trying to measure CPU Frequency, but the use of
-calibrate_tsc forced me add a X86 dependency here.
+Gleb says it's not broken. Maybe I misread the code.
+Need more investigation.
 
-Other finding is recalibrate_cpu_khz() is a null function in SMP.
-But the only two users (p4-clockmod.c and powernow-k7.c) themselves
-could lack of users roo these days.
-
-Let me know if there are any other comments.
-
-My plan for the tool is to push it in 3.6 or 3.7. So I will routinely
-get back to the thread probably weekly or bi-weekly in the time frame.
-:-)
-The 0.2 will based on what I can see in upstream of the tool.
-
-Thanks!!!
+>  VFIO has masked the physical device and has no error
+> path to know that the interrupt inject was unsuccessful.  We almost need
+> an error eventfd that bounces the interrupt back to userspace for the
+> qemu interrupt model to handle, but that has it's own set of
+> complications.  Suggestions?  Declaring the interface broken isn't very
+> useful.  Thanks,
+> 
+> Alex
