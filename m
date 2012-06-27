@@ -1,146 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab2F0NDz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 09:03:55 -0400
-Received: from www.piware.de ([213.9.93.70]:35318 "EHLO mail.piware.de"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab2F0NDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 09:03:54 -0400
-Date: Wed, 27 Jun 2012 15:03:49 +0200
-From: Martin Pitt <martin.pitt@ubuntu.com>
-To: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Zeuthen <zeuthen@gmail.com>,
-        Kay Sievers <kay@vrfy.org>
-Subject: [PATCH v2 1/1] [SCSI] scsi_debug: Add "removable" parameter
-Message-ID: <20120627130349.GB3307@piware.de>
-References: <20120605072528.GE3043@piware.de>
+	id S1752046Ab2F0NGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 09:06:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56873 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775Ab2F0NGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 09:06:40 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH] acpi: intel_idle : break dependency between modules
+Date: Wed, 27 Jun 2012 15:06:28 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
+Cc: srivatsa.bhat@linux.vnet.ibm.com, deepthi@linux.vnet.ibm.com,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-pm@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+References: <201206261301.25550.trenn@suse.de> <1340788068-16422-1-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1340788068-16422-1-git-send-email-daniel.lezcano@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120605072528.GE3043@piware.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206271506.29034.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add "removable" module parameter to set the "removable" attribute of any
-subsequently created debug block device. It is a writable driver option, so
-that you can switch between removable and "fixed" media block devices in
-between the add_host calls.
+Hi,
 
-This is useful for being able to test the different behaviour/required
-privileges in e. g. the udisks test suite.
+I agree that such a dependency between 2 modules is not
+nice. But your patch will have bad side-effects (see comments
+embedded below).
 
-Signed-off-by: Martin Pitt <martin.pitt@ubuntu.com>
-Acked-By: David Zeuthen <zeuthen@gmail.com>
----
- drivers/scsi/scsi_debug.c |   30 +++++++++++++++++++++++++++---
- 1 files changed, 27 insertions(+), 3 deletions(-)
+On Wednesday, June 27, 2012 11:07:48 AM Daniel Lezcano wrote:
+> When the system is booted with some cpus offline, the idle
+> driver is not initialized. When a cpu is set online, the
+> acpi code call the intel idle init function. Unfortunately
+> this code introduce a dependency between intel_idle and acpi.
+> 
+> This patch is intended to remove this dependency by using the
+> notifier of intel_idle. In order to make it work, the notifier
+> must be initialized in the right order, acpi then intel_idle.
+> This is done in the Makefile. This patch has the benefit of
+> encapsulating the intel_idle driver and remove some exported
+> functions.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  drivers/Makefile                |    3 ++-
+>  drivers/acpi/processor_driver.c |    7 -------
+>  drivers/idle/intel_idle.c       |   22 ++++++++++++++--------
+>  include/linux/cpuidle.h         |    7 -------
+>  4 files changed, 16 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 2ba29ff..a2454b8 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -12,8 +12,9 @@ obj-$(CONFIG_PCI)		+= pci/
+>  obj-$(CONFIG_PARISC)		+= parisc/
+>  obj-$(CONFIG_RAPIDIO)		+= rapidio/
+>  obj-y				+= video/
+> -obj-y				+= idle/
+> +# acpi must come before idle for initialization
+>  obj-$(CONFIG_ACPI)		+= acpi/
+> +obj-y				+= idle/
+This breaks intel_idle.
+Loading order defines which one comes first and is used: intel_idle
+or ACPI processor cpuidle driver.
+With above, one would get acpi_idle cpuidle driver if both are
+compiled in, instead of the intel_idle one.
 
-diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-index 182d5a5..57fbd5a 100644
---- a/drivers/scsi/scsi_debug.c
-+++ b/drivers/scsi/scsi_debug.c
-@@ -109,6 +109,7 @@ static const char * scsi_debug_version_date = "20100324";
- #define DEF_OPT_BLKS 64
- #define DEF_PHYSBLK_EXP 0
- #define DEF_PTYPE   0
-+#define DEF_REMOVABLE false
- #define DEF_SCSI_LEVEL   5    /* INQUIRY, byte2 [5->SPC-3] */
- #define DEF_SECTOR_SIZE 512
- #define DEF_UNMAP_ALIGNMENT 0
-@@ -193,11 +194,11 @@ static unsigned int scsi_debug_unmap_granularity = DEF_UNMAP_GRANULARITY;
- static unsigned int scsi_debug_unmap_max_blocks = DEF_UNMAP_MAX_BLOCKS;
- static unsigned int scsi_debug_unmap_max_desc = DEF_UNMAP_MAX_DESC;
- static unsigned int scsi_debug_write_same_length = DEF_WRITESAME_LENGTH;
-+static bool scsi_debug_removable = DEF_REMOVABLE;
- 
- static int scsi_debug_cmnd_count = 0;
- 
- #define DEV_READONLY(TGT)      (0)
--#define DEV_REMOVEABLE(TGT)    (0)
- 
- static unsigned int sdebug_store_sectors;
- static sector_t sdebug_capacity;	/* in sectors */
-@@ -919,7 +920,7 @@ static int resp_inquiry(struct scsi_cmnd * scp, int target,
- 		return ret;
- 	}
- 	/* drops through here for a standard inquiry */
--	arr[1] = DEV_REMOVEABLE(target) ? 0x80 : 0;	/* Removable disk */
-+	arr[1] = scsi_debug_removable ? 0x80 : 0;	/* Removable disk */
- 	arr[2] = scsi_debug_scsi_level;
- 	arr[3] = 2;    /* response_data_format==2 */
- 	arr[4] = SDEBUG_LONG_INQ_SZ - 5;
-@@ -1211,7 +1212,7 @@ static int resp_format_pg(unsigned char * p, int pcontrol, int target)
- 	p[11] = sdebug_sectors_per & 0xff;
- 	p[12] = (scsi_debug_sector_size >> 8) & 0xff;
- 	p[13] = scsi_debug_sector_size & 0xff;
--	if (DEV_REMOVEABLE(target))
-+	if (scsi_debug_removable)
- 		p[20] |= 0x20; /* should agree with INQUIRY */
- 	if (1 == pcontrol)
- 		memset(p + 2, 0, sizeof(format_pg) - 2);
-@@ -2754,6 +2755,7 @@ module_param_named(opt_blks, scsi_debug_opt_blks, int, S_IRUGO);
- module_param_named(opts, scsi_debug_opts, int, S_IRUGO | S_IWUSR);
- module_param_named(physblk_exp, scsi_debug_physblk_exp, int, S_IRUGO);
- module_param_named(ptype, scsi_debug_ptype, int, S_IRUGO | S_IWUSR);
-+module_param_named(removable, scsi_debug_removable, bool, S_IRUGO | S_IWUSR);
- module_param_named(scsi_level, scsi_debug_scsi_level, int, S_IRUGO);
- module_param_named(sector_size, scsi_debug_sector_size, int, S_IRUGO);
- module_param_named(unmap_alignment, scsi_debug_unmap_alignment, int, S_IRUGO);
-@@ -2796,6 +2798,7 @@ MODULE_PARM_DESC(opt_blks, "optimal transfer length in block (def=64)");
- MODULE_PARM_DESC(opts, "1->noise, 2->medium_err, 4->timeout, 8->recovered_err... (def=0)");
- MODULE_PARM_DESC(physblk_exp, "physical block exponent (def=0)");
- MODULE_PARM_DESC(ptype, "SCSI peripheral type(def=0[disk])");
-+MODULE_PARM_DESC(removable, "claim to have removable media (def=0)");
- MODULE_PARM_DESC(scsi_level, "SCSI level to simulate(def=5[SPC-3])");
- MODULE_PARM_DESC(sector_size, "logical block size in bytes (def=512)");
- MODULE_PARM_DESC(unmap_alignment, "lowest aligned thin provisioning lba (def=0)");
-@@ -3205,6 +3208,25 @@ static ssize_t sdebug_map_show(struct device_driver *ddp, char *buf)
- }
- DRIVER_ATTR(map, S_IRUGO, sdebug_map_show, NULL);
- 
-+static ssize_t sdebug_removable_show(struct device_driver *ddp,
-+				     char *buf)
-+{
-+	return scnprintf(buf, PAGE_SIZE, "%d\n", scsi_debug_removable ? 1 : 0);
-+}
-+static ssize_t sdebug_removable_store(struct device_driver *ddp,
-+				      const char *buf, size_t count)
-+{
-+	int n;
-+
-+	if ((count > 0) && (1 == sscanf(buf, "%d", &n)) && (n >= 0)) {
-+		scsi_debug_removable = (n > 0);
-+		return count;
-+	}
-+	return -EINVAL;
-+}
-+DRIVER_ATTR(removable, S_IRUGO | S_IWUSR, sdebug_removable_show,
-+	    sdebug_removable_store);
-+
- 
- /* Note: The following function creates attribute files in the
-    /sys/bus/pseudo/drivers/scsi_debug directory. The advantage of these
-@@ -3230,6 +3252,7 @@ static int do_create_driverfs_files(void)
- 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_num_tgts);
- 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_ptype);
- 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_opts);
-+	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_removable);
- 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_scsi_level);
- 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_virtual_gb);
- 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_vpd_use_hostno);
-@@ -3255,6 +3278,7 @@ static void do_remove_driverfs_files(void)
- 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_scsi_level);
- 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_opts);
- 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_ptype);
-+	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_removable);
- 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_num_tgts);
- 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_num_parts);
- 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_no_uld);
--- 
-1.7.2.5
+Why exactly is this necessary, couldn't it just work?
 
--- 
-Martin Pitt                        | http://www.piware.de
-Ubuntu Developer (www.ubuntu.com)  | Debian Developer  (www.debian.org)
+>  obj-$(CONFIG_SFI)		+= sfi/
+>  # PnP must come after ACPI since it will eventually need to check if acpi
+>  # was used and do nothing if so
+> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> index 0734086..8648b29 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -427,18 +427,11 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+>  		 * Initialize missing things
+>  		 */
+>  		if (pr->flags.need_hotplug_init) {
+> -			struct cpuidle_driver *idle_driver =
+> -				cpuidle_get_driver();
+> -
+>  			printk(KERN_INFO "Will online and init hotplugged "
+>  			       "CPU: %d\n", pr->id);
+>  			WARN(acpi_processor_start(pr), "Failed to start CPU:"
+>  				" %d\n", pr->id);
+>  			pr->flags.need_hotplug_init = 0;
+> -			if (idle_driver && !strcmp(idle_driver->name,
+> -						   "intel_idle")) {
+> -				intel_idle_cpu_init(pr->id);
+> -			}
+>  		/* Normal CPU soft online event */
+>  		} else {
+>  			acpi_processor_ppc_has_changed(pr, 0);
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index d0f59c3..4c36039 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -96,6 +96,7 @@ static const struct idle_cpu *icpu;
+>  static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
+>  static int intel_idle(struct cpuidle_device *dev,
+>  			struct cpuidle_driver *drv, int index);
+> +static int intel_idle_cpu_init(int cpu);
+>  
+>  static struct cpuidle_state *cpuidle_state_table;
+>  
+> @@ -302,22 +303,28 @@ static void __setup_broadcast_timer(void *arg)
+>  	clockevents_notify(reason, &cpu);
+>  }
+>  
+> -static int setup_broadcast_cpuhp_notify(struct notifier_block *n,
+> -		unsigned long action, void *hcpu)
+> +static int cpu_hotplug_notify(struct notifier_block *n,
+> +			      unsigned long action, void *hcpu)
+>  {
+>  	int hotcpu = (unsigned long)hcpu;
+> +	struct cpuidle_device *dev;
+>  
+>  	switch (action & 0xf) {
+>  	case CPU_ONLINE:
+>  		smp_call_function_single(hotcpu, __setup_broadcast_timer,
+>  			(void *)true, 1);
+> +
+> +		dev = per_cpu_ptr(intel_idle_cpuidle_devices, hotcpu);
+> +		if (!dev->registered)
+> +			intel_idle_cpu_init(hotcpu);
+> +
+A small comment why this can happen and needs to be done
+(real hotplugged cpu case) might help here later.
+
+>  		break;
+>  	}
+>  	return NOTIFY_OK;
+>  }
+>  
+> -static struct notifier_block setup_broadcast_notifier = {
+> -	.notifier_call = setup_broadcast_cpuhp_notify,
+> +static struct notifier_block cpu_hotplug_notifier = {
+> +	.notifier_call = cpu_hotplug_notify,
+>  };
+>  
+>  static void auto_demotion_disable(void *dummy)
+> @@ -407,7 +414,7 @@ static int intel_idle_probe(void)
+>  		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+>  	else {
+>  		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
+> -		register_cpu_notifier(&setup_broadcast_notifier);
+> +		register_cpu_notifier(&cpu_hotplug_notifier);
+
+The notifier always has to be registered now, not only in:
+if (boot_cpu_has(X86_FEATURE_ARAT))     /* Always Reliable APIC Timer */
+case.
+
+>  	}
+>  
+>  	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+> @@ -494,7 +501,7 @@ static int intel_idle_cpuidle_driver_init(void)
+>   * allocate, initialize, register cpuidle_devices
+>   * @cpu: cpu/core to initialize
+>   */
+> -int intel_idle_cpu_init(int cpu)
+> +static int intel_idle_cpu_init(int cpu)
+>  {
+>  	int cstate;
+>  	struct cpuidle_device *dev;
+> @@ -539,7 +546,6 @@ int intel_idle_cpu_init(int cpu)
+>  
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(intel_idle_cpu_init);
+>  
+>  static int __init intel_idle_init(void)
+>  {
+> @@ -583,7 +589,7 @@ static void __exit intel_idle_exit(void)
+>  
+>  	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE) {
+>  		on_each_cpu(__setup_broadcast_timer, (void *)false, 1);
+> -		unregister_cpu_notifier(&setup_broadcast_notifier);
+> +		unregister_cpu_notifier(&cpu_hotplug_notifier);
+Same.
