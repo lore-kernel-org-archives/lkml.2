@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab2F0Ca1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 22:30:27 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39355 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751159Ab2F0Ca0 (ORCPT
+	id S1755856Ab2F0Ch2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 22:37:28 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53241 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754782Ab2F0Ch1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 22:30:26 -0400
-X-Sasl-enc: BAs4GIGxjg7GiMAOsPDWLh6KHtEj7/kqSGTNBfgd168k 1340764225
-Date: Tue, 26 Jun 2012 19:30:24 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 06/12] 8250: use the 8250 register interface not the
- legacy one
-Message-ID: <20120627023024.GA13576@kroah.com>
-References: <20120622153600.1405.15575.stgit@localhost.localdomain>
- <20120622154333.1405.21372.stgit@localhost.localdomain>
+	Tue, 26 Jun 2012 22:37:27 -0400
+X-AuditID: 9c930179-b7befae000006417-13-4fea71dd54e9
+Message-ID: <4FEA71E5.5090808@kernel.org>
+Date: Wed, 27 Jun 2012 11:37:25 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120622154333.1405.21372.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.drivers.driver-project.devel,gmane.linux.kernel,gmane.linux.kernel.mm
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 1/3] zram/zcache: swtich Kconfig dependency from X86 to
+ ZSMALLOC
+References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-2-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1340640878-27536-2-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 04:43:51PM +0100, Alan Cox wrote:
-> @@ -69,7 +69,6 @@ struct uart_port;
->  struct uart_8250_port;
->  
->  int serial8250_register_8250_port(struct uart_8250_port *);
-> -int serial8250_register_port(struct uart_port *);
+On 06/26/2012 01:14 AM, Seth Jennings wrote:
 
-There are still in-kernel callers of this function, so I don't think
-it's safe to remove just yet, otherwise the build will break:
+> This patch switches zcache and zram dependency to ZSMALLOC
+> rather than X86.  There is no net change since ZSMALLOC
+> depends on X86, however, this prevent further changes to
+> these files as zsmalloc dependencies change.
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-drivers/char/mwave/mwavedd.c:   return serial8250_register_port(&uart);
-drivers/misc/ibmasm/uart.c:     sp->serial_line = serial8250_register_port(&uport);
-drivers/net/ethernet/sgi/ioc3-eth.c:    serial8250_register_port(&port);
-drivers/tty/serial/of_serial.c:         ret = serial8250_register_port(&port);
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-I'm stopping here on this series, I've only applied the one that added
-the comment, that seems to be the only one that compiled properly :(
+It could be merged regardless of other patches in this series.
 
-Care to redo these please?
-
-thanks,
-
-greg k-h
+-- 
+Kind regards,
+Minchan Kim
