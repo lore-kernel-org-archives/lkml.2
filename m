@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab2F0FI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 01:08:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46091 "EHLO mx1.redhat.com"
+	id S932072Ab2F0FJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 01:09:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3435 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751564Ab2F0FIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 01:08:55 -0400
+	id S1751756Ab2F0FJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 01:09:07 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2 0/6] kvm: level triggered irqfd support
+Subject: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
 To: avi@redhat.com, mst@redhat.com
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Tue, 26 Jun 2012 23:08:52 -0600
-Message-ID: <20120627044758.23698.249.stgit@bling.home>
+Date: Tue, 26 Jun 2012 23:09:04 -0600
+Message-ID: <20120627050858.23698.44118.stgit@bling.home>
+In-Reply-To: <20120627044758.23698.249.stgit@bling.home>
+References: <20120627044758.23698.249.stgit@bling.home>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,46 +22,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, let's see how this flies.  I actually quite like this, so be
-gentle tearing it apart ;)
+Prune this down to just the struct kvm_irqfd so we can avoid
+changing function definition for every flag or field we use.
 
-I just couldn't bring myself to contort KVM_IRQFD into something
-that either sets up an irqfd or specifies a nearly unrelated EOI
-eventfd.  The solution I've come up with, that also avoids exposing
-irq_source_ids to userspace, is to work through the irqfd.  If we
-setup a level irqfd, we can optionally associate an eoifd with
-the same irq_source_id, by passing the irqfd.  To do this, we just
-need to create a new reference counted object for the source ID
-so we don't run into problems ordering release.  This means we
-end up with a KVM_EOIFD ioctl that has both general usefulness and
-can still tie into an irqfd.  In patch 6/6 I also include an
-alternate de-assert mechanism via an irqfd with the opposite
-polarity.  I don't currently use this, but it's pretty trivial
-and at least available in archives now.
-
-I don't address whether injecting an edge irqfd really needs an assert
-followed by de-assert (I don't know).  This new interface really
-unties itself from caring.  We might be able to consolidate inject
-functions at some future point, but it doesn't change how we'd name
-flags as it did in the previous version.  Thanks,
-
-Alex
-
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
-Alex Williamson (6):
-      kvm: Level IRQ de-assert for KVM_IRQFD
-      kvm: KVM_EOIFD, an eventfd for EOIs
-      kvm: Extend irqfd to support level interrupts
-      kvm: Sanitize KVM_IRQFD flags
-      kvm: Add missing KVM_IRQFD API documentation
-      kvm: Pass kvm_irqfd to functions
+ include/linux/kvm_host.h |    4 ++--
+ virt/kvm/eventfd.c       |   20 ++++++++++----------
+ virt/kvm/kvm_main.c      |    2 +-
+ 3 files changed, 13 insertions(+), 13 deletions(-)
 
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 27ac8a4..ae3b426 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -824,7 +824,7 @@ static inline void kvm_free_irq_routing(struct kvm *kvm) {}
+ #ifdef CONFIG_HAVE_KVM_EVENTFD
+ 
+ void kvm_eventfd_init(struct kvm *kvm);
+-int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags);
++int kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args);
+ void kvm_irqfd_release(struct kvm *kvm);
+ void kvm_irq_routing_update(struct kvm *, struct kvm_irq_routing_table *);
+ int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
+@@ -833,7 +833,7 @@ int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
+ 
+ static inline void kvm_eventfd_init(struct kvm *kvm) {}
+ 
+-static inline int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags)
++static inline int kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
+ {
+ 	return -EINVAL;
+ }
+diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+index f59c1e8..c307c24 100644
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -198,7 +198,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
+ }
+ 
+ static int
+-kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
++kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+ {
+ 	struct kvm_irq_routing_table *irq_rt;
+ 	struct _irqfd *irqfd, *tmp;
+@@ -212,12 +212,12 @@ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
+ 		return -ENOMEM;
+ 
+ 	irqfd->kvm = kvm;
+-	irqfd->gsi = gsi;
++	irqfd->gsi = args->gsi;
+ 	INIT_LIST_HEAD(&irqfd->list);
+ 	INIT_WORK(&irqfd->inject, irqfd_inject);
+ 	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
+ 
+-	file = eventfd_fget(fd);
++	file = eventfd_fget(args->fd);
+ 	if (IS_ERR(file)) {
+ 		ret = PTR_ERR(file);
+ 		goto fail;
+@@ -298,19 +298,19 @@ kvm_eventfd_init(struct kvm *kvm)
+  * shutdown any irqfd's that match fd+gsi
+  */
+ static int
+-kvm_irqfd_deassign(struct kvm *kvm, int fd, int gsi)
++kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+ {
+ 	struct _irqfd *irqfd, *tmp;
+ 	struct eventfd_ctx *eventfd;
+ 
+-	eventfd = eventfd_ctx_fdget(fd);
++	eventfd = eventfd_ctx_fdget(args->fd);
+ 	if (IS_ERR(eventfd))
+ 		return PTR_ERR(eventfd);
+ 
+ 	spin_lock_irq(&kvm->irqfds.lock);
+ 
+ 	list_for_each_entry_safe(irqfd, tmp, &kvm->irqfds.items, list) {
+-		if (irqfd->eventfd == eventfd && irqfd->gsi == gsi) {
++		if (irqfd->eventfd == eventfd && irqfd->gsi == args->gsi) {
+ 			/*
+ 			 * This rcu_assign_pointer is needed for when
+ 			 * another thread calls kvm_irq_routing_update before
+@@ -338,12 +338,12 @@ kvm_irqfd_deassign(struct kvm *kvm, int fd, int gsi)
+ }
+ 
+ int
+-kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags)
++kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
+ {
+-	if (flags & KVM_IRQFD_FLAG_DEASSIGN)
+-		return kvm_irqfd_deassign(kvm, fd, gsi);
++	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
++		return kvm_irqfd_deassign(kvm, args);
+ 
+-	return kvm_irqfd_assign(kvm, fd, gsi);
++	return kvm_irqfd_assign(kvm, args);
+ }
+ 
+ /*
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 02cb440..b4ad14cc 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -2059,7 +2059,7 @@ static long kvm_vm_ioctl(struct file *filp,
+ 		r = -EFAULT;
+ 		if (copy_from_user(&data, argp, sizeof data))
+ 			goto out;
+-		r = kvm_irqfd(kvm, data.fd, data.gsi, data.flags);
++		r = kvm_irqfd(kvm, &data);
+ 		break;
+ 	}
+ 	case KVM_IOEVENTFD: {
 
- Documentation/virtual/kvm/api.txt |   53 ++++++
- arch/x86/kvm/x86.c                |    2 
- include/linux/kvm.h               |   23 +++
- include/linux/kvm_host.h          |   17 ++
- virt/kvm/eventfd.c                |  323 ++++++++++++++++++++++++++++++++++++-
- virt/kvm/kvm_main.c               |   13 +
- 6 files changed, 414 insertions(+), 17 deletions(-)
