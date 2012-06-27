@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab2F0SwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:52:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64049 "EHLO
+	id S1754336Ab2F0Szf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:55:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36879 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab2F0SwF (ORCPT
+	with ESMTP id S1751396Ab2F0Szd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:52:05 -0400
-Date: Wed, 27 Jun 2012 11:51:59 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "sclark46@earthlink.net" <sclark46@earthlink.net>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/36] staging: comedi: cb_pcidas: cleanup the driver
-Message-ID: <20120627185159.GA23014@kroah.com>
-References: <201206261745.00636.hartleys@visionengravers.com>
- <4FEB3553.8050609@earthlink.net>
- <ADE657CA350FB648AAC2C43247A983F0020698F2E703@AUSP01VMBX24.collaborationhost.net>
- <4FEB3CAA.3060300@mev.co.uk>
+	Wed, 27 Jun 2012 14:55:33 -0400
+Date: Wed, 27 Jun 2012 11:55:26 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: devel@driverdev.osuosl.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 1/3] zram/zcache: swtich Kconfig dependency from X86 to
+ ZSMALLOC
+Message-ID: <20120627185526.GA23059@kroah.com>
+References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1340640878-27536-2-git-send-email-sjenning@linux.vnet.ibm.com>
+ <4FEA71E5.5090808@kernel.org>
+ <20120627024301.GA8468@kroah.com>
+ <4FEA74D6.8030107@kernel.org>
+ <20120627032101.GA16419@kroah.com>
+ <20120627154003.GI17154@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FEB3CAA.3060300@mev.co.uk>
+In-Reply-To: <20120627154003.GI17154@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 06:02:34PM +0100, Ian Abbott wrote:
-> On 2012-06-27 17:45, H Hartley Sweeten wrote:
-> >On Wednesday, June 27, 2012 9:31 AM, Stephen Clark wrote:
-> >>I there some reason you can't post these as response to this message,
-> >>like GKH does, so if readers aren't
-> >>interested they can mark the thread read without stepping thru each patch.
-> >
-> >The only reason is, I'm not sure how to do that... ;-)
-> >
-> >Greg, any pointers on how?
+On Wed, Jun 27, 2012 at 11:40:03AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jun 26, 2012 at 08:21:01PM -0700, Greg Kroah-Hartman wrote:
+> > On Wed, Jun 27, 2012 at 11:49:58AM +0900, Minchan Kim wrote:
+> > > Hi Greg,
+> > > 
+> > > On 06/27/2012 11:43 AM, Greg Kroah-Hartman wrote:
+> > > 
+> > > > On Wed, Jun 27, 2012 at 11:37:25AM +0900, Minchan Kim wrote:
+> > > >> On 06/26/2012 01:14 AM, Seth Jennings wrote:
+> > > >>
+> > > >>> This patch switches zcache and zram dependency to ZSMALLOC
+> > > >>> rather than X86.  There is no net change since ZSMALLOC
+> > > >>> depends on X86, however, this prevent further changes to
+> > > >>> these files as zsmalloc dependencies change.
+> > > >>>
+> > > >>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > > >>
+> > > >> Reviewed-by: Minchan Kim <minchan@kernel.org>
+> > > >>
+> > > >> It could be merged regardless of other patches in this series.
+> > > > 
+> > > > I already did :)
+> > > 
+> > > 
+> > > It would have been better if you send merge mail to Ccing people.
+> > > Anyway, Thanks!
+> > 
+> > I do, for people on the cc: in the signed-off-by area of the patch.  For
+> > me to manually add the people on the cc: of the email, I would have to
+> > modify git to add them to the commit somehow, sorry.
 > 
-> The easiest way is to use the --compose option of git send-email,
-> which lets you edit an introductory email to the patch series you
-> are posting and uses that email's ID as the --in-reply-to for all
-> the following patch emails (assuming you don't have --chain-reply-to
-> set).
+> Is that some other script you have that does that?
 
-Yes, that's the easiest way to do this, and is what I recommend.
+I don't understand what you are asking here.
+
+My workflow is:
+	- apply patches to a branch and test
+	- if good, 'git format-patch' to create the patches
+	- merge to my upstream branch and push out publically
+	- run script on the patches generated by 'git format-patch' to
+	  say they have been applied.
+
+My custom script is the last thing there, that takes the patches, finds
+the email addresses in the patch, and notifies everyone.
+
+Does that explain things better?
 
 greg k-h
