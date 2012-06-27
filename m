@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab2F0BMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 21:12:33 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:38549 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab2F0BMc (ORCPT
+	id S1755542Ab2F0BvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 21:51:18 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:46543 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab2F0BvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 21:12:32 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-131.messagelabs.com!1340759520!21472059!16
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 36/36] staging: comedi: cb_pcidas: cleanup dac08_write()
-Date: Tue, 26 Jun 2012 18:12:15 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206261812.16108.hartleys@visionengravers.com>
+	Tue, 26 Jun 2012 21:51:17 -0400
+From: Filipe Brandenburger <filbranden@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Filipe Brandenburger <filbranden@gmail.com>
+Subject: [PATCH v2 1/1] locks: prevent side-effects of locks_release_private before file_lock is initialized
+Date: Tue, 26 Jun 2012 21:50:48 -0400
+Message-Id: <1340761848-1352-1-git-send-email-filbranden@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
+References: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reverse the logic of the test against the cached value so that
-the function only has one exit point.
+When calling fcntl(F_SETLEASE) for a second time on the same file descriptor,
+do_fcntl_add_lease will allocate and initialize a new file_lock to pass to
+__vfs_setlease. If that function decides to reuse the existing file_lock, it
+will free the newly allocated one to prevent leaking memory.
 
-Make the logic of the dac write a bit clearer by create a local
-variable for the address used in the outw() calls and masking the
-value to write and setting the enable bits before doing the outw()
-calls. Add a comment just to make sure it's clear.
+However, the newly allocate file_lock was initialized with a valid file
+descriptor pointer and fl_lmops that contains a lm_release_private function,
+so calling locks_free_lock will trigger a call to lease_release_private_callback
+which will clear the fcntl(F_SETOWN) and fcntl(F_SETSIG) settings for the file
+descriptor even though the lease is not really being cleared at that point (as
+only the temporary file_lock is being freed.)
 
-Also, add a comment about the 'return 1;'.  This should be
-insn->n which is the number of data parameters used to do the
-dac08_write_insn() but the insn is not a parameter to this
-function.
+This patch will fix this bug by calling kmem_cache_free directly instead of
+locks_free_lock if the file_lock will not be used. This will end up avoiding
+the call to lease_release_private_callback.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This bug was tracked in kernel.org Bugzilla database:
+https://bugzilla.kernel.org/show_bug.cgi?id=43336
+
+Signed-off-by: Filipe Brandenburger <filbranden@gmail.com>
 ---
- drivers/staging/comedi/drivers/cb_pcidas.c | 28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
+ fs/locks.c |   22 +++++++++++++++++-----
+ 1 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 1479325..3ba75af 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -662,23 +662,25 @@ static int caldac_read_insn(struct comedi_device *dev,
- static int dac08_write(struct comedi_device *dev, unsigned int value)
- {
- 	struct cb_pcidas_private *devpriv = dev->private;
-+	unsigned long cal_reg;
+diff --git a/fs/locks.c b/fs/locks.c
+index 814c51d..2a751d8 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -473,7 +473,10 @@ static struct file_lock *lease_alloc(struct file *filp, int type)
  
--	if (devpriv->dac08_value == value)
--		return 1;
-+	if (devpriv->dac08_value != value) {
-+		devpriv->dac08_value = value;
+ 	error = lease_init(filp, type, fl);
+ 	if (error) {
+-		locks_free_lock(fl);
++		/* Free the lock by hand instead of calling locks_free_lock
++		 * to prevent the call back to lease_release_private_callback
++		 */
++		kmem_cache_free(filelock_cache, fl);
+ 		return ERR_PTR(error);
+ 	}
+ 	return fl;
+@@ -1538,19 +1541,28 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
  
--	devpriv->dac08_value = value;
-+		cal_reg = devpriv->control_status + CALIBRATION_REG;
+ 	new = fasync_alloc();
+ 	if (!new) {
+-		locks_free_lock(fl);
++		/* Free the lock by hand instead of calling locks_free_lock
++		 * to prevent the call back to lease_release_private_callback
++		 */
++		kmem_cache_free(filelock_cache, fl);
+ 		return -ENOMEM;
+ 	}
+ 	ret = fl;
+ 	lock_flocks();
+ 	error = __vfs_setlease(filp, arg, &ret);
++	if (error || ret != fl)
++		/*
++		 * Free the lock by hand instead of calling locks_free_lock
++		 * to prevent the call back to lease_release_private_callback
++		 * which will unset F_SETOWN and F_SETSIG for the file
++		 * descriptor but that is not wanted as the lease was not
++		 * really in use.
++		 */
++		kmem_cache_free(filelock_cache, fl);
+ 	if (error) {
+ 		unlock_flocks();
+-		locks_free_lock(fl);
+ 		goto out_free_fasync;
+ 	}
+-	if (ret != fl)
+-		locks_free_lock(fl);
  
--	outw(cal_enable_bits(dev) | (value & 0xff),
--	     devpriv->control_status + CALIBRATION_REG);
--	udelay(1);
--	outw(cal_enable_bits(dev) | SELECT_DAC08_BIT | (value & 0xff),
--	     devpriv->control_status + CALIBRATION_REG);
--	udelay(1);
--	outw(cal_enable_bits(dev) | (value & 0xff),
--	     devpriv->control_status + CALIBRATION_REG);
--	udelay(1);
-+		value &= 0xff;
-+		value |= cal_enable_bits(dev);
- 
--	return 1;
-+		/* latch the new value into the caldac */
-+		outw(value, cal_reg);
-+		udelay(1);
-+		outw(value | SELECT_DAC08_BIT, cal_reg);
-+		udelay(1);
-+		outw(value, cal_reg);
-+		udelay(1);
-+	}
-+	return 1;	/* insn->n */
- }
- 
- static int dac08_write_insn(struct comedi_device *dev,
+ 	/*
+ 	 * fasync_insert_entry() returns the old entry if any.
 -- 
-1.7.11
+1.7.7.6
 
