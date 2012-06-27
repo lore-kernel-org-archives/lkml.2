@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab2F0BwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 21:52:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58074 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755778Ab2F0BwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 21:52:00 -0400
-Message-ID: <1340761909.5330.23.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] dm thin: reinstate missing mempool_free in
- cell_release_singleton
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Touko Korpela <touko.korpela@iki.fi>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>
-Date: Wed, 27 Jun 2012 02:51:49 +0100
-In-Reply-To: <20120622162127.GA19624@lisko>
-References: <20120622162127.GA19624@lisko>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-vH84KpogmLzEm3A/m/s/"
-X-Mailer: Evolution 3.4.3-1 
+	id S1755913Ab2F0BwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 21:52:08 -0400
+Received: from gherkin.frus.com ([192.158.254.49]:39477 "EHLO gherkin.frus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755719Ab2F0Bve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 21:51:34 -0400
+X-Greylist: delayed 1261 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Jun 2012 21:51:34 EDT
+Date: Tue, 26 Jun 2012 20:30:31 -0500
+From: Bob Tracy <rct@gherkin.frus.com>
+To: linux-kernel@vger.kernel.org
+Subject: no USB keyboard in 3.5-rc1 and later
+Message-ID: <20120627013031.GA2681@gherkin.frus.com>
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here's hoping it's something simple.  Attached USB devices fail to
+initialize/work for kernel version 3.5-rc1 and later (up through
+3.5-rc4).  From what I can tell from the dmesg output (attached),
+there used to be an "input" or "generic-usb" message that appeared
+for each device following detection -- showing the sysfs path to the
+device.
 
---=-vH84KpogmLzEm3A/m/s/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+For the dmesg output excerpted below, I've left out the USB hub
+detection/initialization messages.  The system *does* have a USB 3.0 hub
+with nothing currently attached to it, just in case the presence of 3.0
+hardware is an issue.
 
-On Fri, 2012-06-22 at 19:21 +0300, Touko Korpela wrote:
-> Greg KH wrote:
-> > On Fri, Jun 22, 2012 at 10:59:48AM -0400, Mike Snitzer wrote:
-> > > Hi Greg,
-> > >=20
-> > > 3.3-stable pulled in upstream commit
-> > > 6f94a4c45a6f744383f9f695dde019998db3df55 (dm thin: fix stacked bi_nex=
-t
-> > > usage)
-> > >=20
-> > > But later in the 3.4 development window it was determined that that
-> > > commit introduced a significant leak.  The following upstream commit
-> > > fixes it (but unfortunately didn't cc: stable).
-> >
-> > 3.3 is end-of-life, so there's not much I can do with the 3.3-stable
-> > tree anymore, sorry.  If there's any other tree I should apply this to
-> > that is active (i.e. 3.0 or 3.4), please let me know.
->=20
-> Looks like you forgot 3.2 that is affected (since 3.2.14).
+The relevant 3.4 boot time messages look like this:
 
-I've added this to the queue for 3.2, thanks.
+(...)
+usb 1-1.1: new low-speed USB device number 3 using ehci_hcd
+usb 1-1.1: New USB device found, idVendor=413c, idProduct=2107
+usb 1-1.1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+usb 1-1.1: Product: Dell USB Entry Keyboard
+usb 1-1.1: Manufacturer: DELL
+input: DELL Dell USB Entry Keyboard as /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.1/1-1.1:1.0/input/input3
+generic-usb 0003:413C:2107.0001: input,hidraw0: USB HID v1.10 Keyboard [DELL Dell USB Entry Keyboard] on usb-0000:00:1a.0-1.1/input0
+usb 1-1.2: new low-speed USB device number 4 using ehci_hcd
+usb 1-1.2: New USB device found, idVendor=045e, idProduct=0039
+usb 1-1.2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+usb 1-1.2: Product: Microsoft IntelliMouse<C2><AE> Optical
+usb 1-1.2: Manufacturer: Microsoft
+input: Microsoft Microsoft IntelliMouse<C2><AE> Optical as /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.2/1-1.2:1.0/input/input4
+generic-usb 0003:045E:0039.0002: input,hidraw1: USB HID v1.00 Mouse [Microsoft Microsoft IntelliMouse<C2><AE> Optical] on usb-0000:00:1a.0-1.2/input0
+uhci_hcd: USB Universal Host Controller Interface driver
+usb 1-1.6: new low-speed USB device number 5 using ehci_hcd
+usb 1-1.6: New USB device found, idVendor=051d, idProduct=0002
+usb 1-1.6: New USB device strings: Mfr=3, Product=1, SerialNumber=2
+usb 1-1.6: Product: Back-UPS NS 1250 FW:7.g1 .D USB FW:g1 
+usb 1-1.6: Manufacturer: American Power Conversion
+usb 1-1.6: SerialNumber: JB0643005571  
+generic-usb 0003:051D:0002.0003: hiddev0,hidraw2: USB HID v1.10 Device [American Power Conversion Back-UPS NS 1250 FW:7.g1 .D USB FW:g1 ] on usb-0000:00:1a.0-1.6/input0
 
-Ben.
 
---=20
-Ben Hutchings
-Lowery's Law:
-             If it jams, force it. If it breaks, it needed replacing anyway=
-.
+The 3.5-rc4 messages look like this:
 
---=-vH84KpogmLzEm3A/m/s/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+(...)
+usb 1-1.1: new low-speed USB device number 3 using ehci_hcd
+usb 1-1.1: New USB device found, idVendor=413c, idProduct=2107
+usb 1-1.1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+usb 1-1.1: Product: Dell USB Entry Keyboard
+usb 1-1.1: Manufacturer: DELL
+usb 1-1.2: new low-speed USB device number 4 using ehci_hcd
+usb 1-1.2: New USB device found, idVendor=045e, idProduct=0039
+usb 1-1.2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+usb 1-1.2: Product: Microsoft IntelliMouse<C2><AE> Optical
+usb 1-1.2: Manufacturer: Microsoft
+uhci_hcd: USB Universal Host Controller Interface driver
+usb 1-1.6: new low-speed USB device number 5 using ehci_hcd
+usb 1-1.6: New USB device found, idVendor=051d, idProduct=0002
+usb 1-1.6: New USB device strings: Mfr=3, Product=1, SerialNumber=2
+usb 1-1.6: Product: Back-UPS NS 1250 FW:7.g1 .D USB FW:g1 
+usb 1-1.6: Manufacturer: American Power Conversion
+usb 1-1.6: SerialNumber: JB0643005571  
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks in advance for any assistance in figuring out what's going on
+here.
 
-iQIVAwUAT+pnNee/yOyVhhEJAQqY+xAAnr4mEhuF7iyoI75suZCqw3T0C8p3cNnX
-UXw7sxaIgWaYQfduzd+OgE7+ksj0sYCbfZ8uzz84z6SwQVHXc02YkkTj5qDzMpn4
-TtriRKcLiFgmeF8TfKeyQeR9Hvdz/xppzXkEAgoEyK67CRQRX01CrUKuLUiV5oUK
-J476kf5ve1B4c5WZtwZtoj07Dg0q9juF0vY6lgVC4tN8pqqfAEx2mq6vv4b8NgpT
-UZSgylgX8UrVvzR5+gOLE238b48H+1snP71BUi1mK6hxOT7gcAa0FWq5ICa1uq2p
-as/DDlpqBjI3nnWMxyHfQ5oKhCvXTwdjy5Xrq6+PNk8mk46npInauIfe96NHoprz
-t1aYnMtHge6kkCJZgP8/NeLHwzXOea3ozUljbCdq5R4vM2UntE1eKLCrfS1EvUPF
-/9z9P0CgJDWicVjER5Dps5+UgIS3UTp8GZNhHyttaGRaX/1x8eq6Bkpo+KeY4Ksz
-7Bax3bNCnKjVKU6fpD/JL+LHy+2/wn1THi+wOMMsNDiSxS4VRwIOXzqhn2gla4BW
-CXpI6fNk/HeLHkczJiuJAfR1HR6RJRoGnK2TKasMNsWSGIXYISjNBO+EDVoWjQ44
-NDEJdq9vcX5vAL0C1m9bKLMPKO8XPNVUFRbL0txRO4sfEE9CZ5fP5eFNJQXVjSwH
-/iLmGj+k3ds=
-=MwtK
------END PGP SIGNATURE-----
-
---=-vH84KpogmLzEm3A/m/s/--
+--Bob
