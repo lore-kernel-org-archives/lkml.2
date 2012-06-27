@@ -1,86 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369Ab2F0Myy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:54:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750935Ab2F0Myw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:54:52 -0400
-Message-ID: <4FEB0288.5080106@redhat.com>
-Date: Wed, 27 Jun 2012 15:54:32 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, kvm@vger.kernel.org
-Subject: Re: [PATCH 2/4] KVM: Use __print_hex() for kvm_emulate_insn tracepoint
-References: <1340757701-10711-1-git-send-email-namhyung@kernel.org>  <1340757701-10711-2-git-send-email-namhyung@kernel.org> <1340801375.16702.10.camel@gandalf.stny.rr.com>
-In-Reply-To: <1340801375.16702.10.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1753292Ab2F0NAs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 09:00:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52732 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab2F0NAq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 09:00:46 -0400
+Message-ID: <1340802008.10063.63.camel@twins>
+Subject: Re: [PATCH v4 11/13] rbtree.h: Generic Red-Black Trees
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-doc@vger.kernel.org, linux-sparse@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Turner <pjt@google.com>, Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Richard Weinberger <richard@nod.at>, Rob Landley <rob@landley.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Wed, 27 Jun 2012 15:00:08 +0200
+In-Reply-To: <1340424048-7759-12-git-send-email-daniel.santos@pobox.com>
+References: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com>
+	 <1340424048-7759-12-git-send-email-daniel.santos@pobox.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 03:49 PM, Steven Rostedt wrote:
-> [ Added Avi]
-> 
-> On Wed, 2012-06-27 at 09:41 +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> The kvm_emulate_insn tracepoint used __print_insn()
->> for printing its instructions. However it makes the
->> format of the event hard to parse as it reveals TP
->> internals.
->> 
->> Fortunately, kernel provides __print_hex for almost
->> same purpose, we can use it instead of open coding
->> it. The user-space can be changed to parse it later.
->> 
->> That means raw kernel tracing will not be affected
->> by this change:
->> 
->>  # cd /sys/kernel/debug/tracing/
->>  # cat events/kvm/kvm_emulate_insn/format
->>  name: kvm_emulate_insn
->>  ID: 29
->>  format:
->> 	...
->>  print fmt: "%x:%llx:%s (%s)%s", REC->csbase, REC->rip, __print_hex(REC->insn, REC->len), \
->>  __print_symbolic(REC->flags, { 0, "real" }, { (1 << 0) | (1 << 1), "vm16" }, \
->>  { (1 << 0), "prot16" }, { (1 << 0) | (1 << 2), "prot32" }, { (1 << 0) | (1 << 3), "prot64" }), \
->>  REC->failed ? " failed" : ""
->> 
->>  # echo 1 > events/kvm/kvm_emulate_insn/enable
->>  # cat trace
->>  # tracer: nop
->>  #
->>  # entries-in-buffer/entries-written: 2183/2183   #P:12
->>  #
->>  #                              _-----=> irqs-off
->>  #                             / _----=> need-resched
->>  #                            | / _---=> hardirq/softirq
->>  #                            || / _--=> preempt-depth
->>  #                            ||| /     delay
->>  #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
->>  #              | |       |   ||||       |         |
->>          qemu-kvm-1782  [002] ...1   140.931636: kvm_emulate_insn: 0:c102fa25:89 10 (prot32)
->>          qemu-kvm-1781  [004] ...1   140.931637: kvm_emulate_insn: 0:c102fa25:89 10 (prot32)
-> 
-> Avi, can you give your Acked-by for this change?
+On Fri, 2012-06-22 at 23:00 -0500, Daniel Santos wrote:
 
-Acked-by: Avi Kivity <avi@redhat.com>
+> +typedef long (*rb_compare_f)(const void *a, const void *b);
 
-Some time ago we discussed moving the trace-cmd plugins to /lib/modules,
-which would make this trace display as "mov %edx,(%eax)" instead of "89
-10", even for non-trace-cmd users.  Was there any movement on this?
+> +struct rb_relationship {
+> +	ssize_t root_offset;
+> +	ssize_t left_offset;
+> +	ssize_t right_offset;
+> +	ssize_t count_offset;
+> +	ssize_t node_offset;
+> +	ssize_t key_offset;
+> +	int flags;
+> +	const rb_compare_f compare;
+> +	const rb_augment_f augment;
+> +};
 
--- 
-error compiling committee.c: too many arguments to function
+> +static __always_inline __flatten
+> +struct rb_node *__rb_find(
+> +		struct rb_node *node,
+> +		const void *key,
+> +		const struct rb_relationship *rel)
+> +{
+> +	__rb_assert_good_rel(rel);
+> +	while (node) {
+> +		long diff = rel->compare(key, __rb_node_to_key(node, rel));
+> +
+> +		if (diff > 0)
+> +			node = node->rb_right;
+> +		else if (diff < 0)
+> +			node = node->rb_left;
+> +		else
+> +			return node;
+> +	}
+> +
+> +	return 0;
+> +}
+
+> +#define RB_RELATIONSHIP(						\
+> +		cont_type, root, left, right, count,			\
+> +		obj_type, node, key,					\
+> +		_flags, _compare, _augment) {				\
+> +	.root_offset     = offsetof(cont_type, root),			\
+> +	.left_offset     = OPT_OFFSETOF(cont_type, left),		\
+> +	.right_offset    = OPT_OFFSETOF(cont_type, right),		\
+> +	.count_offset    = OPT_OFFSETOF(cont_type, count),		\
+> +	.node_offset     = offsetof(obj_type, node),			\
+> +	.key_offset      = offsetof(obj_type, key),			\
+> +	.flags           = (_flags)					\
+> +			 | IFF_EMPTY(left ,    0,  RB_HAS_LEFTMOST)	\
+> +			 | IFF_EMPTY(right,    0,  RB_HAS_RIGHTMOST)	\
+> +			 | IFF_EMPTY(count,    0,  RB_HAS_COUNT)	\
+> +			 | IFF_EMPTY(_augment, 0,  RB_IS_AUGMENTED),	\
+> +	.compare         = (const rb_compare_f) (_compare),		\
+> +	.augment         = IFF_EMPTY(_augment, 0, _augment)		\
+> +}
+
+> +#define RB_DEFINE_INTERFACE(						\
+> +	prefix,								\
+> +	cont_type, root, left, right, count,				\
+> +	obj_type, node, key,						\
+> +	flags, compare, augment,					\
+> +	find_mod, insert_mod, find_near_mod, insert_near_mod)		\
+> +									\
+> 									\
+> +static const struct rb_relationship prefix ## _rel =			\
+> +RB_RELATIONSHIP(							\
+> +	cont_type, root, left, right, count,				\
+> +	obj_type, node, key,						\
+> +	flags, compare, augment);					\
+> +									\
+> +IFF_EMPTY(find_mod, static __always_inline, find_mod)			\
+> +obj_type *prefix ## _find(cont_type *cont,				\
+> +			  const typeof(((obj_type *)0)->key) *_key)	\
+> +{									\
+> +	struct rb_node *ret = rb_find(					\
+> +			&cont->root, _key, &prefix ## _rel);		\
+> +	return ret ? rb_entry(ret, obj_type, node) : 0;			\
+> +}									\
+
+
+So the one thing I noticed was your 'fixed' long return type for
+compare. I guess that's one of the things that inspired your CFS compare
+'hack' since on 32bit that's too short.
+
+I tried playing with typeof() and return types of function pointers, but
+I couldn't make it work. Bummer. That leaves explicitly passing it to
+the RB_DEFINE_INTERFACE() and pulling all relevant inline functions into
+the macro as well.
 
 
