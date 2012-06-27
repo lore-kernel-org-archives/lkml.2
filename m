@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab2F0OB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 10:01:57 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:23994 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab2F0OB4 convert rfc822-to-8bit (ORCPT
+	id S1756256Ab2F0ODT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 10:03:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:57555 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751850Ab2F0ODR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 10:01:56 -0400
-Date: Wed, 27 Jun 2012 16:01:21 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: ben-linux@fluff.org, seth.heasley@intel.com, ben@decadent.org.uk,
-        David.Woodhouse@intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olofj@chromium.org, bleung@chromium.org
-Subject: Re: [PATCH 0/3 v2] i2c: i801: enable irq
-Message-ID: <20120627160121.3c3c3a88@endymion.delvare>
-In-Reply-To: <CAGS+omDYaPBQiKBiVewbwZR2Vnjv+NfqbZxc+fknpCBNvRFRKw@mail.gmail.com>
-References: <1325847502-17841-1-git-send-email-djkurtz@chromium.org>
-	<20120627112402.26576746@endymion.delvare>
-	<CAGS+omDYaPBQiKBiVewbwZR2Vnjv+NfqbZxc+fknpCBNvRFRKw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 27 Jun 2012 10:03:17 -0400
+Date: Wed, 27 Jun 2012 10:03:16 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: jonghwa3.lee@samsung.com, <linux-kernel@vger.kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, Jamie Iles <jamie@jamieiles.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] Exynos : Add support for Exynos random number generator
+In-Reply-To: <4FEA0E3E.2070804@codeaurora.org>
+Message-ID: <Pine.LNX.4.44L0.1206270958500.1665-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jun 2012 21:56:34 +0800, Daniel Kurtz wrote:
-> On Wed, Jun 27, 2012 at 5:24 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> > I planned on testing this on my ICH3-M system, but it turns out your
-> > interrupt-based implementation only works for ICH5 and later chips. As
-> > ICH5 and later chips all implement the block buffer, there's no reason
-> > for the byte-by-byte-code to ever be used for SMBus block transactions.
-> > However, the block buffer feature can be disabled for testing purpose
-> > by passing module parameter disable_features=0x0002.
+On Tue, 26 Jun 2012, Stephen Boyd wrote:
+
+> On 06/21/12 18:39, jonghwa3.lee@samsung.com wrote:
+> > On 2012년 06월 21일 12:12, Stephen Boyd wrote:
 > >
-> > I just did, and actually it doesn't work. i2cdump shows 32 bytes no
-> > matter what the device said. Debug log shows that the driver reads
-> > fewer bytes from the device though, as it is supposed to. So I think
-> > the problem is simply that the interrupt path is missing this compared
-> > to the polled path:
+> >> On 06/20/12 19:39, jonghwa3.lee@samsung.com wrote:
+> >>>>> +static int exynos_init(struct hwrng *rng)
+> >>>>> +{
+> >>>>> +	struct exynos_rng *exynos_rng = container_of(rng,
+> >>>>> +						struct exynos_rng, rng);
+> >>>>> +	int i;
+> >>>>> +	int ret = 0;
+> >>>>> +	u32 PRND_SEED[5];
+> >>>>> +
+> >>>>> +	pm_runtime_put_noidle(exynos_rng->dev);
+> >>>>> +	pm_runtime_get_sync(exynos_rng->dev);
+> >>>> This looks very odd. Why are you calling pm_runtime_put_noidle()?
+> >>>>
+> >>> When this callback function is called, the status of power state is
+> >>> 'suspended' and use_count is 1.
+
+That's strange to begin with.  If the usage counter is > 0 then the
+device shouldn't be suspended.  How does this happen?
+
+>  To perform pm_runtime_get_sync()
+> >>> correctly, it requires to have 'suspended' status and use_count is 0.
+
+That's not true.  pm_runtime_get_sync works perfectly well when the 
+status is "suspended" and the usage counter is > 0.
+
+> >>> Thus i force to decrease use_count only with using
+> >>> pm_runtime_put_noidle. I know it looks odd, but i couldn't find better
+> >>> way. Otherwise it can use clk_enable() directly, but i think that it
+> >>> isn't good neither.
+> >> Is the device suspended initially at probe? If so can you set the state
+> >> of the device to suspended?
+> >>
 > >
-> >                if (i == 1 && read_write == I2C_SMBUS_READ
-> >                 && command != I2C_SMBUS_I2C_BLOCK_DATA) {
-> >                        len = inb_p(SMBHSTDAT0(priv));
-> >                        (...)
-> >                        data->block[0] = len;
-> >                }
-> >
-> > I.e. we don't let the caller know how many bytes we actually read from
-> > the device. I fixed it with:
-> >
+> > Yes, it suspended already at the initial of probing. But i can't get
+> > your point, you want to me to make device suspended?
 > 
-> I was just in the middle of finalizing a new patchset when I saw your
-> last email.
-> I incorporated (and tested for no-regressions) the snippet below.
-> Unfortunately, I'm not set up to test this type of transaction, so
-> hopefully you can double check my version of this patch with your
-> setup.
+> I mean to say you should probably call pm_runtime_set_suspended() during
+> probe. But I'm not sure and I would defer to people more familiar with
+> runtime pm.
 
-Sure, no problem, I will do another full round of testing on the new
-patchset.
+If the device starts out in a suspended state then the subsystem or 
+driver should call pm_runtime_set_suspended before calling 
+pm_runtime_enable.
 
--- 
-Jean Delvare
+Alan Stern
+
