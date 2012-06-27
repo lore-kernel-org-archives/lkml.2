@@ -1,535 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab2F0HJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 03:09:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50945 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab2F0HJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 03:09:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="158674224"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 2/2] perf/x86: Uncore Filter support for SandyBridge-EP
-Date: Wed, 27 Jun 2012 15:09:13 +0800
-Message-Id: <1340780953-21130-2-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1340780953-21130-1-git-send-email-zheng.z.yan@intel.com>
-References: <1340780953-21130-1-git-send-email-zheng.z.yan@intel.com>
+	id S1756339Ab2F0HKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 03:10:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:29686 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756264Ab2F0HKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 03:10:17 -0400
+X-IronPort-AV: E=Sophos;i="4.77,483,1336320000"; 
+   d="scan'208";a="5272590"
+Message-ID: <4FEAB2E1.3090200@cn.fujitsu.com>
+Date: Wed, 27 Jun 2012 15:14:41 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH 1/12] memory-hotplug : rename remove_memory to offline_memory
+References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9D5C.1080508@jp.fujitsu.com>
+In-Reply-To: <4FEA9D5C.1080508@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/27 15:10:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/27 15:10:27,
+	Serialize complete at 2012/06/27 15:10:27
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+At 06/27/2012 01:42 PM, Yasuaki Ishimatsu Wrote:
+> remove_memory() does not remove memory but just offlines memory. The patch
+> changes name of it to offline_memory().
 
-This patch adds C-Box and PCU filter support for SandyBridge-EP
-uncore. We can filter C-Box events by thread/core ID and filter
-PCU events by frequency/voltage.
+There are 3 functions in the kernel:
+1. add_memory()
+2. online_pages()
+3. remove_memory()
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |  233 ++++++++++++++++++++-----
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |   24 ++-
- 2 files changed, 211 insertions(+), 46 deletions(-)
+So I think offline_pages() is better than offline_memory().
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 8ca0f8f..70a27ac 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -14,10 +14,13 @@ static cpumask_t uncore_cpu_mask;
- /* constraint for the fixed counter */
- static struct event_constraint constraint_fixed =
- 	EVENT_CONSTRAINT(~0ULL, 1 << UNCORE_PMC_IDX_FIXED, ~0ULL);
-+static struct event_constraint constraint_empty =
-+	EVENT_CONSTRAINT(0, 0, 0);
- 
- DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
- DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
- DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
-+DEFINE_UNCORE_FORMAT_ATTR(tid_en, tid_en, "config:19");
- DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
- DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
- DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
-@@ -26,8 +29,19 @@ DEFINE_UNCORE_FORMAT_ATTR(thresh5, thresh, "config:24-28");
- DEFINE_UNCORE_FORMAT_ATTR(occ_sel, occ_sel, "config:14-15");
- DEFINE_UNCORE_FORMAT_ATTR(occ_invert, occ_invert, "config:30");
- DEFINE_UNCORE_FORMAT_ATTR(occ_edge, occ_edge, "config:14-51");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_tid, filter_tid, "config1:0-4");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_nid, filter_nid, "config1:10-17");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_state, filter_state, "config1:18-22");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_opc, filter_opc, "config1:23-31");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_brand0, filter_brand0, "config1:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_brand1, filter_brand1, "config1:8-15");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_brand2, filter_brand2, "config1:16-23");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_brand3, filter_brand3, "config1:24-31");
- 
- /* Sandy Bridge-EP uncore support */
-+static struct intel_uncore_type snbep_uncore_cbox;
-+static struct intel_uncore_type snbep_uncore_pcu;
-+
- static void snbep_uncore_pci_disable_box(struct intel_uncore_box *box)
- {
- 	struct pci_dev *pdev = box->pci_dev;
-@@ -120,6 +134,10 @@ static void snbep_uncore_msr_enable_event(struct intel_uncore_box *box,
- 					struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
-+	struct hw_perf_event_extra *reg1 = &hwc->extra_reg;
-+
-+	if (reg1->idx != EXTRA_REG_NONE)
-+		wrmsrl(reg1->reg, reg1->config);
- 
- 	wrmsrl(hwc->config_base, hwc->config | SNBEP_PMON_CTL_EN);
- }
-@@ -149,6 +167,71 @@ static void snbep_uncore_msr_init_box(struct intel_uncore_box *box)
- 		wrmsrl(msr, SNBEP_PMON_BOX_CTL_INT);
- }
- 
-+static struct event_constraint *
-+snbep_uncore_get_constraint(struct intel_uncore_box *box,
-+			    struct perf_event *event)
-+{
-+	struct intel_uncore_extra_reg *er;
-+	struct hw_perf_event_extra *reg1 = &event->hw.extra_reg;
-+	unsigned long flags;
-+	bool ok = false;
-+
-+	if (reg1->idx == EXTRA_REG_NONE || (box->phys_id >= 0 && reg1->alloc))
-+		return NULL;
-+
-+	er = &box->shared_regs[reg1->idx];
-+	raw_spin_lock_irqsave(&er->lock, flags);
-+	if (!atomic_read(&er->ref) || er->config1 == reg1->config) {
-+		atomic_inc(&er->ref);
-+		er->config1 = reg1->config;
-+		ok = true;
-+	}
-+	raw_spin_unlock_irqrestore(&er->lock, flags);
-+
-+	if (ok) {
-+		if (box->phys_id >= 0)
-+			reg1->alloc = 1;
-+		return NULL;
-+	}
-+	return &constraint_empty;
-+}
-+
-+static void snbep_uncore_put_constraint(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	struct intel_uncore_extra_reg *er;
-+	struct hw_perf_event_extra *reg1 = &event->hw.extra_reg;
-+
-+	if (box->phys_id < 0 || !reg1->alloc)
-+		return;
-+
-+	er = &box->shared_regs[reg1->idx];
-+	atomic_sub(1, &er->ref);
-+	reg1->alloc = 0;
-+}
-+
-+static int snbep_uncore_hw_config(struct intel_uncore_box *box,
-+				  struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	struct hw_perf_event_extra *reg1 = &hwc->extra_reg;
-+
-+	if (box->pmu->type == &snbep_uncore_cbox) {
-+		reg1->reg = SNBEP_C0_MSR_PMON_BOX_FILTER +
-+			SNBEP_CBO_MSR_OFFSET * box->pmu->pmu_idx;
-+		reg1->config = event->attr.config1 &
-+			SNBEP_CB0_MSR_PMON_BOX_FILTER_MASK;
-+	} else if (box->pmu->type == &snbep_uncore_pcu) {
-+		reg1->reg = SNBEP_PCU_MSR_PMON_BOX_FILTER;
-+		reg1->config = event->attr.config1 &
-+			SNBEP_PCU_MSR_PMON_BOX_FILTER_MASK;
-+	} else {
-+		return 0;
-+	}
-+	reg1->idx = 0;
-+	return 0;
-+}
-+
- static struct attribute *snbep_uncore_formats_attr[] = {
- 	&format_attr_event.attr,
- 	&format_attr_umask.attr,
-@@ -167,6 +250,20 @@ static struct attribute *snbep_uncore_ubox_formats_attr[] = {
- 	NULL,
- };
- 
-+static struct attribute *snbep_uncore_cbox_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_tid_en.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_thresh8.attr,
-+	&format_attr_filter_tid.attr,
-+	&format_attr_filter_nid.attr,
-+	&format_attr_filter_state.attr,
-+	&format_attr_filter_opc.attr,
-+	NULL,
-+};
-+
- static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- 	&format_attr_event.attr,
- 	&format_attr_occ_sel.attr,
-@@ -175,6 +272,10 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- 	&format_attr_thresh5.attr,
- 	&format_attr_occ_invert.attr,
- 	&format_attr_occ_edge.attr,
-+	&format_attr_filter_brand0.attr,
-+	&format_attr_filter_brand1.attr,
-+	&format_attr_filter_brand2.attr,
-+	&format_attr_filter_brand3.attr,
- 	NULL,
- };
- 
-@@ -203,6 +304,11 @@ static struct attribute_group snbep_uncore_ubox_format_group = {
- 	.attrs = snbep_uncore_ubox_formats_attr,
- };
- 
-+static struct attribute_group snbep_uncore_cbox_format_group = {
-+	.name = "format",
-+	.attrs = snbep_uncore_cbox_formats_attr,
-+};
-+
- static struct attribute_group snbep_uncore_pcu_format_group = {
- 	.name = "format",
- 	.attrs = snbep_uncore_pcu_formats_attr,
-@@ -215,6 +321,9 @@ static struct intel_uncore_ops snbep_uncore_msr_ops = {
- 	.disable_event	= snbep_uncore_msr_disable_event,
- 	.enable_event	= snbep_uncore_msr_enable_event,
- 	.read_counter	= snbep_uncore_msr_read_counter,
-+	.get_constraint = snbep_uncore_get_constraint,
-+	.put_constraint = snbep_uncore_put_constraint,
-+	.hw_config	= snbep_uncore_hw_config,
- };
- 
- static struct intel_uncore_ops snbep_uncore_pci_ops = {
-@@ -307,31 +416,33 @@ static struct intel_uncore_type snbep_uncore_ubox = {
- };
- 
- static struct intel_uncore_type snbep_uncore_cbox = {
--	.name		= "cbox",
--	.num_counters   = 4,
--	.num_boxes	= 8,
--	.perf_ctr_bits	= 44,
--	.event_ctl	= SNBEP_C0_MSR_PMON_CTL0,
--	.perf_ctr	= SNBEP_C0_MSR_PMON_CTR0,
--	.event_mask	= SNBEP_PMON_RAW_EVENT_MASK,
--	.box_ctl	= SNBEP_C0_MSR_PMON_BOX_CTL,
--	.msr_offset	= SNBEP_CBO_MSR_OFFSET,
--	.constraints	= snbep_uncore_cbox_constraints,
--	.ops		= &snbep_uncore_msr_ops,
--	.format_group	= &snbep_uncore_format_group,
-+	.name			= "cbox",
-+	.num_counters		= 4,
-+	.num_boxes		= 8,
-+	.perf_ctr_bits		= 44,
-+	.event_ctl		= SNBEP_C0_MSR_PMON_CTL0,
-+	.perf_ctr		= SNBEP_C0_MSR_PMON_CTR0,
-+	.event_mask		= SNBEP_CBO_MSR_PMON_RAW_EVENT_MASK,
-+	.box_ctl		= SNBEP_C0_MSR_PMON_BOX_CTL,
-+	.msr_offset		= SNBEP_CBO_MSR_OFFSET,
-+	.num_shared_regs	= 1,
-+	.constraints		= snbep_uncore_cbox_constraints,
-+	.ops			= &snbep_uncore_msr_ops,
-+	.format_group		= &snbep_uncore_cbox_format_group,
- };
- 
- static struct intel_uncore_type snbep_uncore_pcu = {
--	.name		= "pcu",
--	.num_counters   = 4,
--	.num_boxes	= 1,
--	.perf_ctr_bits	= 48,
--	.perf_ctr	= SNBEP_PCU_MSR_PMON_CTR0,
--	.event_ctl	= SNBEP_PCU_MSR_PMON_CTL0,
--	.event_mask	= SNBEP_PCU_MSR_PMON_RAW_EVENT_MASK,
--	.box_ctl	= SNBEP_PCU_MSR_PMON_BOX_CTL,
--	.ops		= &snbep_uncore_msr_ops,
--	.format_group	= &snbep_uncore_pcu_format_group,
-+	.name			= "pcu",
-+	.num_counters		= 4,
-+	.num_boxes		= 1,
-+	.perf_ctr_bits		= 48,
-+	.perf_ctr		= SNBEP_PCU_MSR_PMON_CTR0,
-+	.event_ctl		= SNBEP_PCU_MSR_PMON_CTL0,
-+	.event_mask		= SNBEP_PCU_MSR_PMON_RAW_EVENT_MASK,
-+	.box_ctl		= SNBEP_PCU_MSR_PMON_BOX_CTL,
-+	.num_shared_regs	= 1,
-+	.ops			= &snbep_uncore_msr_ops,
-+	.format_group		= &snbep_uncore_pcu_format_group,
- };
- 
- static struct intel_uncore_type *snbep_msr_uncores[] = {
-@@ -747,15 +858,27 @@ static void uncore_pmu_init_hrtimer(struct intel_uncore_box *box)
- 	box->hrtimer.function = uncore_pmu_hrtimer;
- }
- 
--struct intel_uncore_box *uncore_alloc_box(int cpu)
-+struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type,
-+					  int cpu)
- {
- 	struct intel_uncore_box *box;
-+	int size = sizeof(*box);
-+
-+	if (type->num_shared_regs)
-+		size += type->num_shared_regs *
-+			sizeof(struct intel_uncore_extra_reg);
- 
--	box = kmalloc_node(sizeof(*box), GFP_KERNEL | __GFP_ZERO,
--			   cpu_to_node(cpu));
-+	box = kmalloc_node(size, GFP_KERNEL | __GFP_ZERO, cpu_to_node(cpu));
- 	if (!box)
- 		return NULL;
- 
-+	if (type->num_shared_regs) {
-+		int i;
-+		box->shared_regs = (struct intel_uncore_extra_reg *)(box + 1);
-+		for (i = 0; i < type->num_shared_regs; i++)
-+			raw_spin_lock_init(&box->shared_regs[i].lock);
-+	}
-+
- 	uncore_pmu_init_hrtimer(box);
- 	atomic_set(&box->refcnt, 1);
- 	box->cpu = -1;
-@@ -834,11 +957,18 @@ static int uncore_collect_events(struct intel_uncore_box *box,
- }
- 
- static struct event_constraint *
--uncore_event_constraint(struct intel_uncore_type *type,
--			struct perf_event *event)
-+uncore_get_event_constraint(struct intel_uncore_box *box,
-+			    struct perf_event *event)
- {
-+	struct intel_uncore_type *type = box->pmu->type;
- 	struct event_constraint *c;
- 
-+	if (type->ops->get_constraint) {
-+		c = type->ops->get_constraint(box, event);
-+		if (c)
-+			return c;
-+	}
-+
- 	if (event->hw.config == ~0ULL)
- 		return &constraint_fixed;
- 
-@@ -852,19 +982,25 @@ uncore_event_constraint(struct intel_uncore_type *type,
- 	return &type->unconstrainted;
- }
- 
-+static void uncore_put_event_constraint(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	if (box->pmu->type->ops->put_constraint)
-+		box->pmu->type->ops->put_constraint(box, event);
-+}
-+
- static int uncore_assign_events(struct intel_uncore_box *box,
- 				int assign[], int n)
- {
- 	unsigned long used_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
- 	struct event_constraint *c, *constraints[UNCORE_PMC_IDX_MAX];
--	int i, ret, wmin, wmax;
-+	int i, wmin, wmax, ret = 0;
- 	struct hw_perf_event *hwc;
- 
- 	bitmap_zero(used_mask, UNCORE_PMC_IDX_MAX);
- 
- 	for (i = 0, wmin = UNCORE_PMC_IDX_MAX, wmax = 0; i < n; i++) {
--		c = uncore_event_constraint(box->pmu->type,
--				box->event_list[i]);
-+		c = uncore_get_event_constraint(box, box->event_list[i]);
- 		constraints[i] = c;
- 		wmin = min(wmin, c->weight);
- 		wmax = max(wmax, c->weight);
-@@ -888,13 +1024,17 @@ static int uncore_assign_events(struct intel_uncore_box *box,
- 			break;
- 
- 		__set_bit(hwc->idx, used_mask);
--		assign[i] = hwc->idx;
-+		if (assign)
-+			assign[i] = hwc->idx;
- 	}
--	if (i == n)
--		return 0;
--
- 	/* slow path */
--	ret = perf_assign_events(constraints, n, wmin, wmax, assign);
-+	if (i != n)
-+		ret = perf_assign_events(constraints, n, wmin, wmax, assign);
-+
-+	if (!assign || ret) {
-+		for (i = 0; i < n; i++)
-+			uncore_put_event_constraint(box, box->event_list[i]);
-+	}
- 	return ret ? -EINVAL : 0;
- }
- 
-@@ -1021,6 +1161,8 @@ static void uncore_pmu_event_del(struct perf_event *event, int flags)
- 
- 	for (i = 0; i < box->n_events; i++) {
- 		if (event == box->event_list[i]) {
-+			uncore_put_event_constraint(box, event);
-+
- 			while (++i < box->n_events)
- 				box->event_list[i - 1] = box->event_list[i];
- 
-@@ -1048,10 +1190,9 @@ static int uncore_validate_group(struct intel_uncore_pmu *pmu,
- {
- 	struct perf_event *leader = event->group_leader;
- 	struct intel_uncore_box *fake_box;
--	int assign[UNCORE_PMC_IDX_MAX];
- 	int ret = -EINVAL, n;
- 
--	fake_box = uncore_alloc_box(smp_processor_id());
-+	fake_box = uncore_alloc_box(pmu->type, smp_processor_id());
- 	if (!fake_box)
- 		return -ENOMEM;
- 
-@@ -1073,7 +1214,7 @@ static int uncore_validate_group(struct intel_uncore_pmu *pmu,
- 
- 	fake_box->n_events = n;
- 
--	ret = uncore_assign_events(fake_box, assign, n);
-+	ret = uncore_assign_events(fake_box, NULL, n);
- out:
- 	kfree(fake_box);
- 	return ret;
-@@ -1117,6 +1258,10 @@ int uncore_pmu_event_init(struct perf_event *event)
- 		return -EINVAL;
- 	event->cpu = box->cpu;
- 
-+	event->hw.idx = -1;
-+	event->hw.last_tag = ~0ULL;
-+	event->hw.extra_reg.idx = EXTRA_REG_NONE;
-+
- 	if (event->attr.config == UNCORE_FIXED_EVENT) {
- 		/* no fixed counter */
- 		if (!pmu->type->fixed_ctl)
-@@ -1130,11 +1275,13 @@ int uncore_pmu_event_init(struct perf_event *event)
- 		hwc->config = ~0ULL;
- 	} else {
- 		hwc->config = event->attr.config & pmu->type->event_mask;
-+		if (pmu->type->ops->hw_config) {
-+			ret = pmu->type->ops->hw_config(box, event);
-+			if (ret)
-+				return ret;
-+		}
- 	}
- 
--	event->hw.idx = -1;
--	event->hw.last_tag = ~0ULL;
--
- 	if (event->group_leader != event)
- 		ret = uncore_validate_group(pmu, event);
- 	else
-@@ -1276,7 +1423,7 @@ static int __devinit uncore_pci_add(struct intel_uncore_type *type,
- 	if (phys_id < 0)
- 		return -ENODEV;
- 
--	box = uncore_alloc_box(0);
-+	box = uncore_alloc_box(type, 0);
- 	if (!box)
- 		return -ENOMEM;
- 
-@@ -1458,7 +1605,7 @@ static int __cpuinit uncore_cpu_prepare(int cpu, int phys_id)
- 			if (pmu->func_id < 0)
- 				pmu->func_id = j;
- 
--			box = uncore_alloc_box(cpu);
-+			box = uncore_alloc_box(type, cpu);
- 			if (!box)
- 				return -ENOMEM;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 88498c7..534585a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -97,6 +97,10 @@
- 				 SNBEP_PMON_CTL_INVERT | \
- 				 SNBEP_U_MSR_PMON_CTL_TRESH_MASK)
- 
-+#define SNBEP_CBO_PMON_CTL_TID_EN		(1 << 19)
-+#define SNBEP_CBO_MSR_PMON_RAW_EVENT_MASK	(SNBEP_PMON_RAW_EVENT_MASK | \
-+						 SNBEP_CBO_PMON_CTL_TID_EN)
-+
- /* SNB-EP PCU event control */
- #define SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK	0x0000c000
- #define SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK	0x1f000000
-@@ -140,15 +144,17 @@
- /* SNB-EP Cbo register */
- #define SNBEP_C0_MSR_PMON_CTR0			0xd16
- #define SNBEP_C0_MSR_PMON_CTL0			0xd10
--#define SNBEP_C0_MSR_PMON_BOX_FILTER		0xd14
- #define SNBEP_C0_MSR_PMON_BOX_CTL		0xd04
-+#define SNBEP_C0_MSR_PMON_BOX_FILTER		0xd14
-+#define SNBEP_CB0_MSR_PMON_BOX_FILTER_MASK	0xfffffc1f
- #define SNBEP_CBO_MSR_OFFSET			0x20
- 
- /* SNB-EP PCU register */
- #define SNBEP_PCU_MSR_PMON_CTR0			0xc36
- #define SNBEP_PCU_MSR_PMON_CTL0			0xc30
--#define SNBEP_PCU_MSR_PMON_BOX_FILTER		0xc34
- #define SNBEP_PCU_MSR_PMON_BOX_CTL		0xc24
-+#define SNBEP_PCU_MSR_PMON_BOX_FILTER		0xc34
-+#define SNBEP_PCU_MSR_PMON_BOX_FILTER_MASK	0xffffffff
- #define SNBEP_PCU_MSR_CORE_C3_CTR		0x3fc
- #define SNBEP_PCU_MSR_CORE_C6_CTR		0x3fd
- 
-@@ -163,7 +169,6 @@ struct intel_uncore_type {
- 	int num_boxes;
- 	int perf_ctr_bits;
- 	int fixed_ctr_bits;
--	int single_fixed;
- 	unsigned perf_ctr;
- 	unsigned event_ctl;
- 	unsigned event_mask;
-@@ -171,6 +176,8 @@ struct intel_uncore_type {
- 	unsigned fixed_ctl;
- 	unsigned box_ctl;
- 	unsigned msr_offset;
-+	unsigned num_shared_regs:8;
-+	unsigned single_fixed:1;
- 	struct event_constraint unconstrainted;
- 	struct event_constraint *constraints;
- 	struct intel_uncore_pmu *pmus;
-@@ -188,6 +195,10 @@ struct intel_uncore_ops {
- 	void (*disable_event)(struct intel_uncore_box *, struct perf_event *);
- 	void (*enable_event)(struct intel_uncore_box *, struct perf_event *);
- 	u64 (*read_counter)(struct intel_uncore_box *, struct perf_event *);
-+	int (*hw_config)(struct intel_uncore_box *, struct perf_event *);
-+	struct event_constraint *(*get_constraint)(struct intel_uncore_box *,
-+						   struct perf_event *);
-+	void (*put_constraint)(struct intel_uncore_box *, struct perf_event *);
- };
- 
- struct intel_uncore_pmu {
-@@ -200,6 +211,12 @@ struct intel_uncore_pmu {
- 	struct list_head box_list;
- };
- 
-+struct intel_uncore_extra_reg {
-+	raw_spinlock_t lock;
-+	u64 config1;
-+	atomic_t ref;
-+};
-+
- struct intel_uncore_box {
- 	int phys_id;
- 	int n_active;	/* number of active events */
-@@ -211,6 +228,7 @@ struct intel_uncore_box {
- 	struct perf_event *event_list[UNCORE_PMC_IDX_MAX];
- 	unsigned long active_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
- 	u64 tags[UNCORE_PMC_IDX_MAX];
-+	struct intel_uncore_extra_reg *shared_regs;
- 	struct pci_dev *pci_dev;
- 	struct intel_uncore_pmu *pmu;
- 	struct hrtimer hrtimer;
--- 
-1.7.10.2
+Thanks
+Wen Congyang
+> 
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> ---
+>  drivers/acpi/acpi_memhotplug.c |    2 +-
+>  drivers/base/memory.c          |    4 ++--
+>  include/linux/memory_hotplug.h |    2 +-
+>  mm/memory_hotplug.c            |    6 +++---
+>  4 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> Index: linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/drivers/acpi/acpi_memhotplug.c	2012-06-25 04:53:04.000000000 +0900
+> +++ linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c	2012-06-26 13:48:38.263940481 +0900
+> @@ -318,7 +318,7 @@ static int acpi_memory_disable_device(st
+>  	 */
+>  	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>  		if (info->enabled) {
+> -			result = remove_memory(info->start_addr, info->length);
+> +			result = offline_memory(info->start_addr, info->length);
+>  			if (result)
+>  				return result;
+>  		}
+> Index: linux-3.5-rc4/drivers/base/memory.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/drivers/base/memory.c	2012-06-25 04:53:04.000000000 +0900
+> +++ linux-3.5-rc4/drivers/base/memory.c	2012-06-26 13:48:46.072842803 +0900
+> @@ -266,8 +266,8 @@ memory_block_action(unsigned long phys_i
+>  			break;
+>  		case MEM_OFFLINE:
+>  			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
+> -			ret = remove_memory(start_paddr,
+> -					    nr_pages << PAGE_SHIFT);
+> +			ret = offline_memory(start_paddr,
+> +					     nr_pages << PAGE_SHIFT);
+>  			break;
+>  		default:
+>  			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
+> Index: linux-3.5-rc4/mm/memory_hotplug.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-25 04:53:04.000000000 +0900
+> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-26 13:48:46.072842803 +0900
+> @@ -990,7 +990,7 @@ out:
+>  	return ret;
+>  }
+> 
+> -int remove_memory(u64 start, u64 size)
+> +int offline_memory(u64 start, u64 size)
+>  {
+>  	unsigned long start_pfn, end_pfn;
+> 
+> @@ -999,9 +999,9 @@ int remove_memory(u64 start, u64 size)
+>  	return offline_pages(start_pfn, end_pfn, 120 * HZ);
+>  }
+>  #else
+> -int remove_memory(u64 start, u64 size)
+> +int offline_memory(u64 start, u64 size)
+>  {
+>  	return -EINVAL;
+>  }
+>  #endif /* CONFIG_MEMORY_HOTREMOVE */
+> -EXPORT_SYMBOL_GPL(remove_memory);
+> +EXPORT_SYMBOL_GPL(offline_memory);
+> Index: linux-3.5-rc4/include/linux/memory_hotplug.h
+> ===================================================================
+> --- linux-3.5-rc4.orig/include/linux/memory_hotplug.h	2012-06-25 04:53:04.000000000 +0900
+> +++ linux-3.5-rc4/include/linux/memory_hotplug.h	2012-06-26 13:48:38.264940468 +0900
+> @@ -233,7 +233,7 @@ static inline int is_mem_section_removab
+>  extern int mem_online_node(int nid);
+>  extern int add_memory(int nid, u64 start, u64 size);
+>  extern int arch_add_memory(int nid, u64 start, u64 size);
+> -extern int remove_memory(u64 start, u64 size);
+> +extern int offline_memory(u64 start, u64 size);
+>  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>  								int nr_pages);
+>  extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
