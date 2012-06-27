@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab2F0Nlf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 09:41:35 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48231 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab2F0Nle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 09:41:34 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: broonie@opensource.wolfsonmicro.com
-Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] regulator: core: Remove unused get_device_regulator
-Date: Wed, 27 Jun 2012 10:40:28 -0300
-Message-Id: <1340804428-17547-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755693Ab2F0NmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 09:42:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:8594 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752038Ab2F0NmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 09:42:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="116539706"
+Subject: Re: [PATCH] dma: tegra: use sg_dma_address() for getting dma
+ buffer address
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+In-Reply-To: <4FE4A78F.4090307@wwwdotorg.org>
+References: <1340377870-10035-1-git-send-email-ldewangan@nvidia.com>
+	 <4FE4A78F.4090307@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Jun 2012 19:02:36 +0530
+Message-ID: <1340803956.1562.245.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On Fri, 2012-06-22 at 11:12 -0600, Stephen Warren wrote:
+> On 06/22/2012 09:11 AM, Laxman Dewangan wrote:
+> > Use the sg_dma_address() to get the segment buffer address for
+> > DMA transfer in place of sg_phys() which returns the physical
+> > address of an sg entry.
+> > The sg_dma_address() returns the correct buffer memory address
+> > for DMA transfer.
+> 
+> It's what everyone else is doing, so:
+And this is the right thing to do. 
+> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
 
-commit 222cc7b1 (regulator: core: Allow multiple requests of a single supply mapping)
-removed the usage of get_device_regulator().
+Applied, thanks
 
-Remove the function definition too amd get rid of the following warning:
-
-drivers/regulator/core.c:112:26: warning: 'get_device_regulator' defined but not used [-Wunused-function]
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/regulator/core.c |   22 ----------------------
- 1 files changed, 0 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index da31b8a..34b76cc 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -108,28 +108,6 @@ static const char *rdev_get_name(struct regulator_dev *rdev)
- 		return "";
- }
- 
--/* gets the regulator for a given consumer device */
--static struct regulator *get_device_regulator(struct device *dev)
--{
--	struct regulator *regulator = NULL;
--	struct regulator_dev *rdev;
--
--	mutex_lock(&regulator_list_mutex);
--	list_for_each_entry(rdev, &regulator_list, list) {
--		mutex_lock(&rdev->mutex);
--		list_for_each_entry(regulator, &rdev->consumer_list, list) {
--			if (regulator->dev == dev) {
--				mutex_unlock(&rdev->mutex);
--				mutex_unlock(&regulator_list_mutex);
--				return regulator;
--			}
--		}
--		mutex_unlock(&rdev->mutex);
--	}
--	mutex_unlock(&regulator_list_mutex);
--	return NULL;
--}
--
- /**
-  * of_get_regulator - get a regulator device node based on supply name
-  * @dev: Device pointer for the consumer (of regulator) device
 -- 
-1.7.1
+~Vinod
 
