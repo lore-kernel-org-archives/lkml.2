@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab2F0Wg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:36:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45605 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755710Ab2F0Wg5 convert rfc822-to-8bit (ORCPT
+	id S1758151Ab2F0WhO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:37:14 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:60931 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758060Ab2F0WhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:36:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120627090030.GC31212@elgon.mountain>
-References: <20120627085800.GA3007@mwanda>
-	<20120627090030.GC31212@elgon.mountain>
-Date: Wed, 27 Jun 2012 15:36:55 -0700
-Message-ID: <CAHtARFGG4HxL7J40o341gBOg8+GunYEGyP0SrBK_w3pH3v6+PA@mail.gmail.com>
-Subject: Re: [patch -resend] [SCSI] megaraid: remove a spurious IRQ enable
-From: adam radford <aradford@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Jun 2012 18:37:08 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: ralf@linux-mips.org, blogic@openwrt.org, jkosina@suse.cz,
+        standby24x7@gmail.com, bhelgaas@google.com, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@stericsson.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND] mips: pci-lantiq: Fix check for valid gpio
+Date: Thu, 28 Jun 2012 00:36:57 +0200
+Message-Id: <1340836617-21666-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 2:00 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> We took this lock with spin_lock() so we should unlock it with
-> spin_unlock() instead of spin_unlock_irq().  This was introduced in
-> f2c8dc402b "[SCSI] megaraid_mbox: remove scsi_assign_lock usage".
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> This was originally sent on Sat, 30 Jul 2011.  I have cleaned up the
-> commit message a bit and added Christoph to the CC list.
->
-> diff --git a/drivers/scsi/megaraid/megaraid_mbox.c b/drivers/scsi/megaraid/megaraid_mbox.c
-> index 35bd138..54b1c5b 100644
-> --- a/drivers/scsi/megaraid/megaraid_mbox.c
-> +++ b/drivers/scsi/megaraid/megaraid_mbox.c
-> @@ -2731,7 +2731,7 @@ megaraid_reset_handler(struct scsi_cmnd *scp)
->        }
->
->  out:
-> -       spin_unlock_irq(&adapter->lock);
-> +       spin_unlock(&adapter->lock);
->        return rval;
->  }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This patch fixes two checks for valid gpio number, formerly (wrongly)
+considering zero as invalid, now using gpio_is_valid().
 
-Acked-by: Adam Radford <aradford@gmail.com>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Applies to v3.5-rc4
+
+ arch/mips/pci/pci-lantiq.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- linux-2.6.orig/arch/mips/pci/pci-lantiq.c
++++ linux-2.6/arch/mips/pci/pci-lantiq.c
+@@ -129,7 +129,7 @@ static int __devinit ltq_pci_startup(str
+ 
+ 	/* setup reset gpio used by pci */
+ 	reset_gpio = of_get_named_gpio(node, "gpio-reset", 0);
+-	if (reset_gpio > 0)
++	if (gpio_is_valid(reset_gpio))
+ 		devm_gpio_request(&pdev->dev, reset_gpio, "pci-reset");
+ 
+ 	/* enable auto-switching between PCI and EBU */
+@@ -192,7 +192,7 @@ static int __devinit ltq_pci_startup(str
+ 	ltq_ebu_w32(ltq_ebu_r32(LTQ_EBU_PCC_IEN) | 0x10, LTQ_EBU_PCC_IEN);
+ 
+ 	/* toggle reset pin */
+-	if (reset_gpio > 0) {
++	if (gpio_is_valid(reset_gpio)) {
+ 		__gpio_set_value(reset_gpio, 0);
+ 		wmb();
+ 		mdelay(1);
