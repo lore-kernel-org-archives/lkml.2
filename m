@@ -1,39 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2F0Ifp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 04:35:45 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:30377 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751199Ab2F0Ifl (ORCPT
+	id S1753713Ab2F0Igd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 04:36:33 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:1094 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752345Ab2F0Iga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 04:35:41 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH] drm/i915/sprite: Fix mem leak in intel_plane_init()
-To: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, dri-devel@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-In-Reply-To: <alpine.LNX.2.00.1206270053570.3759@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1206270053570.3759@swampdragon.chaosbits.net>
-Date: Wed, 27 Jun 2012 09:34:43 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1340786125_85379@CP5-2952>
+	Wed, 27 Jun 2012 04:36:30 -0400
+Message-ID: <1340786187.1911.24.camel@x61.thuisdomein>
+Subject: [PATCH] iwlegacy: print how long queue was actually stuck
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 27 Jun 2012 10:36:27 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 27 Jun 2012 08:36:28.0663 (UTC) FILETIME=[F231B870:01CD543F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jun 2012 00:55:37 +0200 (CEST), Jesper Juhl <jj@chaosbits.net> wrote:
-> If we ever hit the default case in the switch statement we'll return
-> from the function without freeing the memory we just allocated to
-> 'intel_plane' (but that has not been used).
-> 
-> This patch gets rid of the leak by freeing the memory just before we
-> return.
+Every now and then, after resuming from suspend, the iwlegacy driver
+prints
+    iwl4965 0000:03:00.0: Queue 2 stuck for 2000 ms.
+    iwl4965 0000:03:00.0: On demand firmware reload
 
-Heh, I was more worried about the real leak of the planes on module
-unload.
--Chris
+I have no idea what causes these errors. But the code currently uses
+wd_timeout in the first error. wd_timeout will generally be set at
+IL_DEF_WD_TIMEOUT (ie, 2000). Perhaps printing for how long the queue
+was actually stuck can clarify the cause of these errors.
 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Compile tested on v3.5-rc4. Tested on Fedora 's current v3.4.2 based
+kernel (ie, on F16). That required an edit to this commit because of
+trivial context changes.
+
+1) Please note that testing here involved waiting until I again
+triggered this error (which now of course printed how long the queue was
+actually stuck).
+
+ drivers/net/wireless/iwlegacy/common.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlegacy/common.c b/drivers/net/wireless/iwlegacy/common.c
+index cbf2dc1..763c752 100644
+--- a/drivers/net/wireless/iwlegacy/common.c
++++ b/drivers/net/wireless/iwlegacy/common.c
+@@ -4717,10 +4717,11 @@ il_check_stuck_queue(struct il_priv *il, int cnt)
+ 	struct il_tx_queue *txq = &il->txq[cnt];
+ 	struct il_queue *q = &txq->q;
+ 	unsigned long timeout;
++	unsigned long now = jiffies;
+ 	int ret;
+ 
+ 	if (q->read_ptr == q->write_ptr) {
+-		txq->time_stamp = jiffies;
++		txq->time_stamp = now;
+ 		return 0;
+ 	}
+ 
+@@ -4728,9 +4729,9 @@ il_check_stuck_queue(struct il_priv *il, int cnt)
+ 	    txq->time_stamp +
+ 	    msecs_to_jiffies(il->cfg->wd_timeout);
+ 
+-	if (time_after(jiffies, timeout)) {
++	if (time_after(now, timeout)) {
+ 		IL_ERR("Queue %d stuck for %u ms.\n", q->id,
+-		       il->cfg->wd_timeout);
++		       jiffies_to_msecs(now - txq->time_stamp));
+ 		ret = il_force_reset(il, false);
+ 		return (ret == -EAGAIN) ? 0 : 1;
+ 	}
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.7.6
+
