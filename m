@@ -1,154 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2F0Fwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 01:52:31 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38761 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab2F0Fw3 (ORCPT
+	id S1756075Ab2F0FxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 01:53:06 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46777 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab2F0FxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 01:52:29 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FEA9F8B.30105@jp.fujitsu.com>
-Date: Wed, 27 Jun 2012 14:52:11 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 27 Jun 2012 01:53:04 -0400
+Date: Wed, 27 Jun 2012 07:52:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Kay Sievers <kay@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] printk: Revert the buffered-printk() changes for now
+Message-ID: <20120627055255.GC14913@gmail.com>
+References: <1340322723.27036.220.camel@gandalf.stny.rr.com>
+ <20120622145402.8047a669.akpm@linux-foundation.org>
+ <20120623061313.GA21895@gmail.com>
+ <1340452052.1784.40.camel@mop>
+ <20120625090933.GD24512@gmail.com>
+ <CAPXgP10E7HNDQ73ZFyb4EyDVBko2yXs8Rw0KOSKukGUpSBSz_g@mail.gmail.com>
+ <20120625140748.GB1301@gmail.com>
+ <1340635734.27036.327.camel@gandalf.stny.rr.com>
+ <20120625164033.GA14000@kroah.com>
 MIME-Version: 1.0
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
-CC: <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [RFC PATCH 6/12] memory-hotplug : remove_memory calls __remove_pages
-References: <4FEA9C88.1070800@jp.fujitsu.com>
-In-Reply-To: <4FEA9C88.1070800@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120625164033.GA14000@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds __remove_pages() to remove_memory(). Then the range of
-phys_start_pfn argument and nr_pages argument in __remove_pagse() may
-have different zone. So zone argument is removed from __remove_pages()
-and __remove_pages() caluculates zone in each section.
 
-When CONFIG_SPARSEMEM_VMEMMAP is defined, there is no way to remove a memmap.
-So __remove_section only calls unregister_memory_section().
+* Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> On Mon, Jun 25, 2012 at 10:48:54AM -0400, Steven Rostedt wrote:
+> > On Mon, 2012-06-25 at 16:07 +0200, Ingo Molnar wrote:
+> > 
+> > > System logging is an arguably secondary role, and it 
+> > > should not degrade printk()s primary role.
+> > 
+> > I would argue that printk() should not play the role of 
+> > normal system logging. It's main role should be for boot up 
+> > and crashes. If devices need to log information to 
+> > userspace, it should really use some other means. What was 
+> > /sys made for anyway?
+> 
+> Specifically not for logging.  See the very old discussions of 
+> this a long time ago (back in the 2.5 days), if you are 
+> curious.
+> 
+> printk() is the best thing we have for logging as everyone 
+> uses it and the information in it is exactly what userspace 
+> wants to know about. Because of that, why wouldn't we use it?
 
----
- arch/powerpc/platforms/pseries/hotplug-memory.c |    5 +----
- include/linux/memory_hotplug.h                  |    3 +--
- mm/memory_hotplug.c                             |   20 +++++++++++++-------
- 3 files changed, 15 insertions(+), 13 deletions(-)
+I agree with Greg's point there: the reality is that we have 
+over 50,000 printk() sites in the kernel, which is a heck of a 
+good source of system logging information, which we are not 
+going to change over to some other facility, even if we had some 
+marginal reasons to do it.
 
-Index: linux-3.5-rc4/mm/memory_hotplug.c
-===================================================================
---- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-27 09:07:49.124709164 +0900
-+++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-27 09:08:30.612190446 +0900
-@@ -275,11 +275,14 @@ static int __meminit __add_section(int n
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- static int __remove_section(struct zone *zone, struct mem_section *ms)
- {
--	/*
--	 * XXX: Freeing memmap with vmemmap is not implement yet.
--	 *      This should be removed later.
--	 */
--	return -EBUSY;
-+	int ret;
-+
-+	if (!valid_section(ms))
-+		return ret;
-+
-+	ret = unregister_memory_section(ms);
-+
-+	return ret;
- }
- #else
- static int __remove_section(struct zone *zone, struct mem_section *ms)
-@@ -346,11 +349,11 @@ EXPORT_SYMBOL_GPL(__add_pages);
-  * sure that pages are marked reserved and zones are adjust properly by
-  * calling offline_pages().
-  */
--int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
--		 unsigned long nr_pages)
-+int __remove_pages(unsigned long phys_start_pfn, unsigned long nr_pages)
- {
- 	unsigned long i, ret = 0;
- 	int sections_to_remove;
-+	struct zone *zone;
+Just consider the life time of printk() call sites: in most 
+cases it gets added as a debugging printout, as a: "Hey, I just 
+finished reading Linux Device Drivers, 3rd Edition, and this 
+best ever Linux driver is now ALIVE!!" tag of success.
 
- 	/*
- 	 * We can only remove entire sections
-@@ -363,6 +366,7 @@ int __remove_pages(struct zone *zone, un
- 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
- 		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
-+		zone = page_zone(pfn_to_page(pfn));
- 		ret = __remove_section(zone, __pfn_to_section(pfn));
- 		if (ret)
- 			break;
-@@ -664,6 +668,8 @@ int remove_memory(int nid, u64 start, u6
- 	lock_memory_hotplug();
- 	/* remove memmap entry */
- 	firmware_map_remove(start, start + size, "System RAM");
-+
-+	__remove_pages(start >> PAGE_SHIFT, size >> PAGE_SHIFT);
- 	unlock_memory_hotplug();
- 	return 0;
+Then it gets extended with a few more printouts of unexpected 
+behavior: "So, if you got here the hardware must be buggy or you 
+must be doing something stupid, as the driver code sure as heck 
+is perfect".
 
-Index: linux-3.5-rc4/include/linux/memory_hotplug.h
-===================================================================
---- linux-3.5-rc4.orig/include/linux/memory_hotplug.h	2012-06-27 09:06:35.616628141 +0900
-+++ linux-3.5-rc4/include/linux/memory_hotplug.h	2012-06-27 09:08:30.612190446 +0900
-@@ -89,8 +89,7 @@ extern bool is_pageblock_removable_noloc
- /* reasonably generic interface to expand the physical pages in a zone  */
- extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
- 	unsigned long nr_pages);
--extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
--	unsigned long nr_pages);
-+extern int __remove_pages(unsigned long start_pfn, unsigned long nr_pages);
+Most of the printk()s get removed during productization, but 
+some actually make sense and remain (and some don't make sense 
+but just never trigger).
 
- #ifdef CONFIG_NUMA
- extern int memory_add_physaddr_to_nid(u64 start);
-Index: linux-3.5-rc4/arch/powerpc/platforms/pseries/hotplug-memory.c
-===================================================================
---- linux-3.5-rc4.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-06-27 09:08:25.737248748
-+0900
-+++ linux-3.5-rc4/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-06-27 09:08:30.613190434 +0900
-@@ -76,7 +76,6 @@ unsigned long memory_block_size_bytes(vo
- static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
- {
- 	unsigned long start, start_pfn;
--	struct zone *zone;
- 	int i, ret;
- 	int sections_to_remove;
+Very few people add printk()s as "inform the system logging 
+daemon about an event". The prevailing mindset is that perfect 
+code does not need any logging, so what is left are over 50,000 
+call sites of bragging and debugging code, occasionally massaged 
+to be somewhat user friendly.
 
-@@ -87,8 +86,6 @@ static int pseries_remove_memblock(unsig
- 		return 0;
- 	}
+System logging and tracing in particular can hook off this 
+mechanism, but we probably aren't going to change the social 
+role of printk()s overnight (or ever).
 
--	zone = page_zone(pfn_to_page(start_pfn));
--
- 	/*
- 	 * Remove section mappings and sysfs entries for the
- 	 * section of the memory we are removing.
-@@ -101,7 +98,7 @@ static int pseries_remove_memblock(unsig
- 	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
- 		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
--		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
-+		ret = __remove_pages(start_pfn,  PAGES_PER_SECTION);
- 		if (ret)
- 			return ret;
- 	}
+> Anyway, your "never buffer printk data" patch looks like the 
+> right solution here, I'm guessing you are going to respin it 
+> based on the feedback so far, right?
 
+Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
