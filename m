@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974Ab2F0WIF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:08:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10495 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab2F0WID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:08:03 -0400
-Date: Thu, 28 Jun 2012 00:14:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120627211413.GE27746@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
- <20120627050937.23698.68442.stgit@bling.home>
- <20120627095137.GH17507@redhat.com>
- <1340830749.1207.236.camel@bling.home>
+	id S1758037Ab2F0WIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:08:15 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:37899 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754433Ab2F0WIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 18:08:11 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-209.messagelabs.com!1340834880!6676788!7
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 18/19] staging: comedi: adl_pci6208: cleanup pci6208_attach()
+Date: Wed, 27 Jun 2012 15:07:56 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1340830749.1207.236.camel@bling.home>
+Message-ID: <201206271507.56418.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 02:59:09PM -0600, Alex Williamson wrote:
-> On Wed, 2012-06-27 at 12:51 +0300, Michael S. Tsirkin wrote:
-> > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
-> > > In order to inject an interrupt from an external source using an
-> > > irqfd, we need to allocate a new irq_source_id.  This allows us to
-> > > assert and (later) de-assert an interrupt line independently from
-> > > users of KVM_IRQ_LINE and avoid lost interrupts.
-> > > 
-> > > We also add what may appear like a bit of excessive infrastructure
-> > > around an object for storing this irq_source_id.  However, notice
-> > > that we only provide a way to assert the interrupt here.  A follow-on
-> > > interface will make use of the same irq_source_id to allow de-assert.
-> > > 
-> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > ---
-> > > 
-> > >  Documentation/virtual/kvm/api.txt |    5 ++
-> > >  arch/x86/kvm/x86.c                |    1 
-> > >  include/linux/kvm.h               |    3 +
-> > >  virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
-> > >  4 files changed, 99 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > > index ea9edce..b216709 100644
-> > > --- a/Documentation/virtual/kvm/api.txt
-> > > +++ b/Documentation/virtual/kvm/api.txt
-> > > @@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
-> > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
-> > >  and kvm_irqfd.gsi.
-> > >  
-> > > +With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
-> > > +the requested irqfd.  This is necessary to share level triggered
-> > > +interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
-> > > +with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
-> > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
-> > 
-> > Note that if my patch removing auto-deassert gets accepted,
-> > this is not needed at all: we can just look at the GSI
-> > to see if it's level or edge.
-> 
-> I'm not sure this is a good idea.  I know from vfio that I'm injecting a
-> level interrupt regardless of how the guest has the pic/ioapic
-> programmed at the time I'm calling this ioctl.  Peeking across address
-> spaces to get to the right pin on the right pic/ioapic and see how it's
-> currently programmed seems fragile.  Thanks,
-> 
-> Alex
+For aesthetic reasons, set the dev->board_name as soon as the
+thisboard pointer is available.
 
-Fragile? If you set eventfd as LEVEL but GSI is really edge then
-it all explodes, right? So why give users the option to shoot
-themselves in the foot?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/adl_pci6208.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-
+diff --git a/drivers/staging/comedi/drivers/adl_pci6208.c b/drivers/staging/comedi/drivers/adl_pci6208.c
+index aa2db5d..cb14ffd 100644
+--- a/drivers/staging/comedi/drivers/adl_pci6208.c
++++ b/drivers/staging/comedi/drivers/adl_pci6208.c
+@@ -213,17 +213,16 @@ static int pci6208_attach(struct comedi_device *dev,
+ 		return -EIO;
+ 	thisboard = comedi_board(dev);
+ 
++	dev->board_name = thisboard->name;
++
+ 	ret = comedi_pci_enable(devpriv->pci_dev, "adl_pci6208");
+ 	if (ret) {
+ 		dev_err(dev->class_dev,
+ 			"Failed to enable PCI device and request regions\n");
+ 		return ret;
+ 	}
+-
+ 	dev->iobase = pci_resource_start(devpriv->pci_dev, 2);
+ 
+-	dev->board_name = thisboard->name;
+-
+ 	ret = comedi_alloc_subdevices(dev, 2);
+ 	if (ret)
+ 		return ret;
 -- 
-MST
+1.7.11
+
