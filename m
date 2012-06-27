@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab2F0Nv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 09:51:58 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:53404 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755970Ab2F0Nv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 09:51:57 -0400
-Date: Wed, 27 Jun 2012 08:51:55 -0500
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Jack Steiner <steiner@sgi.com>
-Subject: [patch] sgi-xp: nested calls to spin_lock_irqsave()
-Message-ID: <20120627135155.GA3464@sgi.com>
+	id S1756151Ab2F0NwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 09:52:20 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:55158 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752852Ab2F0NwS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 09:52:18 -0400
+X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jun 2012 09:52:18 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Importance: Normal
+X-Priority: 3 (Normal)
+In-Reply-To: <20120627133332.GA21572@pengutronix.de>
+References: <20120627133332.GA21572@pengutronix.de>,
+	<1340749442.3241.4046.camel@pc786-ubu.gnet.global.vpn>
+Subject: Re: [PATCH] rtc: ds1307: Register offset moved to chip description
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Austin Boyle <Austin.Boyle@aviatnet.com>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Message-ID: <OFD3CD15E9.315EBD6D-ONC1257A2A.004B4768-C1257A2A.004B476C@transmode.se>
+Date: Wed, 27 Jun 2012 15:42:14 +0200
+X-Mailer: Lotus Domino Web Server Release 8.5.3FP1 March 07, 2012
+X-MIMETrack: Serialize by Notes Server on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
+ 27/06/2012 15:42:14,
+	Serialize complete at 27/06/2012 15:42:14,
+	Serialize by Router on mail1/Transmode(Release 8.5.3FP1|March 07, 2012) at
+ 27/06/2012 15:42:14
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> 
+> On Wed, Jun 27, 2012 at 10:24:02AM +1200, Austin Boyle wrote:
+> > rtc: ds1307: Register offset moved to chip description
+> > 
+> > From: Austin Boyle <Austin.Boyle@aviatnet.com>
+> > 
+> > Register offset is added to chip description instead of being hard-coded
+> > into probe function.
+> > 
+> > Based on v3.5-rc4
+> > 
+> > Cc: Wolfram Sang <w.sang@pengutronix.de>
+> > Cc: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+> > Cc: Alessandro Zummo <a.zummo@towertech.it>
+> > Signed-off-by: Austin Boyle <Austin.Boyle@aviatnet.com>
+> 
+> I would ack this patch immediately if it added another type using this
+> feature. But only changing already working code doesn't seem necessary
+> to me.
+> 
+> Regards,
+> 
+>     Wolfram
+> 
 
-The code here has a nested spin_lock_irqsave().  It's not needed since
-IRQs are already disabled and it causes a problem because it means that
-IRQs won't be enabled again at the end.  The second call to
-spin_lock_irqsave() will overwrite the value of irq_flags and we can't
-restore the proper settings.
+That was my gut feeling too.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Robin Holt <holt@sgi.com>
-
-diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
-index 17bbacb..87b251a 100644
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -452,9 +452,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 
- 		if (msg->activate_gru_mq_desc_gpa !=
- 		    part_uv->activate_gru_mq_desc_gpa) {
--			spin_lock_irqsave(&part_uv->flags_lock, irq_flags);
-+			spin_lock(&part_uv->flags_lock);
- 			part_uv->flags &= ~XPC_P_CACHED_ACTIVATE_GRU_MQ_DESC_UV;
--			spin_unlock_irqrestore(&part_uv->flags_lock, irq_flags);
-+			spin_unlock(&part_uv->flags_lock);
- 			part_uv->activate_gru_mq_desc_gpa =
- 			    msg->activate_gru_mq_desc_gpa;
- 		}
+  Jocke
