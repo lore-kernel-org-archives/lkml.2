@@ -1,131 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab2F0QCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 12:02:36 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63312 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab2F0QCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 12:02:33 -0400
-Date: Wed, 27 Jun 2012 17:02:20 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: "Kim, Jong-Sung" <neidhard.kim@lge.com>
-Cc: "'Minchan Kim'" <minchan@kernel.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Nicolas Pitre'" <nico@linaro.org>,
-        "'Catalin Marinas'" <catalin.marinas@arm.com>,
-        "'Chanho Min'" <chanho.min@lge.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] [RESEND] arm: limit memblock base address for
- early_pte_alloc
-Message-ID: <20120627160220.GA2310@linaro.org>
-References: <1338880312-17561-1-git-send-email-minchan@kernel.org>
- <025701cd457e$d5065410$7f12fc30$@lge.com>
+	id S1754401Ab2F0QGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 12:06:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38373 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751554Ab2F0QGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 12:06:45 -0400
+Date: Wed, 27 Jun 2012 19:06:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Frank Swiderski <fes@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, riel@redhat.com,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mikew@google.com
+Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
+Message-ID: <20120627160644.GD21393@redhat.com>
+References: <1340742778-11282-1-git-send-email-fes@google.com>
+ <20120626214106.GC14054@redhat.com>
+ <87lij91myw.fsf@rustcorp.com.au>
+ <CAK+C7kWRsDcsB-W9m=Hn65xekvb-uOZC4oAMT0z48CC5q00oJw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <025701cd457e$d5065410$7f12fc30$@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK+C7kWRsDcsB-W9m=Hn65xekvb-uOZC4oAMT0z48CC5q00oJw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 10:58:50PM +0900, Kim, Jong-Sung wrote:
-> > From: Minchan Kim [mailto:minchan@kernel.org]
-> > Sent: Tuesday, June 05, 2012 4:12 PM
-> > 
-> > If we do arm_memblock_steal with a page which is not aligned with section
-> > size, panic can happen during boot by page fault in map_lowmem.
-> > 
-> > Detail:
-> > 
-> > 1) mdesc->reserve can steal a page which is allocated at 0x1ffff000 by
-> > memblock
-> >    which prefers tail pages of regions.
-> > 2) map_lowmem maps 0x00000000 - 0x1fe00000
-> > 3) map_lowmem try to map 0x1fe00000 but it's not aligned by section due to
-> 1.
-> > 4) calling alloc_init_pte allocates a new page for new pte by
-> memblock_alloc
-> > 5) allocated memory for pte is 0x1fffe000 -> it's not mapped yet.
-> > 6) memset(ptr, 0, sz) in early_alloc_aligned got PANICed!
+On Wed, Jun 27, 2012 at 08:48:55AM -0700, Frank Swiderski wrote:
+> On Tue, Jun 26, 2012 at 7:56 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > On Wed, 27 Jun 2012 00:41:06 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> >> On Tue, Jun 26, 2012 at 01:32:58PM -0700, Frank Swiderski wrote:
+> >> > This implementation of a virtio balloon driver uses the page cache to
+> >> > "store" pages that have been released to the host.  The communication
+> >> > (outside of target counts) is one way--the guest notifies the host when
+> >> > it adds a page to the page cache, allowing the host to madvise(2) with
+> >> > MADV_DONTNEED.  Reclaim in the guest is therefore automatic and implicit
+> >> > (via the regular page reclaim).  This means that inflating the balloon
+> >> > is similar to the existing balloon mechanism, but the deflate is
+> >> > different--it re-uses existing Linux kernel functionality to
+> >> > automatically reclaim.
+> >> >
+> >> > Signed-off-by: Frank Swiderski <fes@google.com>
+> >>
+> >> I'm pondering this:
+> >>
+> >> Should it really be a separate driver/device ID?
+> >> If it behaves the same from host POV, maybe it
+> >> should be up to the guest how to inflate/deflate
+> >> the balloon internally?
+> >
+> > Well, it shouldn't steal ID 10, either way :)  Either use a completely
+> > bogus number, or ask for an id.
+> >
+> > But AFAICT this should be a an alternate driver of for the same device:
+> > it's not really a separate device, is it?
+> >
+> > Cheers,
+> > Rusty.
 > 
-> May I suggest another simple approach? The first continuous couples of
-> sections are always safely section-mapped inside alloc_init_section funtion.
-> So, by limiting memblock_alloc to the end of the first continuous couples of
-> sections at the start of map_lowmem, map_lowmem can safely memblock_alloc &
-> memset even if we have one or more section-unaligned memory regions. The
-> limit can be extended back to arm_lowmem_limit after the map_lowmem is done.
-
-By a strange coincidence, I hit exactly the same problem today.
-
-This approach looks nice and simple, but ...
-
+> Apologies, Rusty.  Asking for an ID is in the virtio spec, and I
+> completely neglected that step.  Though as you and others have pointed
+> out, this probably fits better as a different driver for the same
+> device.  Since it changes whether or not the deflate operation is
+> necessary, it also seems that how this should look is different
+> behavior based on a feature bit in the device.
 > 
-> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> index e5dad60..edf1e2d 100644
-> --- a/arch/arm/mm/mmu.c
-> +++ b/arch/arm/mm/mmu.c
-> @@ -1094,6 +1094,11 @@ static void __init kmap_init(void)
->  static void __init map_lowmem(void)
->  {
->  	struct memblock_region *reg;
-> +	phys_addr_t pmd_map_end;
-> +
-> +	pmd_map_end = (memblock.memory.regions[0].base +
-> +	               memblock.memory.regions[0].size) & PMD_MASK;
-
-What does memblock.memory.regions[0] actually refer to at this point?
-Just before map_lowmem(), memblock_dump_all() gives me this:
-
-[    0.000000] MEMBLOCK configuration:
-[    0.000000]  memory size = 0x1ff00000 reserved size = 0x6220a5
-[    0.000000]  memory.cnt  = 0x1
-[    0.000000]  memory[0x0]     [0x00000080000000-0x0000009fefffff], 0x1ff00000 bytes
-[    0.000000]  reserved.cnt  = 0x4
-[    0.000000]  reserved[0x0]   [0x00000080004000-0x00000080007fff], 0x4000 bytes
-[    0.000000]  reserved[0x1]   [0x00000080008200-0x00000080582c83], 0x57aa84 bytes
-[    0.000000]  reserved[0x2]   [0x000000807d4e78-0x000000807d6603], 0x178c bytes
-[    0.000000]  reserved[0x3]   [0x00000080d00000-0x00000080da1e94], 0xa1e95 bytes
-
-For me, it appears that this block just contains the initial region
-passed in ATAG_MEM or on the command line, with some reservations
-for swapper_pg_dir, the kernel text/data, device tree and initramfs.
-
-So far as I can tell, the only memory guaranteed to be mapped here
-is the kernel image: there may be no guarantee that there is any unused
-space in this region which could be used to allocate extra page tables.
-The rest appears during the execution of map_lowmem().
-
-Cheers
----Dave
-
-> +	memblock_set_current_limit(pmd_map_end);
->  
->  	/* Map all the lowmem memory banks. */
->  	for_each_memblock(memory, reg) {
-> @@ -1113,6 +1118,8 @@ static void __init map_lowmem(void)
->  
->  		create_mapping(&map);
->  	}
-> +
-> +	memblock_set_current_limit(arm_lowmem_limit);
->  }
->  
->  /*
-> @@ -1123,8 +1130,6 @@ void __init paging_init(struct machine_desc *mdesc)
->  {
->  	void *zero_page;
->  
-> -	memblock_set_current_limit(arm_lowmem_limit);
-> -
->  	build_mem_type_table();
->  	prepare_page_table();
->  	map_lowmem();
+> If that sounds reasonable, then what I'll do with this patch is merge
+> it with the existing virtio balloon driver with a feature bit for
+> determining which behavior to use.
 > 
+> I also think the idea of a generic balloon that the different balloon
+> drivers use for the inflate/deflate operations is interesting and
+> useful, though I think the suggestion of pending that until later is
+> correct.
 > 
+> Sounds reasonable?
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Regards,
+> fes
+
+I think a spec patch would be a good spec at this point.
+You can get the spec from Rusty, or a mirror
+from my git:
+
+git://git.kernel.org/pub/scm/virt/kvm/mst/virtio-spec.git
+
+
+
