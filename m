@@ -1,119 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab2F0MPS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:15:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47036 "EHLO mx1.redhat.com"
+	id S1756689Ab2F0MX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 08:23:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32049 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605Ab2F0MPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:15:16 -0400
-Message-ID: <4FEAF94F.2060109@redhat.com>
-Date: Wed, 27 Jun 2012 09:15:11 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753785Ab2F0MXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 08:23:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="170612805"
+Date: Wed, 27 Jun 2012 20:23:06 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: BUG: No init found on NFSROOT
+Message-ID: <20120627122306.GA19252@localhost>
+References: <20120626145432.GA15289@localhost>
+ <20120626172918.GA16446@localhost>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch v3 -resend] edac i5000, i5400: fix pointer math in i5000_get_mc_regs()
-References: <20120627090758.GQ31212@elgon.mountain>
-In-Reply-To: <20120627090758.GQ31212@elgon.mountain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120626172918.GA16446@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-06-2012 06:07, Dan Carpenter escreveu:
-> "pvt->ambase" is a u64 datatype.  The intent here is to fill the first
-> half in the first call to pci_read_config_dword() and the other half in
-> the second.  Unfortunately the pointer math is wrong so we set the wrong
-> data.
+Hi Christoph,
 
-Applied, thanks!
-Mauro
+It's a surprise that it bisects down to this commit. I confirmed
+that it boots reliably if reverting this commit on top of linux-next.
 
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> v2: Redid it as with a union as Walter Harms suggested.
->      Fixed the same bug in i5400_edac.c as well.
-> v3: Make the struct __packed just in case.
-> 
-> I don't have this hardware, so please review carefully.  But the
-> original code obviously corrupts memory so my patch could hardly be
-> worse...
-> 
-> This was originally sent on Mon, Mar 5, 2012.  Btw, there are some
-> Sparse errors in these files.  The code looks buggy but I don't know
-> what the intent was.
-> 
-> drivers/edac/i5000_edac.c:485:15: warning: right shift by bigger than source value
-> drivers/edac/i5000_edac.c:580:23: warning: right shift by bigger than source value
-> drivers/edac/i5400_edac.c:391:36: warning: right shift by bigger than source value
-> drivers/edac/i5400_edac.c:401:37: warning: right shift by bigger than source value
-> 
-> diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-> index a5c33df..39c6375 100644
-> --- a/drivers/edac/i5000_edac.c
-> +++ b/drivers/edac/i5000_edac.c
-> @@ -328,7 +328,13 @@ struct i5000_pvt {
->   	struct pci_dev *branch_1;	/* 22.0 */
->   
->   	u16 tolm;		/* top of low memory */
-> -	u64 ambase;		/* AMB BAR */
-> +	union {
-> +		u64 ambase;		/* AMB BAR */
-> +		struct {
-> +			u32 ambase_bottom;
-> +			u32 ambase_top;
-> +		} u __packed;
-> +	};
->   
->   	u16 mir0, mir1, mir2;
->   
-> @@ -1131,9 +1137,9 @@ static void i5000_get_mc_regs(struct mem_ctl_info *mci)
->   	pvt = mci->pvt_info;
->   
->   	pci_read_config_dword(pvt->system_address, AMBASE,
-> -			(u32 *) & pvt->ambase);
-> +			&pvt->u.ambase_bottom);
->   	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
-> -			((u32 *) & pvt->ambase) + sizeof(u32));
-> +			&pvt->u.ambase_top);
->   
->   	maxdimmperch = pvt->maxdimmperch;
->   	maxch = pvt->maxch;
-> diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
-> index 50069c6..2772469 100644
-> --- a/drivers/edac/i5400_edac.c
-> +++ b/drivers/edac/i5400_edac.c
-> @@ -327,7 +327,13 @@ struct i5400_pvt {
->   	struct pci_dev *branch_1;		/* 22.0 */
->   
->   	u16 tolm;				/* top of low memory */
-> -	u64 ambase;				/* AMB BAR */
-> +	union {
-> +		u64 ambase;				/* AMB BAR */
-> +		struct {
-> +			u32 ambase_bottom;
-> +			u32 ambase_top;
-> +		} u __packed;
-> +	};
->   
->   	u16 mir0, mir1;
->   
-> @@ -1055,9 +1061,9 @@ static void i5400_get_mc_regs(struct mem_ctl_info *mci)
->   	pvt = mci->pvt_info;
->   
->   	pci_read_config_dword(pvt->system_address, AMBASE,
-> -			(u32 *) &pvt->ambase);
-> +			&pvt->u.ambase_bottom);
->   	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
-> -			((u32 *) &pvt->ambase) + sizeof(u32));
-> +			&pvt->u.ambase_top);
->   
->   	maxdimmperch = pvt->maxdimmperch;
->   	maxch = pvt->maxch;
-> 
+8c138bc00925521c4e764269db3a903bd2a51592 is the first bad commit
+commit 8c138bc00925521c4e764269db3a903bd2a51592
+Author: Christoph Lameter <cl@linux.com>
+Date:   Wed Jun 13 10:24:58 2012 -0500
 
+    slab: Get rid of obj_size macro
 
+    The size of the slab object is frequently needed. Since we now
+    have a size field directly in the kmem_cache structure there is no
+    need anymore of the obj_size macro/function.
+
+    Signed-off-by: Christoph Lameter <cl@linux.com>
+    Signed-off-by: Pekka Enberg <penberg@kernel.org>
+
+:040000 040000 e0418be654b66b2364add59bb469024fd6958791 f6be0da4d4740844ab8a4c561dbe3815a3f9b8b4 M      mm
+bisect run success
+
+> > [  133.909702] =========================
+> > [  133.910694] [ BUG: held lock freed! ]
+> > [  133.911700] 3.5.0-rc4+ #5 Not tainted
+> > [  133.912672] -------------------------
+> > [  133.912969] swapper/0/0 is freeing memory ffff88001233ce08-ffff88001233de07, with a lock still held there!
+> > [  133.912969]  (slock-AF_INET-RPC/1){+.-...}, at: [<ffffffff82ae84ee>] tcp_v4_rcv+0x28b/0x6fc
+> > [  133.912969] 3 locks held by swapper/0/0:
+> > [  133.912969]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff82a1ea8a>] rcu_lock_acquire+0x0/0x29
+> > [  133.912969]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff82aca483>] rcu_lock_acquire.constprop.14+0x0/0x30
+> > [  133.912969]  #2:  (slock-AF_INET-RPC/1){+.-...}, at: [<ffffffff82ae84ee>] tcp_v4_rcv+0x28b/0x6fc
+> > [  133.912969] 
+> > [  133.912969] stack backtrace:
+> > [  133.912969] Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc4+ #5
+> > [  133.912969] Call Trace:
+> > [  133.912969]  <IRQ>  [<ffffffff810e09ae>] debug_check_no_locks_freed+0x109/0x14b
+> > [  133.912969]  [<ffffffff811774e0>] kmem_cache_free+0x2e/0xa7
+> > [  133.912969]  [<ffffffff82a191e5>] __kfree_skb+0x7f/0x83
+> > [  133.912969]  [<ffffffff82adeccd>] tcp_ack+0x45d/0xc6a
+> > [  133.912969]  [<ffffffff810c22ae>] ? local_clock+0x3b/0x52
+> > [  133.912969]  [<ffffffff82adff44>] tcp_rcv_state_process+0x15a/0x7c6
+> > [  133.912969]  [<ffffffff82ae79e7>] tcp_v4_do_rcv+0x341/0x390
+> > [  133.912969]  [<ffffffff82ae88db>] tcp_v4_rcv+0x678/0x6fc
+> > [  133.912969]  [<ffffffff82aca618>] ip_local_deliver_finish+0x165/0x1e4
+> > [  133.912969]  [<ffffffff82acab4a>] ip_local_deliver+0x53/0x84
+> > [  133.912969]  [<ffffffff810c228c>] ? local_clock+0x19/0x52
+> > [  133.912969]  [<ffffffff82aca9c6>] ip_rcv_finish+0x32f/0x367
+> > [  133.912969]  [<ffffffff82acad8b>] ip_rcv+0x210/0x269
+> > [  133.912969]  [<ffffffff82a1eab1>] ? rcu_lock_acquire+0x27/0x29
+> > [  133.912969]  [<ffffffff82a1ea8a>] ? softnet_seq_show+0x68/0x68
+> > [  133.912969]  [<ffffffff82a21ede>] __netif_receive_skb+0x3cd/0x464
+> > [  133.912969]  [<ffffffff82a21fda>] netif_receive_skb+0x65/0x9c
+> > [  133.912969]  [<ffffffff82a227c5>] ? __napi_gro_receive+0xf2/0xff
+> > [  133.912969]  [<ffffffff82a2209e>] napi_skb_finish+0x26/0x58
+> > [  133.912969]  [<ffffffff810c228c>] ? local_clock+0x19/0x52
+> > [  133.912969]  [<ffffffff82a228c5>] napi_gro_receive+0x2f/0x34
+> > [  133.912969]  [<ffffffff81e36d12>] e1000_receive_skb+0x57/0x60
+> > [  133.912969]  [<ffffffff81e39b23>] e1000_clean_rx_irq+0x2f2/0x387
+> > [  133.912969]  [<ffffffff81e390f3>] e1000_clean+0x541/0x695
+> > [  133.912969]  [<ffffffff8106c57b>] ? kvm_clock_read+0x2e/0x36
+> > [  133.912969]  [<ffffffff82a22402>] ? net_rx_action+0x1b3/0x1f8
+> > [  133.912969]  [<ffffffff82a22302>] net_rx_action+0xb3/0x1f8
+> > [  133.912969]  [<ffffffff810984ab>] ? __do_softirq+0x76/0x1e8
+> > [  133.912969]  [<ffffffff81098515>] __do_softirq+0xe0/0x1e8
+> > [  133.912969]  [<ffffffff81122190>] ? time_hardirqs_off+0x26/0x2a
+> > [  133.912969]  [<ffffffff82ea7fec>] call_softirq+0x1c/0x30
+> > [  133.912969]  [<ffffffff81049cc8>] do_softirq+0x4a/0xa2
+> > [  133.912969]  [<ffffffff8109888e>] irq_exit+0x51/0xbc
+> > [  133.912969]  [<ffffffff82ea88ae>] do_IRQ+0x8e/0xa5
+> > [  133.912969]  [<ffffffff82ea002f>] common_interrupt+0x6f/0x6f
+> > [  133.912969]  <EOI>  [<ffffffff8106c76b>] ? native_safe_halt+0x6/0x8
+> > [  133.912969]  [<ffffffff810e08a3>] ? trace_hardirqs_on+0xd/0xf
+> > [  133.912969]  [<ffffffff8104f384>] default_idle+0x53/0x90
+> > [  133.912969]  [<ffffffff8104fc09>] cpu_idle+0xcc/0x123
+> > [  133.912969]  [<ffffffff82d1d8dd>] rest_init+0xd1/0xda
+> > [  133.912969]  [<ffffffff82d1d80c>] ? csum_partial_copy_generic+0x16c/0x16c
+> > [  133.912969]  [<ffffffff8460dbbc>] start_kernel+0x3da/0x3e7
+> > [  133.912969]  [<ffffffff8460d5ea>] ? repair_env_string+0x5a/0x5a
+> > [  133.912969]  [<ffffffff8460d2d6>] x86_64_start_reservations+0xb1/0xb5
+> > [  133.912969]  [<ffffffff8460d3d8>] x86_64_start_kernel+0xfe/0x10b
+> > [  134.024230] VFS: Mounted root (nfs filesystem) on device 0:14.
+
+Thanks,
+Fengguang
