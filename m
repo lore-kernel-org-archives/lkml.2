@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab2F0O7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 10:59:11 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:43040 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339Ab2F0O7J (ORCPT
+	id S1757507Ab2F0PAK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:00:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42187 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754204Ab2F0PAI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 10:59:09 -0400
-Date: Wed, 27 Jun 2012 16:58:48 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
-        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+	Wed, 27 Jun 2012 11:00:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJRGBZze+hyoj=XepAU3gfSoxzenR1OW+huqGcmF2k3hwMT4kA@mail.gmail.com>
+References: <20120625212312.GA2345@p4.domain>
+	<CAJRGBZze+hyoj=XepAU3gfSoxzenR1OW+huqGcmF2k3hwMT4kA@mail.gmail.com>
+Date: Wed, 27 Jun 2012 23:00:06 +0800
+Message-ID: <CAJRGBZz50QsoWTxGrFxyxoyiy-0-m9evC83dQdLrwTqZbM7oSA@mail.gmail.com>
+Subject: Re: [patch update-v1] a simple hardware detector for latency as well
+ as throughput ver. 0.1.0
+From: Luming Yu <luming.yu@gmail.com>
+To: arnd@arndb.de
+Cc: jcm@jonmasters.org, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8 v3] i2c: i801: optimize waiting for HWPEC to finish
-Message-ID: <20120627165848.5a080673@endymion.delvare>
-In-Reply-To: <1340805255-8041-3-git-send-email-djkurtz@chromium.org>
-References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
-	<1340805255-8041-3-git-send-email-djkurtz@chromium.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Mon, Jun 25, 2012 at 9:37 PM, Luming Yu <luming.yu@gmail.com> wrote:
+> On Tue, Jun 26, 2012 at 5:23 AM, Luming Yu <luming.yu@gmail.com> wrote:
+>> The patch is the fist step to test some basic hardware functions like
+>> TSC to help people understand if there is any hardware latency as well
+>> as throughput problem exposed on bare metal or left behind by BIOS or
+>> interfered by SMI. Currently the patch tests TSC, CPU Frequency, and
+>> RDRAND, which is a new CPU instruction to get random number introudced
+>> in new CPU like Intel Ivy Bridge, in stop_machine context.
+>>
+>> The tsc samples (ns) below are from a P4 system. You can change from 0
+>> to 1000 in /sys/kernel/debug/hw_atency_test/threshold to TSC sample at ms.
+>
+> typo.
+>
+> s/ms/us/
+>
+>>
+>> [root@p4 linux]# rmmod hw_latency_test
+>> [root@p4 linux]# insmod drivers/misc/hw_latency_test.ko
+>> [root@p4 linux]# echo tsc > /sys/kernel/debug/hw_latency_test/current
+>> [root@p4 linux]# echo 1 > /sys/kernel/debug/hw_latency_test/enable
+>> [root@p4 linux]# cat /sys/kernel/debug/hw_latency_test/sample
+>> 1340657264.0434121340   388
+>> 1340657264.0935125912   379
+>> 1340657265.0436123548   404
+>> 1340657265.0937122432   441
+>> ....
+>> ^C
+>> [root@p4 linux]# echo 0 > /sys/kernel/debug/hw_latency_test/enable
+>>
+>> Signed-off-by: Luming  Yu <luming.yu@intel.com>
+>> ---
+>> I will add more tests after the first patch gets merged for those guys
+>> who want to directly play with new hardware functions, and latency and
+>> bandwidth is concern, or simply out of curiosity. The patch is based on
+>> hardware latency dector written by Jcm in RT-tree. I assume I can add
+>> Jcm's signed off here.
+>>
+>>
+>>  drivers/misc/Kconfig           |    7 +
+>>  drivers/misc/Makefile          |    2 +
+>>  drivers/misc/hw_latency_test.c |  833 ++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 842 insertions(+), 0 deletions(-)
+>>
+>>
+>> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+>> index c779509..a5216b5 100644
+>> --- a/drivers/misc/Kconfig
+>> +++ b/drivers/misc/Kconfig
+>> @@ -123,6 +123,13 @@ config IBM_ASM
+>>          for information on the specific driver level and support statement
+>>          for your IBM server.
+>>
+>> +config HW_LATENCY_TEST
+>> +       tristate "Testing module to detect hardware lattency and throughput"
+>> +       depends on DEBUG_FS
+>> +       depends on RING_BUFFER
+>> +       depends on X86
 
-On Wed, 27 Jun 2012 21:54:09 +0800, Daniel Kurtz wrote:
-> When a transaction has finished (including the PEC), the SMBus controller
-> sets the INTR bit.
-> Slightly optimize the polling loop by reading status before the first
-> sleep.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/i2c/busses/i2c-i801.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-> index 51e11eb..8b74e1e 100644
-> --- a/drivers/i2c/busses/i2c-i801.c
-> +++ b/drivers/i2c/busses/i2c-i801.c
-> @@ -291,11 +291,11 @@ static void i801_wait_hwpec(struct i801_priv *priv)
->  	int timeout = 0;
->  	int status;
->  
-> -	do {
-> +	status = inb_p(SMBHSTSTS(priv));
-> +	while ((!(status & SMBHSTSTS_INTR)) && (timeout++ < MAX_RETRIES)) {
->  		usleep_range(250, 500);
->  		status = inb_p(SMBHSTSTS(priv));
-> -	} while ((!(status & SMBHSTSTS_INTR))
-> -		 && (timeout++ < MAX_RETRIES));
-> +	}
->  
->  	if (timeout > MAX_RETRIES)
->  		dev_dbg(&priv->pci_dev->dev, "PEC Timeout!\n");
+I begun the tool on X86, but bear in mind that use standard kernel interface
+as much as possible. I was trying to measure CPU Frequency, but the use of
+calibrate_tsc forced me add a X86 dependency here.
 
-Hmm, I would be very cautious here. Deep memories whisper to me
-that we have sometimes done it that way in the past due to hardware
-bugs. I think it was for the PIIX4 and not the 82801, but I wouldn't be
-surprised if early 82801 chips had some hardware bugs as well.
+Other finding is recalibrate_cpu_khz() is a null function in SMP.
+But the only two users (p4-clockmod.c and powernow-k7.c) themselves
+could lack of users roo these days.
 
-Also note that optimizing the polling code isn't a priority when you're
-about to enable interrupts for most chips supported by the driver. If
-anything, leaving the polling code unchanged for now could even be a
-goal, to make sure that users can disable interrupts if that doesn't
-work for them, and things keep working as before.
+Let me know if there are any other comments.
 
-Plus, PEC isn't used that much (neither you nor me can test it). And
-lastly, are you really certain that there is a benefit? Are you sure
-that the SMBus controller is always faster to receive and process the
-PEC byte than the CPU is to reach the INTR check?
+My plan for the tool is to push it in 3.6 or 3.7. So I will routinely
+get back to the thread probably weekly or bi-weekly in the time frame.
+:-)
+The 0.2 will based on what I can see in upstream of the tool.
 
-Unless you have actual numbers showing a significant improvement, I'd
-rather postpone this change.
-
--- 
-Jean Delvare
+Thanks!!!
