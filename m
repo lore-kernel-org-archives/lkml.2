@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab2F0XXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 19:23:54 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43103 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab2F0XXw (ORCPT
+	id S1757462Ab2F0XeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 19:34:11 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62052 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab2F0XeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 19:23:52 -0400
+	Wed, 27 Jun 2012 19:34:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <1340838807.10063.90.camel@twins>
+In-Reply-To: <CA+55aFy6m967fMxyBsRoXVecdpGtSphXi_XdhwS0DB81Qaocdw@mail.gmail.com>
 References: <20120627211540.459910855@chello.nl> <20120627212831.137126018@chello.nl>
  <CA+55aFwZoVK76ue7tFveV0XZpPUmoCVXJx8550OxPm+XKCSSZA@mail.gmail.com>
- <1340838154.10063.86.camel@twins> <1340838807.10063.90.camel@twins>
+ <1340838154.10063.86.camel@twins> <1340838807.10063.90.camel@twins> <CA+55aFy6m967fMxyBsRoXVecdpGtSphXi_XdhwS0DB81Qaocdw@mail.gmail.com>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 27 Jun 2012 16:23:30 -0700
-X-Google-Sender-Auth: Sabp52cv_BE9y3Ry7IEDZYW17Jk
-Message-ID: <CA+55aFy6m967fMxyBsRoXVecdpGtSphXi_XdhwS0DB81Qaocdw@mail.gmail.com>
+Date: Wed, 27 Jun 2012 16:33:44 -0700
+X-Google-Sender-Auth: JXEuFwCbBn-iliBXoaE5K5a4zfc
+Message-ID: <CA+55aFzLNsVRkp_US8rAmygEkQpp1s1YdakV86Ck-4RZM7TTdA@mail.gmail.com>
 Subject: Re: [PATCH 08/20] mm: Optimize fullmm TLB flushing
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
@@ -42,30 +42,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 4:13 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+On Wed, Jun 27, 2012 at 4:23 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> That triggered.. is this a problem though, at this point userspace is
-> very dead so it shouldn't matter, right?
+> But the branch prediction tables are obviously just predictions, and
+> they easily contain user addresses etc in them. So the kernel may well
+> end up speculatively doing a TLB fill on a user access.
 
-It still matters. Even if user space is dead, kernel space accesses
-can result in TLB fills in user space. Exactly because of things like
-speculative fills etc.
+That should be ".. on a user *address*", hopefully that was clear from
+the context, if not from the text.
 
-So what can happen - for example - is that the kernel does a indirect
-jump, and the CPU predicts the destination of the jump that using the
-branch prediction tables.
+IOW, the point I'm trying to make is that even if there are zero
+*actual* accesses of user space (because user space is dead, and the
+kernel hopefully does no "get_user()/put_user()" stuff at this point
+any more), the CPU may speculatively use user addresses for the
+bog-standard kernel addresses that happen.
 
-But the branch prediction tables are obviously just predictions, and
-they easily contain user addresses etc in them. So the kernel may well
-end up speculatively doing a TLB fill on a user access.
+Taking a user address from the BTB is just one example. Speculative
+memory accesses might happen after a mis-predicted branch, where we
+test a pointer against NULL, and after the branch we access it. So
+doing a speculative TLB walk of the NULL address would not necessarily
+even be unusual. Obviously normally nothing is actually mapped there,
+but these kinds of things can *easily* result in the page tables
+themselves being cached, even if the final page doesn't exist.
 
-And your whole optimization depends on this not happening, unless I
-read the logic wrong. The whole "invalidate the TLB just once
-up-front" approach is *only* valid if you know that nothing is going
-to ever fill that TLB again. But see above - if we're still running
-within that TLB context, we have no idea what speculative execution
-may or may not end up filling.
+Also, all of this obviously depends on how aggressive the speculation
+is. It's entirely possible that effects like these are really hard to
+see in practice, and you'll almost never hit it. But stale TLB
+contents (or stale page directory caches) are *really* nasty when they
+do happen, and almost impossible to debug. So we want to be insanely
+anal in this area.
 
-That said, maybe I misread your patch?
-
-                   Linus
+               Linus
