@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2F0U6L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 16:58:11 -0400
-Received: from mga07.intel.com ([143.182.124.22]:24473 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757317Ab2F0U6J convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 16:58:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120627090521.GM31212@elgon.mountain>
-References: <20120627085800.GA3007@mwanda>
-	<20120627090521.GM31212@elgon.mountain>
-Date: Wed, 27 Jun 2012 13:58:06 -0700
-Message-ID: <CABE8wwt-56EzC4Tmh8FyGPS+ftgNz3EAh7qfRxpc9CZizOqQqQ@mail.gmail.com>
-Subject: Re: [patch -resend] [SCSI] isci: add a couple __iomem annotations
-From: Dan Williams <dan.j.williams@intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Intel SCU Linux support <intel-linux-scu@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>,
-        Ed Nadolski <edmund.nadolski@intel.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932218Ab2F0U7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 16:59:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36645 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756764Ab2F0U7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 16:59:12 -0400
+Message-ID: <1340830749.1207.236.camel@bling.home>
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Date: Wed, 27 Jun 2012 14:59:09 -0600
+In-Reply-To: <20120627095137.GH17507@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+	 <20120627050937.23698.68442.stgit@bling.home>
+	 <20120627095137.GH17507@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 2:05 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> These are __iomem.  Sparse complains if we don't have that.
->
-> drivers/scsi/isci/phy.c +149 70: warning:
->        incorrect type in initializer (different address spaces)
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> Sent on Wed, 18 Jan 2012.
->
+On Wed, 2012-06-27 at 12:51 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > In order to inject an interrupt from an external source using an
+> > irqfd, we need to allocate a new irq_source_id.  This allows us to
+> > assert and (later) de-assert an interrupt line independently from
+> > users of KVM_IRQ_LINE and avoid lost interrupts.
+> > 
+> > We also add what may appear like a bit of excessive infrastructure
+> > around an object for storing this irq_source_id.  However, notice
+> > that we only provide a way to assert the interrupt here.  A follow-on
+> > interface will make use of the same irq_source_id to allow de-assert.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> > 
+> >  Documentation/virtual/kvm/api.txt |    5 ++
+> >  arch/x86/kvm/x86.c                |    1 
+> >  include/linux/kvm.h               |    3 +
+> >  virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
+> >  4 files changed, 99 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > index ea9edce..b216709 100644
+> > --- a/Documentation/virtual/kvm/api.txt
+> > +++ b/Documentation/virtual/kvm/api.txt
+> > @@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
+> >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+> >  and kvm_irqfd.gsi.
+> >  
+> > +With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
+> > +the requested irqfd.  This is necessary to share level triggered
+> > +interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+> > +with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+> > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> 
+> Note that if my patch removing auto-deassert gets accepted,
+> this is not needed at all: we can just look at the GSI
+> to see if it's level or edge.
 
-Thanks for nudge, this fell off the radar.  I'll get this into -next
-with the rest of the pending bits.
+I'm not sure this is a good idea.  I know from vfio that I'm injecting a
+level interrupt regardless of how the guest has the pic/ioapic
+programmed at the time I'm calling this ioctl.  Peeking across address
+spaces to get to the right pin on the right pic/ioapic and see how it's
+currently programmed seems fragile.  Thanks,
+
+Alex
+
