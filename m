@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab2F0M0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:26:51 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64443 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab2F0M0t convert rfc822-to-8bit (ORCPT
+	id S1756934Ab2F0M2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 08:28:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37903 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756135Ab2F0M2q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:26:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FEAF90B.5030809@antcom.de>
-References: <1339064536-20553-1-git-send-email-stigge@antcom.de>
-	<1340794007.29342.50.camel@sauron.fi.intel.com>
-	<4FEAF90B.5030809@antcom.de>
-Date: Wed, 27 Jun 2012 09:26:48 -0300
-Message-ID: <CAAAP30HemOV9svhVghLTWfZe95=P3CT-H7UsQ=xY6rC8=AfBsA@mail.gmail.com>
-Subject: Re: [PATCH v7] MTD: LPC32xx SLC NAND driver
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Jun 2012 08:28:46 -0400
+Message-ID: <1340800064.10063.48.camel@twins>
+Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
+ rbtree
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Rik van Riel <riel@surriel.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, aarcange@redhat.com, minchan@gmail.com,
+        kosaki.motohiro@gmail.com, andi@firstfloor.org, hannes@cmpxchg.org,
+        mel@csn.ul.ie, linux-kernel@vger.kernel.org, danielfsantos@att.net
+Date: Wed, 27 Jun 2012 14:27:44 +0200
+In-Reply-To: <4FE9DA1C.1010305@redhat.com>
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>
+	       <1340315835-28571-2-git-send-email-riel@surriel.com>
+	      <1340359115.18025.57.camel@twins> <4FE47D0E.3000804@redhat.com>
+	     <1340374439.18025.75.camel@twins> <4FE48054.5090407@redhat.com>
+	    <1340375872.18025.77.camel@twins> <4FE4922D.8070501@surriel.com>
+	   <1340652578.21991.18.camel@twins> <4FE8DD80.9040108@redhat.com>
+	  <1340699507.21991.32.camel@twins> <4FE9B3B4.1050305@redhat.com>
+	 <1340718349.21991.81.camel@twins> <4FE9DA1C.1010305@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 9:14 AM, Roland Stigge <stigge@antcom.de> wrote:
-> On 06/27/2012 12:46 PM, Artem Bityutskiy wrote:
->> On Thu, 2012-06-07 at 12:22 +0200, Roland Stigge wrote:
->>> This patch adds support for the SLC NAND controller inside the
->>> LPC32xx SoC.
->>>
->>> Signed-off-by: Roland Stigge <stigge@antcom.de>
->>
->> Now the write_page and write_page_raw functions return an error
->> code, see this commit in the l2 tree:
->>
->> http://git.infradead.org/users/dedekind/l2-mtd.git/commit/49c8d9ab3b70732665249f2d993f734378ebbba9
->>
->>  I've amended your SLC driver, see below the diff. But I think it
->> could return the real return code becuse it can fail - could you
->> please take a look and send an incremental patch?
->>
->> Please, base your work on top of the l2-mtd tree:
->> git://git.infradead.org/users/dedekind/l2-mtd.git
->
-> Thanks for the note! I'm sending an incremental patch. There was
-> actually only one place in the two functions that could fail (return
-> code of lpc32xx_xfer()).
+On Tue, 2012-06-26 at 11:49 -0400, Rik van Riel wrote:
+> 
+> However, doing an insert or delete changes the
+> gap size for the _next_ vma, and potentially a
+> change in the maximum gap size for the parent
+> node, so both insert and delete cause two tree
+> walks :( 
 
-I think it's best in case of *_raw to use nand base default functions,
-like in the MLC patch.
+Right,.. don't have anything smart for that :/
+
+I guess there's nothing to it but create a number of variants of
+rb_insert/rb_erase, possibly using Daniel's 'template' stuff so we don't
+actually have to maintain multiple copies of the code.
+
+Maybe something simple like:
+
+static void __always_inline
+__rb_insert(struct rb_node *node, struct rb_root *root, rb_augment_f func, bool threaded)
+{
+	/* all the fancy code */
+}
+
+void rb_insert(struct rb_node *node, struct rb_root *root)
+{
+	__rb_insert(node, root, NULL, false);
+}
+
+void rb_insert_threaded(struct rb_node *node, struct rb_root *root)
+{
+	__rb_insert(node, root, NULL, true);
+}
+
+void rb_insert_augment(struct rb_node *node, struct rb_root *root, rb_augment_f func)
+{
+	__rb_insert(node, root, func, false);
+}
+
+void rb_insert_augment_threaded(struct rb_node *node, struct rb_root *root, rb_augment_f func)
+{
+	__rb_insert(node, root, func, true);
+}
+
+Would do, except it wouldn't be able to inline the augment function. For
+that to happen we'd need to move __rb_insert() and the
+__rb_insert_augment*() variants into rbtree.h.
+
+But it would create clean variants without augmentation/threading
+without too much duplicate code.
+
+
+BTW, is there a reason rb_link_node() and rb_insert_color() are separate
+functions? They seem to always be used together in sequence.
