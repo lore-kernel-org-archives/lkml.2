@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab2F0Pty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:49:54 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:35362 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab2F0Ptx (ORCPT
+	id S1756580Ab2F0Pv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:51:58 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:34143 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751447Ab2F0Pvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:49:53 -0400
-Message-ID: <4FEB2B8D.7070909@panasas.com>
-Date: Wed, 27 Jun 2012 18:49:33 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
-MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Benny Halevy <bhalevy@tonian.com>, <osd-dev@open-osd.org>
-Subject: Re: [PATCH] exofs: stop using s_dirt
-References: <1338810507-26539-1-git-send-email-dedekind1@gmail.com> <1340281745.13910.211.camel@sauron.fi.intel.com>
-In-Reply-To: <1340281745.13910.211.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Jun 2012 11:51:51 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: dedekind1@gmail.com, linux-mtd@lists.infradead.org, aletes.xgr@gmail.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
+        linux@arm.linux.org.uk
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 4/4] mtd: lpc32xx_slc: Make probe() return -EPROBE_DEFER if necessary
+Date: Wed, 27 Jun 2012 17:51:15 +0200
+Message-Id: <1340812275-1197-4-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1340812275-1197-1-git-send-email-stigge@antcom.de>
+References: <1340812275-1197-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 03:29 PM, Artem Bityutskiy wrote:
+Via of_get_named_gpio(), wp_gpio can become -EPROBE_DEFER which now makes
+probe() return -EPROBE_DEFER as well to wait until the gpio controller is
+probed before trying to probe lpc32xx_slc again.
 
-> On Mon, 2012-06-04 at 14:48 +0300, Artem Bityutskiy wrote:
->> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
->>
->> Exofs has the '->write_super()' handler and makes some use of the '->s_dirt'
->> superblock flag, but it really needs neither of them because it never sets
->> 's_dirt' to one which means the VFS never calls its '->write_super()' handler.
->> Thus, remove both.
->>
->> Note, I am trying to remove both 's_dirt' and 'write_super()' from VFS
->> altogether once all users are gone.
->>
->> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> 
-> Al or Boaz, would you please consider picking this patch?
-> 
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+---
+ drivers/mtd/nand/lpc32xx_slc.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/drivers/mtd/nand/lpc32xx_slc.c b/drivers/mtd/nand/lpc32xx_slc.c
+index 4e8db3a..142a91d 100644
+--- a/drivers/mtd/nand/lpc32xx_slc.c
++++ b/drivers/mtd/nand/lpc32xx_slc.c
+@@ -821,6 +821,8 @@ static int __devinit lpc32xx_nand_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "Missing platform data\n");
+ 		return -ENOENT;
+ 	}
++	if (host->ncfg->wp_gpio == -EPROBE_DEFER)
++		return -EPROBE_DEFER;
+ 	if (gpio_is_valid(host->ncfg->wp_gpio) &&
+ 			gpio_request(host->ncfg->wp_gpio, "NAND WP")) {
+ 		dev_err(&pdev->dev, "GPIO not available\n");
+-- 
+1.7.10.4
 
-I will
-
-Sorry for the delay was sick and am only now coming back on.
-
-It should all be included for the next merge window.
-
-Thanks for doing this.
-Boaz
