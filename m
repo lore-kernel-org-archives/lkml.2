@@ -1,62 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab2F0W0h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:26:37 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:47083 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754869Ab2F0W0e (ORCPT
+	id S932251Ab2F0W0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:26:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47667 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758060Ab2F0W0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:26:34 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 4/8] ARM: LPC32xx: Update DTS file for EA3250 board
-Date: Thu, 28 Jun 2012 00:26:14 +0200
-Message-Id: <1340835978-20331-5-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1340835978-20331-1-git-send-email-stigge@antcom.de>
-References: <1340835978-20331-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Wed, 27 Jun 2012 18:26:40 -0400
+Date: Wed, 27 Jun 2012 15:26:39 -0700 (PDT)
+Message-Id: <20120627.152639.2113059689824053563.davem@davemloft.net>
+To: dan.carpenter@oracle.com
+Cc: ericvh@gmail.com, aneesh.kumar@linux.vnet.ibm.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch -resend] 9p: fix min_t() casting in p9pdu_vwritef()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120627090141.GF31212@elgon.mountain>
+References: <20120627085800.GA3007@mwanda>
+	<20120627090141.GF31212@elgon.mountain>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This DTS file update adds:
-* 3-channel ADC (for AD-IN on AD2, or 3-axis-accelerometer)
-* Interrupt key
+From: Dan Carpenter <dan.carpenter@oracle.com>
+Date: Wed, 27 Jun 2012 12:01:41 +0300
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> I don't think we're actually likely to hit this limit but if we do
+> then the comparison should be done as size_t.  The original code
+> is equivalent to:
+>         len = strlen(sptr) % USHRT_MAX;
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
----
- arch/arm/boot/dts/ea3250.dts |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
---- linux-2.6.orig/arch/arm/boot/dts/ea3250.dts
-+++ linux-2.6/arch/arm/boot/dts/ea3250.dts
-@@ -152,6 +152,23 @@
- 			uart1: serial@40014000 {
- 				status = "okay";
- 			};
-+
-+			/* 3-axis accelerometer X,Y,Z (or AD-IN instead of Z) */
-+			adc@40048000 {
-+				status = "okay";
-+			};
-+		};
-+	};
-+
-+	gpio_keys {
-+		compatible = "gpio-keys";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		autorepeat;
-+		button@21 {
-+			label = "GPIO Key UP";
-+			linux,code = <103>;
-+			gpios = <&gpio 4 1 0>; /* GPI_P3 1 */
- 		};
- 	};
- };
+Applied, thanks Dan.
