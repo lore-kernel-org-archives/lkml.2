@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab2F0Pwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:52:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39732 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab2F0Pwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:52:32 -0400
-Date: Wed, 27 Jun 2012 17:52:30 +0200
-From: Jan Kara <jack@suse.cz>
-To: Ashish Sangwan <ashishsangwan2@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        Ashish Sangwan <ashish.sangwan2@gmail.com>,
-        Namjae Jeon <linkinjeon@gmail.com>
-Subject: Re: [PATCH] UDF: Remove unnecessary variable "offset" from
- udf_fill_inode
-Message-ID: <20120627155230.GA5387@quack.suse.cz>
-References: <1340719391-3081-1-git-send-email-ashish.sangwan2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340719391-3081-1-git-send-email-ashish.sangwan2@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754420Ab2F0Pvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:51:54 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:46416 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751969Ab2F0Pvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 11:51:51 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: dedekind1@gmail.com, linux-mtd@lists.infradead.org, aletes.xgr@gmail.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
+        linux@arm.linux.org.uk
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 3/4] mtd: lpc32xx_slc: Use of_get_named_gpio()
+Date: Wed, 27 Jun 2012 17:51:14 +0200
+Message-Id: <1340812275-1197-3-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1340812275-1197-1-git-send-email-stigge@antcom.de>
+References: <1340812275-1197-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 26-06-12 19:33:11, Ashish Sangwan wrote:
-> The variable "offset" is not needed. Remove it.
-  Thanks. Merged.
+This patch makes the lpc32xx_slc driver use of_get_named_gpio() instead of
+of_get_named_gpio_flags() whose flags are discarded anyway.
 
-								Honza
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+---
+ drivers/mtd/nand/lpc32xx_slc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> 
-> Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
->  fs/udf/inode.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-> index 873e1ba..fafaad7 100644
-> --- a/fs/udf/inode.c
-> +++ b/fs/udf/inode.c
-> @@ -1247,7 +1247,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
->  {
->  	struct fileEntry *fe;
->  	struct extendedFileEntry *efe;
-> -	int offset;
->  	struct udf_sb_info *sbi = UDF_SB(inode->i_sb);
->  	struct udf_inode_info *iinfo = UDF_I(inode);
->  	unsigned int link_count;
-> @@ -1359,7 +1358,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
->  		iinfo->i_lenEAttr = le32_to_cpu(fe->lengthExtendedAttr);
->  		iinfo->i_lenAlloc = le32_to_cpu(fe->lengthAllocDescs);
->  		iinfo->i_checkpoint = le32_to_cpu(fe->checkpoint);
-> -		offset = sizeof(struct fileEntry) + iinfo->i_lenEAttr;
->  	} else {
->  		inode->i_blocks = le64_to_cpu(efe->logicalBlocksRecorded) <<
->  		    (inode->i_sb->s_blocksize_bits - 9);
-> @@ -1381,8 +1379,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
->  		iinfo->i_lenEAttr = le32_to_cpu(efe->lengthExtendedAttr);
->  		iinfo->i_lenAlloc = le32_to_cpu(efe->lengthAllocDescs);
->  		iinfo->i_checkpoint = le32_to_cpu(efe->checkpoint);
-> -		offset = sizeof(struct extendedFileEntry) +
-> -							iinfo->i_lenEAttr;
->  	}
->  
->  	switch (fe->icbTag.fileType) {
-> -- 
-> 1.7.2.3
-> 
+diff --git a/drivers/mtd/nand/lpc32xx_slc.c b/drivers/mtd/nand/lpc32xx_slc.c
+index ab72aca..4e8db3a 100644
+--- a/drivers/mtd/nand/lpc32xx_slc.c
++++ b/drivers/mtd/nand/lpc32xx_slc.c
+@@ -770,7 +770,7 @@ static struct lpc32xx_nand_cfg_slc *lpc32xx_parse_dt(struct device *dev)
+ 	}
+ 
+ 	pdata->use_bbt = of_get_nand_on_flash_bbt(np);
+-	pdata->wp_gpio = of_get_named_gpio_flags(np, "gpios", 0, NULL);
++	pdata->wp_gpio = of_get_named_gpio(np, "gpios", 0);
+ 
+ 	return pdata;
+ }
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10.4
+
