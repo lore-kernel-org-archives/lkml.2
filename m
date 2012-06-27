@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab2FZX60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 19:58:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754368Ab2FZX6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 19:58:25 -0400
-Date: Tue, 26 Jun 2012 19:58:04 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Paul Mackerras <paulus@samba.org>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [linux-pm] [PATCH -v4 6/6] fault-injection: add notifier error
- injection testing scripts
-Message-ID: <20120626235804.GA7525@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Akinobu Mita <akinobu.mita@gmail.com>, Greg KH <greg@kroah.com>,
-	linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-	Paul Mackerras <paulus@samba.org>,
-	=?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-	linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org
-References: <1340463502-15341-1-git-send-email-akinobu.mita@gmail.com>
- <1340463502-15341-7-git-send-email-akinobu.mita@gmail.com>
- <20120626163147.93181e21.akpm@linux-foundation.org>
+	id S1755124Ab2F0AEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 20:04:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51226 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab2F0AEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jun 2012 20:04:09 -0400
+Message-ID: <4FEA4DE7.3030606@gmail.com>
+Date: Tue, 26 Jun 2012 17:03:51 -0700
+From: Dean <seattleplus@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120626163147.93181e21.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        VivekTrivedi <t.vivek@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [RFC PATCH] nfs: Support posix_fadvise(POSIX_FADV_RANDOM) on
+ nfs server.
+References: <1340448446-10198-1-git-send-email-linkinjeon@gmail.com> <20120623115106.GA2742@umich.edu> <5AC2C9F0-EEFE-423E-BBB9-27102D1CA163@oracle.com> <CAKYAXd_QKsiTV86H4eykjOzfJc8Who1T8in5TmnJyxigw=+7AQ@mail.gmail.com> <20120624124625.GA15586@umich.edu> <CAKYAXd-OT9nV--vYOseGYHp35g3qo86rzYJPDiP454ipoGJ2Xw@mail.gmail.com>
+In-Reply-To: <CAKYAXd-OT9nV--vYOseGYHp35g3qo86rzYJPDiP454ipoGJ2Xw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 04:31:47PM -0700, Andrew Morton wrote:
+Hi Namjae,
 
- > My overall take on the fault-injection code is that there has been a
- > disappointing amount of uptake: I don't see many developers using them
- > for whitebox testing their stuff.  I guess this patchset addresses
- > that, in a way.
+I'm glad you also see the usefulness of sending such hints to the NFS 
+server.
 
-I added support for make-it-fail to my syscall fuzzer a while ago.
-(if the file exists, the child processes set it before calling the fuzzed syscall).
-I've not had a chance to really play with it, because I find enough problems
-already even without it.
+Beyond reviewing the  NFSv4.2 spec, it would also be very useful to 
+implement a version of IO_ADVISE and show performance results with your 
+traverse test (among others).  If you have time for this, that would 
+really be helpful in ensuring the usefulness of IO_ADVISE.
 
-	Dave
+Dean Hildebrand
+
+On 6/24/12 6:54 PM, Namjae Jeon wrote:
+> 2012/6/24, Jim Rees <rees@umich.edu>:
+>> Namjae Jeon wrote:
+>>
+>>    > Yes, posix_fadvise support is part of NFSv4.2.
+>>    Where can I check it ?
+>>    Thanks.
+>>
+>> NFS is standardized throught the IETF.  4.2 is not out yet, so you'll find
+>> it in the drafts rather than the RFCs.  You can search them here:
+>> http://www.rfc-editor.org/idsearch.html
+>>
+>> Here is the current draft:
+>> ftp://ftp.rfc-editor.org/in-notes/internet-drafts/draft-ietf-nfsv4-minorversion2-12.txt
+>>
+> Okay, I will check, Thanks a lot Jim~. We hope to contribute NFSv4.2.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
