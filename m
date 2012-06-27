@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab2F0PwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:52:25 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:27495 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756923Ab2F0PwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:52:22 -0400
-Date: Wed, 27 Jun 2012 11:39:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Minchan Kim <minchan@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-Message-ID: <20120627153911.GH17154@phenom.dumpdata.com>
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <4FEA9FDD.6030102@kernel.org>
- <4FEAA4AA.3000406@intel.com>
- <4FEAA7A1.9020307@kernel.org>
- <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default>
+	id S1757942Ab2F0Pwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:52:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39732 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985Ab2F0Pwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 11:52:32 -0400
+Date: Wed, 27 Jun 2012 17:52:30 +0200
+From: Jan Kara <jack@suse.cz>
+To: Ashish Sangwan <ashishsangwan2@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: Re: [PATCH] UDF: Remove unnecessary variable "offset" from
+ udf_fill_inode
+Message-ID: <20120627155230.GA5387@quack.suse.cz>
+References: <1340719391-3081-1-git-send-email-ashish.sangwan2@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1340719391-3081-1-git-send-email-ashish.sangwan2@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 08:12:56AM -0700, Dan Magenheimer wrote:
-> > From: Minchan Kim [mailto:minchan@kernel.org]
-> > Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-> > 
-> > Hello,
-> > 
-> > On 06/27/2012 03:14 PM, Alex Shi wrote:
-> > 
-> > > On 06/27/2012 01:53 PM, Minchan Kim wrote:
-> > >
-> > >> On 06/26/2012 01:14 AM, Seth Jennings wrote:
-> > >>
-> > >>> This patch adds support for a local_tlb_flush_kernel_range()
-> > >>> function for the x86 arch.  This function allows for CPU-local
-> > >>> TLB flushing, potentially using invlpg for single entry flushing,
-> > >>> using an arch independent function name.
-> > >>>
-> > >>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > >>
-> > >>
-> > >> Anyway, we don't matter INVLPG_BREAK_EVEN_PAGES's optimization point is 8 or something.
-> > >
-> > >
-> > > Different CPU type has different balance point on the invlpg replacing
-> > > flush all. and some CPU never get benefit from invlpg, So, it's better
-> > > to use different value for different CPU, not a fixed
-> > > INVLPG_BREAK_EVEN_PAGES.
-> > 
-> > I think it could be another patch as further step and someone who are
-> > very familiar with architecture could do better than.
-> > So I hope it could be merged if it doesn't have real big problem.
-> > 
-> > Thanks for the comment, Alex.
-> 
-> Just my opinion, but I have to agree with Alex.  Hardcoding
-> behavior that is VERY processor-specific is a bad idea.  TLBs should
-> only be messed with when absolutely necessary, not for the
-> convenience of defending an abstraction that is nice-to-have
-> but, in current OS kernel code, unnecessary.
+On Tue 26-06-12 19:33:11, Ashish Sangwan wrote:
+> The variable "offset" is not needed. Remove it.
+  Thanks. Merged.
 
-At least put a big fat comment in the patch saying:
-"This is based on research done by Alex, where ...
-
-
-This needs to be redone where it is automatically figured
-out based on the CPUID, but ." [include what Dan just
-said about breakeven point]
-
+								Honza
 
 > 
-> IIUC, zsmalloc only cares that the breakeven point is greater
-> than two.  An arch-specific choice of (A) two page flushes
-> vs (B) one all-TLB flush should be all that is necessary right
-> now.  (And, per separate discussion, even this isn't really
-> necessary either.)
+> Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+>  fs/udf/inode.c |    4 ----
+>  1 files changed, 0 insertions(+), 4 deletions(-)
 > 
-> If zsmalloc _ever_ gets extended to support items that might
-> span three or more pages, a more generic TLB flush-pages-vs-flush-all
-> approach may be warranted and, by then, may already exist in some
-> future kernel.  Until then, IMHO, keep it simple.
-
-Comments are simple :-)
+> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+> index 873e1ba..fafaad7 100644
+> --- a/fs/udf/inode.c
+> +++ b/fs/udf/inode.c
+> @@ -1247,7 +1247,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+>  {
+>  	struct fileEntry *fe;
+>  	struct extendedFileEntry *efe;
+> -	int offset;
+>  	struct udf_sb_info *sbi = UDF_SB(inode->i_sb);
+>  	struct udf_inode_info *iinfo = UDF_I(inode);
+>  	unsigned int link_count;
+> @@ -1359,7 +1358,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+>  		iinfo->i_lenEAttr = le32_to_cpu(fe->lengthExtendedAttr);
+>  		iinfo->i_lenAlloc = le32_to_cpu(fe->lengthAllocDescs);
+>  		iinfo->i_checkpoint = le32_to_cpu(fe->checkpoint);
+> -		offset = sizeof(struct fileEntry) + iinfo->i_lenEAttr;
+>  	} else {
+>  		inode->i_blocks = le64_to_cpu(efe->logicalBlocksRecorded) <<
+>  		    (inode->i_sb->s_blocksize_bits - 9);
+> @@ -1381,8 +1379,6 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
+>  		iinfo->i_lenEAttr = le32_to_cpu(efe->lengthExtendedAttr);
+>  		iinfo->i_lenAlloc = le32_to_cpu(efe->lengthAllocDescs);
+>  		iinfo->i_checkpoint = le32_to_cpu(efe->checkpoint);
+> -		offset = sizeof(struct extendedFileEntry) +
+> -							iinfo->i_lenEAttr;
+>  	}
+>  
+>  	switch (fe->icbTag.fileType) {
+> -- 
+> 1.7.2.3
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
