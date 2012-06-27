@@ -1,134 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab2F0R3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 13:29:40 -0400
-Received: from mail-yw0-f42.google.com ([209.85.213.42]:33396 "EHLO
-	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab2F0R3i convert rfc822-to-8bit (ORCPT
+	id S1758260Ab2F0Rdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 13:33:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64033 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757713Ab2F0Rdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 13:29:38 -0400
-X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jun 2012 13:29:38 EDT
-MIME-Version: 1.0
-In-Reply-To: <CAKA=qzaZweeeYUFD2OHDeAO-SQihSvExAZ=ZnXeY5o5sMWpxJg@mail.gmail.com>
-References: <CAKA=qzYea71A5VQOQgrqzaZtVFadjhcghgH+Z9n4ivS7vUgW0g@mail.gmail.com>
-	<20120625133047.GA9394@redhat.com>
-	<CAKA=qzbXm7LaDziH=cms1W5X+cwNNRkG0LNFfWKEppr2oht6_w@mail.gmail.com>
-	<20120625211850.GC10916@redhat.com>
-	<CAKA=qzaU=wKLrprgJ4z32tqqyO6W0+SBcaV=ArWAdKh_9c=Zew@mail.gmail.com>
-	<CAKA=qzY+J-Ab8NC-+r1Dw_-giVzC=z8SnxJhSWHF-ud8j3yg6A@mail.gmail.com>
-	<20120626125953.GA22557@redhat.com>
-	<CAKA=qzZ_KhRbH6F4-TWvSAWiJyDsDrz4oUO5WppoMgWNEhyZmg@mail.gmail.com>
-	<20120626155332.GJ22557@redhat.com>
-	<CAKA=qzYoX-1nTZ6QfdD7RhWf=KU7J6tWOJXgt-F+Kz2c3Xn0TQ@mail.gmail.com>
-	<20120626205651.GW3869@google.com>
-	<CAKA=qzbBtteDjHiPogCvN5jOSiPrDxx=vn96p02bXUy=6=jAgA@mail.gmail.com>
-	<CAKA=qzaZweeeYUFD2OHDeAO-SQihSvExAZ=ZnXeY5o5sMWpxJg@mail.gmail.com>
-Date: Wed, 27 Jun 2012 12:21:32 -0500
-Message-ID: <CAKA=qzbaM-z7CbASUgq-A7CZWiUq6pdb93e4giYAw63hQK=MCg@mail.gmail.com>
-Subject: Re: multi-second application stall in open()
-From: Josh Hunt <joshhunt00@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Jun 2012 13:33:47 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        afleming@gmail.com, David Daney <david.daney@cavium.com>
+Subject: [PATCH v2 2/4] netdev/phy/of: Handle IEEE802.3 clause 45 Ethernet PHYs in of_mdiobus_register()
+Date: Wed, 27 Jun 2012 10:33:36 -0700
+Message-Id: <1340818418-10382-3-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1340818418-10382-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1340818418-10382-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 6:44 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
-> On Tue, Jun 26, 2012 at 5:31 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
->> On Tue, Jun 26, 2012 at 3:56 PM, Tejun Heo <tj@kernel.org> wrote:
->>> Hey,
->>>
->>> On Tue, Jun 26, 2012 at 03:37:31PM -0500, Josh Hunt wrote:
->>>> The print "cfq schedule dispatch: busy_queues:1 rq_queued:1
->>>> rq_in_driver:0 rq_in_flight[0]:0 [1]:0" is inside the if to call
->>>> kblockd_schedule_work() so it is getting called, but you can see that
->>>> we never see the workqueue_queue_work tracepoint being hit.
->>>
->>> Hmm... looks like the work item is already queued.  Can you please
->>> move the "schedule dispatch" message after kblockd_schedule_work() and
->>> print its return value too?
->>>
->>>> Tejun - if you could let me know what other data I should be looking
->>>> for/need to enable in the traces I would appreciate it.
->>>
->>> The trace seems truncated and doesn't contain 9527.XXXX traces.  Can
->>> you please resend?
->>>
->>> Thanks.
->>>
->>> --
->>> tejun
->>
->> I added the print after the call to kblockd_schedule_work():
->>
->>           testd-21177 [000]  3285.163208:   8,0    m   N cfq idle timer fired
->>           testd-21177 [000]  3285.163215:   8,0    m   N cfq21314S
->> idle_slice_timer: active queue
->>           testd-21177 [000]  3285.163216:   8,0    m   N cfq21314S
->> idle_slice_timer: clear_cfqq_deep
->>           testd-21177 [000]  3285.163218:   8,0    m   N cfq21314S
->> slice expired t=0
->>           testd-21177 [000]  3285.163219:   8,0    m   N cfq21314S del timer
->>           testd-21177 [000]  3285.163220:   8,0    m   N cfq21314S
->> update idle time stats
->>           testd-21177 [000]  3285.163223:   8,0    m   N cfq21314S
->> sl_used=8 disp=1 charge=8 iops=0 sect=8
->>           testd-21177 [000]  3285.163224:   8,0    m   N cfq21314S
->> slice_expired del cfqq from rr - on_rr:1 rb empty:1
->>           testd-21177 [000]  3285.163225:   8,0    m   N cfq21314S
->> del_from_rr queued[0]:0 queued[1]:0
->>           testd-21177 [000]  3285.163226:   8,0    m   N cfq21314S
->> slice_expired resort_rr_list
->>           testd-21177 [000]  3285.163227:   8,0    m   N cfq21314S
->> slice_expired setting active_queue to NULL
->>           testd-21177 [000]  3285.163229:   8,0    m   N cfq21314S
->> slice_expired setting active_cic to NULL
->>           testd-21177 [000]  3285.163230:   8,0    m   N cfq schedule
->> dispatch: busy_queues:2 rq_queued:2 rq_in_driver:0 rq_in_flight[0]:0
->> [1]:0 ret:0
->>        httpmon-18719 [001]  3285.426011:   8,0    A   R 15970647 + 8
->> <- (8,2) 3391752
->>        httpmon-18719 [001]  3285.426020: block_bio_remap: 8,0 R
->> 15970647 + 8 <- (8,2) 3391752
->>        httpmon-18719 [001]  3285.426021:   8,0    Q   R 15970647 + 8 [httpmon]
->>        httpmon-18719 [001]  3285.426022: block_bio_queue: 8,0 R
->> 15970647 + 8 [httpmon]
->>        httpmon-18719 [001]  3285.426032:   8,0    G   R 15970647 + 8 [httpmon]
->>
->> In this case we call kblockd_schedule_work() but ret is 0. So this
->> looks like it thinks the work is already scheduled on the cpu? I've
->> attached the full log.
->>
->> Thanks for your help.
->> --
->> Josh
->
-> Looking at the workqueue traces I see:
->
->           testd-21177 [000]  3284.438475: workqueue_queue_work: work
-> struct=ffff880204d97a48 function=cfq_kick_queue
-> workqueue=ffff880208e02400 req_cpu=0 cpu=0
->           testd-21177 [000]  3284.438476: workqueue_activate_work:
-> work struct ffff880204d97a48
->
-> but do not see a corresponding execute_start/end until:
->
->     kworker/0:1-11    [000]  3286.873905: workqueue_execute_start:
-> work struct ffff880204d97a48: function cfq_kick_queue
->     kworker/0:1-11    [000]  3286.873907: workqueue_execute_end: work
-> struct ffff880204d97a48
->
-> --
-> Josh
+From: David Daney <david.daney@cavium.com>
 
-Tejun
+Define two new "compatible" values for Ethernet
+PHYs. "ethernet-phy-ieee802.3-c22" and "ethernet-phy-ieee802.3-c45"
+are used to indicate a PHY uses the corresponding protocol.
 
-Was wondering if you had any suggestions on further instrumentation or
-more data that you may need to better understand the problem?
+If a PHY is "compatible" with "ethernet-phy-ieee802.3-c45", we
+indicate this so that get_phy_device() can properly probe the device.
 
-Thanks
+If get_phy_device() fails, it was probably due to failing the probe of
+the PHY identifier registers.  Since we have the device tree telling
+us the PHY exists, go ahead and add it anyhow with a phy_id of zero.
+There may be a driver match based on the "compatible" property.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ Documentation/devicetree/bindings/net/phy.txt |   12 +++++++++++-
+ drivers/of/of_mdio.c                          |   16 ++++++++++++----
+ 2 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
+index bb8c742..7cd18fb 100644
+--- a/Documentation/devicetree/bindings/net/phy.txt
++++ b/Documentation/devicetree/bindings/net/phy.txt
+@@ -14,10 +14,20 @@ Required properties:
+  - linux,phandle :  phandle for this node; likely referenced by an
+    ethernet controller node.
+ 
++Optional Properties:
++
++- compatible: Compatible list, may contain
++  "ethernet-phy-ieee802.3-c22" or "ethernet-phy-ieee802.3-c45" for
++  PHYs that implement IEEE802.3 clause 22 or IEEE802.3 clause 45
++  specifications. If neither of these are specified, the default is to
++  assume clause 22. The compatible list may also contain other
++  elements.
++
+ Example:
+ 
+ ethernet-phy@0 {
+-	linux,phandle = <2452000>
++	compatible = "ethernet-phy-ieee802.3-c22";
++	linux,phandle = <2452000>;
+ 	interrupt-parent = <40000>;
+ 	interrupts = <35 1>;
+ 	reg = <0>;
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 6c24cad..8e6c25f 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -57,6 +57,7 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 		const __be32 *paddr;
+ 		u32 addr;
+ 		int len;
++		bool is_c45;
+ 
+ 		/* A PHY must have a reg property in the range [0-31] */
+ 		paddr = of_get_property(child, "reg", &len);
+@@ -79,11 +80,18 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 				mdio->irq[addr] = PHY_POLL;
+ 		}
+ 
+-		phy = get_phy_device(mdio, addr, false);
++		is_c45 = of_device_is_compatible(child,
++						 "ethernet-phy-ieee802.3-c45");
++		phy = get_phy_device(mdio, addr, is_c45);
++
+ 		if (!phy || IS_ERR(phy)) {
+-			dev_err(&mdio->dev, "error probing PHY at address %i\n",
+-				addr);
+-			continue;
++			phy = phy_device_create(mdio, addr, 0, false, NULL);
++			if (!phy || IS_ERR(phy)) {
++				dev_err(&mdio->dev,
++					"error creating PHY at address %i\n",
++					addr);
++				continue;
++			}
+ 		}
+ 
+ 		/* Associate the OF node with the device structure so it
 -- 
-Josh
+1.7.2.3
+
