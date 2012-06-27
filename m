@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab2F0HOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 03:14:25 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:54153 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab2F0HOY convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 27 Jun 2012 03:14:24 -0400
-Message-Id: <4FEACF1B020000780008C260@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 27 Jun 2012 08:15:07 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Greg KH" <gregkh@linuxfoundation.org>
-Cc: <yuanhan.liu@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        "Kay Sievers" <kay@vrfy.org>
-Subject: Re: [PATCH] syslog: fill buffer with more than a single
- message for SYSLOG_ACTION_READ
-References: <4FE4AD09020000780008B77F@nat28.tlf.novell.com>
- <CAPXgP13nd7k3v3YGcW9F45L8LhT5tctw64jaooUwQ8=ypfVH+g@mail.gmail.com>
- <4FE829CD020000780008B9DB@nat28.tlf.novell.com>
- <20120625192007.GA1005@kroah.com>
- <CAPXgP11rkrk5LBYswPf_3nOD2e2oYnvWgbFb81NYgjta67Dj3w@mail.gmail.com>
- <20120626000148.GA3896@kroah.com>
- <CAPXgP10iHmADRGQ8TvmWG3-LB7PhoVFcRTF7PDPq29CWQNu65w@mail.gmail.com>
- <20120626195511.GA2959@kroah.com>
-In-Reply-To: <20120626195511.GA2959@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756330Ab2F0HRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 03:17:16 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751960Ab2F0HRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 03:17:15 -0400
+Message-ID: <4FEAB36E.4030008@nod.at>
+Date: Wed, 27 Jun 2012 09:17:02 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Nikita V. Youshchenko" <nyoushchenko@mvista.com>
+CC: Namjae Jeon <linkinjeon@gmail.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
+        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
+        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
+        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com
+Subject: Re: UBI fastmap updates
+References: <1340456602-46050-1-git-send-email-richard@nod.at> <CAKYAXd-3ArdssdotKHjvUU0f+yqcFC6y2rHF-mqnJnUcP=+eOg@mail.gmail.com> <201206271048.31524@zigzag.lvk.cs.msu.su>
+In-Reply-To: <201206271048.31524@zigzag.lvk.cs.msu.su>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig1B9E50BF9585E8C6DD8E6FC5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.06.12 at 21:55, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Jun 26, 2012 at 02:34:49AM +0200, Kay Sievers wrote:
->> On Tue, Jun 26, 2012 at 2:01 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Mon, Jun 25, 2012 at 09:35:03PM +0200, Kay Sievers wrote:
->> >> On Mon, Jun 25, 2012 at 9:20 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >>
->> >> > Ok, so I'm confused, you want me to apply this patch and then revert a
->> >> > different one?  Which one, 4a77a5a06ec66ed05199b301e7c25f42f979afdc?
->> >>
->> >> b56a39ac conflicts and is replaced with that patch.
->> >> 4a77a5a0 should stay, as it fixes an actual problem, even with the old
->> >> code, I think.
->> >
->> > Ok, I'm even more confused now.  Maybe I just need more coffee.
->> >
->> > Can you list what exactly I should do here?  Should I apply this patch?
->> > Revert some other patch?  Which one(s)?
->> 
->> Revert b56a39ac (return -EINVAL) and apply the patch from Jan. The
->> problem b56a39ac solved , is replaced by other logic in Jan's patch.
-> 
-> Ok, now done, there's nothing else needed here, right?
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig1B9E50BF9585E8C6DD8E6FC5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Thanks - not that I'm aware of.
+Am 27.06.2012 08:48, schrieb Nikita V. Youshchenko:
+>> Would you infom me how much UBI attach time is improved with fastmap ?=
 
-Jan
+>=20
+> I'm not Richard but still.
+>=20
+> On board I'm currently working on, ubi attach time for 1G chip without =
 
+> fastmap is more than 5 seconds. With fastmap, it is less than 250=20
+> milliseconds.
+
+I can confirm these numbers.
+On all of my boards the attach time dropped from a few seconds to
+less than 500 milliseconds.
+(The worst case I've seen was ~800 milliseconds)
+
+Thanks,
+//richard
+
+
+--------------enig1B9E50BF9585E8C6DD8E6FC5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJP6rNyAAoJEN9758yqZn9eU08IAIVjRIoJHpUZZaexWkZ0gRGE
+U5n6/xMf8dQb9CzCdBcZYoy0/ATv2s8nNIfZ8bLSPdn/sqJ3nmxsdxm4tPbA2JQD
+KTryL0pCK2OSM7RGU0R3m2x5A4T82GBnGzFdvW6JK6+EOtLC9Nmc72Y1ReE69Di9
+fxdA2VN1+9qawC7lMQxUmk8Ag9cntcBFMrBz/XFVGNo0KbCk256D9jaCCgptDTkP
+ku+FCiFAFvRrTkLpcxVrcN33p1CYmCYcOpNIvPrHQnH/4EiYWUyYoTwZRjsR2hzn
+NhMiULHCz28Wpr5srMNlNonYHedU2UwzBHysG8y10+qh86KPiBsGuPHKLSBzfec=
+=Pagm
+-----END PGP SIGNATURE-----
+
+--------------enig1B9E50BF9585E8C6DD8E6FC5--
