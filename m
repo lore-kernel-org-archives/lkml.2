@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab2F0Jxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:53:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52979 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754383Ab2F0Jxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:53:44 -0400
-Date: Wed, 27 Jun 2012 12:53:45 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 2/6] kvm: Add missing KVM_IRQFD API documentation
-Message-ID: <20120627095345.GI17507@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
- <20120627050910.23698.82393.stgit@bling.home>
+	id S1756760Ab2F0Jzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:55:35 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:9881
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753538Ab2F0Jze (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 05:55:34 -0400
+X-Forefront-Antispam-Report: CIP:157.55.49.13;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0802HT009.namprd08.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: PS-3(zzbb2dI98dI1432Izz1202hzz8275bhz2fh2a8h668h839hd25he5bhf0ah)
+Message-ID: <4FEAD887.1080504@ozmodevices.com>
+Date: Wed, 27 Jun 2012 10:55:19 +0100
+From: Rupesh Gujare <rgujare@ozmodevices.com>
+Organization: Ozmo Devices
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120627050910.23698.82393.stgit@bling.home>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] staging: ozwpan: Fix compilation issue due to export.h
+References: <1340712221-6750-1-git-send-email-rgujare@ozmodevices.com> <1340712221-6750-3-git-send-email-rgujare@ozmodevices.com> <20120626220732.GA21906@kroah.com>
+In-Reply-To: <20120626220732.GA21906@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [81.149.82.179]
+X-OriginatorOrg: ozmodevices.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 11:09:17PM -0600, Alex Williamson wrote:
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+On 26/06/12 23:07, Greg KH wrote:
+> On Tue, Jun 26, 2012 at 01:03:40PM +0100, Rupesh Gujare wrote:
+>> Fixes compilation error caused due to header file.
+>>
+>> Signed-off-by: Rupesh Gujare <rgujare@ozmodevices.com>
+>> ---
+>>   drivers/staging/ozwpan/ozhcd.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
+>> index 251f07c..e3efa41 100644
+>> --- a/drivers/staging/ozwpan/ozhcd.c
+>> +++ b/drivers/staging/ozwpan/ozhcd.c
+>> @@ -28,7 +28,7 @@
+>>   #include <linux/usb.h>
+>>   #include <linux/jiffies.h>
+>>   #include <linux/slab.h>
+>> -#include <linux/export.h>
+>> +#include <linux/module.h>
+> I don't understand, what is this fixing?  It builds for me ok here, why
+> is module.h needed instead of export.h?
+>
+> confused,
+>
+Greg,
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Sorry about that. Looks like I tried to compile against distribution 
+kernel, which was throwing error.
+Please ignore this patch.
 
-> ---
-> 
->  Documentation/virtual/kvm/api.txt |   16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
-> 
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index 310fe50..ea9edce 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -1965,6 +1965,22 @@ return the hash table order in the parameter.  (If the guest is using
->  the virtualized real-mode area (VRMA) facility, the kernel will
->  re-create the VMRA HPTEs on the next KVM_RUN of any vcpu.)
->  
-> +4.76 KVM_IRQFD
-> +
-> +Capability: KVM_CAP_IRQFD
-> +Architectures: x86
-> +Type: vm ioctl
-> +Parameters: struct kvm_irqfd (in)
-> +Returns: 0 on success, -1 on error
-> +
-> +Allows setting an eventfd to directly trigger a guest interrupt.
-> +kvm_irqfd.fd specifies the file descriptor to use as the eventfd and
-> +kvm_irqfd.gsi specifies the irqchip pin toggled by this event.  When
-> +an event is tiggered on the eventfd, an interrupt is injected into
-> +the guest using the specified gsi pin.  The irqfd is removed using
-> +the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
-> +and kvm_irqfd.gsi.
-> +
->  
->  5. The kvm_run structure
->  ------------------------
+-- 
+Regards,
+Rupesh Gujare
+
+
