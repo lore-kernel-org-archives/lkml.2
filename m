@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab2F0BHi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 21:07:38 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:47918 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab2F0BHg (ORCPT
+	id S1755943Ab2F0BIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 21:08:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59421 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755430Ab2F0BIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 21:07:36 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-160.messagelabs.com!1340759255!7915698!1
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 29/36] staging: comedi: cb_pcidas: fix comments in private data struct
-Date: Tue, 26 Jun 2012 18:07:32 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 26 Jun 2012 21:08:16 -0400
+Date: Tue, 26 Jun 2012 18:08:13 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 00/11] kmem controller for memcg: stripped down version
+In-Reply-To: <20120626145539.eeeab909.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1206261804160.11287@chino.kir.corp.google.com>
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206261807.32557.hartleys@visionengravers.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A number of the comments in the private data struct definition
-are causing checkpatch.pl to complain about "WARNING: line over
-80 characters". Fix the comments.
+On Tue, 26 Jun 2012, Andrew Morton wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_pcidas.c | 31 +++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+> mm, maybe.  Kernel developers tend to look at code from the point of
+> view "does it work as designed", "is it clean", "is it efficient", "do
+> I understand it", etc.  We often forget to step back and really
+> consider whether or not it should be merged at all.
+> 
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index eba39b4..9e21e68 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -342,34 +342,35 @@ static const struct cb_pcidas_board cb_pcidas_boards[] = {
- 	},
- };
- 
--/* this structure is for data unique to this hardware driver.  If
--   several hardware drivers keep similar information in this structure,
--   feel free to suggest moving the variable to the struct comedi_device struct.  */
- struct cb_pcidas_private {
--	/* would be useful for a PCI device */
- 	struct pci_dev *pci_dev;
--	/*  base addresses */
-+	/* base addresses */
- 	unsigned long s5933_config;
- 	unsigned long control_status;
- 	unsigned long adc_fifo;
- 	unsigned long pacer_counter_dio;
- 	unsigned long ao_registers;
--	/*  divisors of master clock for analog input pacing */
-+	/* divisors of master clock for analog input pacing */
- 	unsigned int divisor1;
- 	unsigned int divisor2;
--	unsigned int count;	/*  number of analog input samples remaining */
--	unsigned int adc_fifo_bits;	/*  bits to write to interrupt/adcfifo register */
--	unsigned int s5933_intcsr_bits;	/*  bits to write to amcc s5933 interrupt control/status register */
--	unsigned int ao_control_bits;	/*  bits to write to ao control and status register */
-+	/* number of analog input samples remaining */
-+	unsigned int count;
-+	/* bits to write to registers */
-+	unsigned int adc_fifo_bits;
-+	unsigned int s5933_intcsr_bits;
-+	unsigned int ao_control_bits;
-+	/* fifo buffers */
- 	short ai_buffer[AI_BUFFER_SIZE];
- 	short ao_buffer[AO_BUFFER_SIZE];
--	/*  divisors of master clock for analog output pacing */
-+	/* divisors of master clock for analog output pacing */
- 	unsigned int ao_divisor1;
- 	unsigned int ao_divisor2;
--	unsigned int ao_count;	/*  number of analog output samples remaining */
--	int ao_value[2];	/*  remember what the analog outputs are set to, to allow readback */
--	unsigned int caldac_value[NUM_CHANNELS_8800];	/*  for readback of caldac */
--	unsigned int trimpot_value[NUM_CHANNELS_8402];	/*  for readback of trimpot */
-+	/* number of analog output samples remaining */
-+	unsigned int ao_count;
-+	/* cached values for readback */
-+	int ao_value[2];
-+	unsigned int caldac_value[NUM_CHANNELS_8800];
-+	unsigned int trimpot_value[NUM_CHANNELS_8402];
- 	unsigned int dac08_value;
- 	unsigned int calibration_source;
- };
--- 
-1.7.11
+It's appropriate for true memory isolation so that applications cannot 
+cause an excess of slab to be consumed.  This allows other applications to 
+have higher reservations without the risk of incurring a global oom 
+condition as the result of the usage of other memcgs.
 
+I'm not sure whether it would ever be appropriate to limit the amount of 
+slab for an individual slab cache, however, instead of limiting the sum of 
+all slab for a set of processes.  With cache merging in slub this would 
+seem to be difficult to do correctly.
