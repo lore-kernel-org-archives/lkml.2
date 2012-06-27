@@ -1,135 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab2F0Mtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:49:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23425 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab2F0Mti (ORCPT
+	id S1755429Ab2F0MwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 08:52:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56406 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2F0MwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:49:38 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=sNxammv2Ed8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=57SyGIRnAAAA:8 a=VwQbUJbxAAAA:8 a=ayGr0IB4zXFYUJbYQfkA:9 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=LI9Vle30uBYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340801375.16702.10.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/4] KVM: Use __print_hex() for kvm_emulate_insn
- tracepoint
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>, Avi Kivity <avi@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, kvm@vger.kernel.org
-Date: Wed, 27 Jun 2012 08:49:35 -0400
-In-Reply-To: <1340757701-10711-2-git-send-email-namhyung@kernel.org>
-References: <1340757701-10711-1-git-send-email-namhyung@kernel.org>
-	 <1340757701-10711-2-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 27 Jun 2012 08:52:17 -0400
+Message-ID: <4FEB01ED.7020804@canonical.com>
+Date: Wed, 27 Jun 2012 14:51:57 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Hillf Danton <dhillf@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>, Andrew Vagin <avagin@openvz.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC][PATCH] sched: Fix race in task_group()
+References: <1340364965.18025.71.camel@twins> <4FE48A09.7050305@canonical.com> <1340718515.21991.83.camel@twins> <4FE9F63B.1000908@canonical.com> <CAJd=RBBWGVkTeZEz9K70AP2-DDTm0p5VEwHgM1tvcnwU3Y=brQ@mail.gmail.com>
+In-Reply-To: <CAJd=RBBWGVkTeZEz9K70AP2-DDTm0p5VEwHgM1tvcnwU3Y=brQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig2958250A1FC9015E5B8B379F"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added Avi]
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig2958250A1FC9015E5B8B379F
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-06-27 at 09:41 +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> The kvm_emulate_insn tracepoint used __print_insn()
-> for printing its instructions. However it makes the
-> format of the event hard to parse as it reveals TP
-> internals.
-> 
-> Fortunately, kernel provides __print_hex for almost
-> same purpose, we can use it instead of open coding
-> it. The user-space can be changed to parse it later.
-> 
-> That means raw kernel tracing will not be affected
-> by this change:
-> 
->  # cd /sys/kernel/debug/tracing/
->  # cat events/kvm/kvm_emulate_insn/format
->  name: kvm_emulate_insn
->  ID: 29
->  format:
-> 	...
->  print fmt: "%x:%llx:%s (%s)%s", REC->csbase, REC->rip, __print_hex(REC->insn, REC->len), \
->  __print_symbolic(REC->flags, { 0, "real" }, { (1 << 0) | (1 << 1), "vm16" }, \
->  { (1 << 0), "prot16" }, { (1 << 0) | (1 << 2), "prot32" }, { (1 << 0) | (1 << 3), "prot64" }), \
->  REC->failed ? " failed" : ""
-> 
->  # echo 1 > events/kvm/kvm_emulate_insn/enable
->  # cat trace
->  # tracer: nop
->  #
->  # entries-in-buffer/entries-written: 2183/2183   #P:12
->  #
->  #                              _-----=> irqs-off
->  #                             / _----=> need-resched
->  #                            | / _---=> hardirq/softirq
->  #                            || / _--=> preempt-depth
->  #                            ||| /     delay
->  #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
->  #              | |       |   ||||       |         |
->          qemu-kvm-1782  [002] ...1   140.931636: kvm_emulate_insn: 0:c102fa25:89 10 (prot32)
->          qemu-kvm-1781  [004] ...1   140.931637: kvm_emulate_insn: 0:c102fa25:89 10 (prot32)
+On 27.06.2012 14:40, Hillf Danton wrote:
+> The patch went three versions, the first,
+>=20
+> On Fri, Jun 22, 2012 at 7:36 PM, Peter Zijlstra <peterz@infradead.org> =
+wrote:
+>> Reported-by: Stefan Bader <stefan.bader@canonical.com>
+>> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> ---
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index 32157b9..77437d4 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -1246,6 +1246,9 @@ struct task_struct {
+>> 	const struct sched_class *sched_class;
+>> 	struct sched_entity se;
+>> 	struct sched_rt_entity rt;
+>> +#ifdef CONFIG_CGROUP_SCHED
+>> +	struct task_struct *sched_task_group;
+>> +#endif
+>>
+>=20
+> The second,
+>=20
+>>> On 26.06.2012 15:48, Peter Zijlstra wrote:
+>>> Here's one that's actually compile tested (with the right CONFIG_foo
+>>> enabled) and I fixed the autogroup lockdep splat.
+>>>
+>>> ---
+>>> Subject: sched: Fix race in task_group()
+>>> From: Peter Zijlstra <peterz@infradead.org>
+>>> Date: Fri, 22 Jun 2012 13:36:05 +0200
+>>>
+>>> Reported-by: Stefan Bader <stefan.bader@canonical.com>
+>>> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>>> ---
+>>> --- a/include/linux/sched.h
+>>> +++ b/include/linux/sched.h
+>>> @@ -1246,6 +1246,9 @@ struct task_struct {
+>>>       const struct sched_class *sched_class;
+>>>       struct sched_entity se;
+>>>       struct sched_rt_entity rt;
+>>> +#ifdef CONFIG_CGROUP_SCHED
+>>> +     struct task_group *sched_task_group;
+>>> +#endif
+>>>
+>=20
+> And the third,  https://lkml.org/lkml/2012/6/26/331
+>=20
+> From d751ab1f1e532f32412d99b71a1bfea3e5282d07 Mon Sep 17 00:00:00 2001
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Fri, 22 Jun 2012 13:36:00 +0200
+> Subject: [PATCH] sched: Fix race in task_group()
+>=20
+> Stefan reported a crash on a kernel before a3e5d1091c1 ("sched: Don't
+> call task_group() too many times in set_task_rq()"), he found the reaso=
+n
+> to be that the multiple task_group() invocations in set_task_rq()
+> returned different values.
+>=20
+> Looking at all that I found a lack of serialization and plain wrong
+> comments.
+>=20
+> The below tries to fix it using an extra pointer which is updated under=
 
-Avi, can you give your Acked-by for this change?
+> the appropriate scheduler locks. Its not pretty, but I can't really see=
 
--- Steve
-
-> 
-> Cc: kvm@vger.kernel.org
-> Link: http://lkml.kernel.org/n/tip-wfw6y3b9ugtey8snaow9nmg5@git.kernel.org
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> another way given how all the cgroup stuff works.
+>=20
+> Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> [backported to apply to 3.0 and 3.2]
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 > ---
->  arch/x86/kvm/trace.h   |   12 +-----------
->  include/trace/ftrace.h |    1 +
->  2 files changed, 2 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-> index 911d2641f14c..62d02e3c3ed6 100644
-> --- a/arch/x86/kvm/trace.h
-> +++ b/arch/x86/kvm/trace.h
-> @@ -710,16 +710,6 @@ TRACE_EVENT(kvm_skinit,
->  		  __entry->rip, __entry->slb)
->  );
->  
-> -#define __print_insn(insn, ilen) ({		                 \
-> -	int i;							 \
-> -	const char *ret = p->buffer + p->len;			 \
-> -								 \
-> -	for (i = 0; i < ilen; ++i)				 \
-> -		trace_seq_printf(p, " %02x", insn[i]);		 \
-> -	trace_seq_printf(p, "%c", 0);				 \
-> -	ret;							 \
-> -	})
-> -
->  #define KVM_EMUL_INSN_F_CR0_PE (1 << 0)
->  #define KVM_EMUL_INSN_F_EFL_VM (1 << 1)
->  #define KVM_EMUL_INSN_F_CS_D   (1 << 2)
-> @@ -786,7 +776,7 @@ TRACE_EVENT(kvm_emulate_insn,
->  
->  	TP_printk("%x:%llx:%s (%s)%s",
->  		  __entry->csbase, __entry->rip,
-> -		  __print_insn(__entry->insn, __entry->len),
-> +		  __print_hex(__entry->insn, __entry->len),
->  		  __print_symbolic(__entry->flags,
->  				   kvm_trace_symbol_emul_flags),
->  		  __entry->failed ? " failed" : ""
-> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> index 769724944fc6..c6bc2faaf261 100644
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -571,6 +571,7 @@ static inline void ftrace_test_probe_##call(void)			\
->  
->  #undef __print_flags
->  #undef __print_symbolic
-> +#undef __print_hex
->  #undef __get_dynamic_array
->  #undef __get_str
->  
+>  include/linux/init_task.h |   12 +++++++++++-
+>  include/linux/sched.h     |    5 ++++-
+>  kernel/sched.c            |   32 ++++++++++++++++++--------------
+>  3 files changed, 33 insertions(+), 16 deletions(-)
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 56de5c1..1fd9884 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1242,6 +1242,9 @@ struct task_struct {
+>  	const struct sched_class *sched_class;
+>  	struct sched_entity se;
+>  	struct sched_rt_entity rt;
+> +#ifdef CONFIG_CGROUP_SCHED
+> +	struct task_struct *sched_task_group;
+> +#endif
+>=20
+> where sched_task_group was defined to be task_struct twice(in the first=
+
+> and the third versions) and to be task_group once.
+>=20
+> Before backport, feel free to respin with the final define determined.
+>=20
+The second version is correct. I just messed up updating my backport, fai=
+ling to
+notice that change (and trying to be clever and not going trhough re-appl=
+ying
+and failure again).
+
+-Stefan
 
 
+
+--------------enig2958250A1FC9015E5B8B379F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBCgAGBQJP6wH3AAoJEOhnXe7L7s6jP9EP+wXcCJTcIrXcQAxJ2ijueXuh
+R0yZrTOaPhNQ3cKxEk7y8dCgpoyLb55mZWYvVEuKApcEP9Zzkx4kjnQzbdkT57sN
+cruH1N9WPRl3Lh7hj/Uq96N6kNHOhgvQ3psKFusu+BG5lv+qAL8MW4yRSVbqMYDE
+1dNjranLqAU9lq6GcTS7U3oVZ/jFlRGcIrajSFxltXXBw1YE1f5NtoHqmSsGrlD9
+MS37X6nSd+IU3XSERS3Y8kH3P3pqw9yXStLcLi/mWO0pRnxi6CQF+Krw39/N9COQ
+QdrWb5idFYmEdA7WBa1k92b89VghKbLyUvj4+1oTCnU5/DCGZRsBzS4DO1vcEMS3
+RyM5d1kL9sgA37xN2XSgItjqcmYCLob2auhiA0kEBtKy1JHi5wxLR2T1QzjCLC5R
+Oe2WC6lAOUDYGcnIQ8ejrGL70aFtz+iGmbRR3tscrDovJsBZt+/qjfSsoLJu5uU7
+EwH5qMOPu0bsWYRFEt2NJy/kryT4JC5mLlg/aNYc4BSHe8xiyXnCbaD0tUjD3wyV
+DtpZ7SzeLLzVLYz3TgOvchwmzyGSTKRGQCM1NTZgQ40rxON9Pk8hg5M7/UTOmLis
+VMPqmxLCMvYanUBcH+xM1Z9L8m1nRY9Ch4GBs4p0Fp5mDZMsh+JQofRfivXxU/8H
++WrtleWbRywqy0h1IwhK
+=+6Vu
+-----END PGP SIGNATURE-----
+
+--------------enig2958250A1FC9015E5B8B379F--
