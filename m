@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab2F0W2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:28:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065Ab2F0W2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:28:50 -0400
-Date: Thu, 28 Jun 2012 01:28:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120627222852.GA27885@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
- <20120627050937.23698.68442.stgit@bling.home>
- <20120627095137.GH17507@redhat.com>
- <1340830749.1207.236.camel@bling.home>
- <20120627211413.GE27746@redhat.com>
- <1340832499.1207.255.camel@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340832499.1207.255.camel@bling.home>
+	id S1757553Ab2F0W0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:26:35 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:55273 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752709Ab2F0W0e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 18:26:34 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 5/8] ARM: LPC32xx: Defconfig update
+Date: Thu, 28 Jun 2012 00:26:15 +0200
+Message-Id: <1340835978-20331-6-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1340835978-20331-1-git-send-email-stigge@antcom.de>
+References: <1340835978-20331-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 03:28:19PM -0600, Alex Williamson wrote:
-> On Thu, 2012-06-28 at 00:14 +0300, Michael S. Tsirkin wrote:
-> > On Wed, Jun 27, 2012 at 02:59:09PM -0600, Alex Williamson wrote:
-> > > On Wed, 2012-06-27 at 12:51 +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
-> > > > > In order to inject an interrupt from an external source using an
-> > > > > irqfd, we need to allocate a new irq_source_id.  This allows us to
-> > > > > assert and (later) de-assert an interrupt line independently from
-> > > > > users of KVM_IRQ_LINE and avoid lost interrupts.
-> > > > > 
-> > > > > We also add what may appear like a bit of excessive infrastructure
-> > > > > around an object for storing this irq_source_id.  However, notice
-> > > > > that we only provide a way to assert the interrupt here.  A follow-on
-> > > > > interface will make use of the same irq_source_id to allow de-assert.
-> > > > > 
-> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > > ---
-> > > > > 
-> > > > >  Documentation/virtual/kvm/api.txt |    5 ++
-> > > > >  arch/x86/kvm/x86.c                |    1 
-> > > > >  include/linux/kvm.h               |    3 +
-> > > > >  virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
-> > > > >  4 files changed, 99 insertions(+), 5 deletions(-)
-> > > > > 
-> > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > > > > index ea9edce..b216709 100644
-> > > > > --- a/Documentation/virtual/kvm/api.txt
-> > > > > +++ b/Documentation/virtual/kvm/api.txt
-> > > > > @@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
-> > > > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
-> > > > >  and kvm_irqfd.gsi.
-> > > > >  
-> > > > > +With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
-> > > > > +the requested irqfd.  This is necessary to share level triggered
-> > > > > +interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
-> > > > > +with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
-> > > > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
-> > > > 
-> > > > Note that if my patch removing auto-deassert gets accepted,
-> > > > this is not needed at all: we can just look at the GSI
-> > > > to see if it's level or edge.
-> > > 
-> > > I'm not sure this is a good idea.  I know from vfio that I'm injecting a
-> > > level interrupt regardless of how the guest has the pic/ioapic
-> > > programmed at the time I'm calling this ioctl.  Peeking across address
-> > > spaces to get to the right pin on the right pic/ioapic and see how it's
-> > > currently programmed seems fragile.  Thanks,
-> > > 
-> > > Alex
-> > 
-> > Fragile? If you set eventfd as LEVEL but GSI is really edge then
-> > it all explodes, right? So why give users the option to shoot
-> > themselves in the foot?
-> 
-> If the guest has the ioapic rte set to edge at the time I call KVM_IRQFD
-> to register my level interrupt then it all explodes, right?  I'd rather
-> let the user shoot themselves than play Russian roulette with the guest.
-> Am I misunderstanding what you mean by looking that the GSI to see if
-> it's level or edge?
+This defconfig update for LPC32xx adds interrupt and polled gpio keyboard
+drivers.
 
-Not sure.
-I simply mean this: if eventfd is bound to irqfd, set level from irqfd
-and clear from eventfd ack notifier.
-There's no need for a special IRQ_LEVEL for this.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
--- 
-MST
+---
+ arch/arm/configs/lpc32xx_defconfig |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- linux-2.6.orig/arch/arm/configs/lpc32xx_defconfig
++++ linux-2.6/arch/arm/configs/lpc32xx_defconfig
+@@ -18,6 +18,7 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_LPC32XX=y
++CONFIG_KEYBOARD_GPIO_POLLED=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+@@ -89,6 +90,7 @@ CONFIG_INPUT_MOUSEDEV_SCREEN_X=240
+ CONFIG_INPUT_MOUSEDEV_SCREEN_Y=320
+ CONFIG_INPUT_EVDEV=y
+ # CONFIG_KEYBOARD_ATKBD is not set
++CONFIG_KEYBOARD_GPIO=y
+ CONFIG_KEYBOARD_LPC32XX=y
+ # CONFIG_INPUT_MOUSE is not set
+ CONFIG_INPUT_TOUCHSCREEN=y
