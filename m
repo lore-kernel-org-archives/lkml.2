@@ -1,133 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab2F0VgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 17:36:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58635 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab2F0VgB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 17:36:01 -0400
-From: Olof Johansson <olof@lixom.net>
-To: hpa@zytor.com
-Cc: Marko Kohtala <marko.kohtala@gmail.com>, linux-kernel@vger.kernel.org,
-        mjg@redhat.com, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] efi: add efi_runtime state checking
-Date: Wed, 27 Jun 2012 14:35:57 -0700
-Message-Id: <1340832957-7386-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
-In-Reply-To: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com>
-References: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com>
+	id S932250Ab2F0Vm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 17:42:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52506 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932185Ab2F0Vm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 17:42:27 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH] kvm, Add x86_hyper_kvm to complete detect_hypervisor_platform check
+Date: Wed, 27 Jun 2012 17:42:18 -0400
+Message-Id: <1340833338-15485-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds an efi_runtime variable indicating whether the
-efi runtime services are available. The only time they are
-expected to not be available is when a 32-bit kernel has been
-booted using 64-but EFI and vice versa.
+While debugging I noticed that unlike all the other hypervisor code in the
+kernel, kvm does not have an entry for x86_hyper which is used in
+detect_hypervisor_platform(), and results in a nice message about the
+hypervisor being used.  This is only really a stub function and it makes
+kvm more consistent with the other hypervisors (and it makes debugging
+a little easier).
 
-It also adds checking to the two locations where functions are
-called; x86 reboot and efivars.
-
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Cc: stable@kernel.org # 3.4
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>
 ---
+ arch/x86/include/asm/hypervisor.h |    1 +
+ arch/x86/kernel/cpu/hypervisor.c  |    1 +
+ arch/x86/kernel/kvm.c             |    6 ++++++
+ 3 files changed, 8 insertions(+)
 
-Marko,
-
-This should solve the issue for you, I hope. I've verified that it works
-here on my 64-bit EFI / 32-bit kernel systems (first-gen Chromebook).
-
-Peter, let me know if you want this split up across several patches. I
-preserved the previous probe/return behaviour for efivars, I suppose
-it could be switched to -ENXIO return instead but this smaller change
-seemed more suitable for -stable.
-
-
--Olof
-
- arch/x86/kernel/reboot.c    | 2 +-
- arch/x86/platform/efi/efi.c | 6 ++++++
- drivers/firmware/efivars.c  | 2 +-
- include/linux/efi.h         | 3 +++
- 4 files changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 52190a9..fa5bb6c 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -592,7 +592,7 @@ static void native_machine_emergency_restart(void)
- 			break;
+diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
+index 7a15153..b518c75 100644
+--- a/arch/x86/include/asm/hypervisor.h
++++ b/arch/x86/include/asm/hypervisor.h
+@@ -49,6 +49,7 @@ extern const struct hypervisor_x86 *x86_hyper;
+ extern const struct hypervisor_x86 x86_hyper_vmware;
+ extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
+ extern const struct hypervisor_x86 x86_hyper_xen_hvm;
++extern const struct hypervisor_x86 x86_hyper_kvm;
  
- 		case BOOT_EFI:
--			if (efi_enabled)
-+			if (efi_runtime)
- 				efi.reset_system(reboot_mode ?
- 						 EFI_RESET_WARM :
- 						 EFI_RESET_COLD,
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 2dc29f5..cc2bc12 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -53,6 +53,9 @@
- int efi_enabled;
- EXPORT_SYMBOL(efi_enabled);
- 
-+bool efi_runtime;
-+EXPORT_SYMBOL(efi_runtime);
-+
- struct efi __read_mostly efi = {
- 	.mps        = EFI_INVALID_TABLE_ADDR,
- 	.acpi       = EFI_INVALID_TABLE_ADDR,
-@@ -77,6 +80,7 @@ static efi_system_table_t efi_systab __initdata;
- static int __init setup_noefi(char *arg)
+ static inline bool hypervisor_x2apic_available(void)
  {
- 	efi_enabled = 0;
-+	efi_runtime = 0;
- 	return 0;
- }
- early_param("noefi", setup_noefi);
-@@ -615,6 +619,8 @@ static int __init efi_runtime_init(void)
- 
- 	early_iounmap(runtime, sizeof(efi_runtime_services_t));
- 
-+	efi_runtime = 1;
-+
- 	return 0;
- }
- 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 47408e8..265449a 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1213,7 +1213,7 @@ efivars_init(void)
- 	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
- 	       EFIVARS_DATE);
- 
--	if (!efi_enabled)
-+	if (!efi_runtime)
- 		return 0;
- 
- 	/* For now we'll register the efi directory at /sys/firmware/efi */
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 103adc6..ac9c28d 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -539,11 +539,14 @@ extern int __init efi_setup_pcdp_console(char *);
- # ifdef CONFIG_X86
-    extern int efi_enabled;
-    extern bool efi_64bit;
-+   extern bool efi_runtime;
- # else
- #  define efi_enabled 1
-+#  define efi_runtime 1
- # endif
- #else
- # define efi_enabled 0
-+# define efi_runtime 0
+diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+index 755f64f..6d6dd7a 100644
+--- a/arch/x86/kernel/cpu/hypervisor.c
++++ b/arch/x86/kernel/cpu/hypervisor.c
+@@ -37,6 +37,7 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
  #endif
+ 	&x86_hyper_vmware,
+ 	&x86_hyper_ms_hyperv,
++	&x86_hyper_kvm,
+ };
  
- /*
+ const struct hypervisor_x86 *x86_hyper;
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index e554e5a..0a38b68 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -39,6 +39,7 @@
+ #include <asm/desc.h>
+ #include <asm/tlbflush.h>
+ #include <asm/idle.h>
++#include <asm/hypervisor.h>
+ 
+ static int kvmapf = 1;
+ 
+@@ -432,6 +433,11 @@ void __init kvm_guest_init(void)
+ #endif
+ }
+ 
++const struct hypervisor_x86 x86_hyper_kvm __refconst = {
++	.name			= "KVM",
++};
++EXPORT_SYMBOL(x86_hyper_kvm);
++
+ static __init int activate_jump_labels(void)
+ {
+ 	if (has_steal_clock) {
 -- 
-1.7.10.1.488.g05fbf7a
+1.7.9.3
 
