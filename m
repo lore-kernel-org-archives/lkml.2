@@ -1,34 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab2F0TVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 15:21:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37311 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab2F0TVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756388Ab2F0TVK (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 27 Jun 2012 15:21:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37230 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854Ab2F0TVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 15:21:06 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Dmitry Antipov <dmitry.antipov@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Jiri Olsa <jolsa@redhat.com>, linaro-dev@lists.linaro.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Sartain <mikesart@valvesoftware.com>,
-        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        patches@linaro.org, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Pierre-Loup A. Griffais" <pgriffais@nvidia.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Chen <tim.c.chen@linux.intel.com>, arnaldo.melo@gmail.com,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/7] perf/core improvements and fixes
-Date: Wed, 27 Jun 2012 16:20:47 -0300
-Message-Id: <1340824854-3005-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/7] perf test: Fix parse events test to follow proper raw event name
+Date: Wed, 27 Jun 2012 16:20:49 -0300
+Message-Id: <1340824854-3005-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1340824854-3005-1-git-send-email-acme@infradead.org>
+References: <1340824854-3005-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -36,86 +26,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Jiri Olsa <jolsa@redhat.com>
 
-	Please consider pulling.
+Following commit changed raw event names to carry event modificator.
 
-	Tested on RHEL6.2, Fedora 17 x86 and x86_64,
+  perf evsel: Reconstruct raw event with modifiers from perf_event_attr
+  commit 6eef3d9c2bcf52b7a3c18e609f5838c007b989a4
+  Author: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-- Arnaldo
+The perf_evsel__name function now returns ':mod' suffix for raw events,
+so we need to follow that in current tests.
 
-The following changes since commit 357398e96d8c883b010379a7669df43ed0e2e32b:
+All tests pass now for 'perf test parse' suite.
 
-  perf/x86: Fix section mismatch in uncore_pci_init() (2012-06-25 10:32:21 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to d9873ab79376d5c0112ed09e14783067dc65e808:
-
-  perf tools: Trivial build fix (2012-06-27 13:32:06 -0300)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Improve 'perf bench' docs, by Namhyung Kim
-
-. Fix build when O= is not used, from David Ahern
-
-. Fix cross compilation build, from Namhyung Kim
-
-. Fix pipe mode when callchains are used, from David Ahern
-
-. Follow .gnu_debuglink section to find separate symbols, from Pierre-Loup A. Griffais
-
-. Fix 'perf test' raw events entries, from Jiri Olsa
-
-. Use the events description in the perf.data file, not the sysfs ones.
-
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1340274316-5161-1-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/parse-events-test.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (1):
-      perf tools: Stop using a global trace events description list
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index 229af6d..a0f61a2 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -413,19 +413,20 @@ static int test__checkevent_pmu_name(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *evsel;
+ 
+-	/* cpu/config=1,name=krava1/u */
++	/* cpu/config=1,name=krava/u */
+ 	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
+ 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
+ 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
+ 	TEST_ASSERT_VAL("wrong config",  1 == evsel->attr.config);
+ 	TEST_ASSERT_VAL("wrong name", !strcmp(perf_evsel__name(evsel), "krava"));
+ 
+-	/* cpu/config=2/" */
++	/* cpu/config=2/u" */
+ 	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
+ 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
+ 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
+ 	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
+-	TEST_ASSERT_VAL("wrong name", !strcmp(perf_evsel__name(evsel), "raw 0x2"));
++	TEST_ASSERT_VAL("wrong name",
++			!strcmp(perf_evsel__name(evsel), "raw 0x2:u"));
+ 
+ 	return 0;
+ }
+-- 
+1.7.1
 
-David Ahern (2):
-      perf report: Delay sample_type checks in pipe mode
-      perf tools: Trivial build fix
-
-Jiri Olsa (1):
-      perf test: Fix parse events test to follow proper raw event name
-
-Namhyung Kim (2):
-      perf evsel: Fix a build failure on cross compilation
-      perf bench: Documentation update
-
-Pierre-Loup A. Griffais (1):
-      perf symbols: Follow .gnu_debuglink section to find separate symbols
-
- tools/perf/Documentation/perf-bench.txt            |   78 +++++++++++++++-
- tools/perf/Makefile                                |    2 +-
- tools/perf/bench/mem-memcpy.c                      |    4 +-
- tools/perf/bench/mem-memset.c                      |    8 +-
- tools/perf/builtin-bench.c                         |    4 +-
- tools/perf/builtin-kmem.c                          |   37 +++++---
- tools/perf/builtin-lock.c                          |    4 +-
- tools/perf/builtin-report.c                        |    6 +-
- tools/perf/builtin-sched.c                         |   36 +++++---
- tools/perf/builtin-script.c                        |   66 ++++++++-----
- tools/perf/util/evlist.c                           |    4 +-
- tools/perf/util/evlist.h                           |    3 +
- tools/perf/util/evsel.c                            |    1 -
- tools/perf/util/header.c                           |   31 ++++---
- tools/perf/util/parse-events-test.c                |    7 +-
- .../perf/util/scripting-engines/trace-event-perl.c |   28 +++---
- .../util/scripting-engines/trace-event-python.c    |   21 +++--
- tools/perf/util/session.c                          |   56 +++++++++++
- tools/perf/util/session.h                          |   10 ++
- tools/perf/util/symbol.c                           |   65 ++++++++++++-
- tools/perf/util/symbol.h                           |    1 +
- tools/perf/util/trace-event-parse.c                |   58 ++++++------
- tools/perf/util/trace-event-read.c                 |   97 ++++++++++----------
- tools/perf/util/trace-event-scripting.c            |    7 +-
- tools/perf/util/trace-event.h                      |   38 ++++----
- 25 files changed, 471 insertions(+), 201 deletions(-)
