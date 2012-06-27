@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab2F0MN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:13:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9131 "EHLO mx1.redhat.com"
+	id S1757259Ab2F0MOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 08:14:08 -0400
+Received: from antcom.de ([188.40.178.216]:34058 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756761Ab2F0MN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:13:27 -0400
-Message-ID: <4FEAF8E0.3080307@redhat.com>
-Date: Wed, 27 Jun 2012 09:13:20 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756554Ab2F0MOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 08:14:06 -0400
+Message-ID: <4FEAF90B.5030809@antcom.de>
+Date: Wed, 27 Jun 2012 14:14:03 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3] edac: add support for Calxeda highbank memory controller
-References: <1339468334-9927-3-git-send-email-robherring2@gmail.com> <1339606915-7521-1-git-send-email-robherring2@gmail.com> <4FE9BCF5.4090109@gmail.com>
-In-Reply-To: <4FE9BCF5.4090109@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
+        linux@arm.linux.org.uk
+Subject: Re: [PATCH v7] MTD: LPC32xx SLC NAND driver
+References: <1339064536-20553-1-git-send-email-stigge@antcom.de> <1340794007.29342.50.camel@sauron.fi.intel.com>
+In-Reply-To: <1340794007.29342.50.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-06-2012 10:45, Rob Herring escreveu:
-> Mauro,
+On 06/27/2012 12:46 PM, Artem Bityutskiy wrote:
+> On Thu, 2012-06-07 at 12:22 +0200, Roland Stigge wrote:
+>> This patch adds support for the SLC NAND controller inside the
+>> LPC32xx SoC.
+>> 
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
 > 
-> On 06/13/2012 12:01 PM, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Add support for memory controller on Calxeda Highbank platforms. Highbank
->> platforms support a single 4GB mini-DIMM with 1-bit correction and 2-bit
->> detection.
->>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> ---
->> v3: fix compile when EDAC_DEBUG is disabled
+> Now the write_page and write_page_raw functions return an error
+> code, see this commit in the l2 tree:
 > 
-> Ping. linux-next is broken for highbank without this fix.
+> http://git.infradead.org/users/dedekind/l2-mtd.git/commit/49c8d9ab3b70732665249f2d993f734378ebbba9
+>
+>  I've amended your SLC driver, see below the diff. But I think it
+> could return the real return code becuse it can fail - could you
+> please take a look and send an incremental patch?
+> 
+> Please, base your work on top of the l2-mtd tree: 
+> git://git.infradead.org/users/dedekind/l2-mtd.git
 
-Patch replaced and merged on my trees (with a minor change, see below).
+Thanks for the note! I'm sending an incremental patch. There was
+actually only one place in the two functions that could fail (return
+code of lpc32xx_xfer()).
 
--next should likely get the fix tomorrow.
-
-Thanks,
-Mauro.
-
->>   .../devicetree/bindings/arm/calxeda/mem-ctrlr.txt  |   17 ++
->>   arch/arm/boot/dts/highbank.dts                     |    6 +
->>   drivers/edac/Kconfig                               |    9 +-
->>   drivers/edac/Makefile                              |    2 +
->>   drivers/edac/highbank_mc_edac.c                    |  264 ++++++++++++++++++++
->>   5 files changed, 297 insertions(+), 1 deletion(-)
->>   create mode 100644 Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
->>   create mode 100644 drivers/edac/highbank_mc_edac.c
->>
->> diff --git a/Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt b/Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
->> new file mode 100644
->> index 0000000..5c74a0b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
->> @@ -0,0 +1,17 @@
->> +Calxeda DDR memory controller
->> +
->> +Properties:
->> +- compatible : Should be "calxeda,hb-ddr-ctrl"
->> +- reg : Address and size for DDR controller registers.
->> +- interrupts : Interrupt for DDR controller.
->> +
->> +Example:
->> +
->> +	memory-controller@fff00000 {
->> +		compatible = "calxeda,hb-ddr-ctrl";
->> +		reg = <0xfff00000 0x1000>;
->> +		interrupts = <0 91 4>;
->> +	};
->> +
->> +
->> +
-
-There are some extra blank likes at the end of this file. I removed them.
+Roland
