@@ -1,207 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab2F0F5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 01:57:05 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58284 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab2F0F5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 01:57:03 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FEAA09F.5000907@jp.fujitsu.com>
-Date: Wed, 27 Jun 2012 14:56:47 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756163Ab2F0F5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 01:57:33 -0400
+Received: from tundra.namei.org ([65.99.196.166]:58702 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752592Ab2F0F5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 01:57:31 -0400
+Date: Wed, 27 Jun 2012 15:57:22 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: linux-security-module@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, lwn@lwn.net,
+        Linux Security Summit Program Committee 
+	<lss-pc@ext.namei.org>,
+        Stephanie Markowski <smarkowski@linuxfoundation.org>,
+        "C. Craig Ross" <ccr@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Corey Bryant <coreyb@linux.vnet.ibm.com>
+Subject: [ANN] Linux Security Summit 2012 - Schedule Published
+Message-ID: <alpine.LRH.2.02.1206271527070.14050@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
-CC: <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [RFC PATCH 10/12] memory-hotplug : free memmap of sparse-vmemmap
-References: <4FEA9C88.1070800@jp.fujitsu.com>
-In-Reply-To: <4FEA9C88.1070800@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think that all pages of virtual mapping in removed memory can be
-freed, since page which type is MIX_SECTION_INFO is difficult to free.
-So, the patch only frees page which type is SECTION_INFO at first.
+This is to announce the schedule for the 2012 Linux Security Summit, to be 
+held 30-31 August in San Diego, USA.
 
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Details of the schedule may be found at:
+http://kernsec.org/wiki/index.php/Linux_Security_Summit_2012/Schedule
 
----
- arch/x86/mm/init_64.c |   89 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mm.h    |    2 +
- mm/memory_hotplug.c   |    5 ++
- mm/sparse.c           |    5 +-
- 4 files changed, 99 insertions(+), 2 deletions(-)
+Summary:
 
-Index: linux-3.5-rc4/include/linux/mm.h
-===================================================================
---- linux-3.5-rc4.orig/include/linux/mm.h	2012-06-27 09:11:13.790150442 +0900
-+++ linux-3.5-rc4/include/linux/mm.h	2012-06-27 09:11:16.433117400 +0900
-@@ -1588,6 +1588,8 @@ int vmemmap_populate(struct page *start_
- void vmemmap_populate_print_last(void);
- void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
- 				  unsigned long size);
-+void vmemmap_kfree(struct page *memmpa, unsigned long nr_pages);
-+void vmemmap_free_bootmem(struct page *memmpa, unsigned long nr_pages);
+o Keynote talk by Matthew Garrett
 
- enum mf_flags {
- 	MF_COUNT_INCREASED = 1 << 0,
-Index: linux-3.5-rc4/mm/sparse.c
-===================================================================
---- linux-3.5-rc4.orig/mm/sparse.c	2012-06-27 09:06:35.317631878 +0900
-+++ linux-3.5-rc4/mm/sparse.c	2012-06-27 09:11:16.434117388 +0900
-@@ -614,12 +614,13 @@ static inline struct page *kmalloc_secti
- 	/* This will make the necessary allocations eventually. */
- 	return sparse_mem_map_populate(pnum, nid);
- }
--static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
-+static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
- {
--	return; /* XXX: Not implemented yet */
-+	vmemmap_kfree(page, nr_pages);
- }
- static void free_map_bootmem(struct page *page, unsigned long nr_pages)
- {
-+	vmemmap_free_bootmem(page, nr_pages);
- }
- #else
- static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
-Index: linux-3.5-rc4/arch/x86/mm/init_64.c
-===================================================================
---- linux-3.5-rc4.orig/arch/x86/mm/init_64.c	2012-06-27 09:11:13.791150430 +0900
-+++ linux-3.5-rc4/arch/x86/mm/init_64.c	2012-06-27 09:11:59.254581998 +0900
-@@ -978,6 +978,95 @@ vmemmap_populate(struct page *start_page
- 	return 0;
- }
+o Refereed talks on new and evolving Linux security topics:
 
-+unsigned long find_and_clear_pte_page(unsigned long addr, unsigned long end,
-+				      struct page *page)
-+{
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+	pte_t *pte;
-+	unsigned long next;
-+
-+	page = NULL;
-+
-+	pgd = pgd_offset_k(addr);
-+	if (pgd_none(*pgd))
-+		return PAGE_SIZE;
-+
-+	pud = pud_offset(pgd, addr);
-+	if (pud_none(*pud))
-+		return PAGE_SIZE;
-+
-+	if (!cpu_has_pse) {
-+		next = (addr + PAGE_SIZE) & PAGE_MASK;
-+		pmd = pmd_offset(pud, addr);
-+		if (pmd_none(*pmd))
-+			return next;
-+
-+		pte = pte_offset_kernel(pmd, addr);
-+		if (pte_none(*pte))
-+			return next;
-+
-+		page = pte_page(*pte);
-+		pte_clear(&init_mm, addr, pte);
-+	} else {
-+		next = pmd_addr_end(addr, end);
-+
-+		pmd = pmd_offset(pud, addr);
-+		if (pmd_none(*pmd))
-+			return next;
-+
-+		page = pmd_page(*pmd);
-+		pmd_clear(pmd);
-+	}
-+
-+	return next;
-+}
-+
-+void __meminit
-+vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
-+{
-+	unsigned long addr = (unsigned long)memmap;
-+	unsigned long end = (unsigned long)(memmap + nr_pages);
-+	unsigned long next;
-+	unsigned int order;
-+	struct page *page;
-+
-+	for (; addr < end; addr = next) {
-+		next = find_and_clear_pte_page(addr, end, page);
-+		if (!page)
-+			continue;
-+
-+		if (is_vmalloc_addr(page))
-+			vfree(page);
-+		else {
-+			order = next - addr;
-+			free_pages((unsigned long)page,
-+				   get_order(sizeof(struct page) *  order));
-+		}
-+	}
-+}
-+
-+void __meminit
-+vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
-+{
-+	unsigned long addr = (unsigned long)memmap;
-+	unsigned long end = (unsigned long)(memmap + nr_pages);
-+	unsigned long next;
-+	struct page *page;
-+	unsigned long magic;
-+
-+	for (; addr < end; addr = next) {
-+		next = find_and_clear_pte_page(addr, end, page);
-+		if (!page)
-+			continue;
-+
-+		magic = (unsigned long) page->lru.next;
-+		if (magic == SECTION_INFO)
-+			put_page_bootmem(page);
-+	}
-+}
-+
- void __meminit
- register_page_bootmem_memmap(unsigned long section_nr, struct page *start_page,
- 			     unsigned long size)
-Index: linux-3.5-rc4/mm/memory_hotplug.c
-===================================================================
---- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-27 09:11:13.789150454 +0900
-+++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-27 09:11:16.436117363 +0900
-@@ -303,6 +303,8 @@ static int __meminit __add_section(int n
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- static int __remove_section(struct zone *zone, struct mem_section *ms)
- {
-+	unsigned long flags;
-+	struct pglist_data *pgdat = zone->zone_pgdat;
- 	int ret;
+    * Bootstrapping the Policies for LSMs for Native and Web Applications
+      Elena Reshetova, Intel
 
- 	if (!valid_section(ms))
-@@ -310,6 +312,9 @@ static int __remove_section(struct zone
+    * DNSSEC: The Shiny New Cryptographically Secured Globally
+        Distributed Database
+      Paul Wouters, Red Hat
 
- 	ret = unregister_memory_section(ms);
+    * Linux Sandbox Version II - Sandboxing Server Applications
+      Dan Walsh, Red Hat
 
-+	pgdat_resize_lock(pgdat, &flags);
-+	sparse_remove_one_section(zone, ms);
-+	pgdat_resize_unlock(pgdat, &flags);
- 	return ret;
- }
- #else
+    * Upcoming Extensions to the Linux kernel Integrity Subsystem 
+        (IMA/EVM)
+      Dmitry Kasatkin, Intel
+
+    * The Linux Integrity Subsystem and TPM-based Network
+        Endpoint Assessment
+      Andreas Steffen, University of Applied Sciences Rapperswil
+
+    * Middleware MAC for Android
+      Stephen Smalley, National Security Agency
+
+    * CaitSith: A New Type of Rule Based In-kernel Access Control
+      Tetsuo Handa, NTT Data Intellilink
+
+    * Finding Kernel Vulnerabilities Using Coccinelle
+      Kees Cook, Google
+
+o Kernel security subsystem updates from maintainers:
+   
+    * Cryptography 	
+      Herbert Xu, Red Hat
+
+    * AppArmor
+      John Johansen, Canonical
+
+    * Key Management
+      David Howells, Red Hat
+
+    * SELinux 
+      Eric Paris, Red Hat
+
+    * Integrity 	
+      Mimi Zohar, IBM
+
+    * TOMOYO
+      Tetsuo Handa, NTT Data Intellilink
+
+    * Smack
+      Casey Schaufler, Intel
+
+    * YAMA
+      Kees Cook, Google 
+
+o Breakout sessions:
+  
+    * LF Security Workgroup BoF
+      Corey Bryant, IBM
+
+    * and more to come...
+
+
+This event is co-located with LinuxCon.
+
+All registered LinuxCon attendees may attend the Linux Security Summit.
+
+For LinuxCon details, see:
+https://events.linuxfoundation.org/events/linuxcon
+
+The Linux Security Summit home page is:
+http://kernsec.org/wiki/index.php/Linux_Security_Summit_2012
+
+
+
+James Morris, 
+on behalf of the LSS Program Committee.
 
