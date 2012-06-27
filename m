@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab2F0M3O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:29:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1065 "EHLO mga03.intel.com"
+	id S1757018Ab2F0MbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 08:31:04 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:57674 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756226Ab2F0M3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:29:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="161275137"
-Message-ID: <1340800392.1799.17.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v7] MTD: LPC32xx SLC NAND driver
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Roland Stigge <stigge@antcom.de>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk
-Date: Wed, 27 Jun 2012 15:33:12 +0300
-In-Reply-To: <4FEAF90B.5030809@antcom.de>
-References: <1339064536-20553-1-git-send-email-stigge@antcom.de>
-	 <1340794007.29342.50.camel@sauron.fi.intel.com>
-	 <4FEAF90B.5030809@antcom.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-oqvf5mSleOX1IBuVKUVG"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753785Ab2F0MbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 08:31:01 -0400
+Message-ID: <4FEAFC5E.4050104@parallels.com>
+Date: Wed, 27 Jun 2012 16:28:14 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kir Kolyshkin <kir@parallels.com>
+Subject: Re: Fork bomb limitation in memcg WAS: Re: [PATCH 00/11] kmem controller
+ for memcg: stripped down version
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org> <4FEAD260.4000603@parallels.com> <20120627122924.GD20638@somewhere.redhat.com>
+In-Reply-To: <20120627122924.GD20638@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/27/2012 04:29 PM, Frederic Weisbecker wrote:
+> On Wed, Jun 27, 2012 at 01:29:04PM +0400, Glauber Costa wrote:
+>> On 06/27/2012 01:55 AM, Andrew Morton wrote:
+>>>> I can't speak for everybody here, but AFAIK, tracking the stack through
+>>>> the memory it used, therefore using my proposed kmem controller, was an
+>>>> idea that good quite a bit of traction with the memcg/memory people.
+>>>> So here you have something that people already asked a lot for, in a
+>>>> shape and interface that seem to be acceptable.
+>>>
+>>> mm, maybe.  Kernel developers tend to look at code from the point of
+>>> view "does it work as designed", "is it clean", "is it efficient", "do
+>>> I understand it", etc.  We often forget to step back and really
+>>> consider whether or not it should be merged at all.
+>>>
+>>> I mean, unless the code is an explicit simplification, we should have
+>>> a very strong bias towards "don't merge".
+>>
+>> Well, simplifications are welcome - this series itself was
+>> simplified beyond what I thought initially possible through the
+>> valuable comments
+>> of other people.
+>>
+>> But of course, this adds more complexity to the kernel as a whole.
+>> And this is true to every single new feature we may add, now or in
+>> the
+>> future.
+>>
+>> What I can tell you about this particular one, is that the justification
+>> for it doesn't come out of nowhere, but from a rather real use case that
+>> we support and maintain in OpenVZ and our line of products for years.
+> 
+> Right and we really need a solution to protect against forkbombs in LXC.
+Small correction: In containers. LXC is not the only one out there =p
 
---=-oqvf5mSleOX1IBuVKUVG
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 2012-06-27 at 14:14 +0200, Roland Stigge wrote:
-> Thanks for the note! I'm sending an incremental patch. There was
-> actually only one place in the two functions that could fail (return
-> code of lpc32xx_xfer()).
-
-Could you please check the MCL patch as well and re-send it against the
-l2 tree?
-
-I've squashed your change into the driver and pushed out, thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-oqvf5mSleOX1IBuVKUVG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP6v2IAAoJECmIfjd9wqK0n70QAL5Sls7HIG0WTZbOpXb+tB6N
-zUgy+7ysX+ey/dvYFgXdjkcvEm7q5hlmnHF3QySwQFLgzqGwwTmWGebmxbWtXMhG
-wQz7U8f2FUSA85Q8x3/Qk7Oa3E+11UARCb94zzcoWnTira+rWpEKx1Iiw+V5wQcx
-OXxH1JX3GHOW5jyZlzWbchrdbm3BTUsZb0M1xBnRfKTb7T3INxNGHliCFOSvo7Ea
-MvKynEDoKj3X3vQdHbKXpj6s3tSHSME5/lNN+sC7VXU9xboQ5WG7tNHFrsUdcULH
-3b5fXB+SZ1Ew6GSb354qt1x/DL+bbjKpRwBqKBY5LwYCeye6ihk8ffIu+sq8sh/g
-fqTKtqkBuGxK8dWIFYTMkwXqS7FxJsxCk7ZnKU9efsg3RMdmTZgU7tnGW9zjNpf8
-YPeHkeJNiA0EeDYvh2rilkLIeJNfGpyl8wOCC1VOP6T5ViB0/Sqv7L1/KgF27RL8
-RHF7Z6b4XnKmxaJ9iBFgRos59h8bVQ9167mRFIf5N4AuQkdzRxzyUjwumgqwJgHt
-ufdWIcolSkLi93u2LBS51J1igc89HwxcJBo7+hxvcN3VfACASzE+SvGBBUPgk1C2
-IQMo+COkmmxLyVfk15I1xLYhl+KjalTgqx54+zErXw/jYmr6TFLCiPiWG731F0aL
-YVkspinXRSbPUcDn4ZLt
-=v4bj
------END PGP SIGNATURE-----
-
---=-oqvf5mSleOX1IBuVKUVG--
 
