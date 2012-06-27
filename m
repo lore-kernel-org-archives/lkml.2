@@ -1,47 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab2F0OYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 10:24:40 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:39027 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046Ab2F0OYi (ORCPT
+	id S1756260Ab2F0O2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 10:28:24 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:64423 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab2F0O2X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 10:24:38 -0400
-Date: Wed, 27 Jun 2012 16:24:30 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
-Message-ID: <20120627162430.3477d0f6@BR9GNB5Z>
-In-Reply-To: <20120627050858.23698.44118.stgit@bling.home>
-References: <20120627044758.23698.249.stgit@bling.home>
-	<20120627050858.23698.44118.stgit@bling.home>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12062714-4966-0000-0000-000002C35187
+	Wed, 27 Jun 2012 10:28:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMO-S2jPvVZndo3_cM67ZvXXV5y5CKvxe-x6YGfguq3w9mVbAg@mail.gmail.com>
+References: <1339944948-3193-1-git-send-email-namhyung@kernel.org>
+	<20120618090501.GB28824@gmail.com>
+	<87mx3zhekz.fsf@sejong.aot.lge.com>
+	<CAMO-S2jPvVZndo3_cM67ZvXXV5y5CKvxe-x6YGfguq3w9mVbAg@mail.gmail.com>
+Date: Wed, 27 Jun 2012 23:28:22 +0900
+Message-ID: <CAMO-S2j74+=9QJ40-=3Zj9a2M2wnCC474vsm216GP-BB9OWbsg@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: Fix an error on perf-bench document
+From: Hitoshi Mitake <h.mitake@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jun 2012 23:09:04 -0600
-Alex Williamson <alex.williamson@redhat.com> wrote:
+On Mon, Jun 25, 2012 at 12:59 AM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+> On Tue, Jun 19, 2012 at 5:48 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+>> Hi, Ingo
+>>
+>> On Mon, 18 Jun 2012 11:05:01 +0200, Ingo Molnar wrote:
+>>> There's several typos all across the perf bench documentation:
+>>>
+>>> 1)
+>>>
+>>>        This perf bench command is general framework for benchmark suites.
+>>>
+>>> s/is general/is a general
+>>>
+>>
+>> Will fix.
+>>
+>>
+>>> 2)
+>>>
+>>> The output of 'perf bench --help' outputs weird looking
+>>> formatting characters like:
+>>>
+>>>            .ft C
+>>>            % perf bench sched pipe                      # with no style specified
+>>>            (executing 1000000 pipe operations between two tasks)
+>>>                    Total time:5.855 sec
+>>>                            5.855061 usecs/op
+>>>                            170792 ops/sec
+>>>            .ft
+>>>
+>>
+>> I have no idea on this, maybe a problem of asciidoc?
+>>
+>>
+>>> 3)
+>>>
+>>> This:
+>>>
+>>>            all: test all suite (pseudo suite)
+>>>
+>>> s/all suite (psudo suite)/all benchmark suites
+>>>
+>>> (this should be fixed for perf bench mem as well.)
+>>>
+>>
+>> Will fix.
+>>
+>>
+>>> 4)
+>>>
+>>> perf bench mem memcpy -h outputs:
+>>>
+>>>     -l, --length <1MB>    Specify length of memory to copy. available unit: B, MB, GB (upper and lower)
+>>>
+>>> bad capitalization: s/. a/. A
+>>>
+>>> s/unit/units
+>>>
+>>
+>> Will fix too.
+>>
+>>
+>>> 5)
+>>>
+>>> This:
+>>>
+>>>     -c, --clock           Use CPU clock for measuring
+>>>
+>>> should probably clarify why the CPU clock matters and what
+>>> measurement is done otherwise.
+>>>
+>>
+>> This looks a bit weird. If -c switch was given, it'd use the cycles
+>> event not the cpu-clock event. If omitted, it'd use the gtod().
+>>
+>
+> Very sorry, I misused the terms clock and cycles. The memset uses
+> hardware cycles event, the above naming and description with "clock"
+> is very bad...
+> I will write and send a patch for fix the problem.
 
-> Prune this down to just the struct kvm_irqfd so we can avoid
-> changing function definition for every flag or field we use.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+I wrote the simple fix for eliminatng wrong usage of "clock":
+https://github.com/mitake/linux/commit/b7836d41deff430c16058ca729120dccfa41e74e
 
-I'm currently trying to find a way to make irqfd workable for s390
-which will likely include using a new field in kvm_irqfd, so I'd like
-to have this change (and I also think it makes the code nicer to read).
-So:
+This patch assumes the change made by the Namhyung's patch. So I'm
+planning to send this after the Namhyung's patch is applied to tip
+tree. Or should the patches be unified before applied?
 
-Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
+-- 
+Hitoshi Mitake
+h.mitake@gmail.com
