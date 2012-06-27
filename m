@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab2F0WRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:17:50 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:49570 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761Ab2F0WRt (ORCPT
+	id S1758041Ab2F0W0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:26:37 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:47083 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754869Ab2F0W0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:17:49 -0400
-Date: Wed, 27 Jun 2012 17:17:43 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Alex Hung <alex.hung@canonical.com>
-Cc: Carsten Otto <otto@informatik.rwth-aachen.de>, corentincj@iksaif.net,
-        mjg@redhat.com, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asus-wmi: use ASUS_WMI_METHODID_DSTS2 as default DSTS ID.
-Message-ID: <20120627221743.GC13738@burratino>
-References: <1340164055-1062-1-git-send-email-alex.hung@canonical.com>
- <20120626213958.GA17871@burratino>
- <20120626215806.GM21479@carsten-otto>
- <4FEABBFC.6090708@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FEABBFC.6090708@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Jun 2012 18:26:34 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 4/8] ARM: LPC32xx: Update DTS file for EA3250 board
+Date: Thu, 28 Jun 2012 00:26:14 +0200
+Message-Id: <1340835978-20331-5-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1340835978-20331-1-git-send-email-stigge@antcom.de>
+References: <1340835978-20331-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+This DTS file update adds:
+* 3-channel ADC (for AD-IN on AD2, or 3-axis-accelerometer)
+* Interrupt key
 
-Alex Hung wrote:
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-> Some Fn keys fail to work is probably the result of un-handled
-> events, i.e. asus_wmi: Unknown key 7a pressed.
->
-> Do you always receive the error messages for each of the Fn-keys
-> that fails? I can take a closer look and try to fix each of them. I
-> don't have a Asus Zenbook Prime but I can check on other available
-> Asus machines.
+---
+ arch/arm/boot/dts/ea3250.dts |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-It looks like your message didn't reach Carsten.  I'm cc-ing him now.
-
-See http://bugs.debian.org/679158#62 for a summary of what each Fn-key
-that fails does (it varies from key to key).
-
-Regards,
-Jonathan
+--- linux-2.6.orig/arch/arm/boot/dts/ea3250.dts
++++ linux-2.6/arch/arm/boot/dts/ea3250.dts
+@@ -152,6 +152,23 @@
+ 			uart1: serial@40014000 {
+ 				status = "okay";
+ 			};
++
++			/* 3-axis accelerometer X,Y,Z (or AD-IN instead of Z) */
++			adc@40048000 {
++				status = "okay";
++			};
++		};
++	};
++
++	gpio_keys {
++		compatible = "gpio-keys";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		autorepeat;
++		button@21 {
++			label = "GPIO Key UP";
++			linux,code = <103>;
++			gpios = <&gpio 4 1 0>; /* GPI_P3 1 */
+ 		};
+ 	};
+ };
