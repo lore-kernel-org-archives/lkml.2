@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab2F0POj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:14:39 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:37696 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757033Ab2F0POh convert rfc822-to-8bit (ORCPT
+	id S1757573Ab2F0PQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:16:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1225 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756108Ab2F0PQI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:14:37 -0400
-MIME-Version: 1.0
-Message-ID: <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default>
-Date: Wed, 27 Jun 2012 08:12:56 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Minchan Kim <minchan@kernel.org>, Alex Shi <alex.shi@intel.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: RE: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <4FEA9FDD.6030102@kernel.org> <4FEAA4AA.3000406@intel.com>
- <4FEAA7A1.9020307@kernel.org>
-In-Reply-To: <4FEAA7A1.9020307@kernel.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
+	Wed, 27 Jun 2012 11:16:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="185653903"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Lekensteyn <lekensteyn@gmail.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc fix for 3.5] mei: pci_resume: set IRQF_ONESHOT for
+ msi request_threaded_irq
+Thread-Topic: [char-misc fix for 3.5] mei: pci_resume: set IRQF_ONESHOT for
+ msi request_threaded_irq
+Thread-Index: AQHNVG83qy0mLC4Nm0+Uvy67sP+Ft5cOD32AgAA2yyA=
+Date: Wed, 27 Jun 2012 15:16:02 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B138D6E@HASMSX103.ger.corp.intel.com>
+References: <1340806460-21646-1-git-send-email-tomas.winkler@intel.com>
+ <67041533.Myjsgf8nbb@al>
+In-Reply-To: <67041533.Myjsgf8nbb@al>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.11]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-> 
-> Hello,
-> 
-> On 06/27/2012 03:14 PM, Alex Shi wrote:
-> 
-> > On 06/27/2012 01:53 PM, Minchan Kim wrote:
-> >
-> >> On 06/26/2012 01:14 AM, Seth Jennings wrote:
-> >>
-> >>> This patch adds support for a local_tlb_flush_kernel_range()
-> >>> function for the x86 arch.  This function allows for CPU-local
-> >>> TLB flushing, potentially using invlpg for single entry flushing,
-> >>> using an arch independent function name.
-> >>>
-> >>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> >>
-> >>
-> >> Anyway, we don't matter INVLPG_BREAK_EVEN_PAGES's optimization point is 8 or something.
-> >
-> >
-> > Different CPU type has different balance point on the invlpg replacing
-> > flush all. and some CPU never get benefit from invlpg, So, it's better
-> > to use different value for different CPU, not a fixed
-> > INVLPG_BREAK_EVEN_PAGES.
-> 
-> I think it could be another patch as further step and someone who are
-> very familiar with architecture could do better than.
-> So I hope it could be merged if it doesn't have real big problem.
-> 
-> Thanks for the comment, Alex.
 
-Just my opinion, but I have to agree with Alex.  Hardcoding
-behavior that is VERY processor-specific is a bad idea.  TLBs should
-only be messed with when absolutely necessary, not for the
-convenience of defending an abstraction that is nice-to-have
-but, in current OS kernel code, unnecessary.
 
-IIUC, zsmalloc only cares that the breakeven point is greater
-than two.  An arch-specific choice of (A) two page flushes
-vs (B) one all-TLB flush should be all that is necessary right
-now.  (And, per separate discussion, even this isn't really
-necessary either.)
+> -----Original Message-----
+> From: Lekensteyn [mailto:lekensteyn@gmail.com]
+> Sent: Wednesday, June 27, 2012 5:59 PM
+> To: Winkler, Tomas
+> Cc: gregkh@linuxfoundation.org; arnd@arndb.de; alan@linux.intel.com;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [char-misc fix for 3.5] mei: pci_resume: set IRQF_ONESHOT for
+> msi request_threaded_irq
+> 
+> On Wednesday 27 June 2012 17:14:20 Tomas Winkler wrote:
+> > when the default irq quick handler is used then IRQF_ONESHOT must be
+> > set otherwise the request fails and following error is displayed:
+> >
+> > mei 0000:00:16.0: irq 48 for MSI/MSI-X
+> > genirq: Threaded irq requested with handler=NULL and !ONESHOT for irq
+> > 48 mei 0000:00:16.0: request_threaded_irq failed: irq = 48.
+> > dpm_run_callback(): pci_pm_resume+0x0/0x140 returns -22
+> > PM: Device 0000:00:16.0 failed to resume async: error -22
+> >
+> > Reported-by: Lekensteyn <lekensteyn@gmail.com>
+> > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> Tested-by: Peter Wu <lekensteyn@gmail.com>
+> 
+> (for the real name policy, if you prefer "Lekensteyn", it's fine too)
 
-If zsmalloc _ever_ gets extended to support items that might
-span three or more pages, a more generic TLB flush-pages-vs-flush-all
-approach may be warranted and, by then, may already exist in some
-future kernel.  Until then, IMHO, keep it simple.
+Thanks for reporting and testing 
+Tomas
+
+
