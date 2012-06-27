@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367Ab2F0Pv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:51:56 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:36190 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751546Ab2F0Pvv (ORCPT
+	id S1757892Ab2F0PwZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:52:25 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:27495 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756923Ab2F0PwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:51:51 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: dedekind1@gmail.com, linux-mtd@lists.infradead.org, aletes.xgr@gmail.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 1/4] mtd: lpc32xx_slc: Select AMBA_PL08X in Kconfig
-Date: Wed, 27 Jun 2012 17:51:12 +0200
-Message-Id: <1340812275-1197-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Wed, 27 Jun 2012 11:52:22 -0400
+Date: Wed, 27 Jun 2012 11:39:11 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Minchan Kim <minchan@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
+Message-ID: <20120627153911.GH17154@phenom.dumpdata.com>
+References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <4FEA9FDD.6030102@kernel.org>
+ <4FEAA4AA.3000406@intel.com>
+ <4FEAA7A1.9020307@kernel.org>
+ <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+On Wed, Jun 27, 2012 at 08:12:56AM -0700, Dan Magenheimer wrote:
+> > From: Minchan Kim [mailto:minchan@kernel.org]
+> > Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
+> > 
+> > Hello,
+> > 
+> > On 06/27/2012 03:14 PM, Alex Shi wrote:
+> > 
+> > > On 06/27/2012 01:53 PM, Minchan Kim wrote:
+> > >
+> > >> On 06/26/2012 01:14 AM, Seth Jennings wrote:
+> > >>
+> > >>> This patch adds support for a local_tlb_flush_kernel_range()
+> > >>> function for the x86 arch.  This function allows for CPU-local
+> > >>> TLB flushing, potentially using invlpg for single entry flushing,
+> > >>> using an arch independent function name.
+> > >>>
+> > >>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > >>
+> > >>
+> > >> Anyway, we don't matter INVLPG_BREAK_EVEN_PAGES's optimization point is 8 or something.
+> > >
+> > >
+> > > Different CPU type has different balance point on the invlpg replacing
+> > > flush all. and some CPU never get benefit from invlpg, So, it's better
+> > > to use different value for different CPU, not a fixed
+> > > INVLPG_BREAK_EVEN_PAGES.
+> > 
+> > I think it could be another patch as further step and someone who are
+> > very familiar with architecture could do better than.
+> > So I hope it could be merged if it doesn't have real big problem.
+> > 
+> > Thanks for the comment, Alex.
+> 
+> Just my opinion, but I have to agree with Alex.  Hardcoding
+> behavior that is VERY processor-specific is a bad idea.  TLBs should
+> only be messed with when absolutely necessary, not for the
+> convenience of defending an abstraction that is nice-to-have
+> but, in current OS kernel code, unnecessary.
 
-Since this driver depends on the amba pl08x dma driver, select it in Kconfig.
+At least put a big fat comment in the patch saying:
+"This is based on research done by Alex, where ...
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- drivers/mtd/nand/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-index de69978..a9e8b73 100644
---- a/drivers/mtd/nand/Kconfig
-+++ b/drivers/mtd/nand/Kconfig
-@@ -417,6 +417,7 @@ config MTD_NAND_PXA3xx
- config MTD_NAND_SLC_LPC32XX
- 	tristate "NXP LPC32xx SLC Controller"
- 	depends on ARCH_LPC32XX
-+	select AMBA_PL08X
- 	help
- 	  Enables support for NXP's LPC32XX SLC (i.e. for Single Level Cell
- 	  chips) NAND controller. This is the default for the PHYTEC 3250
--- 
-1.7.10.4
+This needs to be redone where it is automatically figured
+out based on the CPUID, but ." [include what Dan just
+said about breakeven point]
 
+
+> 
+> IIUC, zsmalloc only cares that the breakeven point is greater
+> than two.  An arch-specific choice of (A) two page flushes
+> vs (B) one all-TLB flush should be all that is necessary right
+> now.  (And, per separate discussion, even this isn't really
+> necessary either.)
+> 
+> If zsmalloc _ever_ gets extended to support items that might
+> span three or more pages, a more generic TLB flush-pages-vs-flush-all
+> approach may be warranted and, by then, may already exist in some
+> future kernel.  Until then, IMHO, keep it simple.
+
+Comments are simple :-)
