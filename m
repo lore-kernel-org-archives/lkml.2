@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab2F0ERt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 00:17:49 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:60111 "EHLO e2.ny.us.ibm.com"
+	id S1751648Ab2F0ERv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 00:17:51 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:38371 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708Ab2F0ERr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750714Ab2F0ERr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jun 2012 00:17:47 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
@@ -23,77 +23,31 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Michel Lespinasse <walken@google.com>,
         Minchan Kim <minchan@kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 0/5][RFC] Fallocate Volatile Ranges v5
-Date: Wed, 27 Jun 2012 00:17:10 -0400
-Message-Id: <1340770635-9909-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 3/5] [RFC] ashmem: Convert ashmem to use volatile ranges
+Date: Wed, 27 Jun 2012 00:17:13 -0400
+Message-Id: <1340770635-9909-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1340770635-9909-1-git-send-email-john.stultz@linaro.org>
+References: <1340770635-9909-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062704-5112-0000-0000-00000980BF78
+x-cbid: 12062704-6078-0000-0000-00000C9344B6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After sending out my last iteration, I got very little feedback, so
-I wanted to try sending this out again for comment.
+Rework of my first pass attempt at getting ashmem to utilize
+the volatile range code, now using the fallocate interface.
 
-This patchset has two parts:
+In this implementaiton GET_PIN_STATUS is unimplemented, due to
+the fact that adding a ISVOLATILE check wasn't considered
+terribly useful in earlier reviews. It would be trivial to
+re-add that functionality, but I wanted to check w/ the
+Android developers to see how often GET_PIN_STATUS is actually
+used?
 
-The first 3 patches add generic volatile range management code, as 
-well as tmpfs support for FALLOC_FL_MARK_VOLATILE, which uses a
-shrinker to purge ranges, and converts ashmem to use
-FALLOC_FL_MARK_VOLATILE, almost reducing the driver in half.
-
-Since Kosaki-san objected to using the shrinker, as its not numa aware,
-and is only called after we shrink normal lru lists. The second half of
-this patch set provides a different method that is not shrinker based.
-In this method we deactivate the pages in the volatile range, and then
-when writepage is called on a volatile page, we purge the entire range.
-Due to my unfamiliar with the details of the VM, this second part is
-less likely to be 100% correct or ideal, but seems to work properly in
-my testing.
-
-Since last sending this out, I was able to do some further performance
-analysis on the extra costs of deactivating all of the pages in the
-range when marking a range volatile, and the overhead is significant.
-Hopefully folks have some suggestions on how to maybe reduce this.
-
-Given that the shrinker approach is much faster, I've been also
-looking at other alternatives: One idea I believe suggested by 
-Minchan (although I may have misunderstood) was to provide a
-separate list to purge volatile ranges before we do the lru
-shrinking. So I've considered adding a "early_shrinker" list,
-which callbacks can be registered against and these shrinkers are
-called prior to lru shrinking. They still would be numa-unaware,
-but would still allow for volatile ranges to be zapped before
-we swap anything out. I realize this isn't what Minchan recently
-proposed (basically adding a new per-zone ERECLAIM LRU list), but
-my worry with the ERECLAIM list idea is we still have to touch the
-pages individually when marking them volatile. If folks are curious
-about this approach, I can post it as well, but I wanted to try to
-get further review on my current approach before jumping off onto
-another tangent.
-
-
-What's new in this iteration:
-* At Michel Lespinasse's and Dmitry Adamushko's earlier suggestion
-  I dropped the generic interval tree implementation to use the
-  prio_tree code which seems to function fine for my needs.
-* I added some pagevec batching in the activating/deactivating
-  paths which helped improve performance of non-shrinker method,
-  but there's still a ways to go.
-* Minor cleanups.
-
-
-Thanks again for the feedback so far!
-
-thanks
--john
-
-(Also, given the number of revisions this patchset, and previous
-attempts, have been through the CC list is getting crazy long,
-so feel free to ping me privately and I'll drop you if you're
-really not wanting to be flooded every week or so with these
-patches as I iterate)
+Similarly the ashmem PURGE_ALL_CACHES ioctl does not function,
+as the volatile range purging is no longer directly under its
+control.
 
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
@@ -114,33 +68,435 @@ CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 CC: Michel Lespinasse <walken@google.com>
 CC: Minchan Kim <minchan@kernel.org>
 CC: linux-mm@kvack.org <linux-mm@kvack.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/ashmem.c |  331 ++------------------------------------
+ 1 file changed, 9 insertions(+), 322 deletions(-)
 
-
-
-John Stultz (5):
-  [RFC] Add volatile range management code
-  [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE handlers
-  [RFC] ashmem: Convert ashmem to use volatile ranges
-  [RFC][HACK] tmpfs: Purge volatile ranges on writepage instead of
-    using shrinker
-  [RFC][HACK] mm: Change memory management of anonymous pages on
-    swapless systems
-
- drivers/staging/android/ashmem.c |  331 +--------------------------
- fs/open.c                        |    3 +-
- include/linux/falloc.h           |    7 +-
- include/linux/pagevec.h          |    5 +-
- include/linux/swap.h             |   23 +-
- include/linux/volatile.h         |   40 ++++
- mm/Makefile                      |    2 +-
- mm/shmem.c                       |  123 +++++++++-
- mm/swap.c                        |   13 +-
- mm/vmscan.c                      |    9 -
- mm/volatile.c                    |  467 ++++++++++++++++++++++++++++++++++++++
- 11 files changed, 673 insertions(+), 350 deletions(-)
- create mode 100644 include/linux/volatile.h
- create mode 100644 mm/volatile.c
-
+diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+index e84dbec..9e8fe37 100644
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -50,26 +50,6 @@ struct ashmem_area {
+ };
+ 
+ /*
+- * ashmem_range - represents an interval of unpinned (evictable) pages
+- * Lifecycle: From unpin to pin
+- * Locking: Protected by `ashmem_mutex'
+- */
+-struct ashmem_range {
+-	struct list_head lru;		/* entry in LRU list */
+-	struct list_head unpinned;	/* entry in its area's unpinned list */
+-	struct ashmem_area *asma;	/* associated area */
+-	size_t pgstart;			/* starting page, inclusive */
+-	size_t pgend;			/* ending page, inclusive */
+-	unsigned int purged;		/* ASHMEM_NOT or ASHMEM_WAS_PURGED */
+-};
+-
+-/* LRU list of unpinned pages, protected by ashmem_mutex */
+-static LIST_HEAD(ashmem_lru_list);
+-
+-/* Count of pages on our LRU list, protected by ashmem_mutex */
+-static unsigned long lru_count;
+-
+-/*
+  * ashmem_mutex - protects the list of and each individual ashmem_area
+  *
+  * Lock Ordering: ashmex_mutex -> i_mutex -> i_alloc_sem
+@@ -77,102 +57,9 @@ static unsigned long lru_count;
+ static DEFINE_MUTEX(ashmem_mutex);
+ 
+ static struct kmem_cache *ashmem_area_cachep __read_mostly;
+-static struct kmem_cache *ashmem_range_cachep __read_mostly;
+-
+-#define range_size(range) \
+-	((range)->pgend - (range)->pgstart + 1)
+-
+-#define range_on_lru(range) \
+-	((range)->purged == ASHMEM_NOT_PURGED)
+-
+-#define page_range_subsumes_range(range, start, end) \
+-	(((range)->pgstart >= (start)) && ((range)->pgend <= (end)))
+-
+-#define page_range_subsumed_by_range(range, start, end) \
+-	(((range)->pgstart <= (start)) && ((range)->pgend >= (end)))
+-
+-#define page_in_range(range, page) \
+-	(((range)->pgstart <= (page)) && ((range)->pgend >= (page)))
+-
+-#define page_range_in_range(range, start, end) \
+-	(page_in_range(range, start) || page_in_range(range, end) || \
+-		page_range_subsumes_range(range, start, end))
+-
+-#define range_before_page(range, page) \
+-	((range)->pgend < (page))
+ 
+ #define PROT_MASK		(PROT_EXEC | PROT_READ | PROT_WRITE)
+ 
+-static inline void lru_add(struct ashmem_range *range)
+-{
+-	list_add_tail(&range->lru, &ashmem_lru_list);
+-	lru_count += range_size(range);
+-}
+-
+-static inline void lru_del(struct ashmem_range *range)
+-{
+-	list_del(&range->lru);
+-	lru_count -= range_size(range);
+-}
+-
+-/*
+- * range_alloc - allocate and initialize a new ashmem_range structure
+- *
+- * 'asma' - associated ashmem_area
+- * 'prev_range' - the previous ashmem_range in the sorted asma->unpinned list
+- * 'purged' - initial purge value (ASMEM_NOT_PURGED or ASHMEM_WAS_PURGED)
+- * 'start' - starting page, inclusive
+- * 'end' - ending page, inclusive
+- *
+- * Caller must hold ashmem_mutex.
+- */
+-static int range_alloc(struct ashmem_area *asma,
+-		       struct ashmem_range *prev_range, unsigned int purged,
+-		       size_t start, size_t end)
+-{
+-	struct ashmem_range *range;
+-
+-	range = kmem_cache_zalloc(ashmem_range_cachep, GFP_KERNEL);
+-	if (unlikely(!range))
+-		return -ENOMEM;
+-
+-	range->asma = asma;
+-	range->pgstart = start;
+-	range->pgend = end;
+-	range->purged = purged;
+-
+-	list_add_tail(&range->unpinned, &prev_range->unpinned);
+-
+-	if (range_on_lru(range))
+-		lru_add(range);
+-
+-	return 0;
+-}
+-
+-static void range_del(struct ashmem_range *range)
+-{
+-	list_del(&range->unpinned);
+-	if (range_on_lru(range))
+-		lru_del(range);
+-	kmem_cache_free(ashmem_range_cachep, range);
+-}
+-
+-/*
+- * range_shrink - shrinks a range
+- *
+- * Caller must hold ashmem_mutex.
+- */
+-static inline void range_shrink(struct ashmem_range *range,
+-				size_t start, size_t end)
+-{
+-	size_t pre = range_size(range);
+-
+-	range->pgstart = start;
+-	range->pgend = end;
+-
+-	if (range_on_lru(range))
+-		lru_count -= pre - range_size(range);
+-}
+ 
+ static int ashmem_open(struct inode *inode, struct file *file)
+ {
+@@ -198,12 +85,6 @@ static int ashmem_open(struct inode *inode, struct file *file)
+ static int ashmem_release(struct inode *ignored, struct file *file)
+ {
+ 	struct ashmem_area *asma = file->private_data;
+-	struct ashmem_range *range, *next;
+-
+-	mutex_lock(&ashmem_mutex);
+-	list_for_each_entry_safe(range, next, &asma->unpinned_list, unpinned)
+-		range_del(range);
+-	mutex_unlock(&ashmem_mutex);
+ 
+ 	if (asma->file)
+ 		fput(asma->file);
+@@ -337,56 +218,6 @@ out:
+ 	return ret;
+ }
+ 
+-/*
+- * ashmem_shrink - our cache shrinker, called from mm/vmscan.c :: shrink_slab
+- *
+- * 'nr_to_scan' is the number of objects (pages) to prune, or 0 to query how
+- * many objects (pages) we have in total.
+- *
+- * 'gfp_mask' is the mask of the allocation that got us into this mess.
+- *
+- * Return value is the number of objects (pages) remaining, or -1 if we cannot
+- * proceed without risk of deadlock (due to gfp_mask).
+- *
+- * We approximate LRU via least-recently-unpinned, jettisoning unpinned partial
+- * chunks of ashmem regions LRU-wise one-at-a-time until we hit 'nr_to_scan'
+- * pages freed.
+- */
+-static int ashmem_shrink(struct shrinker *s, struct shrink_control *sc)
+-{
+-	struct ashmem_range *range, *next;
+-
+-	/* We might recurse into filesystem code, so bail out if necessary */
+-	if (sc->nr_to_scan && !(sc->gfp_mask & __GFP_FS))
+-		return -1;
+-	if (!sc->nr_to_scan)
+-		return lru_count;
+-
+-	mutex_lock(&ashmem_mutex);
+-	list_for_each_entry_safe(range, next, &ashmem_lru_list, lru) {
+-		loff_t start = range->pgstart * PAGE_SIZE;
+-		loff_t end = (range->pgend + 1) * PAGE_SIZE;
+-
+-		do_fallocate(range->asma->file,
+-				FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+-				start, end - start);
+-		range->purged = ASHMEM_WAS_PURGED;
+-		lru_del(range);
+-
+-		sc->nr_to_scan -= range_size(range);
+-		if (sc->nr_to_scan <= 0)
+-			break;
+-	}
+-	mutex_unlock(&ashmem_mutex);
+-
+-	return lru_count;
+-}
+-
+-static struct shrinker ashmem_shrinker = {
+-	.shrink = ashmem_shrink,
+-	.seeks = DEFAULT_SEEKS * 4,
+-};
+-
+ static int set_prot_mask(struct ashmem_area *asma, unsigned long prot)
+ {
+ 	int ret = 0;
+@@ -459,136 +290,10 @@ static int get_name(struct ashmem_area *asma, void __user *name)
+ 	return ret;
+ }
+ 
+-/*
+- * ashmem_pin - pin the given ashmem region, returning whether it was
+- * previously purged (ASHMEM_WAS_PURGED) or not (ASHMEM_NOT_PURGED).
+- *
+- * Caller must hold ashmem_mutex.
+- */
+-static int ashmem_pin(struct ashmem_area *asma, size_t pgstart, size_t pgend)
+-{
+-	struct ashmem_range *range, *next;
+-	int ret = ASHMEM_NOT_PURGED;
+-
+-	list_for_each_entry_safe(range, next, &asma->unpinned_list, unpinned) {
+-		/* moved past last applicable page; we can short circuit */
+-		if (range_before_page(range, pgstart))
+-			break;
+-
+-		/*
+-		 * The user can ask us to pin pages that span multiple ranges,
+-		 * or to pin pages that aren't even unpinned, so this is messy.
+-		 *
+-		 * Four cases:
+-		 * 1. The requested range subsumes an existing range, so we
+-		 *    just remove the entire matching range.
+-		 * 2. The requested range overlaps the start of an existing
+-		 *    range, so we just update that range.
+-		 * 3. The requested range overlaps the end of an existing
+-		 *    range, so we just update that range.
+-		 * 4. The requested range punches a hole in an existing range,
+-		 *    so we have to update one side of the range and then
+-		 *    create a new range for the other side.
+-		 */
+-		if (page_range_in_range(range, pgstart, pgend)) {
+-			ret |= range->purged;
+-
+-			/* Case #1: Easy. Just nuke the whole thing. */
+-			if (page_range_subsumes_range(range, pgstart, pgend)) {
+-				range_del(range);
+-				continue;
+-			}
+-
+-			/* Case #2: We overlap from the start, so adjust it */
+-			if (range->pgstart >= pgstart) {
+-				range_shrink(range, pgend + 1, range->pgend);
+-				continue;
+-			}
+-
+-			/* Case #3: We overlap from the rear, so adjust it */
+-			if (range->pgend <= pgend) {
+-				range_shrink(range, range->pgstart, pgstart-1);
+-				continue;
+-			}
+-
+-			/*
+-			 * Case #4: We eat a chunk out of the middle. A bit
+-			 * more complicated, we allocate a new range for the
+-			 * second half and adjust the first chunk's endpoint.
+-			 */
+-			range_alloc(asma, range, range->purged,
+-				    pgend + 1, range->pgend);
+-			range_shrink(range, range->pgstart, pgstart - 1);
+-			break;
+-		}
+-	}
+-
+-	return ret;
+-}
+-
+-/*
+- * ashmem_unpin - unpin the given range of pages. Returns zero on success.
+- *
+- * Caller must hold ashmem_mutex.
+- */
+-static int ashmem_unpin(struct ashmem_area *asma, size_t pgstart, size_t pgend)
+-{
+-	struct ashmem_range *range, *next;
+-	unsigned int purged = ASHMEM_NOT_PURGED;
+-
+-restart:
+-	list_for_each_entry_safe(range, next, &asma->unpinned_list, unpinned) {
+-		/* short circuit: this is our insertion point */
+-		if (range_before_page(range, pgstart))
+-			break;
+-
+-		/*
+-		 * The user can ask us to unpin pages that are already entirely
+-		 * or partially pinned. We handle those two cases here.
+-		 */
+-		if (page_range_subsumed_by_range(range, pgstart, pgend))
+-			return 0;
+-		if (page_range_in_range(range, pgstart, pgend)) {
+-			pgstart = min_t(size_t, range->pgstart, pgstart),
+-			pgend = max_t(size_t, range->pgend, pgend);
+-			purged |= range->purged;
+-			range_del(range);
+-			goto restart;
+-		}
+-	}
+-
+-	return range_alloc(asma, range, purged, pgstart, pgend);
+-}
+-
+-/*
+- * ashmem_get_pin_status - Returns ASHMEM_IS_UNPINNED if _any_ pages in the
+- * given interval are unpinned and ASHMEM_IS_PINNED otherwise.
+- *
+- * Caller must hold ashmem_mutex.
+- */
+-static int ashmem_get_pin_status(struct ashmem_area *asma, size_t pgstart,
+-				 size_t pgend)
+-{
+-	struct ashmem_range *range;
+-	int ret = ASHMEM_IS_PINNED;
+-
+-	list_for_each_entry(range, &asma->unpinned_list, unpinned) {
+-		if (range_before_page(range, pgstart))
+-			break;
+-		if (page_range_in_range(range, pgstart, pgend)) {
+-			ret = ASHMEM_IS_UNPINNED;
+-			break;
+-		}
+-	}
+-
+-	return ret;
+-}
+-
+ static int ashmem_pin_unpin(struct ashmem_area *asma, unsigned long cmd,
+ 			    void __user *p)
+ {
+ 	struct ashmem_pin pin;
+-	size_t pgstart, pgend;
+ 	int ret = -EINVAL;
+ 
+ 	if (unlikely(!asma->file))
+@@ -610,20 +315,24 @@ static int ashmem_pin_unpin(struct ashmem_area *asma, unsigned long cmd,
+ 	if (unlikely(PAGE_ALIGN(asma->size) < pin.offset + pin.len))
+ 		return -EINVAL;
+ 
+-	pgstart = pin.offset / PAGE_SIZE;
+-	pgend = pgstart + (pin.len / PAGE_SIZE) - 1;
+ 
+ 	mutex_lock(&ashmem_mutex);
+ 
+ 	switch (cmd) {
+ 	case ASHMEM_PIN:
+-		ret = ashmem_pin(asma, pgstart, pgend);
++		ret = do_fallocate(asma->file, FALLOC_FL_MARK_VOLATILE,
++					pin.offset, pin.len);
+ 		break;
+ 	case ASHMEM_UNPIN:
+-		ret = ashmem_unpin(asma, pgstart, pgend);
++		ret = do_fallocate(asma->file, FALLOC_FL_UNMARK_VOLATILE,
++					pin.offset, pin.len);
+ 		break;
+ 	case ASHMEM_GET_PIN_STATUS:
+-		ret = ashmem_get_pin_status(asma, pgstart, pgend);
++		/*
++		 * XXX - volatile ranges currently don't provide status,
++		 * due to questionable utility
++		 */
++		ret = -EINVAL;
+ 		break;
+ 	}
+ 
+@@ -667,15 +376,6 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		break;
+ 	case ASHMEM_PURGE_ALL_CACHES:
+ 		ret = -EPERM;
+-		if (capable(CAP_SYS_ADMIN)) {
+-			struct shrink_control sc = {
+-				.gfp_mask = GFP_KERNEL,
+-				.nr_to_scan = 0,
+-			};
+-			ret = ashmem_shrink(&ashmem_shrinker, &sc);
+-			sc.nr_to_scan = ret;
+-			ashmem_shrink(&ashmem_shrinker, &sc);
+-		}
+ 		break;
+ 	}
+ 
+@@ -711,22 +411,12 @@ static int __init ashmem_init(void)
+ 		return -ENOMEM;
+ 	}
+ 
+-	ashmem_range_cachep = kmem_cache_create("ashmem_range_cache",
+-					  sizeof(struct ashmem_range),
+-					  0, 0, NULL);
+-	if (unlikely(!ashmem_range_cachep)) {
+-		printk(KERN_ERR "ashmem: failed to create slab cache\n");
+-		return -ENOMEM;
+-	}
+-
+ 	ret = misc_register(&ashmem_misc);
+ 	if (unlikely(ret)) {
+ 		printk(KERN_ERR "ashmem: failed to register misc device!\n");
+ 		return ret;
+ 	}
+ 
+-	register_shrinker(&ashmem_shrinker);
+-
+ 	printk(KERN_INFO "ashmem: initialized\n");
+ 
+ 	return 0;
+@@ -736,13 +426,10 @@ static void __exit ashmem_exit(void)
+ {
+ 	int ret;
+ 
+-	unregister_shrinker(&ashmem_shrinker);
+-
+ 	ret = misc_deregister(&ashmem_misc);
+ 	if (unlikely(ret))
+ 		printk(KERN_ERR "ashmem: failed to unregister misc device!\n");
+ 
+-	kmem_cache_destroy(ashmem_range_cachep);
+ 	kmem_cache_destroy(ashmem_area_cachep);
+ 
+ 	printk(KERN_INFO "ashmem: unloaded\n");
 -- 
 1.7.9.5
 
