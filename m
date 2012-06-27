@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab2F0Hc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 03:32:59 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:36545 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903Ab2F0Hc6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 03:32:58 -0400
+	id S1756451Ab2F0HkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 03:40:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59412 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059Ab2F0Hjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 03:39:49 -0400
+X-IronPort-AV: E=Sophos;i="4.77,483,1336320000"; 
+   d="scan'208";a="5272861"
+Message-ID: <4FEAB092.4020603@cn.fujitsu.com>
+Date: Wed, 27 Jun 2012 15:04:50 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1340767488.17253.4.camel@cr0>
-References: <1340445863-16111-1-git-send-email-amwang@redhat.com>
-	<1340445863-16111-5-git-send-email-amwang@redhat.com>
-	<CAMuHMdXkMBSkkXosJkd47n+RznpMBhzBGyLshA+gwdmZ=4dm6A@mail.gmail.com>
-	<1340767488.17253.4.camel@cr0>
-Date: Wed, 27 Jun 2012 09:32:57 +0200
-X-Google-Sender-Auth: cPfq6vRmKS1_C5AcELx7iRQERPg
-Message-ID: <CAMuHMdVVTvwyKWiyu=_XpLT3jEkZLe3QPyab5aCZuB+WD3Zkug@mail.gmail.com>
-Subject: Re: [PATCH 04/12] frv: remove km_type definitions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 6/6 v5] deal with panicked event accoring to '-machine panic_action=action'
+References: <4FEAAE6E.7070302@cn.fujitsu.com>
+In-Reply-To: <4FEAAE6E.7070302@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/27 15:00:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/27 15:01:03,
+	Serialize complete at 2012/06/27 15:01:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 5:24 AM, Cong Wang <amwang@redhat.com> wrote:
-> On Tue, 2012-06-26 at 22:25 +0200, Geert Uytterhoeven wrote:
->>
->> "enum km_type" and "__KM_CACHE" are still used in
->> arch/frv/include/asm/highmem.h:
->
-> Oops! I missed __KM_* types... Fortunately, the following patch could
-> probably fix it.
->
-> Thanks!
->
-> ----------------------->
->
-> All callers of kmap_atomic_primary() use __KM_CACHE, so it can be
-> removed safely, and __kmap_atomic_primary() only check if 'type' if
+The action is the same as -onpanic parameter.
 
-s/if$/is/
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ qemu-config.c   |    4 ++++
+ qemu-options.hx |    4 +++-
+ vl.c            |    7 +++++++
+ 3 files changed, 14 insertions(+), 1 deletions(-)
 
-> __KM_CACHE or not, so 'type' can be changed to a boolean as well.
->
-> Ditto for kunmap_atomic_primary()/__kunmap_atomic_primary().
+diff --git a/qemu-config.c b/qemu-config.c
+index 5c3296b..805e7c4 100644
+--- a/qemu-config.c
++++ b/qemu-config.c
+@@ -595,6 +595,10 @@ static QemuOptsList qemu_machine_opts = {
+             .name = "dt_compatible",
+             .type = QEMU_OPT_STRING,
+             .help = "Overrides the \"compatible\" property of the dt root node",
++        }, {
++            .name = "panic_action",
++            .type = QEMU_OPT_STRING,
++            .help = "The action what QEMU will do when the guest is panicked",
+         },
+         { /* End of list */ }
+     },
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 4a061bf..083a21d 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -33,7 +33,9 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
+     "                property accel=accel1[:accel2[:...]] selects accelerator\n"
+     "                supported accelerators are kvm, xen, tcg (default: tcg)\n"
+     "                kernel_irqchip=on|off controls accelerated irqchip support\n"
+-    "                kvm_shadow_mem=size of KVM shadow MMU\n",
++    "                kvm_shadow_mem=size of KVM shadow MMU\n"
++    "                panic_action=none|pause|poweroff|reset controls what QEmu\n"
++    "                will do when the guest is panicked",
+     QEMU_ARCH_ALL)
+ STEXI
+ @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
+diff --git a/vl.c b/vl.c
+index 9164d29..7663699 100644
+--- a/vl.c
++++ b/vl.c
+@@ -2301,6 +2301,7 @@ int main(int argc, char **argv, char **envp)
+     };
+     const char *trace_events = NULL;
+     const char *trace_file = NULL;
++    const char *panic_action = NULL;
+ 
+     atexit(qemu_run_exit_notifiers);
+     error_set_progname(argv[0]);
+@@ -3372,10 +3373,16 @@ int main(int argc, char **argv, char **envp)
+         kernel_filename = qemu_opt_get(machine_opts, "kernel");
+         initrd_filename = qemu_opt_get(machine_opts, "initrd");
+         kernel_cmdline = qemu_opt_get(machine_opts, "append");
++        panic_action = qemu_opt_get(machine_opts, "panic_action");
+     } else {
+         kernel_filename = initrd_filename = kernel_cmdline = NULL;
+     }
+ 
++    if (panic_action && select_panicked_action(panic_action) == -1) {
++        fprintf(stderr, "Unknown -panic_action parameter\n");
++        exit(1);
++    }
++
+     if (!kernel_cmdline) {
+         kernel_cmdline = "";
+     }
+-- 
+1.7.1
 
-Looks OK to me (don't have the hardware). Thx!
-
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
