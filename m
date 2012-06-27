@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab2F0FdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 01:33:15 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57917 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab2F0FdO (ORCPT
+	id S1755958Ab2F0FkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 01:40:01 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40162 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab2F0Fj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 01:33:14 -0400
-Date: Wed, 27 Jun 2012 07:33:07 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        tglx@linutronix.de, sbw@mit.edu
-Subject: Re: [GIT PULL rcu/urgent] Fix for RCU-related hang
-Message-ID: <20120627053307.GA14913@gmail.com>
-References: <20120625223940.GA17159@linux.vnet.ibm.com>
+	Wed, 27 Jun 2012 01:39:58 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FEA9C88.1070800@jp.fujitsu.com>
+Date: Wed, 27 Jun 2012 14:39:20 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120625223940.GA17159@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [RFC PATCH 0/12] memory-hotplug : hot-remove physical memory
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series aims to support physical memory hot-remove.
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+  [RFC PATCH 1/12] memory-hotplug : rename remove_memory to offline_memory
+  [RFC PATCH 2/12] memory-hogplug : check memory offline in offline_pages
+  [RFC PATCH 3/12] memory-hotplug : add physical memory hotplug code to acpi_memory_device_remove
+  [RFC PATCH 4/12] memory-hotplug : remove /sys/firmware/memmap/X sysfs
+  [RFC PATCH 5/12] memory hotplug : does not release memory region in PAGES_PER_SECTION chunks
+  [RFC PATCH 6/12] memory-hotplug : remove_memory calls __remove_pages
+  [RFC PATCH 7/12] memory-hotplug : check page type in get_page_bootmem
+  [RFC PATCH 8/12] memory-hotplug : move register_page_bootmem_info_node and put_page_bootmem for
+sparse-vmemmap
+  [RFC PATCH 9/12] memory-hotplug : implement register_page_bootmem_info_section of sparse-vmemmap
+  [RFC PATCH 10/12] memory-hotplug : free memmap of sparse-vmemmap
+  [RFC PATCH 11/12] memory-hotplug : add node_device_release
+  [RFC PATCH 12/12] memory-hotplug : remove sysfs file of node
 
-> Hello, Ingo,
-> 
-> This series has a single patch that fixes a system hang that can occur
-> in perhaps unusual but very real circumstances.  This hang occurs
-> because of a very stupid bug of mine introduced in commit b1420f1c
-> (Make rcu_barrier() less disruptive) that can cause CPUs to miscount
-> RCU callbacks.  The sequence of events leading to the hang is as follows:
-> 
-> 1.	A CPU miscounts its callbacks.
-> 2.	That CPU invokes all of its callbacks, so that its callback
-> 	list is empty, but the callback count is nonzero.
-> 3.	That CPU goes offline.  Because its callback list is empty,
-> 	RCU's CPU-hotplug CPU_DEAD notifiers leave both the list and
-> 	the count alone.  (In contrast, had the list been non-empty,
-> 	RCU's CPU_DEAD notifiers would have emptied the list and
-> 	zeroed the count.)
-> 4.	One of the remaining CPUs executes one of the rcu_barrier()
-> 	family of primitives.  The rcu_barrier() primitive notes
-> 	that the offline CPU has a non-zero count of callbacks, and
-> 	therefore hangs waiting for this count to reach zero.  The
-> 	theory behind the indefinite wait is that the only reason that
-> 	an offline CPU can have a non-zero number of RCU callbacks is
-> 	that the CPU's CPU_DEAD notifiers have not yet executed.
-> 	But they already have executed, so the offlined CPU's callback
-> 	count will remain non-zero until it is brought back online,
-> 	in other words, perhaps never.
-> 
-> However, this bug is likely to pass a combined rcutorture/CPU-hotplug
-> stress test because offlined CPUs tend to be brought back online
-> reasonably quickly.  For the rcutorture tests to fail, the system must be
-> in the state indicated by step #3 above at the time the "rmmod rcutorture"
-> executes.
-> 
-> The fix is simply to prevent the miscounting.
-> 
-> This change is available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
-> 
->   								Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> Paul E. McKenney (1):
->       rcu: Stop rcu_do_batch() from multiplexing the "count" variable
-> 
->  kernel/rcutree.c |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
+Even if you apply these patches, you cannot remove the physical memory
+completely since these patches are still under development. I want you to
+cooperate to improve the physical memory hot-remove. So please review these
+patches and give your comment/idea.
 
-Pulled, thanks Paul!
+The patches can free/remove following things:
 
-	Ingo
+  - acpi_memory_info                          : [RFC PATCH 3/12]
+  - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 4/12]
+  - iomem_resource                            : [RFC PATCH 5/12]
+  - mem_section and related sysfs files       : [RFC PATCH 6-10/12]
+  - node and related sysfs files              : [RFC PATCH 11-12/12]
+
+The patches cannot do following things yet:
+
+  - page table of removed memory
+
+If you find lack of function for physical memory hot-remove, please let me
+know.
+
+---
+
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
+ arch/x86/mm/init_64.c                           |  142 ++++++++++++++++++++++++
+ drivers/acpi/acpi_memhotplug.c                  |   25 +++-
+ drivers/base/memory.c                           |   24 +++-
+ drivers/base/node.c                             |    7 +
+ drivers/firmware/memmap.c                       |   71 ++++++++++++
+ include/linux/firmware-map.h                    |    6 +
+ include/linux/memory.h                          |    1
+ include/linux/memory_hotplug.h                  |   17 --
+ include/linux/mm.h                              |    5
+ mm/memory_hotplug.c                             |  101 +++++++++++++----
+ mm/sparse.c                                     |    5
+ 12 files changed, 374 insertions(+), 46 deletions(-)
+
+
