@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab2F0Ajg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 20:39:36 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63630 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab2F0Ajf (ORCPT
+	id S1755334Ab2F0AmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 20:42:12 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:41089 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754730Ab2F0AmJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 20:39:35 -0400
+	Tue, 26 Jun 2012 20:42:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FEA4DE7.3030606@gmail.com>
-References: <1340448446-10198-1-git-send-email-linkinjeon@gmail.com>
-	<20120623115106.GA2742@umich.edu>
-	<5AC2C9F0-EEFE-423E-BBB9-27102D1CA163@oracle.com>
-	<CAKYAXd_QKsiTV86H4eykjOzfJc8Who1T8in5TmnJyxigw=+7AQ@mail.gmail.com>
-	<20120624124625.GA15586@umich.edu>
-	<CAKYAXd-OT9nV--vYOseGYHp35g3qo86rzYJPDiP454ipoGJ2Xw@mail.gmail.com>
-	<4FEA4DE7.3030606@gmail.com>
-Date: Wed, 27 Jun 2012 09:39:33 +0900
-Message-ID: <CAKYAXd9V7GyLNcsn5pkR34ckzsJGSxykXoPFo=91NO5tPeCU+g@mail.gmail.com>
-Subject: Re: [RFC PATCH] nfs: Support posix_fadvise(POSIX_FADV_RANDOM) on nfs server.
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Dean <seattleplus@gmail.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        VivekTrivedi <t.vivek@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120626012751.GB24705@core.coreip.homeip.net>
+References: <1339992522-22073-1-git-send-email-djkurtz@chromium.org>
+	<1339992522-22073-2-git-send-email-djkurtz@chromium.org>
+	<20120621084107.GB2193@core.coreip.homeip.net>
+	<20120625081558.GA641@polaris.bitmath.org>
+	<CAGS+omD5xp1PeXGMdsz6uP-QL2rU+sfoPBmOPGqi2p8NE9S4Jw@mail.gmail.com>
+	<20120626012751.GB24705@core.coreip.homeip.net>
+Date: Tue, 26 Jun 2012 17:42:08 -0700
+X-Google-Sender-Auth: y8Abkv9y0kErdJZxmQve0aVqWQY
+Message-ID: <CANLzEksg2ak9GMOWveMgU+QS-fM92ac-RV+_hNWKZe2gTpsbwQ@mail.gmail.com>
+Subject: Re: [PATCH 01/22 v4] Input: atmel_mxt_ts - set phys to i2c client
+ adapter name
+From: Benson Leung <bleung@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Yufeng Shen <miletus@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. Dean.
+[oops. sorry for duplicate send... resending in plaintext]
 
-I have currenlty been having the deep interest about NFS. If I have a
-chance to help you for NFSv2, It is a great honor for me.
-Acutally I don't know how to contribute something for NFSv2 spec. If
-you give me some guide or advice, I will join postively.
+Would it more sense to more completely describe the bus type, adapter,
+and address in this case, rather than using the client->adapter->name?
 
-Thanks.
+Just to give an example from our system, client->adapter->name is
+"i915 gmbus panel", so your suggestion would be "i915 gmbus
+panel/input0"
 
-2012/6/27, Dean <seattleplus@gmail.com>:
-> Hi Namjae,
+How about this instead :
+i2c-2-004a/input0
+
+This seems to me more consistent with what is done with USB input
+devices, which show a phys field like this :
+usb-00:01.2-2.2/input0
+
+Benson
+
+On Mon, Jun 25, 2012 at 6:27 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
 >
-> I'm glad you also see the usefulness of sending such hints to the NFS
-> server.
+> On Mon, Jun 25, 2012 at 05:58:46PM +0800, Daniel Kurtz wrote:
+> > On Mon, Jun 25, 2012 at 4:15 PM, Henrik Rydberg <rydberg@euromail.se>
+> > wrote:
+> > >
+> > > On Thu, Jun 21, 2012 at 01:41:07AM -0700, Dmitry Torokhov wrote:
+> > > > On Mon, Jun 18, 2012 at 12:08:21PM +0800, Daniel Kurtz wrote:
+> > > > > This allows userspace to more easily distinguish which bus a
+> > > > > particular
+> > > > > atmel_mxt_ts device is attached to.
+> > > > >
+> > > > > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> > > > > ---
+> > > > >  drivers/input/touchscreen/atmel_mxt_ts.c |    1 +
+> > > > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > > >
+> > > > > diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c
+> > > > > b/drivers/input/touchscreen/atmel_mxt_ts.c
+> > > > > index 42e6450..eda9eed 100644
+> > > > > --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> > > > > +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> > > > > @@ -1106,6 +1106,7 @@ static int __devinit mxt_probe(struct
+> > > > > i2c_client
+> > > > > *client,
+> > > > >     }
+> > > > >
+> > > > >     input_dev->name = "Atmel maXTouch Touchscreen";
+> > > > > +   input_dev->phys = client->adapter->name;
+> > > >
+> > > > Normally we set phys to 'xxx/input0' nstead of just the adaptor
+> > > > name.
+> > >
+> > > Daniel, will we be seeing another version of this patch?
+> >
+> > Yes.  Any guidance on "xxx" ?  atmel_mxt_ts?
 >
-> Beyond reviewing the  NFSv4.2 spec, it would also be very useful to
-> implement a version of IO_ADVISE and show performance results with your
-> traverse test (among others).  If you have time for this, that would
-> really be helpful in ensuring the usefulness of IO_ADVISE.
+> What you have before (client->adapter->name) + "/input0" shoudl work
+> splendidly.
 >
-> Dean Hildebrand
+> Thanks.
 >
-> On 6/24/12 6:54 PM, Namjae Jeon wrote:
->> 2012/6/24, Jim Rees <rees@umich.edu>:
->>> Namjae Jeon wrote:
->>>
->>>    > Yes, posix_fadvise support is part of NFSv4.2.
->>>    Where can I check it ?
->>>    Thanks.
->>>
->>> NFS is standardized throught the IETF.  4.2 is not out yet, so you'll
->>> find
->>> it in the drafts rather than the RFCs.  You can search them here:
->>> http://www.rfc-editor.org/idsearch.html
->>>
->>> Here is the current draft:
->>> ftp://ftp.rfc-editor.org/in-notes/internet-drafts/draft-ietf-nfsv4-minorversion2-12.txt
->>>
->> Okay, I will check, Thanks a lot Jim~. We hope to contribute NFSv4.2.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
+> --
+> Dmitry
+
+
+
+
+--
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
