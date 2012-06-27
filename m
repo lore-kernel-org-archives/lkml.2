@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab2F0Mhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:37:35 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52876 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756774Ab2F0Mhd (ORCPT
+	id S1757312Ab2F0MiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 08:38:14 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:23547 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab2F0MiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:37:33 -0400
-Date: Wed, 27 Jun 2012 14:29:27 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kir Kolyshkin <kir@parallels.com>
-Subject: Re: Fork bomb limitation in memcg WAS: Re: [PATCH 00/11] kmem
- controller for memcg: stripped down version
-Message-ID: <20120627122924.GD20638@somewhere.redhat.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
- <20120625162745.eabe4f03.akpm@linux-foundation.org>
- <4FE9621D.2050002@parallels.com>
- <20120626145539.eeeab909.akpm@linux-foundation.org>
- <4FEAD260.4000603@parallels.com>
+	Wed, 27 Jun 2012 08:38:11 -0400
+Date: Wed, 27 Jun 2012 15:37:34 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        iommu <iommu@lists.linux-foundation.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        chrisw <chrisw@sous-sol.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        linux-next@vger.kernel.org
+Subject: Re: Request VFIO inclusion in linux-next
+Message-ID: <20120627123733.GA5449@mwanda>
+References: <1340686552.1207.128.camel@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FEAD260.4000603@parallels.com>
+In-Reply-To: <1340686552.1207.128.camel@bling.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 01:29:04PM +0400, Glauber Costa wrote:
-> On 06/27/2012 01:55 AM, Andrew Morton wrote:
-> >>I can't speak for everybody here, but AFAIK, tracking the stack through
-> >>the memory it used, therefore using my proposed kmem controller, was an
-> >>idea that good quite a bit of traction with the memcg/memory people.
-> >>So here you have something that people already asked a lot for, in a
-> >>shape and interface that seem to be acceptable.
-> >
-> >mm, maybe.  Kernel developers tend to look at code from the point of
-> >view "does it work as designed", "is it clean", "is it efficient", "do
-> >I understand it", etc.  We often forget to step back and really
-> >consider whether or not it should be merged at all.
-> >
-> >I mean, unless the code is an explicit simplification, we should have
-> >a very strong bias towards "don't merge".
+On Mon, Jun 25, 2012 at 10:55:52PM -0600, Alex Williamson wrote:
+> Hi,
 > 
-> Well, simplifications are welcome - this series itself was
-> simplified beyond what I thought initially possible through the
-> valuable comments
-> of other people.
+> VFIO has been kicking around for well over a year now and has been
+> posted numerous times for review.  The pre-requirements are finally
+> available in linux-next (or will be in the 20120626 build) so I'd like
+> to request a new branch be included in linux-next with a goal of being
+> accepted into v3.6.
 > 
-> But of course, this adds more complexity to the kernel as a whole.
-> And this is true to every single new feature we may add, now or in
-> the
-> future.
-> 
-> What I can tell you about this particular one, is that the justification
-> for it doesn't come out of nowhere, but from a rather real use case that
-> we support and maintain in OpenVZ and our line of products for years.
 
-Right and we really need a solution to protect against forkbombs in LXC.
-The task counter was more simple but only useful for our usecase and
-defining the number of tasks as a resource was considered unnatural.
+Could you run Sparse over the driver?
+http://lwn.net/Articles/205624/
 
-So limiting kernel stack allocations works for us. This patchset implements
-this so I'm happy with it. If this is more broadly useful by limiting
-resources others are interested in, that's even better. I doubt we are
-interested in a solution that only concerns kernel stack allocation.
+It reports a bunch of endian problems.  Some are definitely bugs
+like:
+	*prev |= cpu_to_le32((u32)epos << 20);
+
+regards,
+dan carpenter
+
