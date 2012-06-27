@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab2F0PSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:18:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32587 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756584Ab2F0PSF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:18:05 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=EvKSwpK77UAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=pSDxxfrZAAAA:8 a=u57L-JK2nePzAUqIh5AA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340810283.16702.19.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Wed, 27 Jun 2012 11:18:03 -0400
-In-Reply-To: <1340810038.16702.16.camel@gandalf.stny.rr.com>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
-	 <20120625150722.8cd4f45d.akpm@linux-foundation.org>
-	 <20120625235531.GB3652@kroah.com>
-	 <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
-	 <20120626002307.GA4389@kroah.com>
-	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
-	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
-	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
-	 <1340726856.977.6.camel@mop>
-	 <1340810038.16702.16.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757648Ab2F0PSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:18:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757016Ab2F0PSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 11:18:23 -0400
+Date: Wed, 27 Jun 2012 12:17:17 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120627151716.GA3653@t510.redhat.com>
+References: <cover.1340665087.git.aquini@redhat.com>
+ <7f83427b3894af7969c67acc0f27ab5aa68b4279.1340665087.git.aquini@redhat.com>
+ <20120626235754.GB14782@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120626235754.GB14782@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-27 at 11:13 -0400, Steven Rostedt wrote:
-
-> I just tested this patch and it boots fine for me.
-
-Of course after sending this, I rebooted to the same kernel and it
-locked up :-p
-
-Ends with:
-
-[   47.966454] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
-[   48.188791] kvm: disabled by bios
-[   48.352547] snd_hda_intel 0000:00:1b.0: irq 44 for MSI/MSI-X
-[   48.410944] ALSA hda_auto_parser.c:322 autoconfig: line_outs=4 (0xd/0xf/0x10/0x11/0x0) type:line
-[   48.419774] ALSA hda_auto_parser.c:326    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
-[   48.427012] ALSA hda_auto_parser.c:330    hp_outs=1 (0xa/0x0/0x0/0x0/0x0)
-[   48.433848] ALSA hda_auto_parser.c:331    mono: mono_out=0x0
-[   48.439523] ALSA hda_auto_parser.c:334    dig-out=0x21/0x0
-[   48.445023] ALSA hda_auto_parser.c:335    inputs:[   48.449562] ALSA hda_auto_parser.c:339  Front Mic=0xb[   48.454451] ALSA hda_auto_parser.c:339  Rear Mic=0xe[   48.459258] ALSA hda_auto_parser.c:339  Line=0xc
-
--- Steve
-
->  Better still, I put
-> in my 'delay' to make sure the output shows up as it is printed, and it
-> seems to do so.
+On Tue, Jun 26, 2012 at 07:57:55PM -0400, Konrad Rzeszutek Wilk wrote:
+> > +#if defined(CONFIG_VIRTIO_BALLOON) || defined(CONFIG_VIRTIO_BALLOON_MODULE)
+> > +/*
+> > + * Balloon pages special page->mapping.
+> > + * users must properly allocate and initiliaze an instance of balloon_mapping,
 > 
-> Tested-by: Steven Rostedt <rostedt@goodmis.org>
+> initialize
+>
+Thanks! will fix it.
+ 
+> > + * and set it as the page->mapping for balloon enlisted page instances.
+> > + *
+> > + * address_space_operations necessary methods for ballooned pages:
+> > + *   .migratepage    - used to perform balloon's page migration (as is)
+> > + *   .invalidatepage - used to isolate a page from balloon's page list
+> > + *   .freepage       - used to reinsert an isolated page to balloon's page list
+> > + */
+> > +struct address_space *balloon_mapping;
+> > +EXPORT_SYMBOL(balloon_mapping);
+> 
+> Why don't you call this kvm_balloon_mapping - and when other balloon
+> drivers use it, then change it to something more generic. Also at that
+> future point the other balloon drivers might do it a bit differently so
+> it might be that will be reworked completly.
 
+Ok, I see your point. However I really think it's better to keep the naming as
+generic as possible today and, in the future, those who need to change it a bit can
+do it with no pain at all. I believe this way we potentially prevent unnecessary code
+duplication, as it will just be a matter of adjusting those preprocessor checking to
+include other balloon driver to the scheme, or get rid of all of them (in case all 
+balloon drivers assume the very same technique for their page mobility primitives).
+
+As I can be utterly wrong on this, lets see if other folks raise the same
+concerns about this naming scheme I'm using here. If it ends up being a general
+concern that it would be better not being generic at this point, I'll happily
+switch my approach to whatever comes up to be the most feasible way of doing it.
+
+Thanks a lot for taking such consideration and provide good feedback on this
+work.
 
