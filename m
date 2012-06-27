@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2F0T6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 15:58:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57630 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756014Ab2F0T6d convert rfc822-to-8bit (ORCPT
+	id S932145Ab2F0T6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 15:58:45 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20056 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757508Ab2F0T6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 15:58:33 -0400
-Message-ID: <1340827102.10063.72.camel@twins>
-Subject: Re: [PATCH] perf: fix wrong hw_breakpoint documentation
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung@kernel.org>, Jovi Zhang <bookjovi@gmail.com>,
-        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 27 Jun 2012 21:58:22 +0200
-In-Reply-To: <20120627190725.GA1380@krava.redhat.com>
-References: <CACV3sbKFcHgai6AzKGrf=LEb67VjZXjMUqMQuXAOUmby7CeiJg@mail.gmail.com>
-	 <87fw9hyvt5.fsf@sejong.aot.lge.com> <20120627161557.GA3878@infradead.org>
-	 <20120627190725.GA1380@krava.redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 27 Jun 2012 15:58:44 -0400
+Date: Wed, 27 Jun 2012 21:58:42 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: devel@driverdev.osuosl.org, Marcos Paulo de Souza <marcos.mage@gmail.com>,
+        trivial@kernel.org, Forest Bond <forest@alittletooquiet.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vt6656: int.c: A few trivial style cleanups
+In-Reply-To: <20120625174709.GA3789@kroah.com>
+Message-ID: <alpine.LNX.2.00.1206272158130.6908@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1206242209570.30361@swampdragon.chaosbits.net> <20120625174709.GA3789@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-27 at 21:07 +0200, Jiri Olsa wrote:
-> -modifier_bp    [rwx]
-> +modifier_bp    [rwx]{1,3}
+On Mon, 25 Jun 2012, Greg Kroah-Hartman wrote:
+
+> On Sun, Jun 24, 2012 at 10:12:12PM +0200, Jesper Juhl wrote:
+> > Removed a pointless cast + some whitespace cleanups.
 > 
-> and fail parse_breakpoint_type function for nonsense types
+> Please break this up into different patches as you are doing multiple
+> things.
+> 
+Sure thing. A 7 patch series will follow this email.
 
-If you're going to modify parse_breakpoint_type() to fail on nonsense
-types, you might as well do the + thing, right?
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Doesn't really matter that much though ;-)
