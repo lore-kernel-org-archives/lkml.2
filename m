@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab2F0SDZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:03:25 -0400
-Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:39596 "EHLO
-	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753418Ab2F0SDX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:03:23 -0400
-X-Greylist: delayed 1038 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jun 2012 14:03:23 EDT
-From: Krishna Gudipati <kgudipat@Brocade.com>
-To: "'Dan Carpenter'" <dan.carpenter@oracle.com>,
-        Jing Huang <huangj@Brocade.com>
-CC: "'James E.J. Bottomley'" <JBottomley@parallels.com>,
-        "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'kernel-janitors@vger.kernel.org'" <kernel-janitors@vger.kernel.org>
-Date: Wed, 27 Jun 2012 10:45:31 -0700
-Subject: RE: [patch -resend] [SCSI] bfa: dereferencing freed memory in
- bfad_im_probe()
-Thread-Topic: [patch -resend] [SCSI] bfa: dereferencing freed memory in
- bfad_im_probe()
-Thread-Index: Ac1UQ0ABQfbMym+VSZG2oekisqvK2wASVq9Q
-Message-ID: <B5EE62D80D50B84BB9E5174F7FCCE80A28396BCE91@HQ1-EXCH02.corp.brocade.com>
-References: <20120627085800.GA3007@mwanda>
- <20120627085958.GB31212@elgon.mountain>
-In-Reply-To: <20120627085958.GB31212@elgon.mountain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-06-27_05:2012-06-27,2012-06-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=1
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1112030000 definitions=main-1206270178
+	id S1758351Ab2F0SFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:05:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4651 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757719Ab2F0SFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 14:05:54 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XOt6boVe9ZQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=n9gTl2mg8W56Y4s2eZsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340820352.16702.41.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] ring-buffer: fix uninitialized read_stamp
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com
+Date: Wed, 27 Jun 2012 14:05:52 -0400
+In-Reply-To: <CAJL_eks3n3J3nkfYJLx=hbQ36utjodByr=z-q=s-uwWpvWmDXg@mail.gmail.com>
+References: <CAJL_eku9byV+Uk-5boR52HLEO0D-++2h_y=PeaaQG_PrCuALhQ@mail.gmail.com>
+	 <1340060577-9112-1-git-send-email-dhsharp@google.com>
+	 <1340293617.27036.177.camel@gandalf.stny.rr.com>
+	 <CAJL_ekt-iVgh-GG_PoY_eqobgdUGf_L4TH6zmVa4D9oBgohCsA@mail.gmail.com>
+	 <1340407900.27036.275.camel@gandalf.stny.rr.com>
+	 <CAJL_eksV6R2Je+qoBYAtvZ6pSb8d6HdNiBic7AH0TG3u2R0FzQ@mail.gmail.com>
+	 <CAJL_eksSXfq4RVZ_rHagpgex96Jq=QkpiW93hD7M5xoYscq2jQ@mail.gmail.com>
+	 <1340801169.16702.9.camel@gandalf.stny.rr.com>
+	 <CAJL_eks3n3J3nkfYJLx=hbQ36utjodByr=z-q=s-uwWpvWmDXg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-06-27 at 11:00 -0700, David Sharp wrote:
 
+> I just meant, do you want me to send you a version of your patch with
+> my description (I'll update it, obviously), or do it yourself.
 
------Original Message-----
-From: Dan Carpenter [mailto:dan.carpenter@oracle.com] 
-Sent: Wednesday, June 27, 2012 2:00 AM
-To: Jing Huang
-Cc: Krishna Gudipati; James E.J. Bottomley; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; kernel-janitors@vger.kernel.org
-Subject: [patch -resend] [SCSI] bfa: dereferencing freed memory in bfad_im_probe()
+I'll do it. Although, I think this may just go for 3.6 and not 3.5, as
+the bug is really minor.
 
-If bfad_thread_workq(bfad) was not BFA_STATUS_OK then we freed "im"
-and then dereferenced it.
+> I have always disliked that page of very old data, so I'm really happy
+> that this will get rid of it. As I recall, you once claimed this was a
+> "feature". :)
 
-I did a little clean up because it seemed nicer to return directly
-instead of doing a superfluous goto.  I looked at other functions in
-this file and it seems like returning directly is standard.
+Of course it was a feature. But we'll just act like Gnome and remove
+it ;-)
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-This is the third time I have sent this patch.  It was previously sent
-on Fri, 29 Jul 2011 and Wed, 29 Feb 2012.
+-- Steve
 
-diff --git a/drivers/scsi/bfa/bfad_im.c b/drivers/scsi/bfa/bfad_im.c
-index 1ac09af..2eebf8d 100644
---- a/drivers/scsi/bfa/bfad_im.c
-+++ b/drivers/scsi/bfa/bfad_im.c
-@@ -687,25 +687,21 @@ bfa_status_t
- bfad_im_probe(struct bfad_s *bfad)
- {
- 	struct bfad_im_s      *im;
--	bfa_status_t    rc = BFA_STATUS_OK;
- 
- 	im = kzalloc(sizeof(struct bfad_im_s), GFP_KERNEL);
--	if (im == NULL) {
--		rc = BFA_STATUS_ENOMEM;
--		goto ext;
--	}
-+	if (im == NULL)
-+		return BFA_STATUS_ENOMEM;
- 
- 	bfad->im = im;
- 	im->bfad = bfad;
- 
- 	if (bfad_thread_workq(bfad) != BFA_STATUS_OK) {
- 		kfree(im);
--		rc = BFA_STATUS_FAILED;
-+		return BFA_STATUS_FAILED;
- 	}
- 
- 	INIT_WORK(&im->aen_im_notify_work, bfad_aen_im_notify_handler);
--ext:
--	return rc;
-+	return BFA_STATUS_OK;
- }
- 
- void
-
------
-
-Thanks for the patch.
-
-Acked-by: Krishna Gudipati <kgudipat@brocade.com>
 
