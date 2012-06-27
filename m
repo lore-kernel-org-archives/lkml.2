@@ -1,24 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab2F0Jos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:44:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40954 "EHLO mx2.suse.de"
+	id S1756559Ab2F0JrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:47:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41093 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756696Ab2F0Joq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:44:46 -0400
-Date: Wed, 27 Jun 2012 11:44:42 +0200
-Message-ID: <s5h8vf9t7g5.wl%tiwai@suse.de>
+	id S1753538Ab2F0JrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 05:47:12 -0400
+Date: Wed, 27 Jun 2012 11:47:10 +0200
+Message-ID: <s5h62adt7c1.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: alsa-devel@alsa-project.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [Regression] No sound on HP Pavilion dv6, STAC92xx
-In-Reply-To: <87zk7pyvc8.fsf@canonical.com>
-References: <87d34mtb3c.fsf@canonical.com>
-	<s5hvcie5faz.wl%tiwai@suse.de>
-	<s5hk3yu5ct9.wl%tiwai@suse.de>
-	<s5hd34m5av0.wl%tiwai@suse.de>
-	<s5hbok65arx.wl%tiwai@suse.de>
-	<87zk7pyvc8.fsf@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sound fixes for 3.5-rc5
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -28,83 +21,327 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 27 Jun 2012 10:09:43 +0100,
-Luis Henriques wrote:
-> 
-> Hi,
-> 
-> Takashi Iwai <tiwai@suse.de> writes:
-> 
-> > Below is the patch for 3.4 and older.
-> >
-> 
-> Just to let you know that we are receiving positive feedback on this
-> patch from the bug reporters.
-> 
-> I believe you plan to Cc: this patch to -stable, right?  We had this
-> issue reported against 3.2.y.
+Linus,
 
-It's not Cc'ed because it cannot be cherry-picked.  I'll post the
-patch to stable ML once after the upstream fix is merged to Linus
-tree.
+The following changes since commit 0b1d8e09089b69ac2e8be203fb28cd07cfe035b2:
 
+  ALSA: 6fire: use NULL instead of 0 for pointer assignment (2012-06-18 09:36:38 +0200)
 
-thanks,
+are available in the git repository at:
 
-Takashi
+  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git tags/sound-3.5
 
-> 
-> Cheers,
-> --
-> Luis
-> 
-> > Takashi
-> >
-> > ---
-> > From: Takashi Iwai <tiwai@suse.de>
-> > Subject: [PATCH] ALSA: hda - Fix power-map regression for HP dv6 & co
-> >
-> > commit 6e1c39c6b00d9141a82c231ba7c5e5b1716974b2 upstream.
-> >
-> > The recent fix for power-map controls (commit b0791dda813) caused
-> > regressions on some other HP laptops.  They have fixed pins but these
-> > pins are exposed as jack-detectable.  Thus the driver tries to control
-> > the power-map dynamically per jack detection where it never gets on.
-> >
-> > This patch corrects the condition check for fixed pins so that the
-> > power-map is set always for these pins.
-> >
-> > NOTE: this is no simple backport from 3.5 kernel.  Since 3.5 kernel
-> > had significant code change in the relevant part, I had to fix this
-> > differently.
-> >
-> > BugLink: http://bugs.launchpad.net/bugs/1013183
-> > Reported-by: Luis Henriques <luis.henriques@canonical.com>
-> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> > ---
-> >  sound/pci/hda/patch_sigmatel.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-> > index 7b7a516..2b973f5 100644
-> > --- a/sound/pci/hda/patch_sigmatel.c
-> > +++ b/sound/pci/hda/patch_sigmatel.c
-> > @@ -4457,7 +4457,7 @@ static int stac92xx_init(struct hda_codec *codec)
-> >  					 AC_PINCTL_IN_EN);
-> >  	for (i = 0; i < spec->num_pwrs; i++)  {
-> >  		hda_nid_t nid = spec->pwr_nids[i];
-> > -		int pinctl, def_conf;
-> > +		unsigned int pinctl, def_conf;
-> >  
-> >  		/* power on when no jack detection is available */
-> >  		/* or when the VREF is used for controlling LED */
-> > @@ -4484,7 +4484,7 @@ static int stac92xx_init(struct hda_codec *codec)
-> >  		def_conf = get_defcfg_connect(def_conf);
-> >  		/* skip any ports that don't have jacks since presence
-> >   		 * detection is useless */
-> > -		if (def_conf != AC_JACK_PORT_NONE &&
-> > +		if (def_conf != AC_JACK_PORT_COMPLEX ||
-> >  		    !is_jack_detectable(codec, nid)) {
-> >  			stac_toggle_power_map(codec, nid, 1);
-> >  			continue;
-> 
+for you to fetch changes up to 6e1c39c6b00d9141a82c231ba7c5e5b1716974b2:
+
+  ALSA: hda - Fix power-map regression for HP dv6 & co (2012-06-26 17:43:06 +0200)
+
+----------------------------------------------------------------
+Sound fixes for 3.5-rc5
+
+Here you find quite a few changes for HD-audio and a copule of quirk
+additions for USB-audio.  All reasonably small and/or trivial.
+
+----------------------------------------------------------------
+Clemens Ladisch (1):
+      ALSA: usb-audio: add BOSS GT-100 support
+
+David Henningsson (2):
+      ALSA: HDA: Add inverted internal mic quirk for Lenovo S205
+      ALSA: hda - Add Realtek ALC280 codec support
+
+Jaroslav Kysela (1):
+      ASoC: wm8994: remove duplicate code
+
+Oleksij Rempel (2):
+      ALSA: snd_usb_audio: ignore ctrl errors on QuickCam E3500
+      ALSA: snd_usb_audio: ignore ctrl errors on QuickCam Pro for Notebooks
+
+Takashi Iwai (6):
+      ALSA: hda - Fix ALC272X codec detection
+      ALSA: hda - Remove obsoleted CONFIG_SND_HDA_ENABLE_REALTEK_QUIRKS
+      ALSA: hda - Fix memory leaks in Realtek & Conexant codec parsers
+      ALSA: hda - Fix memory leaks at module unload
+      ALSA: hda - Initialize caches at codec reconfiguration
+      ALSA: hda - Fix power-map regression for HP dv6 & co
+
+ sound/pci/hda/Kconfig           |   13 -------------
+ sound/pci/hda/hda_auto_parser.c |    1 -
+ sound/pci/hda/hda_auto_parser.h |   10 ++++++++++
+ sound/pci/hda/hda_codec.c       |    4 ++++
+ sound/pci/hda/patch_conexant.c  |    6 +++++-
+ sound/pci/hda/patch_realtek.c   |   15 +++++++++------
+ sound/pci/hda/patch_sigmatel.c  |    7 ++++++-
+ sound/soc/codecs/wm8994.c       |    3 ---
+ sound/usb/mixer_maps.c          |    8 ++++++++
+ sound/usb/quirks-table.h        |   30 ++++++++++++++++++++++++++++++
+ 10 files changed, 72 insertions(+), 25 deletions(-)
+
+diff --git a/sound/pci/hda/Kconfig b/sound/pci/hda/Kconfig
+index 163b6b5..d030797 100644
+--- a/sound/pci/hda/Kconfig
++++ b/sound/pci/hda/Kconfig
+@@ -97,19 +97,6 @@ config SND_HDA_CODEC_REALTEK
+ 	  snd-hda-codec-realtek.
+ 	  This module is automatically loaded at probing.
+ 
+-config SND_HDA_ENABLE_REALTEK_QUIRKS
+-	bool "Build static quirks for Realtek codecs"
+-	depends on SND_HDA_CODEC_REALTEK
+-	default y
+-	help
+-	  Say Y here to build the static quirks codes for Realtek codecs.
+-	  If you need the "model" preset that the default BIOS auto-parser
+-	  can't handle, turn this option on.
+-
+-	  If your device works with model=auto option, basically you don't
+-	  need the quirk code.  By turning this off, you can reduce the
+-	  module size quite a lot.
+-
+ config SND_HDA_CODEC_ANALOG
+ 	bool "Build Analog Device HD-audio codec support"
+ 	default y
+diff --git a/sound/pci/hda/hda_auto_parser.c b/sound/pci/hda/hda_auto_parser.c
+index 6e9ef3e..f7520b9 100644
+--- a/sound/pci/hda/hda_auto_parser.c
++++ b/sound/pci/hda/hda_auto_parser.c
+@@ -618,7 +618,6 @@ int snd_hda_gen_add_verbs(struct hda_gen_spec *spec,
+ 			  const struct hda_verb *list)
+ {
+ 	const struct hda_verb **v;
+-	snd_array_init(&spec->verbs, sizeof(struct hda_verb *), 8);
+ 	v = snd_array_new(&spec->verbs);
+ 	if (!v)
+ 		return -ENOMEM;
+diff --git a/sound/pci/hda/hda_auto_parser.h b/sound/pci/hda/hda_auto_parser.h
+index 2a7889d..632ad0a 100644
+--- a/sound/pci/hda/hda_auto_parser.h
++++ b/sound/pci/hda/hda_auto_parser.h
+@@ -157,4 +157,14 @@ void snd_hda_pick_fixup(struct hda_codec *codec,
+ 			const struct snd_pci_quirk *quirk,
+ 			const struct hda_fixup *fixlist);
+ 
++static inline void snd_hda_gen_init(struct hda_gen_spec *spec)
++{
++	snd_array_init(&spec->verbs, sizeof(struct hda_verb *), 8);
++}
++
++static inline void snd_hda_gen_free(struct hda_gen_spec *spec)
++{
++	snd_array_free(&spec->verbs);
++}
++
+ #endif /* __SOUND_HDA_AUTO_PARSER_H */
+diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
+index 7504e62..51cb2a2 100644
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -1184,6 +1184,7 @@ static void snd_hda_codec_free(struct hda_codec *codec)
+ {
+ 	if (!codec)
+ 		return;
++	snd_hda_jack_tbl_clear(codec);
+ 	restore_init_pincfgs(codec);
+ #ifdef CONFIG_SND_HDA_POWER_SAVE
+ 	cancel_delayed_work(&codec->power_work);
+@@ -1192,6 +1193,7 @@ static void snd_hda_codec_free(struct hda_codec *codec)
+ 	list_del(&codec->list);
+ 	snd_array_free(&codec->mixers);
+ 	snd_array_free(&codec->nids);
++	snd_array_free(&codec->cvt_setups);
+ 	snd_array_free(&codec->conn_lists);
+ 	snd_array_free(&codec->spdif_out);
+ 	codec->bus->caddr_tbl[codec->addr] = NULL;
+@@ -2333,6 +2335,8 @@ int snd_hda_codec_reset(struct hda_codec *codec)
+ 	/* free only driver_pins so that init_pins + user_pins are restored */
+ 	snd_array_free(&codec->driver_pins);
+ 	restore_pincfgs(codec);
++	snd_array_free(&codec->cvt_setups);
++	snd_array_free(&codec->spdif_out);
+ 	codec->num_pcms = 0;
+ 	codec->pcm_info = NULL;
+ 	codec->preset = NULL;
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 172370b..2bf99fc 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -445,8 +445,10 @@ static int conexant_init(struct hda_codec *codec)
+ 
+ static void conexant_free(struct hda_codec *codec)
+ {
++	struct conexant_spec *spec = codec->spec;
++	snd_hda_gen_free(&spec->gen);
+ 	snd_hda_detach_beep_device(codec);
+-	kfree(codec->spec);
++	kfree(spec);
+ }
+ 
+ static const struct snd_kcontrol_new cxt_capture_mixers[] = {
+@@ -4466,6 +4468,7 @@ static const struct snd_pci_quirk cxt5066_fixups[] = {
+ 	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
++	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
+ 	{}
+ };
+ 
+@@ -4497,6 +4500,7 @@ static int patch_conexant_auto(struct hda_codec *codec)
+ 	if (!spec)
+ 		return -ENOMEM;
+ 	codec->spec = spec;
++	snd_hda_gen_init(&spec->gen);
+ 
+ 	switch (codec->vendor_id) {
+ 	case 0x14f15045:
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index f8f4906..5ccf10a 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2289,6 +2289,7 @@ static void alc_free(struct hda_codec *codec)
+ 	alc_shutup(codec);
+ 	alc_free_kctls(codec);
+ 	alc_free_bind_ctls(codec);
++	snd_hda_gen_free(&spec->gen);
+ 	kfree(spec);
+ 	snd_hda_detach_beep_device(codec);
+ }
+@@ -4253,6 +4254,7 @@ static int alc_alloc_spec(struct hda_codec *codec, hda_nid_t mixer_nid)
+ 		return -ENOMEM;
+ 	codec->spec = spec;
+ 	spec->mixer_nid = mixer_nid;
++	snd_hda_gen_init(&spec->gen);
+ 
+ 	err = alc_codec_rename_from_preset(codec);
+ 	if (err < 0) {
+@@ -6705,6 +6707,12 @@ static int patch_alc662(struct hda_codec *codec)
+ 
+ 	alc_fix_pll_init(codec, 0x20, 0x04, 15);
+ 
++	alc_pick_fixup(codec, alc662_fixup_models,
++		       alc662_fixup_tbl, alc662_fixups);
++	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
++
++	alc_auto_parse_customize_define(codec);
++
+ 	if ((alc_get_coef0(codec) & (1 << 14)) &&
+ 	    codec->bus->pci->subsystem_vendor == 0x1025 &&
+ 	    spec->cdefine.platform_type == 1) {
+@@ -6712,12 +6720,6 @@ static int patch_alc662(struct hda_codec *codec)
+ 			goto error;
+ 	}
+ 
+-	alc_pick_fixup(codec, alc662_fixup_models,
+-		       alc662_fixup_tbl, alc662_fixups);
+-	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
+-
+-	alc_auto_parse_customize_define(codec);
+-
+ 	/* automatic parse from the BIOS config */
+ 	err = alc662_parse_auto_config(codec);
+ 	if (err < 0)
+@@ -6800,6 +6802,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	{ .id = 0x10ec0272, .name = "ALC272", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0275, .name = "ALC275", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0276, .name = "ALC276", .patch = patch_alc269 },
++	{ .id = 0x10ec0280, .name = "ALC280", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
+ 	  .patch = patch_alc861 },
+ 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index 7db8228..0767528 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -4367,7 +4367,7 @@ static int stac92xx_init(struct hda_codec *codec)
+ 					 AC_PINCTL_IN_EN);
+ 	for (i = 0; i < spec->num_pwrs; i++)  {
+ 		hda_nid_t nid = spec->pwr_nids[i];
+-		int pinctl, def_conf;
++		unsigned int pinctl, def_conf;
+ 
+ 		def_conf = snd_hda_codec_get_pincfg(codec, nid);
+ 		def_conf = get_defcfg_connect(def_conf);
+@@ -4376,6 +4376,11 @@ static int stac92xx_init(struct hda_codec *codec)
+ 			stac_toggle_power_map(codec, nid, 0);
+ 			continue;
+ 		}
++		if (def_conf == AC_JACK_PORT_FIXED) {
++			/* no need for jack detection for fixed pins */
++			stac_toggle_power_map(codec, nid, 1);
++			continue;
++		}
+ 		/* power on when no jack detection is available */
+ 		/* or when the VREF is used for controlling LED */
+ 		if (!spec->hp_detect ||
+diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
+index aa8c98b..1436b6c 100644
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -727,9 +727,6 @@ static void wm1811_jackdet_set_mode(struct snd_soc_codec *codec, u16 mode)
+ 	if (!wm8994->jackdet || !wm8994->jack_cb)
+ 		return;
+ 
+-	if (!wm8994->jackdet || !wm8994->jack_cb)
+-		return;
+-
+ 	if (wm8994->active_refcount)
+ 		mode = WM1811_JACKDET_MODE_AUDIO;
+ 
+diff --git a/sound/usb/mixer_maps.c b/sound/usb/mixer_maps.c
+index 41daaa2..e71fe55 100644
+--- a/sound/usb/mixer_maps.c
++++ b/sound/usb/mixer_maps.c
+@@ -341,6 +341,14 @@ static struct usbmix_ctl_map usbmix_ctl_maps[] = {
+ 		.map = audigy2nx_map,
+ 		.selector_map = audigy2nx_selectors,
+ 	},
++	{	/* Logitech, Inc. QuickCam Pro for Notebooks */
++		.id = USB_ID(0x046d, 0x0991),
++		.ignore_ctl_error = 1,
++	},
++	{	/* Logitech, Inc. QuickCam E 3500 */
++		.id = USB_ID(0x046d, 0x09a4),
++		.ignore_ctl_error = 1,
++	},
+ 	{
+ 		/* Hercules DJ Console (Windows Edition) */
+ 		.id = USB_ID(0x06f8, 0xb000),
+diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
+index d89ab4c..79780fa 100644
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -1831,6 +1831,36 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+ 		}
+ 	}
+ },
++{
++	USB_DEVICE(0x0582, 0x014d),
++	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
++		/* .vendor_name = "BOSS", */
++		/* .product_name = "GT-100", */
++		.ifnum = QUIRK_ANY_INTERFACE,
++		.type = QUIRK_COMPOSITE,
++		.data = (const struct snd_usb_audio_quirk[]) {
++			{
++				.ifnum = 1,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 2,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 3,
++				.type = QUIRK_MIDI_FIXED_ENDPOINT,
++				.data = & (const struct snd_usb_midi_endpoint_info) {
++					.out_cables = 0x0001,
++					.in_cables  = 0x0001
++				}
++			},
++			{
++				.ifnum = -1
++			}
++		}
++	}
++},
+ 
+ /* Guillemot devices */
+ {
