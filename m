@@ -1,85 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab2F0Szf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:55:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36879 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab2F0Szd (ORCPT
+	id S1754886Ab2F0S4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:56:20 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:38860 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab2F0S4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:55:33 -0400
-Date: Wed, 27 Jun 2012 11:55:26 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: devel@driverdev.osuosl.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 1/3] zram/zcache: swtich Kconfig dependency from X86 to
- ZSMALLOC
-Message-ID: <20120627185526.GA23059@kroah.com>
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1340640878-27536-2-git-send-email-sjenning@linux.vnet.ibm.com>
- <4FEA71E5.5090808@kernel.org>
- <20120627024301.GA8468@kroah.com>
- <4FEA74D6.8030107@kernel.org>
- <20120627032101.GA16419@kroah.com>
- <20120627154003.GI17154@phenom.dumpdata.com>
+	Wed, 27 Jun 2012 14:56:18 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AttTAAVW609V5qg+PGdsb2JhbABFihWsGBkBAQEBHhkNJ4IYAQEEATocIwULCAMOOBQlChoTiAYJuDoUkE1gA5UxhWaDQYk+
+X-IronPort-AV: E=Sophos;i="4.77,486,1336341600"; 
+   d="scan'208";a="70063986"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 27 Jun 2012 20:59:40 +0200
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-input@vger.kernel.org,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/21 v5] Input: atmel_mxt_ts - add variable length
+ __mxt_write_reg
+Message-ID: <20120627185940.GA14026@polaris.bitmath.org>
+References: <1340693829-18665-1-git-send-email-djkurtz@chromium.org>
+ <1340693829-18665-12-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120627154003.GI17154@phenom.dumpdata.com>
+In-Reply-To: <1340693829-18665-12-git-send-email-djkurtz@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 11:40:03AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Tue, Jun 26, 2012 at 08:21:01PM -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Jun 27, 2012 at 11:49:58AM +0900, Minchan Kim wrote:
-> > > Hi Greg,
-> > > 
-> > > On 06/27/2012 11:43 AM, Greg Kroah-Hartman wrote:
-> > > 
-> > > > On Wed, Jun 27, 2012 at 11:37:25AM +0900, Minchan Kim wrote:
-> > > >> On 06/26/2012 01:14 AM, Seth Jennings wrote:
-> > > >>
-> > > >>> This patch switches zcache and zram dependency to ZSMALLOC
-> > > >>> rather than X86.  There is no net change since ZSMALLOC
-> > > >>> depends on X86, however, this prevent further changes to
-> > > >>> these files as zsmalloc dependencies change.
-> > > >>>
-> > > >>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > > >>
-> > > >> Reviewed-by: Minchan Kim <minchan@kernel.org>
-> > > >>
-> > > >> It could be merged regardless of other patches in this series.
-> > > > 
-> > > > I already did :)
-> > > 
-> > > 
-> > > It would have been better if you send merge mail to Ccing people.
-> > > Anyway, Thanks!
-> > 
-> > I do, for people on the cc: in the signed-off-by area of the patch.  For
-> > me to manually add the people on the cc: of the email, I would have to
-> > modify git to add them to the commit somehow, sorry.
+Hi Daniel,
+
+> The i2c bus requires 4 bytes to do a 1-byte write
+> (1 byte i2c address + 2 byte offset + 1 byte data).
 > 
-> Is that some other script you have that does that?
+> By taking a length with writes, the driver can amortize transaction
+> overhead by performing larger transactions where appropriate.
+> 
+> This patch just sets up the new API.  Later patches refactor writes
+> to take advantage of the larger transactions.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+>  drivers/input/touchscreen/atmel_mxt_ts.c |   22 +++++++++++++++++-----
+>  1 files changed, 17 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index 3672553..d9e7e68 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -431,17 +431,24 @@ static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
+>  	return __mxt_read_reg(client, reg, 1, val);
+>  }
+>  
+> -static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
+> +static int __mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
+> +			   const void *val)
+>  {
+> -	u8 buf[3];
+> +	u8 *buf;
+> +	size_t count;
+>  	int ret;
+>  
+> +	count = len + 2;
+> +	buf = kmalloc(count, GFP_KERNEL);
+> +	if (!buf)
+> +		return -ENOMEM;
+> +
+>  	buf[0] = reg & 0xff;
+>  	buf[1] = (reg >> 8) & 0xff;
+> -	buf[2] = val;
+> +	memcpy(&buf[2], val, len);
+>  
+> -	ret = i2c_master_send(client, buf, 3);
+> -	if (ret == 3) {
+> +	ret = i2c_master_send(client, buf, count);
+> +	if (ret == count) {
+>  		ret = 0;
+>  	} else {
+>  		if (ret >= 0)
+> @@ -453,6 +460,11 @@ static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
 
-I don't understand what you are asking here.
+kfree(buf);
 
-My workflow is:
-	- apply patches to a branch and test
-	- if good, 'git format-patch' to create the patches
-	- merge to my upstream branch and push out publically
-	- run script on the patches generated by 'git format-patch' to
-	  say they have been applied.
+>  	return ret;
+>  }
+>  
+> +static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
+> +{
+> +	return __mxt_write_reg(client, reg, 1, &val);
+> +}
+> +
+>  static int mxt_read_object_table(struct i2c_client *client,
+>  				      u16 reg, u8 *object_buf)
+>  {
+> -- 
+> 1.7.7.3
+> 
 
-My custom script is the last thing there, that takes the patches, finds
-the email addresses in the patch, and notifies everyone.
-
-Does that explain things better?
-
-greg k-h
+Thanks,
+Henrik
