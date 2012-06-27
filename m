@@ -1,28 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab2F0GiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 02:38:06 -0400
-Received: from mo-p06-ob.rzone.de ([81.169.146.185]:21939 "EHLO
-	mo-p06-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2F0GiE convert rfc822-to-8bit (ORCPT
+	id S1753974Ab2F0Gt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 02:49:27 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:44003 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751850Ab2F0GtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 02:38:04 -0400
-X-Greylist: delayed 818 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jun 2012 02:38:03 EDT
-X-RZG-AUTH: :K20WcES7Kt9YeilMccQkcYIAo7pvXB7PehOUbfcc2wn31hgZhSLcXY+dFqCgO0PFriWhvg==
-Message-ID: <x0216fo5R3DgXI.RZmta@mo-p06-ob.rzone.de>
-X-RZG-CLASS-ID: mo06
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 27 Jun 2012 02:49:22 -0400
+Date: Wed, 27 Jun 2012 14:49:00 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Kent Yoder <key@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] drivers: crypto: move nx build to driver/crypto
+ Makefile
+Message-ID: <20120627064859.GB22920@gondor.apana.org.au>
+References: <1339611763-14603-1-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: >>FROM BARRISTER CLIFTON HILL ESQ!!
-To: Recipients <gareds1@janssen-design.de>
-From: gareds1@janssen-design.de
-Date: Wed, 27 Jun 2012 08:21:48 +0200
-Reply-To: bar_cliftonhill@e-mail.ua
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339611763-14603-1-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FROM BARRISTER ALEN CLIFTON HILL ESQ. i have to make this note been open and straight to you considering the 
-urgency of the matter at hand,My Client Mr Anthony Cella has interest in a     l  u  c  r  a  t i v e    i  n  v  e s  t  m  e  n  t     outside the  shores of the UK. [GET BACK TO ME IF INTERESTED] 
+On Wed, Jun 13, 2012 at 01:22:42PM -0500, Seth Jennings wrote:
+> When the nx driver was pulled, the Makefile that actually
+> builds it is arch/powerpc/Makefile. This is unnatural.
+> 
+> This patch moves the line that builds the nx driver from
+> arch/powerpc/Makefile to drivers/crypto/Makefile where it
+> belongs.
+> 
+> Cc: Kent Yoder <key@linux.vnet.ibm.com>
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+
+Both patches applied.
+
+Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
