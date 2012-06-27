@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab2F0Vmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 17:42:47 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42565 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756852Ab2F0Vmp (ORCPT
+	id S932258Ab2F0VrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 17:47:11 -0400
+Received: from mail01.worldserver.net ([217.13.200.41]:40195 "EHLO
+	mail01.worldserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab2F0VrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 17:42:45 -0400
-Message-ID: <4FEB7E19.8040702@linux.vnet.ibm.com>
-Date: Wed, 27 Jun 2012 16:41:45 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Minchan Kim <minchan@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com> <4FEA9FDD.6030102@kernel.org> <4FEAA4AA.3000406@intel.com> <4FEAA7A1.9020307@kernel.org> <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default> <4FEB5204.3090707@linux.vnet.ibm.com> <80ad7298-23de-4c5e-9a8d-483198ae4ef1@default>
-In-Reply-To: <80ad7298-23de-4c5e-9a8d-483198ae4ef1@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062721-5518-0000-0000-000005944D0C
+	Wed, 27 Jun 2012 17:47:10 -0400
+X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jun 2012 17:47:09 EDT
+From: Olivier Goffart <ogoffart@woboq.com>
+To: avatar@sentelic.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olivier Goffart <ogoffart@woboq.com>
+Subject: [PATCH] Fix sentelic multi-touch driver
+Date: Wed, 27 Jun 2012 22:36:15 +0200
+Message-Id: <1340829375-4995-1-git-send-email-ogoffart@woboq.com>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 04:15 PM, Dan Magenheimer wrote:
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->> I guess I'm not following.  Are you supporting the removal
->> of the "break even" logic?  I added that logic as a
->> compromise for Peter's feedback:
->>
->> http://lkml.org/lkml/2012/5/17/177
-> 
-> Yes, as long as I am correct that zsmalloc never has to map/flush
-> more than two pages at a time, I think dealing with the break-even
-> logic is overkill.
+Always report both finger between the sync.  Even if the documentation
+of input-mt says one can only report one at the time, it does not
+work otherwise. This fix scrolling in X11 which flickers a lot.
 
-The implementation of local_flush_tlb_kernel_range()
-shouldn't be influenced by zsmalloc at all.  Additionally,
-we can't assume that zsmalloc will always be the only user
-of this function.
+Ignore the duplicate or release events. They keep some gestures from
+working (such as the two-finger tap)
 
-> I see Peter isn't on this dist list... maybe
-> you should ask him if he agrees, as long as we are only always
-> talking about flush-two-TLB-pages vs flush-all.
+This seems to fix the problems reported here:
+https://bugzilla.kernel.org/show_bug.cgi?id=43591
 
-Yes, I'm planning to send out the next version of patches
-tomorrow (minus the first that has already been accepted)
-and I'll include him like I should have the first time :-/
+Signed-off-by: Olivier Goffart <ogoffart@woboq.com>
+---
+ drivers/input/mouse/sentelic.c | 46 +++++++++++++++++++++++++++++++++++++-----
+ drivers/input/mouse/sentelic.h |  3 +++
+ 2 files changed, 44 insertions(+), 5 deletions(-)
 
-> (And, of course, per previous discussion, I think even mapping/flushing
-> two TLB pages is unnecessary and overkill required only for protecting an
-> abstraction, but will stop beating that dead horse. ;-)
-
-With this patchset, I actually quantified the the
-performance gain with page table assisted mapping vs mapping
-via copy, and there is a significant 40% difference in
-single-threaded performance.
-
-You can do the test yourself by commenting out the
-#define __HAVE_ARCH_LOCAL_FLUSH_TLB_KERNEL_RANGE
-in tlbflush.h which will cause the new mapping via copy
-method to be used.
-
---
-Seth
+diff --git a/drivers/input/mouse/sentelic.c b/drivers/input/mouse/sentelic.c
+index 3f5649f..b205857 100644
+--- a/drivers/input/mouse/sentelic.c
++++ b/drivers/input/mouse/sentelic.c
+@@ -731,6 +731,17 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
+ 			 */
+ 			fgrs = 2;
+ 
++			if (abs_x == 0 && abs_y == 0) {
++				/*
++				 * We can ignore multi-finger release events.
++				 * We notice a finger has left the touchpad
++				 * when we receive events for the other finger.
++				 * And for the last finger, we receive
++				 * single-finger release events.
++				 */
++				return PSMOUSE_FULL_PACKET;
++			}
++
+ 			/* MFMC packet */
+ 			if (packet[0] & FSP_PB0_MFMC_FGR2) {
+ 				/* 2nd finger */
+@@ -742,10 +753,16 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
+ 					 */
+ 					fgrs = 1;
+ 					fsp_set_slot(dev, 0, false, 0, 0);
++					fsp_set_slot(dev, 1, fgrs == 1,
++						     abs_x, abs_y);
++				} else {
++					ad->last_mt_fgr = 2;
++					fsp_set_slot(dev, 0, true,
++						     ad->finger1_abs_x,
++						     ad->finger1_abs_y);
++					fsp_set_slot(dev, 1, fgrs == 2,
++						     abs_x, abs_y);
+ 				}
+-				ad->last_mt_fgr = 2;
+-
+-				fsp_set_slot(dev, 1, fgrs == 2, abs_x, abs_y);
+ 			} else {
+ 				/* 1st finger */
+ 				if (ad->last_mt_fgr == 1) {
+@@ -755,10 +772,29 @@ static psmouse_ret_t fsp_process_byte(struct psmouse *psmouse)
+ 					 * the 2nd finger is up
+ 					 */
+ 					fgrs = 1;
++					fsp_set_slot(dev, 0, fgrs != 0,
++						     abs_x, abs_y);
+ 					fsp_set_slot(dev, 1, false, 0, 0);
++				} else {
++					ad->finger1_abs_x = abs_x;
++					ad->finger1_abs_y = abs_y;
++
++					/*
++					 * There is a superflous event from the
++					 * driver when the two fingers are put
++					 * on the touchpad. Don't set
++					 * last_mt_fgr if we have not seen the
++					 * second figner yet, so the previous
++					 * workarond is not triggered and the
++					 * superflous event is ignored.
++					 * This is required to get the two
++					 * finger tap gesture working.
++					 */
++					if (ad->last_mt_fgr != 0)
++						ad->last_mt_fgr = 1;
++
++					return PSMOUSE_FULL_PACKET;
+ 				}
+-				ad->last_mt_fgr = 1;
+-				fsp_set_slot(dev, 0, fgrs != 0, abs_x, abs_y);
+ 			}
+ 		} else {
+ 			/* SFAC packet */
+diff --git a/drivers/input/mouse/sentelic.h b/drivers/input/mouse/sentelic.h
+index aa697ec..7224f84 100644
+--- a/drivers/input/mouse/sentelic.h
++++ b/drivers/input/mouse/sentelic.h
+@@ -117,6 +117,9 @@ struct fsp_data {
+ 	unsigned char	last_reg;	/* Last register we requested read from */
+ 	unsigned char	last_val;
+ 	unsigned int	last_mt_fgr;	/* Last seen finger(multitouch) */
++
++	unsigned short finger1_abs_x; /* finger1 absolute position */
++	unsigned short finger1_abs_y;
+ };
+ 
+ #ifdef CONFIG_MOUSE_PS2_SENTELIC
+-- 
+1.7.11.1
 
