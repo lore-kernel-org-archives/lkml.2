@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2F0LFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 07:05:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46226 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754799Ab2F0LFS (ORCPT
+	id S1757298Ab2F0LFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 07:05:39 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46510 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536Ab2F0LFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 07:05:18 -0400
-Message-Id: <20120627110512.574379921@openvz.org>
+	Wed, 27 Jun 2012 07:05:21 -0400
+Message-Id: <20120627110512.921499341@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 27 Jun 2012 15:01:19 +0400
+Date: Wed, 27 Jun 2012 15:01:23 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
@@ -18,20 +18,34 @@ Cc: linux-fsdevel@vger.kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Pavel Emelyanov <xemul@parallels.com>,
         James Bottomley <jbottomley@parallels.com>
-Subject: [rfc 3/7] procfs: Add ability to plugin auxiliary fdinfo providers
+Subject: [rfc 7/7] fs, notify: Add procfs fdinfo helper
 References: <20120627110116.201735815@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-seq-ops-helpers-4
+Content-Disposition: inline; filename=seq-fdinfo-fsnotify-2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch brings ability to plugin auxiliary fdinfo providers.
-For example in further patches eventfd, evenpoll and fsnotify
-will print out information associated with files.
+This allow us to print out fsnotify details such as
+watchee inode, device, mask and file handle.
 
-This feature is CONFIG_CHECKPOINT_RESTORE guarded to eliminate
-overhead for those who don't need it at all (this
-unfortunately makes patch bigger than I wanted).
+For example for inotify objects the output is
+
+ | pos:	0
+ | flags:	02000000
+ | inotify wd:        3 ino:             9e7e sdev:   800013 mask  800afce ignored_mask        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 7e9e0000640d1b6d
+ | inotify wd:        2 ino:             a111 sdev:   800013 mask  800afce ignored_mask        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 11a1000020542153
+ | inotify wd:        1 ino:            6b149 sdev:   800013 mask  800afce ignored_mask        0 fhandle-bytes:        8 fhandle-type:        1 f_handle: 49b1060023552153
+
+For fanotify it is like
+
+ | pos:	0
+ | flags:	02
+ | fanotify ino:            68f71 sdev:   800013 mask        1 ignored_mask 40000000 fhandle-bytes:        8 fhandle-type:        1 f_handle: 718f0600b9f42053
+ | fanotify mnt_id:       13 mask        1 ignored_mask 40000000
+
+This feature is CONFIG_CHECKPOINT_RESTORE only. To minimize
+impact on general fsnotify code the new functionality is gathered
+in fs/notify/fdinfo.c file mostly.
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 CC: Al Viro <viro@ZenIV.linux.org.uk>
@@ -40,293 +54,370 @@ CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Pavel Emelyanov <xemul@parallels.com>
 CC: James Bottomley <jbottomley@parallels.com>
 ---
- fs/proc/fd.c            |  208 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/proc_fs.h |   28 ++++++
- 2 files changed, 236 insertions(+)
+ fs/notify/Makefile                 |    2 
+ fs/notify/fanotify/fanotify_user.c |   17 ++
+ fs/notify/fdinfo.c                 |  218 +++++++++++++++++++++++++++++++++++++
+ fs/notify/fdinfo.h                 |   19 +++
+ fs/notify/inotify/inotify_user.c   |   32 +++++
+ 5 files changed, 286 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.git/fs/proc/fd.c
+Index: linux-2.6.git/fs/notify/Makefile
 ===================================================================
---- linux-2.6.git.orig/fs/proc/fd.c
-+++ linux-2.6.git/fs/proc/fd.c
-@@ -8,12 +8,218 @@
- #include <linux/security.h>
- #include <linux/file.h>
- #include <linux/seq_file.h>
-+#include <linux/spinlock.h>
+--- linux-2.6.git.orig/fs/notify/Makefile
++++ linux-2.6.git/fs/notify/Makefile
+@@ -1,5 +1,5 @@
+ obj-$(CONFIG_FSNOTIFY)		+= fsnotify.o notification.o group.o inode_mark.o \
+-				   mark.o vfsmount_mark.o
++				   mark.o vfsmount_mark.o fdinfo.o
  
- #include <linux/proc_fs.h>
+ obj-y			+= dnotify/
+ obj-y			+= inotify/
+Index: linux-2.6.git/fs/notify/fanotify/fanotify_user.c
+===================================================================
+--- linux-2.6.git.orig/fs/notify/fanotify/fanotify_user.c
++++ linux-2.6.git/fs/notify/fanotify/fanotify_user.c
+@@ -17,6 +17,7 @@
+ #include <asm/ioctls.h>
  
- #include "internal.h"
- #include "fd.h"
+ #include "../../mount.h"
++#include "../fdinfo.h"
  
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+
-+static LIST_HEAD(fdinfo_drivers);
-+static DECLARE_RWSEM(fdinfo_drivers_sem);
-+
-+int proc_register_fdinfo_driver(struct proc_fdinfo_driver *s)
+ #define FANOTIFY_DEFAULT_MAX_EVENTS	16384
+ #define FANOTIFY_DEFAULT_MAX_MARKS	8192
+@@ -877,6 +878,20 @@ asmlinkage long SyS_fanotify_mark(long f
+ SYSCALL_ALIAS(sys_fanotify_mark, SyS_fanotify_mark);
+ #endif
+ 
++#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
++int is_file_fanotify(struct file *file)
 +{
-+	struct proc_fdinfo_driver *i;
-+	int ret = 0;
-+
-+	if (!s->ops || !s->probe)
-+		return -EINVAL;
-+
-+	down_write(&fdinfo_drivers_sem);
-+	list_for_each_entry(i, &fdinfo_drivers, list) {
-+		if (i == s) {
-+			WARN_ONCE("Trying reassign fdinfo driver `%s'\n",
-+				  i->name);
-+			ret = -EINVAL;
-+			break;
-+		}
-+	}
-+	if (!ret)
-+		list_add(&s->list, &fdinfo_drivers);
-+	up_write(&fdinfo_drivers_sem);
-+
-+	return ret;
++	return file->f_op == &fanotify_fops;
 +}
 +
-+void proc_unregister_fdinfo_driver(struct proc_fdinfo_driver *s)
++static int __init fanotify_register_fdinfo_driver(void)
 +{
-+	struct proc_fdinfo_driver *i;
-+
-+	down_write(&fdinfo_drivers_sem);
-+	list_for_each_entry(i, &fdinfo_drivers, list) {
-+		if (i == s) {
-+			list_del(&i->list);
-+			break;
-+		}
-+	}
-+	up_write(&fdinfo_drivers_sem);
++	return proc_register_fdinfo_driver(&fanotify_fdinfo);
 +}
++#else
++void fanotify_register_fdinfo_driver(void) { }
++#endif /* CONFIG_PROC_FS && CONFIG_CHECKPOINT_RESTORE */
 +
-+static int prep_fdinfo_driver(struct proc_fdinfo_extra *extra)
+ /*
+  * fanotify_user_setup - Our initialization function.  Note that we cannot return
+  * error because we have compiled-in VFS hooks.  So an (unlikely) failure here
+@@ -887,7 +902,7 @@ static int __init fanotify_user_setup(vo
+ 	fanotify_mark_cache = KMEM_CACHE(fsnotify_mark, SLAB_PANIC);
+ 	fanotify_response_event_cache = KMEM_CACHE(fanotify_response_event,
+ 						   SLAB_PANIC);
+-
++	fanotify_register_fdinfo_driver();
+ 	return 0;
+ }
+ device_initcall(fanotify_user_setup);
+Index: linux-2.6.git/fs/notify/fdinfo.c
+===================================================================
+--- /dev/null
++++ linux-2.6.git/fs/notify/fdinfo.c
+@@ -0,0 +1,218 @@
++#include <linux/file.h>
++#include <linux/fs.h>
++#include <linux/fsnotify_backend.h>
++#include <linux/idr.h>
++#include <linux/init.h>
++#include <linux/inotify.h>
++#include <linux/kernel.h>
++#include <linux/namei.h>
++#include <linux/sched.h>
++#include <linux/types.h>
++#include <linux/seq_file.h>
++#include <linux/exportfs.h>
++#include <linux/proc_fs.h>
++
++#include "inotify/inotify.h"
++#include "../fs/mount.h"
++
++struct inode_file_handle {
++	struct file_handle		h;
++	struct fid			fid;
++} __packed;
++
++#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
++
++#if defined(CONFIG_INOTIFY_USER) || defined(CONFIG_FANOTIFY)
++
++#ifdef CONFIG_EXPORTFS
++static int inotify_encode_target(struct inode *inode, struct inode_file_handle *fhandle)
 +{
-+	struct proc_fdinfo_driver *s;
-+	int ret = 0;
++	int ret, size;
 +
-+	down_read(&fdinfo_drivers_sem);
-+	list_for_each_entry(s, &fdinfo_drivers, list) {
-+		if (s->probe(extra->f_file)) {
-+			extra->driver = s;
-+			break;
-+		}
-+	}
-+	up_read(&fdinfo_drivers_sem);
++	size = sizeof(fhandle->fid) >> 2;
++	ret = export_encode_inode_fh(inode, &fhandle->fid, &size);
++	BUG_ON(ret != FILEID_INO32_GEN);
 +
-+	if (extra->driver && extra->driver->priv_size) {
-+		extra->priv = kmalloc(extra->driver->priv_size, GFP_KERNEL);
-+		if (!extra->priv)
-+			ret = -ENOMEM;
-+	}
++	fhandle->h.handle_type = FILEID_INO32_GEN;
++	fhandle->h.handle_bytes = size * sizeof(u32);
 +
-+	return ret;
++	return 0;
++}
++#else
++static int inotify_encode_target(struct inode *inode, struct inode_file_handle *fhandle)
++{
++	fhandle->h.handle_type = FILEID_ROOT;
++	fhandle->h.handle_bytes = 0;
++	return 0;
++}
++#endif /* CONFIG_EXPORTFS */
++
++struct fsnotify_mark *
++seq_lookup_mark(struct proc_fdinfo_extra *extra, loff_t num)
++{
++	const int match = FSNOTIFY_MARK_FLAG_INODE | FSNOTIFY_MARK_FLAG_VFSMOUNT;
++        struct fsnotify_group *group = extra->f_file->private_data;
++        struct fsnotify_mark *mark, *v = NULL;
++
++        spin_lock(&group->mark_lock);
++        list_for_each_entry(mark, &group->marks_list, g_list) {
++                if (!(mark->flags & FSNOTIFY_MARK_FLAG_ALIVE) ||
++		    !(mark->flags & match))
++                        continue;
++                if (num-- == 0) {
++                        v = mark;
++                        fsnotify_get_mark(mark);
++                        break;
++                }
++        }
++
++        spin_unlock(&group->mark_lock);
++        return v;
 +}
 +
 +static void *seq_start(struct seq_file *m, loff_t *pos)
 +{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	down_read(&fdinfo_drivers_sem);
-+	extra->pos = *pos;
-+
-+	return *pos == 0 ? extra :
-+		(extra->driver ? extra->driver->ops->start(m, pos) : NULL);
++        struct proc_fdinfo_extra *extra = m->private;
++        return seq_lookup_mark(extra, *pos);
 +}
 +
 +static void seq_stop(struct seq_file *m, void *v)
 +{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	if (extra->driver && extra->pos > 0)
-+		extra->driver->ops->stop(m, v);
-+	up_read(&fdinfo_drivers_sem);
++        if (v)
++                fsnotify_put_mark(v);
 +}
 +
 +static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
 +{
-+	struct proc_fdinfo_extra *extra = m->private;
-+	void *v = NULL;
-+
-+	if (extra->driver) {
-+		int ret = 0;
-+
-+		if (*pos == 0) {
-+			v = extra->driver->ops->start(m, pos);
-+			if (v) {
-+				ret = extra->driver->ops->show(m, v);
-+				p = v;
-+			} else
-+				ret = -1;
-+		}
-+
-+		if (!ret)
-+			v = extra->driver->ops->next(m, p, pos);
-+	} else
-+		++*pos;
-+
-+	extra->pos = *pos;
-+	return v;
++        struct proc_fdinfo_extra *extra = m->private;
++        ++*pos;
++        if (p)
++                fsnotify_put_mark(p);
++        return (void *)seq_lookup_mark(extra, *pos);
 +}
 +
-+static int seq_show(struct seq_file *m, void *v)
++#ifdef CONFIG_INOTIFY_USER
++
++extern int is_file_inotify(struct file *file);
++
++static int seq_show_inotify(struct seq_file *m, void *v)
 +{
-+	struct proc_fdinfo_extra *extra = m->private;
++        struct inotify_inode_mark *inode_mark;
++        struct fsnotify_mark *mark = v;
++        struct inode *inode;
 +
-+	if (extra->driver && extra->pos > 0)
-+		return extra->driver->ops->show(m, v);
++        spin_lock(&mark->lock);
++	if (!(mark->flags & FSNOTIFY_MARK_FLAG_ALIVE))
++		goto out;
 +
-+	seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
-+		   (long long)extra->f_file->f_pos,
-+		   extra->f_flags);
-+	return 0;
++	if (unlikely(!(mark->flags & FSNOTIFY_MARK_FLAG_INODE)))
++		goto out;
++
++	inode_mark = container_of(mark, struct inotify_inode_mark, fsn_mark);
++	inode = igrab(mark->i.inode);
++	if (inode) {
++		struct inode_file_handle fhandle;
++		int i;
++
++		inotify_encode_target(inode, &fhandle);
++
++		seq_printf(m, "inotify wd: %8d ino: %16lx sdev: %8x mask %8x "
++			   "ignored_mask %8x fhandle-bytes: %8x "
++			   "fhandle-type: %8x f_handle: ",
++			   inode_mark->wd, inode->i_ino,
++			   inode->i_sb->s_dev,
++			   mark->mask,
++			   mark->ignored_mask,
++			   fhandle.h.handle_bytes,
++			   fhandle.h.handle_type);
++
++		for (i = 0; i < fhandle.h.handle_bytes; i++)
++			seq_printf(m, "%02x",
++				   (int)(unsigned char)fhandle.h.f_handle[i]);
++		seq_putc(m, '\n');
++		iput(inode);
++	}
++out:
++        spin_unlock(&mark->lock);
++        return 0;
 +}
 +
-+static const struct seq_operations fdinfo_seq_ops = {
++static const struct seq_operations inotify_fdinfo_ops = {
 +	.start	= seq_start,
 +	.next	= seq_next,
 +	.stop	= seq_stop,
-+	.show	= seq_show,
++	.show	= seq_show_inotify,
 +};
 +
-+static int seq_fdinfo_open(struct inode *inode, struct file *file)
-+{
-+	struct files_struct *files = NULL;
-+	struct proc_fdinfo_extra *extra;
-+	struct task_struct *task;
-+	struct seq_file *m;
-+	int ret;
-+
-+	extra = kzalloc(sizeof(*extra), GFP_KERNEL);
-+	if (!extra)
-+		return -ENOMEM;
-+
-+	ret = seq_open(file, &fdinfo_seq_ops);
-+	if (!ret) {
-+		ret = -ENOENT;
-+		m = file->private_data;
-+		m->private = extra;
-+
-+		task = get_proc_task(inode);
-+		if (task) {
-+			files = get_files_struct(task);
-+			put_task_struct(task);
-+		}
-+
-+		if (files) {
-+			int fd = proc_fd(inode);
-+
-+			spin_lock(&files->file_lock);
-+			extra->f_file = fcheck_files(files, fd);
-+			if (extra->f_file) {
-+				struct fdtable *fdt = files_fdtable(files);
-+
-+				extra->f_flags = extra->f_file->f_flags & ~O_CLOEXEC;
-+				if (close_on_exec(fd, fdt))
-+					extra->f_flags |= O_CLOEXEC;
-+				get_file(extra->f_file);
-+			}
-+			spin_unlock(&files->file_lock);
-+			put_files_struct(files);
-+
-+			ret = prep_fdinfo_driver(extra);
-+		}
-+	}
-+
-+	if (ret) {
-+		if (extra->f_file)
-+			put_filp(extra->f_file);
-+		kfree(extra);
-+	}
-+	return ret;
-+}
-+
-+static int seq_fdinfo_release(struct inode *inode, struct file *file)
-+{
-+	struct seq_file *m = file->private_data;
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	put_filp(extra->f_file);
-+	kfree(extra->priv);
-+	kfree(m->private);
-+
-+	return seq_release(inode, file);
-+}
-+
-+static const struct file_operations proc_fdinfo_file_operations = {
-+	.open		= seq_fdinfo_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_fdinfo_release,
++struct proc_fdinfo_driver inotify_fdinfo = {
++	.name	= "inotify",
++	.ops	= &inotify_fdinfo_ops,
++	.probe	= is_file_inotify,
 +};
 +
-+#else /* CONFIG_CHECKPOINT_RESTORE */
++#endif /* CONFIG_INOTIFY_USER */
 +
- struct proc_fdinfo {
- 	loff_t	f_pos;
- 	int	f_flags;
-@@ -90,6 +296,8 @@ static const struct file_operations proc
- 	.release	= seq_fdinfo_release,
- };
- 
-+#endif /* CONFIG_CHECKPOINT_RESTORE */
++#ifdef CONFIG_FANOTIFY
 +
- static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
- {
- 	struct files_struct *files;
-Index: linux-2.6.git/include/linux/proc_fs.h
++extern int is_file_fanotify(struct file *file);
++
++static int seq_show_fanotify(struct seq_file *m, void *v)
++{
++        struct fsnotify_mark *mark = v;
++        struct inode *inode;
++
++        spin_lock(&mark->lock);
++	if (!(mark->flags & FSNOTIFY_MARK_FLAG_ALIVE))
++		goto out;
++	if (mark->flags & FSNOTIFY_MARK_FLAG_INODE) {
++		struct inode_file_handle fhandle;
++		int i;
++
++		inode = igrab(mark->i.inode);
++		if (!inode)
++			goto out;
++		inotify_encode_target(inode, &fhandle);
++
++		seq_printf(m, "fanotify ino: %16lx sdev: %8x mask %8x ignored_mask %8x "
++			   "fhandle-bytes: %8x fhandle-type: %8x f_handle: ",
++			   inode->i_ino,
++			   inode->i_sb->s_dev,
++			   mark->mask,
++			   mark->ignored_mask,
++			   fhandle.h.handle_bytes,
++			   fhandle.h.handle_type);
++
++		for (i = 0; i < fhandle.h.handle_bytes; i++)
++			seq_printf(m, "%02x",
++				   (int)(unsigned char)fhandle.h.f_handle[i]);
++		seq_putc(m, '\n');
++		iput(inode);
++	} else if (mark->flags & FSNOTIFY_MARK_FLAG_VFSMOUNT) {
++		struct mount *mnt = real_mount(mark->m.mnt);
++
++		seq_printf(m, "fanotify mnt_id: %8x mask %8x ignored_mask %8x\n",
++			   mnt->mnt_id, mark->mask, mark->ignored_mask);
++	}
++out:
++        spin_unlock(&mark->lock);
++        return 0;
++}
++
++static const struct seq_operations fanotify_fdinfo_ops = {
++	.start	= seq_start,
++	.next	= seq_next,
++	.stop	= seq_stop,
++	.show	= seq_show_fanotify,
++};
++
++struct proc_fdinfo_driver fanotify_fdinfo = {
++	.name		= "fanotify",
++	.ops		= &fanotify_fdinfo_ops,
++	.probe		= is_file_fanotify,
++};
++
++#endif /* CONFIG_FANOTIFY */
++
++#endif /* CONFIG_INOTIFY_USER || CONFIG_FANOTIFY */
++
++#endif /* CONFIG_PROC_FS && CONFIG_CHECKPOINT_RESTORE */
+Index: linux-2.6.git/fs/notify/fdinfo.h
 ===================================================================
---- linux-2.6.git.orig/include/linux/proc_fs.h
-+++ linux-2.6.git/include/linux/proc_fs.h
-@@ -100,6 +100,26 @@ struct vmcore {
- 	loff_t offset;
- };
- 
-+struct seq_operations;
+--- /dev/null
++++ linux-2.6.git/fs/notify/fdinfo.h
+@@ -0,0 +1,19 @@
++#ifndef __FSNOTIFY_FDINFO_H__
++#define __FSNOTIFY_FDINFO_H__
 +
-+/* fdinfo auxiliary information drivers */
-+struct proc_fdinfo_driver {
-+	struct list_head		list;
-+	const char			*name;
-+	const struct seq_operations	*ops;
-+	int				(*probe)(struct file *file);
-+	size_t				priv_size;
-+};
++#include <linux/errno.h>
++#include <linux/proc_fs.h>
 +
-+/* auxiliary data allocated per fdinfo reader */
-+struct proc_fdinfo_extra {
-+	struct proc_fdinfo_driver	*driver;
-+	void				*priv;
-+	loff_t				pos;
-+	struct file			*f_file;
-+	unsigned int			f_flags;
-+};
++#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
 +
- #ifdef CONFIG_PROC_FS
- 
- extern void proc_root_init(void);
-@@ -175,6 +195,11 @@ extern struct proc_dir_entry *proc_net_m
- 
- extern struct file *proc_ns_fget(int fd);
- 
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+extern int proc_register_fdinfo_driver(struct proc_fdinfo_driver *s);
-+extern void proc_unregister_fdinfo_driver(struct proc_fdinfo_driver *s);
-+#endif /* CONFIG_CHECKPOINT_RESTORE */
++#ifdef CONFIG_INOTIFY_USER
++extern struct proc_fdinfo_driver inotify_fdinfo;
++#endif
 +
- #else
++#ifdef CONFIG_FANOTIFY
++extern struct proc_fdinfo_driver fanotify_fdinfo;
++#endif
++
++#endif
++
++#endif /* __FSNOTIFY_FDINFO_H__ */
+Index: linux-2.6.git/fs/notify/inotify/inotify_user.c
+===================================================================
+--- linux-2.6.git.orig/fs/notify/inotify/inotify_user.c
++++ linux-2.6.git/fs/notify/inotify/inotify_user.c
+@@ -38,8 +38,12 @@
+ #include <linux/uaccess.h>
+ #include <linux/poll.h>
+ #include <linux/wait.h>
++#include <linux/seq_file.h>
++#include <linux/exportfs.h>
++#include <linux/proc_fs.h>
  
- #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
-@@ -229,6 +254,9 @@ static inline struct file *proc_ns_fget(
- 	return ERR_PTR(-EINVAL);
+ #include "inotify.h"
++#include "../fdinfo.h"
+ 
+ #include <asm/ioctls.h>
+ 
+@@ -827,6 +831,26 @@ out:
+ 	return ret;
  }
  
-+static inline int proc_register_fdinfo_driver(struct proc_fdinfo_driver *s) { return -EINVAL; }
-+static inline void proc_unregister_fdinfo_driver(struct proc_fdinfo_driver *s) { }
++#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
++int is_file_inotify(struct file *file)
++{
++	return file->f_op == &inotify_fops;
++}
 +
- #endif /* CONFIG_PROC_FS */
++static int __init inotify_register_fdinfo_driver(void)
++{
++	return proc_register_fdinfo_driver(&inotify_fdinfo);
++}
++
++static void __exit inotify_unregister_fdinfo_driver(void)
++{
++	proc_unregister_fdinfo_driver(&inotify_fdinfo);
++}
++#else
++static int __init inotify_register_fdinfo_driver(void) { return 0; }
++static void __exit inotify_unregister_fdinfo_driver(void) { }
++#endif /* CONFIG_PROC_FS && CONFIG_CHECKPOINT_RESTORE */
++
+ /*
+  * inotify_user_setup - Our initialization function.  Note that we cannot return
+  * error because we have compiled-in VFS hooks.  So an (unlikely) failure here
+@@ -862,6 +886,14 @@ static int __init inotify_user_setup(voi
+ 	inotify_max_user_instances = 128;
+ 	inotify_max_user_watches = 8192;
  
- #if !defined(CONFIG_PROC_KCORE)
++	inotify_register_fdinfo_driver();
++
+ 	return 0;
+ }
+ module_init(inotify_user_setup);
++
++static void __exit inotify_user_exit(void)
++{
++	inotify_unregister_fdinfo_driver();
++}
++module_exit(inotify_user_exit);
 
