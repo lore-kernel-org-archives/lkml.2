@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab2F0QqK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 12:46:10 -0400
-Received: from elasmtp-junco.atl.sa.earthlink.net ([209.86.89.63]:48961 "EHLO
-	elasmtp-junco.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754627Ab2F0QqI (ORCPT
+	id S1756746Ab2F0Qv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 12:51:57 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:39225 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755653Ab2F0Qvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 12:46:08 -0400
-X-Greylist: delayed 890 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jun 2012 12:46:08 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=BVQufhN7Gp8HtscWNPL11v036BAwvzdFbRfyQ+J63rhzecC9T8kQq1expMW/bkiZ;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4FEB3553.8050609@earthlink.net>
-Date: Wed, 27 Jun 2012 12:31:15 -0400
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 00/36] staging: comedi: cb_pcidas: cleanup the driver
-References: <201206261745.00636.hartleys@visionengravers.com>
-In-Reply-To: <201206261745.00636.hartleys@visionengravers.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 27 Jun 2012 12:51:55 -0400
+Date: Wed, 27 Jun 2012 18:51:36 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
+        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/8 v3] i2c: i801: check and return errors during
+ byte-by-byte transfers
+Message-ID: <20120627185136.315e6625@endymion.delvare>
+In-Reply-To: <1340805255-8041-5-git-send-email-djkurtz@chromium.org>
+References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
+	<1340805255-8041-5-git-send-email-djkurtz@chromium.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79fd9e4f2f96e703866e47bcb6209df1c7350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 08:45 PM, H Hartley Sweeten wrote:
-> Cleanup the cb_pcidas driver.
->
-> H Hartley Sweeten (36):
->    staging: comedi: cb_pcidas: remove forward declarations 1
->    staging: comedi: cb_pcidas: remove forward declarations 2
->    staging: comedi: cb_pcidas: remove forward declarations 3
->    staging: comedi: cb_pcidas: remove forward declarations 4
->    staging: comedi: cb_pcidas: remove forward declarations 5
->    staging: comedi: cb_pcidas: remove forward declarations 6
->    staging: comedi: cb_pcidas: remove forward declarations 7
->    staging: comedi: cb_pcidas: remove forward declarations 8
->    staging: comedi: cb_pcidas: remove forward declarations 9
->    staging: comedi: cb_pcidas: remove thisboard and devpriv macros
->    staging: comedi: cb_pcidas: factor out the find pci device code
->    staging: comedi: cb_pcidas: remove some obvious comments in the
->      attach
->    staging: comedi: cb_pcidas: remove the PCI BAR index defines
->    staging: comedi: cb_pcidas: remove CB_PCIDAS_DEBUG define
->    staging: comedi: cb_pcidas: remove unused io region size defines
->    staging: comedi: cb_pcidas: simplify the boardinfo
->    staging: comedi: cb_pcidas: cleanup the boardinfo 1
->    staging: comedi: cb_pcidas: cleanup the boardinfo 2
->    staging: comedi: cb_pcidas: cleanup the boardinfo 3
->    staging: comedi: cb_pcidas: cleanup the boardinfo 4
->    staging: comedi: cb_pcidas: cleanup ai_config_insn()
->    staging: comedi: cb_pcidas: move the "find pci" dev_printk messages
->    staging: comedi: cb_pcidas: use the driver_name for the resource name
->    staging: comedi: cb_pcidas: check for failure of subdev_8255_init
->    staging: comedi: cb_pcidas: fix a space before tab issue
->    staging: comedi: cb_pcidas: fix some>  80 char lines
->    staging: comedi: cb_pcidas: fix comments in *_cmdtest functions
->    staging: comedi: cb_pcidas: remove 'volatile' on private data
->      variables
->    staging: comedi: cb_pcidas: fix comments in private data struct
->    staging: comedi: cb_pcidas: change dac bit enums into defines
->    staging: comedi: cb_pcidas: add whitespace to all the #define's
->    staging: comedi: cb_pcidas: fix remaining checkpatch.pl issues
->    staging: comedi: cb_pcidas: cleanup cb_pcidas_ao_fifo_winsn()
->    staging: comedi: cb_pcidas: cleanup cb_pcidas_ao_nofifo_winsn()
->    staging: comedi: cb_pcidas: cleanup cb_pcidas_ai_rinsn()
->    staging: comedi: cb_pcidas: cleanup dac08_write()
->
->   drivers/staging/comedi/drivers/cb_pcidas.c | 1695 +++++++++++++---------------
->   1 file changed, 770 insertions(+), 925 deletions(-)
->
->    
-I there some reason you can't post these as response to this message, 
-like GKH does, so if readers aren't
-interested they can mark the thread read without stepping thru each patch.
+On Wed, 27 Jun 2012 21:54:11 +0800, Daniel Kurtz wrote:
+> If an error is detected in the polling loop, abort the transaction and
+> return an error code.
+> 
+>  * DEV_ERR is set if the device does not respond with an acknowledge, and
+> the SMBus controller times out (minimum 25ms).
+>  * BUS_ERR is set if a bus arbitration collision is detected.  In other
+> words, when the SMBus controller tries to generate a START condition, but
+> detects that the SMBDATA is being held low, usually by another SMBus/I2C
+> master.
+>  * FAILED is only set if a the transaction is set by software (using the
+> SMBHSTCNT KILL bit).
+
+Not quite sure what you mean with "set by software". Other than this,
+patch looks good, applied, thanks.
+
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+>  drivers/i2c/busses/i2c-i801.c |   10 ++++++----
+>  1 files changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+> index 6a53338..ba56b74 100644
+> --- a/drivers/i2c/busses/i2c-i801.c
+> +++ b/drivers/i2c/busses/i2c-i801.c
+> @@ -131,9 +131,11 @@
+>  #define SMBHSTSTS_INTR		0x02
+>  #define SMBHSTSTS_HOST_BUSY	0x01
+>  
+> -#define STATUS_FLAGS		(SMBHSTSTS_BYTE_DONE | SMBHSTSTS_FAILED | \
+> -				 SMBHSTSTS_BUS_ERR | SMBHSTSTS_DEV_ERR | \
+> -				 SMBHSTSTS_INTR)
+> +#define STATUS_ERROR_FLAGS	(SMBHSTSTS_FAILED | SMBHSTSTS_BUS_ERR | \
+> +				 SMBHSTSTS_DEV_ERR)
+> +
+> +#define STATUS_FLAGS		(SMBHSTSTS_BYTE_DONE | SMBHSTSTS_INTR | \
+> +				 STATUS_ERROR_FLAGS)
+>  
+>  /* Older devices have their ID defined in <linux/pci_ids.h> */
+>  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
+> @@ -385,7 +387,7 @@ static int i801_block_transaction_byte_by_byte(struct i801_priv *priv,
+>  		do {
+>  			usleep_range(250, 500);
+>  			status = inb_p(SMBHSTSTS(priv));
+> -		} while ((!(status & SMBHSTSTS_BYTE_DONE))
+> +		} while (!(status & (SMBHSTSTS_BYTE_DONE | STATUS_ERROR_FLAGS))
+>  			 && (timeout++ < MAX_RETRIES));
+>  
+>  		result = i801_check_post(priv, status, timeout > MAX_RETRIES);
+
 
 -- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
-
+Jean Delvare
