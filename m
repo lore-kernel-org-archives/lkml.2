@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab2F0Mf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:35:56 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:56813 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368Ab2F0Mfy (ORCPT
+	id S1757185Ab2F0MhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 08:37:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52252 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab2F0MhH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:35:54 -0400
-Date: Wed, 27 Jun 2012 14:35:47 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+	Wed, 27 Jun 2012 08:37:07 -0400
+Message-ID: <1340800594.10063.53.camel@twins>
+Subject: Re: [PATCH v4 12/13] fair.c: Use generic rbtree impl in fair
+ scheduler
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
         David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kir Kolyshkin <kir@parallels.com>
-Subject: Re: Fork bomb limitation in memcg WAS: Re: [PATCH 00/11] kmem
- controller for memcg: stripped down version
-Message-ID: <20120627123544.GE20638@somewhere.redhat.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com>
- <20120625162745.eabe4f03.akpm@linux-foundation.org>
- <4FE9621D.2050002@parallels.com>
- <20120626145539.eeeab909.akpm@linux-foundation.org>
- <4FEAD260.4000603@parallels.com>
- <20120627122924.GD20638@somewhere.redhat.com>
- <4FEAFC5E.4050104@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FEAFC5E.4050104@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-doc@vger.kernel.org, linux-sparse@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Turner <pjt@google.com>, Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Richard Weinberger <richard@nod.at>, Rob Landley <rob@landley.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Wed, 27 Jun 2012 14:36:34 +0200
+In-Reply-To: <4FEA30B2.9010902@att.net>
+References: <1340424048-7759-1-git-send-email-daniel.santos@pobox.com>
+	 <1340424048-7759-13-git-send-email-daniel.santos@pobox.com>
+	 <1340712949.21991.57.camel@twins> <4FEA30B2.9010902@att.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 04:28:14PM +0400, Glauber Costa wrote:
-> On 06/27/2012 04:29 PM, Frederic Weisbecker wrote:
-> > On Wed, Jun 27, 2012 at 01:29:04PM +0400, Glauber Costa wrote:
-> >> On 06/27/2012 01:55 AM, Andrew Morton wrote:
-> >>>> I can't speak for everybody here, but AFAIK, tracking the stack through
-> >>>> the memory it used, therefore using my proposed kmem controller, was an
-> >>>> idea that good quite a bit of traction with the memcg/memory people.
-> >>>> So here you have something that people already asked a lot for, in a
-> >>>> shape and interface that seem to be acceptable.
-> >>>
-> >>> mm, maybe.  Kernel developers tend to look at code from the point of
-> >>> view "does it work as designed", "is it clean", "is it efficient", "do
-> >>> I understand it", etc.  We often forget to step back and really
-> >>> consider whether or not it should be merged at all.
-> >>>
-> >>> I mean, unless the code is an explicit simplification, we should have
-> >>> a very strong bias towards "don't merge".
-> >>
-> >> Well, simplifications are welcome - this series itself was
-> >> simplified beyond what I thought initially possible through the
-> >> valuable comments
-> >> of other people.
-> >>
-> >> But of course, this adds more complexity to the kernel as a whole.
-> >> And this is true to every single new feature we may add, now or in
-> >> the
-> >> future.
-> >>
-> >> What I can tell you about this particular one, is that the justification
-> >> for it doesn't come out of nowhere, but from a rather real use case that
-> >> we support and maintain in OpenVZ and our line of products for years.
-> > 
-> > Right and we really need a solution to protect against forkbombs in LXC.
-> Small correction: In containers. LXC is not the only one out there =p
+On Tue, 2012-06-26 at 16:59 -0500, Daniel Santos wrote:
+> Also, to address why we're not using entity_before (or a less()
+> function) directly, there's two main reasons (one that doesn't even
+> affect CFS).  The first reason is that an "is equal" evaluation would
+> also be required for insertions in trees with unique keys,
 
-Sure. I was just speaking for the specific project I'm working on :)
-But I'm definetly interested in solutions that work for everyone in containers in
-general. And if Openvz is also interested in forkbombs protection that's even
-better.
+Right, I saw that feature in your code, are there any such trees in the
+kernel? It would be good to have a kernel code conversion for each
+variant your code supports.
+
+>  as well as
+> all lookups.  This doesn't doesn't affect CFS because it isn't doing
+> lookups (it only cares about leftmost) and duplicate keys are allowed.
+> 
+Right.. there's that.
+
+Too bad, partial order is slightly cheaper at times. A well, nothing for
+it.
+
