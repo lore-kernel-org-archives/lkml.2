@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab2F0Tsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 15:48:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55636 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046Ab2F0Tsn (ORCPT
+	id S1756542Ab2F0Tt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 15:49:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:52748 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab2F0Ttz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 15:48:43 -0400
-Date: Wed, 27 Jun 2012 12:48:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Glauber Costa <glommer@parallels.com>
-cc: cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Tejun Heo <tj@kernel.org>, Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 02/11] memcg: Reclaim when more than one page needed.
-In-Reply-To: <4FEADA55.4060409@parallels.com>
-Message-ID: <alpine.DEB.2.00.1206271246380.22162@chino.kir.corp.google.com>
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-3-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206252106430.26640@chino.kir.corp.google.com> <4FEADA55.4060409@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 27 Jun 2012 15:49:55 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120627193039.GF25319@n2100.arm.linux.org.uk>
+References: <1340812275-1197-1-git-send-email-stigge@antcom.de>
+	<20120627191542.GC25319@n2100.arm.linux.org.uk>
+	<CAAAP30Fdr2_tcgMYjCirVPCPTtrUgbeMb=7j=69wGtvJeiLsOA@mail.gmail.com>
+	<20120627193039.GF25319@n2100.arm.linux.org.uk>
+Date: Wed, 27 Jun 2012 16:49:54 -0300
+Message-ID: <CAAAP30HE++jF084LZbG+yMgddKtwqUAwVxuiXr4RPD0B4-H_8A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] mtd: lpc32xx_slc: Select AMBA_PL08X in Kconfig
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Roland Stigge <stigge@antcom.de>, dedekind1@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jun 2012, Glauber Costa wrote:
+On Wed, Jun 27, 2012 at 4:30 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> Well, the DMA engine API gets stubbed out when no DMA engine is selected,
+> so I'm not sure why spi-pl022 needs all those ifdefs (yes, you may wish
+> to do that if you want to shrink your driver private struct size.)
+>
+> Provided the driver is capable of working without DMA engine, I don't see
+> any reason what so ever to make that driver select or depend on DMA engine
+> stuff.
 
-> > @@ -2206,7 +2214,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup
-> > *memcg, gfp_t gfp_mask,
-> > >  	 * unlikely to succeed so close to the limit, and we fall back
-> > >  	 * to regular pages anyway in case of failure.
-> > >  	 */
-> > > -	if (nr_pages == 1 && ret)
-> > > +	if (nr_pages <= NR_PAGES_TO_RETRY && ret)
-> > >  		return CHARGE_RETRY;
-> 
-> Changed to costly order.
-> 
+Ok, so this one can be dropped.
 
-1 << PAGE_ALLOC_COSTLY_ORDER was the suggestion.
-
-> One more thing. The original version of this patch included
-> a cond_resched() here, that was also removed. From my re-reading
-> of the code in page_alloc.c and vmscan.c now, I tend to think
-> this is indeed not needed, since any cond_resched()s that might
-> be needed to ensure the safety of the code will be properly
-> inserted by the reclaim code itself, so there is no need for us
-> to include any when we signal that a retry is needed.
-> 
-
-For __GFP_WAIT, that sounds like a safe guarantee.
+It was proposed because of an build error in the past, but it's not
+happening anymore.
