@@ -1,58 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab2F0J6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:58:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753538Ab2F0J6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:58:12 -0400
-Date: Wed, 27 Jun 2012 12:58:14 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 0/6] kvm: level triggered irqfd support
-Message-ID: <20120627095814.GJ17507@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120627044758.23698.249.stgit@bling.home>
+	id S1756809Ab2F0J7g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:59:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49302 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754799Ab2F0J7f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 05:59:35 -0400
+Message-ID: <1340791167.10063.7.camel@twins>
+Subject: Re: [PATCH 4/4] perf, x86: Improve debug output in check_hw_exists()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 27 Jun 2012 11:59:27 +0200
+In-Reply-To: <20120622163643.GK24632@erda.amd.com>
+References: <1340217996-2254-1-git-send-email-robert.richter@amd.com>
+	 <1340217996-2254-5-git-send-email-robert.richter@amd.com>
+	 <1340380427.18025.84.camel@twins> <20120622163643.GK24632@erda.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 11:08:52PM -0600, Alex Williamson wrote:
-> Ok, let's see how this flies.  I actually quite like this, so be
-> gentle tearing it apart ;)
-> 
-> I just couldn't bring myself to contort KVM_IRQFD into something
-> that either sets up an irqfd or specifies a nearly unrelated EOI
-> eventfd.  The solution I've come up with, that also avoids exposing
-> irq_source_ids to userspace, is to work through the irqfd.  If we
-> setup a level irqfd, we can optionally associate an eoifd with
-> the same irq_source_id, by passing the irqfd.  To do this, we just
-> need to create a new reference counted object for the source ID
-> so we don't run into problems ordering release.  This means we
-> end up with a KVM_EOIFD ioctl that has both general usefulness and
-> can still tie into an irqfd.
+On Fri, 2012-06-22 at 18:36 +0200, Robert Richter wrote:
+> I wonder why my gcc this didn't report, its 4.4.5.
 
-I like this API.
+gcc (Ubuntu/Linaro 4.6.1-9ubuntu3) 4.6.1
 
-> In patch 6/6 I also include an alternate de-assert mechanism via an
-> irqfd with the opposite polarity.  I don't currently use this, but
-> it's pretty trivial and at least available in archives now.
-
-The nasty bit about that is that if you assert twice then
-deassert once it's not clear what should happen.
-But yea, it does not hurt to put them in the archives.
-
-> 
-> I don't address whether injecting an edge irqfd really needs an assert
-> followed by de-assert (I don't know).  This new interface really
-> unties itself from caring.  We might be able to consolidate inject
-> functions at some future point, but it doesn't change how we'd name
-> flags as it did in the previous version.  Thanks,
-> 
-> Alex
-
+so you're like 2 minors behind. Time to update! ;-)
