@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2F0ESR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 00:18:17 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:48563 "EHLO e8.ny.us.ibm.com"
+	id S1753884Ab2F0EST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 00:18:19 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:43509 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab2F0ERs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750773Ab2F0ERs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jun 2012 00:17:48 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
@@ -23,45 +23,58 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Michel Lespinasse <walken@google.com>,
         Minchan Kim <minchan@kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 5/5] [RFC][HACK] mm: Change memory management of anonymous pages on swapless systems
-Date: Wed, 27 Jun 2012 00:17:15 -0400
-Message-Id: <1340770635-9909-6-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 2/5] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE handlers
+Date: Wed, 27 Jun 2012 00:17:12 -0400
+Message-Id: <1340770635-9909-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1340770635-9909-1-git-send-email-john.stultz@linaro.org>
 References: <1340770635-9909-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062704-9360-0000-0000-000007CFFED1
+x-cbid: 12062704-5806-0000-0000-000016B1D933
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to my newbie-ness, the following may not be precise, but
-I think it conveys the intent of what I'm trying to do here.
+This patch enables FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+functionality for tmpfs making use of the volatile range
+management code.
 
-Anonymous memory is tracked on two LRU lists: LRU_INACTIVE_ANON
-and LRU_ACTIVE_ANON. This split is useful when we need to free
-up pages and are trying to decide what to swap out.
+Conceptually, FALLOC_FL_MARK_VOLATILE is like a delayed
+FALLOC_FL_PUNCH_HOLE.  This allows applications that have
+data caches that can be re-created to tell the kernel that
+some memory contains data that is useful in the future, but
+can be recreated if needed, so if the kernel needs, it can
+zap the memory without having to swap it out.
 
-However, on systems that do no have swap, this partition is less
-clear. In many cases the code avoids aging active anonymous pages
-onto the inactive list. However in some cases pages do get moved
-to the inactive list, but we never call writepage, as there isn't
-anything to swap out.
+In use, applications use FALLOC_FL_MARK_VOLATILE to mark
+page ranges as volatile when they are not in use. Then later
+if they wants to reuse the data, they use
+FALLOC_FL_UNMARK_VOLATILE, which will return an error if the
+data has been purged.
 
-This patch changes some of the active/inactive list management of
-anonymous memory when there is no swap. In that case pages are
-always added to the active lru. The intent is that since anonymous
-pages cannot be swapped out, they all shoudld be active.
+This is very much influenced by the Android Ashmem interface by
+Robert Love so credits to him and the Android developers.
+In many cases the code & logic come directly from the ashmem patch.
+The intent of this patch is to allow for ashmem-like behavior, but
+embeds the idea a little deeper into the VM code.
 
-The one exception is volatile pages, which can be moved to
-the inactive lru by calling deactivate_page().
+This is a reworked version of the fadvise volatile idea submitted
+earlier to the list. Thanks to Dave Chinner for suggesting to
+rework the idea in this fashion. Also thanks to Dmitry Adamushko
+for continued review and bug reporting, and Dave Hansen for
+help with the original design and mentoring me in the VM code.
 
-In addition, I've changed the logic so we also do try to shrink
-the inactive anonymous lru, and call writepage. This should only
-be done if there are volatile pages on the inactive lru.
+v3:
+* Fix off by one issue when truncating page ranges
+* Use Dave Hansesn's suggestion to use shmem_writepage to trigger
+  range purging instead of using a shrinker.
 
-This allows us to purge volatile pages in writepage when the system
-does not have swap.
+v4:
+* Revert the shrinker removal, since writepage won't get called
+  if we don't have swap.
+
+v5:
+* Cleanups
 
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
@@ -84,126 +97,195 @@ CC: Minchan Kim <minchan@kernel.org>
 CC: linux-mm@kvack.org <linux-mm@kvack.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/pagevec.h |    5 +----
- include/linux/swap.h    |   23 +++++++++++++++--------
- mm/swap.c               |   13 ++++++++++++-
- mm/vmscan.c             |    9 ---------
- 4 files changed, 28 insertions(+), 22 deletions(-)
+ fs/open.c              |    3 +-
+ include/linux/falloc.h |    7 +--
+ mm/shmem.c             |  113 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 119 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/pagevec.h b/include/linux/pagevec.h
-index 2aa12b8..e1312a5 100644
---- a/include/linux/pagevec.h
-+++ b/include/linux/pagevec.h
-@@ -22,6 +22,7 @@ struct pagevec {
+diff --git a/fs/open.c b/fs/open.c
+index d6c79a0..c0531c0 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -223,7 +223,8 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 		return -EINVAL;
  
- void __pagevec_release(struct pagevec *pvec);
- void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru);
-+void __pagevec_lru_add_anon(struct pagevec *pvec);
- unsigned pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
- 		pgoff_t start, unsigned nr_pages);
- unsigned pagevec_lookup_tag(struct pagevec *pvec,
-@@ -64,10 +65,6 @@ static inline void pagevec_release(struct pagevec *pvec)
- 		__pagevec_release(pvec);
- }
+ 	/* Return error if mode is not supported */
+-	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
++	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
++			FALLOC_FL_MARK_VOLATILE | FALLOC_FL_UNMARK_VOLATILE))
+ 		return -EOPNOTSUPP;
  
--static inline void __pagevec_lru_add_anon(struct pagevec *pvec)
--{
--	__pagevec_lru_add(pvec, LRU_INACTIVE_ANON);
--}
+ 	/* Punch hole must have keep size set */
+diff --git a/include/linux/falloc.h b/include/linux/falloc.h
+index 73e0b62..3e47ad5 100644
+--- a/include/linux/falloc.h
++++ b/include/linux/falloc.h
+@@ -1,9 +1,10 @@
+ #ifndef _FALLOC_H_
+ #define _FALLOC_H_
  
- static inline void __pagevec_lru_add_active_anon(struct pagevec *pvec)
- {
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index c84ec68..639936f 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -238,14 +238,6 @@ extern void swap_setup(void);
- 
- extern void add_page_to_unevictable_list(struct page *page);
- 
--/**
-- * lru_cache_add: add a page to the page lists
-- * @page: the page to add
-- */
--static inline void lru_cache_add_anon(struct page *page)
--{
--	__lru_cache_add(page, LRU_INACTIVE_ANON);
--}
- 
- static inline void lru_cache_add_file(struct page *page)
- {
-@@ -474,5 +466,20 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent)
- }
- 
- #endif /* CONFIG_SWAP */
-+
-+/**
-+ * lru_cache_add: add a page to the page lists
-+ * @page: the page to add
-+ */
-+static inline void lru_cache_add_anon(struct page *page)
-+{
-+	int lru = LRU_INACTIVE_ANON;
-+	if (!total_swap_pages)
-+		lru = LRU_ACTIVE_ANON;
-+
-+	__lru_cache_add(page, lru);
-+}
-+
-+
- #endif /* __KERNEL__*/
- #endif /* _LINUX_SWAP_H */
-diff --git a/mm/swap.c b/mm/swap.c
-index 4e7e2ec..f35df46 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -691,7 +691,7 @@ void lru_add_page_tail(struct page *page, struct page *page_tail,
- 	SetPageLRU(page_tail);
- 
- 	if (page_evictable(page_tail, NULL)) {
--		if (PageActive(page)) {
-+		if (PageActive(page) || !total_swap_pages) {
- 			SetPageActive(page_tail);
- 			active = 1;
- 			lru = LRU_ACTIVE_ANON;
-@@ -755,6 +755,17 @@ void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru)
- }
- EXPORT_SYMBOL(__pagevec_lru_add);
- 
-+
-+void __pagevec_lru_add_anon(struct pagevec *pvec)
-+{
-+	if (!total_swap_pages)
-+		__pagevec_lru_add(pvec, LRU_ACTIVE_ANON);
-+	else
-+		__pagevec_lru_add(pvec, LRU_INACTIVE_ANON);
-+}
-+EXPORT_SYMBOL(__pagevec_lru_add_anon);
-+
-+
- /**
-  * pagevec_lookup - gang pagecache lookup
-  * @pvec:	Where the resulting pages are placed
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index eeb3bc9..52d8ad9 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1597,15 +1597,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
- 	if (!global_reclaim(sc))
- 		force_scan = true;
- 
--	/* If we have no swap space, do not bother scanning anon pages. */
--	if (!sc->may_swap || (nr_swap_pages <= 0)) {
--		noswap = 1;
--		fraction[0] = 0;
--		fraction[1] = 1;
--		denominator = 1;
--		goto out;
--	}
+-#define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
+-#define FALLOC_FL_PUNCH_HOLE	0x02 /* de-allocates range */
 -
- 	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
- 		get_lru_size(lruvec, LRU_INACTIVE_ANON);
- 	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
++#define FALLOC_FL_KEEP_SIZE		0x01 /* default is extend size */
++#define FALLOC_FL_PUNCH_HOLE		0x02 /* de-allocates range */
++#define FALLOC_FL_MARK_VOLATILE		0x04 /* mark range volatile */
++#define FALLOC_FL_UNMARK_VOLATILE	0x08 /* mark range non-volatile */
+ #ifdef __KERNEL__
+ 
+ /*
+diff --git a/mm/shmem.c b/mm/shmem.c
+index a15a466..d85d237 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -64,6 +64,7 @@ static struct vfsmount *shm_mnt;
+ #include <linux/highmem.h>
+ #include <linux/seq_file.h>
+ #include <linux/magic.h>
++#include <linux/volatile.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -624,6 +625,103 @@ static int shmem_setattr(struct dentry *dentry, struct iattr *attr)
+ 	return error;
+ }
+ 
++static DEFINE_VOLATILE_FS_HEAD(shmem_volatile_head);
++
++static int shmem_mark_volatile(struct inode *inode, loff_t offset, loff_t len)
++{
++	pgoff_t start, end;
++	int ret;
++
++	start = offset >> PAGE_CACHE_SHIFT;
++	end = (offset+len) >> PAGE_CACHE_SHIFT;
++
++	volatile_range_lock(&shmem_volatile_head);
++	ret = volatile_range_add(&shmem_volatile_head, &inode->i_data,
++								start, end);
++	if (ret > 0) { /* immdiately purge */
++		shmem_truncate_range(inode,
++				((loff_t) start << PAGE_CACHE_SHIFT),
++				((loff_t) end << PAGE_CACHE_SHIFT)-1);
++		ret = 0;
++	}
++	volatile_range_unlock(&shmem_volatile_head);
++
++	return ret;
++}
++
++static int shmem_unmark_volatile(struct inode *inode, loff_t offset, loff_t len)
++{
++	pgoff_t start, end;
++	int ret;
++
++	start = offset >> PAGE_CACHE_SHIFT;
++	end = (offset+len) >> PAGE_CACHE_SHIFT;
++
++	volatile_range_lock(&shmem_volatile_head);
++	ret = volatile_range_remove(&shmem_volatile_head, &inode->i_data,
++								start, end);
++	volatile_range_unlock(&shmem_volatile_head);
++
++	return ret;
++}
++
++static void shmem_clear_volatile(struct inode *inode)
++{
++	volatile_range_lock(&shmem_volatile_head);
++	volatile_range_clear(&shmem_volatile_head, &inode->i_data);
++	volatile_range_unlock(&shmem_volatile_head);
++}
++
++static
++int shmem_volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
++{
++	s64 nr_to_scan = sc->nr_to_scan;
++	const gfp_t gfp_mask = sc->gfp_mask;
++	struct address_space *mapping;
++	pgoff_t start, end;
++	int ret;
++	s64 page_count;
++
++	if (nr_to_scan && !(gfp_mask & __GFP_FS))
++		return -1;
++
++	volatile_range_lock(&shmem_volatile_head);
++	page_count = volatile_range_lru_size(&shmem_volatile_head);
++	if (!nr_to_scan)
++		goto out;
++
++	do {
++		ret = volatile_ranges_pluck_lru(&shmem_volatile_head,
++							&mapping, &start, &end);
++		if (ret) {
++			shmem_truncate_range(mapping->host,
++				((loff_t) start << PAGE_CACHE_SHIFT),
++				((loff_t) end << PAGE_CACHE_SHIFT)-1);
++
++			nr_to_scan -= end-start;
++			page_count -= end-start;
++		};
++	} while (ret && (nr_to_scan > 0));
++
++out:
++	volatile_range_unlock(&shmem_volatile_head);
++
++	return page_count;
++}
++
++static struct shrinker shmem_volatile_shrinker = {
++	.shrink = shmem_volatile_shrink,
++	.seeks = DEFAULT_SEEKS,
++};
++
++static int __init shmem_shrinker_init(void)
++{
++	register_shrinker(&shmem_volatile_shrinker);
++	return 0;
++}
++arch_initcall(shmem_shrinker_init);
++
++
+ static void shmem_evict_inode(struct inode *inode)
+ {
+ 	struct shmem_inode_info *info = SHMEM_I(inode);
+@@ -1806,6 +1904,14 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
+ 		/* No need to unmap again: hole-punching leaves COWed pages */
+ 		error = 0;
+ 		goto out;
++	} else if (mode & FALLOC_FL_MARK_VOLATILE) {
++		/* Mark pages volatile, sort of delayed hole punching */
++		error = shmem_mark_volatile(inode, offset, len);
++		goto out;
++	} else if (mode & FALLOC_FL_UNMARK_VOLATILE) {
++		/* Mark pages non-volatile, return error if pages were purged */
++		error = shmem_unmark_volatile(inode, offset, len);
++		goto out;
+ 	}
+ 
+ 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
+@@ -1884,6 +1990,12 @@ out:
+ 	return error;
+ }
+ 
++static int shmem_release(struct inode *inode, struct file *file)
++{
++	shmem_clear_volatile(inode);
++	return 0;
++}
++
+ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+ {
+ 	struct shmem_sb_info *sbinfo = SHMEM_SB(dentry->d_sb);
+@@ -2795,6 +2907,7 @@ static const struct file_operations shmem_file_operations = {
+ 	.splice_read	= shmem_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
+ 	.fallocate	= shmem_fallocate,
++	.release	= shmem_release,
+ #endif
+ };
+ 
 -- 
 1.7.9.5
 
