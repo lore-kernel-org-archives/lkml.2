@@ -1,130 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2F0IpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 04:45:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58823 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753741Ab2F0IpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 04:45:04 -0400
-X-IronPort-AV: E=Sophos;i="4.77,483,1336320000"; 
-   d="scan'208";a="5273610"
-Message-ID: <4FEAC916.7030506@cn.fujitsu.com>
-Date: Wed, 27 Jun 2012 16:49:26 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1754303Ab2F0Iqa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 04:46:30 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:39500 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752460Ab2F0Iq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 04:46:29 -0400
+Message-ID: <4FEAC7C6.7030601@parallels.com>
+Date: Wed, 27 Jun 2012 12:43:50 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH 2/12] memory-hogplug : check memory offline in offline_pages
-References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9DB1.7010303@jp.fujitsu.com>
-In-Reply-To: <4FEA9DB1.7010303@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/27 16:45:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/27 16:45:14,
-	Serialize complete at 2012/06/27 16:45:14
+To: Wanpeng Li <liwp.linux@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v2] memcg: unify mem_control_xxx to memcg_xxx
+References: <1340756175-3420-1-git-send-email-liwp.linux@gmail.com>
+In-Reply-To: <1340756175-3420-1-git-send-email-liwp.linux@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 06/27/2012 01:44 PM, Yasuaki Ishimatsu Wrote:
-> When offline_pages() is called to offlined memory, the function fails since
-> all memory has been offlined. In this case, the function should succeed.
-> The patch adds the check function into offline_pages().
+On 06/27/2012 04:16 AM, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>
+> Changelog:
+>
+> V2 -> V1:
+>
+> * replace memory_cgroup_xxx by memcg_xxx
+>
+> Unify memcg functions to memcg_xxx.
 
-You miss such case: some pages are online, while some pages are offline.
-offline_pages() will fail too in such case.
 
-Thanks
-Wen Congyang
+This patch achieves nothing.
+You're changing a couple of function names. Andrew stated goal was to 
+change *all* function names from mem_cgroup_xxx to memcg_xxx, not just 
+one or two.
 
-> 
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->  drivers/base/memory.c  |   20 ++++++++++++++++++++
->  include/linux/memory.h |    1 +
->  mm/memory_hotplug.c    |    5 +++++
->  3 files changed, 26 insertions(+)
-> 
-> Index: linux-3.5-rc4/drivers/base/memory.c
-> ===================================================================
-> --- linux-3.5-rc4.orig/drivers/base/memory.c	2012-06-26 13:28:16.726211752 +0900
-> +++ linux-3.5-rc4/drivers/base/memory.c	2012-06-26 13:34:22.423639904 +0900
-> @@ -70,6 +70,26 @@ void unregister_memory_isolate_notifier(
->  }
->  EXPORT_SYMBOL(unregister_memory_isolate_notifier);
-> 
-> +bool memory_is_offline(unsigned long start_pfn, unsigned long end_pfn)
-> +{
-> +	struct memory_block *mem;
-> +	struct mem_section *section;
-> +	unsigned long pfn, section_nr;
-> +
-> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-> +		section_nr = pfn_to_section_nr(pfn);
-> +		section = __nr_to_section(section_nr);
-> +		mem = find_memory_block(section);
-> +		if (!mem)
-> +			continue;
-> +		if (mem->state == MEM_OFFLINE)
-> +			continue;
-> +		return false;
-> +	}
-> +
-> +	return true;
-> +}
-> +
->  /*
->   * register_memory - Setup a sysfs device for a memory block
->   */
-> Index: linux-3.5-rc4/include/linux/memory.h
-> ===================================================================
-> --- linux-3.5-rc4.orig/include/linux/memory.h	2012-06-25 04:53:04.000000000 +0900
-> +++ linux-3.5-rc4/include/linux/memory.h	2012-06-26 13:34:22.424639891 +0900
-> @@ -120,6 +120,7 @@ extern int memory_isolate_notify(unsigne
->  extern struct memory_block *find_memory_block_hinted(struct mem_section *,
->  							struct memory_block *);
->  extern struct memory_block *find_memory_block(struct mem_section *);
-> +extern bool memory_is_offline(unsigned long start_pfn, unsigned long end_pfn);
->  #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
->  enum mem_add_context { BOOT, HOTPLUG };
->  #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
-> Index: linux-3.5-rc4/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-26 13:28:16.743211538 +0900
-> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-26 13:48:38.264940468 +0900
-> @@ -887,6 +887,11 @@ static int __ref offline_pages(unsigned
-> 
->  	lock_memory_hotplug();
-> 
-> +	if (memory_is_offline(start_pfn, end_pfn)) {
-> +		ret = 0;
-> +		goto out;
-> +	}
-> +
->  	zone = page_zone(pfn_to_page(start_pfn));
->  	node = zone_to_nid(zone);
->  	nr_pages = end_pfn - start_pfn;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+This can be done mechanically by replacing occurrences of mem_cgroup_xxx 
+with memcg_xxx, and verifying that your final result is correct by 
+compiling the kernel with and without the combination of config options 
+that matters here, plus a set of randconfigs - or anything like that.
+
+Make sure you have Andrew's latest patch in your tree, that converts the 
+config option names.
+
 
