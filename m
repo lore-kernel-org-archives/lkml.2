@@ -1,36 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab2F0NWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 09:22:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49601 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab2F0NWK (ORCPT
+	id S1755388Ab2F0Ndi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 09:33:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54155 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab2F0Ndh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 09:22:10 -0400
+	Wed, 27 Jun 2012 09:33:37 -0400
+Date: Wed, 27 Jun 2012 15:33:32 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Austin Boyle <Austin.Boyle@aviatnet.com>
+Cc: rtc-linux@googlegroups.com,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: ds1307: Register offset moved to chip description
+Message-ID: <20120627133332.GA21572@pengutronix.de>
+References: <1340749442.3241.4046.camel@pc786-ubu.gnet.global.vpn>
 MIME-Version: 1.0
-Date: Wed, 27 Jun 2012 21:22:09 +0800
-Message-ID: <CAJRGBZw_my_=Z+Jyb2UBYwW48BpCGYdcuD5mu7erHsX8NSKbDg@mail.gmail.com>
-Subject: CPU isolation question again
-From: Luming Yu <luming.yu@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
+Content-Disposition: inline
+In-Reply-To: <1340749442.3241.4046.camel@pc786-ubu.gnet.global.vpn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
 
-I noticed some discussion about CPU isolation which points me to the
-patch set (https://lkml.org/lkml/2011/8/15/245). I'm currently
-preparing a RFC-patch-set to automatically pick up a few suitable CPUs
-to isolate then kick them out of service for a while. We need to
-balance between  thermal & power management And overall system
-performance during this operation as much as possible. So
-software-cpu-online-offline interface could not be a good option to
-me. But to make sure I'm not blindly running on a dead-end path, I'd
-check with experts here to ensure it makes some sense to isolate CPUs
-to this level, and the idea also makes some sense, and the most
-important is it's not implemented yet.
+--SLDf9lqlvOQaIe6s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks!!
+On Wed, Jun 27, 2012 at 10:24:02AM +1200, Austin Boyle wrote:
+> rtc: ds1307: Register offset moved to chip description
+>=20
+> From: Austin Boyle <Austin.Boyle@aviatnet.com>
+>=20
+> Register offset is added to chip description instead of being hard-coded
+> into probe function.
+>=20
+> Based on v3.5-rc4
+>=20
+> Cc: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Signed-off-by: Austin Boyle <Austin.Boyle@aviatnet.com>
+
+I would ack this patch immediately if it added another type using this
+feature. But only changing already working code doesn't seem necessary
+to me.
+
+Regards,
+
+    Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--SLDf9lqlvOQaIe6s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/rC6wACgkQD27XaX1/VRu+/QCffUzGbOOaLyz99sDniEIzyhJh
+2jkAnAuYEgB6KiguzZJuws6Qj0bXHxdj
+=OR06
+-----END PGP SIGNATURE-----
+
+--SLDf9lqlvOQaIe6s--
