@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2F1TIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 15:08:39 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:45304 "EHLO
+	id S1756093Ab2F1TIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 15:08:38 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:45302 "EHLO
 	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696Ab2F1TIf (ORCPT
+	with ESMTP id S1754689Ab2F1TIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Jun 2012 15:08:35 -0400
-Date: Thu, 28 Jun 2012 09:42:54 -0400
+Date: Wed, 27 Jun 2012 14:27:14 -0400
 From: "John W. Linville" <linville@tuxdriver.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Dave Jones <davej@redhat.com>,
-        David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org,
-        aloisio.almeida@openbossa.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH] net: nfc: fix panic in accept()
-Message-ID: <20120628134254.GB2115@tuxdriver.com>
-References: <20120611145700.GY22557@sortiz-mobl>
- <1339426778.6001.2312.camel@edumazet-glaptop>
- <20120611152007.GZ22557@sortiz-mobl>
- <1339433810.4999.65.camel@lappy>
- <20120611172545.GA1776@redhat.com>
- <CA+1xoqcwr-5dzHvqkt9x0-xj9EFAywVfva=asbHXvX-LSBWqdA@mail.gmail.com>
- <1340639612.10893.84.camel@edumazet-glaptop>
- <20120625171532.GB16275@sortiz-mobl>
- <CA+1xoqfy21wOh2myV0D6iBDqoZ3YmkwNZwKBVXLU75zePOGi4w@mail.gmail.com>
- <20120628125612.GG4846@sortiz-mobl>
+To: Arvydas Sidorenko <asido4@gmail.com>
+Cc: mcgrof@qca.qualcomm.com, jouni@qca.qualcomm.com, vthiagar@qca.qualcomm.com,
+        senthilb@qca.qualcomm.com, linux-wireless@vger.kernel.org,
+        ath9k-devel@venema.h4ckr.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Build fix in drivers/net/wireless/ath/ath9k/main.c
+Message-ID: <20120627182713.GB1862@tuxdriver.com>
+References: <1340824779-5157-1-git-send-email-asido4@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120628125612.GG4846@sortiz-mobl>
+In-Reply-To: <1340824779-5157-1-git-send-email-asido4@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 02:56:12PM +0200, Samuel Ortiz wrote:
-> Hi Sasha,
-> 
-> On Thu, Jun 28, 2012 at 02:11:38PM +0200, Sasha Levin wrote:
-> > Hi Samuel,
-> > 
-> > On Mon, Jun 25, 2012 at 7:15 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > > Hi Eric,
-> > >
-> > > On Mon, Jun 25, 2012 at 05:53:32PM +0200, Eric Dumazet wrote:
-> > >> From: Eric Dumazet <edumazet@google.com>
-> > >>
-> > >> Sasha Levin reported following panic :
-> > > I applied a similar patch, more consistent with the rest of the NFC socket
-> > > code, still with you as the author. See here:
-> > >
-> > > http://git.kernel.org/?p=linux/kernel/git/sameo/nfc-3.0.git;a=commit;h=631c301f20558525a641fadffc0126affd3dc4a4
-> > 
-> > Could this tree be included in -next please?
-> No, wireless-next is already included in -next. The above patch is making its
-> way upstream, it's in the wireless.git tree and should hit davem's net tree
-> soon.
-
-FWIW, lots (or most?) of the bug fix trees get pulled into -next
-as well.  Having the nfc tree go there makes sense to me.
+Thanks, but Sujith beat you to the same fix.
 
 John
+
+On Wed, Jun 27, 2012 at 09:19:39PM +0200, Arvydas Sidorenko wrote:
+> Commit fad29cd2f59949581050a937786c2c9bc78b2f04 broke the build if
+> no CONFIG_ATH9K_BTCOEX_SUPPORT is enabled.
+> 
+> Signed-off-by: Arvydas Sidorenko <asido4@gmail.com>
+> ---
+>  drivers/net/wireless/ath/ath9k/main.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+> index c14cf5a..e4e73f0 100644
+> --- a/drivers/net/wireless/ath/ath9k/main.c
+> +++ b/drivers/net/wireless/ath/ath9k/main.c
+> @@ -151,8 +151,10 @@ static void __ath_cancel_work(struct ath_softc *sc)
+>  	cancel_delayed_work_sync(&sc->tx_complete_work);
+>  	cancel_delayed_work_sync(&sc->hw_pll_work);
+>  
+> +#ifdef CONFIG_ATH9K_BTCOEX_SUPPORT
+>  	if (ath9k_hw_mci_is_enabled(sc->sc_ah))
+>  		cancel_work_sync(&sc->mci_work);
+> +#endif
+>  }
+>  
+>  static void ath_cancel_work(struct ath_softc *sc)
+> -- 
+> 1.7.8.6
+> 
+> 
+
 -- 
 John W. Linville		Someday the world will need a hero, and you
 linville@tuxdriver.com			might be all we have.  Be ready.
