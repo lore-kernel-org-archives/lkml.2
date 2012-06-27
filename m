@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab2F0LLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 07:11:07 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:53323 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751199Ab2F0LLF (ORCPT
+	id S1755805Ab2F0LMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 07:12:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53351 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345Ab2F0LMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 07:11:05 -0400
-Message-ID: <4FEAEA41.7070502@ti.com>
-Date: Wed, 27 Jun 2012 16:40:57 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Wed, 27 Jun 2012 07:12:48 -0400
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: mturquette@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
-        Viresh Kumar <viresh.linux@gmail.com>
-Subject: Re: [PATCH v2] clk: Add support for rate table based dividers
-References: <1340794893-20869-1-git-send-email-rnayak@ti.com> <4FEAE89D.3090702@pengutronix.de>
-In-Reply-To: <4FEAE89D.3090702@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1340795162.10063.28.camel@twins>
+References: <CAPXgP124qFG=QdO4H7qsp1bhY4BOp-PJEz7-4v-Dhi13LW+GDQ@mail.gmail.com>
+ <20120627060939.GD14913@gmail.com> <CAPXgP10OLwd2v57qJqoJMTkXrM+7C8uhFoydy6HUEbfPfFVN8Q@mail.gmail.com>
+ <1340795162.10063.28.camel@twins>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 27 Jun 2012 13:12:27 +0200
+Message-ID: <CAPXgP117sDoiuA-i3LWFPnj+VN5BbOQrYGM8KXYCqGSan7ZZMg@mail.gmail.com>
+Subject: Re: cosmetic printk() issue with lockdep warning in arch/x86/kernel/alternative.c
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartmann <greg@kroah.com>,
+        Lennart Poettering <lennart@poettering.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 June 2012 04:33 PM, Marc Kleine-Budde wrote:
-> On 06/27/2012 01:01 PM, Rajendra Nayak wrote:
->> Some divider clks do not have any obvious relationship
->> between the divider and the value programmed in the
->> register. For instance, say a value of 1 could signify divide
->> by 6 and a value of 2 could signify divide by 4 etc.
->> Also there are dividers where not all values possible
->> based on the bitfield width are valid. For instance
->> a 3 bit wide bitfield can be used to program a value
->> from 0 to 7. However its possible that only 0 to 4
->> are valid values.
->>
->> All these cases need the platform code to pass a simple
->> table of divider/value tuple, so the framework knows
->> the exact value to be written based on the divider
->> calculation and can also do better error checking.
->>
->> This patch adds support for such rate table based
->> dividers.
->>
->> Also since this means adding a new parameter to the
->> clk_register_divider(), update all existing users of
->> it.
->>
->> Signed-off-by: Rajendra Nayak<rnayak@ti.com>
->> Cc: Sascha Hauer<kernel@pengutronix.de>
->> Cc: Viresh Kumar<viresh.linux@gmail.com>
->> ---
->>   arch/arm/mach-imx/clk.h            |    2 +-
->>   drivers/clk/clk-divider.c          |   67 ++++++++++++++++++++++++++++++++++--
->>   drivers/clk/spear/spear3xx_clock.c |    4 +-
->>   drivers/clk/spear/spear6xx_clock.c |    4 +-
->>   include/linux/clk-private.h        |    3 +-
->>   include/linux/clk-provider.h       |   10 +++++-
->>   6 files changed, 80 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/arm/mach-imx/clk.h b/arch/arm/mach-imx/clk.h
->> index 1bf64fe..8cb6f97 100644
->> --- a/arch/arm/mach-imx/clk.h
->> +++ b/arch/arm/mach-imx/clk.h
->> @@ -56,7 +56,7 @@ static inline struct clk *imx_clk_divider(const char *name, const char *parent,
->>   		void __iomem *reg, u8 shift, u8 width)
->>   {
->>   	return clk_register_divider(NULL, name, parent, CLK_SET_RATE_PARENT,
->> -			reg, shift, width, 0,&imx_ccm_lock);
->> +			reg, shift, width, 0, , NULL,&imx_ccm_lock);
->                                             ^^^^^
+On Wed, Jun 27, 2012 at 1:06 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2012-06-27 at 12:49 +0200, Kay Sievers wrote:
+>> All we want is a reliable printk
 >
-> Is this valid C-Syntax?
+> We too, but we define reliable differently. I want printk() to dump data
+> ASAP so that it has better chance to get out of the system and onto my
+> console in case of a crash. I don't give a rats arse about interleaved
+> text, any text is better than no text.
 
-Nope, its not. Thanks for catching. Will built test with imx and spear
-configs before the next spin.
+Sure, I fully understand that this is useful.
 
+> So if you go add separate buffers in there that will delay writing text,
+> you're actively destroying printk().
 >
-> Marc
->
+> Any change that makes it harder to get text out is bad.
 
+The text is always flushed immediately for full lines, there is no
+change at all. Since yesterday, continuation lines (which are
+buffered) are flushed immediately to the console too.
+
+I don't think there will be a substantial difference anymore to the
+old behaviour, but we still get reliable records stored in the kmsg
+buffer.
+
+Kay
