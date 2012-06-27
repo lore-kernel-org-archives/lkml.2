@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab2F0QOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 12:14:08 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:58818 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751546Ab2F0QOE (ORCPT
+	id S1757948Ab2F0QQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 12:16:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45826 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab2F0QQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 12:14:04 -0400
-Message-ID: <4FEB312D.5020608@xenotime.net>
-Date: Wed, 27 Jun 2012 09:13:33 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 27 Jun 2012 12:16:06 -0400
+Date: Wed, 27 Jun 2012 13:15:57 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Jovi Zhang <bookjovi@gmail.com>,
+        mingo@redhat.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: fix wrong hw_breakpoint documentation
+Message-ID: <20120627161557.GA3878@infradead.org>
+References: <CACV3sbKFcHgai6AzKGrf=LEb67VjZXjMUqMQuXAOUmby7CeiJg@mail.gmail.com>
+ <87fw9hyvt5.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Joe Thornber <dm-devel@redhat.com>, Alasdair Kergon <agk@redhat.com>
-Subject: Re: linux-next: Tree for Jun 27 (dm-thin.c)
-References: <20120627132217.f8bbdd1f467711419123d188@canb.auug.org.au>
-In-Reply-To: <20120627132217.f8bbdd1f467711419123d188@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fw9hyvt5.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 08:22 PM, Stephen Rothwell wrote:
-
-> Hi all,
+Em Wed, Jun 27, 2012 at 05:59:34PM +0900, Namhyung Kim escreveu:
+> Hi, Jovi
 > 
-> This tree was not built between each merge, but only after merging all
-> the trees.
+> On Wed, 27 Jun 2012 16:39:19 +0800, Jovi Zhang wrote:
+> > From f5f9c3a064482cf3d0fb7ed788c66630bddbfc79 Mon Sep 17 00:00:00 2001
+> > From: Jovi Zhang <bookjovi@gmail.com>
+> > Date: Wed, 27 Jun 2012 16:09:21 +0800
+> > Subject: [PATCH] perf: fix wrong hw_breakpoint documentation
+> >
+> > read-write access hw_breakpoint event is passed as 'mem:addr',
+> > 'mem:0x1000:rw' is parsed as invalid argument currently.
+> >
 > 
-> Changes since 20120626:
+> It should be a bug in event parser. I guess the patch below will fix it:
+
+Jiri,
+
+	Ack? If so, Namhyung, can you send a patch with his Ack?
+
+- Arnaldo
+ 
 > 
-> The device-mapper tree gained a build failure for which I reverted a
-> commit.
-
-
-on x86_64:
-
-drivers/md/dm-thin.c: In function 'pool_preresume':
-drivers/md/dm-thin.c:2129:3: warning: format '%llu' expects type 'long long unsigned int', but argument 2 has type 'sector_t'
-
-
-CONFIG_LBDAF is not enabled.
-
-
--- 
-~Randy
+> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+> index 488362e14133..aafca33a8a09 100644
+> --- a/tools/perf/util/parse-events.l
+> +++ b/tools/perf/util/parse-events.l
+> @@ -76,7 +76,7 @@ num_hex               0x[a-fA-F0-9]+
+>  num_raw_hex    [a-fA-F0-9]+
+>  name           [a-zA-Z_*?][a-zA-Z0-9_*?]*
+>  modifier_event [ukhpGH]{1,8}
+> -modifier_bp    [rwx]
+> +modifier_bp    [rwx]+
+>  
+>  %%
+>  
