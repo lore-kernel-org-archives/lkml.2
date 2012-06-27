@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab2F0TQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 15:16:06 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:34225 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752038Ab2F0TQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 15:16:04 -0400
-Message-ID: <4FEB5A7E.8040500@linux.vnet.ibm.com>
-Date: Wed, 27 Jun 2012 14:09:50 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1755815Ab2F0TSL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 15:18:11 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34378 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab2F0TSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 15:18:07 -0400
+Date: Wed, 27 Jun 2012 20:15:42 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roland Stigge <stigge@antcom.de>
+Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org, aletes.xgr@gmail.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com
+Subject: Re: [PATCH 1/4] mtd: lpc32xx_slc: Select AMBA_PL08X in Kconfig
+Message-ID: <20120627191542.GC25319@n2100.arm.linux.org.uk>
+References: <1340812275-1197-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 2/3] zsmalloc: add generic path and remove x86 dependency
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-3-git-send-email-sjenning@linux.vnet.ibm.com> <4FEA9A0D.4020000@kernel.org>
-In-Reply-To: <4FEA9A0D.4020000@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062719-8974-0000-0000-00000A9693FE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340812275-1197-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 12:28 AM, Minchan Kim wrote:
->> +{
->> +	if (area->vm)
->> +		return 0;
+On Wed, Jun 27, 2012 at 05:51:12PM +0200, Roland Stigge wrote:
+> From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 > 
+> Since this driver depends on the amba pl08x dma driver, select it in Kconfig.
 > 
-> Just out of curiosity.
-> When do we need above check?
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> ---
+>  drivers/mtd/nand/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+> index de69978..a9e8b73 100644
+> --- a/drivers/mtd/nand/Kconfig
+> +++ b/drivers/mtd/nand/Kconfig
+> @@ -417,6 +417,7 @@ config MTD_NAND_PXA3xx
+>  config MTD_NAND_SLC_LPC32XX
+>  	tristate "NXP LPC32xx SLC Controller"
+>  	depends on ARCH_LPC32XX
+> +	select AMBA_PL08X
+>  	help
+>  	  Enables support for NXP's LPC32XX SLC (i.e. for Single Level Cell
+>  	  chips) NAND controller. This is the default for the PHYTEC 3250
 
-I did this in the case that there was a race between the for
-loop in zs_init(), calling zs_cpu_notifier(), and a CPU
-coming online.  I've never seen the condition hit, but if it
-did, it would leak memory without this check.
-
-I would move the cpu notifier registration after the loop in
-zs_init(), but then I could miss a cpu up event and we
-wouldn't have the needed per-cpu resources for mapping.
-
-All other suggestions are accepted.  Thanks for the feedback!
-
---
-Seth
-
+Surely not?  Drivers using DMA engine really should not depend on any
+particular DMA engine implementation.
