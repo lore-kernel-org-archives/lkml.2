@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab2F0OmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 10:42:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755498Ab2F0Ol7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 10:41:59 -0400
-Message-ID: <1340808117.1207.215.camel@bling.home>
-Subject: Re: [PATCH] kvm: don't clear level from irqfd
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 27 Jun 2012 08:41:57 -0600
-In-Reply-To: <20120627113843.GB17922@redhat.com>
-References: <20120627091343.GA17693@redhat.com>
-	 <20120627100345.GA6533@redhat.com> <20120627102024.GA17922@redhat.com>
-	 <20120627102254.GB6533@redhat.com> <20120627113843.GB17922@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757344Ab2F0Om2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 10:42:28 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:48204 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756192Ab2F0Om0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 10:42:26 -0400
+Date: Wed, 27 Jun 2012 07:14:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch V2 0/7] Per cpu thread hotplug infrastructure
+Message-ID: <20120627141434.GA2418@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120615140217.933711648@linutronix.de>
+ <20120626232620.GA24468@linux.vnet.ibm.com>
+ <1340790739.10063.5.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340790739.10063.5.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062714-7606-0000-0000-00000184D68D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-27 at 14:38 +0300, Michael S. Tsirkin wrote:
-> On Wed, Jun 27, 2012 at 01:22:54PM +0300, Gleb Natapov wrote:
-> > On Wed, Jun 27, 2012 at 01:20:24PM +0300, Michael S. Tsirkin wrote:
-> > > On Wed, Jun 27, 2012 at 01:03:46PM +0300, Gleb Natapov wrote:
-> > > > On Wed, Jun 27, 2012 at 12:13:43PM +0300, Michael S. Tsirkin wrote:
-> > > > > irqfd sets and clears the level immediately.
-> > > > > This used to be necessary for MSI interrupts but isn't anymore.
-> > > > > 
-> > > > > Note! We never officially supported irqfd for level
-> > > > > interrupts but it usually seemed to kind of work,
-> > > > > and this change will break it. There are no known
-> > > > > real users of that feature though - only old vfio prototypes.
-> > > > > Removing this line will make it easier to add
-> > > > > real support for level irqfds in the future.
-> > > > > 
-> > > > Did we officially supported irqfd for ioapic/pic edge interrupts?
-> > > > Because those will break to.
-> > > 
-> > > Hard to say - as Alex points out it was never documented.
-> > If we will start dropping everything that was never documented we will
-> > hardly have working VMM at the end :)
+On Wed, Jun 27, 2012 at 11:52:19AM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-06-26 at 16:26 -0700, Paul E. McKenney wrote:
+> > there might be other reasons to park besides
+> > CPU hotplug.  Thoughts? 
 > 
-> Generally true.
-> 
-> However I just realized that this interface does not work
-> reliably for ioapic/pic edge either. More or less for the same reason that
-> it does not work for edge: we set bit in IRR, try to inject,
-> then clear even if injection failed (e.g. because it is low
-> priority). Guest will never get an interrupt in this case.
-> 
-> So what happened e.g. for Alex's vfio prototype is he never
-> hit an interrupt window in light testing.
-> 
-> What we would need to do to fix it is:
-> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> 
-> Which will fix edge but break level same as this patch.
-> But is it worth fixing? Maybe declare it broken and be
-> done with it?
+> s2r, freezers and similar stuff?
 
-Ugh, so if I understand correctly, the case where kvm_set_irq() returns
-<0, we're broken.  VFIO has masked the physical device and has no error
-path to know that the interrupt inject was unsuccessful.  We almost need
-an error eventfd that bounces the interrupt back to userspace for the
-qemu interrupt model to handle, but that has it's own set of
-complications.  Suggestions?  Declaring the interface broken isn't very
-useful.  Thanks,
+OK, so it sounds like the full functionality should be available in
+!SMP kernels, then...
 
-Alex
+							Thanx, Paul
 
