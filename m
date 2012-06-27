@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab2F0Nir (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 09:38:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22321 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012Ab2F0Nip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 09:38:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="170640586"
-Subject: Re: [PATCH 1/2] dma: tegra: set DMA_CYCLIC capability
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-In-Reply-To: <1340365364-16276-1-git-send-email-ldewangan@nvidia.com>
-References: <1340365364-16276-1-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Jun 2012 18:59:08 +0530
-Message-ID: <1340803748.1562.244.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755424Ab2F0Nkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 09:40:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50031 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab2F0Nkm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 09:40:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <87fw9hyvt5.fsf@sejong.aot.lge.com>
+References: <CACV3sbKFcHgai6AzKGrf=LEb67VjZXjMUqMQuXAOUmby7CeiJg@mail.gmail.com>
+	<87fw9hyvt5.fsf@sejong.aot.lge.com>
+Date: Wed, 27 Jun 2012 21:40:40 +0800
+Message-ID: <CACV3sbL7qQRe9oo6uCm-dLATU1nirMxsK0qrkwktuRhX9zpZtQ@mail.gmail.com>
+Subject: Re: [PATCH] perf: fix wrong hw_breakpoint documentation
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, mingo@redhat.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-22 at 17:12 +0530, Laxman Dewangan wrote:
-> Tegra's APB DMA driver support the cyclic mode of data
-> transfer and hence setting the DMA_CYCLIC caps for dma
-> channels.
-> 
-> This is require when generic sound dmaengine pcm driver
-> request for dma channel with CYCLIC capability.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/dma/tegra20-apb-dma.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-> index 134ea7c..b4bd50c 100644
-> --- a/drivers/dma/tegra20-apb-dma.c
-> +++ b/drivers/dma/tegra20-apb-dma.c
-> @@ -1306,6 +1306,8 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
->  
->  	dma_cap_set(DMA_SLAVE, tdma->dma_dev.cap_mask);
->  	dma_cap_set(DMA_PRIVATE, tdma->dma_dev.cap_mask);
-> +	dma_cap_set(DMA_CYCLIC, tdma->dma_dev.cap_mask);
-> +
->  	tdma->dma_dev.dev = &pdev->dev;
->  	tdma->dma_dev.device_alloc_chan_resources =
->  					tegra_dma_alloc_chan_resources;
-What sort of testing went into this.
-I can see that you are marking descriptor complete even for cyclic case,
-that is wrong you should fix that as well. See the other drivers for
-cyclic handling of descriptors.
+Hi Kim,
 
--- 
-~Vinod
+> It should be a bug in event parser. I guess the patch below will fix it:
+>
+>
+> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+> index 488362e14133..aafca33a8a09 100644
+> --- a/tools/perf/util/parse-events.l
+> +++ b/tools/perf/util/parse-events.l
+> @@ -76,7 +76,7 @@ num_hex               0x[a-fA-F0-9]+
+>  num_raw_hex    [a-fA-F0-9]+
+>  name           [a-zA-Z_*?][a-zA-Z0-9_*?]*
+>  modifier_event [ukhpGH]{1,8}
+> -modifier_bp    [rwx]
+> +modifier_bp    [rwx]+
+>
 
+that should also be fine, but it will export rx/wx interface to user,
+and rx/wx mostly not supported on many architecture.
+Perhaps this issue is very tiny :)
+
+[root@jovi perf]# ./perf stat -e mem:0x080652c8:rx  -e mem:0x0 --
+/usr/bin/ls > /dev/null
+
+Performance counter stats for '/usr/bin/ls':
+
+  <not supported> mem:0x80652c8:rx
+                0 mem:(nil):rw
+
+      0.006728643 seconds time elapsed
