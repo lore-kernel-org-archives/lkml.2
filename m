@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab2F0O3J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 10:29:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35760 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab2F0O3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 10:29:07 -0400
-Message-ID: <1340807344.1207.207.camel@bling.home>
-Subject: Re: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: avi@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Wed, 27 Jun 2012 08:29:04 -0600
-In-Reply-To: <20120627135811.GE6533@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
-	 <20120627050952.23698.37235.stgit@bling.home>
-	 <20120627135811.GE6533@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1757024Ab2F0O3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 10:29:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46415 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab2F0O3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 10:29:44 -0400
+Date: Thu, 28 Jun 2012 00:29:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Turquette <mturquette@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        broonie@opensource.wolfsonmicro.com, rnayak@ti.com,
+        viresh.kumar@linaro.org, amit.kucheria@linaro.org,
+        linus.walleij@stericsson.com, shawn.guo@freescale.com,
+        mkl@pengutronix.de, sr@denx.de, pawel.moll@arm.com,
+        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
+        arnd.bergmann@linaro.org, olof@lixom.net
+Subject: Re: linux-next: adding the common clk tree
+Message-Id: <20120628002925.dd144b4782398042593b6b47@canb.auug.org.au>
+In-Reply-To: <20120626230503.GA4402@gmail.com>
+References: <20120626015551.GW4402@gmail.com>
+	<20120626132502.7584f6acbfc23bdc3d6a8f8e@canb.auug.org.au>
+	<20120626230503.GA4402@gmail.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__28_Jun_2012_00_29_25_+1000_B5cCt=U9x.qqqF_5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-27 at 16:58 +0300, Gleb Natapov wrote:
-> On Tue, Jun 26, 2012 at 11:10:08PM -0600, Alex Williamson wrote:
-> > This new ioctl enables an eventfd to be triggered when an EOI is
-> > written for a specified irqchip pin.  By default this is a simple
-> > notification, but we can also tie the eoifd to a level irqfd, which
-> > enables the irqchip pin to be automatically de-asserted on EOI.
-> > This mode is particularly useful for device-assignment applications
-> > where the unmask and notify triggers a hardware unmask.  The default
-> > mode is most applicable to simple notify with no side-effects for
-> > userspace usage, such as Qemu.
-> > 
-> > Here we make use of the reference counting of the _irq_source
-> > object allowing us to share it with an irqfd and cleanup regardless
-> > of the release order.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> >  Documentation/virtual/kvm/api.txt |   24 +++++
-> >  arch/x86/kvm/x86.c                |    1 
-> >  include/linux/kvm.h               |   14 +++
-> >  include/linux/kvm_host.h          |   13 +++
-> >  virt/kvm/eventfd.c                |  189 +++++++++++++++++++++++++++++++++++++
-> >  virt/kvm/kvm_main.c               |   11 ++
-> >  6 files changed, 250 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > index b216709..87a2558 100644
-> > --- a/Documentation/virtual/kvm/api.txt
-> > +++ b/Documentation/virtual/kvm/api.txt
-> > @@ -1987,6 +1987,30 @@ interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
-> >  with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
-> >  KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
-> >  
-> > +4.77 KVM_EOIFD
-> > +
-> > +Capability: KVM_CAP_EOIFD
-> > +Architectures: x86
-> > +Type: vm ioctl
-> > +Parameters: struct kvm_eoifd (in)
-> > +Returns: 0 on success, -1 on error
-> > +
-> > +KVM_EOIFD allows userspace to receive EOI notification through an
-> > +eventfd for level triggered irqchip interrupts.  Behavior for edge
-> > +triggered interrupts is undefined.  kvm_eoifd.fd specifies the eventfd
-> Lets make it defined. EOI notification can be used by userspace to fix
-> time drift due to lost interrupts. But than userspace needs to know
-> which vcpu did EOI.
+--Signature=_Thu__28_Jun_2012_00_29_25_+1000_B5cCt=U9x.qqqF_5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, do we need an additional flag and field in kvm_eoifd to filter by
-vCPU then?
+Hi Mike,
 
-> Also see question below.
-> 
-...
-> > +
-> > +static int kvm_assign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
-> > +{
-> > +	struct eventfd_ctx *eventfd;
-> > +	struct _eoifd *eoifd, *tmp;
-> > +	struct _irq_source *source = NULL;
-> > +
-> > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-> > +		source = get_irq_source_from_irqfd(kvm, args->irqfd);
-> > +		if (IS_ERR(source))
-> > +			return PTR_ERR(source);
-> > +	}
-> > +
-> Shouldn't you check that eoifd->gsi == irqfd->gsi?
+On Tue, 26 Jun 2012 16:05:03 -0700 Mike Turquette <mturquette@ti.com> wrote:
+>
+> So please let me know if I still have the concept wrong and I'll change
+> things up.  Otherwise my clk-next fulfils all of the guidelines you've
+> mentioned below for inclusion into linux-next.
 
-Yes I should.  Thanks,
+OK, that all seems to be fine.  I would make one suggestion: that you
+create the clk-next branch like this:
 
-Alex
+git checkout clk-next
+git reset --hard clk-3.x
+git merge clk-fixes
+git am patches/clk/next/incoming/*.patch
 
+or maybe just merge clk-fixes directly into clk-3.x when necessary or
+from time to time and base clk-next just in clk-3.x.
+--
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Thu__28_Jun_2012_00_29_25_+1000_B5cCt=U9x.qqqF_5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP6xjFAAoJEECxmPOUX5FEqHEP/i+Wcb5Ja0nUmKKoH1sgm7xA
+S2t3Pu7/x76voQYt3Z9INCJD2Wc70uNL90RfJD9gwJKh9k13Zu3+1QNqyIyf6X1d
+BoYUOf7ffSKV++ImHtbHkYINsw5O9D/P/Nwzywls96NSBQunqOkajBSB99nADF7O
+13zBHgl2PxoftgdZcJWTcma4l6NePYHKyvjmBVTUL7Hka+lOtzI8Kglj1RcDyA+j
+PUBGMNXHPAp8PJp4aqyUhh3WfzWDHDnwm0MY3KlNzujK07kcPhFyE7qPLVETMgyn
+4BDFt7iUifPgR9DdYe80itbOoA8i5n9V5IRaaugWobPO0m0n4Ap3C+9yv/TxtZkg
+f8IcW+JZNO1IvJUtWilQmknf9YnK3df80xYwI/SUtMWtr5fWSm+h0v1lDQ4brdu8
+kWvRlbCl1gEZ74o25H57TwilFglQPFMMcpHTJpJ5xRe1LjwrhxvzeSeCbulxYw0u
+laVl/mrRcCMsI1sk5ql4SBpprMmKg4W1HfS4/V0AVKFDAaPsgeyiFyeqb8LAjBMP
+Lb5pVjwC5ehQffE9zHrYwuclDhSj5xIBebgwbN5oI+NkwyBObQMWB09i6Wz7tw0s
+WtcI+TwVTNjfCGgPCiFmnng9uw4g7pscGhyOa8Hk7uEVRHBs+19somQzs55S1slZ
+cO4kxef9oQ7hC9mvJ8rU
+=iNE0
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__28_Jun_2012_00_29_25_+1000_B5cCt=U9x.qqqF_5--
