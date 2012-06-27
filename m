@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab2F0UAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 16:00:44 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20130 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762Ab2F0UAn (ORCPT
+	id S1757488Ab2F0UBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 16:01:05 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51428 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab2F0UBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 16:00:43 -0400
-Date: Wed, 27 Jun 2012 22:00:41 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: devel@driverdev.osuosl.org, Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        trivial@kernel.org, Forest Bond <forest@alittletooquiet.net>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] staging: vt6656: int.h: Fix indentation and spacing
-In-Reply-To: <alpine.LNX.2.00.1206272158130.6908@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1206272200200.6908@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1206242209570.30361@swampdragon.chaosbits.net> <20120625174709.GA3789@kroah.com> <alpine.LNX.2.00.1206272158130.6908@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 27 Jun 2012 16:01:03 -0400
+Date: Wed, 27 Jun 2012 21:01:00 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: UEFI Secure boot using qemu-kvm
+Message-ID: <20120627200100.GA10300@srcf.ucam.org>
+References: <1340818445.3175.73.camel@dabdike.int.hansenpartnership.com>
+ <20120627181503.GA7775@srcf.ucam.org>
+ <1340825704.3175.88.camel@dabdike.int.hansenpartnership.com>
+ <20120627193806.GA10091@srcf.ucam.org>
+ <1340826809.3175.89.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1340826809.3175.89.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use tabs for indentation and once space between variable types and
-variable name.
+On Wed, Jun 27, 2012 at 08:53:29PM +0100, James Bottomley wrote:
+> /usr/include/efi/x86_64/efibind.h:88:1: error: unknown type name
+> ‘uint64_t’
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/vt6656/int.h | 42 +++++++++++++++++++++---------------------
- 1 file changed, 21 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/staging/vt6656/int.h b/drivers/staging/vt6656/int.h
-index 3098630..3734e2c 100644
---- a/drivers/staging/vt6656/int.h
-+++ b/drivers/staging/vt6656/int.h
-@@ -36,27 +36,27 @@
- /*---------------------  Export Definitions -------------------------*/
- #pragma pack(1)
- typedef struct tagSINTData {
--    BYTE    byTSR0;
--    BYTE    byPkt0;
--    WORD    wTime0;
--    BYTE    byTSR1;
--    BYTE    byPkt1;
--    WORD    wTime1;
--    BYTE    byTSR2;
--    BYTE    byPkt2;
--    WORD    wTime2;
--    BYTE    byTSR3;
--    BYTE    byPkt3;
--    WORD    wTime3;
--    DWORD   dwLoTSF;
--    DWORD   dwHiTSF;
--    BYTE    byISR0;
--    BYTE    byISR1;
--    BYTE    byRTSSuccess;
--    BYTE    byRTSFail;
--    BYTE    byACKFail;
--    BYTE    byFCSErr;
--    BYTE    abySW[2];
-+	BYTE byTSR0;
-+	BYTE byPkt0;
-+	WORD wTime0;
-+	BYTE byTSR1;
-+	BYTE byPkt1;
-+	WORD wTime1;
-+	BYTE byTSR2;
-+	BYTE byPkt2;
-+	WORD wTime2;
-+	BYTE byTSR3;
-+	BYTE byPkt3;
-+	WORD wTime3;
-+	DWORD dwLoTSF;
-+	DWORD dwHiTSF;
-+	BYTE byISR0;
-+	BYTE byISR1;
-+	BYTE byRTSSuccess;
-+	BYTE byRTSFail;
-+	BYTE byACKFail;
-+	BYTE byFCSErr;
-+	BYTE abySW[2];
- } __attribute__ ((__packed__))
- SINTData, *PSINTData;
- 
--- 
-1.7.11.1
-
+Ok, so some difference in toolchains is pulling in stdint.h for me but 
+not for you.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Matthew Garrett | mjg59@srcf.ucam.org
