@@ -1,84 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab2F0ReM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 13:34:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39906 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758287Ab2F0ReJ (ORCPT
+	id S1758459Ab2F0Ren (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 13:34:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43634 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757735Ab2F0Rdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 13:34:09 -0400
-Message-ID: <1340818445.3175.73.camel@dabdike.int.hansenpartnership.com>
-Subject: UEFI Secure boot using qemu-kvm
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Date: Wed, 27 Jun 2012 18:34:05 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 27 Jun 2012 13:33:47 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        afleming@gmail.com, David Daney <david.daney@cavium.com>
+Subject: [PATCH v2 4/4] netdev/phy: Add driver for Broadcom BCM87XX 10G Ethernet PHYs
+Date: Wed, 27 Jun 2012 10:33:38 -0700
+Message-Id: <1340818418-10382-5-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1340818418-10382-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1340818418-10382-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Everyone,
+From: David Daney <david.daney@cavium.com>
 
-The purpose of this email is to widen the pool of people who are playing
-with UEFI Secure boot.  The Linux Foundation Technical Advisory Board
-have been looking into this because it turns out to be rather difficult
-to lay your hands on real UEFI Secure Boot enabled hardware.  Many
-thanks are due to the Intel Tianocore project which recently added the
-secure boot facility to their UEFI rom images.
+Add a driver for BCM8706 and BCM8727 devices.  These are a 10Gig PHYs
+which use MII_ADDR_C45 addressing.  They are always 10G full duplex, so
+there is no autonegotiation.  All we do is report link state and send
+interrupts when it changes.
 
-What I have done:
+If the PHY has a device tree of_node associated with it, the
+"broadcom,c45-reg-init" property is used to supply register
+initialization values when config_init() is called.
 
-I've built the tianocore boot system (along with a README describing how
-to use it) and placed it in the opensuse build system so you can
-download it (the OVMF package) from:
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ .../devicetree/bindings/net/broadcom-bcm87xx.txt   |   29 +++
+ drivers/net/phy/Kconfig                            |    5 +
+ drivers/net/phy/Makefile                           |    1 +
+ drivers/net/phy/bcm87xx.c                          |  238 ++++++++++++++++++++
+ 4 files changed, 273 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
+ create mode 100644 drivers/net/phy/bcm87xx.c
 
-http://download.opensuse.org/repositories/home:/jejb1:/UEFI/openSUSE_12.1/
-
-(it has no OS depends, so the rpm should be installable on almost any
-distro ... including debian via alien).  Also in this repository is
-Jeremy Kerr's sbsigntools which can be used to sign efi binaries.
-
-While doing all of this, I discovered a bug in the gnu-efi environment
-we usually use to build efi binaries on Linux (the fix is to the loader
-script).  I've got an example of how to use the fixed script and a
-builder for a LockDown.efi binary that will take a secure boot platform
-in setup mode and install a Platform Key and Key Exchange Key and enable
-secure boot (if you type make, it will build the PK and KEK
-certificates, plus roll them into the binary).
-
-http://git.kernel.org/?p=linux/kernel/git/jejb/efitools.git;a=summary
-
-I'll probably add other useful efi utilities as the project progresses.
-
-I should note that currently Jeremy's efi signing tools only really do
-x86_64 binaries, so the whole project is based on that architecture.
-
-The current state is that I've managed to lock down the secure boot
-virtual platform with my own PK and KEK and verified that I can generate
-signed efi binaries that will run on it (and that it will refuse to run
-unsigned efi binaries).  Finally I've demonstrated that I can sign
-elilo.efi (this has to be built specially because of the bug in gnu-efi)
-and have it boot an unsigned linux kernel when the platform is in secure
-mode (I've booted up to an initrd root prompt).
-
-I'm releasing this now because interest in UEFI Secure Boot is rising,
-particularly amongst the Linux Distributions which don't have access to
-UEFI secure boot hardware, so having a virtual platform should allow
-them to experiment with coming up with their own solutions.
-
-Please remember, though, that all this is very alpha.  The Tianocore
-firmware that does secure boot is only a few weeks old, and the
-sbsigning tools weren't really working up until yesterday, so this is
-very far from rock solid.
-
-James
-
-PS if you don't understand terms like Platform Key, or Setup Mode in the
-above, please ask google for help.  Secure boot is very technical, but
-there have been some good blog posts explaining the basics.
-
+diff --git a/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt b/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
+new file mode 100644
+index 0000000..7c86d5e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
+@@ -0,0 +1,29 @@
++The Broadcom BCM87XX devices are a family of 10G Ethernet PHYs.  They
++have these bindings in addition to the standard PHY bindings.
++
++Compatible: Should contain "broadcom,bcm8706" or "broadcom,bcm8727" and
++            "ethernet-phy-ieee802.3-c45"
++
++Optional Properties:
++
++- broadcom,c45-reg-init : one of more sets of 4 cells.  The first cell
++  is the MDIO Manageable Device (MMD) address, the second a register
++  address within the MMD, the third cell contains a mask to be ANDed
++  with the existing register value, and the fourth cell is ORed with
++  he result to yield the new register value.  If the third cell has a
++  value of zero, no read of the existing value is performed.
++
++Example:
++
++	ethernet-phy@5 {
++		reg = <5>;
++		compatible = "broadcom,bcm8706", "ethernet-phy-ieee802.3-c45";
++		interrupt-parent = <&gpio>;
++		interrupts = <12 8>; /* Pin 12, active low */
++		/*
++		 * Set PMD Digital Control Register for
++		 * GPIO[1] Tx/Rx
++		 * GPIO[0] R64 Sync Acquired
++		 */
++		broadcom,c45-reg-init = <1 0xc808 0xff8f 0x70>;
++	};
+diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
+index 944cdfb..3090dc6 100644
+--- a/drivers/net/phy/Kconfig
++++ b/drivers/net/phy/Kconfig
+@@ -67,6 +67,11 @@ config BCM63XX_PHY
+ 	---help---
+ 	  Currently supports the 6348 and 6358 PHYs.
+ 
++config BCM87XX_PHY
++	tristate "Driver for Broadcom BCM8706 and BCM8727 PHYs"
++	help
++	  Currently supports the BCM8706 and BCM8727 10G Ethernet PHYs.
++
+ config ICPLUS_PHY
+ 	tristate "Drivers for ICPlus PHYs"
+ 	---help---
+diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
+index f51af68..6d2dc6c 100644
+--- a/drivers/net/phy/Makefile
++++ b/drivers/net/phy/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_SMSC_PHY)		+= smsc.o
+ obj-$(CONFIG_VITESSE_PHY)	+= vitesse.o
+ obj-$(CONFIG_BROADCOM_PHY)	+= broadcom.o
+ obj-$(CONFIG_BCM63XX_PHY)	+= bcm63xx.o
++obj-$(CONFIG_BCM87XX_PHY)	+= bcm87xx.o
+ obj-$(CONFIG_ICPLUS_PHY)	+= icplus.o
+ obj-$(CONFIG_REALTEK_PHY)	+= realtek.o
+ obj-$(CONFIG_LSI_ET1011C_PHY)	+= et1011c.o
+diff --git a/drivers/net/phy/bcm87xx.c b/drivers/net/phy/bcm87xx.c
+new file mode 100644
+index 0000000..f5f0562
+--- /dev/null
++++ b/drivers/net/phy/bcm87xx.c
+@@ -0,0 +1,238 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2011 - 2012 Cavium, Inc.
++ */
++
++#include <linux/module.h>
++#include <linux/phy.h>
++#include <linux/of.h>
++
++#define PHY_ID_BCM8706	0x0143bdc1
++#define PHY_ID_BCM8727	0x0143bff0
++
++#define BCM87XX_PMD_RX_SIGNAL_DETECT	(MII_ADDR_C45 | 0x1000a)
++#define BCM87XX_10GBASER_PCS_STATUS	(MII_ADDR_C45 | 0x30020)
++#define BCM87XX_XGXS_LANE_STATUS	(MII_ADDR_C45 | 0x40018)
++
++#define BCM87XX_LASI_CONTROL (MII_ADDR_C45 | 0x39002)
++#define BCM87XX_LASI_STATUS (MII_ADDR_C45 | 0x39005)
++
++#if IS_ENABLED(CONFIG_OF_MDIO)
++/* Set and/or override some configuration registers based on the
++ * marvell,reg-init property stored in the of_node for the phydev.
++ *
++ * broadcom,c45-reg-init = <devid reg mask value>,...;
++ *
++ * There may be one or more sets of <devid reg mask value>:
++ *
++ * devid: which sub-device to use.
++ * reg: the register.
++ * mask: if non-zero, ANDed with existing register value.
++ * value: ORed with the masked value and written to the regiser.
++ *
++ */
++static int bcm87xx_of_reg_init(struct phy_device *phydev)
++{
++	const __be32 *paddr;
++	const __be32 *paddr_end;
++	int len, ret;
++
++	if (!phydev->dev.of_node)
++		return 0;
++
++	paddr = of_get_property(phydev->dev.of_node,
++				"broadcom,c45-reg-init", &len);
++	if (!paddr)
++		return 0;
++
++	paddr_end = paddr + (len /= sizeof(*paddr));
++
++	ret = 0;
++
++	while (paddr + 3 < paddr_end) {
++		u16 devid	= be32_to_cpup(paddr++);
++		u16 reg		= be32_to_cpup(paddr++);
++		u16 mask	= be32_to_cpup(paddr++);
++		u16 val_bits	= be32_to_cpup(paddr++);
++		int val;
++		u32 regnum = MII_ADDR_C45 | (devid << 16) | reg;
++		val = 0;
++		if (mask) {
++			val = phy_read(phydev, regnum);
++			if (val < 0) {
++				ret = val;
++				goto err;
++			}
++			val &= mask;
++		}
++		val |= val_bits;
++
++		ret = phy_write(phydev, regnum, val);
++		if (ret < 0)
++			goto err;
++	}
++err:
++	return ret;
++}
++#else
++static int bcm87xx_of_reg_init(struct phy_device *phydev)
++{
++	return 0;
++}
++#endif /* CONFIG_OF_MDIO */
++
++static int bcm87xx_config_init(struct phy_device *phydev)
++{
++	phydev->supported = SUPPORTED_10000baseR_FEC;
++	phydev->advertising = ADVERTISED_10000baseR_FEC;
++	phydev->state = PHY_NOLINK;
++
++	bcm87xx_of_reg_init(phydev);
++
++	return 0;
++}
++
++static int bcm87xx_config_aneg(struct phy_device *phydev)
++{
++	return -EINVAL;
++}
++
++static int bcm87xx_read_status(struct phy_device *phydev)
++{
++	int rx_signal_detect;
++	int pcs_status;
++	int xgxs_lane_status;
++
++	rx_signal_detect = phy_read(phydev, BCM87XX_PMD_RX_SIGNAL_DETECT);
++	if (rx_signal_detect < 0)
++		return rx_signal_detect;
++
++	if ((rx_signal_detect & 1) == 0)
++		goto no_link;
++
++	pcs_status = phy_read(phydev, BCM87XX_10GBASER_PCS_STATUS);
++	if (pcs_status < 0)
++		return pcs_status;
++
++	if ((pcs_status & 1) == 0)
++		goto no_link;
++
++	xgxs_lane_status = phy_read(phydev, BCM87XX_XGXS_LANE_STATUS);
++	if (xgxs_lane_status < 0)
++		return xgxs_lane_status;
++
++	if ((xgxs_lane_status & 0x1000) == 0)
++		goto no_link;
++
++	phydev->speed = 10000;
++	phydev->link = 1;
++	phydev->duplex = 1;
++	return 0;
++
++no_link:
++	phydev->link = 0;
++	return 0;
++}
++
++static int bcm87xx_config_intr(struct phy_device *phydev)
++{
++	int reg, err;
++
++	reg = phy_read(phydev, BCM87XX_LASI_CONTROL);
++
++	if (reg < 0)
++		return reg;
++
++	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
++		reg |= 1;
++	else
++		reg &= ~1;
++
++	err = phy_write(phydev, BCM87XX_LASI_CONTROL, reg);
++	return err;
++}
++
++static int bcm87xx_did_interrupt(struct phy_device *phydev)
++{
++	int reg;
++
++	reg = phy_read(phydev, BCM87XX_LASI_STATUS);
++
++	if (reg < 0) {
++		dev_err(&phydev->dev,
++			"Error: Read of BCM87XX_LASI_STATUS failed: %d\n", reg);
++		return 0;
++	}
++	return (reg & 1) != 0;
++}
++
++static int bcm87xx_ack_interrupt(struct phy_device *phydev)
++{
++	/* Reading the LASI status clears it. */
++	bcm87xx_did_interrupt(phydev);
++	return 0;
++}
++
++static int bcm8706_match_phy_device(struct phy_device *phydev)
++{
++	return phydev->c45_ids.device_ids[4] == PHY_ID_BCM8706;
++}
++
++static int bcm8727_match_phy_device(struct phy_device *phydev)
++{
++	return phydev->c45_ids.device_ids[4] == PHY_ID_BCM8727;
++}
++
++static struct phy_driver bcm8706_driver = {
++	.phy_id		= PHY_ID_BCM8706,
++	.phy_id_mask	= 0xffffffff,
++	.name		= "Broadcom BCM8706",
++	.flags		= PHY_HAS_INTERRUPT,
++	.config_init	= bcm87xx_config_init,
++	.config_aneg	= bcm87xx_config_aneg,
++	.read_status	= bcm87xx_read_status,
++	.ack_interrupt	= bcm87xx_ack_interrupt,
++	.config_intr	= bcm87xx_config_intr,
++	.did_interrupt	= bcm87xx_did_interrupt,
++	.match_phy_device = bcm8706_match_phy_device,
++	.driver		= { .owner = THIS_MODULE },
++};
++
++static struct phy_driver bcm8727_driver = {
++	.phy_id		= PHY_ID_BCM8727,
++	.phy_id_mask	= 0xffffffff,
++	.name		= "Broadcom BCM8727",
++	.flags		= PHY_HAS_INTERRUPT,
++	.config_init	= bcm87xx_config_init,
++	.config_aneg	= bcm87xx_config_aneg,
++	.read_status	= bcm87xx_read_status,
++	.ack_interrupt	= bcm87xx_ack_interrupt,
++	.config_intr	= bcm87xx_config_intr,
++	.did_interrupt	= bcm87xx_did_interrupt,
++	.match_phy_device = bcm8727_match_phy_device,
++	.driver		= { .owner = THIS_MODULE },
++};
++
++static int __init bcm87xx_init(void)
++{
++	int ret;
++
++	ret = phy_driver_register(&bcm8706_driver);
++	if (ret)
++		goto err;
++
++	ret = phy_driver_register(&bcm8727_driver);
++err:
++	return ret;
++}
++module_init(bcm87xx_init);
++
++static void __exit bcm87xx_exit(void)
++{
++	phy_driver_unregister(&bcm8706_driver);
++	phy_driver_unregister(&bcm8727_driver);
++}
++module_exit(bcm87xx_exit);
+-- 
+1.7.2.3
 
