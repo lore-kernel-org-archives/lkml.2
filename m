@@ -1,36 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab2F0NDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 09:03:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50327 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab2F0NDb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 09:03:31 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: linux-media <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Subject: Re: [GIT PULL FOR v3.5] Move sta2x11_vip to staging
-Date: Wed, 27 Jun 2012 15:07:03 +0200
-Message-ID: <7065995.lg2ecmA8tn@harkonnen>
-User-Agent: KMail/4.8.3 (Linux/3.4.3-1.fc17.x86_64; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <201206271117.56365.hverkuil@xs4all.nl>
-References: <201205260939.58100.hverkuil@xs4all.nl> <1444585.tu7qHxh2Mp@harkonnen> <201206271117.56365.hverkuil@xs4all.nl>
+	id S1754040Ab2F0NDz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 09:03:55 -0400
+Received: from www.piware.de ([213.9.93.70]:35318 "EHLO mail.piware.de"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751001Ab2F0NDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 09:03:54 -0400
+Date: Wed, 27 Jun 2012 15:03:49 +0200
+From: Martin Pitt <martin.pitt@ubuntu.com>
+To: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Zeuthen <zeuthen@gmail.com>,
+        Kay Sievers <kay@vrfy.org>
+Subject: [PATCH v2 1/1] [SCSI] scsi_debug: Add "removable" parameter
+Message-ID: <20120627130349.GB3307@piware.de>
+References: <20120605072528.GE3043@piware.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120605072528.GE3043@piware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Federico,
-> 
-> Any news on this?
+Add "removable" module parameter to set the "removable" attribute of any
+subsequently created debug block device. It is a writable driver option, so
+that you can switch between removable and "fixed" media block devices in
+between the add_host calls.
 
-Not at the moment. I'll ask for detail :)
+This is useful for being able to test the different behaviour/required
+privileges in e. g. the udisks test suite.
+
+Signed-off-by: Martin Pitt <martin.pitt@ubuntu.com>
+Acked-By: David Zeuthen <zeuthen@gmail.com>
+---
+ drivers/scsi/scsi_debug.c |   30 +++++++++++++++++++++++++++---
+ 1 files changed, 27 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 182d5a5..57fbd5a 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -109,6 +109,7 @@ static const char * scsi_debug_version_date = "20100324";
+ #define DEF_OPT_BLKS 64
+ #define DEF_PHYSBLK_EXP 0
+ #define DEF_PTYPE   0
++#define DEF_REMOVABLE false
+ #define DEF_SCSI_LEVEL   5    /* INQUIRY, byte2 [5->SPC-3] */
+ #define DEF_SECTOR_SIZE 512
+ #define DEF_UNMAP_ALIGNMENT 0
+@@ -193,11 +194,11 @@ static unsigned int scsi_debug_unmap_granularity = DEF_UNMAP_GRANULARITY;
+ static unsigned int scsi_debug_unmap_max_blocks = DEF_UNMAP_MAX_BLOCKS;
+ static unsigned int scsi_debug_unmap_max_desc = DEF_UNMAP_MAX_DESC;
+ static unsigned int scsi_debug_write_same_length = DEF_WRITESAME_LENGTH;
++static bool scsi_debug_removable = DEF_REMOVABLE;
+ 
+ static int scsi_debug_cmnd_count = 0;
+ 
+ #define DEV_READONLY(TGT)      (0)
+-#define DEV_REMOVEABLE(TGT)    (0)
+ 
+ static unsigned int sdebug_store_sectors;
+ static sector_t sdebug_capacity;	/* in sectors */
+@@ -919,7 +920,7 @@ static int resp_inquiry(struct scsi_cmnd * scp, int target,
+ 		return ret;
+ 	}
+ 	/* drops through here for a standard inquiry */
+-	arr[1] = DEV_REMOVEABLE(target) ? 0x80 : 0;	/* Removable disk */
++	arr[1] = scsi_debug_removable ? 0x80 : 0;	/* Removable disk */
+ 	arr[2] = scsi_debug_scsi_level;
+ 	arr[3] = 2;    /* response_data_format==2 */
+ 	arr[4] = SDEBUG_LONG_INQ_SZ - 5;
+@@ -1211,7 +1212,7 @@ static int resp_format_pg(unsigned char * p, int pcontrol, int target)
+ 	p[11] = sdebug_sectors_per & 0xff;
+ 	p[12] = (scsi_debug_sector_size >> 8) & 0xff;
+ 	p[13] = scsi_debug_sector_size & 0xff;
+-	if (DEV_REMOVEABLE(target))
++	if (scsi_debug_removable)
+ 		p[20] |= 0x20; /* should agree with INQUIRY */
+ 	if (1 == pcontrol)
+ 		memset(p + 2, 0, sizeof(format_pg) - 2);
+@@ -2754,6 +2755,7 @@ module_param_named(opt_blks, scsi_debug_opt_blks, int, S_IRUGO);
+ module_param_named(opts, scsi_debug_opts, int, S_IRUGO | S_IWUSR);
+ module_param_named(physblk_exp, scsi_debug_physblk_exp, int, S_IRUGO);
+ module_param_named(ptype, scsi_debug_ptype, int, S_IRUGO | S_IWUSR);
++module_param_named(removable, scsi_debug_removable, bool, S_IRUGO | S_IWUSR);
+ module_param_named(scsi_level, scsi_debug_scsi_level, int, S_IRUGO);
+ module_param_named(sector_size, scsi_debug_sector_size, int, S_IRUGO);
+ module_param_named(unmap_alignment, scsi_debug_unmap_alignment, int, S_IRUGO);
+@@ -2796,6 +2798,7 @@ MODULE_PARM_DESC(opt_blks, "optimal transfer length in block (def=64)");
+ MODULE_PARM_DESC(opts, "1->noise, 2->medium_err, 4->timeout, 8->recovered_err... (def=0)");
+ MODULE_PARM_DESC(physblk_exp, "physical block exponent (def=0)");
+ MODULE_PARM_DESC(ptype, "SCSI peripheral type(def=0[disk])");
++MODULE_PARM_DESC(removable, "claim to have removable media (def=0)");
+ MODULE_PARM_DESC(scsi_level, "SCSI level to simulate(def=5[SPC-3])");
+ MODULE_PARM_DESC(sector_size, "logical block size in bytes (def=512)");
+ MODULE_PARM_DESC(unmap_alignment, "lowest aligned thin provisioning lba (def=0)");
+@@ -3205,6 +3208,25 @@ static ssize_t sdebug_map_show(struct device_driver *ddp, char *buf)
+ }
+ DRIVER_ATTR(map, S_IRUGO, sdebug_map_show, NULL);
+ 
++static ssize_t sdebug_removable_show(struct device_driver *ddp,
++				     char *buf)
++{
++	return scnprintf(buf, PAGE_SIZE, "%d\n", scsi_debug_removable ? 1 : 0);
++}
++static ssize_t sdebug_removable_store(struct device_driver *ddp,
++				      const char *buf, size_t count)
++{
++	int n;
++
++	if ((count > 0) && (1 == sscanf(buf, "%d", &n)) && (n >= 0)) {
++		scsi_debug_removable = (n > 0);
++		return count;
++	}
++	return -EINVAL;
++}
++DRIVER_ATTR(removable, S_IRUGO | S_IWUSR, sdebug_removable_show,
++	    sdebug_removable_store);
++
+ 
+ /* Note: The following function creates attribute files in the
+    /sys/bus/pseudo/drivers/scsi_debug directory. The advantage of these
+@@ -3230,6 +3252,7 @@ static int do_create_driverfs_files(void)
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_num_tgts);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_ptype);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_opts);
++	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_removable);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_scsi_level);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_virtual_gb);
+ 	ret |= driver_create_file(&sdebug_driverfs_driver, &driver_attr_vpd_use_hostno);
+@@ -3255,6 +3278,7 @@ static void do_remove_driverfs_files(void)
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_scsi_level);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_opts);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_ptype);
++	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_removable);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_num_tgts);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_num_parts);
+ 	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_no_uld);
+-- 
+1.7.2.5
 
 -- 
-Federico Vaga
+Martin Pitt                        | http://www.piware.de
+Ubuntu Developer (www.ubuntu.com)  | Debian Developer  (www.debian.org)
