@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab2F0SFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:05:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4651 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757719Ab2F0SFy (ORCPT
+	id S1758380Ab2F0SGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:06:51 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:37568 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754547Ab2F0SGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:05:54 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XOt6boVe9ZQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=n9gTl2mg8W56Y4s2eZsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340820352.16702.41.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] ring-buffer: fix uninitialized read_stamp
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com
-Date: Wed, 27 Jun 2012 14:05:52 -0400
-In-Reply-To: <CAJL_eks3n3J3nkfYJLx=hbQ36utjodByr=z-q=s-uwWpvWmDXg@mail.gmail.com>
-References: <CAJL_eku9byV+Uk-5boR52HLEO0D-++2h_y=PeaaQG_PrCuALhQ@mail.gmail.com>
-	 <1340060577-9112-1-git-send-email-dhsharp@google.com>
-	 <1340293617.27036.177.camel@gandalf.stny.rr.com>
-	 <CAJL_ekt-iVgh-GG_PoY_eqobgdUGf_L4TH6zmVa4D9oBgohCsA@mail.gmail.com>
-	 <1340407900.27036.275.camel@gandalf.stny.rr.com>
-	 <CAJL_eksV6R2Je+qoBYAtvZ6pSb8d6HdNiBic7AH0TG3u2R0FzQ@mail.gmail.com>
-	 <CAJL_eksSXfq4RVZ_rHagpgex96Jq=QkpiW93hD7M5xoYscq2jQ@mail.gmail.com>
-	 <1340801169.16702.9.camel@gandalf.stny.rr.com>
-	 <CAJL_eks3n3J3nkfYJLx=hbQ36utjodByr=z-q=s-uwWpvWmDXg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 27 Jun 2012 14:06:49 -0400
+Date: Wed, 27 Jun 2012 11:06:35 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Rajendra Nayak <rnayak@ti.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        Viresh Kumar <viresh.linux@gmail.com>
+Subject: Re: [PATCH v2] clk: Add support for rate table based dividers
+Message-ID: <20120627180635.GH22766@gmail.com>
+References: <1340794893-20869-1-git-send-email-rnayak@ti.com>
+ <20120627162851.GT1623@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627162851.GT1623@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-27 at 11:00 -0700, David Sharp wrote:
+On 20120627-18:28, Sascha Hauer wrote:
+> On Wed, Jun 27, 2012 at 04:31:33PM +0530, Rajendra Nayak wrote:
+> > Some divider clks do not have any obvious relationship
+> > between the divider and the value programmed in the
+> > register. For instance, say a value of 1 could signify divide
+> > by 6 and a value of 2 could signify divide by 4 etc.
+> > Also there are dividers where not all values possible
+> > based on the bitfield width are valid. For instance
+> > a 3 bit wide bitfield can be used to program a value
+> > from 0 to 7. However its possible that only 0 to 4
+> > are valid values.
+> > 
+> > All these cases need the platform code to pass a simple
+> > table of divider/value tuple, so the framework knows
+> > the exact value to be written based on the divider
+> > calculation and can also do better error checking.
+> > 
+> > This patch adds support for such rate table based
+> > dividers.
+> > 
+> > Also since this means adding a new parameter to the
+> > clk_register_divider(), update all existing users of
+> > it.
+> 
+> I'm not sure whether we should overload the divider code with another
+> type of divider. Maybe it would be better to add a new
+> clk-divider-table.c for this? Just an idea, the result may or may not be
+> better.
+> 
 
-> I just meant, do you want me to send you a version of your patch with
-> my description (I'll update it, obviously), or do it yourself.
+Sascha,
 
-I'll do it. Although, I think this may just go for 3.6 and not 3.5, as
-the bug is really minor.
+I had the same concerns originally, but the code reuse in clk-divider.c
+is pretty good.  Before this patch I have it about 200 lines, most of
+which would have to be reproduced for a separate clk-rate-table.c.  So I
+think marginally added complexity is OK compared to code duplication
+(and duplicate bugfixes, etc).
 
-> I have always disliked that page of very old data, so I'm really happy
-> that this will get rid of it. As I recall, you once claimed this was a
-> "feature". :)
+Rajendra,
 
-Of course it was a feature. But we'll just act like Gnome and remove
-it ;-)
+After thinking about it a bit more I still think a separate
+clk_register_divider_table is needed.  Primarily this would reduce
+needless churn in having to update all existing users of
+clk_register_divider.  I also think that clearly separating the two
+functions will make it a bit easier on folks trying to port their clocks
+trees over.
 
--- Steve
+Unless there is a technical reason why having two registration functions
+is a bad idea, can you send a V4 with that new registration function?
+I'll take it into clk-next.
 
+Thanks,
+Mike
 
+> Sascha
+> 
+> 
+> -- 
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
