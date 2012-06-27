@@ -1,79 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab2F0QCB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 12:02:01 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12647 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab2F0QB6 (ORCPT
+	id S1754766Ab2F0QCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 12:02:36 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63312 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab2F0QCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 12:01:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 27 Jun 2012 09:01:45 -0700
-Message-ID: <4FEB2DD8.4090904@nvidia.com>
-Date: Wed, 27 Jun 2012 21:29:20 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 27 Jun 2012 12:02:33 -0400
+Date: Wed, 27 Jun 2012 17:02:20 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: "Kim, Jong-Sung" <neidhard.kim@lge.com>
+Cc: "'Minchan Kim'" <minchan@kernel.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Nicolas Pitre'" <nico@linaro.org>,
+        "'Catalin Marinas'" <catalin.marinas@arm.com>,
+        "'Chanho Min'" <chanho.min@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] [RESEND] arm: limit memblock base address for
+ early_pte_alloc
+Message-ID: <20120627160220.GA2310@linaro.org>
+References: <1338880312-17561-1-git-send-email-minchan@kernel.org>
+ <025701cd457e$d5065410$7f12fc30$@lge.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: Re: [PATCH] i2c: tegra: use clk_disable_unprepare in place of clk_disable
-References: <1340196960-3002-1-git-send-email-ldewangan@nvidia.com> <4FE1F9A0.6080200@wwwdotorg.org> <4FE1F9D6.6090802@wwwdotorg.org> <4FE83374.6090608@nvidia.com> <4FE889D6.4030500@wwwdotorg.org> <4FE9564C.4010502@nvidia.com> <4FE9E338.6090601@wwwdotorg.org>
-In-Reply-To: <4FE9E338.6090601@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <025701cd457e$d5065410$7f12fc30$@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 June 2012 09:58 PM, Stephen Warren wrote:
-> On 06/26/2012 12:27 AM, Laxman Dewangan wrote:
->> On Monday 25 June 2012 09:25 PM, Stephen Warren wrote:
->>> On 06/25/2012 03:46 AM, Laxman Dewangan wrote:
->>>> Stephen,
->>>>
->>>> On Wednesday 20 June 2012 09:57 PM, Stephen Warren wrote:
->>>>> On 06/20/2012 10:26 AM, Stephen Warren wrote:
->>>>>> On 06/20/2012 06:56 AM, Laxman Dewangan wrote:
->>>>>>> Use clk_disable_unprepare() inplace of clk_disable().
->>>>>>> This was missed as part of moving clock enable/disable to
->>>>>>> prepare/unprepare for using the common clock framework.
->>>>> ...
->>>>>> I see no reason not to take the second patch in the series through the
->>>>>> I2C tree though.
->>>>> Uggh. Ignore that paragraph - the other patch was sent separately
->>>>> not as
->>>>> a series.
->>>> so are you taking care of this patch or do I need to send the patch
->>>> based on your tree in place of linux-next?
->>> Yes, this patch should be applied through the Tegra tree, since it will
->>> be a dependency of the common clock framework switchover there, which I
->>> hope to take place this kernel cycle.
->>>
->>> I did just attempt to apply this patch to the for-3.6/common-clk branch,
->>> but it doesn't apply:-( Could you please rebase and resend. Thanks.
->> Looked at your common_clk branch and the related code is not there.
->> The clk_disable() in the particular case is introduced by change
->> i2c: tegra: make all resource allocation through devm_*
->> which is not in your branch.
->>
->> Then later Prashant post the change as
->> i2c: tegra: Add clk_prepare/clk_unprepare
->> and it does not accounted for the above patch.
->>
->> So none of your local tree will have this issue.
-> OK. In that case, it's best if this patch goes through the I2C tree
-> since that's where the code is that it's modifying. This might not be
-> optimal for runtime git bisection depending on the order Linus ends up
-> merging things, but it's probably as good as we can do without
-> inter-twining the I2C and Tegra trees a lot.
+On Fri, Jun 08, 2012 at 10:58:50PM +0900, Kim, Jong-Sung wrote:
+> > From: Minchan Kim [mailto:minchan@kernel.org]
+> > Sent: Tuesday, June 05, 2012 4:12 PM
+> > 
+> > If we do arm_memblock_steal with a page which is not aligned with section
+> > size, panic can happen during boot by page fault in map_lowmem.
+> > 
+> > Detail:
+> > 
+> > 1) mdesc->reserve can steal a page which is allocated at 0x1ffff000 by
+> > memblock
+> >    which prefers tail pages of regions.
+> > 2) map_lowmem maps 0x00000000 - 0x1fe00000
+> > 3) map_lowmem try to map 0x1fe00000 but it's not aligned by section due to
+> 1.
+> > 4) calling alloc_init_pte allocates a new page for new pte by
+> memblock_alloc
+> > 5) allocated memory for pte is 0x1fffe000 -> it's not mapped yet.
+> > 6) memset(ptr, 0, sz) in early_alloc_aligned got PANICed!
+> 
+> May I suggest another simple approach? The first continuous couples of
+> sections are always safely section-mapped inside alloc_init_section funtion.
+> So, by limiting memblock_alloc to the end of the first continuous couples of
+> sections at the start of map_lowmem, map_lowmem can safely memblock_alloc &
+> memset even if we have one or more section-unaligned memory regions. The
+> limit can be extended back to arm_lowmem_limit after the map_lowmem is done.
 
+By a strange coincidence, I hit exactly the same problem today.
 
-Then it can go Wolfram's tree along with other patch
-  i2c: tegra: remove unused member variable.
+This approach looks nice and simple, but ...
 
-as some of previous i2c patches are in his tree.
+> 
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index e5dad60..edf1e2d 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -1094,6 +1094,11 @@ static void __init kmap_init(void)
+>  static void __init map_lowmem(void)
+>  {
+>  	struct memblock_region *reg;
+> +	phys_addr_t pmd_map_end;
+> +
+> +	pmd_map_end = (memblock.memory.regions[0].base +
+> +	               memblock.memory.regions[0].size) & PMD_MASK;
+
+What does memblock.memory.regions[0] actually refer to at this point?
+Just before map_lowmem(), memblock_dump_all() gives me this:
+
+[    0.000000] MEMBLOCK configuration:
+[    0.000000]  memory size = 0x1ff00000 reserved size = 0x6220a5
+[    0.000000]  memory.cnt  = 0x1
+[    0.000000]  memory[0x0]     [0x00000080000000-0x0000009fefffff], 0x1ff00000 bytes
+[    0.000000]  reserved.cnt  = 0x4
+[    0.000000]  reserved[0x0]   [0x00000080004000-0x00000080007fff], 0x4000 bytes
+[    0.000000]  reserved[0x1]   [0x00000080008200-0x00000080582c83], 0x57aa84 bytes
+[    0.000000]  reserved[0x2]   [0x000000807d4e78-0x000000807d6603], 0x178c bytes
+[    0.000000]  reserved[0x3]   [0x00000080d00000-0x00000080da1e94], 0xa1e95 bytes
+
+For me, it appears that this block just contains the initial region
+passed in ATAG_MEM or on the command line, with some reservations
+for swapper_pg_dir, the kernel text/data, device tree and initramfs.
+
+So far as I can tell, the only memory guaranteed to be mapped here
+is the kernel image: there may be no guarantee that there is any unused
+space in this region which could be used to allocate extra page tables.
+The rest appears during the execution of map_lowmem().
+
+Cheers
+---Dave
+
+> +	memblock_set_current_limit(pmd_map_end);
+>  
+>  	/* Map all the lowmem memory banks. */
+>  	for_each_memblock(memory, reg) {
+> @@ -1113,6 +1118,8 @@ static void __init map_lowmem(void)
+>  
+>  		create_mapping(&map);
+>  	}
+> +
+> +	memblock_set_current_limit(arm_lowmem_limit);
+>  }
+>  
+>  /*
+> @@ -1123,8 +1130,6 @@ void __init paging_init(struct machine_desc *mdesc)
+>  {
+>  	void *zero_page;
+>  
+> -	memblock_set_current_limit(arm_lowmem_limit);
+> -
+>  	build_mem_type_table();
+>  	prepare_page_table();
+>  	map_lowmem();
+> 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
