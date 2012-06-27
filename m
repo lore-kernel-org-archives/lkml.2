@@ -1,307 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2F0F2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 01:28:41 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44215 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab2F0F2j (ORCPT
+	id S1754812Ab2F0FdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 01:33:15 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57917 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab2F0FdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 01:28:39 -0400
-X-AuditID: 9c930179-b7cceae000004195-86-4fea9a05eb92
-Message-ID: <4FEA9A0D.4020000@kernel.org>
-Date: Wed, 27 Jun 2012 14:28:45 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 27 Jun 2012 01:33:14 -0400
+Date: Wed, 27 Jun 2012 07:33:07 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        tglx@linutronix.de, sbw@mit.edu
+Subject: Re: [GIT PULL rcu/urgent] Fix for RCU-related hang
+Message-ID: <20120627053307.GA14913@gmail.com>
+References: <20120625223940.GA17159@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.drivers.driver-project.devel,gmane.linux.kernel,gmane.linux.kernel.mm
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 2/3] zsmalloc: add generic path and remove x86 dependency
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-3-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1340640878-27536-3-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120625223940.GA17159@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 01:14 AM, Seth Jennings wrote:
 
-> This patch adds generic pages mapping methods that
-> work on all archs in the absence of support for
-> local_tlb_flush_kernel_range() advertised by the
-> arch through __HAVE_LOCAL_TLB_FLUSH_KERNEL_RANGE
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+> Hello, Ingo,
 > 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-
-
-Sorry for handling this issue recently.
-I like the patch.
-Some comment below.
-
-> ---
->  drivers/staging/zsmalloc/Kconfig         |    4 -
->  drivers/staging/zsmalloc/zsmalloc-main.c |  136 ++++++++++++++++++++++++------
->  drivers/staging/zsmalloc/zsmalloc_int.h  |    5 +-
->  3 files changed, 115 insertions(+), 30 deletions(-)
+> This series has a single patch that fixes a system hang that can occur
+> in perhaps unusual but very real circumstances.  This hang occurs
+> because of a very stupid bug of mine introduced in commit b1420f1c
+> (Make rcu_barrier() less disruptive) that can cause CPUs to miscount
+> RCU callbacks.  The sequence of events leading to the hang is as follows:
 > 
-> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> index a5ab720..9084565 100644
-> --- a/drivers/staging/zsmalloc/Kconfig
-> +++ b/drivers/staging/zsmalloc/Kconfig
-> @@ -1,9 +1,5 @@
->  config ZSMALLOC
->  	tristate "Memory allocator for compressed pages"
-> -	# X86 dependency is because of the use of __flush_tlb_one and set_pte
-> -	# in zsmalloc-main.c.
-> -	# TODO: convert these to portable functions
-> -	depends on X86
->  	default n
->  	help
->  	  zsmalloc is a slab-based memory allocator designed to store
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 10b0d60..14f04d8 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -470,28 +470,116 @@ static struct page *find_get_zspage(struct size_class *class)
->  	return page;
->  }
->  
-> +#ifdef __HAVE_LOCAL_FLUSH_TLB_KERNEL_RANGE
+> 1.	A CPU miscounts its callbacks.
+> 2.	That CPU invokes all of its callbacks, so that its callback
+> 	list is empty, but the callback count is nonzero.
+> 3.	That CPU goes offline.  Because its callback list is empty,
+> 	RCU's CPU-hotplug CPU_DEAD notifiers leave both the list and
+> 	the count alone.  (In contrast, had the list been non-empty,
+> 	RCU's CPU_DEAD notifiers would have emptied the list and
+> 	zeroed the count.)
+> 4.	One of the remaining CPUs executes one of the rcu_barrier()
+> 	family of primitives.  The rcu_barrier() primitive notes
+> 	that the offline CPU has a non-zero count of callbacks, and
+> 	therefore hangs waiting for this count to reach zero.  The
+> 	theory behind the indefinite wait is that the only reason that
+> 	an offline CPU can have a non-zero number of RCU callbacks is
+> 	that the CPU's CPU_DEAD notifiers have not yet executed.
+> 	But they already have executed, so the offlined CPU's callback
+> 	count will remain non-zero until it is brought back online,
+> 	in other words, perhaps never.
+> 
+> However, this bug is likely to pass a combined rcutorture/CPU-hotplug
+> stress test because offlined CPUs tend to be brought back online
+> reasonably quickly.  For the rcutorture tests to fail, the system must be
+> in the state indicated by step #3 above at the time the "rmmod rcutorture"
+> executes.
+> 
+> The fix is simply to prevent the miscounting.
+> 
+> This change is available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
+> 
+>   								Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> Paul E. McKenney (1):
+>       rcu: Stop rcu_do_batch() from multiplexing the "count" variable
+> 
+>  kernel/rcutree.c |   14 +++++++-------
+>  1 files changed, 7 insertions(+), 7 deletions(-)
 
+Pulled, thanks Paul!
 
-As you already mentioned, __HAVE_ARCH_LOCAL_XXX
-
-> +static inline int zs_arch_cpu_up(struct mapping_area *area)
-
-
-Why should function's name represent arch dependent?
-IMHO, it would be better to use just zs_cpu_up.
-
-
-> +{
-> +	if (area->vm)
-> +		return 0;
-
-
-Just out of curiosity.
-When do we need above check?
-
-> +	area->vm = alloc_vm_area(PAGE_SIZE * 2, NULL);
-> +	if (!area->vm)
-> +		return -ENOMEM;
-> +	return 0;
-> +}
-> +
-> +static inline void zs_arch_cpu_down(struct mapping_area *area)
-
-
-Ditto.
-
-> +{
-> +	if (area->vm)
-> +		free_vm_area(area->vm);
-> +	area->vm = NULL;
-> +}
-> +
-> +static inline void zs_arch_map_object(struct mapping_area *area,
-> +				struct page *pages[2], int off, int size)
-> +{
-> +	BUG_ON(map_vm_area(area->vm, PAGE_KERNEL, &pages));
-
-
-I think we need some comment about why map_vm_area must not fail.
-I used below comment in my patch.
-+               /*
-+                * map_vm_area never fail because we already allocated
-+                * pages for page table in alloc_vm_area.
-+                */
-
-> +	area->vm_addr = area->vm->addr;
-> +}
-> +
-> +static inline void zs_arch_unmap_object(struct mapping_area *area,
-> +				struct page *pages[2], int off, int size)
-> +{
-> +	unsigned long addr = (unsigned long)area->vm_addr;
-> +	unsigned long end = addr + (PAGE_SIZE * 2);
-> +
-> +	flush_cache_vunmap(addr, end);
-> +	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
-> +	local_flush_tlb_kernel_range(addr, end);
-> +}
-> +#else
-> +static inline int zs_arch_cpu_up(struct mapping_area *area)
-> +{
-> +	if (area->vm_buf)
-> +		return 0;
-> +	area->vm_buf = (char *)__get_free_pages(GFP_KERNEL, 1);
-
-> +	if (!area->vm_buf)
-
-> +		return -ENOMEM;
-> +	return 0;
-> +}
-> +
-> +static inline void zs_arch_cpu_down(struct mapping_area *area)
-> +{
-> +	if (area->vm_buf)
-> +		free_pages((unsigned long)area->vm_buf, 1);
-> +	area->vm_buf = NULL;
-> +}
-> +
-> +static void zs_arch_map_object(struct mapping_area *area,
-> +				struct page *pages[2], int off, int size)
-
-
-How about just void __zs_map_object?
-Anyway, it's just preference and I am not strong against.
-
-> +{
-> +	int sizes[2];
-> +	char *buf = area->vm_buf + off;
-> +	void *addr;
-> +
-> +	sizes[0] = PAGE_SIZE - off;
-> +	sizes[1] = size - sizes[0];
-> +
-> +	/* copy object to temp buffer */
-> +	addr = kmap_atomic(pages[0]);
-> +	memcpy(buf, addr + off, sizes[0]);
-> +	kunmap_atomic(addr);
-> +	addr = kmap_atomic(pages[1]);
-> +	memcpy(buf + sizes[0], addr, sizes[1]);
-> +	kunmap_atomic(addr);
-> +	area->vm_addr = area->vm_buf;
-> +}
-> +
-> +static void zs_arch_unmap_object(struct mapping_area *area,
-> +				struct page *pages[2], int off, int size)
-> +{
-> +	int sizes[2];
-> +	char *buf = area->vm_buf + off;
-> +	void *addr;
-> +
-> +	sizes[0] = PAGE_SIZE - off;
-> +	sizes[1] = size - sizes[0];
-> +
-> +	/* copy temp buffer to obj*/
-> +	addr = kmap_atomic(pages[0]);
-> +	memcpy(addr + off, buf, sizes[0]);
-> +	kunmap_atomic(addr);
-> +	addr = kmap_atomic(pages[1]);
-> +	memcpy(addr, buf + sizes[0], sizes[1]);
-> +	kunmap_atomic(addr);
-> +}
-> +#endif
->  
->  static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
->  				void *pcpu)
->  {
-> -	int cpu = (long)pcpu;
-> +	int ret, cpu = (long)pcpu;
->  	struct mapping_area *area;
->  
->  	switch (action) {
->  	case CPU_UP_PREPARE:
->  		area = &per_cpu(zs_map_area, cpu);
-> -		if (area->vm)
-> -			break;
-> -		area->vm = alloc_vm_area(2 * PAGE_SIZE, area->vm_ptes);
-> -		if (!area->vm)
-> -			return notifier_from_errno(-ENOMEM);
-> +		ret = zs_arch_cpu_up(area);
-> +		if (ret)
-> +			return notifier_from_errno(ret);
->  		break;
->  	case CPU_DEAD:
->  	case CPU_UP_CANCELED:
->  		area = &per_cpu(zs_map_area, cpu);
-> -		if (area->vm)
-> -			free_vm_area(area->vm);
-> -		area->vm = NULL;
-> +		zs_arch_cpu_down(area);
->  		break;
->  	}
->  
-> @@ -716,19 +804,14 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle)
->  		area->vm_addr = kmap_atomic(page);
->  	} else {
->  		/* this object spans two pages */
-> -		struct page *nextp;
-> -
-> -		nextp = get_next_page(page);
-> -		BUG_ON(!nextp);
-> +		struct page *pages[2];
->  
-> +		pages[0] = page;
-> +		pages[1] = get_next_page(page);
-> +		BUG_ON(!pages[1]);
->  
-> -		set_pte(area->vm_ptes[0], mk_pte(page, PAGE_KERNEL));
-> -		set_pte(area->vm_ptes[1], mk_pte(nextp, PAGE_KERNEL));
-> -
-> -		/* We pre-allocated VM area so mapping can never fail */
-> -		area->vm_addr = area->vm->addr;
-> +		zs_arch_map_object(area, pages, off, class->size);
->  	}
-> -
->  	return area->vm_addr + off;
->  }
->  EXPORT_SYMBOL_GPL(zs_map_object);
-> @@ -751,13 +834,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
->  	off = obj_idx_to_offset(page, obj_idx, class->size);
->  
->  	area = &__get_cpu_var(zs_map_area);
-> -	if (off + class->size <= PAGE_SIZE) {
-> +	if (off + class->size <= PAGE_SIZE)
->  		kunmap_atomic(area->vm_addr);
-> -	} else {
-> -		set_pte(area->vm_ptes[0], __pte(0));
-> -		set_pte(area->vm_ptes[1], __pte(0));
-> -		__flush_tlb_one((unsigned long)area->vm_addr);
-> -		__flush_tlb_one((unsigned long)area->vm_addr + PAGE_SIZE);
-> +	else {
-> +		struct page *pages[2];
-> +
-> +		pages[0] = page;
-> +		pages[1] = get_next_page(page);
-> +		BUG_ON(!pages[1]);
-> +
-> +		zs_arch_unmap_object(area, pages, off, class->size);
->  	}
->  	put_cpu_var(zs_map_area);
->  }
-> diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
-> index 6fd32a9..8a6887e 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc_int.h
-> +++ b/drivers/staging/zsmalloc/zsmalloc_int.h
-> @@ -110,8 +110,11 @@ enum fullness_group {
->  static const int fullness_threshold_frac = 4;
->  
->  struct mapping_area {
-> +#ifdef __HAVE_LOCAL_FLUSH_TLB_KERNEL_RANGE
->  	struct vm_struct *vm;
-> -	pte_t *vm_ptes[2];
-> +#else
-> +	char *vm_buf;
-> +#endif
->  	char *vm_addr;
->  };
-
-
-Need comment about vm_buf and vm_addr.
-
-Thanks, Seth.
-
--- 
-Kind regards,
-Minchan Kim
+	Ingo
