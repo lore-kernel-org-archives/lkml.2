@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab2F0PU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:20:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab2F0PU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:20:26 -0400
-Date: Wed, 27 Jun 2012 18:20:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120627152029.GB21393@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
- <20120627050952.23698.37235.stgit@bling.home>
+	id S1757775Ab2F0PYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:24:11 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65372 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757691Ab2F0PYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 11:24:09 -0400
+Date: Wed, 27 Jun 2012 17:24:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, a.p.zijlstra@chello.nl,
+        mingo@elte.hu, paulus@samba.org, cjashfor@linux.vnet.ibm.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 03/23] perf: Add ability to attach user level registers
+ dump to sample
+Message-ID: <20120627152359.GI20638@somewhere.redhat.com>
+References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
+ <1340120894-9465-4-git-send-email-jolsa@redhat.com>
+ <20120627151059.GG20638@somewhere.redhat.com>
+ <CABPqkBTdL7rt4YF1SYdo4N7BaK3TOvXJqfs3Te2Asmm_-jA_Ag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120627050952.23698.37235.stgit@bling.home>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBTdL7rt4YF1SYdo4N7BaK3TOvXJqfs3Te2Asmm_-jA_Ag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 11:10:08PM -0600, Alex Williamson wrote:
-> +static void eoifd_event(struct kvm_irq_ack_notifier *notifier)
-> +{
-> +	struct _eoifd *eoifd;
-> +
-> +	eoifd = container_of(notifier, struct _eoifd, notifier);
-> +
-> +	if (eoifd->source)
-> +		kvm_set_irq(eoifd->kvm, eoifd->source->id,
-> +			    eoifd->notifier.gsi, 0);
+On Wed, Jun 27, 2012 at 05:13:44PM +0200, Stephane Eranian wrote:
+> On Wed, Jun 27, 2012 at 5:11 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > On Tue, Jun 19, 2012 at 05:47:54PM +0200, Jiri Olsa wrote:
+> >> @@ -4061,6 +4105,19 @@ void perf_prepare_sample(struct perf_event_header *header,
+> >>               }
+> >>               header->size += size;
+> >>       }
+> >> +
+> >> +     if (sample_type & PERF_SAMPLE_REGS_USER) {
+> >> +             /* regs dump available bool */
+> >> +             int size = sizeof(u64);
+> >> +
+> >> +             data->regs_user = perf_sample_regs_user(regs);
+> >> +             if (data->regs_user) {
+> >> +                     u64 mask = event->attr.sample_regs_user;
+> >> +                     size += hweight64(mask) * sizeof(u64);
+> >> +             }
+> >> +
+> >> +             header->size += size;
+> >
+> > We'll need to remove the 64 bits registers for compat tasks but other than
+> > that, it looks ok.
+> You cannot do this. You cannot remove register values from under the hood.
+> The only way the user has to parse the sample is the sample_regs_users bitmask.
+> You have to return 0 for those unexisting regs for compat tasks.
 
-Let's add a comment here explaining why it's a safe thing
-to do, which is, userspace will check status and reinject if
-necessary.
-
--- 
-MST
+You mean fill unexisting reg values with 0? Yeah that works.
