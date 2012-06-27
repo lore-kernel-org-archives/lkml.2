@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2F0FJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 01:09:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47127 "EHLO mx1.redhat.com"
+	id S1756085Ab2F0FKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 01:10:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5106 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752937Ab2F0FJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 01:09:50 -0400
+	id S1751756Ab2F0FKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 01:10:12 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+Subject: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
 To: avi@redhat.com, mst@redhat.com
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Tue, 26 Jun 2012 23:09:46 -0600
-Message-ID: <20120627050937.23698.68442.stgit@bling.home>
+Date: Tue, 26 Jun 2012 23:10:08 -0600
+Message-ID: <20120627050952.23698.37235.stgit@bling.home>
 In-Reply-To: <20120627044758.23698.249.stgit@bling.home>
 References: <20120627044758.23698.249.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -22,243 +22,399 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to inject an interrupt from an external source using an
-irqfd, we need to allocate a new irq_source_id.  This allows us to
-assert and (later) de-assert an interrupt line independently from
-users of KVM_IRQ_LINE and avoid lost interrupts.
+This new ioctl enables an eventfd to be triggered when an EOI is
+written for a specified irqchip pin.  By default this is a simple
+notification, but we can also tie the eoifd to a level irqfd, which
+enables the irqchip pin to be automatically de-asserted on EOI.
+This mode is particularly useful for device-assignment applications
+where the unmask and notify triggers a hardware unmask.  The default
+mode is most applicable to simple notify with no side-effects for
+userspace usage, such as Qemu.
 
-We also add what may appear like a bit of excessive infrastructure
-around an object for storing this irq_source_id.  However, notice
-that we only provide a way to assert the interrupt here.  A follow-on
-interface will make use of the same irq_source_id to allow de-assert.
+Here we make use of the reference counting of the _irq_source
+object allowing us to share it with an irqfd and cleanup regardless
+of the release order.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- Documentation/virtual/kvm/api.txt |    5 ++
+ Documentation/virtual/kvm/api.txt |   24 +++++
  arch/x86/kvm/x86.c                |    1 
- include/linux/kvm.h               |    3 +
- virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
- 4 files changed, 99 insertions(+), 5 deletions(-)
+ include/linux/kvm.h               |   14 +++
+ include/linux/kvm_host.h          |   13 +++
+ virt/kvm/eventfd.c                |  189 +++++++++++++++++++++++++++++++++++++
+ virt/kvm/kvm_main.c               |   11 ++
+ 6 files changed, 250 insertions(+), 2 deletions(-)
 
 diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index ea9edce..b216709 100644
+index b216709..87a2558 100644
 --- a/Documentation/virtual/kvm/api.txt
 +++ b/Documentation/virtual/kvm/api.txt
-@@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
- the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
- and kvm_irqfd.gsi.
+@@ -1987,6 +1987,30 @@ interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+ with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+ KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
  
-+With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
-+the requested irqfd.  This is necessary to share level triggered
-+interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
-+with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
-+KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
- 
++4.77 KVM_EOIFD
++
++Capability: KVM_CAP_EOIFD
++Architectures: x86
++Type: vm ioctl
++Parameters: struct kvm_eoifd (in)
++Returns: 0 on success, -1 on error
++
++KVM_EOIFD allows userspace to receive EOI notification through an
++eventfd for level triggered irqchip interrupts.  Behavior for edge
++triggered interrupts is undefined.  kvm_eoifd.fd specifies the eventfd
++used for notification and kvm_eoifd.gsi specifies the irchip pin,
++similar to KVM_IRQFD.  KVM_EOIFD_FLAG_DEASSIGN is used to deassign
++a previously enabled eoifd and should also set fd and gsi to match.
++
++The KVM_EOIFD_FLAG_LEVEL_IRQFD flag indicates that the EOI is for
++a level triggered EOI and the kvm_eoifd structure includes
++kvm_eoifd.irqfd, which must be previously configured using KVM_IRQFD
++with the KVM_IRQFD_FLAG_LEVEL flag.  This allows both EOI notification
++through kvm_eoifd.fd as well as automatically de-asserting level
++irqfds on EOI.  Both KVM_EOIFD_FLAG_DEASSIGN and
++KVM_EOIFD_FLAG_LEVEL_IRQFD should be used to de-assign an eoifd
++initially setup with KVM_EOIFD_FLAG_LEVEL_IRQFD.
++
  5. The kvm_run structure
  ------------------------
+ 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index a01a424..80bed07 100644
+index 80bed07..62d6eca 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -2148,6 +2148,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_GET_TSC_KHZ:
+@@ -2149,6 +2149,7 @@ int kvm_dev_ioctl_check_extension(long ext)
  	case KVM_CAP_PCI_2_3:
  	case KVM_CAP_KVMCLOCK_CTRL:
-+	case KVM_CAP_IRQFD_LEVEL:
+ 	case KVM_CAP_IRQFD_LEVEL:
++	case KVM_CAP_EOIFD:
  		r = 1;
  		break;
  	case KVM_CAP_COALESCED_MMIO:
 diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 2ce09aa..b2e6e4f 100644
+index b2e6e4f..7567e7d 100644
 --- a/include/linux/kvm.h
 +++ b/include/linux/kvm.h
-@@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_PPC_GET_SMMU_INFO 78
+@@ -619,6 +619,7 @@ struct kvm_ppc_smmu_info {
  #define KVM_CAP_S390_COW 79
  #define KVM_CAP_PPC_ALLOC_HTAB 80
-+#define KVM_CAP_IRQFD_LEVEL 81
+ #define KVM_CAP_IRQFD_LEVEL 81
++#define KVM_CAP_EOIFD 82
  
  #ifdef KVM_CAP_IRQ_ROUTING
  
-@@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
- #endif
+@@ -694,6 +695,17 @@ struct kvm_irqfd {
+ 	__u8  pad[20];
+ };
  
- #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-+/* Available with KVM_CAP_IRQFD_LEVEL */
-+#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
- 
- struct kvm_irqfd {
- 	__u32 fd;
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 7d7e2aa..18cc284 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -36,6 +36,64 @@
- #include "iodev.h"
- 
- /*
-+ * An irq_source_id can be created from KVM_IRQFD for level interrupt
-+ * injections and shared with other interfaces for EOI or de-assert.
-+ * Create an object with reference counting to make it easy to use.
-+ */
-+struct _irq_source {
-+	int id;
-+	struct kvm *kvm;
-+	struct kref kref;
++#define KVM_EOIFD_FLAG_DEASSIGN (1 << 0)
++#define KVM_EOIFD_FLAG_LEVEL_IRQFD (1 << 1)
++
++struct kvm_eoifd {
++	__u32 fd;
++	__u32 gsi;
++	__u32 flags;
++	__u32 irqfd;
++	__u8 pad[16];
 +};
 +
-+static void release_irq_source(struct kref *kref)
+ struct kvm_clock_data {
+ 	__u64 clock;
+ 	__u32 flags;
+@@ -834,6 +846,8 @@ struct kvm_s390_ucas_mapping {
+ #define KVM_PPC_GET_SMMU_INFO	  _IOR(KVMIO,  0xa6, struct kvm_ppc_smmu_info)
+ /* Available with KVM_CAP_PPC_ALLOC_HTAB */
+ #define KVM_PPC_ALLOCATE_HTAB	  _IOWR(KVMIO, 0xa7, __u32)
++/* Available with KVM_CAP_EOIFD */
++#define KVM_EOIFD                 _IOW(KVMIO,  0xa8, struct kvm_eoifd)
+ 
+ /*
+  * ioctls for vcpu fds
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index ae3b426..83472eb 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -285,6 +285,10 @@ struct kvm {
+ 		struct list_head  items;
+ 	} irqfds;
+ 	struct list_head ioeventfds;
++	struct {
++		spinlock_t        lock;
++		struct list_head  items;
++	} eoifds;
+ #endif
+ 	struct kvm_vm_stat stat;
+ 	struct kvm_arch arch;
+@@ -828,6 +832,8 @@ int kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args);
+ void kvm_irqfd_release(struct kvm *kvm);
+ void kvm_irq_routing_update(struct kvm *, struct kvm_irq_routing_table *);
+ int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
++int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args);
++void kvm_eoifd_release(struct kvm *kvm);
+ 
+ #else
+ 
+@@ -853,6 +859,13 @@ static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+ 	return -ENOSYS;
+ }
+ 
++static inline int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
 +{
-+	struct _irq_source *source;
-+
-+	source = container_of(kref, struct _irq_source, kref);
-+
-+	kvm_free_irq_source_id(source->kvm, source->id);
-+	kfree(source);
++	return -ENOSYS;
 +}
 +
-+static void put_irq_source(struct _irq_source *source)
++static inline void kvm_eoifd_release(struct kvm *kvm) {}
++
+ #endif /* CONFIG_HAVE_KVM_EVENTFD */
+ 
+ #ifdef CONFIG_KVM_APIC_ARCHITECTURE
+diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+index 18cc284..02ca50f 100644
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -62,8 +62,7 @@ static void put_irq_source(struct _irq_source *source)
+ 		kref_put(&source->kref, release_irq_source);
+ }
+ 
+-static struct _irq_source *__attribute__ ((used)) /* white lie for now */
+-get_irq_source(struct _irq_source *source)
++static struct _irq_source *get_irq_source(struct _irq_source *source)
+ {
+ 	if (source)
+ 		kref_get(&source->kref);
+@@ -118,6 +117,41 @@ struct _irqfd {
+ 	struct work_struct shutdown;
+ };
+ 
++static struct _irq_source *get_irq_source_from_irqfd(struct kvm *kvm, int fd)
 +{
-+	if (source)
-+		kref_put(&source->kref, release_irq_source);
-+}
++	struct file *file;
++	struct eventfd_ctx *eventfd;
++	struct _irqfd *irqfd;
++	struct _irq_source *source = NULL;
 +
-+static struct _irq_source *__attribute__ ((used)) /* white lie for now */
-+get_irq_source(struct _irq_source *source)
-+{
-+	if (source)
-+		kref_get(&source->kref);
++	file = fget(fd);
++	if (!file)
++		return ERR_PTR(-EBADF);
 +
-+	return source;
-+}
-+
-+static struct _irq_source *new_irq_source(struct kvm *kvm)
-+{
-+	struct _irq_source *source;
-+	int id;
-+
-+	source = kzalloc(sizeof(*source), GFP_KERNEL);
-+	if (!source)
-+		return ERR_PTR(-ENOMEM);
-+
-+	id = kvm_request_irq_source_id(kvm);
-+	if (id < 0) {
-+		kfree(source);
-+		return ERR_PTR(id);
++	eventfd = eventfd_ctx_fileget(file);
++	if (IS_ERR(eventfd)) {
++		fput(file);
++		return (struct _irq_source *)eventfd;
 +	}
 +
-+	kref_init(&source->kref);
-+	source->kvm = kvm;
-+	source->id = id;
++	spin_lock_irq(&kvm->irqfds.lock);
 +
-+	return source;
++	list_for_each_entry(irqfd, &kvm->irqfds.items, list) {
++		if (irqfd->eventfd != eventfd)
++			continue;
++
++		source = get_irq_source(irqfd->source);
++		break;
++	}
++
++	spin_unlock_irq(&kvm->irqfds.lock);
++
++	eventfd_ctx_put(eventfd);
++	fput(file);
++
++	return source ? source : ERR_PTR(-ENODEV);
 +}
 +
-+/*
-  * --------------------------------------------------------------------
-  * irqfd: Allows an fd to be used to inject an interrupt to the guest
-  *
-@@ -52,6 +110,7 @@ struct _irqfd {
- 	/* Used for level IRQ fast-path */
- 	int gsi;
- 	struct work_struct inject;
-+	struct _irq_source *source;
- 	/* Used for setup/shutdown */
- 	struct eventfd_ctx *eventfd;
- 	struct list_head list;
-@@ -62,7 +121,7 @@ struct _irqfd {
  static struct workqueue_struct *irqfd_cleanup_wq;
  
  static void
--irqfd_inject(struct work_struct *work)
-+irqfd_inject_edge(struct work_struct *work)
- {
- 	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
- 	struct kvm *kvm = irqfd->kvm;
-@@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
- 	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+@@ -375,6 +409,8 @@ kvm_eventfd_init(struct kvm *kvm)
+ 	spin_lock_init(&kvm->irqfds.lock);
+ 	INIT_LIST_HEAD(&kvm->irqfds.items);
+ 	INIT_LIST_HEAD(&kvm->ioeventfds);
++	spin_lock_init(&kvm->eoifds.lock);
++	INIT_LIST_HEAD(&kvm->eoifds.items);
  }
  
-+static void
-+irqfd_inject_level(struct work_struct *work)
-+{
-+	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+ /*
+@@ -743,3 +779,152 @@ kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+ 
+ 	return kvm_assign_ioeventfd(kvm, args);
+ }
 +
-+	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
++/*
++ * --------------------------------------------------------------------
++ *  eoifd: Translate KVM APIC/IOAPIC EOI into eventfd signal.
++ *
++ *  userspace can register GSIs with an eventfd for receiving
++ *  notification when an EOI occurs.
++ * --------------------------------------------------------------------
++ */
++
++struct _eoifd {
++	struct kvm *kvm;
++	struct eventfd_ctx *eventfd;
++	struct _irq_source *source;
++	struct kvm_irq_ack_notifier notifier;
++	struct list_head list;
++};
++
++static void eoifd_event(struct kvm_irq_ack_notifier *notifier)
++{
++	struct _eoifd *eoifd;
++
++	eoifd = container_of(notifier, struct _eoifd, notifier);
++
++	if (eoifd->source)
++		kvm_set_irq(eoifd->kvm, eoifd->source->id,
++			    eoifd->notifier.gsi, 0);
++
++	eventfd_signal(eoifd->eventfd, 1);
 +}
 +
- /*
-  * Race-free decouple logic (ordering is critical)
-  */
-@@ -96,6 +163,9 @@ irqfd_shutdown(struct work_struct *work)
- 	 * It is now safe to release the object's resources
- 	 */
- 	eventfd_ctx_put(irqfd->eventfd);
++static int kvm_assign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
++{
++	struct eventfd_ctx *eventfd;
++	struct _eoifd *eoifd, *tmp;
++	struct _irq_source *source = NULL;
 +
-+	put_irq_source(irqfd->source);
++	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
++		source = get_irq_source_from_irqfd(kvm, args->irqfd);
++		if (IS_ERR(source))
++			return PTR_ERR(source);
++	}
 +
- 	kfree(irqfd);
- }
- 
-@@ -214,7 +284,19 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
- 	irqfd->kvm = kvm;
- 	irqfd->gsi = args->gsi;
- 	INIT_LIST_HEAD(&irqfd->list);
--	INIT_WORK(&irqfd->inject, irqfd_inject);
++	eventfd = eventfd_ctx_fdget(args->fd);
++	if (IS_ERR(eventfd)) {
++		put_irq_source(source);
++		return PTR_ERR(eventfd);
++	}
 +
-+	if (args->flags & KVM_IRQFD_FLAG_LEVEL) {
-+		irqfd->source = new_irq_source(kvm);
-+		if (IS_ERR(irqfd->source)) {
-+			ret = PTR_ERR(irqfd->source);
-+			irqfd->source = NULL;
-+			goto fail;
++	eoifd = kzalloc(sizeof(*eoifd), GFP_KERNEL);
++	if (!eoifd) {
++		put_irq_source(source);
++		eventfd_ctx_put(eventfd);
++		return -ENOMEM;
++	}
++
++	INIT_LIST_HEAD(&eoifd->list);
++	eoifd->kvm = kvm;
++	eoifd->eventfd = eventfd;
++	eoifd->source = source;
++	eoifd->notifier.gsi = args->gsi;
++	eoifd->notifier.irq_acked = eoifd_event;
++
++	spin_lock_irq(&kvm->eoifds.lock);
++
++	list_for_each_entry(tmp, &kvm->eoifds.items, list) {
++		if (eoifd->eventfd != tmp->eventfd)
++			continue;
++
++		put_irq_source(source);
++		eventfd_ctx_put(eventfd);
++		kfree(eoifd);
++		return -EBUSY;
++	}
++
++	list_add_tail(&eoifd->list, &kvm->eoifds.items);
++	kvm_register_irq_ack_notifier(kvm, &eoifd->notifier);
++
++	spin_unlock_irq(&kvm->eoifds.lock);
++
++	return 0;
++}
++
++static void eoifd_deactivate(struct kvm *kvm, struct _eoifd *eoifd)
++{
++	list_del(&eoifd->list);
++	kvm_unregister_irq_ack_notifier(kvm, &eoifd->notifier);
++	put_irq_source(eoifd->source);
++	eventfd_ctx_put(eoifd->eventfd);
++	kfree(eoifd);
++}
++
++void kvm_eoifd_release(struct kvm *kvm)
++{
++	struct _eoifd *eoifd, *tmp;
++
++	spin_lock_irq(&kvm->eoifds.lock);
++
++	list_for_each_entry_safe(eoifd, tmp, &kvm->eoifds.items, list)
++		eoifd_deactivate(kvm, eoifd);
++
++	spin_unlock_irq(&kvm->eoifds.lock);
++}
++
++static int kvm_deassign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
++{
++	struct eventfd_ctx *eventfd;
++	struct _eoifd *eoifd;
++	bool uses_source = (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) != 0;
++	int ret = -ENODEV;
++
++	eventfd = eventfd_ctx_fdget(args->fd);
++	if (IS_ERR(eventfd))
++		return PTR_ERR(eventfd);
++
++	spin_lock_irq(&kvm->eoifds.lock);
++
++	list_for_each_entry(eoifd, &kvm->eoifds.items, list) {
++		/*
++		 * Matching eventfd is unique since we don't allow dulicates,
++		 * the rest is sanitizing the calling parameters.
++		 */
++		if (eoifd->eventfd == eventfd &&
++		    eoifd->notifier.gsi == args->gsi &&
++		    uses_source == (eoifd->source != NULL)) {
++			eoifd_deactivate(kvm, eoifd);
++			ret = 0;
++			break;
 +		}
++	}
 +
-+		INIT_WORK(&irqfd->inject, irqfd_inject_level);
-+	} else
-+		INIT_WORK(&irqfd->inject, irqfd_inject_edge);
++	spin_unlock_irq(&kvm->eoifds.lock);
 +
- 	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
++	eventfd_ctx_put(eventfd);
++
++	return ret;
++}
++
++int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
++{
++	if (args->flags & ~(KVM_EOIFD_FLAG_DEASSIGN |
++			    KVM_EOIFD_FLAG_LEVEL_IRQFD))
++		return -EINVAL;
++
++	if (args->flags & KVM_EOIFD_FLAG_DEASSIGN)
++		return kvm_deassign_eoifd(kvm, args);
++
++	return kvm_assign_eoifd(kvm, args);
++}
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index b4ad14cc..5b41df1 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -620,6 +620,8 @@ static int kvm_vm_release(struct inode *inode, struct file *filp)
  
- 	file = eventfd_fget(args->fd);
-@@ -279,9 +361,10 @@ fail:
- 	if (eventfd && !IS_ERR(eventfd))
- 		eventfd_ctx_put(eventfd);
+ 	kvm_irqfd_release(kvm);
  
--	if (!IS_ERR(file))
-+	if (file && !IS_ERR(file))
- 		fput(file);
- 
-+	put_irq_source(irqfd->source);
- 	kfree(irqfd);
- 	return ret;
++	kvm_eoifd_release(kvm);
++
+ 	kvm_put_kvm(kvm);
+ 	return 0;
  }
-@@ -302,6 +385,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
- {
- 	struct _irqfd *irqfd, *tmp;
- 	struct eventfd_ctx *eventfd;
-+	bool is_level = (args->flags & KVM_IRQFD_FLAG_LEVEL) != 0;
- 
- 	eventfd = eventfd_ctx_fdget(args->fd);
- 	if (IS_ERR(eventfd))
-@@ -310,7 +394,8 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
- 	spin_lock_irq(&kvm->irqfds.lock);
- 
- 	list_for_each_entry_safe(irqfd, tmp, &kvm->irqfds.items, list) {
--		if (irqfd->eventfd == eventfd && irqfd->gsi == args->gsi) {
-+		if (irqfd->eventfd == eventfd && irqfd->gsi == args->gsi &&
-+		    is_level == (irqfd->source != NULL)) {
- 			/*
- 			 * This rcu_assign_pointer is needed for when
- 			 * another thread calls kvm_irq_routing_update before
-@@ -340,7 +425,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
- int
- kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
- {
--	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
-+	if (args->flags & ~(KVM_IRQFD_FLAG_DEASSIGN | KVM_IRQFD_FLAG_LEVEL))
- 		return -EINVAL;
- 
- 	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
+@@ -2093,6 +2095,15 @@ static long kvm_vm_ioctl(struct file *filp,
+ 		break;
+ 	}
+ #endif
++	case KVM_EOIFD: {
++		struct kvm_eoifd data;
++
++		r = -EFAULT;
++		if (copy_from_user(&data, argp, sizeof data))
++			goto out;
++		r = kvm_eoifd(kvm, &data);
++		break;
++	}
+ 	default:
+ 		r = kvm_arch_vm_ioctl(filp, ioctl, arg);
+ 		if (r == -ENOTTY)
 
