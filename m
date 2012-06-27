@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2F0PoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 11:44:25 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56620 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab2F0PoX (ORCPT
+	id S1757782Ab2F0PsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 11:48:04 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20677 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab2F0PsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 11:44:23 -0400
-From: Michael Miller <commnerd@gmail.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, Michael Miller <commnerd@gmail.com>
-Subject: [PATCH] block/partitions/acorn.c: Changed string pointer declaration to array declaration for fewer asm statements
-Date: Wed, 27 Jun 2012 09:41:20 -0600
-Message-Id: <1340811680-3556-1-git-send-email-commnerd@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Wed, 27 Jun 2012 11:48:01 -0400
+Date: Wed, 27 Jun 2012 11:40:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        devel@driverdev.osuosl.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 1/3] zram/zcache: swtich Kconfig dependency from X86 to
+ ZSMALLOC
+Message-ID: <20120627154003.GI17154@phenom.dumpdata.com>
+References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1340640878-27536-2-git-send-email-sjenning@linux.vnet.ibm.com>
+ <4FEA71E5.5090808@kernel.org>
+ <20120627024301.GA8468@kroah.com>
+ <4FEA74D6.8030107@kernel.org>
+ <20120627032101.GA16419@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627032101.GA16419@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michael Miller <commnerd@gmail.com>
+On Tue, Jun 26, 2012 at 08:21:01PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Jun 27, 2012 at 11:49:58AM +0900, Minchan Kim wrote:
+> > Hi Greg,
+> > 
+> > On 06/27/2012 11:43 AM, Greg Kroah-Hartman wrote:
+> > 
+> > > On Wed, Jun 27, 2012 at 11:37:25AM +0900, Minchan Kim wrote:
+> > >> On 06/26/2012 01:14 AM, Seth Jennings wrote:
+> > >>
+> > >>> This patch switches zcache and zram dependency to ZSMALLOC
+> > >>> rather than X86.  There is no net change since ZSMALLOC
+> > >>> depends on X86, however, this prevent further changes to
+> > >>> these files as zsmalloc dependencies change.
+> > >>>
+> > >>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > >>
+> > >> Reviewed-by: Minchan Kim <minchan@kernel.org>
+> > >>
+> > >> It could be merged regardless of other patches in this series.
+> > > 
+> > > I already did :)
+> > 
+> > 
+> > It would have been better if you send merge mail to Ccing people.
+> > Anyway, Thanks!
+> 
+> I do, for people on the cc: in the signed-off-by area of the patch.  For
+> me to manually add the people on the cc: of the email, I would have to
+> modify git to add them to the commit somehow, sorry.
 
----
- block/partitions/acorn.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/block/partitions/acorn.c b/block/partitions/acorn.c
-index fbeb697..bf5847e 100644
---- a/block/partitions/acorn.c
-+++ b/block/partitions/acorn.c
-@@ -168,7 +168,7 @@ int adfspart_check_CUMANA(struct parsed_partitions *state)
- 	unsigned int start_blk = 0;
- 	Sector sect;
- 	unsigned char *data;
--	char *name = "CUMANA/ADFS";
-+	char name[] = "CUMANA/ADFS";
- 	int first = 1;
- 	int slot = 1;
- 
--- 
-1.7.2.5
-
+Is that some other script you have that does that?
