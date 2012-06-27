@@ -1,107 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab2F0VQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 17:16:08 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40217 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab2F0VQH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 17:16:07 -0400
-MIME-Version: 1.0
-Message-ID: <80ad7298-23de-4c5e-9a8d-483198ae4ef1@default>
-Date: Wed, 27 Jun 2012 14:15:25 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Minchan Kim <minchan@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: RE: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <4FEA9FDD.6030102@kernel.org> <4FEAA4AA.3000406@intel.com>
- <4FEAA7A1.9020307@kernel.org> <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default>
- <4FEB5204.3090707@linux.vnet.ibm.com>
-In-Reply-To: <4FEB5204.3090707@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1757877Ab2F0VTw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 17:19:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755860Ab2F0VTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 17:19:50 -0400
+Message-ID: <1340831986.1207.250.camel@bling.home>
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Date: Wed, 27 Jun 2012 15:19:46 -0600
+In-Reply-To: <20120627093427.GE17507@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+	 <20120627050937.23698.68442.stgit@bling.home>
+	 <20120627093427.GE17507@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Sent: Wednesday, June 27, 2012 12:34 PM
-> To: Dan Magenheimer
-> Cc: Minchan Kim; Alex Shi; Greg Kroah-Hartman; devel@driverdev.osuosl.org; Konrad Wilk; linux-
-> kernel@vger.kernel.org; linux-mm@kvack.org; Andrew Morton; Robert Jennings; Nitin Gupta
-> Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
+On Wed, 2012-06-27 at 12:34 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > In order to inject an interrupt from an external source using an
+> > irqfd, we need to allocate a new irq_source_id.  This allows us to
+> > assert and (later) de-assert an interrupt line independently from
+> > users of KVM_IRQ_LINE and avoid lost interrupts.
+> > 
+> > We also add what may appear like a bit of excessive infrastructure
+> > around an object for storing this irq_source_id.  However, notice
+> > that we only provide a way to assert the interrupt here.  A follow-on
+> > interface will make use of the same irq_source_id to allow de-assert.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> > 
+> >  Documentation/virtual/kvm/api.txt |    5 ++
+> >  arch/x86/kvm/x86.c                |    1 
+> >  include/linux/kvm.h               |    3 +
+> >  virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
+> >  4 files changed, 99 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > index ea9edce..b216709 100644
+> > --- a/Documentation/virtual/kvm/api.txt
+> > +++ b/Documentation/virtual/kvm/api.txt
+> > @@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
+> >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+> >  and kvm_irqfd.gsi.
+> >  
+> > +With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
+> > +the requested irqfd.
 > 
-> On 06/27/2012 10:12 AM, Dan Magenheimer wrote:
-> >> From: Minchan Kim [mailto:minchan@kernel.org]
-> >> Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
-> >>
-> >> On 06/27/2012 03:14 PM, Alex Shi wrote:
-> >>>
-> >>> On 06/27/2012 01:53 PM, Minchan Kim wrote:
-> >>> Different CPU type has different balance point on the invlpg replacing
-> >>> flush all. and some CPU never get benefit from invlpg, So, it's better
-> >>> to use different value for different CPU, not a fixed
-> >>> INVLPG_BREAK_EVEN_PAGES.
-> >>
-> >> I think it could be another patch as further step and someone who are
-> >> very familiar with architecture could do better than.
-> >> So I hope it could be merged if it doesn't have real big problem.
-> >>
-> >> Thanks for the comment, Alex.
-> >
-> > Just my opinion, but I have to agree with Alex.  Hardcoding
-> > behavior that is VERY processor-specific is a bad idea.  TLBs should
-> > only be messed with when absolutely necessary, not for the
-> > convenience of defending an abstraction that is nice-to-have
-> > but, in current OS kernel code, unnecessary.
-> 
-> I agree that it's not optimal.  The selection based on CPUID
-> is part of Alex's patchset, and I'll be glad to use that
-> code when it gets integrated.
-> 
-> But the real discussion is are we going to:
-> 1) wait until Alex's patches to be integrated, degrading
-> zsmalloc in the meantime or
-> 2) put in some simple temporary logic that works well (not
-> best) for most cases
-> 
-> > IIUC, zsmalloc only cares that the breakeven point is greater
-> > than two.  An arch-specific choice of (A) two page flushes
-> > vs (B) one all-TLB flush should be all that is necessary right
-> > now.  (And, per separate discussion, even this isn't really
-> > necessary either.)
-> >
-> > If zsmalloc _ever_ gets extended to support items that might
-> > span three or more pages, a more generic TLB flush-pages-vs-flush-all
-> > approach may be warranted and, by then, may already exist in some
-> > future kernel.  Until then, IMHO, keep it simple.
-> 
-> I guess I'm not following.  Are you supporting the removal
-> of the "break even" logic?  I added that logic as a
-> compromise for Peter's feedback:
-> 
-> http://lkml.org/lkml/2012/5/17/177
+> This is the first and last time the term source id appears in this text.
+> We probably can do without talking about it at all, simply
+> explain that multiple irqfds mapped to same GSI are
+> OR-ed together.
 
-Yes, as long as I am correct that zsmalloc never has to map/flush
-more than two pages at a time, I think dealing with the break-even
-logic is overkill.  I see Peter isn't on this dist list... maybe
-you should ask him if he agrees, as long as we are only always
-talking about flush-two-TLB-pages vs flush-all.
+Ok
 
-(And, of course, per previous discussion, I think even mapping/flushing
-two TLB pages is unnecessary and overkill required only for protecting an
-abstraction, but will stop beating that dead horse. ;-)
+> >  This is necessary to share level triggered
+> > +interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+> > +with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+> > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> >  
+> >  5. The kvm_run structure
+> >  ------------------------
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index a01a424..80bed07 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -2148,6 +2148,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> >  	case KVM_CAP_GET_TSC_KHZ:
+> >  	case KVM_CAP_PCI_2_3:
+> >  	case KVM_CAP_KVMCLOCK_CTRL:
+> > +	case KVM_CAP_IRQFD_LEVEL:
+> >  		r = 1;
+> >  		break;
+> >  	case KVM_CAP_COALESCED_MMIO:
+> > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > index 2ce09aa..b2e6e4f 100644
+> > --- a/include/linux/kvm.h
+> > +++ b/include/linux/kvm.h
+> > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+> >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+> >  #define KVM_CAP_S390_COW 79
+> >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> > +#define KVM_CAP_IRQFD_LEVEL 81
+> >  
+> >  #ifdef KVM_CAP_IRQ_ROUTING
+> >  
+> > @@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
+> >  #endif
+> >  
+> >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
+> > +/* Available with KVM_CAP_IRQFD_LEVEL */
+> > +#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
+> >  
+> >  struct kvm_irqfd {
+> >  	__u32 fd;
+> > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > index 7d7e2aa..18cc284 100644
+> > --- a/virt/kvm/eventfd.c
+> > +++ b/virt/kvm/eventfd.c
+> > @@ -36,6 +36,64 @@
+> >  #include "iodev.h"
+> >  
+> >  /*
+> > + * An irq_source_id can be created from KVM_IRQFD for level interrupt
+> > + * injections and shared with other interfaces for EOI or de-assert.
+> > + * Create an object with reference counting to make it easy to use.
+> > + */
+> > +struct _irq_source {
+> > +	int id;
+> > +	struct kvm *kvm;
+> > +	struct kref kref;
+> > +};
+> > +
+> > +static void release_irq_source(struct kref *kref)
+> > +{
+> > +	struct _irq_source *source;
+> > +
+> > +	source = container_of(kref, struct _irq_source, kref);
+> > +
+> > +	kvm_free_irq_source_id(source->kvm, source->id);
+> > +	kfree(source);
+> > +}
+> > +
+> 
+> It would be nicer to prefix everything with irqfd_
+> and generally use prefixes.  _irqfd_source irqfd_source_release_ etc.
 
-Dan
+Hmm, these objects are setup by an irqfd, but I don't think that
+warrants naming all the functions after irqfd.  I'll make them
+_irq_source_foo()
+
+> > +static void put_irq_source(struct _irq_source *source)
+> > +{
+> > +	if (source)
+> > +		kref_put(&source->kref, release_irq_source);
+> > +}
+> > +
+> > +static struct _irq_source *__attribute__ ((used)) /* white lie for now */
+> > +get_irq_source(struct _irq_source *source)
+> > +{
+> > +	if (source)
+> > +		kref_get(&source->kref);
+> > +
+> > +	return source;
+> > +}
+> > +
+> > +static struct _irq_source *new_irq_source(struct kvm *kvm)
+> > +{
+> > +	struct _irq_source *source;
+> > +	int id;
+> > +
+> > +	source = kzalloc(sizeof(*source), GFP_KERNEL);
+> > +	if (!source)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	id = kvm_request_irq_source_id(kvm);
+> > +	if (id < 0) {
+> > +		kfree(source);
+> > +		return ERR_PTR(id);
+> > +	}
+> > +
+> > +	kref_init(&source->kref);
+> > +	source->kvm = kvm;
+> > +	source->id = id;
+> > +
+> > +	return source;
+> > +}
+> > +
+> 
+> s/new/alloc/
+
+Ok
+
+> > +/*
+> >   * --------------------------------------------------------------------
+> >   * irqfd: Allows an fd to be used to inject an interrupt to the guest
+> >   *
+> > @@ -52,6 +110,7 @@ struct _irqfd {
+> >  	/* Used for level IRQ fast-path */
+> >  	int gsi;
+> >  	struct work_struct inject;
+> > +	struct _irq_source *source;
+> >  	/* Used for setup/shutdown */
+> >  	struct eventfd_ctx *eventfd;
+> >  	struct list_head list;
+> > @@ -62,7 +121,7 @@ struct _irqfd {
+> >  static struct workqueue_struct *irqfd_cleanup_wq;
+> >  
+> >  static void
+> > -irqfd_inject(struct work_struct *work)
+> > +irqfd_inject_edge(struct work_struct *work)
+> >  {
+> >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> >  	struct kvm *kvm = irqfd->kvm;
+> > @@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
+> >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> >  }
+> >  
+> > +static void
+> > +irqfd_inject_level(struct work_struct *work)
+> > +{
+> > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > +
+> > +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > +}
+> > +
+> >  /*
+> >   * Race-free decouple logic (ordering is critical)
+> >   */
+> > @@ -96,6 +163,9 @@ irqfd_shutdown(struct work_struct *work)
+> >  	 * It is now safe to release the object's resources
+> >  	 */
+> >  	eventfd_ctx_put(irqfd->eventfd);
+> > +
+> > +	put_irq_source(irqfd->source);
+> > +
+> >  	kfree(irqfd);
+> >  }
+> >  
+> > @@ -214,7 +284,19 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  	irqfd->kvm = kvm;
+> >  	irqfd->gsi = args->gsi;
+> >  	INIT_LIST_HEAD(&irqfd->list);
+> > -	INIT_WORK(&irqfd->inject, irqfd_inject);
+> > +
+> > +	if (args->flags & KVM_IRQFD_FLAG_LEVEL) {
+> > +		irqfd->source = new_irq_source(kvm);
+> > +		if (IS_ERR(irqfd->source)) {
+> > +			ret = PTR_ERR(irqfd->source);
+> > +			irqfd->source = NULL;
+> > +			goto fail;
+> 
+> A bit cleaner to create a dedicated label which skips
+> put_irq_source than doing source=NULL tricks.
+
+Matter of opinion.  I think I'll switch to the mechanism used elsewhere
+in this function:
+
+source = _irq_source_alloc(kvm);
+if (IS_ERR(source)) {
+    ...
+}
+
+irqfd->source = source;
+
+> > +		}
+> > +
+> > +		INIT_WORK(&irqfd->inject, irqfd_inject_level);
+> > +	} else
+> > +		INIT_WORK(&irqfd->inject, irqfd_inject_edge);
+> > +
+> >  	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
+> >  
+> >  	file = eventfd_fget(args->fd);
+> > @@ -279,9 +361,10 @@ fail:
+> >  	if (eventfd && !IS_ERR(eventfd))
+> >  		eventfd_ctx_put(eventfd);
+> >  
+> > -	if (!IS_ERR(file))
+> > +	if (file && !IS_ERR(file))
+> >  		fput(file);
+> >  
+> > +	put_irq_source(irqfd->source);
+> >  	kfree(irqfd);
+> >  	return ret;
+> >  }
+> > @@ -302,6 +385,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  {
+> >  	struct _irqfd *irqfd, *tmp;
+> >  	struct eventfd_ctx *eventfd;
+> > +	bool is_level = (args->flags & KVM_IRQFD_FLAG_LEVEL) != 0;
+> 
+> != 0 is not needed here I think.
+
+Strictly, no it's not.  I just prefer to set bools from bools and I
+think Avi has commented on using !! before.
+
+> Also I'm not really sure why are we making userspace
+> supply KVM_IRQFD_FLAG_LEVEL flag for clear.
+
+It's mostly a sanity test for userspace.  We don't allow duplicate
+eventfds, so we really only need args->fd to match.  But the existing
+code matches args->gsi as well, so I thought I should make an attempt to
+follow tradition.  It'd be a lot easier to drop the tests below and only
+match eventfd.  Which do we want?
+
+> >  
+> >  	eventfd = eventfd_ctx_fdget(args->fd);
+> >  	if (IS_ERR(eventfd))
+> > @@ -310,7 +394,8 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  	spin_lock_irq(&kvm->irqfds.lock);
+> >  
+> >  	list_for_each_entry_safe(irqfd, tmp, &kvm->irqfds.items, list) {
+> > -		if (irqfd->eventfd == eventfd && irqfd->gsi == args->gsi) {
+> > +		if (irqfd->eventfd == eventfd && irqfd->gsi == args->gsi &&
+> > +		    is_level == (irqfd->source != NULL)) {
+> 
+> Let's rename source to level_source to make usage clear?
+
+has_source is perhaps more versatile.  Thanks,
+
+Alex
+
+> >  			/*
+> >  			 * This rcu_assign_pointer is needed for when
+> >  			 * another thread calls kvm_irq_routing_update before
+> > @@ -340,7 +425,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  int
+> >  kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
+> >  {
+> > -	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
+> > +	if (args->flags & ~(KVM_IRQFD_FLAG_DEASSIGN | KVM_IRQFD_FLAG_LEVEL))
+> >  		return -EINVAL;
+> >  
+> >  	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
+
+
+
