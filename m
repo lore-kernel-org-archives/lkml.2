@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489Ab2F0SOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 14:14:01 -0400
-Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:40163 "EHLO
-	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758404Ab2F0SN7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 14:13:59 -0400
-From: Krishna Gudipati <kgudipat@Brocade.com>
-To: "'Dan Carpenter'" <dan.carpenter@oracle.com>,
-        Jing Huang <huangj@Brocade.com>
-CC: "'James E.J. Bottomley'" <JBottomley@parallels.com>,
-        "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'kernel-janitors@vger.kernel.org'" <kernel-janitors@vger.kernel.org>
-Date: Wed, 27 Jun 2012 10:44:56 -0700
-Subject: RE: [patch -resend] [SCSI] bfa: off by one in bfa_ioc_mbox_isr()
-Thread-Topic: [patch -resend] [SCSI] bfa: off by one in bfa_ioc_mbox_isr()
-Thread-Index: Ac1UQzOctUI3tVz7Tj2NwGgfAZWPhQASShIg
-Message-ID: <B5EE62D80D50B84BB9E5174F7FCCE80A28396BCE90@HQ1-EXCH02.corp.brocade.com>
-References: <20120627085800.GA3007@mwanda>
- <20120627085936.GA31212@elgon.mountain>
-In-Reply-To: <20120627085936.GA31212@elgon.mountain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758418Ab2F0SPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 14:15:09 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51163 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756014Ab2F0SPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 14:15:07 -0400
+Date: Wed, 27 Jun 2012 19:15:03 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: UEFI Secure boot using qemu-kvm
+Message-ID: <20120627181503.GA7775@srcf.ucam.org>
+References: <1340818445.3175.73.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-06-27_05:2012-06-27,2012-06-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=1
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1112030000 definitions=main-1206270178
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340818445.3175.73.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-From: Dan Carpenter [mailto:dan.carpenter@oracle.com] 
-Sent: Wednesday, June 27, 2012 2:00 AM
-To: Jing Huang
-Cc: Krishna Gudipati; James E.J. Bottomley; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; kernel-janitors@vger.kernel.org
-Subject: [patch -resend] [SCSI] bfa: off by one in bfa_ioc_mbox_isr()
+On Wed, Jun 27, 2012 at 06:34:05PM +0100, James Bottomley wrote:
 
-If mc == BFI_MC_MAX then we're reading past the end of the
-mod->mbhdlr[] array.
+> The purpose of this email is to widen the pool of people who are playing
+> with UEFI Secure boot.  The Linux Foundation Technical Advisory Board
+> have been looking into this because it turns out to be rather difficult
+> to lay your hands on real UEFI Secure Boot enabled hardware.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-Originally sent on Wed, 6 Jul 2011.
+http://tunnelmountain.net/ is the canonical source, but I believe that 
+these are now out of stock and waiting for Intel to finish the 
+firmware for the replacement.
 
-diff --git a/drivers/scsi/bfa/bfa_ioc.c b/drivers/scsi/bfa/bfa_ioc.c
-index 14e6284..8cdb79c 100644
---- a/drivers/scsi/bfa/bfa_ioc.c
-+++ b/drivers/scsi/bfa/bfa_ioc.c
-@@ -2357,7 +2357,7 @@ bfa_ioc_mbox_isr(struct bfa_ioc_s *ioc)
- 			return;
- 		}
- 
--		if ((mc > BFI_MC_MAX) || (mod->mbhdlr[mc].cbfn == NULL))
-+		if ((mc >= BFI_MC_MAX) || (mod->mbhdlr[mc].cbfn == NULL))
- 			return;
- 
- 		mod->mbhdlr[mc].cbfn(mod->mbhdlr[mc].cbarg, &m);
+> The current state is that I've managed to lock down the secure boot
+> virtual platform with my own PK and KEK and verified that I can generate
+> signed efi binaries that will run on it (and that it will refuse to run
+> unsigned efi binaries).  Finally I've demonstrated that I can sign
+> elilo.efi (this has to be built specially because of the bug in gnu-efi)
+> and have it boot an unsigned linux kernel when the platform is in secure
+> mode (I've booted up to an initrd root prompt).
 
+It's probably worth noting that booting unsigned kernels violates the 
+expectations of various vendors 
+(http://msdn.microsoft.com/en-us/library/windows/desktop/hh848062%28v=vs.85%29.aspx 
+would be unnecessary if you're supporting unsigned kernels, for 
+example). There's no public cross-vendor guidance on this, but I'm 
+trying to get that rectified.
 
------
+As well as sbsign there's also https://github.com/vathpela/pesign for 
+anyone stuck relying on nss rather than openssl for awkward regulatory 
+reasons.
 
-Thanks for the patch.
-
-Acked-by: Krishna Gudipati <kgudipat@brocade.com>
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
