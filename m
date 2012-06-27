@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab2F0WIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 18:08:50 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:39778 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757982Ab2F0WIs (ORCPT
+	id S1757982Ab2F0WJr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 18:09:47 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:44520 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751587Ab2F0WJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 18:08:48 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-209.messagelabs.com!1340834901!7118444!34
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 19/19] staging: comedi: adl_pci6208: use the driver_name for the resource name
-Date: Wed, 27 Jun 2012 15:08:39 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206271508.39556.hartleys@visionengravers.com>
+	Wed, 27 Jun 2012 18:09:46 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND] gpio: LPC32xx: Driver cleanup
+Date: Thu, 28 Jun 2012 00:09:35 +0200
+Message-Id: <1340834975-17144-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the dev->driver->driver_name for the resource name passed to
-pci_request_regions(), by way of comedi_pci_enable(), instead of
-the open coded string "adl_pci6208".
+Since LPC32xx is now switched over to devicetree based GPIO, the unused
+lpc32xx_gpio_init() can be removed.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Further, the driver title changed since it referred to the wrong file.
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
 ---
- drivers/staging/comedi/drivers/adl_pci6208.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Applies to v3.5-rc4
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci6208.c b/drivers/staging/comedi/drivers/adl_pci6208.c
-index cb14ffd..487fd4a 100644
---- a/drivers/staging/comedi/drivers/adl_pci6208.c
-+++ b/drivers/staging/comedi/drivers/adl_pci6208.c
-@@ -215,7 +215,7 @@ static int pci6208_attach(struct comedi_device *dev,
- 
- 	dev->board_name = thisboard->name;
- 
--	ret = comedi_pci_enable(devpriv->pci_dev, "adl_pci6208");
-+	ret = comedi_pci_enable(devpriv->pci_dev, dev->driver->driver_name);
- 	if (ret) {
- 		dev_err(dev->class_dev,
- 			"Failed to enable PCI device and request regions\n");
--- 
-1.7.11
+ drivers/gpio/gpio-lpc32xx.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
+--- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
++++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
+@@ -1,5 +1,5 @@
+ /*
+- * arch/arm/mach-lpc32xx/gpiolib.c
++ * GPIO driver for LPC32xx SoC
+  *
+  * Author: Kevin Wells <kevin.wells@nxp.com>
+  *
+@@ -457,13 +457,6 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 	},
+ };
+ 
+-/* Empty now, can be removed later when mach-lpc32xx is finally switched over
+- * to DT support
+- */
+-void __init lpc32xx_gpio_init(void)
+-{
+-}
+-
+ static int lpc32xx_of_xlate(struct gpio_chip *gc,
+ 			    const struct of_phandle_args *gpiospec, u32 *flags)
+ {
