@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab2F0Rdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 13:33:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63809 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757154Ab2F0Rdr (ORCPT
+	id S1758302Ab2F0ReM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 13:34:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39906 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758287Ab2F0ReJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 13:33:47 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        afleming@gmail.com, David Daney <david.daney@cavium.com>
-Subject: [PATCH v2 3/4] netdev/phy/of: Add more methods for binding PHY devices to drivers.
-Date: Wed, 27 Jun 2012 10:33:37 -0700
-Message-Id: <1340818418-10382-4-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1340818418-10382-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1340818418-10382-1-git-send-email-ddaney.cavm@gmail.com>
+	Wed, 27 Jun 2012 13:34:09 -0400
+Message-ID: <1340818445.3175.73.camel@dabdike.int.hansenpartnership.com>
+Subject: UEFI Secure boot using qemu-kvm
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Date: Wed, 27 Jun 2012 18:34:05 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Hi Everyone,
 
-Allow PHY drivers to supply their own device matching function
-(match_phy_device()), or to be matched OF compatible properties.
+The purpose of this email is to widen the pool of people who are playing
+with UEFI Secure boot.  The Linux Foundation Technical Advisory Board
+have been looking into this because it turns out to be rather difficult
+to lay your hands on real UEFI Secure Boot enabled hardware.  Many
+thanks are due to the Intel Tianocore project which recently added the
+secure boot facility to their UEFI rom images.
 
-PHYs following IEEE802.3 clause 45 have more than one device
-identifier constants, which breaks the default device matching code.
-Other 10G PHYs don't follow the standard manufacturer/device
-identifier register layout standards, but they do use the standard
-MDIO bus protocols for register access.  Both of these require
-adjustments to the PHY driver to device matching code.
+What I have done:
 
-If the there is an of_node associated with such a PHY, we can match it
-to its driver using the "compatible" properties, just as we do with
-certain platform devices.  If the "compatible" property match fails,
-first check if there is a driver supplied matching function, and if
-not fall back to the existing identifier matching rules.
+I've built the tianocore boot system (along with a README describing how
+to use it) and placed it in the opensuse build system so you can
+download it (the OVMF package) from:
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/net/phy/mdio_bus.c |    7 +++++++
- include/linux/phy.h        |    6 ++++++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+http://download.opensuse.org/repositories/home:/jejb1:/UEFI/openSUSE_12.1/
 
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index 2cee6d2..170eb41 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -25,6 +25,7 @@
- #include <linux/init.h>
- #include <linux/delay.h>
- #include <linux/device.h>
-+#include <linux/of_device.h>
- #include <linux/netdevice.h>
- #include <linux/etherdevice.h>
- #include <linux/skbuff.h>
-@@ -308,6 +309,12 @@ static int mdio_bus_match(struct device *dev, struct device_driver *drv)
- 	struct phy_device *phydev = to_phy_device(dev);
- 	struct phy_driver *phydrv = to_phy_driver(drv);
- 
-+	if (of_driver_match_device(dev, drv))
-+		return 1;
-+
-+	if (phydrv->match_phy_device)
-+		return phydrv->match_phy_device(phydev);
-+
- 	return ((phydrv->phy_id & phydrv->phy_id_mask) ==
- 		(phydev->phy_id & phydrv->phy_id_mask));
- }
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 597d05d..7eac80a 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -426,6 +426,12 @@ struct phy_driver {
- 	/* Clears up any memory if needed */
- 	void (*remove)(struct phy_device *phydev);
- 
-+	/* Returns true if this is a suitable driver for the given
-+	 * phydev.  If NULL, matching is based on phy_id and
-+	 * phy_id_mask.
-+	 */
-+	int (*match_phy_device)(struct phy_device *phydev);
-+
- 	/* Handles ethtool queries for hardware time stamping. */
- 	int (*ts_info)(struct phy_device *phydev, struct ethtool_ts_info *ti);
- 
--- 
-1.7.2.3
+(it has no OS depends, so the rpm should be installable on almost any
+distro ... including debian via alien).  Also in this repository is
+Jeremy Kerr's sbsigntools which can be used to sign efi binaries.
+
+While doing all of this, I discovered a bug in the gnu-efi environment
+we usually use to build efi binaries on Linux (the fix is to the loader
+script).  I've got an example of how to use the fixed script and a
+builder for a LockDown.efi binary that will take a secure boot platform
+in setup mode and install a Platform Key and Key Exchange Key and enable
+secure boot (if you type make, it will build the PK and KEK
+certificates, plus roll them into the binary).
+
+http://git.kernel.org/?p=linux/kernel/git/jejb/efitools.git;a=summary
+
+I'll probably add other useful efi utilities as the project progresses.
+
+I should note that currently Jeremy's efi signing tools only really do
+x86_64 binaries, so the whole project is based on that architecture.
+
+The current state is that I've managed to lock down the secure boot
+virtual platform with my own PK and KEK and verified that I can generate
+signed efi binaries that will run on it (and that it will refuse to run
+unsigned efi binaries).  Finally I've demonstrated that I can sign
+elilo.efi (this has to be built specially because of the bug in gnu-efi)
+and have it boot an unsigned linux kernel when the platform is in secure
+mode (I've booted up to an initrd root prompt).
+
+I'm releasing this now because interest in UEFI Secure Boot is rising,
+particularly amongst the Linux Distributions which don't have access to
+UEFI secure boot hardware, so having a virtual platform should allow
+them to experiment with coming up with their own solutions.
+
+Please remember, though, that all this is very alpha.  The Tianocore
+firmware that does secure boot is only a few weeks old, and the
+sbsigning tools weren't really working up until yesterday, so this is
+very far from rock solid.
+
+James
+
+PS if you don't understand terms like Platform Key, or Setup Mode in the
+above, please ask google for help.  Secure boot is very technical, but
+there have been some good blog posts explaining the basics.
+
 
