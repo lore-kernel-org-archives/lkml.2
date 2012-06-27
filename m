@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab2F0LE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 07:04:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46821 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756223Ab2F0LEZ (ORCPT
+	id S1757123Ab2F0LFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 07:05:21 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51189 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab2F0LFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 07:04:25 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dave Airlie <airlied@gmail.com>, David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Francisco Jerez <currojerez@riseup.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] drm/i2c/ch7006: Convert to dev_pm_ops
-Date: Wed, 27 Jun 2012 12:04:13 +0100
-Message-Id: <1340795053-26575-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Wed, 27 Jun 2012 07:05:17 -0400
+Message-Id: <20120627110512.652322059@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 27 Jun 2012 15:01:20 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: [rfc 4/7] fs, eventfd: Add procfs fdinfo helper
+References: <20120627110116.201735815@openvz.org>
+Content-Disposition: inline; filename=seq-fdinfo-eventfd-6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The I2C specific suspend and resume functions have been deprecated and
-printing a warning on boot for over a year, dev_pm_ops should be used
-instead so convert to that.
+This allow us to print out raw counter value.
+The /proc/pid/fdinfo/fd output is
 
-Also remove the suspend function since all it does is log.
+ | pos:	0
+ | flags:	04002
+ | eventfd-count:               5a
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Francisco Jerez <currojerez@riseup.net>
+This feature is CONFIG_CHECKPOINT_RESTORE only.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: James Bottomley <jbottomley@parallels.com>
 ---
- drivers/gpu/drm/i2c/ch7006_drv.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ fs/eventfd.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
 
-diff --git a/drivers/gpu/drm/i2c/ch7006_drv.c b/drivers/gpu/drm/i2c/ch7006_drv.c
-index d3f2e87..0fb8742 100644
---- a/drivers/gpu/drm/i2c/ch7006_drv.c
-+++ b/drivers/gpu/drm/i2c/ch7006_drv.c
-@@ -427,15 +427,10 @@ static int ch7006_remove(struct i2c_client *client)
- 	return 0;
+Index: linux-2.6.git/fs/eventfd.c
+===================================================================
+--- linux-2.6.git.orig/fs/eventfd.c
++++ linux-2.6.git/fs/eventfd.c
+@@ -19,6 +19,8 @@
+ #include <linux/export.h>
+ #include <linux/kref.h>
+ #include <linux/eventfd.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
+ 
+ struct eventfd_ctx {
+ 	struct kref kref;
+@@ -433,3 +435,56 @@ SYSCALL_DEFINE1(eventfd, unsigned int, c
+ 	return sys_eventfd2(count, 0);
  }
  
--static int ch7006_suspend(struct i2c_client *client, pm_message_t mesg)
-+static int ch7006_resume(struct device *dev)
- {
--	ch7006_dbg(client, "\n");
--
--	return 0;
--}
-+	struct i2c_client *client = to_i2c_client(dev);
- 
--static int ch7006_resume(struct i2c_client *client)
--{
- 	ch7006_dbg(client, "\n");
- 
- 	ch7006_write(client, 0x3d, 0x0);
-@@ -499,15 +494,18 @@ static struct i2c_device_id ch7006_ids[] = {
- };
- MODULE_DEVICE_TABLE(i2c, ch7006_ids);
- 
-+static const struct dev_pm_ops ch7006_pm_ops = {
-+	.resume = ch7006_resume,
++#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
++
++static void *seq_start(struct seq_file *m, loff_t *pos)
++{
++	struct proc_fdinfo_extra *extra = m->private;
++	return *pos == 0 ? extra->f_file : NULL;
++}
++
++static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
++{
++	++*pos;
++	return NULL;
++}
++
++static int seq_show(struct seq_file *m, void *v)
++{
++	struct eventfd_ctx *ctx = ((struct file *)v)->private_data;
++
++	spin_lock_irq(&ctx->wqh.lock);
++	seq_printf(m, "eventfd-count: %16llx\n",
++		   (unsigned long long)ctx->count);
++	spin_unlock_irq(&ctx->wqh.lock);
++
++	return 0;
++}
++
++static void seq_stop(struct seq_file *p, void *v) { }
++
++static const struct seq_operations eventfd_fdinfo_ops = {
++	.start	= seq_start,
++	.next	= seq_next,
++	.stop	= seq_stop,
++	.show	= seq_show,
 +};
 +
- static struct drm_i2c_encoder_driver ch7006_driver = {
- 	.i2c_driver = {
- 		.probe = ch7006_probe,
- 		.remove = ch7006_remove,
--		.suspend = ch7006_suspend,
--		.resume = ch7006_resume,
- 
- 		.driver = {
- 			.name = "ch7006",
-+			.pm = &ch7006_pm_ops,
- 		},
- 
- 		.id_table = ch7006_ids,
--- 
-1.7.10
++static int is_eventfd_file(struct file *file)
++{
++	return file->f_op == &eventfd_fops;
++}
++
++static struct proc_fdinfo_driver eventfd_fdinfo = {
++	.name	= "eventfd",
++	.ops	= &eventfd_fdinfo_ops,
++	.probe	= is_eventfd_file,
++};
++
++static int __init eventfd_init(void)
++{
++	return proc_register_fdinfo_driver(&eventfd_fdinfo);
++}
++fs_initcall(eventfd_init);
++
++#endif /* CONFIG_PROC_FS && CONFIG_CHECKPOINT_RESTORE */
 
