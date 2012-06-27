@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab2F0Jf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:35:56 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:54554 "EHLO mx2.parallels.com"
+	id S1756319Ab2F0Jk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:40:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21511 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753813Ab2F0Jfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:35:55 -0400
-Message-ID: <4FEAD351.2030203@parallels.com>
-Date: Wed, 27 Jun 2012 13:33:05 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753605Ab2F0Jkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 05:40:55 -0400
+Date: Wed, 27 Jun 2012 15:10:46 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Frank Swiderski <fes@google.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, riel@redhat.com,
+        Andrea Arcangeli <aarcange@redhat.com>, mikew@google.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] Add a page cache-backed balloon device driver.
+Message-ID: <20120627094046.GE19023@amit.redhat.com>
+References: <1340742778-11282-1-git-send-email-fes@google.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
-        <devel@openvz.org>, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 06/11] memcg: kmem controller infrastructure
-References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <1340633728-12785-7-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1206260210200.16020@chino.kir.corp.google.com> <4FE97E31.3010201@parallels.com> <alpine.DEB.2.00.1206262100320.24245@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1206262100320.24245@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340742778-11282-1-git-send-email-fes@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On (Tue) 26 Jun 2012 [13:32:58], Frank Swiderski wrote:
+> This implementation of a virtio balloon driver uses the page cache to
+> "store" pages that have been released to the host.  The communication
+> (outside of target counts) is one way--the guest notifies the host when
+> it adds a page to the page cache, allowing the host to madvise(2) with
+> MADV_DONTNEED.  Reclaim in the guest is therefore automatic and implicit
+> (via the regular page reclaim).  This means that inflating the balloon
+> is similar to the existing balloon mechanism, but the deflate is
+> different--it re-uses existing Linux kernel functionality to
+> automatically reclaim.
 
->>
->> Nothing, but I also don't see how to prevent that.
->
-> You can test for current->flags & PF_KTHREAD following the check for
-> in_interrupt() and return true, it's what you were trying to do with the
-> check for !current->mm.
->
+This is a good idea for a guest co-operative balloon driver.  I don't
+think it'll replace the original driver.  The traditional balloon
+model is essentially driven by the host to increase guest density on
+the host.  This driver can't work in that case.  However, using both
+the types of drivers will be helpful, as unused pages on the guest
+will be able to be used by the host.
 
-am I right to believe that if not in interrupt context - already ruled 
-out - and !(current->flags & PF_KTHREAD), I am guaranteed to have a mm 
-context, and thus, don't need to test against it ?
+Balbir Singh had done some work earlier on a guest co-operative
+balloon driver, but AFAIR it was with modification of the existing
+virtio-balloon driver.
 
+I don't think a separate driver is necessary for the functionality,
+though.  Perhaps just a new config space item which mentions how many
+pages are present in the page cache, so that host do some accounting
+as well.
+
+		Amit
