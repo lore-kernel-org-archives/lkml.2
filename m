@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab2F0RO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 13:14:28 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:52528 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756880Ab2F0RO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 13:14:26 -0400
-Date: Wed, 27 Jun 2012 10:10:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Alexey Vlasov <renton@renton.name>, linux-kernel@vger.kernel.org
-Subject: Re: Attaching a process to cgroups
-Message-ID: <20120627171044.GF2418@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120619185856.GC31797@beaver>
- <1340195298.15707.3.camel@marge.simpson.net>
- <20120621075428.GE31797@beaver>
- <1340266982.29752.37.camel@marge.simpson.net>
- <20120626180620.GK2397@linux.vnet.ibm.com>
- <1340781811.10881.70.camel@marge.simpson.net>
+	id S1756990Ab2F0RWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 13:22:43 -0400
+Received: from magic.merlins.org ([209.81.13.136]:51684 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab2F0RWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 13:22:41 -0400
+Date: Wed, 27 Jun 2012 10:21:30 -0700
+From: Marc MERLIN <marc@merlins.org>
+To: Alexander Block <ablock84@googlemail.com>
+Cc: linux-btrfs@vger.kernel.org, dave@jikos.cz, hch@infradead.org,
+        linux-fsdevel@vger.kernel.org, chris.mason@fusionio.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Allow cross subvolume reflinks (2nd attempt)
+Message-ID: <20120627172130.GD7472@merlins.org>
+References: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340781811.10881.70.camel@marge.simpson.net>
+In-Reply-To: <1340188512-5761-1-git-send-email-ablock84@googlemail.com>
+X-Sysadmin: BOFH
+X-URL: http://marc.merlins.org/
+X-Operating-System: Proudly running Linux
+ 3.2.16-amd64-volpreempt-noide-20120410/Debian wheezy/sid
+X-Mailer: Some Outlooks can't quote properly without this header
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062717-3534-0000-0000-000009DA947C
+X-SA-No-Run: Yes
+X-SA-Exim-Connect-IP: 208.54.5.199
+X-SA-Exim-Mail-From: merlin@merlins.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 09:23:31AM +0200, Mike Galbraith wrote:
-> On Tue, 2012-06-26 at 11:06 -0700, Paul E. McKenney wrote: 
-> > On Thu, Jun 21, 2012 at 10:23:02AM +0200, Mike Galbraith wrote:
-> > > On Thu, 2012-06-21 at 11:54 +0400, Alexey Vlasov wrote: 
-> > > > On Wed, Jun 20, 2012 at 02:28:18PM +0200, Mike Galbraith wrote:
-> > > > > 
-> > > > > kernel/cgroup.c::cgroup_attach_task()
-> > > > > {
-> > > > > ...
-> > > > > 	synchronize_rcu();
-> > > > > ...
-> > > > > }
-> > > > 
-> > > > So nothing can be done here? (I mean if only I knew how to fix it I
-> > > > wouldn't ask about it ;)
-> > > 
-> > > Sure, kill the obnoxious thing, it's sitting right in the middle of the
-> > > userspace interface.
-> > > 
-> > > I banged on it a while back (wrt explosive android patches), extracted
-> > > RCU from the userspace interface.  It seemed to work great, much faster,
-> > > couldn't make it explode.  I wouldn't bet anything I wasn't willing to
-> > > immediately part with that the result was really really safe though ;-)
-> > 
-> > Or replace it with synchronize_rcu_expedited().  You can "get lucky"
-> > for quite some time removing synchronize_rcu() calls!
+On Wed, Jun 20, 2012 at 12:35:11PM +0200, Alexander Block wrote:
+> Hello,
 > 
-> s/remove/replace, but yup.  A company that wanted to use the android
-> patches plus my tinkering showed a fix they needed on top to close a
-> race discovered in their testing.  So yeah, even when all seems fine,
-> extracting synchronize_rcu() may expose evils you couldn't encounter
-> before, and didn't happen to encounter afterward.
+> This is the second attempt to bring in cross subvolume reflinks into btrfs.
+> The first attempt was NAKed due to missing vfs mount checks and a clear
+> description of what btrfs subvolumes are and probably also why cross 
+> subvolume reflinks are ok in the case of btrfs. This version of the patch 
+> comes from David and is in SUSE kernels since a long time, so it is tested 
+> and working. The patch also does proper vfs mount checks, so cross mount 
+> point reflinks are not possible with this patch. It only allows cross 
+> reflinks between two subvolumes which are in the same mount point. 
+ 
+Thank you for bringing this back. This would have saved me a lot of
+trouble
 
-I really did mean "remove".  Removing a synchronize_rcu() does result
-in a race, but often an extremely low-probability race.  So you can
-remove a synchronize_rcu() and get lucky for a long time, but sooner
-or later, something will explode.
+I'm not familiar with the code, but here's a big thumbs up from me.
 
-							Thanx, Paul
+Anyone doing reviews, please consider this :)
 
+Thanks,
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/
