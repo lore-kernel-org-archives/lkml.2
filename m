@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2F0IjX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 04:39:23 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50669 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab2F0IjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 04:39:20 -0400
+	id S1753539Ab2F0Iml (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 04:42:41 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:35145 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab2F0Imi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 04:42:38 -0400
+Message-ID: <4FEAC6DA.1010806@parallels.com>
+Date: Wed, 27 Jun 2012 12:39:54 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Date: Wed, 27 Jun 2012 16:39:19 +0800
-Message-ID: <CACV3sbKFcHgai6AzKGrf=LEb67VjZXjMUqMQuXAOUmby7CeiJg@mail.gmail.com>
-Subject: [PATCH] perf: fix wrong hw_breakpoint documentation
-From: Jovi Zhang <bookjovi@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, mingo@redhat.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: jovi zhang <bookjovi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Tejun Heo" <tj@kernel.org>
+Subject: Re: [PATCH 00/11] kmem controller for memcg: stripped down version
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org> <alpine.DEB.2.00.1206261804160.11287@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1206261804160.11287@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f5f9c3a064482cf3d0fb7ed788c66630bddbfc79 Mon Sep 17 00:00:00 2001
-From: Jovi Zhang <bookjovi@gmail.com>
-Date: Wed, 27 Jun 2012 16:09:21 +0800
-Subject: [PATCH] perf: fix wrong hw_breakpoint documentation
+On 06/27/2012 05:08 AM, David Rientjes wrote:
+> On Tue, 26 Jun 2012, Andrew Morton wrote:
+>
+>> mm, maybe.  Kernel developers tend to look at code from the point of
+>> view "does it work as designed", "is it clean", "is it efficient", "do
+>> I understand it", etc.  We often forget to step back and really
+>> consider whether or not it should be merged at all.
+>>
+>
+> It's appropriate for true memory isolation so that applications cannot
+> cause an excess of slab to be consumed.  This allows other applications to
+> have higher reservations without the risk of incurring a global oom
+> condition as the result of the usage of other memcgs.
 
-read-write access hw_breakpoint event is passed as 'mem:addr',
-'mem:0x1000:rw' is parsed as invalid argument currently.
+Just a note for Andrew, we we're in the same page: The slab cache 
+limitation is not included in *this* particular series. The goal was 
+always to have other kernel resources limited as well, and the general 
+argument from David holds: we want a set of applications to run truly 
+independently from others, without creating memory pressure on the 
+global system.
 
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
----
- tools/perf/Documentation/perf-record.txt |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The way history develop in this series, I started from the slab cache, 
+and a page-level tracking appeared on that series. I then figured it 
+would be better to start tracking something that is totally page-based, 
+such as the stack - that already accounts for 70 % of the 
+infrastructure, and then merge the slab code later. In this sense, it 
+was just a strategy inversion. But both are, and were, in the goals.
 
-diff --git a/tools/perf/Documentation/perf-record.txt
-b/tools/perf/Documentation/perf-record.txt
-index b38a1f9..f9321b3 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -38,7 +38,7 @@ OPTIONS
-           Access is the memory access type (read, write, execute) it can
-           be passed as follows: '\mem:addr[:[r][w][x]]'.
-           If you want to profile read-write accesses in 0x1000, just set
--          'mem:0x1000:rw'.
-+          'mem:0x1000'.
+> I'm not sure whether it would ever be appropriate to limit the amount of
+> slab for an individual slab cache, however, instead of limiting the sum of
+> all slab for a set of processes.  With cache merging in slub this would
+> seem to be difficult to do correctly.
 
- --filter=<filter>::
-         Event filter.
---
-1.7.9.7
+Yes, I do agree.
+
+
+
