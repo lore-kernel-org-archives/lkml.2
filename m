@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab2F0JLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:11:20 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:35532 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab2F0JLP (ORCPT
+	id S1756716Ab2F0JLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:11:21 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47459 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201Ab2F0JLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:11:15 -0400
-From: Junxiao Bi <junxiao.bi@oracle.com>
-To: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org
-Cc: mfasheh@suse.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        joe.jin@oracle.com, Junxiao Bi <junxiao.bi@oracle.com>,
-        stable@vger.kernel.org
-Subject: [PATCH v4 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
-Date: Wed, 27 Jun 2012 17:09:54 +0800
-Message-Id: <1340788195-20623-2-git-send-email-junxiao.bi@oracle.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
-References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
+	Wed, 27 Jun 2012 05:11:14 -0400
+Date: Wed, 27 Jun 2012 12:10:56 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch -resend] leds-lp5523: BUG() in error handling in probe()
+Message-ID: <20120627091055.GW31212@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627085800.GA3007@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
-commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
-io flag is involved in it to serialize the unaligned aio. As
-*private is not initialized in init_sync_kiocb() of do_sync_write(),
-this unaligned io flag may be unexpectly set in an aligned dio.
-And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
-to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
-will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
+Inside the error handling in lp5523_init_led(), there is a place that
+calls to led_classdev_unregister().  When we unregister the LED drivers,
+it tries to set the brightness to OFF.  In this driver setting the
+brightness is done through a work queue and the work queue hasn't been
+initialized yet.
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: stable@vger.kernel.org
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
+The result is that we trigger a WARN_ON() in the __queue_work().
+
+The fix is to move the INIT_WORK() in front of the call to
+lp5523_init_led().
+
+Matt Renzelmann found this using a bug finding tool.
+
+Reported-by: Matt Renzelmann <mjr@cs.wisc.edu>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 ---
- include/linux/aio.h |    1 +
- 1 file changed, 1 insertion(+)
+I don't have this hardware, so I can't test it.  I originally sent this
+on Fri, 13 Apr 2012, and that was before Bryan Wu took on the LED
+subsystem.  Also when I sent it, the WARN_ON() in __queue_work() was
+a BUG_ON() so I've updated the commit message.
 
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 2314ad8..b1a520e 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -140,6 +140,7 @@ struct kiocb {
- 		(x)->ki_dtor = NULL;			\
- 		(x)->ki_obj.tsk = tsk;			\
- 		(x)->ki_user_data = 0;                  \
-+		(x)->private = NULL;			\
- 	} while (0)
+diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+index 857a3e1..e8a2712 100644
+--- a/drivers/leds/leds-lp5523.c
++++ b/drivers/leds/leds-lp5523.c
+@@ -943,6 +943,9 @@ static int __devinit lp5523_probe(struct i2c_client *client,
+ 		if (pdata->led_config[i].led_current == 0)
+ 			continue;
  
- #define AIO_RING_MAGIC			0xa10a10a1
--- 
-1.7.9.5
-
++		INIT_WORK(&chip->leds[led].brightness_work,
++			lp5523_led_brightness_work);
++
+ 		ret = lp5523_init_led(&chip->leds[led], &client->dev, i, pdata);
+ 		if (ret) {
+ 			dev_err(&client->dev, "error initializing leds\n");
+@@ -956,9 +959,6 @@ static int __devinit lp5523_probe(struct i2c_client *client,
+ 			  LP5523_REG_LED_CURRENT_BASE + chip->leds[led].chan_nr,
+ 			  chip->leds[led].led_current);
+ 
+-		INIT_WORK(&(chip->leds[led].brightness_work),
+-			lp5523_led_brightness_work);
+-
+ 		led++;
+ 	}
+ 
