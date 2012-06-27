@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab2F0Ok4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 10:40:56 -0400
-Received: from mail2.charite.de ([141.42.206.200]:49911 "EHLO mail2.charite.de"
+	id S1756768Ab2F0OmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 10:42:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28455 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756255Ab2F0Oky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 10:40:54 -0400
-Date: Wed, 27 Jun 2012 16:40:51 +0200
-From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
-To: linux-kernel@vger.kernel.org
-Subject: Kernel 3.4.3: WARNING: at arch/x86/kernel/apic/ipi.c:109
- default_send_IPI_mask_logical+0x97/0xc7()
-Message-ID: <20120627144051.GB8726@charite.de>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755498Ab2F0Ol7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 10:41:59 -0400
+Message-ID: <1340808117.1207.215.camel@bling.home>
+Subject: Re: [PATCH] kvm: don't clear level from irqfd
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 27 Jun 2012 08:41:57 -0600
+In-Reply-To: <20120627113843.GB17922@redhat.com>
+References: <20120627091343.GA17693@redhat.com>
+	 <20120627100345.GA6533@redhat.com> <20120627102024.GA17922@redhat.com>
+	 <20120627102254.GB6533@redhat.com> <20120627113843.GB17922@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI:
+On Wed, 2012-06-27 at 14:38 +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 27, 2012 at 01:22:54PM +0300, Gleb Natapov wrote:
+> > On Wed, Jun 27, 2012 at 01:20:24PM +0300, Michael S. Tsirkin wrote:
+> > > On Wed, Jun 27, 2012 at 01:03:46PM +0300, Gleb Natapov wrote:
+> > > > On Wed, Jun 27, 2012 at 12:13:43PM +0300, Michael S. Tsirkin wrote:
+> > > > > irqfd sets and clears the level immediately.
+> > > > > This used to be necessary for MSI interrupts but isn't anymore.
+> > > > > 
+> > > > > Note! We never officially supported irqfd for level
+> > > > > interrupts but it usually seemed to kind of work,
+> > > > > and this change will break it. There are no known
+> > > > > real users of that feature though - only old vfio prototypes.
+> > > > > Removing this line will make it easier to add
+> > > > > real support for level irqfds in the future.
+> > > > > 
+> > > > Did we officially supported irqfd for ioapic/pic edge interrupts?
+> > > > Because those will break to.
+> > > 
+> > > Hard to say - as Alex points out it was never documented.
+> > If we will start dropping everything that was never documented we will
+> > hardly have working VMM at the end :)
+> 
+> Generally true.
+> 
+> However I just realized that this interface does not work
+> reliably for ioapic/pic edge either. More or less for the same reason that
+> it does not work for edge: we set bit in IRR, try to inject,
+> then clear even if injection failed (e.g. because it is low
+> priority). Guest will never get an interrupt in this case.
+> 
+> So what happened e.g. for Alex's vfio prototype is he never
+> hit an interrupt window in light testing.
+> 
+> What we would need to do to fix it is:
+> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > +	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> 
+> Which will fix edge but break level same as this patch.
+> But is it worth fixing? Maybe declare it broken and be
+> done with it?
 
-Jun 26 12:42:49 mail2 kernel: [436077.350389] ------------[ cut here ]------------
-Jun 26 12:42:49 mail2 kernel: [436077.350417] WARNING: at arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x97/0xc7()
-Jun 26 12:42:49 mail2 kernel: [436077.350423] Hardware name: ProLiant DL360 G4
-Jun 26 12:42:49 mail2 kernel: [436077.350426] empty IPI mask
-Jun 26 12:42:49 mail2 kernel: [436077.350428] Modules linked in: nfnetlink_log nfnetlink ipv6 tg3 microcode hpwdt rng_core psmouse container i6300esb button thermal processor
-Jun 26 12:42:49 mail2 kernel: [436077.350457] Pid: 20792, comm: /usr/sbin/amavi Not tainted 3.4.3 #1
-Jun 26 12:42:49 mail2 kernel: [436077.350462] Call Trace:
-Jun 26 12:42:49 mail2 kernel: [436077.350477]  [<c1024334>] warn_slowpath_common+0x67/0x8e
-Jun 26 12:42:49 mail2 kernel: [436077.350484]  [<c1018795>] ? default_send_IPI_mask_logical+0x97/0xc7
-Jun 26 12:42:49 mail2 kernel: [436077.350490]  [<c1018795>] ? default_send_IPI_mask_logical+0x97/0xc7
-Jun 26 12:42:49 mail2 kernel: [436077.350496]  [<c10243d7>] warn_slowpath_fmt+0x2e/0x30
-Jun 26 12:42:49 mail2 kernel: [436077.350502]  [<c1018795>] default_send_IPI_mask_logical+0x97/0xc7
-Jun 26 12:42:49 mail2 kernel: [436077.350510]  [<c107007b>] ? put_callchain_buffers+0x1b/0x3d
-Jun 26 12:42:49 mail2 kernel: [436077.350516]  [<c10173ad>] native_send_call_func_ipi+0x42/0x54
-Jun 26 12:42:49 mail2 kernel: [436077.350525]  [<c1055ae7>] smp_call_function_many+0x15c/0x1d5
-Jun 26 12:42:49 mail2 kernel: [436077.350534]  [<c107713b>] ? drain_pages+0x62/0x62
-Jun 26 12:42:49 mail2 kernel: [436077.350540]  [<c1055b85>] on_each_cpu_mask+0x25/0x3d
-Jun 26 12:42:49 mail2 kernel: [436077.350545]  [<c107713b>] ? drain_pages+0x62/0x62
-Jun 26 12:42:49 mail2 kernel: [436077.350550]  [<c10751fa>] drain_all_pages+0x89/0x90
-Jun 26 12:42:49 mail2 kernel: [436077.350555]  [<c10774f3>] __alloc_pages_nodemask+0x3a8/0x651
-Jun 26 12:42:49 mail2 kernel: [436077.350567]  [<c10a0ace>] do_huge_pmd_wp_page+0x1bc/0x567
-Jun 26 12:42:49 mail2 kernel: [436077.350574]  [<c1044787>] ? __enqueue_entity+0x67/0x6f
-Jun 26 12:42:49 mail2 kernel: [436077.350582]  [<c1089972>] handle_mm_fault+0x14a/0x206
-Jun 26 12:42:49 mail2 kernel: [436077.350588]  [<c101d725>] ? vmalloc_sync_all+0x5/0x5
-Jun 26 12:42:49 mail2 kernel: [436077.350593]  [<c101d818>] do_page_fault+0xf3/0x3ab
-Jun 26 12:42:49 mail2 kernel: [436077.350604]  [<c1008fbc>] ? sys_clone+0x2b/0x32
-Jun 26 12:42:49 mail2 kernel: [436077.350609]  [<c101d725>] ? vmalloc_sync_all+0x5/0x5
-Jun 26 12:42:49 mail2 kernel: [436077.350620]  [<c12873bf>] error_code+0x67/0x6c
-Jun 26 12:42:49 mail2 kernel: [436077.350625] ---[ end trace 402a702d5527abf9 ]---
+Ugh, so if I understand correctly, the case where kvm_set_irq() returns
+<0, we're broken.  VFIO has masked the physical device and has no error
+path to know that the interrupt inject was unsuccessful.  We almost need
+an error eventfd that bounces the interrupt back to userspace for the
+qemu interrupt model to handle, but that has it's own set of
+complications.  Suggestions?  Declaring the interface broken isn't very
+useful.  Thanks,
 
--- 
-Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
-ralf.hildebrandt@charite.de        Campus Benjamin Franklin
-http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
-Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
+Alex
+
