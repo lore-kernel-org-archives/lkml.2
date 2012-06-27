@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab2F0Vm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 17:42:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932185Ab2F0Vm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 17:42:27 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] kvm, Add x86_hyper_kvm to complete detect_hypervisor_platform check
-Date: Wed, 27 Jun 2012 17:42:18 -0400
-Message-Id: <1340833338-15485-1-git-send-email-prarit@redhat.com>
+	id S1757852Ab2F0Vmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 17:42:47 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:42565 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756852Ab2F0Vmp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 17:42:45 -0400
+Message-ID: <4FEB7E19.8040702@linux.vnet.ibm.com>
+Date: Wed, 27 Jun 2012 16:41:45 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Minchan Kim <minchan@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
+References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com> <4FEA9FDD.6030102@kernel.org> <4FEAA4AA.3000406@intel.com> <4FEAA7A1.9020307@kernel.org> <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default> <4FEB5204.3090707@linux.vnet.ibm.com> <80ad7298-23de-4c5e-9a8d-483198ae4ef1@default>
+In-Reply-To: <80ad7298-23de-4c5e-9a8d-483198ae4ef1@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062721-5518-0000-0000-000005944D0C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While debugging I noticed that unlike all the other hypervisor code in the
-kernel, kvm does not have an entry for x86_hyper which is used in
-detect_hypervisor_platform(), and results in a nice message about the
-hypervisor being used.  This is only really a stub function and it makes
-kvm more consistent with the other hypervisors (and it makes debugging
-a little easier).
+On 06/27/2012 04:15 PM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> I guess I'm not following.  Are you supporting the removal
+>> of the "break even" logic?  I added that logic as a
+>> compromise for Peter's feedback:
+>>
+>> http://lkml.org/lkml/2012/5/17/177
+> 
+> Yes, as long as I am correct that zsmalloc never has to map/flush
+> more than two pages at a time, I think dealing with the break-even
+> logic is overkill.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>
----
- arch/x86/include/asm/hypervisor.h |    1 +
- arch/x86/kernel/cpu/hypervisor.c  |    1 +
- arch/x86/kernel/kvm.c             |    6 ++++++
- 3 files changed, 8 insertions(+)
+The implementation of local_flush_tlb_kernel_range()
+shouldn't be influenced by zsmalloc at all.  Additionally,
+we can't assume that zsmalloc will always be the only user
+of this function.
 
-diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
-index 7a15153..b518c75 100644
---- a/arch/x86/include/asm/hypervisor.h
-+++ b/arch/x86/include/asm/hypervisor.h
-@@ -49,6 +49,7 @@ extern const struct hypervisor_x86 *x86_hyper;
- extern const struct hypervisor_x86 x86_hyper_vmware;
- extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
- extern const struct hypervisor_x86 x86_hyper_xen_hvm;
-+extern const struct hypervisor_x86 x86_hyper_kvm;
- 
- static inline bool hypervisor_x2apic_available(void)
- {
-diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-index 755f64f..6d6dd7a 100644
---- a/arch/x86/kernel/cpu/hypervisor.c
-+++ b/arch/x86/kernel/cpu/hypervisor.c
-@@ -37,6 +37,7 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
- #endif
- 	&x86_hyper_vmware,
- 	&x86_hyper_ms_hyperv,
-+	&x86_hyper_kvm,
- };
- 
- const struct hypervisor_x86 *x86_hyper;
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index e554e5a..0a38b68 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -39,6 +39,7 @@
- #include <asm/desc.h>
- #include <asm/tlbflush.h>
- #include <asm/idle.h>
-+#include <asm/hypervisor.h>
- 
- static int kvmapf = 1;
- 
-@@ -432,6 +433,11 @@ void __init kvm_guest_init(void)
- #endif
- }
- 
-+const struct hypervisor_x86 x86_hyper_kvm __refconst = {
-+	.name			= "KVM",
-+};
-+EXPORT_SYMBOL(x86_hyper_kvm);
-+
- static __init int activate_jump_labels(void)
- {
- 	if (has_steal_clock) {
--- 
-1.7.9.3
+> I see Peter isn't on this dist list... maybe
+> you should ask him if he agrees, as long as we are only always
+> talking about flush-two-TLB-pages vs flush-all.
+
+Yes, I'm planning to send out the next version of patches
+tomorrow (minus the first that has already been accepted)
+and I'll include him like I should have the first time :-/
+
+> (And, of course, per previous discussion, I think even mapping/flushing
+> two TLB pages is unnecessary and overkill required only for protecting an
+> abstraction, but will stop beating that dead horse. ;-)
+
+With this patchset, I actually quantified the the
+performance gain with page table assisted mapping vs mapping
+via copy, and there is a significant 40% difference in
+single-threaded performance.
+
+You can do the test yourself by commenting out the
+#define __HAVE_ARCH_LOCAL_FLUSH_TLB_KERNEL_RANGE
+in tlbflush.h which will cause the new mapping via copy
+method to be used.
+
+--
+Seth
 
