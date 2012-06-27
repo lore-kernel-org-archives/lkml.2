@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab2F0AMt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 20:12:49 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:60040 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754221Ab2F0AMs (ORCPT
+	id S1755371Ab2F0ANG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 20:13:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61703 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2F0AMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 20:12:48 -0400
-Date: Tue, 26 Jun 2012 17:12:46 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [PATCH] drm/i915/sprite: Fix mem leak in intel_plane_init()
-Message-ID: <20120626171246.4c385996@jbarnes-desktop>
-In-Reply-To: <alpine.LNX.2.00.1206270053570.3759@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1206270053570.3759@swampdragon.chaosbits.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Tue, 26 Jun 2012 20:12:49 -0400
+Date: Wed, 27 Jun 2012 08:12:33 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH v4 2/2] memcg: change mem_control_xxx to mem_cgroup_xxx
+Message-ID: <20120627001233.GA2289@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1340622959-13136-1-git-send-email-liwp.linux@gmail.com>
+ <20120626125437.26050bb0.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120626125437.26050bb0.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jun 2012 00:55:37 +0200 (CEST)
-Jesper Juhl <jj@chaosbits.net> wrote:
+On Tue, Jun 26, 2012 at 12:54:37PM -0700, Andrew Morton wrote:
+>On Mon, 25 Jun 2012 19:15:59 +0800
+>Wanpeng Li <liwp.linux@gmail.com> wrote:
+>
+>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>> 
+>> Unify memcg functions to mem_cgroup_xxx.
+>
+>How about we unify memcg functions to memcg_xxx?
 
-> If we ever hit the default case in the switch statement we'll return
-> from the function without freeing the memory we just allocated to
-> 'intel_plane' (but that has not been used).
-> 
-> This patch gets rid of the leak by freeing the memory just before we
-> return.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/gpu/drm/i915/intel_sprite.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_sprite.c b/drivers/gpu/drm/i915/intel_sprite.c
-> index 2a20fb0..c8851ba 100644
-> --- a/drivers/gpu/drm/i915/intel_sprite.c
-> +++ b/drivers/gpu/drm/i915/intel_sprite.c
-> @@ -685,6 +685,7 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe)
->  		break;
->  
->  	default:
-> +		kfree(intel_plane);
->  		return -ENODEV;
->  	}
->  
-> @@ -699,4 +700,3 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe)
->  
->  	return ret;
->  }
+OK, I will resend the patch. Thank you!
 
-Yeah, looks fine.  I just fixed the same thing in a local tree (though
-by using a goto since I added another path that could fail).
+Regards,
+Wanpeng Li 
 
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+>
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -3999,7 +3999,7 @@ static int mem_cgroup_move_charge_write(struct cgroup *cgrp,
+>>  #endif
+>>  
+>>  #ifdef CONFIG_NUMA
+>> -static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
+>> +static int mem_cgroup_numa_stat_show(struct cgroup *cont, struct cftype *cft,
+>>  				      struct seq_file *m)
+>
+>memcg_numa_stat_show(), etc.
+>
+>
