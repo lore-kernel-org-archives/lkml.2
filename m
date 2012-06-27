@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab2F0Ctx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jun 2012 22:49:53 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61733 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754743Ab2F0Ctw (ORCPT
+	id S1755438Ab2F0C6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jun 2012 22:58:11 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:53069 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2F0C6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jun 2012 22:49:52 -0400
-X-AuditID: 9c930179-b7cceae000004195-49-4fea74ce0069
-Message-ID: <4FEA74D6.8030107@kernel.org>
-Date: Wed, 27 Jun 2012 11:49:58 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 26 Jun 2012 22:58:10 -0400
+Date: Wed, 27 Jun 2012 02:58:46 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Rob Landley <rob@landley.net>, Miklos Szeredi <mszeredi@suse.cz>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: kernel-parameters.txt remove
+ capability.disable
+Message-ID: <20120627025846.GA13155@mail.hallyn.com>
+References: <20120626013402.GC9997@zod.bos.redhat.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 1/3] zram/zcache: swtich Kconfig dependency from X86 to
- ZSMALLOC
-References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-2-git-send-email-sjenning@linux.vnet.ibm.com> <4FEA71E5.5090808@kernel.org> <20120627024301.GA8468@kroah.com>
-In-Reply-To: <20120627024301.GA8468@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120626013402.GC9997@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On 06/27/2012 11:43 AM, Greg Kroah-Hartman wrote:
-
-> On Wed, Jun 27, 2012 at 11:37:25AM +0900, Minchan Kim wrote:
->> On 06/26/2012 01:14 AM, Seth Jennings wrote:
->>
->>> This patch switches zcache and zram dependency to ZSMALLOC
->>> rather than X86.  There is no net change since ZSMALLOC
->>> depends on X86, however, this prevent further changes to
->>> these files as zsmalloc dependencies change.
->>>
->>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>
->> Reviewed-by: Minchan Kim <minchan@kernel.org>
->>
->> It could be merged regardless of other patches in this series.
+Quoting Josh Boyer (jwboyer@redhat.com):
+> Remove the documentation for capability.disable.  The code supporting this
+> parameter was removed with:
 > 
-> I already did :)
+> 	commit 5915eb53861c5776cfec33ca4fcc1fd20d66dd27
+> 	Author: Miklos Szeredi <mszeredi@suse.cz>
+> 	Date:   Thu Jul 3 20:56:05 2008 +0200
+> 
+>     	security: remove dummy module
+> 
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 
+Thanks!
 
-It would have been better if you send merge mail to Ccing people.
-Anyway, Thanks!
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
--- 
-Kind regards,
-Minchan Kim
+> ---
+>  Documentation/kernel-parameters.txt |    6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index a92c5eb..9415bcc 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -446,12 +446,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			possible to determine what the correct size should be.
+>  			This option provides an override for these situations.
+>  
+> -	capability.disable=
+> -			[SECURITY] Disable capabilities.  This would normally
+> -			be used only if an alternative security model is to be
+> -			configured.  Potentially dangerous and should only be
+> -			used if you are entirely sure of the consequences.
+> -
+>  	ccw_timeout_log [S390]
+>  			See Documentation/s390/CommonIO for details.
+>  
+> -- 
+> 1.7.10.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
