@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045Ab2F0KUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 06:20:37 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:9970
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757009Ab2F0KUf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 06:20:35 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah)
-Date: Wed, 27 Jun 2012 18:21:38 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
-Message-ID: <20120627102138.GB10476@localhost.localdomain>
-References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com>
- <1340748634.3732.27.camel@pasglop>
+	id S1757021Ab2F0KXD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 06:23:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753538Ab2F0KXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 06:23:01 -0400
+Date: Wed, 27 Jun 2012 13:22:54 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] kvm: don't clear level from irqfd
+Message-ID: <20120627102254.GB6533@redhat.com>
+References: <20120627091343.GA17693@redhat.com>
+ <20120627100345.GA6533@redhat.com>
+ <20120627102024.GA17922@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340748634.3732.27.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.net
+In-Reply-To: <20120627102024.GA17922@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 08:10:34AM +1000, Benjamin Herrenschmidt wrote:
-> On Tue, 2012-06-26 at 18:25 +0800, Zhao Chenhui wrote:
-> > Do hardware timebase sync. Firstly, stop all timebases, and transfer
-> > the timebase value of the boot core to the other core. Finally,
-> > start all timebases.
-> > 
-> > Only apply to dual-core chips, such as MPC8572, P2020, etc.
-> > 
-> > Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> > Signed-off-by: Li Yang <leoli@freescale.com>
-> > ---
-> > Changes for v6:
-> >  * added 85xx_TB_SYNC
-> >  * added isync() after set_tb()
-> >  * removed extra entries from mpc85xx_smp_guts_ids
+On Wed, Jun 27, 2012 at 01:20:24PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 27, 2012 at 01:03:46PM +0300, Gleb Natapov wrote:
+> > On Wed, Jun 27, 2012 at 12:13:43PM +0300, Michael S. Tsirkin wrote:
+> > > irqfd sets and clears the level immediately.
+> > > This used to be necessary for MSI interrupts but isn't anymore.
+> > > 
+> > > Note! We never officially supported irqfd for level
+> > > interrupts but it usually seemed to kind of work,
+> > > and this change will break it. There are no known
+> > > real users of that feature though - only old vfio prototypes.
+> > > Removing this line will make it easier to add
+> > > real support for level irqfds in the future.
+> > > 
+> > Did we officially supported irqfd for ioapic/pic edge interrupts?
+> > Because those will break to.
 > 
-> What's that CONFIG option for ?
+> Hard to say - as Alex points out it was never documented.
+If we will start dropping everything that was never documented we will
+hardly have working VMM at the end :)
+
+> But at least they actually worked reliably. Hmm.  One way to address
+> this is to add kvm_trigger_irq which will trigger edge interrupts
+> unconditionally.
 > 
-> Cheers,
-> Ben.
+> Not sure it's worth it though.
+> 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  virt/kvm/eventfd.c | 1 -
+> > >  1 file changed, 1 deletion(-)
+> > > 
+> > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > > index f59c1e8..4db6b01 100644
+> > > --- a/virt/kvm/eventfd.c
+> > > +++ b/virt/kvm/eventfd.c
+> > > @@ -68,7 +68,6 @@ irqfd_inject(struct work_struct *work)
+> > >  	struct kvm *kvm = irqfd->kvm;
+> > >  
+> > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > >  }
+> > >  
+> > >  /*
+> > > -- 
+> > > MST
+> > 
+> > --
+> > 			Gleb.
 
-This option is to guard the timebase sync routines. It is selected
-when KEXEC or HOTPLUG_CPU is enabled on Freescale Book-E platforms.
-
--Chenhui
-
+--
+			Gleb.
