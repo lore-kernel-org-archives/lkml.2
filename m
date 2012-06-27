@@ -1,54 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab2F0Iqa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 04:46:30 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:39500 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460Ab2F0Iq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 04:46:29 -0400
-Message-ID: <4FEAC7C6.7030601@parallels.com>
-Date: Wed, 27 Jun 2012 12:43:50 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754274Ab2F0Ixe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 04:53:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50606 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab2F0Ixb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 04:53:31 -0400
+X-IronPort-AV: E=Sophos;i="4.77,483,1336320000"; 
+   d="scan'208";a="5273670"
+Message-ID: <4FEAC945.50700@cn.fujitsu.com>
+Date: Wed, 27 Jun 2012 16:50:13 +0800
+From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Wanpeng Li <liwp.linux@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2] memcg: unify mem_control_xxx to memcg_xxx
-References: <1340756175-3420-1-git-send-email-liwp.linux@gmail.com>
-In-Reply-To: <1340756175-3420-1-git-send-email-liwp.linux@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com
+CC: ebiederm@xmission.com, luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>,
+        dzickus@redhat.com, paul.gortmaker@windriver.com,
+        ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH v3 0/5] Export offsets of VMCS fields as note information
+ for kdump
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/27 16:53:38,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/27 16:53:42,
+	Serialize complete at 2012/06/27 16:53:42
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 04:16 AM, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->
-> Changelog:
->
-> V2 -> V1:
->
-> * replace memory_cgroup_xxx by memcg_xxx
->
-> Unify memcg functions to memcg_xxx.
+This patch set exports offsets of VMCS fields as note information for
+kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+runtime state of guest machine image, such as registers, in host
+machine's crash dump as VMCS format. The problem is that VMCS internal
+is hidden by Intel in its specification. So, we slove this problem
+by reverse engineering implemented in this patch set. The VMCSINFO
+is exported via sysfs (/sys/devices/cpu/vmcs/) to kexec-tools.
 
+Here are two usercases for two features that we want.
 
-This patch achieves nothing.
-You're changing a couple of function names. Andrew stated goal was to 
-change *all* function names from mem_cgroup_xxx to memcg_xxx, not just 
-one or two.
+1) Create guest machine's crash dumpfile from host machine's crash dumpfile
 
-This can be done mechanically by replacing occurrences of mem_cgroup_xxx 
-with memcg_xxx, and verifying that your final result is correct by 
-compiling the kernel with and without the combination of config options 
-that matters here, plus a set of randconfigs - or anything like that.
+In general, we want to use this feature on failure analysis for the system
+where the processing depends on the communication between host and guest
+machines to look into the system from both machines's viewpoints.
 
-Make sure you have Andrew's latest patch in your tree, that converts the 
-config option names.
+As a concrete situation, consider where there's heartbeat monitoring
+feature on the guest machine's side, where we need to determine in
+which machine side the cause of heartbeat stop lies. In our actual
+experiments, we encountered such situation and we found the cause of
+the bug was in host's process schedular so guest machine's vcpu stopped
+for a long time and then led to heartbeat stop.
 
+The module that judges heartbeat stop is on guest machine, so we need
+to debug guest machine's data. But if the cause lies in host machine
+side, we need to look into host machine's crash dump.
 
+Without this feature, we first create guest machine's dump and then
+create host mahine's, but there's only a short time between two
+processings, during which it's unlikely that buggy situation remains.
+
+So, we think the feature is useful to debug both guest machine's and
+host machine's sides at the same time, and expect we can make failure
+analysis efficiently.
+
+Of course, we believe this feature is commonly useful on the situation
+where guest machine doesn't work well due to something of host machine's.
+
+2) Get offsets of VMCS information on the CPU running on the host machine
+
+If kdump doesn't work well, then it means we cannot use kvm API to get
+register values of guest machine and they are still left on its vmcs
+region. In the case, we use crash dump mechanism running outside of
+linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
+information is then necessary.
+
+TODO:
+  1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
+     into vmcore.
+  2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
+     core file. To do this, we will modify kernel core dumper, gdb gcore
+     and crash gcore.
+  3. Dump guest image from the qemu-process core file into a vmcore.
+
+Changelog from v2 to v3:
+1. New VMCSINFO format.
+   Now the VMCSINFO is mainly made up of an array that contains all vmcs
+   fields' offsets. The offsets aren't encoded because we decode them in
+   the module itself. If some field doesn't exist or its offset cannot be
+   decoded correctly, the offset in the array is just set to zero.
+2. New sysfs interface and Documentation/ABI entry. 
+   We expose the actual fields in /sys/devices/cpu/vmcs instead of just
+   exporting the address of VMCSINFO in /sys/kernel/vmcsinfo.
+   For example, /sys/devices/cpu/vmcs/0800 contains the offset of
+   GUEST_DS_SELECTOR. 0800 is the encoding of GUEST_DS_SELECTOR.
+   Accordingly, ABI entry in Documentation is changed from sysfs-kernel-vmcsinfo
+   to sysfs-devices-cpu-vmcs.
+
+Changelog from v1 to v2:
+1. The VMCSINFO now has a simple binary <field><encoded offset> format,
+   as below:
+     +-------------+--------------------------+
+     | Byte offset | Contents                 |
+     +-------------+--------------------------+
+     | 0           | VMCS revision identifier |
+     +-------------+--------------------------+
+     | 4           | <field><encoded offset>  |
+     +-------------+--------------------------+
+     | 16          | <field><encoded offset>  |
+     +-------------+--------------------------+
+     ......
+  
+   The first 32 bits of VMCSINFO contains the VMCS revision identifier.
+   The remainder of VMCSINFO is used for <field><encoded offset> sets.
+   Each set takes 12 bytes: field occupys 4 bytes and its corresponding
+   encoded offset occupys 8 bytes.
+
+   Encoded offsets are raw values read by vmcs_read{16, 64, 32, l}, and
+   they are all unsigned extended to 8 bytes for each <field><encoded offset>
+   set will have the same size. 
+   We do not decode offsets here. The decoding work is delayed in userspace
+   tools for more flexible handling.
+   
+   And here are two examples of the new VMCSINFO:
+   Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
+   VMCSINFO contains:
+     <0000000d>                   --> VMCS revision id = 0xd
+     <00004000><0000000001840180> --> OFFSET(PIN_BASED_VM_EXEC_CONTROL) = 0x01840180
+     <00004002><0000000001940190> --> OFFSET(CPU_BASED_VM_EXEC_CONTROL) = 0x01940190
+     <0000401e><000000000fe40fe0> --> OFFSET(SECONDARY_VM_EXEC_CONTROL) = 0x0fe40fe0
+     <0000400c><0000000001e401e0> --> OFFSET(VM_EXIT_CONTROLS) = 0x01e401e0
+     ......
+
+   Processor: Intel(R) Xeon(R) CPU           E7540  @ 2.00GHz (24 cores)
+   VMCSINFO contains:
+     <0000000e>                   --> VMCS revision id = 0xe 
+     <00004000><0000000005540550> --> OFFSET(PIN_BASED_VM_EXEC_CONTROL) = 0x05540550
+     <00004002><0000000005440540> --> OFFSET(CPU_BASED_VM_EXEC_CONTROL) = 0x05440540
+     <0000401e><00000000054c0548> --> OFFSET(SECONDARY_VM_EXEC_CONTROL) = 0x054c0548
+     <0000400c><00000000057c0578> --> OFFSET(VM_EXIT_CONTROLS) = 0x057c0578
+     ......
+
+2. Add a new kernel module *vmcsinfo-intel* for filling VMCSINFO instead
+   of putting it in module kvm-intel. The new module is auto-loaded
+   when the vmx cpufeature is detected and it depends on module kvm-intel.
+   *Loading and unloading this module will have no side effect on the
+   running guests.*
+3. The sysfs file vmcsinfo is splitted into 2 files:
+   /sys/kernel/vmcsinfo: shows physical address of VMCSINFO note information.
+   /sys/kernel/vmcsinfo_maxsize: shows max size of VMCSINFO.
+4. A new Documentation/ABI entry is added for vmcsinfo and vmcsinfo_maxsize.
+5. Do not update VMCSINFO note when the kernel is panicked.
+
+zhangyanfei (5):
+  x86: Add helper variables and functions to hold VMCSINFO
+  KVM: Export symbols for module vmcsinfo-intel
+  KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
+  Sysfs: Export VMCSINFO via sysfs
+  Documentation: Add ABI entry for vmcs sysfs interface.
+
+ Documentation/ABI/testing/sysfs-devices-cpu-vmcs |   11 +
+ arch/x86/include/asm/vmcsinfo.h                  |  219 +++++++++++++
+ arch/x86/include/asm/vmx.h                       |  231 +++++---------
+ arch/x86/kernel/Makefile                         |    1 +
+ arch/x86/kernel/vmcsinfo.c                       |  381 ++++++++++++++++++++++
+ arch/x86/kvm/Kconfig                             |   11 +
+ arch/x86/kvm/Makefile                            |    3 +
+ arch/x86/kvm/vmcsinfo.c                          |  198 +++++++++++
+ arch/x86/kvm/vmx.c                               |   81 +----
+ drivers/base/core.c                              |   13 +
+ include/linux/kvm_host.h                         |    3 +
+ virt/kvm/kvm_main.c                              |    8 +-
+ 12 files changed, 932 insertions(+), 228 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-cpu-vmcs
+ create mode 100644 arch/x86/include/asm/vmcsinfo.h
+ create mode 100644 arch/x86/kernel/vmcsinfo.c
+ create mode 100644 arch/x86/kvm/vmcsinfo.c
