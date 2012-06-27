@@ -1,134 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab2F0RGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 13:06:11 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:62234 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167Ab2F0RGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 13:06:09 -0400
+	id S1758160Ab2F0RO2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 13:14:28 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:52528 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756880Ab2F0RO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 13:14:26 -0400
+Date: Wed, 27 Jun 2012 10:10:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Alexey Vlasov <renton@renton.name>, linux-kernel@vger.kernel.org
+Subject: Re: Attaching a process to cgroups
+Message-ID: <20120627171044.GF2418@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120619185856.GC31797@beaver>
+ <1340195298.15707.3.camel@marge.simpson.net>
+ <20120621075428.GE31797@beaver>
+ <1340266982.29752.37.camel@marge.simpson.net>
+ <20120626180620.GK2397@linux.vnet.ibm.com>
+ <1340781811.10881.70.camel@marge.simpson.net>
 MIME-Version: 1.0
-In-Reply-To: <20120627134849.GN1623@pengutronix.de>
-References: <1340772715-22117-1-git-send-email-rob.lee@linaro.org>
- <1340772715-22117-2-git-send-email-rob.lee@linaro.org> <20120627134849.GN1623@pengutronix.de>
-From: Rob Lee <rob.lee@linaro.org>
-Date: Wed, 27 Jun 2012 12:05:27 -0500
-Message-ID: <CAMXH7KF7yzyw3e+R7vciZQ0+BjO+cSsARfq9fEfvbJ_1bMF24A@mail.gmail.com>
-Subject: Re: [PATCH v6] ARM: imx: Add basic imx6q thermal driver
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: kernel@pengutronix.de, shawn.guo@linaro.org, linux@arm.linux.org.uk,
-        richard.zhao@freescale.com, dirk.behme@de.bosch.com,
-        amit.kachhap@linaro.org, amit.kucheria@linaro.org, lenb@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340781811.10881.70.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062717-3534-0000-0000-000009DA947C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 8:48 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Tue, Jun 26, 2012 at 11:51:55PM -0500, Robert Lee wrote:
->> +static inline int anatop_get_temp(int *temp, struct thermal_zone_device *tzdev)
->> +{
->> +     unsigned int n_meas;
->> +     unsigned int reg;
->> +     struct imx_anatop_tsdata *sd;
->> +
->> +     sd = &((struct imx_anatop_thdata *)tzdev->devdata)->sensor_data;
->> +
->> +
->> +     do {
->> +             /*
->> +              * Every time we measure the temperature, we will power on the
->> +              * temperature sensor, enable measurements, take a reading,
->> +              * disable measurements, power off the temperature sensor.
->> +              */
->> +             sd->handle_suspend = false;
->> +
->> +             anatop_write_reg(sd->anatopmfd, HW_ANADIG_TEMPSENSE0, 0,
->> +                     BM_ANADIG_TEMPSENSE0_POWER_DOWN);
->> +             anatop_write_reg(sd->anatopmfd, HW_ANADIG_TEMPSENSE0,
->> +                     BM_ANADIG_TEMPSENSE0_MEASURE_TEMP,
->> +                     BM_ANADIG_TEMPSENSE0_MEASURE_TEMP);
->> +             /*
->> +              * According to the anatop temp sensor designers, it may require
->> +              * up to ~17us to complete a measurement (imx6q).
->> +              * But this timing isn't checked on every part nor is it
->> +              * specified in the datasheet,  so sleeping at least 1ms should
->> +              * provide plenty of time.  Sleeping longer than 1ms is ok so no
->> +              * need for usleep_range */
->> +             msleep(1);
->> +
->> +             reg = anatop_read_reg(sd->anatopmfd, HW_ANADIG_TEMPSENSE0);
->> +
->> +             anatop_write_reg(sd->anatopmfd, HW_ANADIG_TEMPSENSE0, 0,
->> +                     BM_ANADIG_TEMPSENSE0_MEASURE_TEMP);
->> +             anatop_write_reg(sd->anatopmfd, HW_ANADIG_TEMPSENSE0,
->> +                     BM_ANADIG_TEMPSENSE0_POWER_DOWN,
->> +                     BM_ANADIG_TEMPSENSE0_POWER_DOWN);
->> +
->> +     /* if we had a suspend and resume event, we will re-take the reading */
->> +     } while (sd->handle_suspend);
->
-> [...]
->
->> +static int anatop_thermal_suspend(struct platform_device *pdev,
->> +                                     pm_message_t state)
->> +{
->> +     struct imx_anatop_thdata *dd = platform_get_drvdata(pdev);
->> +     struct imx_anatop_tsdata *sd = &dd->sensor_data;
->> +
->> +     /* power off the sensor during suspend */
->> +     anatop_write_reg(sd->anatopmfd, HW_ANADIG_TEMPSENSE0, 0,
->> +             BM_ANADIG_TEMPSENSE0_MEASURE_TEMP);
->> +
->> +     anatop_write_reg(sd->anatopmfd, HW_ANADIG_TEMPSENSE0,
->> +             BM_ANADIG_TEMPSENSE0_POWER_DOWN,
->> +             BM_ANADIG_TEMPSENSE0_POWER_DOWN);
->> +     return 0;
->> +}
->> +
->> +static int anatop_thermal_resume(struct platform_device *pdev)
->> +{
->> +     struct imx_anatop_thdata *dd = platform_get_drvdata(pdev);
->> +     struct imx_anatop_tsdata *sd = &dd->sensor_data;
->> +
->> +     sd->handle_suspend = true;
->> +     return 0;
->> +}
->
-> I don't know how to handle this properly or if it's really needed, but
-> the usage of this handle_suspend variable really looks suspicious. I've
-> never seen a driver looping around a while-suspended-in-between. Someone
-> else should have a look over this.
+On Wed, Jun 27, 2012 at 09:23:31AM +0200, Mike Galbraith wrote:
+> On Tue, 2012-06-26 at 11:06 -0700, Paul E. McKenney wrote: 
+> > On Thu, Jun 21, 2012 at 10:23:02AM +0200, Mike Galbraith wrote:
+> > > On Thu, 2012-06-21 at 11:54 +0400, Alexey Vlasov wrote: 
+> > > > On Wed, Jun 20, 2012 at 02:28:18PM +0200, Mike Galbraith wrote:
+> > > > > 
+> > > > > kernel/cgroup.c::cgroup_attach_task()
+> > > > > {
+> > > > > ...
+> > > > > 	synchronize_rcu();
+> > > > > ...
+> > > > > }
+> > > > 
+> > > > So nothing can be done here? (I mean if only I knew how to fix it I
+> > > > wouldn't ask about it ;)
+> > > 
+> > > Sure, kill the obnoxious thing, it's sitting right in the middle of the
+> > > userspace interface.
+> > > 
+> > > I banged on it a while back (wrt explosive android patches), extracted
+> > > RCU from the userspace interface.  It seemed to work great, much faster,
+> > > couldn't make it explode.  I wouldn't bet anything I wasn't willing to
+> > > immediately part with that the result was really really safe though ;-)
+> > 
+> > Or replace it with synchronize_rcu_expedited().  You can "get lucky"
+> > for quite some time removing synchronize_rcu() calls!
+> 
+> s/remove/replace, but yup.  A company that wanted to use the android
+> patches plus my tinkering showed a fix they needed on top to close a
+> race discovered in their testing.  So yeah, even when all seems fine,
+> extracting synchronize_rcu() may expose evils you couldn't encounter
+> before, and didn't happen to encounter afterward.
 
-I'll add some more context that may help you and others in analyzing this.
+I really did mean "remove".  Removing a synchronize_rcu() does result
+in a race, but often an extremely low-probability race.  So you can
+remove a synchronize_rcu() and get lucky for a long time, but sooner
+or later, something will explode.
 
-As mentioned, this driver hooks into the linux thermal framework.
-Upon registration with this is framework, the thermal framework
-creates a kernel thread which periodically checks the temperature and
-takes any necessary action.  So anatop_get_temp periodically gets
-called.  Now if a suspend were to occur during the msleep() call of
-this function for example, the temperature read afterword may not be
-valid.  So the loop check can detect that a suspend had occurred and
-that the temperature sensor value read was invalid so it will try
-again.
+							Thanx, Paul
 
-Another option would be for the resume function to return the
-temperature sensor to its previous state that it was in right before
-suspend.  This would require the resume to re-enable the temperature
-sensor and spin in a loop waiting for the temperature measurement to
-complete (aka, checking a hardware bit for completion) which
-theoretically may take up to ~17us.  In this case, a timeout could be
-added to this loop if we don't trust the hardware, and the looping in
-the anatop_get_temp could be removed.  This function already has some
-handling if an invalid temp sensor reading is detected.
-
->
-> Sascha
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
