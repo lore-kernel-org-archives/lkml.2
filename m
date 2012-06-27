@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab2F0MkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 08:40:05 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50628 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755803Ab2F0MkD convert rfc822-to-8bit (ORCPT
+	id S932128Ab2F0MkR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 08:40:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32289 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab2F0MkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 08:40:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FE9F63B.1000908@canonical.com>
-References: <1340364965.18025.71.camel@twins>
-	<4FE48A09.7050305@canonical.com>
-	<1340718515.21991.83.camel@twins>
-	<4FE9F63B.1000908@canonical.com>
-Date: Wed, 27 Jun 2012 20:40:02 +0800
-Message-ID: <CAJd=RBBWGVkTeZEz9K70AP2-DDTm0p5VEwHgM1tvcnwU3Y=brQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH] sched: Fix race in task_group()
-From: Hillf Danton <dhillf@gmail.com>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>, Andrew Vagin <avagin@openvz.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Jun 2012 08:40:15 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=SVBeI296zcEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=_w-MO9lUEIP7HSUNWOEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340800812.16702.3.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 4/7] tracing/function: Introduce persistent trace option
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Date: Wed, 27 Jun 2012 08:40:12 -0400
+In-Reply-To: <1340753009-12483-4-git-send-email-anton.vorontsov@linaro.org>
+References: <20120626232210.GA11549@lizard>
+	 <1340753009-12483-4-git-send-email-anton.vorontsov@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch went three versions, the first,
+On Tue, 2012-06-26 at 16:23 -0700, Anton Vorontsov wrote:
+>  
+> @@ -219,6 +232,8 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
+>  
+>  		return 0;
+>  	}
+> +	if (bit == TRACE_FUNC_OPT_PSTORE)
+> +		return 0;
 
-On Fri, Jun 22, 2012 at 7:36 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Reported-by: Stefan Bader <stefan.bader@canonical.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 32157b9..77437d4 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1246,6 +1246,9 @@ struct task_struct {
->	const struct sched_class *sched_class;
->	struct sched_entity se;
->	struct sched_rt_entity rt;
-> +#ifdef CONFIG_CGROUP_SCHED
-> +	struct task_struct *sched_task_group;
-> +#endif
->
+Perhaps this should be a switch() statement, or at least put a
+ } else if () {
 
-The second,
+As it can't be bit == TRACE_FUNC_OPT_STACK and bit ==
+TRACE_FUNC_OPT_PSTORE.
 
->> On 26.06.2012 15:48, Peter Zijlstra wrote:
->> Here's one that's actually compile tested (with the right CONFIG_foo
->> enabled) and I fixed the autogroup lockdep splat.
->>
->> ---
->> Subject: sched: Fix race in task_group()
->> From: Peter Zijlstra <peterz@infradead.org>
->> Date: Fri, 22 Jun 2012 13:36:05 +0200
->>
->> Reported-by: Stefan Bader <stefan.bader@canonical.com>
->> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> ---
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -1246,6 +1246,9 @@ struct task_struct {
->>       const struct sched_class *sched_class;
->>       struct sched_entity se;
->>       struct sched_rt_entity rt;
->> +#ifdef CONFIG_CGROUP_SCHED
->> +     struct task_group *sched_task_group;
->> +#endif
->>
+-- Steve
 
-And the third,  https://lkml.org/lkml/2012/6/26/331
+>  
+>  	return -EINVAL;
+>  }
 
->From d751ab1f1e532f32412d99b71a1bfea3e5282d07 Mon Sep 17 00:00:00 2001
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri, 22 Jun 2012 13:36:00 +0200
-Subject: [PATCH] sched: Fix race in task_group()
 
-Stefan reported a crash on a kernel before a3e5d1091c1 ("sched: Don't
-call task_group() too many times in set_task_rq()"), he found the reason
-to be that the multiple task_group() invocations in set_task_rq()
-returned different values.
-
-Looking at all that I found a lack of serialization and plain wrong
-comments.
-
-The below tries to fix it using an extra pointer which is updated under
-the appropriate scheduler locks. Its not pretty, but I can't really see
-another way given how all the cgroup stuff works.
-
-Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-[backported to apply to 3.0 and 3.2]
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
----
- include/linux/init_task.h |   12 +++++++++++-
- include/linux/sched.h     |    5 ++++-
- kernel/sched.c            |   32 ++++++++++++++++++--------------
- 3 files changed, 33 insertions(+), 16 deletions(-)
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 56de5c1..1fd9884 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1242,6 +1242,9 @@ struct task_struct {
- 	const struct sched_class *sched_class;
- 	struct sched_entity se;
- 	struct sched_rt_entity rt;
-+#ifdef CONFIG_CGROUP_SCHED
-+	struct task_struct *sched_task_group;
-+#endif
-
-where sched_task_group was defined to be task_struct twice(in the first
-and the third versions) and to be task_group once.
-
-Before backport, feel free to respin with the final define determined.
