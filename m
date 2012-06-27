@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab2F0Jzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 05:55:35 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:9881
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753538Ab2F0Jze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 05:55:34 -0400
-X-Forefront-Antispam-Report: CIP:157.55.49.13;KIP:(null);UIP:(null);IPV:NLI;H:SN2PRD0802HT009.namprd08.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: PS-3(zzbb2dI98dI1432Izz1202hzz8275bhz2fh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FEAD887.1080504@ozmodevices.com>
-Date: Wed, 27 Jun 2012 10:55:19 +0100
-From: Rupesh Gujare <rgujare@ozmodevices.com>
-Organization: Ozmo Devices
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756840Ab2F0J6N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 05:58:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33238 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753538Ab2F0J6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 05:58:12 -0400
+Date: Wed, 27 Jun 2012 12:58:14 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 0/6] kvm: level triggered irqfd support
+Message-ID: <20120627095814.GJ17507@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] staging: ozwpan: Fix compilation issue due to export.h
-References: <1340712221-6750-1-git-send-email-rgujare@ozmodevices.com> <1340712221-6750-3-git-send-email-rgujare@ozmodevices.com> <20120626220732.GA21906@kroah.com>
-In-Reply-To: <20120626220732.GA21906@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.149.82.179]
-X-OriginatorOrg: ozmodevices.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627044758.23698.249.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/06/12 23:07, Greg KH wrote:
-> On Tue, Jun 26, 2012 at 01:03:40PM +0100, Rupesh Gujare wrote:
->> Fixes compilation error caused due to header file.
->>
->> Signed-off-by: Rupesh Gujare <rgujare@ozmodevices.com>
->> ---
->>   drivers/staging/ozwpan/ozhcd.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
->> index 251f07c..e3efa41 100644
->> --- a/drivers/staging/ozwpan/ozhcd.c
->> +++ b/drivers/staging/ozwpan/ozhcd.c
->> @@ -28,7 +28,7 @@
->>   #include <linux/usb.h>
->>   #include <linux/jiffies.h>
->>   #include <linux/slab.h>
->> -#include <linux/export.h>
->> +#include <linux/module.h>
-> I don't understand, what is this fixing?  It builds for me ok here, why
-> is module.h needed instead of export.h?
->
-> confused,
->
-Greg,
+On Tue, Jun 26, 2012 at 11:08:52PM -0600, Alex Williamson wrote:
+> Ok, let's see how this flies.  I actually quite like this, so be
+> gentle tearing it apart ;)
+> 
+> I just couldn't bring myself to contort KVM_IRQFD into something
+> that either sets up an irqfd or specifies a nearly unrelated EOI
+> eventfd.  The solution I've come up with, that also avoids exposing
+> irq_source_ids to userspace, is to work through the irqfd.  If we
+> setup a level irqfd, we can optionally associate an eoifd with
+> the same irq_source_id, by passing the irqfd.  To do this, we just
+> need to create a new reference counted object for the source ID
+> so we don't run into problems ordering release.  This means we
+> end up with a KVM_EOIFD ioctl that has both general usefulness and
+> can still tie into an irqfd.
 
-Sorry about that. Looks like I tried to compile against distribution 
-kernel, which was throwing error.
-Please ignore this patch.
+I like this API.
 
--- 
-Regards,
-Rupesh Gujare
+> In patch 6/6 I also include an alternate de-assert mechanism via an
+> irqfd with the opposite polarity.  I don't currently use this, but
+> it's pretty trivial and at least available in archives now.
 
+The nasty bit about that is that if you assert twice then
+deassert once it's not clear what should happen.
+But yea, it does not hurt to put them in the archives.
+
+> 
+> I don't address whether injecting an edge irqfd really needs an assert
+> followed by de-assert (I don't know).  This new interface really
+> unties itself from caring.  We might be able to consolidate inject
+> functions at some future point, but it doesn't change how we'd name
+> flags as it did in the previous version.  Thanks,
+> 
+> Alex
 
