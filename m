@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab2F1Kvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 06:51:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35984 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750817Ab2F1Kvv (ORCPT
+	id S1752393Ab2F1KzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 06:55:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40293 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2F1KzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 06:51:51 -0400
-Date: Thu, 28 Jun 2012 11:51:48 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: perex@perex.cz, tiwai@suse.de, lrg@ti.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, swarren@nvidia.com
-Subject: Re: [PATCH] ASoC: snd_dmaengine: add common api for pcm_mmap
-Message-ID: <20120628105148.GD28922@opensource.wolfsonmicro.com>
-References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="48TaNjbzBVislYPb"
-Content-Disposition: inline
-In-Reply-To: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Jun 2012 06:55:15 -0400
+From: Sha Zhengju <handai.szj@gmail.com>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org
+Cc: kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH 0/7] Per-cgroup page stat accounting
+Date: Thu, 28 Jun 2012 18:54:45 +0800
+Message-Id: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series provide the ability for each memory cgroup to have independent
+dirty/writeback page stats. This can provide some information for per-cgroup direct
+reclaim. Meanwhile, we add more detailed dump messages for memcg OOMs.
 
---48TaNjbzBVislYPb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Three features are included in this patch series:
+ (0).prepare patches for page accounting
+  1. memcg dirty page accounting
+  2. memcg writeback page accounting
+  3. memcg OOMs dump info
 
-On Thu, Jun 28, 2012 at 12:31:26PM +0530, Laxman Dewangan wrote:
-> The pcm mmap for the substream dma buffer is done using the
-> dma_mmap_writecombine().
-> Some of the chip sound driver like Spear, Tegra, Davinci,
-> ep93xx,snd_imx, snd_mxs, NUC900, OMAP, Samsung are doing this
-> mapping locally.
-> Add api in the snd dmaengine driver so that different client of
-> snd dmaengine can use this rather than implementing locally.
+In (0) prepare patches, we have reworked vfs set page dirty routines to make "modify
+page info" and "dirty page accouting" stay in one function as much as possible for
+the sake of memcg bigger lock.
 
-OK, but I'd expect this to come along with one or more patches
-converting at least some of the users to the new API...
+These patches are cooked based on Andrew's akpm tree.
 
---48TaNjbzBVislYPb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Sha Zhengju (7):
+	memcg-update-cgroup-memory-document.patch
+	memcg-remove-MEMCG_NR_FILE_MAPPED.patch
+	Make-TestSetPageDirty-and-dirty-page-accounting-in-o.patch
+	Use-vfs-__set_page_dirty-interface-instead-of-doing-.patch
+	memcg-add-per-cgroup-dirty-pages-accounting.patch
+	memcg-add-per-cgroup-writeback-pages-accounting.patch
+	memcg-print-more-detailed-info-while-memcg-oom-happe.patch	
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ Documentation/cgroups/memory.txt |    2 +
+ fs/buffer.c                      |   36 +++++++++-----
+ fs/ceph/addr.c                   |   20 +-------
+ include/linux/buffer_head.h      |    2 +
+ include/linux/memcontrol.h       |   27 +++++++---
+ mm/filemap.c                     |    5 ++
+ mm/memcontrol.c                  |   99 +++++++++++++++++++++++--------------
+ mm/page-writeback.c              |   42 ++++++++++++++--
+ mm/rmap.c                        |    4 +-
+ mm/truncate.c                    |    6 ++
+ 10 files changed, 159 insertions(+), 84 deletions(-)
 
-iQIcBAEBAgAGBQJP7DcKAAoJEBus8iNuMP3d+osQAIvuuvCUKlZ1Vd4zES6f6LbA
-YDCXj05mH/leRfNHq3DU19M+jKyP+GZ81NXfpq76BpcjLf0ieTECyOUc7lKs6Ivw
-EGb3GMRV+TnBZaTUlQTLc4UR2F/AVvOgAoLSqaL9fM0eLm2w95HyECt1vGsSX4A6
-FxDswxf5tDGxoMjZsOdv6EOzYOSiqM+f+HPegmiyGFs/ghlNKuDKupgvN3JwHs3j
-F4fcDm7ARELKHCCKxHzAfC40oAfXUdF4iZbHMm1BBzTAQIRY0UW1s6SNdZMNdiLs
-ylaV7aNVvXhanM69MIQ5iJsXftsdQ8c8J0hr2L6JJCV8DxAqV23mo9q/jEq/MOeJ
-yeAB0PDbdn/VXCuuv8e6RVBpftsdwN9Xmzx+4HlMcaKyyJ7Ci63jzP/iM7lIvg4q
-4EKP8ox1inSCQpWTJ8TWqH0imjARrwcHHL3q1nbV60kgd9aUSAEYnQxF3IeSHo1M
-DCUlqGt4FShXvXY9NmAt/a+uHko6BhFe9mcuaqCP1UIqCC2Pjpumn6WnfMIoEzxC
-cHuQq2HPXmqYdX9AzmaLAPHWQqD7msc1vtlFRjGyWDF78aQdm1Eu0IgrLCdZwXK/
-/GV5Cv6R8nHuBS/ibN/KbWejk6SX68orPYJnOMos7shVhFjkzQM48FD4J+TrLNsU
-/PH9ZFKm0jDoj501PqZQ
-=task
------END PGP SIGNATURE-----
-
---48TaNjbzBVislYPb--
