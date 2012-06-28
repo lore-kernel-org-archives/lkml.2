@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab2F1M6t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:58:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45402 "EHLO mx1.redhat.com"
+	id S1756079Ab2F1M7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:59:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7068 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755948Ab2F1M6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:58:42 -0400
+	id S1755415Ab2F1M7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:59:08 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,57 +27,74 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 04/40] xen: document Xen is using an unused bit for the pagetables
-Date: Thu, 28 Jun 2012 14:55:44 +0200
-Message-Id: <1340888180-15355-5-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 12/40] autonuma: core autonuma.h header
+Date: Thu, 28 Jun 2012 14:55:52 +0200
+Message-Id: <1340888180-15355-13-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xen has taken over the last reserved bit available for the pagetables
-which is set through ioremap, this documents it and makes the code
-more readable.
+This is the generic autonuma.h header that defines the generic
+AutoNUMA specific functions like autonuma_setup_new_exec,
+autonuma_split_huge_page, numa_hinting_fault, etc...
+
+As usual functions like numa_hinting_fault that only matter for builds
+with CONFIG_AUTONUMA=y are defined unconditionally, but they are only
+linked into the kernel if CONFIG_AUTONUMA=n. Their call sites are
+optimized away at build time (or kernel won't link).
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/x86/include/asm/pgtable_types.h |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+ include/linux/autonuma.h |   41 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 41 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/autonuma.h
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 013286a..b74cac9 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -17,7 +17,7 @@
- #define _PAGE_BIT_PAT		7	/* on 4KB pages */
- #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
- #define _PAGE_BIT_UNUSED1	9	/* available for programmer */
--#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
-+#define _PAGE_BIT_UNUSED2	10
- #define _PAGE_BIT_HIDDEN	11	/* hidden by kmemcheck */
- #define _PAGE_BIT_PAT_LARGE	12	/* On 2MB or 1GB pages */
- #define _PAGE_BIT_SPECIAL	_PAGE_BIT_UNUSED1
-@@ -41,7 +41,7 @@
- #define _PAGE_PSE	(_AT(pteval_t, 1) << _PAGE_BIT_PSE)
- #define _PAGE_GLOBAL	(_AT(pteval_t, 1) << _PAGE_BIT_GLOBAL)
- #define _PAGE_UNUSED1	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED1)
--#define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_IOMAP)
-+#define _PAGE_UNUSED2	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED2)
- #define _PAGE_PAT	(_AT(pteval_t, 1) << _PAGE_BIT_PAT)
- #define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
- #define _PAGE_SPECIAL	(_AT(pteval_t, 1) << _PAGE_BIT_SPECIAL)
-@@ -49,6 +49,13 @@
- #define _PAGE_SPLITTING	(_AT(pteval_t, 1) << _PAGE_BIT_SPLITTING)
- #define __HAVE_ARCH_PTE_SPECIAL
- 
-+/* flag used to indicate IO mapping */
-+#ifdef CONFIG_XEN
-+#define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED2)
-+#else
-+#define _PAGE_IOMAP	(_AT(pteval_t, 0))
-+#endif
+diff --git a/include/linux/autonuma.h b/include/linux/autonuma.h
+new file mode 100644
+index 0000000..85ca5eb
+--- /dev/null
++++ b/include/linux/autonuma.h
+@@ -0,0 +1,41 @@
++#ifndef _LINUX_AUTONUMA_H
++#define _LINUX_AUTONUMA_H
 +
- #ifdef CONFIG_KMEMCHECK
- #define _PAGE_HIDDEN	(_AT(pteval_t, 1) << _PAGE_BIT_HIDDEN)
- #else
++#ifdef CONFIG_AUTONUMA
++
++#include <linux/autonuma_flags.h>
++
++extern void autonuma_enter(struct mm_struct *mm);
++extern void autonuma_exit(struct mm_struct *mm);
++extern void __autonuma_migrate_page_remove(struct page *page);
++extern void autonuma_migrate_split_huge_page(struct page *page,
++					     struct page *page_tail);
++extern void autonuma_setup_new_exec(struct task_struct *p);
++
++static inline void autonuma_migrate_page_remove(struct page *page)
++{
++	if (ACCESS_ONCE(page->autonuma_migrate_nid) >= 0)
++		__autonuma_migrate_page_remove(page);
++}
++
++#define autonuma_printk(format, args...) \
++	if (autonuma_debug()) printk(format, ##args)
++
++#else /* CONFIG_AUTONUMA */
++
++static inline void autonuma_enter(struct mm_struct *mm) {}
++static inline void autonuma_exit(struct mm_struct *mm) {}
++static inline void autonuma_migrate_page_remove(struct page *page) {}
++static inline void autonuma_migrate_split_huge_page(struct page *page,
++						    struct page *page_tail) {}
++static inline void autonuma_setup_new_exec(struct task_struct *p) {}
++
++#endif /* CONFIG_AUTONUMA */
++
++extern pte_t __pte_numa_fixup(struct mm_struct *mm, struct vm_area_struct *vma,
++			      unsigned long addr, pte_t pte, pte_t *ptep);
++extern void __pmd_numa_fixup(struct mm_struct *mm, unsigned long addr,
++			     pmd_t *pmd);
++extern void numa_hinting_fault(struct page *page, int numpages);
++
++#endif /* _LINUX_AUTONUMA_H */
