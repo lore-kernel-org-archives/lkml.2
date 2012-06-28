@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab2F1RF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 13:05:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42391 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab2F1RF4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 13:05:56 -0400
-Message-ID: <4FEC8EF0.6080408@gmail.com>
-Date: Thu, 28 Jun 2012 10:05:52 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        afleming@gmail.com, david.daney@cavium.com
-Subject: Re: [PATCH v2 0/4] netdev/phy: 10G PHY support.
-References: <1340818418-10382-1-git-send-email-ddaney.cavm@gmail.com> <20120627.212941.485325944406335522.davem@davemloft.net>
-In-Reply-To: <20120627.212941.485325944406335522.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-7; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755889Ab2F1RJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 13:09:50 -0400
+Received: from smtp.witbe.net ([81.88.96.48]:34944 "EHLO smtp.witbe.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755549Ab2F1RJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 13:09:49 -0400
+Date: Thu, 28 Jun 2012 19:09:43 +0200
+From: Paul Rolland <rol@as2917.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: 3.5.0-rc3 - Issue with CFQ and cgroup
+Message-ID: <20120628190943.15f65dcd@tux.DEF.witbe.net>
+In-Reply-To: <20120628160855.GB22641@google.com>
+References: <20120627195808.31714295@tux.DEF.witbe.net>
+	<20120627182202.GO15811@google.com>
+	<20120628095103.3c6c0a1e@tux.DEF.witbe.net>
+	<20120628155754.GA22641@google.com>
+	<20120628180443.01242645@tux.DEF.witbe.net>
+	<20120628160855.GB22641@google.com>
+Organization: AS2917.net
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.7; x86_64-unknown-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 09:29 PM, David Miller wrote:
-> From: David Daney<ddaney.cavm@gmail.com>
-> Date: Wed, 27 Jun 2012 10:33:34 -0700
->
->> From: David Daney<david.daney@cavium.com>
->>
->> The only non-cosmetic change from v1 is to pass an additional argument
->> to get_phy_device() that indicates that the PHY uses 802.3 clause 45
->> signaling, previously I had been using a high order bit of the addr
->> parameter for this.
->>
->> There are also changes from v1 in the code and comment formatting.
->> These should now be closer to what David Miller prefers.
->
-> Applied, but I had to add the following warning fixup:
+Hello,
 
-Thank You.
+On Thu, 28 Jun 2012 09:08:55 -0700
+Tejun Heo <tj@kernel.org> wrote:
 
->
-> --------------------
-> phy: Fix warning in get_phy_device().
->
-> drivers/net/phy/phy_device.c: In function ¡get_phy_device¢:
-> drivers/net/phy/phy_device.c:340:14: warning: ¡phy_id¢ may be used uninitialized in this function [-Wmaybe-uninitialized]
->
-> GCC can't see that when we return zero we always initialize
-> phy_id and that's the only path where we use it.
->
-> Initialize phy_id to zero to shut it up.
->
+> You cloned block tree into for-linus directory and then implicitly
+> used the master branch of the block tree, which is mainline.  What
+> should have been done are...
+> 
+> * git clone git://git.kernel....block.git block
+> * cd block
+> * git checkout for-linus
 
-FWIW: I was testing with GCC-4.6.3 and saw no such warnings.
+OK, just boot that version and it's fixing the issue (BTW, your patch is
+nicer than mine ;)
 
-David Daney
-
-
-> Signed-off-by: David S. Miller<davem@davemloft.net>
-> ---
->   drivers/net/phy/phy_device.c |    4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-> index ef4cdee..47e02e7 100644
-> --- a/drivers/net/phy/phy_device.c
-> +++ b/drivers/net/phy/phy_device.c
-> @@ -327,9 +327,9 @@ static int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id,
->    */
->   struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45)
->   {
-> -	struct phy_device *dev = NULL;
-> -	u32 phy_id;
->   	struct phy_c45_device_ids c45_ids = {0};
-> +	struct phy_device *dev = NULL;
-> +	u32 phy_id = 0;
->   	int r;
->
->   	r = get_phy_id(bus, addr,&phy_id, is_c45,&c45_ids);
-
+Thanks,
+Paul
