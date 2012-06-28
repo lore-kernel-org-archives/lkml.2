@@ -1,135 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab2F1FAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 01:00:17 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60295 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751152Ab2F1FAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 01:00:16 -0400
-Message-ID: <1340859614.16533.66.camel@joe2Laptop>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Wed, 27 Jun 2012 22:00:14 -0700
-In-Reply-To: <1340869133.876.10.camel@mop>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
-	 <20120625150722.8cd4f45d.akpm@linux-foundation.org>
-	 <20120625235531.GB3652@kroah.com>
-	 <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
-	 <20120626002307.GA4389@kroah.com>
-	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
-	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
-	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
-	 <1340726856.977.6.camel@mop>
-	 <1340810038.16702.16.camel@gandalf.stny.rr.com>
-	 <1340810283.16702.19.camel@gandalf.stny.rr.com>
-	 <CAPXgP121+zA_p4x9VdSMWtu-SqqqiNC51CKkYKY4YkAL+QsQ4g@mail.gmail.com>
-	 <1340869133.876.10.camel@mop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752176Ab2F1FBH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 01:01:07 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:48907 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab2F1FBF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 01:01:05 -0400
+From: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org,
+        Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
+Subject: [PATCH 5/5] Staging: comedi: usbduxsigma: Syntax issue fixes
+Date: Thu, 28 Jun 2012 02:01:00 -0300
+Message-Id: <1340859660-28813-1-git-send-email-sebastianbenvenuti@gmail.com>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 09:38 +0200, Kay Sievers wrote:
-> Here we share the continuation buffer with the console copy logic,
-> and partial lines are always immediately flushed to the available
-> consoles. They are still buffered internally to improve the
-> readability and integrity of the messages and minimize the amount
-> of needed record headers to store.
+fixed "many quoted string split across lines" issues,
+replaced "printk(KERN_ERR" for "pr_err("
+and replaced "printk(KERN_INFO" for "pr_info("
 
-trivia:
+Signed-off-by: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
+---
+ drivers/staging/comedi/drivers/usbduxsigma.c | 68 ++++++++++++++--------------
+ 1 file changed, 34 insertions(+), 34 deletions(-)
 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-
-> @@ -329,8 +337,13 @@ static void log_store(int facility, int level,
->  	msg->text_len = text_len;
->  	memcpy(log_dict(msg), dict, dict_len);
->  	msg->dict_len = dict_len;
-> -	msg->level = (facility << 3) | (level & 7);
-> -	msg->ts_nsec = local_clock();
-> +	msg->facility = facility;
-> +	msg->level = level & 7;
-
-Doesn't need & 7
-
-> +	msg->flags = flags & 0x1f;
-> +	if (ts_nsec > 0)
-> +		msg->ts_nsec = ts_nsec;
-> +	else
-> +		msg->ts_nsec = local_clock();
-
-Why local_clock?  ts_nsec really can be 0.
-[]
-
-> @@ -1294,15 +1311,92 @@ static inline void printk_delay(void)
->  	}
->  }
->  
-> +/*
-> + * Continuation lines are buffered, and not committed to the record buffer
-> + * until the line is complete, or a race forces it. The line fragments
-> + * though, are printed immediately to the consoles to ensure everything has
-> + * reached the console in case of a kernel crash.
-> + */
-> +static struct cont {
-> +	char buf[LOG_LINE_MAX];
-> +	size_t len;			/* length == 0 means unused buffer */
-> +	size_t cons;			/* bytes written to console */
-> +	struct task_struct *owner;	/* task of first print*/
-> +	u64 ts_nsec;			/* time of first print */
-> +	u8 level;			/* log level of first message */
-> +	u8 facility;			/* log level of first message */
-> +	bool flushed:1;			/* buffer sealed and committed */
-
-bool flushed:1 seems unnecessary.
-bool flushed seems more appropriate.
-
-> +} cont;
-> +
-> +static void cont_flush(void)
-> +{
-> +	if (cont.flushed)
-> +		return;
-> +	if (cont.len == 0)
-> +		return;
-> +
-> +	log_store(cont.facility, cont.level, LOG_NOCONS, cont.ts_nsec,
-> +		  NULL, 0, cont.buf, cont.len);
-> +
-> +	cont.flushed = true;
-> +}
-> +
-> +static bool cont_add(int facility, int level, const char *text, size_t len)
-> +{
-> +	if (cont.len && cont.flushed)
-> +		return false;
-> +
-> +	if (cont.len + len > sizeof(cont.buf)) {
-> +		cont_flush();
-> +		return false;
-> +	}
-> +
-> +	if (!cont.len) {
-> +		cont.facility = facility;
-> +		cont.level = level;
-> +		cont.owner = current;
-> +		cont.ts_nsec = local_clock();
-> +		cont.cons = 0;
-> +		cont.flushed = false;
-> +	}
-> +
-> +	memcpy(cont.buf + cont.len, text, len);
-
-Looks like you can still overrun cont.buf.
-
+diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
+index 465afbd..37541c1 100644
+--- a/drivers/staging/comedi/drivers/usbduxsigma.c
++++ b/drivers/staging/comedi/drivers/usbduxsigma.c
+@@ -1069,7 +1069,7 @@ static int send_dux_commands(struct usbduxsub *this_usbduxsub, int cmd_type)
+ 
+ 	this_usbduxsub->dux_commands[0] = cmd_type;
+ #ifdef NOISY_DUX_DEBUGBUG
+-	printk(KERN_DEBUG "comedi%d: usbdux: dux_commands: ",
++	pr_debug("comedi%d: usbdux: dux_commands: ",
+ 	       this_usbduxsub->comedidev->minor);
+ 	for (result = 0; result < SIZEOFDUXBUFFER; result++)
+ 		printk(" %02x", this_usbduxsub->dux_commands[result]);
+@@ -1081,8 +1081,8 @@ static int send_dux_commands(struct usbduxsub *this_usbduxsub, int cmd_type)
+ 			      this_usbduxsub->dux_commands, SIZEOFDUXBUFFER,
+ 			      &nsent, BULK_TIMEOUT);
+ 	if (result < 0)
+-		dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
+-			"could not transmit dux_command to the usb-device, "
++		dev_err(&this_usbduxsub->interface->dev, "comedi%d: " \
++			"could not transmit dux_command to the usb-device, " \
+ 			"err=%d\n", this_usbduxsub->comedidev->minor, result);
+ 
+ 	return result;
+@@ -1101,9 +1101,9 @@ static int receive_dux_commands(struct usbduxsub *this_usbduxsub, int command)
+ 				      this_usbduxsub->insnBuffer, SIZEINSNBUF,
+ 				      &nrec, BULK_TIMEOUT);
+ 		if (result < 0) {
+-			dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
+-				"insn: USB error %d "
+-				"while receiving DUX command"
++			dev_err(&this_usbduxsub->interface->dev, "comedi%d: " \
++				"insn: USB error %d " \
++				"while receiving DUX command" \
+ 				"\n", this_usbduxsub->comedidev->minor,
+ 				result);
+ 			return result;
+@@ -1113,7 +1113,7 @@ static int receive_dux_commands(struct usbduxsub *this_usbduxsub, int command)
+ 	}
+ 	/* this is only reached if the data has been requested a couple of
+ 	 * times */
+-	dev_err(&this_usbduxsub->interface->dev, "comedi%d: insn: "
++	dev_err(&this_usbduxsub->interface->dev, "comedi%d: insn: " \
+ 		"wrong data returned from firmware: want %d, got %d.\n",
+ 		this_usbduxsub->comedidev->minor, command,
+ 		this_usbduxsub->insnBuffer[0]);
+@@ -1189,7 +1189,7 @@ static int usbdux_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 		return -ENODEV;
+ 	}
+ 	if (this_usbduxsub->ai_cmd_running) {
+-		dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
++		dev_err(&this_usbduxsub->interface->dev, "comedi%d: " \
+ 			"ai_cmd not possible. Another ai_cmd is running.\n",
+ 			dev->minor);
+ 		up(&this_usbduxsub->sem);
+@@ -1251,8 +1251,8 @@ static int usbdux_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 		this_usbduxsub->ai_timer = cmd->scan_begin_arg / 1000000;
+ 	}
+ 	if (this_usbduxsub->ai_timer < 1) {
+-		dev_err(&this_usbduxsub->interface->dev, "comedi%d: ai_cmd: "
+-			"timer=%d, scan_begin_arg=%d. "
++		dev_err(&this_usbduxsub->interface->dev, "comedi%d: ai_cmd: " \
++			"timer=%d, scan_begin_arg=%d. " \
+ 			"Not properly tested by cmdtest?\n", dev->minor,
+ 			this_usbduxsub->ai_timer, cmd->scan_begin_arg);
+ 		up(&this_usbduxsub->sem);
+@@ -1319,7 +1319,7 @@ static int usbdux_ai_insn_read(struct comedi_device *dev,
+ 	}
+ 	if (this_usbduxsub->ai_cmd_running) {
+ 		dev_err(&this_usbduxsub->interface->dev,
+-			"comedi%d: ai_insn_read not possible. "
++			"comedi%d: ai_insn_read not possible. " \
+ 			"Async Command is running.\n", dev->minor);
+ 		up(&this_usbduxsub->sem);
+ 		return 0;
+@@ -1383,7 +1383,7 @@ static int usbdux_getstatusinfo(struct comedi_device *dev, int chan)
+ 
+ 	if (this_usbduxsub->ai_cmd_running) {
+ 		dev_err(&this_usbduxsub->interface->dev,
+-			"comedi%d: status read not possible. "
++			"comedi%d: status read not possible. " \
+ 			"Async Command is running.\n", dev->minor);
+ 		return 0;
+ 	}
+@@ -1488,7 +1488,7 @@ static int usbdux_ao_insn_write(struct comedi_device *dev,
+ 	}
+ 	if (this_usbduxsub->ao_cmd_running) {
+ 		dev_err(&this_usbduxsub->interface->dev,
+-			"comedi%d: ao_insn_write: "
++			"comedi%d: ao_insn_write: " \
+ 			"ERROR: asynchronous ao_cmd is running\n", dev->minor);
+ 		up(&this_usbduxsub->sem);
+ 		return 0;
+@@ -1543,7 +1543,7 @@ static int usbdux_ao_inttrig(struct comedi_device *dev,
+ 		ret = usbduxsub_submit_OutURBs(this_usbduxsub);
+ 		if (ret < 0) {
+ 			dev_err(&this_usbduxsub->interface->dev,
+-				"comedi%d: usbdux_ao_inttrig: submitURB: "
++				"comedi%d: usbdux_ao_inttrig: submitURB: " \
+ 				"err=%d\n", dev->minor, ret);
+ 			this_usbduxsub->ao_cmd_running = 0;
+ 			goto out;
+@@ -1683,7 +1683,7 @@ static int usbdux_ao_cmdtest(struct comedi_device *dev,
+ 		}
+ 	}
+ 
+-	dev_dbg(&this_usbduxsub->interface->dev, "comedi%d: err=%d, "
++	dev_dbg(&this_usbduxsub->interface->dev, "comedi%d: err=%d, " \
+ 		"scan_begin_src=%d, scan_begin_arg=%d, convert_src=%d, "
+ 		"convert_arg=%d\n", dev->minor, err, cmd->scan_begin_src,
+ 		cmd->scan_begin_arg, cmd->convert_src, cmd->convert_arg);
+@@ -2349,7 +2349,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	int index;
+ 	int ret;
+ 
+-	dev_dbg(dev, "comedi_: usbdux_: "
++	dev_dbg(dev, "comedi_: usbdux_: " \
+ 		"finding a free structure for the usb-device\n");
+ 
+ 	down(&start_stop_sem);
+@@ -2368,7 +2368,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 		up(&start_stop_sem);
+ 		return -EMFILE;
+ 	}
+-	dev_dbg(dev, "comedi_: usbdux: "
++	dev_dbg(dev, "comedi_: usbdux: " \
+ 		"usbduxsub[%d] is ready to connect to comedi.\n", index);
+ 
+ 	sema_init(&(usbduxsub[index].sem), 1);
+@@ -2392,7 +2392,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	/* create space for the commands of the DA converter */
+ 	usbduxsub[index].dac_commands = kzalloc(NUMOUTCHANNELS, GFP_KERNEL);
+ 	if (!usbduxsub[index].dac_commands) {
+-		dev_err(dev, "comedi_: usbduxsigma: "
++		dev_err(dev, "comedi_: usbduxsigma: " \
+ 			"error alloc space for dac commands\n");
+ 		tidy_up(&(usbduxsub[index]));
+ 		up(&start_stop_sem);
+@@ -2401,7 +2401,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	/* create space for the commands going to the usb device */
+ 	usbduxsub[index].dux_commands = kzalloc(SIZEOFDUXBUFFER, GFP_KERNEL);
+ 	if (!usbduxsub[index].dux_commands) {
+-		dev_err(dev, "comedi_: usbduxsigma: "
++		dev_err(dev, "comedi_: usbduxsigma: " \
+ 			"error alloc space for dux commands\n");
+ 		tidy_up(&(usbduxsub[index]));
+ 		up(&start_stop_sem);
+@@ -2410,7 +2410,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	/* create space for the in buffer and set it to zero */
+ 	usbduxsub[index].inBuffer = kzalloc(SIZEINBUF, GFP_KERNEL);
+ 	if (!(usbduxsub[index].inBuffer)) {
+-		dev_err(dev, "comedi_: usbduxsigma: "
++		dev_err(dev, "comedi_: usbduxsigma: " \
+ 			"could not alloc space for inBuffer\n");
+ 		tidy_up(&(usbduxsub[index]));
+ 		up(&start_stop_sem);
+@@ -2419,7 +2419,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	/* create space of the instruction buffer */
+ 	usbduxsub[index].insnBuffer = kzalloc(SIZEINSNBUF, GFP_KERNEL);
+ 	if (!(usbduxsub[index].insnBuffer)) {
+-		dev_err(dev, "comedi_: usbduxsigma: "
++		dev_err(dev, "comedi_: usbduxsigma: " \
+ 			"could not alloc space for insnBuffer\n");
+ 		tidy_up(&(usbduxsub[index]));
+ 		up(&start_stop_sem);
+@@ -2428,7 +2428,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	/* create space for the outbuffer */
+ 	usbduxsub[index].outBuffer = kzalloc(SIZEOUTBUF, GFP_KERNEL);
+ 	if (!(usbduxsub[index].outBuffer)) {
+-		dev_err(dev, "comedi_: usbduxsigma: "
++		dev_err(dev, "comedi_: usbduxsigma: " \
+ 			"could not alloc space for outBuffer\n");
+ 		tidy_up(&(usbduxsub[index]));
+ 		up(&start_stop_sem);
+@@ -2438,7 +2438,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	i = usb_set_interface(usbduxsub[index].usbdev,
+ 			      usbduxsub[index].ifnum, 3);
+ 	if (i < 0) {
+-		dev_err(dev, "comedi_: usbduxsigma%d: "
++		dev_err(dev, "comedi_: usbduxsigma%d: " \
+ 			"could not set alternate setting 3 in high speed.\n",
+ 			index);
+ 		tidy_up(&(usbduxsub[index]));
+@@ -2454,7 +2454,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	    kzalloc(sizeof(struct urb *) * usbduxsub[index].numOfInBuffers,
+ 		    GFP_KERNEL);
+ 	if (!(usbduxsub[index].urbIn)) {
+-		dev_err(dev, "comedi_: usbduxsigma: "
++		dev_err(dev, "comedi_: usbduxsigma: " \
+ 			"Could not alloc. urbIn array\n");
+ 		tidy_up(&(usbduxsub[index]));
+ 		up(&start_stop_sem);
+@@ -2464,7 +2464,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 		/* one frame: 1ms */
+ 		usbduxsub[index].urbIn[i] = usb_alloc_urb(1, GFP_KERNEL);
+ 		if (usbduxsub[index].urbIn[i] == NULL) {
+-			dev_err(dev, "comedi_: usbduxsigma%d: "
++			dev_err(dev, "comedi_: usbduxsigma%d: " \
+ 				"Could not alloc. urb(%d)\n", index, i);
+ 			tidy_up(&(usbduxsub[index]));
+ 			up(&start_stop_sem);
+@@ -2480,7 +2480,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 		usbduxsub[index].urbIn[i]->transfer_buffer =
+ 		    kzalloc(SIZEINBUF, GFP_KERNEL);
+ 		if (!(usbduxsub[index].urbIn[i]->transfer_buffer)) {
+-			dev_err(dev, "comedi_: usbduxsigma%d: "
++			dev_err(dev, "comedi_: usbduxsigma%d: " \
+ 				"could not alloc. transb.\n", index);
+ 			tidy_up(&(usbduxsub[index]));
+ 			up(&start_stop_sem);
+@@ -2504,7 +2504,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 	    kzalloc(sizeof(struct urb *) * usbduxsub[index].numOfOutBuffers,
+ 		    GFP_KERNEL);
+ 	if (!(usbduxsub[index].urbOut)) {
+-		dev_err(dev, "comedi_: usbduxsigma: "
++		dev_err(dev, "comedi_: usbduxsigma: " \
+ 			"Could not alloc. urbOut array\n");
+ 		tidy_up(&(usbduxsub[index]));
+ 		up(&start_stop_sem);
+@@ -2514,7 +2514,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 		/* one frame: 1ms */
+ 		usbduxsub[index].urbOut[i] = usb_alloc_urb(1, GFP_KERNEL);
+ 		if (usbduxsub[index].urbOut[i] == NULL) {
+-			dev_err(dev, "comedi_: usbduxsigma%d: "
++			dev_err(dev, "comedi_: usbduxsigma%d: " \
+ 				"Could not alloc. urb(%d)\n", index, i);
+ 			tidy_up(&(usbduxsub[index]));
+ 			up(&start_stop_sem);
+@@ -2530,7 +2530,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 		usbduxsub[index].urbOut[i]->transfer_buffer =
+ 		    kzalloc(SIZEOUTBUF, GFP_KERNEL);
+ 		if (!(usbduxsub[index].urbOut[i]->transfer_buffer)) {
+-			dev_err(dev, "comedi_: usbduxsigma%d: "
++			dev_err(dev, "comedi_: usbduxsigma%d: " \
+ 				"could not alloc. transb.\n", index);
+ 			tidy_up(&(usbduxsub[index]));
+ 			up(&start_stop_sem);
+@@ -2558,7 +2558,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 		usbduxsub[index].sizePwmBuf = 512;
+ 		usbduxsub[index].urbPwm = usb_alloc_urb(0, GFP_KERNEL);
+ 		if (usbduxsub[index].urbPwm == NULL) {
+-			dev_err(dev, "comedi_: usbduxsigma%d: "
++			dev_err(dev, "comedi_: usbduxsigma%d: " \
+ 				"Could not alloc. pwm urb\n", index);
+ 			tidy_up(&(usbduxsub[index]));
+ 			up(&start_stop_sem);
+@@ -2567,7 +2567,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
+ 		usbduxsub[index].urbPwm->transfer_buffer =
+ 		    kzalloc(usbduxsub[index].sizePwmBuf, GFP_KERNEL);
+ 		if (!(usbduxsub[index].urbPwm->transfer_buffer)) {
+-			dev_err(dev, "comedi_: usbduxsigma%d: "
++			dev_err(dev, "comedi_: usbduxsigma%d: " \
+ 				"could not alloc. transb. for pwm\n", index);
+ 			tidy_up(&(usbduxsub[index]));
+ 			up(&start_stop_sem);
+@@ -2660,7 +2660,7 @@ static int usbduxsigma_attach(struct comedi_device *dev,
+ 	}
+ 
+ 	if (index < 0) {
+-		printk(KERN_ERR "comedi%d: usbduxsigma: error: attach failed,"
++		pr_err("comedi%d: usbduxsigma: error: attach failed," \
+ 		       "dev not connected to the usb bus.\n", dev->minor);
+ 		up(&start_stop_sem);
+ 		return -ENODEV;
+@@ -2792,7 +2792,7 @@ static int usbduxsigma_attach(struct comedi_device *dev,
+ 	offset = usbdux_getstatusinfo(dev, 0);
+ 	if (offset < 0)
+ 		dev_err(&udev->interface->dev,
+-			"Communication to USBDUXSIGMA failed!"
++			"Communication to USBDUXSIGMA failed!" \
+ 			"Check firmware and cabling.");
+ 
+ 	dev_info(&udev->interface->dev,
+@@ -2845,7 +2845,7 @@ static struct usb_driver usbduxsigma_driver = {
+ /* registering the usb-system _and_ the comedi-driver */
+ static int __init init_usbduxsigma(void)
+ {
+-	printk(KERN_INFO KBUILD_MODNAME ": "
++	pr_info(KBUILD_MODNAME ": "
+ 	       DRIVER_VERSION ":" DRIVER_DESC "\n");
+ 	usb_register(&usbduxsigma_driver);
+ 	comedi_driver_register(&driver_usbduxsigma);
+-- 
+1.7.11.1
 
