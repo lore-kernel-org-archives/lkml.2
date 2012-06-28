@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901Ab2F1KKs (ORCPT <rfc822;w@1wt.eu>);
+	id S932920Ab2F1KK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 06:10:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51108 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932778Ab2F1KKs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Jun 2012 06:10:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56741 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753165Ab2F1KKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 06:10:47 -0400
-Date: Thu, 28 Jun 2012 12:10:40 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] HID: hid-multitouch: fix input mode feature
- command
-In-Reply-To: <CAN+gG=GRO3PXK1QF4rUq49Z-7gXd6VDz=cbTNNmJBP6NLcgCKQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1206281209530.17549@pobox.suse.cz>
-References: <1340109594-10732-1-git-send-email-benjamin.tissoires@gmail.com> <alpine.LNX.2.00.1206281030070.17549@pobox.suse.cz> <CAN+gG=GRO3PXK1QF4rUq49Z-7gXd6VDz=cbTNNmJBP6NLcgCKQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <1340878232.28750.6.camel@twins>
+Subject: Re: [PATCH 2/2] perf/x86: Uncore Filter support for SandyBridge-EP
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: eranian@google.com, mingo@elte.hu, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 28 Jun 2012 12:10:32 +0200
+In-Reply-To: <4FEBB3A9.6090906@intel.com>
+References: <1340780953-21130-1-git-send-email-zheng.z.yan@intel.com>
+	  <1340780953-21130-2-git-send-email-zheng.z.yan@intel.com>
+	 <1340791604.10063.10.camel@twins> <4FEBB3A9.6090906@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012, Benjamin Tissoires wrote:
+On Thu, 2012-06-28 at 09:30 +0800, Yan, Zheng wrote:
+> > Isn't the uncore now suffering the same problem you found for the
+> > regular extra stuff?
+> 
+> The snbep_uncore_get/put_constraint(...) has check for that. The uncore case is simpler,
+> because we don't need try swapping RSP_0/RSP_1. 
 
-> Thanks a lot for that.
-> My apologies. I didn't thanked Henrik and commented his review. So
-> thank you Henrik. (the "break" here is not an optimisation as
-> field->maxusage may be greater than the real report count).
-
-Yes, I thought so, and therefore applied that patch. 2/3 I am still 
-keeping unapplied.
-
-> I'm currently quite overloaded with the hid over i2c bus, and I'm 
-> getting some very goods results. I'm stuck with the acpi part, but the 
-> rest of it is working pretty good for a draft. I'll keep you inform 
-> soon.
-
-Sounds great, looking forward to seeing the implementation :)
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+The fact that I missed that is a big hint..
