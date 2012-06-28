@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab2F1UZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 16:25:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61308 "EHLO mx1.redhat.com"
+	id S1755164Ab2F1U0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 16:26:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1687 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012Ab2F1UZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 16:25:28 -0400
-Subject: Re: [PATCH 3/9] arm/PCI: move final fixup quirks from __init to
- __devinit
+	id S1754412Ab2F1UZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 16:25:30 -0400
+Subject: Re: [PATCH 1/9] PCI: Remove redundant debug output in pci_do_fixups
 From: Myron Stowe <mstowe@redhat.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
         linux@arm.linux.org.uk, ralf@linux-mips.org, tglx@linutronix.de,
         mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org
-In-Reply-To: <CAErSpo5yNxjjBVaTXjAKCY4SfRWj7uXK2cS3BtkugmoF4fYn6g@mail.gmail.com>
+In-Reply-To: <CAErSpo7+KoNNXcYBLm8C9M3RctugjzcTB6dbyeLD7R+7Jkeb1w@mail.gmail.com>
 References: <20120621202415.16865.6226.stgit@amt.stowe>
-	 <20120621202435.16865.1340.stgit@amt.stowe>
-	 <CAErSpo5yNxjjBVaTXjAKCY4SfRWj7uXK2cS3BtkugmoF4fYn6g@mail.gmail.com>
+	 <20120621202423.16865.50394.stgit@amt.stowe>
+	 <CAErSpo7+KoNNXcYBLm8C9M3RctugjzcTB6dbyeLD7R+7Jkeb1w@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jun 2012 14:25:20 -0600
-Message-ID: <1340915120.2411.27.camel@zim.stowe>
+Date: Thu, 28 Jun 2012 14:25:08 -0600
+Message-ID: <1340915108.2411.26.camel@zim.stowe>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-26 at 16:33 -0600, Bjorn Helgaas wrote:
+On Tue, 2012-06-26 at 16:26 -0600, Bjorn Helgaas wrote:
 > On Thu, Jun 21, 2012 at 2:24 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
-> > The PCI subsystem's final fixups are executed once during boot, after the
-> > pci-device is found.  As long as the system does not support hot-plug,
-> > specifying __init is fine.
+> > When the boot argument 'initcall_debug' is specified, redundant debug
+> > output occurs for each device as a quirk is applied:
+> >  ...
+> >  pci 0000:00:1a.0: calling quirk_usb_early_handoff+0x0/0x620
+> >  calling  quirk_usb_early_handoff+0x0/0x620 @ 1 for 0000:00:1a.0
+> >  pci fixup quirk_usb_early_handoff+0x0/0x620 returned after 32 usecs for 0000:00: 1a.0
+> >  ...
 > >
-> > With hot-plug, either physically based hot-plug events or pseudo hot-plug
-> > events such as "echo 1 > /sys/bus/pci/rescan", it is possible to remove a
-> > PCI bus during run time and have it rediscovered which will require the
-> > call of the fixups again in order for the device to function properly.
-> >
-> > This patch prepares specific quirk(s) for use with hot-plug events.
-> >
+> > This patch removes the redundancy by eliminating the first debug output
+> > occurence in the sequence shown above when 'initcall_debug' is specified.
+> 
+> Here's what I don't like about this: adding "initcall_debug" *removes*
+> some output.  My expectation is that it would only *add* output.
+
+Well, the point to me was that it only removed output that was
+completely redundant when "initcall_debug" was true.
+
+I *really* wanted to change the "initcall_debug" output to follow the
+convention already in place via 'dev_dbg()' but did not as I'm vaguely
+aware of some scripting that parses "initcall_debug" output and did not
+want to break that.
+> 
 > > Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 > > ---
 > >
-> >  arch/arm/mach-iop32x/n2100.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >  drivers/pci/quirks.c |    5 +++--
+> >  1 files changed, 3 insertions(+), 2 deletions(-)
 > >
-> > diff --git a/arch/arm/mach-iop32x/n2100.c b/arch/arm/mach-iop32x/n2100.c
-> > index 5a7ae91..04c4110 100644
-> > --- a/arch/arm/mach-iop32x/n2100.c
-> > +++ b/arch/arm/mach-iop32x/n2100.c
-> > @@ -126,7 +126,7 @@ static struct hw_pci n2100_pci __initdata = {
-> >  * the ->broken_parity_status flag for both ports so that the r8169
-> >  * driver knows it should ignore error interrupts.
-> >  */
-> > -static void n2100_fixup_r8169(struct pci_dev *dev)
-> > +static void __devinit n2100_fixup_r8169(struct pci_dev *dev)
+> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> > index a2d9d33..9c93558 100644
+> > --- a/drivers/pci/quirks.c
+> > +++ b/drivers/pci/quirks.c
+> > @@ -2953,11 +2953,12 @@ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+> >                     f->vendor == (u16) PCI_ANY_ID) &&
+> >                    (f->device == dev->device ||
+> >                     f->device == (u16) PCI_ANY_ID)) {
+> > -                       dev_dbg(&dev->dev, "calling %pF\n", f->hook);
+> >                        if (initcall_debug)
+> >                                do_one_fixup_debug(f->hook, dev);
+> > -                       else
+> > +                       else {
+> > +                               dev_dbg(&dev->dev, "calling %pF\n", f->hook);
+> >                                f->hook(dev);
 > 
-> These actually move functions from normal text to __devinit, not from
-> __init to __devinit.
-
-Yes (as I hang my head sheepishly).  What got me started down this path
-was seeing the recent series by Sabastian Andrzej
-( http://marc.info/?l=linux-pci&m=133875179103880&w=2 ).
+> This part isn't something you changed, but I also think it's a bit
+> ugly that we have two possible call sites for the quirk: either inside
+> do_one_fixup_debug() or directly in pci_do_fixups().  I wonder if this
+> could be restructured a bit in the style of initcall_debug_start() and
+> initcall_debug_report(), so we could have this:
 > 
-> That should be safe for most quirks (although enable, suspend, resume,
-> and resume_early quirks can be called after we free initmem, even if
-> we have CONFIG_HOTPLUG=n), but given the discussion about whether we
-> should even bother with __devinit any more, I think I'll hold off on
-> these for now.  If we were to get rid of __devinit, these would all
-> have to revert to being normal text.
-
-Agreed, and I've only recently (after posting this series) became aware
-of James Bottomley's thoughts about __devinit so lets skip these changes
-within the series.  I don't want to start a lot of unnecessary churn if
-we end up just dropping __devinit altogether.
-
-It's the last patch in the series that is of the most interest - trying
-to solve PCI's "final" quirks with respect to hot-plug events and the
-asymmetry I ended up discovering while working that issue.  Wish we
-would have received some feedback from others about that.
+>     ktime_t calltime;
+> 
+>     calltime = initcall_debug_start(dev);
+>     f->hook(dev);
+>     initcall_debug_report(dev, calltime);
+> 
+> where initcall_debug_report() would only print something when
+> initcall_debug is enabled.
+> 
+Nice observation!  Such a change would yield a better result.  Perhaps,
+transitioning to this approach would also eventually help with my
+earlier peeve concerning the redundant output.
 
 Thanks,
  Myron
-
-Thanks,
- Myron
-> 
-> >  {
-> >        if (dev->bus->number == 0 &&
-> >            (dev->devfn == PCI_DEVFN(1, 0) ||
-> >
+> > +                       }
+> >                }
+> >  }
 
 
