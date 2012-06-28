@@ -1,136 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab2F1LFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 07:05:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44245 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726Ab2F1LFg (ORCPT
+	id S1754286Ab2F1LFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 07:05:52 -0400
+Received: from smtp-out-130.synserver.de ([212.40.185.130]:1242 "EHLO
+	smtp-out-120.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753967Ab2F1LFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 07:05:36 -0400
-From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
-        akpm@linux-foundation.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH 6/7] memcg: add per cgroup writeback pages accounting
-Date: Thu, 28 Jun 2012 19:05:25 +0800
-Message-Id: <1340881525-5835-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
-References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+	Thu, 28 Jun 2012 07:05:50 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 20266
+Message-ID: <4FEC3B70.5030902@metafoo.de>
+Date: Thu, 28 Jun 2012 13:09:36 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: perex@perex.cz, broonie@opensource.wolfsonmicro.com, tiwai@suse.de,
+        lrg@ti.com, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        swarren@nvidia.com
+Subject: Re: [PATCH] ASoC: snd_dmaengine: add common api for pcm_mmap
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sha Zhengju <handai.szj@taobao.com>
+On 06/28/2012 09:01 AM, Laxman Dewangan wrote:
+> The pcm mmap for the substream dma buffer is done using the
+> dma_mmap_writecombine().
+> Some of the chip sound driver like Spear, Tegra, Davinci,
+> ep93xx,snd_imx, snd_mxs, NUC900, OMAP, Samsung are doing this
+> mapping locally.
+> Add api in the snd dmaengine driver so that different client of
+> snd dmaengine can use this rather than implementing locally.
+> 
 
-Similar to dirty page, we add per cgroup writeback pages accounting. The lock
-rule still is:
-	mem_cgroup_begin_update_page_stat()
-	modify page WRITEBACK stat
-	mem_cgroup_update_page_stat()
-	mem_cgroup_end_update_page_stat()
+This is not really related to the dmaengine pcm driver. It's more of a
+coincidence that all upstream drivers which use the dmaengine pcm driver
+also use write-combined memory. In my opinion it would be better to add this
+to the ALSA core. Now that there is a generic dma_mmap_writecombine it may
+make sense to integrate this with snd_pcm_lib_default_mmap.
 
-There're two writeback interface to modify: test_clear/set_page_writeback.
+- Lars
 
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
----
- include/linux/memcontrol.h |    1 +
- mm/memcontrol.c            |    5 +++++
- mm/page-writeback.c        |   12 ++++++++++++
- 3 files changed, 18 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index ad37b59..9193d93 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
- 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
- 	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
- 	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
-+	MEM_CGROUP_STAT_FILE_WRITEBACK,  /* # of pages under writeback */
- 	MEM_CGROUP_STAT_NSTATS,
- };
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 90e2946..8493119 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -83,6 +83,7 @@ static const char * const mem_cgroup_stat_names[] = {
- 	"mapped_file",
- 	"swap",
- 	"dirty",
-+	"writeback",
- };
- 
- enum mem_cgroup_events_index {
-@@ -2604,6 +2605,10 @@ static int mem_cgroup_move_account(struct page *page,
- 		mem_cgroup_move_account_page_stat(from, to,
- 				MEM_CGROUP_STAT_FILE_DIRTY);
- 
-+	if (PageWriteback(page))
-+		mem_cgroup_move_account_page_stat(from, to,
-+				MEM_CGROUP_STAT_FILE_WRITEBACK);
-+
- 	mem_cgroup_charge_statistics(from, anon, -nr_pages);
- 
- 	/* caller should have done css_get */
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index e79a2f7..7398836 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1981,6 +1981,7 @@ EXPORT_SYMBOL(account_page_dirtied);
-  */
- void account_page_writeback(struct page *page)
- {
-+	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_WRITEBACK);
- 	inc_zone_page_state(page, NR_WRITEBACK);
- }
- EXPORT_SYMBOL(account_page_writeback);
-@@ -2214,7 +2215,10 @@ int test_clear_page_writeback(struct page *page)
- {
- 	struct address_space *mapping = page_mapping(page);
- 	int ret;
-+	bool locked;
-+	unsigned long flags;
- 
-+	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
- 	if (mapping) {
- 		struct backing_dev_info *bdi = mapping->backing_dev_info;
- 		unsigned long flags;
-@@ -2235,9 +2239,12 @@ int test_clear_page_writeback(struct page *page)
- 		ret = TestClearPageWriteback(page);
- 	}
- 	if (ret) {
-+		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_WRITEBACK);
- 		dec_zone_page_state(page, NR_WRITEBACK);
- 		inc_zone_page_state(page, NR_WRITTEN);
- 	}
-+
-+	mem_cgroup_end_update_page_stat(page, &locked, &flags);
- 	return ret;
- }
- 
-@@ -2245,7 +2252,10 @@ int test_set_page_writeback(struct page *page)
- {
- 	struct address_space *mapping = page_mapping(page);
- 	int ret;
-+	bool locked;
-+	unsigned long flags;
- 
-+	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
- 	if (mapping) {
- 		struct backing_dev_info *bdi = mapping->backing_dev_info;
- 		unsigned long flags;
-@@ -2272,6 +2282,8 @@ int test_set_page_writeback(struct page *page)
- 	}
- 	if (!ret)
- 		account_page_writeback(page);
-+
-+	mem_cgroup_end_update_page_stat(page, &locked, &flags);
- 	return ret;
- 
- }
--- 
-1.7.1
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+>  include/sound/dmaengine_pcm.h |    2 ++
+>  sound/soc/soc-dmaengine-pcm.c |   17 +++++++++++++++++
+>  2 files changed, 19 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/sound/dmaengine_pcm.h b/include/sound/dmaengine_pcm.h
+> index b877334..15c0d3c 100644
+> --- a/include/sound/dmaengine_pcm.h
+> +++ b/include/sound/dmaengine_pcm.h
+> @@ -47,4 +47,6 @@ int snd_dmaengine_pcm_close(struct snd_pcm_substream *substream);
+>  
+>  struct dma_chan *snd_dmaengine_pcm_get_chan(struct snd_pcm_substream *substream);
+>  
+> +int snd_dmaengine_pcm_mmap_writecombine(struct snd_pcm_substream *substream,
+> +		struct vm_area_struct *vma);
+>  #endif
+> diff --git a/sound/soc/soc-dmaengine-pcm.c b/sound/soc/soc-dmaengine-pcm.c
+> index 5df529e..6535eb3 100644
+> --- a/sound/soc/soc-dmaengine-pcm.c
+> +++ b/sound/soc/soc-dmaengine-pcm.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/dmaengine.h>
+> +#include <linux/dma-mapping.h>
+>  #include <linux/slab.h>
+>  #include <sound/pcm.h>
+>  #include <sound/pcm_params.h>
+> @@ -313,3 +314,19 @@ int snd_dmaengine_pcm_close(struct snd_pcm_substream *substream)
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_close);
+> +
+> +/**
+> + * snd_dmaengine_pcm_mmap_writecombine - mmap stream dma buffer using
+> + * dma_mmap_writecombine().
+> + * @substream: PCM substream
+> + * @vma: VM area.
+> + */
+> +int snd_dmaengine_pcm_mmap_writecombine(struct snd_pcm_substream *substream,
+> +			struct vm_area_struct *vma)
+> +{
+> +	struct snd_pcm_runtime *runtime = substream->runtime;
+> +
+> +	return dma_mmap_writecombine(substream->pcm->card->dev, vma,
+> +		runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
+> +}
+> +EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_mmap_writecombine);
 
