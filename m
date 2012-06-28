@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab2F1QG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:06:29 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35210 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753921Ab2F1QG1 (ORCPT
+	id S1755621Ab2F1QHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:07:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48228 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375Ab2F1QHl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:06:27 -0400
+	Thu, 28 Jun 2012 12:07:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FEC16EF.40408@jp.fujitsu.com>
-References: <4FACDED0.3020400@jp.fujitsu.com>
-	<20120621202043.GD4642@google.com>
-	<4FE3ADDD.9060908@jp.fujitsu.com>
-	<20120627175818.GM15811@google.com>
-	<4FEC16EF.40408@jp.fujitsu.com>
-Date: Thu, 28 Jun 2012 09:06:25 -0700
-X-Google-Sender-Auth: dLK8HKw7xWgPEHGkzG2W62juCRM
-Message-ID: <CAOS58YNuSMjDB00UgOPjGCSFcRx-gjvMrW+e4uW0ug8WMsuFSw@mail.gmail.com>
-Subject: Re: [PATCH v3][0/6] memcg: prevent -ENOMEM in pre_destroy()
-From: Tejun Heo <tj@kernel.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1340894351.3070.121.camel@sauron.fi.intel.com>
+References: <1340636918-7505-1-git-send-email-richard.genoud@gmail.com> <1340894351.3070.121.camel@sauron.fi.intel.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 28 Jun 2012 18:07:24 +0200
+Message-ID: <CACQ1gAjLdR-ZRUS6gxMrJzVpRdvdMK2JRceyiFmeSq-FQkZbZg@mail.gmail.com>
+Subject: Re: [PATCH] UBI: add minimal amount of reserved erase blocks in Kconfig
+To: dedekind1@gmail.com
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, KAME.
-
-On Thu, Jun 28, 2012 at 1:33 AM, Kamezawa Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> Ooh, once memcg drops the __DEPRECATED_clear_css_refs, cgroup_rmdir()
->> will mark the cgroup dead before start calling pre_destroy() and none
->> of the above will happen.
->>
+2012/6/28 Artem Bityutskiy <dedekind1@gmail.com>:
+> Hi, first of all, this 1% is does is not good enough for modern devices.
+> It is just a default I picked out of the thin air.
+Hi !
+Agreed, it seems that 2% of the whole flash (at least for SLC device)
+is more realistic.
 >
-> Hm, threads which touches memcg should hold memcg's reference count rather
-> than css.
-> Right ? IIUC, one of reason is a reference from kswapd etc...hm. I'll check
-> it.
+> What we really need is to make it possible to specify beb_rsvd_level at
+> attach time. I believe it is not difficult to implement:
+>
+> 1. Add a parameter to ubiattach
+> 2. Extend the attach ioctl and add beb_rsvd_level there. We have 12
+> unused bytes in 'struct ubi_attach_req'.
+> 3. Extend the "mtd" module parameter and allow to specify beb_rsvd_level
+> there as well.
+>
+> That's it - you can specify the needed numbers for your flash.
+>
+>  to make this per-MTD device
+All right, with this approach, we can have different flash devices
+with different MBB. Got it.
 
-Not sure I'm following. I meant that css_tryget() will always fail
-once pre_destroy() calls being for the cgroup, so no new child or
-reference can be created for it after that point.
+> On Mon, 2012-06-25 at 17:08 +0200, Richard Genoud wrote:
+>> The problem with this behaviour is that NAND flash manufacturers give a
+>> minimum number of valid block (NVB) during the endurance life of the
+>> device.
+>> E.G.:
+>> Parameter             Symbol    Min    Max    Unit      Notes
+>> --------------------------------------------------------------
+>> Valid block number     NVB     1004    1024   Blocks     1
+>> Note:
+>> 1. Invalid blocks are block that contain one or more bad bits beyond
+>> ECC. The device may contain bad blocks upon shipment. Additional bad
+>> blocks may develop over time; however, the total number of available
+>> blocks will not drop below NVB during the endurance life of the device.
+>
+> OK, in this discussion is is easier to talk about maximum bad blocks
+> (MBB) rather than minimum good blocks, though. So basically, the vendor
+> guarantees that there will be at most MBB bad blocks.
+>
+>> From this number we can deduce the maximum number of bad PEB that a
+>> device will contain during its endurance life :
+>> A 128MiB NAND flash (1024 PEB) will not have less than 20 bad blocks
+>> during the flash endurance life.
+>
+> OK.
+>
+>> BUT, the manufacturer doesn't tell where those bad block will appear. He
+>> doesn't say either if they will be equally disposed on the whole device
+>> (and I'm pretty sure they won't).
+>
+> Right, then if you implement what I suggested, you'll pass
+> "beb_rsvd_level=20" when attaching both partitions.
+>
+>> So, according to the datasheets, we should reserve the maximum number of
+>> bad PEB for each UBI volume.
+>> (Worst case scenario: 20 bad blocks appears on the smallest UBI volume.)
+>
+> Err, not smallest UBI volume, but smallest MTD partition. We reserve
+> PEBs per-MTD device.
+Yes, you're right (I usually use only one ubi volume per mdt device,
+that's why I mixed up things)
 
-Thanks.
+>> => The actual parameter MTD_UBI_BEB_RESERVE is not enough to cover this
+>> scenario. We need to set a minimal number of reserved PEB for a UBI
+>> volume.
+>
+> Frankly, I do not understand this logic :-) And your patch looks wrong -
+> it touches the "auto-format" code which you may consider more like a
+> "debugging" feature and should not rely on this in production.
+Sorry, but I don't understand what you mean by the "auto-format" code.
+The other thing I don't understand is that the patch touches only the
+ubi_calculate_reserved() function which is the only place where
+beb_rsvd_level is set.
+And with your approach, as far as we'll get beb_rsvd_level value from
+ioctl, I'll have also to touch this function...
+(or maybe what's wrong with this patch is that beb_rsvd_level can be
+less that 2, in this case I should have set a minimum range of 2 in
+Kconfig)
+
+Thanks for your comments.
+
+Best regards,
+Richard.
+
+> --
+> Best Regards,
+> Artem Bityutskiy
+
+
 
 -- 
-tejun
+for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
