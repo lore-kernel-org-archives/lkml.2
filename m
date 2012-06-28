@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab2F1He5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 03:34:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46634 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab2F1He4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 03:34:56 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [linux-pm] [PATCH] acpi: intel_idle : break dependency between modules
-Date: Thu, 28 Jun 2012 09:34:47 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linaro-dev@lists.linaro.org,
-        linux-pm@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-References: <201206261301.25550.trenn@suse.de> <1340788068-16422-1-git-send-email-daniel.lezcano@linaro.org> <4FEB31E1.2030209@linux.vnet.ibm.com>
-In-Reply-To: <4FEB31E1.2030209@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932559Ab2F1HvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 03:51:25 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:44936 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475Ab2F1HvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 03:51:24 -0400
+Message-ID: <1340869868.4491.4.camel@jlt3.sipsolutions.net>
+Subject: Re: [Ilw] 	Re: 3.4-rc2, ilwagn still most of the time completely
+ unusable
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Norbert Preining <preining@logic.at>
+Cc: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>,
+        "Lin, Hsien KuoX" <hsien.kuox.lin@intel.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Emmanuel Grumbach <egrumbach@gmail.com>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>
+Date: Thu, 28 Jun 2012 09:51:08 +0200
+In-Reply-To: <20120628072512.GF31944@gamma.logic.tuwien.ac.at>
+References: <20120330011734.GH6277@gamma.logic.tuwien.ac.at>
+	 <20120411023747.GA10126@gamma.logic.tuwien.ac.at>
+	 <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com>
+	 <20120412000202.GA15286@gamma.logic.tuwien.ac.at>
+	 <4595B4D22AB93C4FABBA84AAD5AA37FD120BF8@ORSMSX103.amr.corp.intel.com>
+	 <20120413014047.GB25681@gamma.logic.tuwien.ac.at>
+	 <20120330011734.GH6277@gamma.logic.tuwien.ac.at>
+	 <20120411023747.GA10126@gamma.logic.tuwien.ac.at>
+	 <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com>
+	 <20120412000202.GA15286@gamma.logic.tuwien.ac.at>
+	 <20120628072512.GF31944@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206280934.48147.trenn@suse.de>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 27, 2012 06:16:33 PM Srivatsa S. Bhat wrote:
-> On 06/27/2012 02:37 PM, Daniel Lezcano wrote:
-> > When the system is booted with some cpus offline, the idle
-> > driver is not initialized. When a cpu is set online, the
-> > acpi code call the intel idle init function. Unfortunately
-> > this code introduce a dependency between intel_idle and acpi.
-> > 
-> > This patch is intended to remove this dependency by using the
-> > notifier of intel_idle. In order to make it work, the notifier
-> > must be initialized in the right order, acpi then intel_idle.
-> > This is done in the Makefile.
-> 
-> There is a much better way of doing this. See below.
-> 
-> > This patch has the benefit of
-> > encapsulating the intel_idle driver and remove some exported
-> > functions.
-> > 
-> 
-> Nice :)
-> 
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > ---
-> >  drivers/Makefile                |    3 ++-
-> >  drivers/acpi/processor_driver.c |    7 -------
-> >  drivers/idle/intel_idle.c       |   22 ++++++++++++++--------
-> >  include/linux/cpuidle.h         |    7 -------
-> >  4 files changed, 16 insertions(+), 23 deletions(-)
-> > 
-> > diff --git a/drivers/Makefile b/drivers/Makefile
-> > index 2ba29ff..a2454b8 100644
-> > --- a/drivers/Makefile
-> > +++ b/drivers/Makefile
-> > @@ -12,8 +12,9 @@ obj-$(CONFIG_PCI)		+= pci/
-> >  obj-$(CONFIG_PARISC)		+= parisc/
-> >  obj-$(CONFIG_RAPIDIO)		+= rapidio/
-> >  obj-y				+= video/
-> > -obj-y				+= idle/
-> > +# acpi must come before idle for initialization
-> >  obj-$(CONFIG_ACPI)		+= acpi/
-> > +obj-y				+= idle/
-> >  obj-$(CONFIG_SFI)		+= sfi/
-> >  # PnP must come after ACPI since it will eventually need to check if acpi
-> >  # was used and do nothing if so
-> 
-> OK, so all you are trying to do here is ensure that the intel idle related
-> notifier runs _after_ the acpi related one.
-I might oversee something, if you have concerns, please point me to it.
-If it's all about keeping the order of excuting these functions:
-   acpi_processor_start(pr)
-and
-   intel_idle_cpu_init()
-There should be no need for it. Intel idle is pretty separated.
+Hi Norbert,
 
-  Thomas
+> I am coming back to this old thread, not because it has been solved,
+
+Somehow your mail didn't make it to the lists, not sure why.
+
+> but because today I got a funny new message while checking why
+> everything got stuck again:
+>         [69588.972126] iwlwifi 0000:06:00.0: fail to flush all tx fifo queues
+> and after doing
+>         rfkill block wifi
+>         sleep 20
+>         rfkill unblock wifi
+> I got a kernel warning:
+> [76477.289251] WARNING: at net/mac80211/driver-ops.h:12 ieee80211_bss_info_change_notify+0x14e/0x1ca [mac80211]()
+> [76477.289256] Hardware name: VGN-Z11VN_B
+> [76477.289260] wlan0:  Failed check-sdata-in-driver check, flags: 0x0
+> [76477.289350] Modules linked in: ...
+> [76477.289361] Pid: 4278, comm: NetworkManager Tainted: P        W  O 3.5.0-rc4+ #78
+> [76477.289365] Call Trace:
+> [76477.289380]  [<ffffffff8102ba46>] warn_slowpath_common+0x83/0x9c
+> [76477.289389]  [<ffffffff8102bb02>] warn_slowpath_fmt+0x46/0x48
+> [76477.289402]  [<ffffffff813f21da>] ? neigh_ifdown+0xc5/0xd6
+> [76477.289424]  [<ffffffffa00b252e>] ieee80211_bss_info_change_notify+0x14e/0x1ca [mac80211]
+> [76477.289448]  [<ffffffffa00b267d>] ieee80211_ifa_changed+0xd3/0xe6 [mac80211]
+> [76477.289458]  [<ffffffff8104b7e3>] notifier_call_chain+0x37/0x61
+> [76477.289467]  [<ffffffff8104b919>] __blocking_notifier_call_chain+0x46/0x5f
+> [76477.289475]  [<ffffffff8104b946>] blocking_notifier_call_chain+0x14/0x16
+> [76477.289485]  [<ffffffff81432cc0>] __inet_del_ifa+0x176/0x22c
+> [76477.289494]  [<ffffffff81432f96>] inet_rtm_deladdr+0xe7/0x128
+> [76477.289504]  [<ffffffff813f61e0>] rtnetlink_rcv_msg+0x226/0x235
+
+Fun. I don't actually see how this can possibly happen though?!
+
+
+> Maybe this tells you something.
+> 
+> > > >   [ 9457.176828] iwlwifi 0000:06:00.0: ACTIVATE a non DRIVER active
+> > > >station id 0 addr 00:24:c4:ab:bd:e0
+> 
+> These messages now appear only now and then.
+
+I fixed those recently.
+
+You seem to be on 3.5.0-rc now, is that really no different from 3.4?
+
+johannes
+
