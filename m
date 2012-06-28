@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab2F1NCl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:02:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25817 "EHLO mx1.redhat.com"
+	id S1753746Ab2F1NC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:02:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3954 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752537Ab2F1NCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 09:02:38 -0400
+	id S1755740Ab2F1M63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:58:29 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,52 +27,133 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 34/40] autonuma: add CONFIG_AUTONUMA and CONFIG_AUTONUMA_DEFAULT_ENABLED
-Date: Thu, 28 Jun 2012 14:56:14 +0200
-Message-Id: <1340888180-15355-35-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 30/40] autonuma: numa hinting page faults entry points
+Date: Thu, 28 Jun 2012 14:56:10 +0200
+Message-Id: <1340888180-15355-31-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the config options to allow building the kernel with AutoNUMA.
-
-If CONFIG_AUTONUMA_DEFAULT_ENABLED is "=y", then
-/sys/kernel/mm/autonuma/enabled will be equal to 1, and AutoNUMA will
-be enabled automatically at boot.
-
-CONFIG_AUTONUMA currently depends on X86, because no other arch
-implements the pte/pmd_numa yet and selecting =y would result in a
-failed build, but this shall be relaxed in the future. Porting
-AutoNUMA to other archs should be pretty simple.
+This is where the numa hinting page faults are detected and are passed
+over to the AutoNUMA core logic.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/Kconfig |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ include/linux/huge_mm.h |    2 ++
+ mm/huge_memory.c        |   17 +++++++++++++++++
+ mm/memory.c             |   31 +++++++++++++++++++++++++++++++
+ 3 files changed, 50 insertions(+), 0 deletions(-)
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 82fed4e..330dd51 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -207,6 +207,19 @@ config MIGRATION
- 	  pages as migration can relocate pages to satisfy a huge page
- 	  allocation instead of reclaiming.
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index ad4e2e0..5270c81 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -11,6 +11,8 @@ extern int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			       unsigned long address, pmd_t *pmd,
+ 			       pmd_t orig_pmd);
++extern pmd_t __huge_pmd_numa_fixup(struct mm_struct *mm, unsigned long addr,
++				   pmd_t pmd, pmd_t *pmdp);
+ extern pgtable_t get_pmd_huge_pte(struct mm_struct *mm);
+ extern struct page *follow_trans_huge_pmd(struct mm_struct *mm,
+ 					  unsigned long addr,
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index ae20409..4fcdaf7 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1037,6 +1037,23 @@ out:
+ 	return page;
+ }
  
-+config AUTONUMA
-+	bool "Auto NUMA"
-+	select MIGRATION
-+	depends on NUMA && X86
-+	help
-+	  Automatic NUMA CPU scheduling and memory migration.
++#ifdef CONFIG_AUTONUMA
++pmd_t __huge_pmd_numa_fixup(struct mm_struct *mm, unsigned long addr,
++			    pmd_t pmd, pmd_t *pmdp)
++{
++	spin_lock(&mm->page_table_lock);
++	if (pmd_same(pmd, *pmdp)) {
++		struct page *page = pmd_page(pmd);
++		pmd = pmd_mknotnuma(pmd);
++		set_pmd_at(mm, addr & HPAGE_PMD_MASK, pmdp, pmd);
++		numa_hinting_fault(page, HPAGE_PMD_NR);
++		VM_BUG_ON(pmd_numa(pmd));
++	}
++	spin_unlock(&mm->page_table_lock);
++	return pmd;
++}
++#endif
 +
-+config AUTONUMA_DEFAULT_ENABLED
-+	bool "Auto NUMA default enabled"
-+	depends on AUTONUMA
-+	help
-+	  Automatic NUMA CPU scheduling and memory migration enabled at boot.
-+
- config PHYS_ADDR_T_64BIT
- 	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
+ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 		 pmd_t *pmd, unsigned long addr)
+ {
+diff --git a/mm/memory.c b/mm/memory.c
+index 78b6acc..d72aafd 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -57,6 +57,7 @@
+ #include <linux/swapops.h>
+ #include <linux/elf.h>
+ #include <linux/gfp.h>
++#include <linux/autonuma.h>
  
+ #include <asm/io.h>
+ #include <asm/pgalloc.h>
+@@ -3406,6 +3407,31 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
+ }
+ 
++static inline pte_t pte_numa_fixup(struct mm_struct *mm,
++				   struct vm_area_struct *vma,
++				   unsigned long addr, pte_t pte, pte_t *ptep)
++{
++	if (pte_numa(pte))
++		pte = __pte_numa_fixup(mm, vma, addr, pte, ptep);
++	return pte;
++}
++
++static inline void pmd_numa_fixup(struct mm_struct *mm,
++				  unsigned long addr, pmd_t *pmd)
++{
++	if (pmd_numa(*pmd))
++		__pmd_numa_fixup(mm, addr, pmd);
++}
++
++static inline pmd_t huge_pmd_numa_fixup(struct mm_struct *mm,
++					unsigned long addr,
++					pmd_t pmd, pmd_t *pmdp)
++{
++	if (pmd_numa(pmd))
++		pmd = __huge_pmd_numa_fixup(mm, addr, pmd, pmdp);
++	return pmd;
++}
++
+ /*
+  * These routines also need to handle stuff like marking pages dirty
+  * and/or accessed for architectures that don't do it in hardware (most
+@@ -3448,6 +3474,7 @@ int handle_pte_fault(struct mm_struct *mm,
+ 	spin_lock(ptl);
+ 	if (unlikely(!pte_same(*pte, entry)))
+ 		goto unlock;
++	entry = pte_numa_fixup(mm, vma, address, entry, pte);
+ 	if (flags & FAULT_FLAG_WRITE) {
+ 		if (!pte_write(entry))
+ 			return do_wp_page(mm, vma, address,
+@@ -3512,6 +3539,8 @@ retry:
+ 
+ 		barrier();
+ 		if (pmd_trans_huge(orig_pmd)) {
++			orig_pmd = huge_pmd_numa_fixup(mm, address,
++						       orig_pmd, pmd);
+ 			if (flags & FAULT_FLAG_WRITE &&
+ 			    !pmd_write(orig_pmd) &&
+ 			    !pmd_trans_splitting(orig_pmd)) {
+@@ -3530,6 +3559,8 @@ retry:
+ 		}
+ 	}
+ 
++	pmd_numa_fixup(mm, address, pmd);
++
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+ 	 * run pte_offset_map on the pmd, if an huge pmd could
