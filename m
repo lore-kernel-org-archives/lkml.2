@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2F1MBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:01:06 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:43395 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab2F1MBE (ORCPT
+	id S1754325Ab2F1MCt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:02:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42226 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751473Ab2F1MCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:01:04 -0400
-Date: Thu, 28 Jun 2012 14:00:41 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
-Message-ID: <20120628140041.10354331@BR9GNB5Z>
-In-Reply-To: <20120628093442.GH12447@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
-	<20120627050858.23698.44118.stgit@bling.home>
-	<20120627162430.3477d0f6@BR9GNB5Z>
-	<20120628083857.GD12447@redhat.com>
-	<20120628110316.0f53a1ef@BR9GNB5Z>
-	<20120628093442.GH12447@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12062812-3548-0000-0000-00000260A52F
+	Thu, 28 Jun 2012 08:02:48 -0400
+Date: Thu, 28 Jun 2012 13:02:45 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] ASoC: snd_dmaengine: add common api for pcm_mmap
+Message-ID: <20120628120245.GF28922@opensource.wolfsonmicro.com>
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
+ <20120628105148.GD28922@opensource.wolfsonmicro.com>
+ <4FEC468A.3080607@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qftxBdZWiueWNAVY"
+Content-Disposition: inline
+In-Reply-To: <4FEC468A.3080607@nvidia.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012 12:34:43 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> On Thu, Jun 28, 2012 at 11:03:16AM +0200, Cornelia Huck wrote:
+--qftxBdZWiueWNAVY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > How about something like this as parameter for the new ioctl?
-> > 
-> > struct kvm_irqfd2 {
-> > 	__u32 fd;
-> > 	__u32 flags;  /* for things like deassign */
-> > 	__u64 type;   /* determines the payload */
-> > 	union {
-> > 		/* type traditional */
-> > 		struct {
-> > 			__u32 gsi;
-> > 		} trad;
-> > 		/* type s390 */
-> > 		struct {
-> > 			__u32 int_type;
-> > 			__u32 parm;
-> > 			__u64 parm64;
-> > 		} s390;
-> > 		__u8 pad[20];
-> > 	};
-> > }
-> > 
-> > This could be combined with an arch or a per-kvm callback to keep the
-> > generic code clean of architecture dependencies.
-> > 
-> > Cornelia
-> 
-> Looks a bit weird - shouldn't all this be part of gsi routing?
-> But no idea really, I don't see the big picture here.
-> 
+On Thu, Jun 28, 2012 at 05:26:58PM +0530, Laxman Dewangan wrote:
 
-Well, on s390 we don't have anything like "gsi routing" (I'm not even
-really sure what that is).
+> Other driver which can use this API are davinci, OMAP, samsung but
+> because they are not using the snd_dmaengine_pcm driver's api as of
+> now so not be very much useful for them.
 
-My understanding is the following:
+There's no reason why we can't factor out more common code - this is
+essentially what Lars-Peter was saying.
 
-- Basically, we want to notify the guest for a virtqueue.
-- For this, we want to inject an interrupt for the associated device.
-- On x86, this means raising an interrupt on an interrupt line, as
-  specified by some kind of number.
-- On s390, we need some more information to (a) identify the device and
-  (b) additional information that needs to be transmitted for an
-  interrupt (device specific). (This is what basically goes into struct
-  kvm_s390_interrupt, which I reproduced in the s390 part.)
+> Should I send one patch per driver change or squash all 4 file
+> changes in one patch? Whatever will be easy or recommended?
 
-Cornelia
+It doesn't really matter that much, but please take on board
+Lars-Peter's comments.
 
+--qftxBdZWiueWNAVY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP7EfdAAoJEBus8iNuMP3dEewP+wXK+vQib8Z5fIeTvXnlcACG
+aAlljJByLuZGrRq5RZXN0yeTQgo84VHqZZ9F/uQEjFSWAV7FmEFiazOmL/fydPPB
+q5vvFxofByU4xc5U4QsMpFSxqcHaqEA3N9CV4/Sxr7dAa1AYEU1cBJozy9fo28DP
+I+oQTy2/5/2ucdwDXPoiIDuo5kAYp+iN/qRP4UVJx8b1ycHeKgNBUJ/ICEaZQH67
+Osa9Kf1vnwtGkgsznT6iS/2Pf/UOSYpJoVUBQkn0oBW2MvMgPhxiMQEdvtNpFo1J
+sEdoRNkKcSMQLXVGkdU9tq0MtAUJ0RmDRhih574KVh6LpyhGsnXM8NP+Fn53bnfI
+tnLZ5quWXn7RK1/XkQnGdHo61NKBxXYOvlbNDY1ObrWZ4kVze+aqtJ1+Ygn1aTxZ
+WNTImaN2OAbMVqMNF7qtPPTz1XrL2Rb8vYVwhwaKwhQrs0WgiGGqnHpLDVjtYwk+
+2cVMS8AoHhPJ1NW7O1P1r5mZ3UiZHZ/xGG59wHUY+5DlnEVIy2jHruie2YFQBlEm
+xvAW39QSSwOX+Cpm/2ck320ijt+6GRfrm+8Xdk9QSiVcarLW5c94KlMPyyx8ompe
+lJFJwM5EavTMPVCL/eIMNjZ5BqRhi4kSTObc5iozK7hdm/B/xpjU3QL1ig2i+F+N
+A4/LDKEBTs897uk2G9sk
+=0mAZ
+-----END PGP SIGNATURE-----
+
+--qftxBdZWiueWNAVY--
