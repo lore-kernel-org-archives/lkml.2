@@ -1,67 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab2F1Cl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 22:41:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33095 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821Ab2F1ClG (ORCPT
+	id S932364Ab2F1Cmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 22:42:38 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:14794 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757941Ab2F1Cmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 22:41:06 -0400
-Date: Thu, 28 Jun 2012 12:40:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Franky Lin <frankyl@broadcom.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Message-Id: <20120628124049.15ee2861836495a252ea188f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__28_Jun_2012_12_40_49_+1000_6G88y=guqRHKOXmM"
+	Wed, 27 Jun 2012 22:42:35 -0400
+X-AuditID: cbfee61a-b7f086d000000e64-88-4febc4990884
+From: Jonghwa Lee <jonghwa3.lee@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, Jamie Iles <jamie@jamieiles.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH v3] Exynos : Add support for Exynos random number generator
+Date: Thu, 28 Jun 2012 11:42:25 +0900
+Message-id: <1340851345-27107-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOJMWRmVeSWpSXmKPExsVy+t9jAd2ZR177G/xaJWhxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyNq4tKmi0rrh7UryBcaNhFyMnh4SAicSarZvYIGwxiQv31gPZ
+	XBxCAosYJXZO/8sO4SxlkpjSN5MRpIpNQEfi/76b7CC2iICCxObeZ6wgRcwCe5gkfn++zQyS
+	EBbwlrh3fxdQEQcHi4CqxO82fRCTV8BDYspFPYhlChIL7r1lm8DIvYCRYRWjaGpBckFxUnqu
+	oV5xYm5xaV66XnJ+7iZGsPeeSe1gXNlgcYhRgINRiYd3xcHX/kKsiWXFlbmHGCU4mJVEeL/H
+	AYV4UxIrq1KL8uOLSnNSiw8xSnOwKInzNllf8BcSSE8sSc1OTS1ILYLJMnFwSjUwMoa7qLjf
+	W3NK/pFS/FobvUlOXYqOFiI5yrtPvo1J39wwuUxZVlGlM8zwyRWlpXv1PdXVVYtvX0q782pf
+	nn/d0q8cm3d1XVCdkr3ccc5Ulw2daXUtB0pLuv9orm7hFlHMFLxaMKvgev3fRubDAo6p93+t
+	+3VSwJG79Z0Iw9QVH/m+TA5r0qtRYinOSDTUYi4qTgQAUKBk+toBAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__28_Jun_2012_12_40_49_+1000_6G88y=guqRHKOXmM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch supports Exynos SOC's PRNG driver. Exynos's PRNG has 5 seeds and
+5 random number outputs. Module is excuted under runtime power management control,
+so it activates only while it's in use. Otherwise it will be suspended generally.
+It was tested on PQ board by rngtest program.
 
-Hi John,
+Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+v3
+ - It supports pm_runtime_autosuspend. After busy working it sets timer and it will
+   be suspended automatically when timer is expired.
+ - Use jiffies as the seeds of generator for more accuracy randomness.
+ - Fix Kconfig depends-on condition to broden this drivers's coverage.
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c between commit
-2c208890c6d4 ("wireless: Remove casts to same type") from the net-next
-tree and commit d610cde30b00 ("brcmfmac: use firmware data buffer
-directly for nvram") from the wireless-next tree.
+v2
+ https://lkml.org/lkml/2012/6/27/186
 
-The latter removed the code modified by the former, so I used the latter.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ drivers/char/hw_random/Kconfig      |   12 +++
+ drivers/char/hw_random/Makefile     |    1 +
+ drivers/char/hw_random/exynos-rng.c |  183 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 196 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/hw_random/exynos-rng.c
 
---Signature=_Thu__28_Jun_2012_12_40_49_+1000_6G88y=guqRHKOXmM
-Content-Type: application/pgp-signature
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index f45dad3..b01d673 100644
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -263,3 +263,15 @@ config HW_RANDOM_PSERIES
+ 	  module will be called pseries-rng.
+ 
+ 	  If unsure, say Y.
++
++config HW_RANDOM_EXYNOS
++	tristate "EXYNOS HW random number generator support"
++	depends on HW_RANDOM && HAS_IOMEM && HAVE_CLK
++	---help---
++	  This driver provides kernel-side support for the Random Number
++	  Generator hardware found on EXYNOS SOCs.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called exynos-rng.
++
++	  If unsure, say Y.
+diff --git a/drivers/char/hw_random/Makefile b/drivers/char/hw_random/Makefile
+index d901dfa..8d6d173 100644
+--- a/drivers/char/hw_random/Makefile
++++ b/drivers/char/hw_random/Makefile
+@@ -23,3 +23,4 @@ obj-$(CONFIG_HW_RANDOM_NOMADIK) += nomadik-rng.o
+ obj-$(CONFIG_HW_RANDOM_PICOXCELL) += picoxcell-rng.o
+ obj-$(CONFIG_HW_RANDOM_PPC4XX) += ppc4xx-rng.o
+ obj-$(CONFIG_HW_RANDOM_PSERIES) += pseries-rng.o
++obj-$(CONFIG_HW_RANDOM_EXYNOS)	+= exynos-rng.o
+diff --git a/drivers/char/hw_random/exynos-rng.c b/drivers/char/hw_random/exynos-rng.c
+new file mode 100644
+index 0000000..b6766f2
+--- /dev/null
++++ b/drivers/char/hw_random/exynos-rng.c
+@@ -0,0 +1,183 @@
++/*
++ * exynos-rng.c - Random Number Generator driver for the exynos
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * Jonghwa Lee <jonghwa3.lee@smasung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include <linux/hw_random.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/pm_runtime.h>
++#include <linux/err.h>
++
++#define EXYNOS_PRNG_STATUS_OFFSET	0x10
++#define EXYNOS_PRNG_SEED_OFFSET		0x140
++#define EXYNOS_PRNG_OUT1_OFFSET		0x160
++#define SEED_SETTING_DONE		BIT(1)
++#define PRNG_START			0x18
++#define PRNG_DONE			BIT(5)
++#define EXYNOS_AUTOSUSPEND_DELAY	100
++
++struct exynos_rng {
++	struct device *dev;
++	struct hwrng rng;
++	void __iomem *mem;
++	struct clk *clk;
++};
++
++static u32 exynos_rng_readl(struct exynos_rng *rng, u32 offset)
++{
++	return	__raw_readl(rng->mem + offset);
++}
++
++static void exynos_rng_writel(struct exynos_rng *rng, u32 val, u32 offset)
++{
++	__raw_writel(val, rng->mem + offset);
++}
++
++static int exynos_init(struct hwrng *rng)
++{
++	struct exynos_rng *exynos_rng = container_of(rng,
++						struct exynos_rng, rng);
++	int i;
++	int ret = 0;
++
++	pm_runtime_get_sync(exynos_rng->dev);
++
++	for (i = 0 ; i < 5 ; i++)
++		exynos_rng_writel(exynos_rng, jiffies,
++				EXYNOS_PRNG_SEED_OFFSET + 4*i);
++
++	if (!(exynos_rng_readl(exynos_rng, EXYNOS_PRNG_STATUS_OFFSET)
++						 & SEED_SETTING_DONE))
++		ret = -EIO;
++
++	pm_runtime_put_noidle(exynos_rng->dev);
++
++	return ret;
++}
++
++static int exynos_read(struct hwrng *rng, void *buf,
++					size_t max, bool wait)
++{
++	struct exynos_rng *exynos_rng = container_of(rng,
++						struct exynos_rng, rng);
++	u32 *data = buf;
++
++	pm_runtime_get_sync(exynos_rng->dev);
++
++	exynos_rng_writel(exynos_rng, PRNG_START, 0);
++
++	while (!(exynos_rng_readl(exynos_rng,
++			EXYNOS_PRNG_STATUS_OFFSET) & PRNG_DONE))
++		cpu_relax();
++
++	exynos_rng_writel(exynos_rng, PRNG_DONE, EXYNOS_PRNG_STATUS_OFFSET);
++
++	*data = exynos_rng_readl(exynos_rng, EXYNOS_PRNG_OUT1_OFFSET);
++
++	pm_runtime_mark_last_busy(exynos_rng->dev);
++	pm_runtime_autosuspend(exynos_rng->dev);
++
++	return 4;
++}
++
++static int __devinit exynos_rng_probe(struct platform_device *pdev)
++{
++	struct exynos_rng *exynos_rng;
++
++	exynos_rng = devm_kzalloc(&pdev->dev, sizeof(struct exynos_rng),
++					GFP_KERNEL);
++	if (!exynos_rng)
++		return -ENOMEM;
++
++	exynos_rng->dev = &pdev->dev;
++	exynos_rng->rng.name = "exynos";
++	exynos_rng->rng.init =	exynos_init;
++	exynos_rng->rng.read = exynos_read;
++	exynos_rng->clk = devm_clk_get(&pdev->dev, "secss");
++	if (IS_ERR(exynos_rng->clk)) {
++		dev_err(&pdev->dev, "Couldn't get clock.\n");
++		return -ENOENT;
++	}
++
++	exynos_rng->mem = devm_request_and_ioremap(&pdev->dev,
++			platform_get_resource(pdev, IORESOURCE_MEM, 0));
++	if (!exynos_rng->mem)
++		return -EBUSY;
++
++	platform_set_drvdata(pdev, exynos_rng);
++
++	pm_runtime_set_autosuspend_delay(&pdev->dev, EXYNOS_AUTOSUSPEND_DELAY);
++	pm_runtime_use_autosuspend(&pdev->dev);
++	pm_runtime_enable(&pdev->dev);
++
++	return hwrng_register(&exynos_rng->rng);
++}
++
++static int __devexit exynos_rng_remove(struct platform_device *pdev)
++{
++	struct exynos_rng *exynos_rng = platform_get_drvdata(pdev);
++
++	hwrng_unregister(&exynos_rng->rng);
++
++	return 0;
++}
++
++static int exynos_rng_runtime_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct exynos_rng *exynos_rng = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(exynos_rng->clk);
++
++	return 0;
++}
++
++static int exynos_rng_runtime_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct exynos_rng *exynos_rng = platform_get_drvdata(pdev);
++
++	return clk_prepare_enable(exynos_rng->clk);
++}
++
++
++UNIVERSAL_DEV_PM_OPS(exynos_rng_pm_ops, exynos_rng_runtime_suspend,
++					exynos_rng_runtime_resume, NULL);
++
++static struct platform_driver exynos_rng_driver = {
++	.driver		= {
++		.name	= "exynos-rng",
++		.owner	= THIS_MODULE,
++		.pm	= &exynos_rng_pm_ops,
++	},
++	.probe		= exynos_rng_probe,
++	.remove		= __devexit_p(exynos_rng_remove),
++};
++
++module_platform_driver(exynos_rng_driver);
++
++MODULE_DESCRIPTION("EXYNOS 4 H/W Random Number Generator driver");
++MODULE_AUTHOR("Jonghwa Lee <jonghwa3.lee@samsung.com>");
++MODULE_LICENSE("GPL");
+-- 
+1.7.4.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP68QxAAoJEECxmPOUX5FE/pwP/2O6qslKuRAyOpTswwN74/v+
-F7SZ93fg/OB9X/LNFQv5yqwgMgmBmt4lI41cEg+5m5QZWgBeUeU+zzzURV/I9bAX
-lif+Hfsc7ygSOffVb5VNNNHZBQxZidmBuhvleXk+uqAPQ+yjntrK8C2x70lQOr29
-QSTgGgoeqCvWWyeq4F9t7IzA8yxqBBGhaf1VuL0YlP0aXhUxQ059yOWfq7cyBAeo
-FjVzFNCzqO9b9SdOcxPg7Iba7+5kVICmKgbcJjjtG7hFe7B2l4MT+0mbqJplRhSC
-6fXeHK4ItlM9F9p9CdBmda57Ux8T6jLTdmLnfUeY3hlo/kbIH8hOp6yiLVK85HiP
-T7HA6RcMg/uiFkSB2h1oYCUOpDX2tJY4PL2n+oXCZTpVEqUYaslYbTyuOUlupDvF
-eVJNleDALy7MvTM8VXkqzZmRboZM6kHM9kSdbyUtOMUPSNOA8FxYhLUm81IneLzH
-Cv/jHcDy+PVj0EXpREHutqbYFz8fwJQudATqI+Y1SgwHFwZ9miybpFftYEEnBVRW
-Jr+aDWEyKE9GAqZ3otwoB7MPlp3XLyIhmCW0flsKo9hfkq2EAwo6zSpvS2o3t5nc
-8KkcsCoFEiYsruRqNBj1Ip7S2H0ESk/4Mim9WC0H+RZovbFXIe92XFmB/6PE0N4y
-BbIOpsjW9YmRQIrZ528x
-=KG/9
------END PGP SIGNATURE-----
-
---Signature=_Thu__28_Jun_2012_12_40_49_+1000_6G88y=guqRHKOXmM--
