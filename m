@@ -1,134 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab2F1GM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 02:12:59 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:47718 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932486Ab2F1GIG (ORCPT
+	id S932356Ab2F1G0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 02:26:05 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:38039 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab2F1G0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 02:08:06 -0400
-X-AuditID: b753bd60-9fe84ba000000655-9e-4febf4c4c69c
-X-AuditID: b753bd60-9fe84ba000000655-9e-4febf4c4c69c
-From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Subject: [RFC PATCH 07/18] KVM: handle page faults occured in slave CPUs on
- online CPUs
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 28 Jun 2012 15:07:56 +0900
-Message-ID: <20120628060756.19298.42007.stgit@localhost.localdomain>
-In-Reply-To: <20120628060719.19298.43879.stgit@localhost.localdomain>
-References: <20120628060719.19298.43879.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Thu, 28 Jun 2012 02:26:03 -0400
+Date: Thu, 28 Jun 2012 02:25:59 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: "Kim, Jong-Sung" <neidhard.kim@lge.com>
+cc: "'Dave Martin'" <dave.martin@linaro.org>,
+        "'Minchan Kim'" <minchan@kernel.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Catalin Marinas'" <catalin.marinas@arm.com>,
+        "'Chanho Min'" <chanho.min@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org
+Subject: RE: [PATCH] [RESEND] arm: limit memblock base address for
+ early_pte_alloc
+In-Reply-To: <00e801cd54f0$eb8a3540$c29e9fc0$@lge.com>
+Message-ID: <alpine.LFD.2.02.1206280223250.31003@xanadu.home>
+References: <1338880312-17561-1-git-send-email-minchan@kernel.org> <025701cd457e$d5065410$7f12fc30$@lge.com> <20120627160220.GA2310@linaro.org> <00e801cd54f0$eb8a3540$c29e9fc0$@lge.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page faults which occured by the guest running on slave CPUs cannot be
-handled on slave CPUs because it is running on idle process context.
+On Thu, 28 Jun 2012, Kim, Jong-Sung wrote:
 
-With this patch, the page fault happened in a slave CPU is notified to
-online CPU using struct kvm_access_fault, and is handled after the
-user-process for the guest is resumed on an online CPU.
+> > From: Dave Martin [mailto:dave.martin@linaro.org]
+> > Sent: Thursday, June 28, 2012 1:02 AM
+> > 
+> > For me, it appears that this block just contains the initial region passed
+> > in ATAG_MEM or on the command line, with some reservations for
+> > swapper_pg_dir, the kernel text/data, device tree and initramfs.
+> > 
+> > So far as I can tell, the only memory guaranteed to be mapped here is the
+> > kernel image: there may be no guarantee that there is any unused space in
+> > this region which could be used to allocate extra page tables.
+> > The rest appears during the execution of map_lowmem().
+> > 
+> > Cheers
+> > ---Dave
+> 
+> Thank you for your comment, Dave! It was not that sophisticated choice, but
+> I thought that normal embedded system trying to reduce the BOM would have a
+> big-enough first memblock memory region. However you're right. There can be
+> exceptional systems. Then, how do you think about following manner:
+[...]
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
----
+This still has some possibilities for failure.
 
- arch/x86/include/asm/kvm_host.h |   15 +++++++++++++++
- arch/x86/kvm/mmu.c              |   13 +++++++++++++
- arch/x86/kvm/x86.c              |   10 ++++++++++
- 3 files changed, 38 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 4291954..80f7b3b 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -66,6 +66,11 @@
- 
- #define UNMAPPED_GVA (~(gpa_t)0)
- 
-+#ifdef CONFIG_SLAVE_CPU
-+/* Requests to handle VM exit on online cpu */
-+#define KVM_REQ_HANDLE_PF	32
-+#endif
-+
- /* KVM Hugepage definitions for x86 */
- #define KVM_NR_PAGE_SIZES	3
- #define KVM_HPAGE_GFN_SHIFT(x)	(((x) - 1) * 9)
-@@ -405,6 +410,16 @@ struct kvm_vcpu_arch {
- 		u8 nr;
- 	} interrupt;
- 
-+#ifdef CONFIG_SLAVE_CPU
-+	/* used for recording page fault on offline CPU */
-+	struct kvm_access_fault {
-+		gva_t cr2;
-+		u32 error_code;
-+		void *insn;
-+		int insn_len;
-+	} page_fault;
-+#endif
-+
- 	int halt_request; /* real mode on Intel only */
- 
- 	int cpuid_nent;
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 6139e1d..a179ebc 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3785,6 +3785,19 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
- 	int r, emulation_type = EMULTYPE_RETRY;
- 	enum emulation_result er;
- 
-+#ifdef CONFIG_SLAVE_CPU
-+	if (cpu_slave(smp_processor_id())) {
-+		/* Page fault must be handled on user-process context. */
-+		r = -EFAULT;
-+		vcpu->arch.page_fault.cr2 = cr2;
-+		vcpu->arch.page_fault.error_code = error_code;
-+		vcpu->arch.page_fault.insn = insn;
-+		vcpu->arch.page_fault.insn_len = insn_len;
-+		kvm_make_request(KVM_REQ_HANDLE_PF, vcpu);
-+		goto out;
-+	}
-+#endif
-+
- 	r = vcpu->arch.mmu.page_fault(vcpu, cr2, error_code, false);
- 	if (r < 0)
- 		goto out;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index ecd474a..7b9f2a5 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5552,6 +5552,16 @@ static int vcpu_enter_guest_slave(struct kvm_vcpu *vcpu,
- 	r = arg.ret;
- 	*apf_pending = arg.apf_pending;
- 
-+	if (r == -EFAULT && kvm_check_request(KVM_REQ_HANDLE_PF, vcpu)) {
-+		pr_debug("handling page fault request @%p\n",
-+			 (void *)vcpu->arch.page_fault.cr2);
-+		r = kvm_mmu_page_fault(vcpu,
-+				       vcpu->arch.page_fault.cr2,
-+				       vcpu->arch.page_fault.error_code,
-+				       vcpu->arch.page_fault.insn,
-+				       vcpu->arch.page_fault.insn_len);
-+	}
-+
- 	return r;
- }
- 
+Please have a look at the two patches I've posted to fix this in a 
+better way.
 
 
+Nicolas
