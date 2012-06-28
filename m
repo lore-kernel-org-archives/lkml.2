@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab2F1NFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:05:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51090 "EHLO mx1.redhat.com"
+	id S1754121Ab2F1NGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:06:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49965 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755164Ab2F1M5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:57:47 -0400
+	id S1754929Ab2F1M5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:57:41 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,43 +27,186 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 07/40] autonuma: generic pte_numa() and pmd_numa()
-Date: Thu, 28 Jun 2012 14:55:47 +0200
-Message-Id: <1340888180-15355-8-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 38/40] autonuma: autonuma_migrate_head[0] dynamic size
+Date: Thu, 28 Jun 2012 14:56:18 +0200
+Message-Id: <1340888180-15355-39-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement generic version of the methods. They're used when
-CONFIG_AUTONUMA=n, and they're a noop.
+Reduce the autonuma_migrate_head array entries from MAX_NUMNODES to
+num_possible_nodes() or zero if autonuma_impossible() is true.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/asm-generic/pgtable.h |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ arch/x86/mm/numa.c             |    6 ++++--
+ arch/x86/mm/numa_32.c          |    3 ++-
+ include/linux/memory_hotplug.h |    3 ++-
+ include/linux/mmzone.h         |    8 +++++++-
+ include/linux/page_autonuma.h  |   10 ++++++++--
+ mm/memory_hotplug.c            |    2 +-
+ mm/page_autonuma.c             |    5 +++--
+ 7 files changed, 27 insertions(+), 10 deletions(-)
 
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index ff4947b..0ff87ec 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -530,6 +530,18 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 2d125be..a4a9e92 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -11,6 +11,7 @@
+ #include <linux/nodemask.h>
+ #include <linux/sched.h>
+ #include <linux/topology.h>
++#include <linux/page_autonuma.h>
+ 
+ #include <asm/e820.h>
+ #include <asm/proto.h>
+@@ -192,7 +193,8 @@ int __init numa_add_memblk(int nid, u64 start, u64 end)
+ /* Initialize NODE_DATA for a node on the local memory */
+ static void __init setup_node_data(int nid, u64 start, u64 end)
+ {
+-	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
++	const size_t nd_size = roundup(autonuma_pglist_data_size(),
++				       PAGE_SIZE);
+ 	bool remapped = false;
+ 	u64 nd_pa;
+ 	void *nd;
+@@ -239,7 +241,7 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
+ 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
+ 
+ 	node_data[nid] = nd;
+-	memset(NODE_DATA(nid), 0, sizeof(pg_data_t));
++	memset(NODE_DATA(nid), 0, autonuma_pglist_data_size());
+ 	NODE_DATA(nid)->node_id = nid;
+ 	NODE_DATA(nid)->node_start_pfn = start >> PAGE_SHIFT;
+ 	NODE_DATA(nid)->node_spanned_pages = (end - start) >> PAGE_SHIFT;
+diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+index 534255a..d32d6cc 100644
+--- a/arch/x86/mm/numa_32.c
++++ b/arch/x86/mm/numa_32.c
+@@ -25,6 +25,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/memblock.h>
+ #include <linux/module.h>
++#include <linux/page_autonuma.h>
+ 
+ #include "numa_internal.h"
+ 
+@@ -194,7 +195,7 @@ void __init init_alloc_remap(int nid, u64 start, u64 end)
+ 
+ 	/* calculate the necessary space aligned to large page size */
+ 	size = node_memmap_size_bytes(nid, start_pfn, end_pfn);
+-	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
++	size += ALIGN(autonuma_pglist_data_size(), PAGE_SIZE);
+ 	size = ALIGN(size, LARGE_PAGE_BYTES);
+ 
+ 	/* allocate node memory and the lowmem remap area */
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 910550f..76b1840 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -5,6 +5,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/notifier.h>
+ #include <linux/bug.h>
++#include <linux/page_autonuma.h>
+ 
+ struct page;
+ struct zone;
+@@ -130,7 +131,7 @@ extern void arch_refresh_nodedata(int nid, pg_data_t *pgdat);
+  */
+ #define generic_alloc_nodedata(nid)				\
+ ({								\
+-	kzalloc(sizeof(pg_data_t), GFP_KERNEL);			\
++	kzalloc(autonuma_pglist_data_size(), GFP_KERNEL);	\
+ })
+ /*
+  * This definition is just for error path in node hotadd.
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index e66da74..ed5b0c0 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -701,10 +701,16 @@ typedef struct pglist_data {
+ #if !defined(CONFIG_SPARSEMEM)
+ 	struct page_autonuma *node_page_autonuma;
  #endif
+-	struct list_head autonuma_migrate_head[MAX_NUMNODES];
+ 	unsigned long autonuma_nr_migrate_pages;
+ 	wait_queue_head_t autonuma_knuma_migrated_wait;
+ 	spinlock_t autonuma_lock;
++	/*
++	 * Archs supporting AutoNUMA should allocate the pgdat with
++	 * size autonuma_pglist_data_size() after including
++	 * <linux/page_autonuma.h> and the below field must remain the
++	 * last one of this structure.
++	 */
++	struct list_head autonuma_migrate_head[0];
+ #endif
+ } pg_data_t;
+ 
+diff --git a/include/linux/page_autonuma.h b/include/linux/page_autonuma.h
+index d748aa2..bc7a629 100644
+--- a/include/linux/page_autonuma.h
++++ b/include/linux/page_autonuma.h
+@@ -10,6 +10,7 @@ static inline void __init page_autonuma_init_flatmem(void) {}
+ #ifdef CONFIG_AUTONUMA
+ 
+ #include <linux/autonuma_flags.h>
++#include <linux/autonuma_types.h>
+ 
+ extern void __meminit page_autonuma_map_init(struct page *page,
+ 					     struct page_autonuma *page_autonuma,
+@@ -29,11 +30,10 @@ extern void __meminit pgdat_autonuma_init(struct pglist_data *);
+ struct page_autonuma;
+ #define PAGE_AUTONUMA_SIZE 0
+ #define SECTION_PAGE_AUTONUMA_SIZE 0
++#endif
+ 
+ #define autonuma_impossible() true
+ 
+-#endif
+-
+ static inline void pgdat_autonuma_init(struct pglist_data *pgdat) {}
+ 
+ #endif /* CONFIG_AUTONUMA */
+@@ -50,4 +50,10 @@ extern void __init sparse_early_page_autonuma_alloc_node(struct page_autonuma **
+ 							 int nodeid);
+ #endif
+ 
++/* inline won't work here */
++#define autonuma_pglist_data_size() (sizeof(struct pglist_data) +	\
++				     (autonuma_impossible() ? 0 :	\
++				      sizeof(struct list_head) * \
++				      num_possible_nodes()))
++
+ #endif /* _LINUX_PAGE_AUTONUMA_H */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 0d7e3ec..604995b 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -164,7 +164,7 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ 	struct page *page;
+ 	struct zone *zone;
+ 
+-	nr_pages = PAGE_ALIGN(sizeof(struct pglist_data)) >> PAGE_SHIFT;
++	nr_pages = PAGE_ALIGN(autonuma_pglist_data_size()) >> PAGE_SHIFT;
+ 	page = virt_to_page(pgdat);
+ 
+ 	for (i = 0; i < nr_pages; i++, page++)
+diff --git a/mm/page_autonuma.c b/mm/page_autonuma.c
+index 2468c9e..d7c5e4a 100644
+--- a/mm/page_autonuma.c
++++ b/mm/page_autonuma.c
+@@ -23,8 +23,9 @@ static void __meminit __pgdat_autonuma_init(struct pglist_data *pgdat)
+ 	spin_lock_init(&pgdat->autonuma_lock);
+ 	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
+ 	pgdat->autonuma_nr_migrate_pages = 0;
+-	for_each_node(node_iter)
+-		INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
++	if (!autonuma_impossible())
++		for_each_node(node_iter)
++			INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
  }
  
-+#ifndef CONFIG_AUTONUMA
-+static inline int pte_numa(pte_t pte)
-+{
-+	return 0;
-+}
-+
-+static inline int pmd_numa(pmd_t pmd)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_AUTONUMA */
-+
- #endif /* CONFIG_MMU */
- 
- #endif /* !__ASSEMBLY__ */
+ #if !defined(CONFIG_SPARSEMEM)
