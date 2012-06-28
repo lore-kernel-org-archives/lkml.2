@@ -1,242 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571Ab2F1II0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 04:08:26 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44063 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932486Ab2F1IIH (ORCPT
+	id S1754051Ab2F1IQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 04:16:16 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:41260 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab2F1IQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 04:08:07 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FEC10CB.3060403@jp.fujitsu.com>
-Date: Thu, 28 Jun 2012 17:07:39 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 28 Jun 2012 04:16:13 -0400
+Date: Thu, 28 Jun 2012 17:16:07 +0900
+From: Norbert Preining <preining@logic.at>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>,
+        "Lin, Hsien KuoX" <hsien.kuox.lin@intel.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Emmanuel Grumbach <egrumbach@gmail.com>
+Subject: Re: [Ilw]  Re: 3.4-rc2, ilwagn still most of the time completely
+	unusable
+Message-ID: <20120628081607.GG31944@gamma.logic.tuwien.ac.at>
+References: <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com> <20120412000202.GA15286@gamma.logic.tuwien.ac.at> <4595B4D22AB93C4FABBA84AAD5AA37FD120BF8@ORSMSX103.amr.corp.intel.com> <20120413014047.GB25681@gamma.logic.tuwien.ac.at> <20120330011734.GH6277@gamma.logic.tuwien.ac.at> <20120411023747.GA10126@gamma.logic.tuwien.ac.at> <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com> <20120412000202.GA15286@gamma.logic.tuwien.ac.at> <20120628072512.GF31944@gamma.logic.tuwien.ac.at> <1340869868.4491.4.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH 4/12] memory-hotplug : remove /sys/firmware/memmap/X
- sysfs
-References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9E5F.4070205@jp.fujitsu.com> <4FEBFA8D.5040607@cn.fujitsu.com>
-In-Reply-To: <4FEBFA8D.5040607@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340869868.4491.4.camel@jlt3.sipsolutions.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
+On Do, 28 Jun 2012, Johannes Berg wrote:
+> Somehow your mail didn't make it to the lists, not sure why.
 
-2012/06/28 15:32, Wen Congyang wrote:
-> At 06/27/2012 01:47 PM, Yasuaki Ishimatsu Wrote:
->> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
->> sysfs files are created. But there is no code to remove these files. The patch
->> implements the function to remove them.
->>
->> Note : The code does not free firmware_map_entry since there is no way to free
->>         memory which is allocated by bootmem.
->>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Wen Congyang <wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> ---
->>   drivers/firmware/memmap.c    |   71 +++++++++++++++++++++++++++++++++++++++++++
->>   include/linux/firmware-map.h |    6 +++
->>   mm/memory_hotplug.c          |    6 +++
->>   3 files changed, 82 insertions(+), 1 deletion(-)
->>
->> Index: linux-3.5-rc4/mm/memory_hotplug.c
->> ===================================================================
->> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-26 13:37:30.546288901 +0900
->> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-26 13:44:37.069955820 +0900
->> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
->>
->>   int remove_memory(int nid, u64 start, u64 size)
->>   {
->> -	return -EBUSY;
->> +	lock_memory_hotplug();
->> +	/* remove memmap entry */
->> +	firmware_map_remove(start, start + size, "System RAM");
->> +	unlock_memory_hotplug();
->> +	return 0;
->>
->>   }
->>   EXPORT_SYMBOL_GPL(remove_memory);
->> Index: linux-3.5-rc4/include/linux/firmware-map.h
->> ===================================================================
->> --- linux-3.5-rc4.orig/include/linux/firmware-map.h	2012-06-25 04:53:04.000000000 +0900
->> +++ linux-3.5-rc4/include/linux/firmware-map.h	2012-06-26 13:44:37.070955807 +0900
->> @@ -25,6 +25,7 @@
->>
->>   int firmware_map_add_early(u64 start, u64 end, const char *type);
->>   int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
->> +int firmware_map_remove(u64 start, u64 end, const char *type);
->>
->>   #else /* CONFIG_FIRMWARE_MEMMAP */
->>
->> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
->>   	return 0;
->>   }
->>
->> +static inline int firmware_map_remove(u64 start, u64 end, const char *type)
->> +{
->> +	return 0;
->> +}
->> +
->>   #endif /* CONFIG_FIRMWARE_MEMMAP */
->>
->>   #endif /* _LINUX_FIRMWARE_MAP_H */
->> Index: linux-3.5-rc4/drivers/firmware/memmap.c
->> ===================================================================
->> --- linux-3.5-rc4.orig/drivers/firmware/memmap.c	2012-06-25 04:53:04.000000000 +0900
->> +++ linux-3.5-rc4/drivers/firmware/memmap.c	2012-06-26 13:47:17.606948898 +0900
->> @@ -123,6 +123,16 @@ static int firmware_map_add_entry(u64 st
->>   	return 0;
->>   }
->>
->> +/**
->> + * firmware_map_remove_entry() - Does the real work to remove a firmware
->> + * memmap entry.
->> + * @entry: removed entry.
->> + **/
->> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
->> +{
->> +	list_del(&entry->list);
->> +}
->> +
->>   /*
->>    * Add memmap entry on sysfs
->>    */
->> @@ -144,6 +154,31 @@ static int add_sysfs_fw_map_entry(struct
->>   	return 0;
->>   }
->>
->> +/*
->> + * Remove memmap entry on sysfs
->> + */
->> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
->> +{
->> +	kobject_del(&entry->kobj);
->> +}
->> +
->> +/*
->> + * Search memmap entry
->> + */
->> +
->> +struct firmware_map_entry * __meminit
->> +find_firmware_map_entry(u64 start, u64 end, const char *type)
->> +{
->> +	struct firmware_map_entry *entry;
->> +
->> +	list_for_each_entry(entry, &map_entries, list)
->> +		if ((entry->start == start) && (entry->end == end) &&
->> +		    (!strcmp(entry->type, type)))
->> +			return entry;
->> +
->> +	return NULL;
->> +}
->> +
->>   /**
->>    * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
->>    * memory hotplug.
->> @@ -196,6 +231,42 @@ int __init firmware_map_add_early(u64 st
->>   	return firmware_map_add_entry(start, end, type, entry);
->>   }
->>
->> +void release_firmware_map_entry(struct firmware_map_entry *entry)
->> +{
->> +	/*
->> +	 * FIXME : There is no idea.
->> +	 *         How to free the entry which allocated bootmem?
->> +	 */
->> +}
->> +
->> +/**
->> + * firmware_map_remove() - remove a firmware mapping entry
->> + * @start: Start of the memory range.
->> + * @end:   End of the memory range (inclusive).
->> + * @type:  Type of the memory range.
->> + *
->> + * removes a firmware mapping entry.
->> + *
->> + * Returns 0 on success, or -EINVAL if no entry.
->> + **/
->> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
->> +{
->> +	struct firmware_map_entry *entry;
->> +
->> +	entry = find_firmware_map_entry(start, end, type);
->
-> Hmm, we cannot find the entry easily, because the end can be:
-> 1. start + size
-> 2. start + size - 1
->
-> So, We should fix this bug first.
+Hmm, yeah, some of the emails were privte exchange with 
+Venkataraman and Lin.
 
-This is not a bug.
+> Fun. I don't actually see how this can possibly happen though?!
 
-start and size arguments of firmware_map_remove() include
-acpi_memory_info->{start_addr, length}. And when creating a firmware_map_entry,
-the entry is created by acpi_memory_info->{start_addr, length}. So I don't
-think that we need care your comment.
+Hmm, actually I think I have seen similar things quite regularly,
+and reported them also.
 
->
->> +	if (!entry)
->> +		return -EINVAL;
->> +
->> +	/* remove the memmap entry */
->> +	remove_sysfs_fw_map_entry(entry);
->> +
->> +	firmware_map_remove_entry(entry);
->> +
->> +	release_firmware_map_entry(entry);
->
-> I guess you want to free the memory in the above function. But I think it is
-> not a good idea to free it here. We should free it when the entry->kobj's kref
-> is decreased to 0.
+> > > > >   [ 9457.176828] iwlwifi 0000:06:00.0: ACTIVATE a non DRIVER active
+> > > > >station id 0 addr 00:24:c4:ab:bd:e0
+> > 
+> > These messages now appear only now and then.
+> 
+> I fixed those recently.
 
-Thanks.
-I'll update your comment at next version.
+Good.
 
-Thanks,
-Yasuaki Ishimatsu
+> You seem to be on 3.5.0-rc now, is that really no different from 3.4?
 
->
-> Thanks
-> Wen Congyang
->
->> +
->> +	return 0;
->> +}
->> +
->>   /*
->>    * Sysfs functions -------------------------------------------------------------
->>    */
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+The feeling is that it is definitely better.
 
+I can actually work now wirelessly, and in case of hangs an rfkill block
+rfkill unblock practically always, and mostly is not needed.
 
+So yes, it is better, definitely.
 
+I think till 3.4 I had to use the cable quite regularly.
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+JAWCRAIG (n. medical)
+A massive facial spasm which is brought on by being told a really
+astounding piece of news. A mysterious attack of jawcraig affected
+40,000 sheep in Whales in 1952.
+			--- Douglas Adams, The Meaning of Liff
