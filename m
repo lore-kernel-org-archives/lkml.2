@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab2F1LUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 07:20:39 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50631 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816Ab2F1LUg (ORCPT
+	id S1753737Ab2F1LYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 07:24:40 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:41241 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab2F1LYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 07:20:36 -0400
-Date: Thu, 28 Jun 2012 13:19:50 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>, Alex Shi <alex.shi@intel.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Tony Luck <tony.luck@intel.com>,
-        Paul Mundt <lethal@linux-sh.org>, Jeff Dike <jdike@addtoit.com>,
-        Richard Weinberger <richard@nod.at>,
-        Ralf Baechle <ralf@linux-mips.org>, Kyle McMartin <kyle@mcmartin.ca>,
-        James Bottomley <jejb@parisc-linux.org>,
-        Chris Zankel <chris@zankel.net>
-Subject: Re: [PATCH 08/20] mm: Optimize fullmm TLB flushing
-Message-ID: <20120628131950.0afe39f0@de.ibm.com>
-In-Reply-To: <1340880904.28750.13.camel@twins>
-References: <20120627211540.459910855@chello.nl>
-	<20120627212831.137126018@chello.nl>
-	<CA+55aFwZoVK76ue7tFveV0XZpPUmoCVXJx8550OxPm+XKCSSZA@mail.gmail.com>
-	<1340838154.10063.86.camel@twins>
-	<1340838807.10063.90.camel@twins>
-	<CA+55aFy6m967fMxyBsRoXVecdpGtSphXi_XdhwS0DB81Qaocdw@mail.gmail.com>
-	<CA+55aFzLNsVRkp_US8rAmygEkQpp1s1YdakV86Ck-4RZM7TTdA@mail.gmail.com>
-	<1340880904.28750.13.camel@twins>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 28 Jun 2012 07:24:38 -0400
+Message-ID: <4FEC3EB6.8030203@linux.vnet.ibm.com>
+Date: Thu, 28 Jun 2012 16:53:34 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Thomas Renninger <trenn@suse.de>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Subject: Re: [linux-pm] [PATCH] acpi: intel_idle : break dependency between
+ modules
+References: <201206261301.25550.trenn@suse.de> <1340788068-16422-1-git-send-email-daniel.lezcano@linaro.org> <4FEB31E1.2030209@linux.vnet.ibm.com> <201206280934.48147.trenn@suse.de>
+In-Reply-To: <201206280934.48147.trenn@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12062811-3548-0000-0000-000002608070
+x-cbid: 12062801-0260-0000-0000-0000016A0DA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012 12:55:04 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Wed, 2012-06-27 at 16:33 -0700, Linus Torvalds wrote:
-> > IOW, the point I'm trying to make is that even if there are zero
-> > *actual* accesses of user space (because user space is dead, and the
-> > kernel hopefully does no "get_user()/put_user()" stuff at this point
-> > any more), the CPU may speculatively use user addresses for the
-> > bog-standard kernel addresses that happen. 
+On 06/28/2012 01:04 PM, Thomas Renninger wrote:
+> On Wednesday, June 27, 2012 06:16:33 PM Srivatsa S. Bhat wrote:
+>> On 06/27/2012 02:37 PM, Daniel Lezcano wrote:
+>>> When the system is booted with some cpus offline, the idle
+>>> driver is not initialized. When a cpu is set online, the
+>>> acpi code call the intel idle init function. Unfortunately
+>>> this code introduce a dependency between intel_idle and acpi.
+>>>
+>>> This patch is intended to remove this dependency by using the
+>>> notifier of intel_idle. In order to make it work, the notifier
+>>> must be initialized in the right order, acpi then intel_idle.
+>>> This is done in the Makefile.
+>>
+>> There is a much better way of doing this. See below.
+>>
+>>> This patch has the benefit of
+>>> encapsulating the intel_idle driver and remove some exported
+>>> functions.
+>>>
+>>
+>> Nice :)
+>>
+>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>> ---
+>>>  drivers/Makefile                |    3 ++-
+>>>  drivers/acpi/processor_driver.c |    7 -------
+>>>  drivers/idle/intel_idle.c       |   22 ++++++++++++++--------
+>>>  include/linux/cpuidle.h         |    7 -------
+>>>  4 files changed, 16 insertions(+), 23 deletions(-)
+>>>
+>>> diff --git a/drivers/Makefile b/drivers/Makefile
+>>> index 2ba29ff..a2454b8 100644
+>>> --- a/drivers/Makefile
+>>> +++ b/drivers/Makefile
+>>> @@ -12,8 +12,9 @@ obj-$(CONFIG_PCI)		+= pci/
+>>>  obj-$(CONFIG_PARISC)		+= parisc/
+>>>  obj-$(CONFIG_RAPIDIO)		+= rapidio/
+>>>  obj-y				+= video/
+>>> -obj-y				+= idle/
+>>> +# acpi must come before idle for initialization
+>>>  obj-$(CONFIG_ACPI)		+= acpi/
+>>> +obj-y				+= idle/
+>>>  obj-$(CONFIG_SFI)		+= sfi/
+>>>  # PnP must come after ACPI since it will eventually need to check if acpi
+>>>  # was used and do nothing if so
+>>
+>> OK, so all you are trying to do here is ensure that the intel idle related
+>> notifier runs _after_ the acpi related one.
+> I might oversee something, if you have concerns, please point me to it.
+> If it's all about keeping the order of excuting these functions:
+>    acpi_processor_start(pr)
+> and
+>    intel_idle_cpu_init()
+> There should be no need for it. Intel idle is pretty separated.
 > 
-> Right.. and s390 having done this only says that s390 appears to be ok
-> with it. Martin, does s390 hardware guarantee no speculative stuff like
-> Linus explained, or might there even be a latent issue on s390?
 
-The cpu can create speculative TLB entries, but only if it runs in the
-mode that uses the respective mm. We have two mm's active at the same
-time, the kernel mm (init_mm) and the user mm. While the cpu runs only
-in kernel mode it is not allowed to create TLBs for the user mm.
-While running in user mode it is allowed to speculatively create TLBs.
- 
-> But it looks like we cannot do this in general, and esp. ARM (as already
-> noted by Catalin) has very aggressive speculative behaviour.
-> 
-> The alternative is that we do a switch_mm() to init_mm instead of the
-> TLB flush. On x86 that should be about the same cost, but I've not
-> looked at other architectures yet.
-> 
-> The second and least favourite alternative is of course special casing
-> this for s390 if it turns out its a safe thing to do for them.
-> 
-> /me goes look through arch code.
+I digged through the code a bit, and even I couldn't find any reason why there
+should be a dependency between the two events.
 
-Basically we have two special requirements on s390:
-1) do not modify ptes while attached to another cpu except with the
-   special IPTE / IDTE instructions
-2) do a TLB flush before freeing any kind of page table page, s390
-   needs a flush for pud, pmd & pte tables.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+Regards,
+Srivatsa S. Bhat
 
