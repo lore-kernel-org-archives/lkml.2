@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab2F1RaI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 13:30:08 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1216 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab2F1RaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 13:30:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 28 Jun 2012 10:29:57 -0700
-Message-ID: <4FEC948D.9080606@nvidia.com>
-Date: Thu, 28 Jun 2012 22:59:49 +0530
-From: Prashant G <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755599Ab2F1RaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 13:30:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10933 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752397Ab2F1RaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 13:30:06 -0400
+Date: Thu, 28 Jun 2012 14:29:31 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v3 3/3] perf script/python: Pass event/thread/dso name
+ and symbol info to event handler in python
+Message-ID: <20120628172931.GA18586@infradead.org>
+References: <1339999839-14007-1-git-send-email-feng.tang@intel.com>
+ <1339999839-14007-4-git-send-email-feng.tang@intel.com>
+ <20120627185817.GD20530@infradead.org>
+ <20120628165027.43806b3d@feng-i7>
 MIME-Version: 1.0
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "mturquette@ti.com" <mturquette@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH 5/6] ARM: tegra: Port tegra to generic clock framework
-References: <1340879846-12900-1-git-send-email-pgaikwad@nvidia.com> <1340879846-12900-6-git-send-email-pgaikwad@nvidia.com>
-In-Reply-To: <1340879846-12900-6-git-send-email-pgaikwad@nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120628165027.43806b3d@feng-i7>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is not delivered to all mailing lists reason being the 
-message body too big.
-It can be viewed at https://lkml.org/lkml/2012/6/28/158
+Em Thu, Jun 28, 2012 at 04:50:27PM +0800, Feng Tang escreveu:
+> On Wed, 27 Jun 2012 15:58:17 -0300
+> Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> > Now old scrips will break, as the tuple they expect:
+> > 
+> >  (attr, sample, raw_data)
+> > 
+> > will not be there.
+> 
+> Actually, there are no such scripts out. Current perf python script only
+> supports the trace point type, while perl scriptt has the support for
+> general events. It is my first patch "perf script: Add general python 
+> handler to process non-tracepoint events" which bring this (attr, sample,
+> raw_data) in to be on the same page as perl. So this won't be a problem
+> when the 3 patches are merged together. 
 
-Thanks & Regards,
-Prashant G
+Cool, I forgot about that, thanks for correcting me :-)
 
-On Thursday 28 June 2012 04:07 PM, Prashant Gaikwad wrote:
-> This patch converts tegra clock code to generic clock framework in following way:
->   - Implement clk_ops as required by generic clk framework. (tegraXX_clocks.c)
->   - Use platform specific struct clk_tegra in clk_ops implementation instead of struct clk.
->   - Initialize all clock data statically. (tegraXX_clocks_data.c)
->
-> Legacy framework did not have recalc_rate and is_enabled functions. Implemented these functions.
-> Removed init function. It's functionality is splitted into recalc_rate and is_enabled.
->
-> Static initialization is used since slab is not up in .init_early and clock
-> is needed to be initialized before clockevent/clocksource initialization.
-> Macros redefined for clk_tegra.
->
-> Also, single struct clk_tegra is used for all type of clocks (PLL, peripheral etc.). This
-> is to move quickly to generic common clock framework so that other dependent features will
-> not be blocked (such as DT binding).
->
-> Enabling COMMON_CLOCK config moved to ARCH_TEGRA since it is enabled for both Tegra20
-> and Tegra30.
->
-> Signed-off-by: Prashant Gaikwad<pgaikwad@nvidia.com>
-> ---
->   arch/arm/Kconfig                          |    1 +
->   arch/arm/mach-tegra/clock.h               |    1 +
->   arch/arm/mach-tegra/tegra20_clocks.c      |  986 +++++++++--------
->   arch/arm/mach-tegra/tegra20_clocks.h      |    4 +
->   arch/arm/mach-tegra/tegra20_clocks_data.c | 1318 +++++++++++++----------
->   arch/arm/mach-tegra/tegra30_clocks.c      | 1331 +++++++++++++----------
->   arch/arm/mach-tegra/tegra30_clocks.h      |   14 +-
->   arch/arm/mach-tegra/tegra30_clocks_data.c | 1688 ++++++++++++++++-------------
->   8 files changed, 3029 insertions(+), 2314 deletions(-)
->
->
+But even then, perf and python diverged in this... anyway, not a big
+deal, I guess, the info available for perl scripts will be available in
+the dict as well, right?
+ 
+> > The first two patches in this series don't apply anymore, please find
+> > them attached fixed, please check if they work as expected.
 
+> Thanks a lot for fixing them, I'll generate perf tool patch against the
+> "perf/core" branch of your git tree on kernel.org from now on.
+> 
+> Btw, I have 2 more python scripts based on these patches, will add them
+> to this serie for your review.
+
+Ok, will take a look at them.
+
+- Arnaldo
