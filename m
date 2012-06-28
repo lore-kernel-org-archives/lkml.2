@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab2F1Tah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 15:30:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35057 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab2F1TaW (ORCPT
+	id S1753549Ab2F1TeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 15:34:15 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43773 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab2F1TeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 15:30:22 -0400
-Date: Thu, 28 Jun 2012 14:30:17 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Corentin Chary <corentin.chary@gmail.com>
-Subject: Re: [PATCH] backlight: add support for disabling backlights via sysfs
-Message-ID: <20120628193017.GA29456@thinkpad-t410>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-	platform-driver-x86@vger.kernel.org,
-	Corentin Chary <corentin.chary@gmail.com>
-References: <1340910426-13269-1-git-send-email-seth.forshee@canonical.com>
- <20120628191043.GA9777@srcf.ucam.org>
+	Thu, 28 Jun 2012 15:34:13 -0400
+Date: Thu, 28 Jun 2012 22:33:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Jose Alberto Reguero <jareguero@telefonica.net>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch -resend] [media] az6007: precedence bug in
+ az6007_i2c_xfer()
+Message-ID: <20120628193354.GL3007@mwanda>
+References: <20120627090644.GP31212@elgon.mountain>
+ <4FEB0664.3030408@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120628191043.GA9777@srcf.ucam.org>
+In-Reply-To: <4FEB0664.3030408@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 08:10:43PM +0100, Matthew Garrett wrote:
-> On Thu, Jun 28, 2012 at 02:07:06PM -0500, Seth Forshee wrote:
+On Wed, Jun 27, 2012 at 10:11:00AM -0300, Mauro Carvalho Chehab wrote:
+> Em 27-06-2012 06:06, Dan Carpenter escreveu:
+> > The intent here was to test that the flag was clear but the '!' has
+> > higher precedence than the '&'.  I2C_M_RD is 0x1 so the current code is
+> > equivalent to "&& (!sgs[i].flags) ..."
+> > 
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > ---
+> > I sent this originally on Wed, 25 Jan 2012 and Emil Goode sent the same
+> > fix on Thu, May 3, 2012.
+> > 
+> > diff --git a/drivers/media/dvb/dvb-usb/az6007.c b/drivers/media/dvb/dvb-usb/az6007.c
+> > index 4008b9c..f6f0cf9 100644
+> > --- a/drivers/media/dvb/dvb-usb/az6007.c
+> > +++ b/drivers/media/dvb/dvb-usb/az6007.c
+> > @@ -711,7 +711,7 @@ static int az6007_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+> >   		addr = msgs[i].addr << 1;
+> >   		if (((i + 1) < num)
+> >   		    && (msgs[i].len == 1)
+> > -		    && (!msgs[i].flags & I2C_M_RD)
+> > +		    && (!(msgs[i].flags & I2C_M_RD))
+> >   		    && (msgs[i + 1].flags & I2C_M_RD)
+> >   		    && (msgs[i].addr == msgs[i + 1].addr)) {
+> >   			/*
+> > 
 > 
-> > Rather than trying to address this situation in a piecemeal fashion, we
-> > should find a solution that deal with disabling broken backlights more
-> > generically. This patch does so by adding an "enabled" attribute to
-> > sysfs for backlight devices. Writing 0 to this attribute disables the
-> > backlight, blocking most attempts to change the state. Tools like udev
-> > can set use this attribute to disable known broken backlight interfaces,
-> > and tools like gnome-settings-daemon can query the attribute to avoid
-> > using disabled backlights.
+> Dan,
 > 
-> I'm not entirely thrilled by this, especially because in several cases I 
-> suspect that we're just going to end up disabling acpi_backlight rather 
-> than fixing any of the range of integration bugs we still have with it. 
-> If anyone has links with OEMs then I'd love to know how Windows handles 
-> backlight control policy, but otherwise I think Corentin's approach of 
-> having the vendor drivers promote or demote themselves makes more sense 
-> than pushing the problem out to userspace.
+> Your logic is correct, however, I didn't apply this patch because it broke
+> the driver.
+> 
+> I'll need to re-visit the driver when I have some time, in order to be
+> able to apply this one, without breaking the driver. I'll likely need to
+> change some other things on this routine.
+> 
+> (this has a low priority, as the driver is working properly the way it is).
+> 
+> So, I'm keeping your patch at patchwork, while I don't find some time for it.
 
-I actually don't think Corentin's solution is a bad one. It does suffer
-from a couple of shortcomings though. First, it only works for broken
-ACPI backlights, and some platforms have other backlight interfaces that
-are broken (e.g. the i915 backlight on the MacBook Pro 8,2). Second,
-marking backlights as broken in the kernel necessitates ever-expanding
-dmi blacklists in some of the platform drivers, unless we can get
-vendors to stop providing broken backlight interfaces.
+We could just put a comment next to the code and forget about it.
 
-I'm all for fixing integration bugs in the ACPI backlight
-implementations if we can, but some vendor implementations are just
-flat-out broken, and it isn't always possible to get vendor cooperation.
-In the case of Toshiba I've tried reaching out to them to work on ACPI
-integration issues, but they flat out refused.
+               && (!(msgs[i].flags & I2C_M_RD)) /* the fix needs testing. */
 
+Sparse complains about this so it people are going to keep sending
+patches for it.  It's not like you should be stuck doing all the
+work.
+
+regards,
+dan carpenter
