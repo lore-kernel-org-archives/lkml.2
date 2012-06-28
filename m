@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab2F1SaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 14:30:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49069 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab2F1SaE (ORCPT
+	id S1755963Ab2F1Sak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 14:30:40 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33050 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754557Ab2F1Sai convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 14:30:04 -0400
-Date: Thu, 28 Jun 2012 11:29:34 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>, Zhouping Liu <zliu@redhat.com>,
-        linux-mm@kvack.org, Li Zefan <lizefan@huawei.com>,
-        CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
-Message-ID: <20120628182934.GD22641@google.com>
-References: <2a1a74bf-fbb5-4a6e-b958-44fff8debff2@zmail13.collab.prod.int.phx2.redhat.com>
- <34bb8049-8007-496c-8ffb-11118c587124@zmail13.collab.prod.int.phx2.redhat.com>
- <20120627154827.GA4420@tiehlicka.suse.cz>
- <alpine.DEB.2.00.1206271256120.22162@chino.kir.corp.google.com>
- <20120628123611.GA16042@tiehlicka.suse.cz>
-MIME-Version: 1.0
+	Thu, 28 Jun 2012 14:30:38 -0400
+Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
+Mime-Version: 1.0 (Apple Message framework v1278)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120628123611.GA16042@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1340880651.20977.83.camel@pasglop>
+Date: Thu, 28 Jun 2012 13:30:26 -0500
+Cc: "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
+        Scott Wood <scottwood@freescale.com>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        Li Yang <leoli@freescale.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D2BA086B-6EB3-4853-B901-FA37DCCDC134@kernel.crashing.org>
+References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com> <1340748634.3732.27.camel@pasglop> <20120627102138.GB10476@localhost.localdomain> <1340797732.3732.46.camel@pasglop> <20120628033815.GA11387@localhost.localdomain> <1340880651.20977.83.camel@pasglop>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
 
-On Thu, Jun 28, 2012 at 02:36:11PM +0200, Michal Hocko wrote:
-> @@ -2726,6 +2726,9 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
->  	int err, ret = 0;
->  
->  	for (cft = cfts; cft->name[0] != '\0'; cft++) {
-> +		if (subsys->cftype_enabled && !subsys->cftype_enabled(cft->name))
-> +			continue;
-> +
->  		if (is_add)
->  			err = cgroup_add_file(cgrp, subsys, cft);
->  		else
+On Jun 28, 2012, at 5:50 AM, Benjamin Herrenschmidt wrote:
 
-I hope we could avoid this dynamic decision.  That was one of the main
-reasons behind doing the cftype thing.  It's better to be able to
-"declare" these kind of things rather than being able to implement
-fully flexible dynamic logic.  Too much flexibility often doesn't
-achieve much while being a hindrance to evolution of code base (trying
-to improve / simplify X - ooh... there's this single wacko corner case
-YYY here which is really different from all other users).
+> On Thu, 2012-06-28 at 11:38 +0800, Zhao Chenhui wrote:
+>> 
+>> 
+>> The bootloader have done a timebase sync. If we do not need KEXEC or
+>> HOTPLUG_CPU feature, it is unnecessary to do it again at boot time of
+>> kernel. I only compile the timebase sync routines
+>> when users enable KEXEC or HOTPLUG_CPU. 
+> 
+> Still, how much are you really saving ? Is it worth the added mess and
+> loss of test coverage ?
+> 
+> We have too many conditional stuff like that already.
+> 
+> Cheers,
+> Ben.
+> 
 
-really_do_swap_account can't change once booted, right?  Why not just
-separate out memsw cfts into a separate array and call
-cgroup_add_cftypes() from init path?  Can't we do that from
-enable_swap_cgroup()?
+I'd also be interested to know how long it actually takes to do time base sync this way.  Since you are freezing the timers for some period how long does it really take between the freeze/unfreeze in mpc85xx_give_timebase()
 
-Thanks.
++	mpc85xx_timebase_freeze(1);
+...
++	mpc85xx_timebase_freeze(0);
 
--- 
-tejun
+You can use ATBL/U as a way to see # of cycles taken.
+
+- k
