@@ -1,115 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab2F1VOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 17:14:49 -0400
-Received: from nm32-vm10.bullet.mail.sg3.yahoo.com ([106.10.151.217]:38324
-	"HELO nm32-vm10.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751995Ab2F1VOr (ORCPT
+	id S1754671Ab2F1VQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 17:16:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35362 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab2F1VQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 17:14:47 -0400
-X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jun 2012 17:14:47 EDT
-X-Yahoo-Newman-Id: 610214.30037.bm@smtp146.mail.sg3.yahoo.com
-X-Yahoo-Newman-Property: ymail-5
-X-YMail-OSG: C5pOMWoVM1kSpM7Ahie.AhOWXBq5KYlWiblnsF1KV03tUSA
- IuXi8Qi2wl31fxRBzOV06Xe_GlnDfM0nhkytRSqWUmEgwIq5mfhiT1y9KbER
- xHzTD7dJWGmmJw_wDNnqUzJXz7xjtn0iJTgH76LuSxGnTs_BIDU0woR1_SUg
- m6JZu4NfphZzKBFc4QJGDY0vjsrEKBJBqtWKfv3wVfov.qXtlN82kCStARvi
- CDHxsR_BKOxfF7Wx9L9KsnN79mf2JNpeb1FfdmMtSEpP_xTYkENpf7e6SwSH
- atrpJ_9v5bcyHsR5S1LcJCU8WlS22f5NH4lgYzf5G.zdD8mw84QFEQfg34Z2
- F80UCY9pbEayNp5BvriAOYFE5eNbfK9S2MimuNu1BGHs7L6ey5tq8YJKuZtb
- K80nhs_nKrCP6l.cgNuc-
-X-Yahoo-SMTP: SzYLxI.swBBlKMSa6AKj31kWdniaeA--
-From: =?GB2312?B?1cXPyMn6sePD8bf+zvGh7w==?= <blaedjyca@yahoo.com>
-To: "lilongwe-chat" <lilongwe-chat@googlegroups.com>
-Subject: Date: Fri, 29 Jun 2012 05:08:16 +0800
-Message-ID: <201206290508166710246@yahoo.com>
-Date: Fri, 29 Jun 2012 05:08:16 +0800
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Thu, 28 Jun 2012 17:16:06 -0400
+Date: Thu, 28 Jun 2012 16:16:00 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Corentin Chary <corentin.chary@gmail.com>
+Subject: Re: [PATCH] backlight: add support for disabling backlights via sysfs
+Message-ID: <20120628211600.GB29456@thinkpad-t410>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
+	platform-driver-x86@vger.kernel.org,
+	Corentin Chary <corentin.chary@gmail.com>
+References: <1340910426-13269-1-git-send-email-seth.forshee@canonical.com>
+ <20120628191043.GA9777@srcf.ucam.org>
+ <20120628193017.GA29456@thinkpad-t410>
+ <20120628193652.GB10945@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="----=hlp840_8932_367008860.178997"
-X-Priority: 3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120628193652.GB10945@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Thu, Jun 28, 2012 at 08:36:52PM +0100, Matthew Garrett wrote:
+> Userspace should already be prioritising platform interfaces over raw 
+> interfaces, so if gmux works on the Mac then there's no problem. DMI 
+> lists should, broadly speaking, be unnecessary - they're mostly a 
+> symptom of us not understanding how the hardware is expected to work.
 
-------=hlp840_8932_367008860.178997
-Content-Type: text/plain;
-	charset="GB2312"
-Content-Transfer-Encoding: base64
+I agree that we want to avoid papering over problems instead of fixing
+them, but we're already disabling the ACPI backlight in some cases and
+will continue to do so for the time being. We're also doing it with
+apple_bl. It's not a question of whether we do it, but how.
 
-bGlsb25nd2UtY2hhdEBnb29nbGVncm91cHMuY29tDQrXoy0tLbijo6ENCjIwMS4xOTcuNzMuMTAw
+What I still don't understand is your reason for preferring
+driver-specific interfaces for disabling backlights to a single generic
+interface. Are you afraid that allowing it to be done from userspace
+will make it too easy, and as a result quirks will be applied without
+attempting to fix the problem (i.e. the quriking should go through a
+kernel dev to ensure someone tries to fix the problem is made before
+applying a quirk)?
 
-
-------=hlp840_8932_367008860.178997
-Content-Type: image/gif;
-	name="Puyd_3395.gif"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="Puyd_3395.gif"
-
-R0lGODdhnQFdAHcAACwAAAAAnQFdAIcAAAAAADMAAGYAAJkAAMwAAP8AMwAAMzMAM2YAM5kAM8wA
-M/8AZgAAZjMAZmYAZpkAZswAZv8AmQAAmTMAmWYAmZkAmcwAmf8AzAAAzDMAzGYAzJkAzMwAzP8A
-/wAA/zMA/2YA/5kA/8wA//8zAAAzADMzAGYzAJkzAMwzAP8zMwAzMzMzM2YzM5kzM8wzM/8zZgAz
-ZjMzZmYzZpkzZswzZv8zmQAzmTMzmWYzmZkzmcwzmf8zzAAzzDMzzGYzzJkzzMwzzP8z/wAz/zMz
-/2Yz/5kz/8wz//9mAABmADNmAGZmAJlmAMxmAP9mMwBmMzNmM2ZmM5lmM8xmM/9mZgBmZjNmZmZm
-ZplmZsxmZv9mmQBmmTNmmWZmmZlmmcxmmf9mzABmzDNmzGZmzJlmzMxmzP9m/wBm/zNm/2Zm/5lm
-/8xm//+ZAACZADOZAGaZAJmZAMyZAP+ZMwCZMzOZM2aZM5mZM8yZM/+ZZgCZZjOZZmaZZpmZZsyZ
-Zv+ZmQCZmTOZmWaZmZmZmcyZmf+ZzACZzDOZzGaZzJmZzMyZzP+Z/wCZ/zOZ/2aZ/5mZ/8yZ///M
-AADMADPMAGbMAJnMAMzMAP/MMwDMMzPMM2bMM5nMM8zMM//MZgDMZjPMZmbMZpnMZszMZv/MmQDM
-mTPMmWbMmZnMmczMmf/MzADMzDPMzGbMzJnMzMzMzP/M/wDM/zPM/2bM/5nM/8zM////AAD/ADP/
-AGb/AJn/AMz/AP//MwD/MzP/M2b/M5n/M8z/M///ZgD/ZjP/Zmb/Zpn/Zsz/Zv//mQD/mTP/mWb/
-mZn/mcz/mf//zAD/zDP/zGb/zJn/zMz/zP///wD//zP//2b//5n//8z///8AAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI/wA9CRxI
-sKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzatzIsaPHjyBDihxJsqTJkyhTqlzJsqXLlzBjypxJs6bN
-mzhz6tzJs6fPn0A3AgBAJ6jRo0iTktQztKnToRqfDC16kM5TqlGfLJTqVE9Crk29YgQ7VGzVqwmf
-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
-
-------=hlp840_8932_367008860.178997--
