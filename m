@@ -1,51 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab2F1CAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 22:00:00 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44208 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab2F1B76 (ORCPT
+	id S932330Ab2F1CAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 22:00:16 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:34255 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932287Ab2F1CAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 21:59:58 -0400
-X-AuditID: 9c930179-b7cceae000004195-54-4febba999418
-From: Namhyung Kim <namhyung@kernel.org>
-To: Hitoshi Mitake <h.mitake@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf tools: Fix an error on perf-bench document
-References: <1339944948-3193-1-git-send-email-namhyung@kernel.org>
-	<20120618090501.GB28824@gmail.com> <87mx3zhekz.fsf@sejong.aot.lge.com>
-	<CAMO-S2jPvVZndo3_cM67ZvXXV5y5CKvxe-x6YGfguq3w9mVbAg@mail.gmail.com>
-	<CAMO-S2j74+=9QJ40-=3Zj9a2M2wnCC474vsm216GP-BB9OWbsg@mail.gmail.com>
-Date: Thu, 28 Jun 2012 10:56:04 +0900
-In-Reply-To: <CAMO-S2j74+=9QJ40-=3Zj9a2M2wnCC474vsm216GP-BB9OWbsg@mail.gmail.com>
-	(Hitoshi Mitake's message of "Wed, 27 Jun 2012 23:28:22 +0900")
-Message-ID: <87395gyzbf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 27 Jun 2012 22:00:12 -0400
+Date: Thu, 28 Jun 2012 11:00:02 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: avi@redhat.com, mtosatti@redhat.com
+Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        takuya.yoshikawa@gmail.com
+Subject: [PATCH 3/6] KVM: MMU: Make kvm_handle_hva() handle range of
+ addresses
+Message-Id: <20120628110002.2a29e1f1.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp>
+References: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jun 2012 23:28:22 +0900, Hitoshi Mitake wrote:
-> I wrote the simple fix for eliminatng wrong usage of "clock":
-> https://github.com/mitake/linux/commit/b7836d41deff430c16058ca729120dccfa41e74e
->
-> This patch assumes the change made by the Namhyung's patch. So I'm
-> planning to send this after the Namhyung's patch is applied to tip
-> tree. Or should the patches be unified before applied?
+When guest's memory is backed by THP pages, MMU notifier needs to call
+kvm_unmap_hva(), which in turn leads to kvm_handle_hva(), in a loop to
+invalidate a range of pages which constitute one huge page:
 
-The patch is now in Arnaldo's tree. So you can see it in tip tree soon
-unless something bad happens.
+  for each page
+    for each memslot
+      if page is in memslot
+        unmap using rmap
 
-Anyway, looking at your commit (I think it's better just to send it via
-email with mentioning the dependency), it seems only addresses memset
-part but I think memcpy has the same problem, right?
+This means although every page in that range is expected to be found in
+the same memslot, we are forced to check unrelated memslots many times.
+If the guest has more memslots, the situation will become worse.
 
-Thanks,
-Namhyung
+Furthermore, if the range does not include any pages in the guest's
+memory, the loop over the pages will just consume extra time.
+
+This patch, together with the following patches, solves this problem by
+introducing kvm_handle_hva_range() which makes the loop look like this:
+
+  for each memslot
+    for each page in memslot
+      unmap using rmap
+
+In this new processing, the actual work is converted to a loop over rmap
+which is much more cache friendly than before.
+
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Paul Mackerras <paulus@samba.org>
+---
+ arch/powerpc/kvm/book3s_64_mmu_hv.c |   36 ++++++++++++++++++++++------
+ arch/x86/kvm/mmu.c                  |   44 ++++++++++++++++++++++++++--------
+ 2 files changed, 61 insertions(+), 19 deletions(-)
+
+diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+index 3703755..688e3a1 100644
+--- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
++++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+@@ -756,9 +756,12 @@ int kvmppc_book3s_hv_page_fault(struct kvm_run *run, struct kvm_vcpu *vcpu,
+ 	goto out_put;
+ }
+ 
+-static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+-			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
+-					 unsigned long gfn))
++static int kvm_handle_hva_range(struct kvm *kvm,
++				unsigned long start,
++				unsigned long end,
++				int (*handler)(struct kvm *kvm,
++					       unsigned long *rmapp,
++					       unsigned long gfn))
+ {
+ 	int ret;
+ 	int retval = 0;
+@@ -767,12 +770,22 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+ 
+ 	slots = kvm_memslots(kvm);
+ 	kvm_for_each_memslot(memslot, slots) {
+-		unsigned long start = memslot->userspace_addr;
+-		unsigned long end;
++		unsigned long hva_start, hva_end;
++		gfn_t gfn, gfn_end;
++
++		hva_start = max(start, memslot->userspace_addr);
++		hva_end = min(end, memslot->userspace_addr +
++					(memslot->npages << PAGE_SHIFT));
++		if (hva_start >= hva_end)
++			continue;
++		/*
++		 * {gfn(page) | page intersects with [hva_start, hva_end)} =
++		 * {gfn, gfn+1, ..., gfn_end-1}.
++		 */
++		gfn = hva_to_gfn_memslot(hva_start, memslot);
++		gfn_end = hva_to_gfn_memslot(hva_end + PAGE_SIZE - 1, memslot);
+ 
+-		end = start + (memslot->npages << PAGE_SHIFT);
+-		if (hva >= start && hva < end) {
+-			gfn_t gfn = hva_to_gfn_memslot(hva, memslot);
++		for (; gfn < gfn_end; ++gfn) {
+ 			gfn_t gfn_offset = gfn - memslot->base_gfn;
+ 
+ 			ret = handler(kvm, &memslot->rmap[gfn_offset], gfn);
+@@ -783,6 +796,13 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+ 	return retval;
+ }
+ 
++static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
++			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
++					 unsigned long gfn))
++{
++	return kvm_handle_hva_range(kvm, hva, hva + PAGE_SIZE, handler);
++}
++
+ static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 			   unsigned long gfn)
+ {
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index b898bec..b1f64b1 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1183,10 +1183,13 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 	return 0;
+ }
+ 
+-static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+-			  unsigned long data,
+-			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
+-					 unsigned long data))
++static int kvm_handle_hva_range(struct kvm *kvm,
++				unsigned long start,
++				unsigned long end,
++				unsigned long data,
++				int (*handler)(struct kvm *kvm,
++					       unsigned long *rmapp,
++					       unsigned long data))
+ {
+ 	int j;
+ 	int ret;
+@@ -1197,13 +1200,22 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+ 	slots = kvm_memslots(kvm);
+ 
+ 	kvm_for_each_memslot(memslot, slots) {
+-		unsigned long start = memslot->userspace_addr;
+-		unsigned long end;
++		unsigned long hva_start, hva_end;
++		gfn_t gfn, gfn_end;
+ 
+-		end = start + (memslot->npages << PAGE_SHIFT);
+-		if (hva >= start && hva < end) {
+-			gfn_t gfn = hva_to_gfn_memslot(hva, memslot);
++		hva_start = max(start, memslot->userspace_addr);
++		hva_end = min(end, memslot->userspace_addr +
++					(memslot->npages << PAGE_SHIFT));
++		if (hva_start >= hva_end)
++			continue;
++		/*
++		 * {gfn(page) | page intersects with [hva_start, hva_end)} =
++		 * {gfn, gfn+1, ..., gfn_end-1}.
++		 */
++		gfn = hva_to_gfn_memslot(hva_start, memslot);
++		gfn_end = hva_to_gfn_memslot(hva_end + PAGE_SIZE - 1, memslot);
+ 
++		for (; gfn < gfn_end; ++gfn) {
+ 			ret = 0;
+ 
+ 			for (j = PT_PAGE_TABLE_LEVEL;
+@@ -1213,7 +1225,9 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+ 				rmapp = __gfn_to_rmap(gfn, j, memslot);
+ 				ret |= handler(kvm, rmapp, data);
+ 			}
+-			trace_kvm_age_page(hva, memslot, ret);
++			trace_kvm_age_page(memslot->userspace_addr +
++					(gfn - memslot->base_gfn) * PAGE_SIZE,
++					memslot, ret);
+ 			retval |= ret;
+ 		}
+ 	}
+@@ -1221,6 +1235,14 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+ 	return retval;
+ }
+ 
++static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
++			  unsigned long data,
++			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
++					 unsigned long data))
++{
++	return kvm_handle_hva_range(kvm, hva, hva + PAGE_SIZE, data, handler);
++}
++
+ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva)
+ {
+ 	return kvm_handle_hva(kvm, hva, 0, kvm_unmap_rmapp);
+-- 
+1.7.5.4
+
