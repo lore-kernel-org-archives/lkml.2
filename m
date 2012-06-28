@@ -1,122 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab2F1T5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 15:57:33 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:15156 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab2F1T5c convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 15:57:32 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-127.messagelabs.com!1340913450!2582886!4
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Thu, 28 Jun 2012 14:57:18 -0500
-Subject: RE: [PATCH 04/19] staging: comedi: adl_pci6208: document the
- register map of the device
-Thread-Topic: [PATCH 04/19] staging: comedi: adl_pci6208: document the
- register map of the device
-Thread-Index: Ac1VYSDCKCePtuF3Sg6TMMz05jFZyQABVMfg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698F2EA87@AUSP01VMBX24.collaborationhost.net>
-References: <201206271456.44218.hartleys@visionengravers.com>
- <20120628190602.GM5333@mwanda>
-In-Reply-To: <20120628190602.GM5333@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753226Ab2F1UIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 16:08:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34225 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769Ab2F1UIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 16:08:15 -0400
+Message-ID: <4FECB95D.7010200@zytor.com>
+Date: Thu, 28 Jun 2012 13:06:53 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>, Russell King <linux@arm.linux.org.uk>,
+        x86@kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
+References: <cover.1338222460.git.rubini@gnudd.com> <f85fefb10b7a7407b77180be65b18bf0426145b9.1338222461.git.rubini@gnudd.com>
+In-Reply-To: <f85fefb10b7a7407b77180be65b18bf0426145b9.1338222461.git.rubini@gnudd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 28, 2012 12:06 PM, Dan Carpenter wrote:
-> On Wed, Jun 27, 2012 at 02:56:43PM -0700, H Hartley Sweeten wrote:
->> Add defines for the register map of the device. These will be
->> used to clarify the code.
->> 
->> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> Cc: Ian Abbott <abbotti@mev.co.uk>
->> Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> ---
->>  drivers/staging/comedi/drivers/adl_pci6208.c | 12 ++++++++++++
->>  1 file changed, 12 insertions(+)
->> 
->> diff --git a/drivers/staging/comedi/drivers/adl_pci6208.c b/drivers/staging/comedi/drivers/adl_pci6208.c
->> index f949d20..b6a8439 100644
->> --- a/drivers/staging/comedi/drivers/adl_pci6208.c
->> +++ b/drivers/staging/comedi/drivers/adl_pci6208.c
->> @@ -53,6 +53,18 @@ References:
->>   */
->>  #include "../comedidev.h"
->>  
->> +/*
->> + * PCI-6208/6216-GL register map
->> + */
->> +#define PCI6208_AO_CONTROL(x)		(0x00 + (2 * (x)))
->> +#define PCI6208_AO_STATUS		0x00
->> +#define PCI6208_AO_STATUS_DATA_SEND	(1 << 0)
->> +#define PCI6208_DIO			0x40
->> +#define PCI6208_DIO_DO_MASK		(0x0f)
->> +#define PCI6208_DIO_DO_SHIFT		(0)
->> +#define PCI6208_DIO_DI_MASK		(0xf0)
->> +#define PCI6208_DIO_DI_SHIFT		(4)
+On 05/28/2012 09:37 AM, Alessandro Rubini wrote:
+> The sta2x11 I/O Hub is a bridge from PCIe to AMBA. It reuses a number
+> of amba drivers and needs to activate core bus support.
 >
-> This series is nice and I'm not nacking anything, but really is it
-> that useful to say:
-> 	status = inw(dev->iobase + PCI6208_AO_STATUS);
-> instead of just?:
-> 	status = inw(dev->iobase);
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> ---
+>   arch/x86/Kconfig |    4 ++++
+>   1 files changed, 4 insertions(+), 0 deletions(-)
 
-Either would work.
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 91dea918..112718f 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -500,6 +500,7 @@ config STA2X11
+>  	select SWIOTLB
+>  	select MFD_STA2X11
+>  	select ARCH_REQUIRE_GPIOLIB
+> +	select ARM_AMBA
+>  	default n
+>  	---help---
+>  	  This adds support for boards based on the STA2X11 IO-Hub,
+> @@ -2173,6 +2174,9 @@ config GEOS
+>
+>  endif # X86_32
+>
+> +config ARM_AMBA
+> +        bool
+> +
+>  config AMD_NB
+>  	def_bool y
+>  	depends on CPU_SUP_AMD && PCI
 
-But the '+ PCI6208_AO_STATUS' used in the function makes it
-easily apparent that the 'status' register is being read without
-having to go back and see what the assumed '+ 0' register is.
 
-> I'm not sure what the 0x00 in PCI6208_AO_CONTROL represents.  Some
-> of these are not used like PCI6208_DIO_DI_SHIFT.
+Nacked-by: H. Peter Anvin <hpa@zytor.com>
 
-Sorry about that. Maybe there should be a comment.
+This brings in tons of code into the x86 all{yes,mod}config builds, and 
+as perhaps one could expect some of it doesn't compile.  For example:
 
-The PCI-6208 has 8 separate "control" registers, one for each DAC output
-(the PCI-6216 has 16). They are at offsets 0x00, 0x02, 0x04, ... 0x0e (0x1e for
-The PCI-6216). The PCI6208_AO_CONTROL macro is used to calculate the
-necessary offset based on the DAC channel. The original code used the
-same open-coded logic.
 
-The unused ones can be removed. When I created the patch that added
-them I just added everything that might be useful from the manual for
-the PCI-6208. I was quite sure what ones would end up un used.
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c: In function 
+‘dmac_alloc_resources’:
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c:2056:2: warning: 
+passing argument 3 of ‘dma_alloc_attrs’ from incompatible
+  pointer type [enabled by default]
+In file included from 
+/home/hpa/kernel/tip.x86-platform/include/linux/dma-mapping.h:73:0,
+                  from 
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c:22:
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/dma-mapping.h:130:1: 
+note: expected ‘dma_addr_t *’ but argument is of typ
+e ‘u32 *’
+   CC      sound/pci/au88x0/au8830.o
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c:73:0: warning: 
+"DS" redefined [enabled by default]
+In file included from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/ptrace.h:5:0,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/vm86.h:130,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/processor.h:10,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/thread_info.h:22,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/thread_info.h:54,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/preempt.h:9,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/spinlock.h:50,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/vmalloc.h:4,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/io.h:195,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/io.h:22,
+                  from 
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c:15:
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/ptrace-abi.h:13:0: note: 
+this is the location of the previous definition
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c:89:0: warning: 
+"ES" redefined [enabled by default]
+In file included from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/ptrace.h:5:0,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/vm86.h:130,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/processor.h:10,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/thread_info.h:22,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/thread_info.h:54,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/preempt.h:9,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/spinlock.h:50,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/vmalloc.h:4,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/io.h:195,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/io.h:22,
+                  from 
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c:15:
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/ptrace-abi.h:14:0: note: 
+this is the location of the previous definition
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c:100:0: warning: 
+"CS" redefined [enabled by default]
+In file included from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/ptrace.h:5:0,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/vm86.h:130,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/processor.h:10,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/thread_info.h:22,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/thread_info.h:54,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/preempt.h:9,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/spinlock.h:50,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/vmalloc.h:4,
+                  from 
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/io.h:195,
+                  from 
+/home/hpa/kernel/tip.x86-platform/include/linux/io.h:22,
+                  from 
+/home/hpa/kernel/tip.x86-platform/drivers/dma/pl330.c:15:
+/home/hpa/kernel/tip.x86-platform/arch/x86/include/asm/ptrace-abi.h:19:0: note: 
+this is the location of the previous definition
+   CC      drivers/dma/pch_dma.o
+   CC      drivers/dma/amba-pl08x.o
+/home/hpa/kernel/tip.x86-platform/drivers/dma/amba-pl08x.c:86:32: fatal 
+error: asm/hardware/pl080.h: No such file or directory
+compilation terminated.
+make[4]: *** [drivers/dma/amba-pl08x.o] Error 1
+make[3]: *** [drivers/dma] Error 2
+make[2]: *** [drivers] Error 2
+make[2]: *** Waiting for unfinished jobs....
 
-> Does checkpatch.pl complain if you leave off these parenthesis?  If
-> so I will complain again to the checkpatch.pl people.  Extra
-> parenthesis are silly and there not used consistently.  Only
-> PCI6208_AO_CONTROL() and PCI6208_AO_STATUS_DATA_SEND() need
-> paranthesis.
 
-No, checkpatch.pl does not complain about the parenthesis either way.
-I usually use the parenthesis in the 'bit' defines and not for the 'register'
-defines. It helps my brain keep them separate... ;-)
 
-But, they can be removed it needed.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-> Again, I'm fine with this patch and the whole series.  These are
-> just comments.
 
-Thanks for the comments!
 
-Regards,
-Hartley
