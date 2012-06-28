@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab2F1MJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:09:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36431 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab2F1MJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:09:48 -0400
-Date: Thu, 28 Jun 2012 15:09:49 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
-Message-ID: <20120628120948.GA13567@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
- <20120627050858.23698.44118.stgit@bling.home>
- <20120627162430.3477d0f6@BR9GNB5Z>
- <20120628083857.GD12447@redhat.com>
- <20120628110316.0f53a1ef@BR9GNB5Z>
- <20120628093442.GH12447@redhat.com>
- <20120628140041.10354331@BR9GNB5Z>
+	id S1754851Ab2F1MKL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:10:11 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11805 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab2F1MKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:10:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 28 Jun 2012 05:06:52 -0700
+Message-ID: <4FEC48FF.9040408@nvidia.com>
+Date: Thu, 28 Jun 2012 17:37:27 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120628140041.10354331@BR9GNB5Z>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] ASoC: snd_dmaengine: add common api for pcm_mmap
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com> <20120628105148.GD28922@opensource.wolfsonmicro.com> <4FEC468A.3080607@nvidia.com> <20120628120245.GF28922@opensource.wolfsonmicro.com>
+In-Reply-To: <20120628120245.GF28922@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 02:00:41PM +0200, Cornelia Huck wrote:
-> On Thu, 28 Jun 2012 12:34:43 +0300
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> 
-> > On Thu, Jun 28, 2012 at 11:03:16AM +0200, Cornelia Huck wrote:
-> 
-> > > How about something like this as parameter for the new ioctl?
-> > > 
-> > > struct kvm_irqfd2 {
-> > > 	__u32 fd;
-> > > 	__u32 flags;  /* for things like deassign */
-> > > 	__u64 type;   /* determines the payload */
-> > > 	union {
-> > > 		/* type traditional */
-> > > 		struct {
-> > > 			__u32 gsi;
-> > > 		} trad;
-> > > 		/* type s390 */
-> > > 		struct {
-> > > 			__u32 int_type;
-> > > 			__u32 parm;
-> > > 			__u64 parm64;
-> > > 		} s390;
-> > > 		__u8 pad[20];
-> > > 	};
-> > > }
-> > > 
-> > > This could be combined with an arch or a per-kvm callback to keep the
-> > > generic code clean of architecture dependencies.
-> > > 
-> > > Cornelia
-> > 
-> > Looks a bit weird - shouldn't all this be part of gsi routing?
-> > But no idea really, I don't see the big picture here.
-> > 
-> 
-> Well, on s390 we don't have anything like "gsi routing" (I'm not even
-> really sure what that is).
+On Thursday 28 June 2012 05:32 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Thu, Jun 28, 2012 at 05:26:58PM +0530, Laxman Dewangan wrote:
+>
+>> Other driver which can use this API are davinci, OMAP, samsung but
+>> because they are not using the snd_dmaengine_pcm driver's api as of
+>> now so not be very much useful for them.
+> There's no reason why we can't factor out more common code - this is
+> essentially what Lars-Peter was saying.
+>
 
-I really mean kvm_irq_routing. This has options for
-irqchip, msi, I guess we can add more.
+Ok, then let me start on this.
 
+>> Should I send one patch per driver change or squash all 4 file
+>> changes in one patch? Whatever will be easy or recommended?
+> It doesn't really matter that much, but please take on board
+> Lars-Peter's comments.
 
-> My understanding is the following:
-> 
-> - Basically, we want to notify the guest for a virtqueue.
-> - For this, we want to inject an interrupt for the associated device.
-> - On x86, this means raising an interrupt on an interrupt line, as
->   specified by some kind of number.
+Ok then I will go for one patch per file.
+I will send the patches in series.
 
-Not just that: for MSI we pass in data encoding priority
-destination etc.
-
-> - On s390, we need some more information to (a) identify the device and
->   (b) additional information that needs to be transmitted for an
->   interrupt (device specific). (This is what basically goes into struct
->   kvm_s390_interrupt, which I reproduced in the s390 part.)
-> 
-> Cornelia
-
-Is this b mostly static or does it change for each interrupt?
