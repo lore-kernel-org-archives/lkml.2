@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab2F1C5X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 22:57:23 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:41858 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758130Ab2F1C40 (ORCPT
+	id S932435Ab2F1C5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 22:57:17 -0400
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:37149 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758153Ab2F1C40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jun 2012 22:56:26 -0400
-Subject: [PATCH 02/16] sched: maintain per-rq runnable averages
+Subject: [PATCH 05/16] sched: add an rq migration call-back to sched_class
 To: linux-kernel@vger.kernel.org
 From: Paul Turner <pjt@google.com>
 Cc: Venki Pallipadi <venki@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
@@ -21,7 +21,7 @@ Cc: Venki Pallipadi <venki@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Morten Rasmussen <Morten.Rasmussen@arm.com>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 Date: Wed, 27 Jun 2012 19:24:14 -0700
-Message-ID: <20120628022414.30496.62298.stgit@kitami.mtv.corp.google.com>
+Message-ID: <20120628022414.30496.73413.stgit@kitami.mtv.corp.google.com>
 In-Reply-To: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
 References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -32,119 +32,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Segall <bsegall@google.com>
+Since we are now doing bottom up load accumulation we need explicit
+notification when a task has been re-parented so that the old hierarchy can be
+updated.
 
-Since runqueues do not have a corresponding sched_entity we instead embed a
-sched_avg structure directly.
+Adds task_migrate_rq(struct rq *prev, struct *rq new_rq);
 
-Signed-off-by: Ben Segall <bsegall@google.com>
+(The alternative is to do this out of __set_task_cpu, but it was suggested that
+this would be a cleaner encapsulation.)
+
 Signed-off-by: Paul Turner <pjt@google.com>
 ---
- kernel/sched/debug.c |   10 ++++++++--
- kernel/sched/fair.c  |   18 ++++++++++++++++--
- kernel/sched/sched.h |    2 ++
- 3 files changed, 26 insertions(+), 4 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |    2 ++
+ kernel/sched/fair.c   |   12 ++++++++++++
+ 3 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index cd5ef23..5d4a7dd 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -61,14 +61,20 @@ static unsigned long nsec_low(unsigned long long nsec)
- static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group *tg)
- {
- 	struct sched_entity *se = tg->se[cpu];
--	if (!se)
--		return;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 842c4df..fdfdfab 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1102,6 +1102,7 @@ struct sched_class {
  
- #define P(F) \
- 	SEQ_printf(m, "  .%-30s: %lld\n", #F, (long long)F)
- #define PN(F) \
- 	SEQ_printf(m, "  .%-30s: %lld.%06ld\n", #F, SPLIT_NS((long long)F))
+ #ifdef CONFIG_SMP
+ 	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
++	void (*migrate_task_rq)(struct task_struct *p, int next_cpu);
  
-+	if (!se) {
-+		struct sched_avg *avg = &cpu_rq(cpu)->avg;
-+		P(avg->runnable_avg_sum);
-+		P(avg->runnable_avg_period);
-+		return;
-+	}
-+
-+
- 	PN(se->exec_start);
- 	PN(se->vruntime);
- 	PN(se->sum_exec_runtime);
+ 	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
+ 	void (*post_schedule) (struct rq *this_rq);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index aeb8e56..c3686eb 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1109,6 +1109,8 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 	trace_sched_migrate_task(p, new_cpu);
+ 
+ 	if (task_cpu(p) != new_cpu) {
++		if (p->sched_class->migrate_task_rq)
++			p->sched_class->migrate_task_rq(p, new_cpu);
+ 		p->se.nr_migrations++;
+ 		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, NULL, 0);
+ 	}
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 864a122..08bd3e0 100644
+index 6200d20..33f582a 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1091,8 +1091,14 @@ static inline void update_entity_load_avg(struct sched_entity *se)
- 	__update_entity_runnable_avg(rq_of(cfs_rq_of(se))->clock_task, &se->avg,
- 				     se->on_rq);
+@@ -3089,6 +3089,17 @@ unlock:
+ 
+ 	return new_cpu;
  }
 +
-+static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
-+{
-+	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
++/*
++ * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
++ * cfs_rq_of(p) references at time of call are still valid and identify the
++ * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
++ * other assumptions, including rq->lock state, should be made.
++ * Caller guarantees p->pi_lock held, but nothing else.
++ */
++static void
++migrate_task_rq_fair(struct task_struct *p, int next_cpu) {
 +}
- #else
- static inline void update_entity_load_avg(struct sched_entity *se) {}
-+static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
- #endif
+ #endif /* CONFIG_SMP */
  
- static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
-@@ -2344,8 +2350,10 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 		update_cfs_shares(cfs_rq);
- 	}
+ static unsigned long
+@@ -5754,6 +5765,7 @@ const struct sched_class fair_sched_class = {
  
--	if (!se)
-+	if (!se) {
-+		update_rq_runnable_avg(rq, rq->nr_running);
- 		inc_nr_running(rq);
-+	}
- 	hrtick_update(rq);
- }
- 
-@@ -2403,8 +2411,10 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 		update_cfs_shares(cfs_rq);
- 	}
- 
--	if (!se)
-+	if (!se) {
- 		dec_nr_running(rq);
-+		update_rq_runnable_avg(rq, 1);
-+	}
- 	hrtick_update(rq);
- }
- 
-@@ -4732,6 +4742,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
- 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
- 		return;
- 
-+	update_rq_runnable_avg(this_rq, 1);
-+
- 	/*
- 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
- 	 */
-@@ -5230,6 +5242,8 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
- 		cfs_rq = cfs_rq_of(se);
- 		entity_tick(cfs_rq, se, queued);
- 	}
-+
-+	update_rq_runnable_avg(rq, 1);
- }
- 
- /*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 4134d37..bfdb119 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -469,6 +469,8 @@ struct rq {
  #ifdef CONFIG_SMP
- 	struct llist_head wake_list;
- #endif
-+
-+	struct sched_avg avg;
- };
+ 	.select_task_rq		= select_task_rq_fair,
++	.migrate_task_rq	= migrate_task_rq_fair,
  
- static inline struct list_head *offnode_tasks(struct rq *rq)
+ 	.rq_online		= rq_online_fair,
+ 	.rq_offline		= rq_offline_fair,
 
 
