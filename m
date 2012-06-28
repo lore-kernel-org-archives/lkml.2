@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab2F1RCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 13:02:14 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54984 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab2F1RCM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 13:02:12 -0400
+	id S1755949Ab2F1RCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 13:02:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19076 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755549Ab2F1RCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 13:02:40 -0400
+Message-ID: <4FEC8E22.4000208@redhat.com>
+Date: Thu, 28 Jun 2012 20:02:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <4FEB80A5.8020806@zytor.com>
-References: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com>
-	<1340832957-7386-1-git-send-email-olof@lixom.net>
-	<4FEB80A5.8020806@zytor.com>
-Date: Thu, 28 Jun 2012 10:02:12 -0700
-Message-ID: <CAOesGMhzAmpX0sSFv4w+=Y4Uzh77aa3_QW3JW=eurfo22dRMoA@mail.gmail.com>
-Subject: Re: [PATCH] efi: add efi_runtime state checking
-From: Olof Johansson <olof@lixom.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Marko Kohtala <marko.kohtala@gmail.com>, linux-kernel@vger.kernel.org,
-        mjg@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        yrl.pp-manager.tt@hitachi.com, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC PATCH 06/18] KVM: Add facility to run guests on slave CPUs
+References: <20120628060719.19298.43879.stgit@localhost.localdomain> <20120628060751.19298.39801.stgit@localhost.localdomain>
+In-Reply-To: <20120628060751.19298.39801.stgit@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 2:52 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 06/27/2012 02:35 PM, Olof Johansson wrote:
->>
->> This adds an efi_runtime variable indicating whether the
->> efi runtime services are available. The only time they are
->> expected to not be available is when a 32-bit kernel has been
->> booted using 64-but EFI and vice versa.
->>
->> It also adds checking to the two locations where functions are
->> called; x86 reboot and efivars.
->>
->
-> OK, stupid question:
->
-> Why is this different from the efi_enabled variable, or rather: why is it
-> different from what the efi_enabled variable *should* be?  If runtime
-> services aren't available the only "EFI" that is available to the kernel are
-> the data structures passed in, and those can be checked directly...
+On 06/28/2012 09:07 AM, Tomoki Sekiyama wrote:
+> Add path to migrate execution of vcpu_enter_guest to a slave CPU when
+> vcpu->arch.slave_cpu is set.
+> 
+> After moving to the slave CPU, it goes back to the online CPU when the
+> guest is exited by reasons that cannot be handled by the slave CPU only
+> (e.g. handling async page faults).
 
-Excellent question, and I think it would work to turn off efi_enabled
-towards the end of setup_arch() for non-native boots. That'd solve all
-these problems, I believe.
+What about, say, instruction emulation?  It may need to touch guest
+memory, which cannot be done from interrupt disabled context.
 
-I'll try it out and revise this patch. It might take me a day or two
-to get cycles for it.
+> +
+> +static int vcpu_post_run(struct kvm_vcpu *vcpu, struct task_struct *task,
+> +			 int *can_complete_async_pf)
+> +{
+> +	int r = LOOP_ONLINE;
+> +
+> +	clear_bit(KVM_REQ_PENDING_TIMER, &vcpu->requests);
+> +	if (kvm_cpu_has_pending_timer(vcpu))
+> +		kvm_inject_pending_timer_irqs(vcpu);
+> +
+> +	if (dm_request_for_irq_injection(vcpu)) {
+> +		r = -EINTR;
+> +		vcpu->run->exit_reason = KVM_EXIT_INTR;
+> +		++vcpu->stat.request_irq_exits;
+> +	}
+> +
+> +	if (can_complete_async_pf) {
+> +		*can_complete_async_pf = kvm_can_complete_async_pf(vcpu);
+> +		if (r == LOOP_ONLINE)
+> +			r = *can_complete_async_pf ? LOOP_APF : LOOP_SLAVE;
+> +	} else
+> +		kvm_check_async_pf_completion(vcpu);
+> +
+> +	if (signal_pending(task)) {
+> +		r = -EINTR;
+> +		vcpu->run->exit_reason = KVM_EXIT_INTR;
+> +		++vcpu->stat.signal_exits;
+> +	}
+
+Isn't this racy?  The signal can come right after this.
+
+-- 
+error compiling committee.c: too many arguments to function
 
 
--Olof
