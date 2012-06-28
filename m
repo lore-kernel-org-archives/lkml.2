@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab2F1NO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:14:26 -0400
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:40147 "EHLO
+	id S1755622Ab2F1NOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:14:23 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:47768 "EHLO
 	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab2F1NI3 (ORCPT
+	with ESMTP id S1754453Ab2F1NI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Jun 2012 09:08:29 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 12/23 v6] Input: atmel_mxt_ts - optimize writing of object table entries
-Date: Thu, 28 Jun 2012 21:08:13 +0800
-Message-Id: <1340888904-15620-13-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 07/23 v6] Input: atmel_mxt_ts - optimize reading objects in object sysfs entry
+Date: Thu, 28 Jun 2012 21:08:08 +0800
+Message-Id: <1340888904-15620-8-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
 References: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
@@ -25,57 +25,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Write each object using a single bulk i2c write transfer.
+Read each object in a single i2c transaction instead of byte-by-byte
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Reviewed-by: Joonyoung Shim <jy0922.shim@samsung.com>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   35 ++++++++++++-----------------
+ 1 files changed, 15 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index dd2577b..99d5210 100644
+index 55855b8..94dd1d1 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -655,7 +655,8 @@ static int mxt_check_reg_init(struct mxt_data *data)
- 	struct mxt_object *object;
- 	struct device *dev = &data->client->dev;
- 	int index = 0;
--	int i, j, config_offset;
-+	int i, size;
-+	int ret;
+@@ -479,20 +479,6 @@ static int mxt_read_message(struct mxt_data *data,
+ 			sizeof(struct mxt_message), message);
+ }
  
- 	if (!pdata->config) {
- 		dev_dbg(dev, "No cfg data defined, skipping reg init\n");
-@@ -668,18 +669,17 @@ static int mxt_check_reg_init(struct mxt_data *data)
- 		if (!mxt_object_writable(object->type))
- 			continue;
- 
--		for (j = 0;
--		     j < (object->size + 1) * (object->instances + 1);
--		     j++) {
--			config_offset = index + j;
--			if (config_offset > pdata->config_length) {
--				dev_err(dev, "Not enough config data!\n");
--				return -EINVAL;
--			}
--			mxt_write_object(data, object->type, j,
--					 pdata->config[config_offset]);
-+		size = (object->size + 1) * (object->instances + 1);
-+		if (index + size > pdata->config_length) {
-+			dev_err(dev, "Not enough config data!\n");
-+			return -EINVAL;
- 		}
--		index += (object->size + 1) * (object->instances + 1);
+-static int mxt_read_object(struct mxt_data *data,
+-				u8 type, u8 offset, u8 *val)
+-{
+-	struct mxt_object *object;
+-	u16 reg;
+-
+-	object = mxt_get_object(data, type);
+-	if (!object)
+-		return -EINVAL;
+-
+-	reg = object->start_address;
+-	return __mxt_read_reg(data->client, reg + offset, 1, val);
+-}
+-
+ static int mxt_write_object(struct mxt_data *data,
+ 				 u8 type, u8 offset, u8 val)
+ {
+@@ -900,7 +886,14 @@ static ssize_t mxt_object_show(struct device *dev,
+ 	int i, j;
+ 	int error;
+ 	u8 val;
++	u8 *obuf;
 +
-+		ret = __mxt_write_reg(data->client, object->start_address,
-+				size, &pdata->config[index]);
-+		if (ret)
-+			return ret;
-+		index += size;
++	/* Pre-allocate buffer large enough to hold max sized object. */
++	obuf = kmalloc(256, GFP_KERNEL);
++	if (!obuf)
++		return -ENOMEM;
+ 
++	error = 0;
+ 	for (i = 0; i < data->info.object_num; i++) {
+ 		object = data->object_table + i;
+ 
+@@ -914,20 +907,22 @@ static ssize_t mxt_object_show(struct device *dev,
+ 			continue;
+ 		}
+ 
++		error = __mxt_read_reg(data->client, object->start_address,
++				object->size + 1, obuf);
++		if (error)
++			break;
++
+ 		for (j = 0; j < object->size + 1; j++) {
+-			error = mxt_read_object(data,
+-						object->type, j, &val);
+-			if (error)
+-				return error;
++			val = obuf[j];
+ 
+ 			count += scnprintf(buf + count, PAGE_SIZE - count,
+ 					"\t[%2d]: %02x (%d)\n", j, val, val);
+ 		}
+-
+ 		count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
  	}
  
- 	return 0;
+-	return count;
++	kfree(obuf);
++	return error ?: count;
+ }
+ 
+ static int mxt_load_fw(struct device *dev, const char *fn)
 -- 
 1.7.7.3
 
