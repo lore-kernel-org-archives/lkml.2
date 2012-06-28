@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab2F1Ig7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 04:36:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51238 "EHLO mx2.suse.de"
+	id S932580Ab2F1IjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 04:39:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63734 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab2F1Ig5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 04:36:57 -0400
-Date: Thu, 28 Jun 2012 10:36:50 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Rob Landley <rob@landley.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] HID: roccat: Added support for Roccat Savu
-In-Reply-To: <1337546694.19878.28.camel@neuromancer.tessier-ashpool>
-Message-ID: <alpine.LNX.2.00.1206281036440.17549@pobox.suse.cz>
-References: <1337546694.19878.28.camel@neuromancer.tessier-ashpool>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755312Ab2F1Ii7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 04:38:59 -0400
+Date: Thu, 28 Jun 2012 11:38:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
+Message-ID: <20120628083857.GD12447@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+ <20120627050858.23698.44118.stgit@bling.home>
+ <20120627162430.3477d0f6@BR9GNB5Z>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627162430.3477d0f6@BR9GNB5Z>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 May 2012, Stefan Achatz wrote:
+On Wed, Jun 27, 2012 at 04:24:30PM +0200, Cornelia Huck wrote:
+> On Tue, 26 Jun 2012 23:09:04 -0600
+> Alex Williamson <alex.williamson@redhat.com> wrote:
+> 
+> > Prune this down to just the struct kvm_irqfd so we can avoid
+> > changing function definition for every flag or field we use.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> 
+> I'm currently trying to find a way to make irqfd workable for s390
+> which will likely include using a new field in kvm_irqfd, so I'd like
+> to have this change (and I also think it makes the code nicer to read).
+> So:
+> 
+> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-> This patch adds rupport for Roccat Savu gaming mouse.
-
-I have now applied the series.
-
-Thanks,
+Unfortunately it looks like we are not sanitizing kvm_irqfd
+at all so we won't be able to use the padding :(
+We'll need a new ioctl instead.
 
 -- 
-Jiri Kosina
-SUSE Labs
+MST
