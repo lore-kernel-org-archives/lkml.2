@@ -1,212 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab2F1NGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:06:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49965 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754929Ab2F1M5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:57:41 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 38/40] autonuma: autonuma_migrate_head[0] dynamic size
-Date: Thu, 28 Jun 2012 14:56:18 +0200
-Message-Id: <1340888180-15355-39-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+	id S1754349Ab2F1NGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:06:40 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4220 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab2F1NGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 09:06:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 28 Jun 2012 06:06:37 -0700
+Message-ID: <4FEC5642.9080908@nvidia.com>
+Date: Thu, 28 Jun 2012 18:34:02 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lrg@ti.com" <lrg@ti.com>, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: snd_dmaengine: add common api for
+ pcm_mmap
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>	<4FEC3B70.5030902@metafoo.de>	<s5hobo3zl79.wl%tiwai@suse.de>	<20120628121816.GB21029@sirena.org.uk>	<4FEC4E62.3020101@metafoo.de>	<20120628122830.GJ28922@opensource.wolfsonmicro.com>	<4FEC4FA9.20004@nvidia.com> <s5hlij7zja0.wl%tiwai@suse.de>
+In-Reply-To: <s5hlij7zja0.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the autonuma_migrate_head array entries from MAX_NUMNODES to
-num_possible_nodes() or zero if autonuma_impossible() is true.
+On Thursday 28 June 2012 06:27 PM, Takashi Iwai wrote:
+> At Thu, 28 Jun 2012 18:05:53 +0530,
+> Laxman Dewangan wrote:
+>> On Thursday 28 June 2012 05:58 PM, Mark Brown wrote:
+>>> * PGP Signed by an unknown key
+>>>
+>>> On Thu, Jun 28, 2012 at 02:30:26PM +0200, Lars-Peter Clausen wrote:
+>>>> On 06/28/2012 02:18 PM, Mark Brown wrote:
+>>>>> Oh, dear - this means we don't actually have a generic API at all.  Is
+>>>>> there any effort being made to make this generally available?
+>>>> Yes there is, and in fact in next/master there is generic
+>>>> dma_mmap_writecombine. I'm not quite sure how it behaves on non ARM archs
+>>>> though. But in theory it should fallback to a normal coherent mapping. Marek
+>>>> did a lot of work on this, I've put him on Cc.
+>> So can we put the function snd_pcm_lib_writecombine_mmap() in the
+>> pcm_native.c and only export this api for ARM i.e.  under macro  #ifdef
+>> CONFIG_ARM so that ARM based SOCs like Tegra/epa3xx/mxs/spear can
+>> directly use that one?
+>> Or, wait for this common API until all ARCH support it?
+> I think it's fine to put it first in ALSA side with some ifdef.
+> A similar trick is already found for snd_pcm_lib_mmap_iomem.
+> See include/sound/pcm.h.
+>
+> But, actually it's a still question what if an architecture doesn't
+> support the mmap of writecombine at all.  The proposed patch doesn't
+> allow you to know whether writecombine-mmap is possible or not on the
+> running architecture until you really try to call it and fail.
+> It's a missing piece, IMO.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- arch/x86/mm/numa.c             |    6 ++++--
- arch/x86/mm/numa_32.c          |    3 ++-
- include/linux/memory_hotplug.h |    3 ++-
- include/linux/mmzone.h         |    8 +++++++-
- include/linux/page_autonuma.h  |   10 ++++++++--
- mm/memory_hotplug.c            |    2 +-
- mm/page_autonuma.c             |    5 +++--
- 7 files changed, 27 insertions(+), 10 deletions(-)
+Lars wanted to move the buffer allocation also to common place.
+Then how about this?
+create new file and header for snd-pcm-writecombine-buffer.c/.h and put 
+this in sound/core.
+Select this file compilation through config SND_PCM_WRITECOMBINE_BUFFER 
+which will be select this config through sound/soc/xxx/Kconfig if they 
+want to use.
+This will provide three apis: new, free and mmap.
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 2d125be..a4a9e92 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -11,6 +11,7 @@
- #include <linux/nodemask.h>
- #include <linux/sched.h>
- #include <linux/topology.h>
-+#include <linux/page_autonuma.h>
- 
- #include <asm/e820.h>
- #include <asm/proto.h>
-@@ -192,7 +193,8 @@ int __init numa_add_memblk(int nid, u64 start, u64 end)
- /* Initialize NODE_DATA for a node on the local memory */
- static void __init setup_node_data(int nid, u64 start, u64 end)
- {
--	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
-+	const size_t nd_size = roundup(autonuma_pglist_data_size(),
-+				       PAGE_SIZE);
- 	bool remapped = false;
- 	u64 nd_pa;
- 	void *nd;
-@@ -239,7 +241,7 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
- 
- 	node_data[nid] = nd;
--	memset(NODE_DATA(nid), 0, sizeof(pg_data_t));
-+	memset(NODE_DATA(nid), 0, autonuma_pglist_data_size());
- 	NODE_DATA(nid)->node_id = nid;
- 	NODE_DATA(nid)->node_start_pfn = start >> PAGE_SHIFT;
- 	NODE_DATA(nid)->node_spanned_pages = (end - start) >> PAGE_SHIFT;
-diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index 534255a..d32d6cc 100644
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -25,6 +25,7 @@
- #include <linux/bootmem.h>
- #include <linux/memblock.h>
- #include <linux/module.h>
-+#include <linux/page_autonuma.h>
- 
- #include "numa_internal.h"
- 
-@@ -194,7 +195,7 @@ void __init init_alloc_remap(int nid, u64 start, u64 end)
- 
- 	/* calculate the necessary space aligned to large page size */
- 	size = node_memmap_size_bytes(nid, start_pfn, end_pfn);
--	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
-+	size += ALIGN(autonuma_pglist_data_size(), PAGE_SIZE);
- 	size = ALIGN(size, LARGE_PAGE_BYTES);
- 
- 	/* allocate node memory and the lowmem remap area */
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 910550f..76b1840 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -5,6 +5,7 @@
- #include <linux/spinlock.h>
- #include <linux/notifier.h>
- #include <linux/bug.h>
-+#include <linux/page_autonuma.h>
- 
- struct page;
- struct zone;
-@@ -130,7 +131,7 @@ extern void arch_refresh_nodedata(int nid, pg_data_t *pgdat);
-  */
- #define generic_alloc_nodedata(nid)				\
- ({								\
--	kzalloc(sizeof(pg_data_t), GFP_KERNEL);			\
-+	kzalloc(autonuma_pglist_data_size(), GFP_KERNEL);	\
- })
- /*
-  * This definition is just for error path in node hotadd.
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index e66da74..ed5b0c0 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -701,10 +701,16 @@ typedef struct pglist_data {
- #if !defined(CONFIG_SPARSEMEM)
- 	struct page_autonuma *node_page_autonuma;
- #endif
--	struct list_head autonuma_migrate_head[MAX_NUMNODES];
- 	unsigned long autonuma_nr_migrate_pages;
- 	wait_queue_head_t autonuma_knuma_migrated_wait;
- 	spinlock_t autonuma_lock;
-+	/*
-+	 * Archs supporting AutoNUMA should allocate the pgdat with
-+	 * size autonuma_pglist_data_size() after including
-+	 * <linux/page_autonuma.h> and the below field must remain the
-+	 * last one of this structure.
-+	 */
-+	struct list_head autonuma_migrate_head[0];
- #endif
- } pg_data_t;
- 
-diff --git a/include/linux/page_autonuma.h b/include/linux/page_autonuma.h
-index d748aa2..bc7a629 100644
---- a/include/linux/page_autonuma.h
-+++ b/include/linux/page_autonuma.h
-@@ -10,6 +10,7 @@ static inline void __init page_autonuma_init_flatmem(void) {}
- #ifdef CONFIG_AUTONUMA
- 
- #include <linux/autonuma_flags.h>
-+#include <linux/autonuma_types.h>
- 
- extern void __meminit page_autonuma_map_init(struct page *page,
- 					     struct page_autonuma *page_autonuma,
-@@ -29,11 +30,10 @@ extern void __meminit pgdat_autonuma_init(struct pglist_data *);
- struct page_autonuma;
- #define PAGE_AUTONUMA_SIZE 0
- #define SECTION_PAGE_AUTONUMA_SIZE 0
-+#endif
- 
- #define autonuma_impossible() true
- 
--#endif
--
- static inline void pgdat_autonuma_init(struct pglist_data *pgdat) {}
- 
- #endif /* CONFIG_AUTONUMA */
-@@ -50,4 +50,10 @@ extern void __init sparse_early_page_autonuma_alloc_node(struct page_autonuma **
- 							 int nodeid);
- #endif
- 
-+/* inline won't work here */
-+#define autonuma_pglist_data_size() (sizeof(struct pglist_data) +	\
-+				     (autonuma_impossible() ? 0 :	\
-+				      sizeof(struct list_head) * \
-+				      num_possible_nodes()))
-+
- #endif /* _LINUX_PAGE_AUTONUMA_H */
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 0d7e3ec..604995b 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -164,7 +164,7 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
- 	struct page *page;
- 	struct zone *zone;
- 
--	nr_pages = PAGE_ALIGN(sizeof(struct pglist_data)) >> PAGE_SHIFT;
-+	nr_pages = PAGE_ALIGN(autonuma_pglist_data_size()) >> PAGE_SHIFT;
- 	page = virt_to_page(pgdat);
- 
- 	for (i = 0; i < nr_pages; i++, page++)
-diff --git a/mm/page_autonuma.c b/mm/page_autonuma.c
-index 2468c9e..d7c5e4a 100644
---- a/mm/page_autonuma.c
-+++ b/mm/page_autonuma.c
-@@ -23,8 +23,9 @@ static void __meminit __pgdat_autonuma_init(struct pglist_data *pgdat)
- 	spin_lock_init(&pgdat->autonuma_lock);
- 	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
- 	pgdat->autonuma_nr_migrate_pages = 0;
--	for_each_node(node_iter)
--		INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
-+	if (!autonuma_impossible())
-+		for_each_node(node_iter)
-+			INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
- }
- 
- #if !defined(CONFIG_SPARSEMEM)
+
+
+
