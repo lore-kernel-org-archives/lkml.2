@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab2F1Vut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 17:50:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31891 "EHLO mx1.redhat.com"
+	id S1755626Ab2F1Vur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 17:50:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38314 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755103Ab2F1Vup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755022Ab2F1Vup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Jun 2012 17:50:45 -0400
 From: Rafael Aquini <aquini@redhat.com>
 To: linux-mm@kvack.org
@@ -15,108 +15,155 @@ Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Rafael Aquini <aquini@redhat.com>
-Subject: [PATCH v2 0/4] make balloon pages movable by compaction
-Date: Thu, 28 Jun 2012 18:49:38 -0300
-Message-Id: <cover.1340916058.git.aquini@redhat.com>
+Subject: [PATCH v2 2/4] virtio_balloon: handle concurrent accesses to virtio_balloon struct elements
+Date: Thu, 28 Jun 2012 18:49:40 -0300
+Message-Id: <dae7bc496f8c7ac0dd7b1d76842f33011aeb4687.1340916058.git.aquini@redhat.com>
+In-Reply-To: <cover.1340916058.git.aquini@redhat.com>
+References: <cover.1340916058.git.aquini@redhat.com>
+In-Reply-To: <cover.1340916058.git.aquini@redhat.com>
+References: <cover.1340916058.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset follows the main idea discussed at 2012 LSFMMS section:
-"Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
+This patch introduces access sychronization to critical elements of struct
+virtio_balloon, in order to allow the thread concurrency compaction/migration
+bits might ended up imposing to the balloon driver on several situations.
 
-to introduce the required changes to the virtio_balloon driver, as well as
-changes to the core compaction & migration bits, in order to allow
-memory balloon pages become movable within a guest.
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+---
+ drivers/virtio/virtio_balloon.c |   45 +++++++++++++++++++++++++++++----------
+ 1 file changed, 34 insertions(+), 11 deletions(-)
 
-Rafael Aquini (4):
-  mm: introduce compaction and migration for virtio ballooned pages
-  virtio_balloon: handle concurrent accesses to virtio_balloon struct
-    elements
-  virtio_balloon: introduce migration primitives to balloon pages
-  mm: add vm event counters for balloon pages compaction
-
- drivers/virtio/virtio_balloon.c |  142 +++++++++++++++++++++++++++++++++++----
- include/linux/mm.h              |   16 +++++
- include/linux/virtio_balloon.h  |    6 ++
- include/linux/vm_event_item.h   |    2 +
- mm/compaction.c                 |  111 ++++++++++++++++++++++++------
- mm/migrate.c                    |   32 ++++++++-
- mm/vmstat.c                     |    4 ++
- 7 files changed, 280 insertions(+), 33 deletions(-)
-
-
-V2: address Mel Gorman's review comments
-
-TODO:
-- check on naming chages suggested by Konrad (original series discussion)
-
-
-Preliminary test results:
-(2 VCPU 1024mB RAM KVM guest running 3.5.0_rc4+)
-
-* 64mB balloon:
-[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
-compact_blocks_moved 0
-compact_pages_moved 0
-compact_pagemigrate_failed 0
-compact_stall 0
-compact_fail 0
-compact_success 0
-compact_balloon_migrated 0
-compact_balloon_failed 0
-compact_balloon_isolated 0
-compact_balloon_freed 0
-[root@localhost ~]#
-[root@localhost ~]# for i in $(seq 1 4); do echo 1> /proc/sys/vm/compact_memory & done &>/dev/null
-[1]   Done                    echo > /proc/sys/vm/compact_memory
-[2]   Done                    echo > /proc/sys/vm/compact_memory
-[3]-  Done                    echo > /proc/sys/vm/compact_memory
-[4]+  Done                    echo > /proc/sys/vm/compact_memory
-[root@localhost ~]#
-[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
- compact_blocks_moved 2717
-compact_pages_moved 46697
-compact_pagemigrate_failed 75
-compact_stall 0
-compact_fail 0
-compact_success 0
-compact_balloon_migrated 16384
-compact_balloon_failed 0
-compact_balloon_isolated 16384
-compact_balloon_freed 16384
-
-
-* 128mB balloon:
-[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
-compact_blocks_moved 0
-compact_pages_moved 0
-compact_pagemigrate_failed 0
-compact_stall 0
-compact_fail 0
-compact_success 0
-compact_balloon_migrated 0
-compact_balloon_failed 0
-compact_balloon_isolated 0
-compact_balloon_freed 0
-[root@localhost ~]#
-[root@localhost ~]# for i in $(seq 1 4); do echo 1> /proc/sys/vm/compact_memory & done &>/dev/null
-[1]   Done                    echo > /proc/sys/vm/compact_memory
-[2]   Done                    echo > /proc/sys/vm/compact_memory
-[3]-  Done                    echo > /proc/sys/vm/compact_memory
-[4]+  Done                    echo > /proc/sys/vm/compact_memory
-[root@localhost ~]#
-[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
-compact_blocks_moved 2598
-compact_pages_moved 47660
-compact_pagemigrate_failed 103
-compact_stall 0
-compact_fail 0
-compact_success 0
-compact_balloon_migrated 26652
-compact_balloon_failed 76
-compact_balloon_isolated 26728
-compact_balloon_freed 26652
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index bfbc15c..d47c5c2 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -51,6 +51,10 @@ struct virtio_balloon
+ 
+ 	/* Number of balloon pages we've told the Host we're not using. */
+ 	unsigned int num_pages;
++
++	/* Protect 'pages', 'pfns' & 'num_pnfs' against concurrent updates */
++	spinlock_t pfn_list_lock;
++
+ 	/*
+ 	 * The pages we've told the Host we're not using.
+ 	 * Each page on this list adds VIRTIO_BALLOON_PAGES_PER_PAGE
+@@ -97,21 +101,23 @@ static void balloon_ack(struct virtqueue *vq)
+ 		complete(&vb->acked);
+ }
+ 
+-static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
+-{
+-	struct scatterlist sg;
+-
+-	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
++/* Protection for concurrent accesses to balloon virtqueues and vb->acked */
++DEFINE_MUTEX(vb_queue_completion);
+ 
++static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq,
++		      struct scatterlist *sg)
++{
++	mutex_lock(&vb_queue_completion);
+ 	init_completion(&vb->acked);
+ 
+ 	/* We should always be able to add one buffer to an empty queue. */
+-	if (virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL) < 0)
++	if (virtqueue_add_buf(vq, sg, 1, 0, vb, GFP_KERNEL) < 0)
+ 		BUG();
+ 	virtqueue_kick(vq);
+ 
+ 	/* When host has read buffer, this completes via balloon_ack */
+ 	wait_for_completion(&vb->acked);
++	mutex_unlock(&vb_queue_completion);
+ }
+ 
+ static void set_page_pfns(u32 pfns[], struct page *page)
+@@ -126,9 +132,12 @@ static void set_page_pfns(u32 pfns[], struct page *page)
+ 
+ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ {
++	struct scatterlist sg;
++	int alloc_failed = 0;
+ 	/* We can only do one array worth at a time. */
+ 	num = min(num, ARRAY_SIZE(vb->pfns));
+ 
++	spin_lock(&vb->pfn_list_lock);
+ 	for (vb->num_pfns = 0; vb->num_pfns < num;
+ 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+ 		struct page *page = alloc_page(GFP_HIGHUSER | __GFP_NORETRY |
+@@ -138,8 +147,7 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ 				dev_printk(KERN_INFO, &vb->vdev->dev,
+ 					   "Out of puff! Can't get %zu pages\n",
+ 					   num);
+-			/* Sleep for at least 1/5 of a second before retry. */
+-			msleep(200);
++			alloc_failed = 1;
+ 			break;
+ 		}
+ 		set_page_pfns(vb->pfns + vb->num_pfns, page);
+@@ -149,10 +157,19 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ 	}
+ 
+ 	/* Didn't get any?  Oh well. */
+-	if (vb->num_pfns == 0)
++	if (vb->num_pfns == 0) {
++		spin_unlock(&vb->pfn_list_lock);
+ 		return;
++	}
++
++	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
++	spin_unlock(&vb->pfn_list_lock);
+ 
+-	tell_host(vb, vb->inflate_vq);
++	/* alloc_page failed, sleep for at least 1/5 of a sec before retry. */
++	if (alloc_failed)
++		msleep(200);
++
++	tell_host(vb, vb->inflate_vq, &sg);
+ }
+ 
+ static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
+@@ -169,10 +186,12 @@ static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
+ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+ {
+ 	struct page *page;
++	struct scatterlist sg;
+ 
+ 	/* We can only do one array worth at a time. */
+ 	num = min(num, ARRAY_SIZE(vb->pfns));
+ 
++	spin_lock(&vb->pfn_list_lock);
+ 	for (vb->num_pfns = 0; vb->num_pfns < num;
+ 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+ 		page = list_first_entry(&vb->pages, struct page, lru);
+@@ -180,13 +199,15 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+ 		set_page_pfns(vb->pfns + vb->num_pfns, page);
+ 		vb->num_pages -= VIRTIO_BALLOON_PAGES_PER_PAGE;
+ 	}
++	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
++	spin_unlock(&vb->pfn_list_lock);
+ 
+ 	/*
+ 	 * Note that if
+ 	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+ 	 * is true, we *have* to do it in this order
+ 	 */
+-	tell_host(vb, vb->deflate_vq);
++	tell_host(vb, vb->deflate_vq, &sg);
+ 	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+ }
+ 
+@@ -356,6 +377,8 @@ static int virtballoon_probe(struct virtio_device *vdev)
+ 	}
+ 
+ 	INIT_LIST_HEAD(&vb->pages);
++	spin_lock_init(&vb->pfn_list_lock);
++
+ 	vb->num_pages = 0;
+ 	init_waitqueue_head(&vb->config_change);
+ 	vb->vdev = vdev;
 -- 
 1.7.10.2
 
