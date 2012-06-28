@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab2F1U7n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 16:59:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41017 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab2F1U7l (ORCPT
+	id S1754263Ab2F1VD5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 17:03:57 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:37154 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab2F1VDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 16:59:41 -0400
-Date: Thu, 28 Jun 2012 13:59:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, jaschut@sandia.gov, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where it
- left
-Message-Id: <20120628135940.2c26ada9.akpm@linux-foundation.org>
-In-Reply-To: <20120628135520.0c48b066@annuminas.surriel.com>
-References: <20120628135520.0c48b066@annuminas.surriel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 28 Jun 2012 17:03:55 -0400
+Message-ID: <1340917430.3821.2.camel@lorien2>
+Subject: Re: linux-next: Tree for Jun 27 (eliminated_printk)
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: shuahkhan@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
+Date: Thu, 28 Jun 2012 15:03:50 -0600
+In-Reply-To: <20120628201601.GB12471@srcf.ucam.org>
+References: <20120627132217.f8bbdd1f467711419123d188@canb.auug.org.au>
+	 <4FEB340D.3040908@xenotime.net> <1340814569.16533.53.camel@joe2Laptop>
+	 <20120628085226.af0623e39a282192935047c3@canb.auug.org.au>
+	 <1340914459.3821.0.camel@lorien2> <20120628201601.GB12471@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012 13:55:20 -0400
-Rik van Riel <riel@redhat.com> wrote:
-
-> Order > 0 compaction stops when enough free pages of the correct
-> page order have been coalesced. When doing subsequent higher order
-> allocations, it is possible for compaction to be invoked many times.
+On Thu, 2012-06-28 at 21:16 +0100, Matthew Garrett wrote:
+> On Thu, Jun 28, 2012 at 02:14:19PM -0600, Shuah Khan wrote:
 > 
-> However, the compaction code always starts out looking for things to
-> compact at the start of the zone, and for free pages to compact things
-> to at the end of the zone.
+> > Has this bean fixed in June 28th tree??
 > 
-> This can cause quadratic behaviour, with isolate_freepages starting
-> at the end of the zone each time, even though previous invocations
-> of the compaction code already filled up all free memory on that end
-> of the zone.
+> I dropped the patches from my -next branch. I'll wait to hear that the 
+> pre-requisites have gone in - alternatively, Joe, feel free to add my 
+> SoB and have them pushed through whichever tree takes the first in the 
+> series.
 > 
-> This can cause isolate_freepages to take enormous amounts of CPU
-> with certain workloads on larger memory systems.
-> 
-> The obvious solution is to have isolate_freepages remember where
-> it left off last time, and continue at that point the next time
-> it gets invoked for an order > 0 compaction. This could cause
-> compaction to fail if cc->free_pfn and cc->migrate_pfn are close
-> together initially, in that case we restart from the end of the
-> zone and try once more.
-> 
-> Forced full (order == -1) compactions are left alone.
 
-Is there a quality of service impact here?  Newly-compactable pages
-at lower pfns than compact_cached_free_pfn will now get missed, leading
-to a form of fragmentation?
+ok Worked around for now by enabling CONFIG_THINKPAD_ACPI_DEBUG and
+CONFIG_FUJITSU_LAPTOP_DEBUG. Just in case others need a work around.
 
-> @@ -463,6 +474,8 @@ static void isolate_freepages(struct zone *zone,
->  		 */
->  		if (isolated)
->  			high_pfn = max(high_pfn, pfn);
-> +		if (cc->order > 0)
-> +			zone->compact_cached_free_pfn = high_pfn;
+-- Shuah
 
-Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
-assume so, if lots of code in other places is correct but it's
-unobvious from reading this function.
-
->  	}
->  
->  	/* split_free_page does not map the pages */
->
-> ...
->
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -118,8 +118,10 @@ struct compact_control {
->  	unsigned long nr_freepages;	/* Number of isolated free pages */
->  	unsigned long nr_migratepages;	/* Number of pages to migrate */
->  	unsigned long free_pfn;		/* isolate_freepages search base */
-> +	unsigned long start_free_pfn;	/* where we started the search */
->  	unsigned long migrate_pfn;	/* isolate_migratepages search base */
->  	bool sync;			/* Synchronous migration */
-> +	bool wrapped;			/* Last round for order>0 compaction */
-
-This comment is incomprehensible :(
-
->  
->  	int order;			/* order a direct compactor needs */
->  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
 
