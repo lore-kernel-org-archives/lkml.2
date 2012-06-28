@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab2F1NEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62251 "EHLO mx1.redhat.com"
+	id S1752792Ab2F1NE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:04:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27323 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755529Ab2F1M6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:58:06 -0400
+	id S1754765Ab2F1M57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:57:59 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,45 +27,43 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 08/40] autonuma: teach gup_fast about pte_numa
-Date: Thu, 28 Jun 2012 14:55:48 +0200
-Message-Id: <1340888180-15355-9-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 29/40] autonuma: retain page last_nid information in khugepaged
+Date: Thu, 28 Jun 2012 14:56:09 +0200
+Message-Id: <1340888180-15355-30-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gup_fast will skip over non present ptes (pte_numa requires the pte to
-be non present). So no explicit check is needed for pte_numa in the
-pte case.
-
-gup_fast will also automatically skip over THP when the trans huge pmd
-is non present (pmd_numa requires the pmd to be non present).
-
-But for the special pmd mode scan of knuma_scand
-(/sys/kernel/mm/autonuma/knuma_scand/pmd == 1), the pmd may be of numa
-type (so non present too), the pte may be present. gup_pte_range
-wouldn't notice the pmd is of numa type. So to avoid losing a NUMA
-hinting page fault with gup_fast we need an explicit check for
-pmd_numa() here to be sure it will fault through gup ->
-handle_mm_fault.
+When pages are collapsed try to keep the last_nid information from one
+of the original pages.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/x86/mm/gup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/huge_memory.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-index dd74e46..bf36575 100644
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -164,7 +164,7 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
- 		 * wait_split_huge_page() would never return as the
- 		 * tlb flush IPI wouldn't run.
- 		 */
--		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
-+		if (pmd_none(pmd) || pmd_trans_splitting(pmd) || pmd_numa(pmd))
- 			return 0;
- 		if (unlikely(pmd_large(pmd))) {
- 			if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 094f82b..ae20409 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1814,7 +1814,18 @@ static bool __collapse_huge_page_copy(pte_t *pte, struct page *page,
+ 			clear_user_highpage(page, address);
+ 			add_mm_counter(vma->vm_mm, MM_ANONPAGES, 1);
+ 		} else {
++#ifdef CONFIG_AUTONUMA
++			int autonuma_last_nid;
++#endif
+ 			src_page = pte_page(pteval);
++#ifdef CONFIG_AUTONUMA
++			/* pick the last one, better than nothing */
++			autonuma_last_nid =
++				ACCESS_ONCE(src_page->autonuma_last_nid);
++			if (autonuma_last_nid >= 0)
++				ACCESS_ONCE(page->autonuma_last_nid) =
++					autonuma_last_nid;
++#endif
+ 			copy_user_highpage(page, src_page, address, vma);
+ 			VM_BUG_ON(page_mapcount(src_page) != 1);
+ 			VM_BUG_ON(page_count(src_page) != 2);
