@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab2F1Lhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 07:37:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38625 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274Ab2F1Lhv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 07:37:51 -0400
-Date: Thu, 28 Jun 2012 04:37:38 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, ebiederm@xmission.com,
-        luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
-        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH v3 4/5] Sysfs: Export VMCSINFO via sysfs
-Message-ID: <20120628113738.GA5499@kroah.com>
-References: <4FEAC945.50700@cn.fujitsu.com>
- <4FEACA5E.4090009@cn.fujitsu.com>
- <20120627192236.GB1965@kroah.com>
- <4FEC29D6.5020109@cn.fujitsu.com>
+	id S1754848Ab2F1Lv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 07:51:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:32920 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752343Ab2F1Lvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 07:51:47 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
+CC: <hvaibhav@ti.com>
+Subject: [PATCH v1 06/11] arm/dts: Add twl6030-usb data
+Date: Thu, 28 Jun 2012 17:21:02 +0530
+Message-ID: <1340884267-28908-7-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1340884267-28908-1-git-send-email-kishon@ti.com>
+References: <1340884267-28908-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FEC29D6.5020109@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 05:54:30PM +0800, Yanfei Zhang wrote:
-> 于 2012年06月28日 03:22, Greg KH 写道:
-> > On Wed, Jun 27, 2012 at 04:54:54PM +0800, Yanfei Zhang wrote:
-> >> This patch export offsets of fields via /sys/devices/cpu/vmcs/.
-> >> Individual offsets are contained in subfiles named by the filed's
-> >> encoding, e.g.: /sys/devices/cpu/vmcs/0800
-> >>
-> >> Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-> >> ---
-> >>  drivers/base/core.c |   13 +++++++++++++
-> >>  1 files changed, 13 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> >> index 346be8b..dd05ee7 100644
-> >> --- a/drivers/base/core.c
-> >> +++ b/drivers/base/core.c
-> >> @@ -26,6 +26,7 @@
-> >>  #include <linux/async.h>
-> >>  #include <linux/pm_runtime.h>
-> >>  #include <linux/netdevice.h>
-> >> +#include <asm/vmcsinfo.h>
-> > 
-> > Did you just break the build on all other arches?  Not nice.
-> > 
-> >> @@ -1038,6 +1039,11 @@ int device_add(struct device *dev)
-> >>  	error = dpm_sysfs_add(dev);
-> >>  	if (error)
-> >>  		goto DPMError;
-> >> +#if defined(CONFIG_KVM_INTEL) || defined(CONFIG_KVM_INTEL_MODULE)
-> >> +	error = vmcs_sysfs_add(dev);
-> >> +	if (error)
-> >> +		goto VMCSError;
-> >> +#endif
-> > 
-> > Oh my no, that's no way to ever do this, you know better than that,
-> > please fix.
-> > 
-> > greg k-h
-> > 
-> 
-> Sorry for my thoughtless, Here is the new patch.
-> 
-> ---
->  drivers/base/core.c |   13 +++++++++++++
->  1 files changed, 13 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 346be8b..7b5266a 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -30,6 +30,13 @@
->  #include "base.h"
->  #include "power/power.h"
->  
-> +#if defined(CONFIG_KVM_INTEL) || defined(CONFIG_KVM_INTEL_MODULE)
-> +#include <asm/vmcsinfo.h>
-> +#else
-> +static inline int vmcs_sysfs_add(struct device *dev) { return 0; }
-> +static inline void vmcs_sysfs_remove(struct device *dev) { }
-> +#endif
+Add twl6030-usb data node in twl6030 device tree file
 
-{sigh}  No, again, you know better, don't do this.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/twl6030.dtsi |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-greg k-h
+diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
+index 3b2f351..6526366 100644
+--- a/arch/arm/boot/dts/twl6030.dtsi
++++ b/arch/arm/boot/dts/twl6030.dtsi
+@@ -83,4 +83,11 @@
+ 	clk32kg: regulator@12 {
+ 		compatible = "ti,twl6030-clk32kg";
+ 	};
++
++	twl6030-usb {
++		compatible = "ti,twl6030-usb";
++		interrupts = < 4 10 >;
++		regulator = "vusb";
++		vusb-supply = <&vusb>;
++	};
+ };
+-- 
+1.7.5.4
+
