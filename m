@@ -1,36 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab2F1Nti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:49:38 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:35704 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab2F1Nth (ORCPT
+	id S1754116Ab2F1Nun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:50:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33539 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab2F1Num (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 09:49:37 -0400
-Date: Thu, 28 Jun 2012 14:49:32 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alex Hung <alex.hung@canonical.com>
-Cc: corentincj@iksaif.net, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] eeepc-wmi: change wireless key event to toggle all
- wireless devices.
-Message-ID: <20120628134932.GA30433@srcf.ucam.org>
-References: <1340162788-531-1-git-send-email-alex.hung@canonical.com>
- <20120626183349.GB29375@srcf.ucam.org>
- <4FEC00EE.7040007@canonical.com>
+	Thu, 28 Jun 2012 09:50:42 -0400
+Date: Thu, 28 Jun 2012 08:50:39 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apple-gmux: Correctly depend on apple_bl for building
+Message-ID: <20120628135039.GC15308@thinkpad-t410>
+Mail-Followup-To: Arun Raghavan <arun.raghavan@collabora.co.uk>,
+	Matthew Garrett <mjg@redhat.com>,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1340879796-30262-1-git-send-email-arun.raghavan@collabora.co.uk>
+ <20120628132058.GA15308@thinkpad-t410>
+ <1340889815.4994.4.camel@localhost>
+ <20120628134806.GB15308@thinkpad-t410>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FEC00EE.7040007@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120628134806.GB15308@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, I'll merge this.
+On Thu, Jun 28, 2012 at 08:48:06AM -0500, Seth Forshee wrote:
+> On Thu, Jun 28, 2012 at 06:53:35PM +0530, Arun Raghavan wrote:
+> > On Thu, 2012-06-28 at 08:20 -0500, Seth Forshee wrote:
+> > > On Thu, Jun 28, 2012 at 04:06:36PM +0530, Arun Raghavan wrote:
+> > > > apple_bl_register/unregister() are unconditionally used now, so we need
+> > > > to make sure that apple_bl is selected appropriately (built-in/module)
+> > > > if apple-gmux is being built.
+> > > 
+> > > apple_bl.h provides stubs for these functions when apple_bl is not
+> > > built, so this shouldn't be necessary. Are you encoutering a situation
+> > > that causes build problems?
+> > 
+> > Yes, I am. With CONFIG_BACKLIGHT_APPLE=m and CONFIG_APPLE_GMUX=y, I see
+> > the following error:
+> > 
+> >   LD      init/built-in.o
+> > drivers/built-in.o: In function `gmux_probe':
+> > apple-gmux.c:(.devinit.text+0xa769): undefined reference to `apple_bl_unregister'
+> > drivers/built-in.o: In function `gmux_remove':
+> > apple-gmux.c:(.devexit.text+0x46d): undefined reference to `apple_bl_register'
+> 
+> Yuck. In that case I don't think your patch probably goes far enough to
+> fix your situation.
+> 
+> As far as I know select isn't recursive, i.e. it won't select the
+> dependencies of the thing you select. 
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Oops, I accidentally sent this before I was done writing it.
+
+I want to play with this a bit more, because it looks like there are
+other scenarios that could be problematic. So I'll respond again once
+I've had a chance to do that.
+
+Seth
+
