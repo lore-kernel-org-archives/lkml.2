@@ -1,187 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab2F1Paq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 11:30:46 -0400
-Received: from sentry-two.sandia.gov ([132.175.109.14]:58800 "EHLO
-	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab2F1Pao (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 11:30:44 -0400
-X-WSS-ID: 0M6C332-0B-4J3-02
-X-M-MSG: 
-X-Server-Uuid: 6BFC7783-7E22-49B4-B610-66D6BE496C0E
-Message-ID: <4FEC7878.6000906@sandia.gov>
-Date: Thu, 28 Jun 2012 09:30:00 -0600
-From: "Jim Schutt" <jaschut@sandia.gov>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120425
- Thunderbird/10.0.4
-MIME-Version: 1.0
-To: "Mel Gorman" <mel@csn.ul.ie>
-cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rik van Riel" <riel@redhat.com>, "Minchan Kim" <minchan@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
-Subject: Re: excessive CPU utilization by isolate_freepages?
-References: <4FEB8237.6030402@sandia.gov>
- <20120628113619.GR8103@csn.ul.ie>
-In-Reply-To: <20120628113619.GR8103@csn.ul.ie>
-X-TMWD-Spam-Summary: TS=20120628153009; ID=1; SEV=2.3.1;
- DFV=B2012062815; IFV=NA; AIF=B2012062815; RPD=5.03.0010; ENG=NA;
- RPDID=7374723D303030312E30413031303230312E34464543373838302E303130423A534346535441543838363133332C73733D312C6667733D30;
- CAT=NONE; CON=NONE; SIG=AAABAJsKIgAAAAAAAAAAAAAAAAAAAH0=
-X-MMS-Spam-Filter-ID: B2012062815_5.03.0010
-X-WSS-ID: 63F2A7F50QW5421962-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-X-RSA-Inspected: yes
-X-RSA-Classifications: public
-X-RSA-Action: allow
+	id S1755415Ab2F1Phe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 11:37:34 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45644 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab2F1Phd convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
+	Thu, 28 Jun 2012 11:37:33 -0400
+Message-Id: <4FEC9686020000780008C9BB@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 28 Jun 2012 16:38:14 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: <cyclonusj@gmail.com>, <rostedt@goodmis.org>,
+        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
+        <marmarek@invisiblethingslab.com>, <x86@kernel.org>,
+        <tglx@linutronix.de>, <xen-devel@lists.xensource.com>,
+        <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        "Jason Garrett-Glaser" <jason@x264.com>
+Subject: Re: [Xen-devel] [PATCH] x86 fixes for 3.3 impacting distros
+ (v1).
+References: <1328888091-9692-1-git-send-email-konrad.wilk@oracle.com>
+ <CABS55+BFrDUV-WR=nx+d6+ZJngpuZnh41DZ3NYU4adFqaxqaNA@mail.gmail.com>
+ <20120510153457.GB6389@phenom.dumpdata.com>
+ <20120627231755.GA1021@gmail.com>
+ <20120628142836.GE8956@phenom.dumpdata.com> <4FEC6D44.8080807@zytor.com>
+In-Reply-To: <4FEC6D44.8080807@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 05:36 AM, Mel Gorman wrote:
-> On Wed, Jun 27, 2012 at 03:59:19PM -0600, Jim Schutt wrote:
->> Hi,
->>
->> I'm running into trouble with systems going unresponsive,
->> and perf suggests it's excessive CPU usage by isolate_freepages().
->> I'm currently testing 3.5-rc4, but I think this problem may have
->> first shown up in 3.4.  I'm only just learning how to use perf,
->> so I only currently have results to report for 3.5-rc4.
->>
->
-> Out of curiosity, why do you think it showed up in 3.4? It's not
-> surprising as such if it did show up there but I'm wondering what you
-> are basing it on.
+>>> On 28.06.12 at 16:42, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> On 06/28/2012 07:28 AM, Konrad Rzeszutek Wilk wrote:
+>> I also chatted with the core Xen hypervisor folks about adding in the 
+> context switch code
+>> to alter the PAT layout - but they were not keen a about it - and I am not 
+> sure how much
+>> CPU cycles one loses by doing a wrmsr to the PAT register on every guest 
+> context switch
+>> (worst case when on has a pvops kernel and a old-style one - where the WC bit 
+> would differ)?
+>> 
+> 
+> And you're comparing that to a bunch of new pvops calls?  The discussion
+> shouldn't even have started until you had ruled out this solution and
+> had data to show it.
 
-If I remember correctly, when I was testing this workload on 3.4 is
-when I first saw hundreds of runable threads being reported by vmstat.
-At that time I couldn't reproduce quite as reliably, and I didn't
-know how to get perf to give me call chains, so I didn't follow up :(
+That's definitely not an option: Xen itself may be (and is, under
+certain circumstances at least) using WC page table entries, so
+we can't allow on-the-fly changes to the meaning of the various
+indexes.
 
->
-> It's not a suprise because it's also where reclaim/compaction stopped
-> depending on lumpy reclaim. In the past we would have reclaimed more
-> pages but now rely on compaction more. It's plassible that for many
-> parallel compactions that there would be higher CPU usage now.
->
->> <SNIP>
->> 2012-06-27 14:00:03.219-06:00
->> vmstat -w 4 16
->> procs -------------------memory------------------ ---swap-- -----io---- --system-- -----cpu-------
->>   r  b       swpd       free       buff      cache   si   so    bi    bo   in   cs  us sy  id wa st
->> 75  1          0     566988        576   35664800    0    0     2  1355   21    3   1  4  95  0  0
->> 433  1          0     964052        576   35069112    0    0     7 456359 102256 20901   2 98   0  0  0
->> 547  3          0     820116        576   34893932    0    0    57 560507 114878 28115   3 96   0  0  0
->> 806  2          0     606992        576   34848180    0    0   339 309668 101230 21056   2 98   0  0  0
->> 708  1          0     529624        576   34708000    0    0   248 370886 101327 20062   2 97   0  0  0
->> 231  5          0     504772        576   34663880    0    0   305 334824 95045 20407   2 97   1  1  0
->> 158  6          0    1063088        576   33518536    0    0   531 847435 130696 47140   4 92   1  2  0
->> 193  0          0    1449156        576   33035572    0    0   363 371279 94470 18955   2 96   1  1  0
->> 266  6          0    1623512        576   32728164    0    0    77 241114 95730 15483   2 98   0  0  0
->> 243  8          0    1629504        576   32653080    0    0    81 471018 100223 20920   3 96   0  1  0
->> 70 11          0    1342140        576   33084020    0    0   100 925869 139876 56599   6 88   3  3  0
->> 211  7          0    1130316        576   33470432    0    0   290 1008984 150699 74320   6 83   6  5  0
->> 365  3          0     776736        576   34072772    0    0   182 747167 139436 67135   5 88   4  3  0
->> 29  1          0    1528412        576   34110640    0    0    50 612181 137403 77609   4 87   6  3  0
->> 266  5          0    1657688        576   34105696    0    0     3 258307 62879 38508   2 93   3  2  0
->> 1159  2          0    2002256        576   33775476    0    0    19 88554 42112 14230   1 98   0  0  0
->>
->
-> ok, so System CPU usage through the roof.
->
->>
->> Right around 14:00 I was able to get a "perf -a -g"; here's the
->> beginning of what "perf report --sort symbol --call-graph fractal,5"
->> had to say:
->>
->> #
->>      64.86%  [k] _raw_spin_lock_irqsave
->>              |
->>              |--97.94%-- isolate_freepages
->>              |          compaction_alloc
->>              |          unmap_and_move
->>              |          migrate_pages
->>              |          compact_zone
->>              |          |
->>              |          |--99.56%-- try_to_compact_pages
->>              |          |          __alloc_pages_direct_compact
->>              |          |          __alloc_pages_slowpath
->>              |          |          __alloc_pages_nodemask
->>              |          |          alloc_pages_vma
->>              |          |          do_huge_pmd_anonymous_page
->>              |          |          handle_mm_fault
->>              |          |          do_page_fault
->>              |          |          page_fault
->>              |          |          |
->>              |          |          |--53.53%-- skb_copy_datagram_iovec
->>              |          |          |          tcp_recvmsg
->>              |          |          |          inet_recvmsg
->>              |          |          |          sock_recvmsg
->>              |          |          |          sys_recvfrom
->>              |          |          |          system_call_fastpath
->>              |          |          |          __recv
->>              |          |          |          |
->>              |          |          |           --100.00%-- (nil)
->>              |          |          |
->>              |          |          |--27.80%-- __pthread_create_2_1
->>              |          |          |          (nil)
->>              |          |          |
->>              |          |           --18.67%-- memcpy
->>              |          |                     |
->>              |          |                     |--57.38%-- 0x50d000005
->>              |          |                     |
->>              |          |                     |--34.52%-- 0x3b300bf271940a35
->>              |          |                     |
->>              |          |                      --8.10%-- 0x1500000000000009
->>              |           --0.44%-- [...]
->>               --2.06%-- [...]
->>
->
-> This looks like lock contention to me on zone->lock which
-> isolate_freepages takes and releases frequently. You do not describe the
-> exact memory layout but it's likely that there are two very large zones
-> with 12 CPUs each. If they all were running compaction they would pound
-> zone->lock pretty heavily.
-
-Does this tell you what you need to know?
-If not, let me know what you'd like to see.
-
-# grep -H MemTotal /sys/devices/system/node/node*/meminfo
-/sys/devices/system/node/node0/meminfo:Node 0 MemTotal:       25156644 kB
-/sys/devices/system/node/node1/meminfo:Node 1 MemTotal:       25165824 kB
-
->
->> <SNIP>
->
-> The other call traces also look like they are pounding zone->lock
-> heavily.
->
-> Rik's patch has the potential to reduce contention by virtue of the fact
-> that less scanning is required. I'd be interested in hearing how much of
-> an impact that patch has so please test that first.
-
-Working on that now....
-
->
-> If that approach does not work I'll put together a patch that either
-> backs off compaction on zone->lock contention.
->
->> I seem to be able to recreate this issue at will, so please
->> let me know what I can do to help learn what is going on.
->>
->
-> Thanks very much for testing.
->
-
-No problem.  Thanks to you all for jumping on this so quickly.
-
-FWIW, perf rocks!  Thanks to all who've helped make it so great!
-
--- Jim
-
+Jan
 
