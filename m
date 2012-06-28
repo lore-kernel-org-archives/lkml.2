@@ -1,179 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566Ab2F1HQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 03:16:13 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48622 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab2F1HQL (ORCPT
+	id S932545Ab2F1HZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 03:25:19 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:55871 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab2F1HZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 03:16:11 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FEC042C.5070509@jp.fujitsu.com>
-Date: Thu, 28 Jun 2012 16:13:48 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 28 Jun 2012 03:25:17 -0400
+Date: Thu, 28 Jun 2012 16:25:12 +0900
+From: Norbert Preining <preining@logic.at>
+To: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>,
+        "Lin, Hsien KuoX" <hsien.kuox.lin@intel.com>
+Cc: Emmanuel Grumbach <egrumbach@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>
+Subject: Re: 3.4-rc2, ilwagn still most of the time completely unusable
+Message-ID: <20120628072512.GF31944@gamma.logic.tuwien.ac.at>
+References: <20120330011734.GH6277@gamma.logic.tuwien.ac.at> <20120411023747.GA10126@gamma.logic.tuwien.ac.at> <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com> <20120412000202.GA15286@gamma.logic.tuwien.ac.at> <4595B4D22AB93C4FABBA84AAD5AA37FD120BF8@ORSMSX103.amr.corp.intel.com> <20120413014047.GB25681@gamma.logic.tuwien.ac.at> <20120330011734.GH6277@gamma.logic.tuwien.ac.at> <20120411023747.GA10126@gamma.logic.tuwien.ac.at> <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com> <20120412000202.GA15286@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: akpm@linux-foundation.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Mel Gorman <mel@csn.ul.ie>, Aaditya Kumar <aaditya.kumar.30@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH 2/2 v2] memory-hotplug: fix kswapd looping forever problem
-References: <1340783514-8150-1-git-send-email-minchan@kernel.org> <1340783514-8150-3-git-send-email-minchan@kernel.org>
-In-Reply-To: <1340783514-8150-3-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <59083F8344AE164EB150C0518405C0680E0F285C@FMSMSX107.amr.corp.intel.com> <20120413014047.GB25681@gamma.logic.tuwien.ac.at> <20120412000202.GA15286@gamma.logic.tuwien.ac.at>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/27 16:51), Minchan Kim wrote:
-> When hotplug offlining happens on zone A, it starts to mark freed page
-> as MIGRATE_ISOLATE type in buddy for preventing further allocation.
-> (MIGRATE_ISOLATE is very irony type because it's apparently on buddy
-> but we can't allocate them).
-> When the memory shortage happens during hotplug offlining,
-> current task starts to reclaim, then wake up kswapd.
-> Kswapd checks watermark, then go sleep because current zone_watermark_ok_safe
-> doesn't consider MIGRATE_ISOLATE freed page count.
-> Current task continue to reclaim in direct reclaim path without kswapd's helping.
-> The problem is that zone->all_unreclaimable is set by only kswapd
-> so that current task would be looping forever like below.
-> 
-> __alloc_pages_slowpath
-> restart:
-> 	wake_all_kswapd
-> rebalance:
-> 	__alloc_pages_direct_reclaim
-> 		do_try_to_free_pages
-> 			if global_reclaim && !all_unreclaimable
-> 				return 1; /* It means we did did_some_progress */
-> 	skip __alloc_pages_may_oom
-> 	should_alloc_retry
-> 		goto rebalance;
-> 
-> If we apply KOSAKI's patch[1] which doesn't depends on kswapd
-> about setting zone->all_unreclaimable, we can solve this problem
-> by killing some task in direct reclaim path. But it doesn't wake up kswapd, still.
-> It could be a problem still if other subsystem needs GFP_ATOMIC request.
-> So kswapd should consider MIGRATE_ISOLATE when it calculate free pages
-> BEFORE going sleep.
-> 
-> This patch counts the number of MIGRATE_ISOLATE page block and
-> zone_watermark_ok_safe will consider it if the system has such blocks
-> (fortunately, it's very rare so no problem in POV overhead and kswapd is never
-> hotpath).
-> 
-> Copy/modify from Mel's quote
-> "
-> Ideal solution would be "allocating" the pageblock.
-> It would keep the free space accounting as it is but historically,
-> memory hotplug didn't allocate pages because it would be difficult to
-> detect if a pageblock was isolated or if part of some balloon.
-> Allocating just full pageblocks would work around this, However,
-> it would play very badly with CMA.
-> "
-> 
-> [1] http://lkml.org/lkml/2012/6/14/74
-> 
-> * from v1
->   - add changelog
->   - make functions simple
->   - remove atomic variable
->   - discard exact isolated free page accounting.
->   - rebased on next-20120626
-> 
-> Suggested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Aaditya Kumar <aaditya.kumar.30@gmail.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
-> 
-> Aaditya, coul you confirm this patch solve your problem and
-> make sure nr_pageblock_isolate is zero after hotplug end?
-> 
-> Thanks!
-> 
->   include/linux/mmzone.h |    8 ++++++++
->   mm/page_alloc.c        |   31 +++++++++++++++++++++++++++++++
->   mm/page_isolation.c    |   29 +++++++++++++++++++++++++++--
->   3 files changed, 66 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index dbc876e..6ee83b8 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -474,6 +474,14 @@ struct zone {
->   	 * rarely used fields:
->   	 */
->   	const char		*name;
-> +#ifdef CONFIG_MEMORY_ISOLATION
-> +	/*
-> +	 * the number of MIGRATE_ISOLATE *pageblock*.
-> +	 * We need this for free page counting. Look at zone_watermark_ok_safe.
-> +	 * It's protected by zone->lock
-> +	 */
-> +	int		nr_pageblock_isolate;
-> +#endif
->   } ____cacheline_internodealigned_in_smp;
->   
->   typedef enum {
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index c175fa9..b12c8ec 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -218,6 +218,11 @@ EXPORT_SYMBOL(nr_online_nodes);
->   
->   int page_group_by_mobility_disabled __read_mostly;
->   
-> +/*
-> + * NOTE:
-> + * Don't use set_pageblock_migratetype(page, MIGRATE_ISOLATE) directly.
-> + * Instead, use {un}set_pageblock_isolate.
-> + */
->   void set_pageblock_migratetype(struct page *page, int migratetype)
->   {
->   	if (unlikely(page_group_by_mobility_disabled))
-> @@ -1614,6 +1619,23 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
->   	return true;
->   }
->   
-> +#ifdef CONFIG_MEMORY_ISOLATION
-> +static inline unsigned long nr_zone_isolate_freepages(struct zone *zone)
-> +{
-> +	unsigned long nr_pages = 0;
-> +
-> +	if (unlikely(zone->nr_pageblock_isolate)) {
-> +		nr_pages = zone->nr_pageblock_isolate * pageblock_nr_pages;
-> +	}
-> +	return nr_pages;
-> +}
-> +#else
-> +static inline unsigned long nr_zone_isolate_freepages(struct zone *zone)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
->   bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
->   		      int classzone_idx, int alloc_flags)
->   {
-> @@ -1629,6 +1651,14 @@ bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
->   	if (z->percpu_drift_mark && free_pages < z->percpu_drift_mark)
->   		free_pages = zone_page_state_snapshot(z, NR_FREE_PAGES);
->   
-> +	/*
-> +	 * If the zone has MIGRATE_ISOLATE type free page,
-> +	 * we should consider it. nr_zone_isolate_freepages is never
-> +	 * accurate so kswapd might not sleep although she can.
-> +	 * But it's more desirable for memory hotplug rather than
-> +	 * forever sleep which cause livelock in direct reclaim path.
-> +	 */
-> +	free_pages -= nr_zone_isolate_freepages(z);
+Hi everyone,
 
-Here, free_pages could be < 0 ?
+I am coming back to this old thread, not because it has been solved, 
+but because today I got a funny new message while checking why 
+everything got stuck again:
+	[69588.972126] iwlwifi 0000:06:00.0: fail to flush all tx fifo queues
+and after doing
+	rfkill block wifi
+	sleep 20
+	rfkill unblock wifi
+I got a kernel warning:
+[76477.289251] WARNING: at net/mac80211/driver-ops.h:12 ieee80211_bss_info_change_notify+0x14e/0x1ca [mac80211]()
+[76477.289256] Hardware name: VGN-Z11VN_B
+[76477.289260] wlan0:  Failed check-sdata-in-driver check, flags: 0x0
+[76477.289350] Modules linked in: dm_mod btusb iptable_filter bnep rfcomm bluetooth snd_hrtimer vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) binfmt_misc isofs btrfs zlib_deflate libcrc32c vfat fat fuse loop uinput snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_page_alloc hso arc4 snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi iwlwifi mac80211 snd_seq_midi_event cfg80211 snd_seq lpc_ich snd_seq_device snd_timer mxm_wmi mfd_core snd firewire_ohci firewire_core sony_laptop joydev crc_itu_t tpm_infineon rfkill soundcore
+[76477.289361] Pid: 4278, comm: NetworkManager Tainted: P        W  O 3.5.0-rc4+ #78
+[76477.289365] Call Trace:
+[76477.289380]  [<ffffffff8102ba46>] warn_slowpath_common+0x83/0x9c
+[76477.289389]  [<ffffffff8102bb02>] warn_slowpath_fmt+0x46/0x48
+[76477.289402]  [<ffffffff813f21da>] ? neigh_ifdown+0xc5/0xd6
+[76477.289424]  [<ffffffffa00b252e>] ieee80211_bss_info_change_notify+0x14e/0x1ca [mac80211]
+[76477.289448]  [<ffffffffa00b267d>] ieee80211_ifa_changed+0xd3/0xe6 [mac80211]
+[76477.289458]  [<ffffffff8104b7e3>] notifier_call_chain+0x37/0x61
+[76477.289467]  [<ffffffff8104b919>] __blocking_notifier_call_chain+0x46/0x5f
+[76477.289475]  [<ffffffff8104b946>] blocking_notifier_call_chain+0x14/0x16
+[76477.289485]  [<ffffffff81432cc0>] __inet_del_ifa+0x176/0x22c
+[76477.289494]  [<ffffffff81432f96>] inet_rtm_deladdr+0xe7/0x128
+[76477.289504]  [<ffffffff813f61e0>] rtnetlink_rcv_msg+0x226/0x235
+[76477.289513]  [<ffffffff8140460c>] ? netlink_sendmsg+0x124/0x20e
+[76477.289520]  [<ffffffff813f5fba>] ? __rtnl_unlock+0x17/0x17
+[76477.289528]  [<ffffffff814048b8>] netlink_rcv_skb+0x43/0x91
+[76477.289536]  [<ffffffff813f415f>] rtnetlink_rcv+0x26/0x2d
+[76477.289543]  [<ffffffff81404466>] netlink_unicast+0xe0/0x162
+[76477.289551]  [<ffffffff814046d1>] netlink_sendmsg+0x1e9/0x20e
+[76477.289562]  [<ffffffff813d7360>] __sock_sendmsg_nosec+0x61/0x6c
+[76477.289570]  [<ffffffff813d774e>] sock_sendmsg+0xa1/0xb6
+[76477.289582]  [<ffffffff813d96fb>] ? move_addr_to_kernel+0x49/0x67
+[76477.289591]  [<ffffffff813e2605>] ? copy_from_user+0x9/0xb
+[76477.289599]  [<ffffffff813e29e2>] ? verify_iovec+0x52/0xa4
+[76477.289607]  [<ffffffff813d7a11>] __sys_sendmsg+0x206/0x293
+[76477.289617]  [<ffffffff8108d48b>] ? __rcu_read_unlock+0xc/0x55
+[76477.289627]  [<ffffffff810e69f5>] ? fput+0x16/0x1c7
+[76477.289635]  [<ffffffff810e6888>] ? fget_light+0x92/0x9e
+[76477.289643]  [<ffffffff813d77b3>] ? fput_light+0xd/0xf
+[76477.289651]  [<ffffffff8108d48b>] ? __rcu_read_unlock+0xc/0x55
+[76477.289659]  [<ffffffff810e6888>] ? fget_light+0x92/0x9e
+[76477.289668]  [<ffffffff813da1ce>] sys_sendmsg+0x42/0x60
+[76477.289678]  [<ffffffff81474b72>] system_call_fastpath+0x16/0x1b
 
-Thanks,
--Kame
 
+Maybe this tells you something.
+
+> > >	[ 9457.176828] iwlwifi 0000:06:00.0: ACTIVATE a non DRIVER active
+> > >station id 0 addr 00:24:c4:ab:bd:e0
+
+These messages now appear only now and then.
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+The fronting for the eighty-yard long marble-topped bar
+had been made by stitching together nearly twenty thousand
+Antarean Mosaic Lizard skins, despite the fact that the
+twenty thousand lizards concerned had needed them to keep
+their insides in.
+                 --- The Book decribing Milliways' politically incorrect
+                 --- decor.
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
