@@ -1,105 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab2F1LLf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 07:11:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6189 "EHLO mx1.redhat.com"
+	id S1754044Ab2F1LPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 07:15:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59834 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751617Ab2F1LLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 07:11:34 -0400
-Message-ID: <4FEC3BE3.8050802@redhat.com>
-Date: Thu, 28 Jun 2012 07:11:31 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753515Ab2F1LPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 07:15:43 -0400
+Date: Thu, 28 Jun 2012 13:15:41 +0200
+From: Jan Kara <jack@suse.cz>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Alasdair G. Kergon" <agk@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: Re: Crash when IO is being submitted and block size is changed
+Message-ID: <20120628111541.GB17515@quack.suse.cz>
+References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH] kvm, Add x86_hyper_kvm to complete detect_hypervisor_platform
- check
-References: <1340833338-15485-1-git-send-email-prarit@redhat.com> <20120628012419.GA8956@phenom.dumpdata.com>
-In-Reply-To: <20120628012419.GA8956@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 27-06-12 23:04:09, Mikulas Patocka wrote:
+> The kernel crashes when IO is being submitted to a block device and block 
+> size of that device is changed simultaneously.
+  Nasty ;-)
 
-
-On 06/27/2012 09:24 PM, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jun 27, 2012 at 05:42:18PM -0400, Prarit Bhargava wrote:
->> While debugging I noticed that unlike all the other hypervisor code in the
->> kernel, kvm does not have an entry for x86_hyper which is used in
->> detect_hypervisor_platform(), and results in a nice message about the
->> hypervisor being used.  This is only really a stub function and it makes
->> kvm more consistent with the other hypervisors (and it makes debugging
->> a little easier).
->>
->> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
->> Cc: Avi Kivity <avi@redhat.com>
->> Cc: Gleb Natapov <gleb@redhat.com>
->> Cc: Alex Williamson <alex.williamson@redhat.com>
->> ---
->>  arch/x86/include/asm/hypervisor.h |    1 +
->>  arch/x86/kernel/cpu/hypervisor.c  |    1 +
->>  arch/x86/kernel/kvm.c             |    6 ++++++
->>  3 files changed, 8 insertions(+)
->>
->> diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
->> index 7a15153..b518c75 100644
->> --- a/arch/x86/include/asm/hypervisor.h
->> +++ b/arch/x86/include/asm/hypervisor.h
->> @@ -49,6 +49,7 @@ extern const struct hypervisor_x86 *x86_hyper;
->>  extern const struct hypervisor_x86 x86_hyper_vmware;
->>  extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
->>  extern const struct hypervisor_x86 x86_hyper_xen_hvm;
->> +extern const struct hypervisor_x86 x86_hyper_kvm;
->>  
->>  static inline bool hypervisor_x2apic_available(void)
->>  {
->> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
->> index 755f64f..6d6dd7a 100644
->> --- a/arch/x86/kernel/cpu/hypervisor.c
->> +++ b/arch/x86/kernel/cpu/hypervisor.c
->> @@ -37,6 +37,7 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
->>  #endif
->>  	&x86_hyper_vmware,
->>  	&x86_hyper_ms_hyperv,
->> +	&x86_hyper_kvm,
->>  };
->>  
->>  const struct hypervisor_x86 *x86_hyper;
->> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
->> index e554e5a..0a38b68 100644
->> --- a/arch/x86/kernel/kvm.c
->> +++ b/arch/x86/kernel/kvm.c
->> @@ -39,6 +39,7 @@
->>  #include <asm/desc.h>
->>  #include <asm/tlbflush.h>
->>  #include <asm/idle.h>
->> +#include <asm/hypervisor.h>
->>  
->>  static int kvmapf = 1;
->>  
->> @@ -432,6 +433,11 @@ void __init kvm_guest_init(void)
->>  #endif
->>  }
->>  
->> +const struct hypervisor_x86 x86_hyper_kvm __refconst = {
->> +	.name			= "KVM",
->> +};
->> +EXPORT_SYMBOL(x86_hyper_kvm);
+> To reproduce the crash, apply this patch:
 > 
-> EXPORT_SYMBOL_GPL version. ?
+> --- linux-3.4.3-fast.orig/fs/block_dev.c 2012-06-27 20:24:07.000000000 +0200
+> +++ linux-3.4.3-fast/fs/block_dev.c 2012-06-27 20:28:34.000000000 +0200
+> @@ -28,6 +28,7 @@
+>  #include <linux/log2.h>
+>  #include <linux/cleancache.h>
+>  #include <asm/uaccess.h> 
+> +#include <linux/delay.h>
+>  #include "internal.h"
+>  struct bdev_inode {
+> @@ -203,6 +204,7 @@ blkdev_get_blocks(struct inode *inode, s
+>  
+>  	bh->b_bdev = I_BDEV(inode);
+>  	bh->b_blocknr = iblock;
+> +	msleep(1000);
+>  	bh->b_size = max_blocks << inode->i_blkbits;
+>  	if (max_blocks)
+>  		set_buffer_mapped(bh);
+> 
+> Use some device with 4k blocksize, for example a ramdisk.
+> Run "dd if=/dev/ram0 of=/dev/null bs=4k count=1 iflag=direct"
+> While it is sleeping in the msleep function, run "blockdev --setbsz 2048 
+> /dev/ram0" on the other console.
+> You get a BUG at fs/direct-io.c:1013 - BUG_ON(this_chunk_bytes == 0);
+> 
+> 
+> One may ask "why would anyone do this - submit I/O and change block size 
+> simultaneously?" - the problem is that udev and lvm can scan and read all 
+> block devices anytime - so anytime you change block device size, there may 
+> be some i/o to that device in flight and the crash may happen. That BUG 
+> actually happened in production environment because of lvm scanning block 
+> devices and some other software changing block size at the same time.
+> 
+> 
+> I would like to know, what is your opinion on fixing this crash? There are 
+> several possibilities:
+> 
+> * we could potentially read i_blkbits once, store it in the direct i/o 
+> structure and never read it again - direct i/o could be maybe modified for 
+> this (it reads i_blkbits only at a few places). But what about non-direct 
+> i/o? Non-direct i/o is reading i_blkbits much more often and the code was 
+> obviously written without consideration that it may change - for block 
+> devices, i_blkbits is essentially a random value that can change anytime 
+> you read it and the code of block_read_full_page, __block_write_begin, 
+> __block_write_full_page and others doesn't seem to take it into account.
+> 
+> * put some rw-lock arond all I/Os on block device. The rw-lock would be 
+> taken for read on all I/O paths and it would be taken for write when 
+> changing the block device size. The downside would be a possible 
+> performance hit of the rw-lock. The rw-lock could be made per-cpu to avoid 
+> cache line bouncing (take the rw-lock belonging to the current cpu for 
+> read; for write take all cpus' locks).
+> 
+> * allow changing block size only if the device is open only once and the 
+> process is singlethreaded? (so there couldn't be any outstanding I/Os). I 
+> don't know if this could be tested reliably... Another question: what to 
+> do if the device is open multiple times?
+> 
+> Do you have any other ideas what to do with it?
+  Yeah, it's nasty and neither solution looks particularly appealing. One
+idea that came to my mind is: I'm trying to solve some races between direct
+IO, buffered IO, hole punching etc. by a new mapping interval lock. I'm not
+sure if it will go anywhere yet but if it does, we can fix the above race
+by taking the mapping lock for the whole block device around setting block
+size thus effectivelly disallowing any IO to it.
 
-Hey Konrad, thanks for the review.
-
-The other hypervisor_x86 structs are only EXPORT_SYMBOL, so I maintained that
-convention here.
-
-If I'm mistaken in that assumption, please let me know.
-
-Thanks again,
-
-P.
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
