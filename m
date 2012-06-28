@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab2F1IjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 04:39:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63734 "EHLO mx1.redhat.com"
+	id S932596Ab2F1IlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 04:41:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10922 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755312Ab2F1Ii7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 04:38:59 -0400
-Date: Thu, 28 Jun 2012 11:38:57 +0300
+	id S1756428Ab2F1IlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 04:41:02 -0400
+Date: Thu, 28 Jun 2012 11:41:05 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: Gleb Natapov <gleb@redhat.com>
 Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
         kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
-Message-ID: <20120628083857.GD12447@redhat.com>
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120628084105.GE12447@redhat.com>
 References: <20120627044758.23698.249.stgit@bling.home>
- <20120627050858.23698.44118.stgit@bling.home>
- <20120627162430.3477d0f6@BR9GNB5Z>
+ <20120627050937.23698.68442.stgit@bling.home>
+ <20120627152624.GC21393@redhat.com>
+ <1340834658.1207.261.camel@bling.home>
+ <20120627223128.GB27885@redhat.com>
+ <20120628063431.GI6533@redhat.com>
+ <20120628083435.GC12447@redhat.com>
+ <20120628083541.GN6533@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120627162430.3477d0f6@BR9GNB5Z>
+In-Reply-To: <20120628083541.GN6533@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 04:24:30PM +0200, Cornelia Huck wrote:
-> On Tue, 26 Jun 2012 23:09:04 -0600
-> Alex Williamson <alex.williamson@redhat.com> wrote:
-> 
-> > Prune this down to just the struct kvm_irqfd so we can avoid
-> > changing function definition for every flag or field we use.
+On Thu, Jun 28, 2012 at 11:35:41AM +0300, Gleb Natapov wrote:
+> On Thu, Jun 28, 2012 at 11:34:35AM +0300, Michael S. Tsirkin wrote:
+> > On Thu, Jun 28, 2012 at 09:34:31AM +0300, Gleb Natapov wrote:
+> > > On Thu, Jun 28, 2012 at 01:31:29AM +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, Jun 27, 2012 at 04:04:18PM -0600, Alex Williamson wrote:
+> > > > > On Wed, 2012-06-27 at 18:26 +0300, Michael S. Tsirkin wrote:
+> > > > > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > > > > > > @@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
+> > > > > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > > >  }
+> > > > > > >  
+> > > > > > > +static void
+> > > > > > > +irqfd_inject_level(struct work_struct *work)
+> > > > > > > +{
+> > > > > > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > > > > > +
+> > > > > > > +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > > > > > > +}
+> > > > > > > +
+> > > > > > >  /*
+> > > > > > >   * Race-free decouple logic (ordering is critical)
+> > > > > > >   */
+> > > > > > 
+> > > > > > 
+> > > > > > Why is it safe to ignore return value here?
+> > > > > > needs a comment.
+> > > > > 
+> > > > > Well, it seems like you and Gleb came to the conclusion that it's safe,
+> > > > > but I can really follow from the list thread.  Can you explain and I'll
+> > > > > add a comment?  Thanks,
+> > > > > 
+> > > > > Alex
+> > > > 
+> > > > We merely talked about edge interrupts.
+> > > > 
+> > > In fact it would have been nice to return -EBUSY when write() to level
+> > > irqfd is coalesced.
 > > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> 
-> I'm currently trying to find a way to make irqfd workable for s390
-> which will likely include using a new field in kvm_irqfd, so I'd like
-> to have this change (and I also think it makes the code nicer to read).
-> So:
-> 
-> Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> > Possibly nice but not really practical.
+> > 
+> What do you mean by that? Impossible to implement or not useful?
 
-Unfortunately it looks like we are not sanitizing kvm_irqfd
-at all so we won't be able to use the padding :(
-We'll need a new ioctl instead.
+Impossible to implement and also does not match normal eventfd
+semantics.
 
--- 
-MST
+> --
+> 			Gleb.
