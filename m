@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab2F1CDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 22:03:11 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54383 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932261Ab2F1CDJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 22:03:09 -0400
-X-AuditID: 9c930179-b7cceae000004195-8b-4febbb5b656e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Avi Kivity <avi@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, kvm@vger.kernel.org,
-        dsahern@gmail.com
-Subject: Re: [PATCH 2/4] KVM: Use __print_hex() for kvm_emulate_insn tracepoint
-References: <1340757701-10711-1-git-send-email-namhyung@kernel.org>
-	<1340757701-10711-2-git-send-email-namhyung@kernel.org>
-	<1340801375.16702.10.camel@gandalf.stny.rr.com>
-	<4FEB0288.5080106@redhat.com>
-	<1340803224.16702.12.camel@gandalf.stny.rr.com>
-	<87bok4z157.fsf@sejong.aot.lge.com>
-	<1340848364.16702.56.camel@gandalf.stny.rr.com>
-Date: Thu, 28 Jun 2012 10:59:17 +0900
-In-Reply-To: <1340848364.16702.56.camel@gandalf.stny.rr.com> (Steven Rostedt's
-	message of "Wed, 27 Jun 2012 21:52:44 -0400")
-Message-ID: <87y5n8xklm.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	id S1758112Ab2F1CFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 22:05:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13078 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757672Ab2F1CFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 22:05:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="170896216"
+Message-ID: <4FEBBB5C.5000505@intel.com>
+Date: Thu, 28 Jun 2012 10:03:08 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
+References: <1340640878-27536-1-git-send-email-sjenning@linux.vnet.ibm.com> <1340640878-27536-4-git-send-email-sjenning@linux.vnet.ibm.com> <4FEA9FDD.6030102@kernel.org> <4FEAA4AA.3000406@intel.com> <4FEAA7A1.9020307@kernel.org> <90bcc2c8-bcac-4620-b3c0-6b65f8d9174d@default> <4FEB5204.3090707@linux.vnet.ibm.com>
+In-Reply-To: <4FEB5204.3090707@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jun 2012 21:52:44 -0400, Steven Rostedt wrote:
-> On Thu, 2012-06-28 at 10:16 +0900, Namhyung Kim wrote:
->> [CC'ing David]
->> 
->> Hi, Steve
->> 
->> On Wed, 27 Jun 2012 09:20:24 -0400, Steven Rostedt wrote:
->> > On Wed, 2012-06-27 at 15:54 +0300, Avi Kivity wrote:
->> >
->> >> Acked-by: Avi Kivity <avi@redhat.com>
->> >
->> > Thanks Avi!
->> >
->> 
->> Can you give me your ack's too (for this and other ones in the series)?
->> And if you ok, I can route this and future changes (from anybody) on
->> libtraceevent through my tree.
->> 
->
-> Actually, as this patch touches x86 and ftrace, and does not truly
-> affect the tools directory, I've already added it into my queue for 3.6.
->
+On 06/28/2012 02:33 AM, Seth Jennings wrote:
 
-Ok, thanks. But how about other ones? Did you add all of 4 into you
-queue?
+> On 06/27/2012 10:12 AM, Dan Magenheimer wrote:
+>>> From: Minchan Kim [mailto:minchan@kernel.org]
+>>> Subject: Re: [PATCH 3/3] x86: add local_tlb_flush_kernel_range()
+>>>
+>>> On 06/27/2012 03:14 PM, Alex Shi wrote:
+>>>>
+>>>> On 06/27/2012 01:53 PM, Minchan Kim wrote:
+>>>> Different CPU type has different balance point on the invlpg replacing
+>>>> flush all. and some CPU never get benefit from invlpg, So, it's better
+>>>> to use different value for different CPU, not a fixed
+>>>> INVLPG_BREAK_EVEN_PAGES.
+>>>
+>>> I think it could be another patch as further step and someone who are
+>>> very familiar with architecture could do better than.
+>>> So I hope it could be merged if it doesn't have real big problem.
+>>>
+>>> Thanks for the comment, Alex.
+>>
+>> Just my opinion, but I have to agree with Alex.  Hardcoding
+>> behavior that is VERY processor-specific is a bad idea.  TLBs should
+>> only be messed with when absolutely necessary, not for the
+>> convenience of defending an abstraction that is nice-to-have
+>> but, in current OS kernel code, unnecessary.
+> 
+> I agree that it's not optimal.  The selection based on CPUID
+> is part of Alex's patchset, and I'll be glad to use that
+> code when it gets integrated.
+> 
+> But the real discussion is are we going to:
+> 1) wait until Alex's patches to be integrated, degrading
+> zsmalloc in the meantime or
 
-Thanks,
-Namhyung
+
+Peter Anvin is merging my TLB patch set into tip tree, x86/mm branch.
+
+> 2) put in some simple temporary logic that works well (not
+> best) for most cases
+
+
