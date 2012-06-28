@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab2F1UTz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 16:19:55 -0400
-Received: from sentry-two.sandia.gov ([132.175.109.14]:40929 "EHLO
-	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab2F1UTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 16:19:54 -0400
-X-WSS-ID: 0M6CGH5-0B-0H0-02
-X-M-MSG: 
-X-Server-Uuid: 6BFC7783-7E22-49B4-B610-66D6BE496C0E
-Message-ID: <4FECBC50.2060705@sandia.gov>
-Date: Thu, 28 Jun 2012 14:19:28 -0600
-From: "Jim Schutt" <jaschut@sandia.gov>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120425
- Thunderbird/10.0.4
-MIME-Version: 1.0
-To: "Rik van Riel" <riel@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "Mel Gorman" <mel@csn.ul.ie>,
-        "Andrew Morton" <akpm@linux-foundation.org>, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off
- where it left
-References: <20120628135520.0c48b066@annuminas.surriel.com>
-In-Reply-To: <20120628135520.0c48b066@annuminas.surriel.com>
-X-TMWD-Spam-Summary: TS=20120628201929; ID=1; SEV=2.3.1;
- DFV=B2012062820; IFV=NA; AIF=B2012062820; RPD=5.03.0010; ENG=NA;
- RPDID=7374723D303030312E30413031303230342E34464543424335312E303032463A534346535441543838363133332C73733D312C6667733D30;
- CAT=NONE; CON=NONE; SIG=AAAAAAAAAAAAAAAAAAAAAAAAfQ==
-X-MMS-Spam-Filter-ID: B2012062820_5.03.0010
-X-WSS-ID: 63F263DA0QW5466003-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
+	id S1754246Ab2F1UZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 16:25:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61308 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751012Ab2F1UZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 16:25:28 -0400
+Subject: Re: [PATCH 3/9] arm/PCI: move final fixup quirks from __init to
+ __devinit
+From: Myron Stowe <mstowe@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
+        linux@arm.linux.org.uk, ralf@linux-mips.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org
+In-Reply-To: <CAErSpo5yNxjjBVaTXjAKCY4SfRWj7uXK2cS3BtkugmoF4fYn6g@mail.gmail.com>
+References: <20120621202415.16865.6226.stgit@amt.stowe>
+	 <20120621202435.16865.1340.stgit@amt.stowe>
+	 <CAErSpo5yNxjjBVaTXjAKCY4SfRWj7uXK2cS3BtkugmoF4fYn6g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Jun 2012 14:25:20 -0600
+Message-ID: <1340915120.2411.27.camel@zim.stowe>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RSA-Inspected: yes
-X-RSA-Classifications: public
-X-RSA-Action: allow
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 11:55 AM, Rik van Riel wrote:
+On Tue, 2012-06-26 at 16:33 -0600, Bjorn Helgaas wrote:
+> On Thu, Jun 21, 2012 at 2:24 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
+> > The PCI subsystem's final fixups are executed once during boot, after the
+> > pci-device is found.  As long as the system does not support hot-plug,
+> > specifying __init is fine.
+> >
+> > With hot-plug, either physically based hot-plug events or pseudo hot-plug
+> > events such as "echo 1 > /sys/bus/pci/rescan", it is possible to remove a
+> > PCI bus during run time and have it rediscovered which will require the
+> > call of the fixups again in order for the device to function properly.
+> >
+> > This patch prepares specific quirk(s) for use with hot-plug events.
+> >
+> > Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> > ---
+> >
+> >  arch/arm/mach-iop32x/n2100.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-iop32x/n2100.c b/arch/arm/mach-iop32x/n2100.c
+> > index 5a7ae91..04c4110 100644
+> > --- a/arch/arm/mach-iop32x/n2100.c
+> > +++ b/arch/arm/mach-iop32x/n2100.c
+> > @@ -126,7 +126,7 @@ static struct hw_pci n2100_pci __initdata = {
+> >  * the ->broken_parity_status flag for both ports so that the r8169
+> >  * driver knows it should ignore error interrupts.
+> >  */
+> > -static void n2100_fixup_r8169(struct pci_dev *dev)
+> > +static void __devinit n2100_fixup_r8169(struct pci_dev *dev)
+> 
+> These actually move functions from normal text to __devinit, not from
+> __init to __devinit.
 
-> ---
-> v2: implement Mel's suggestions, handling wrap-around etc
->
+Yes (as I hang my head sheepishly).  What got me started down this path
+was seeing the recent series by Sabastian Andrzej
+( http://marc.info/?l=linux-pci&m=133875179103880&w=2 ).
+> 
+> That should be safe for most quirks (although enable, suspend, resume,
+> and resume_early quirks can be called after we free initmem, even if
+> we have CONFIG_HOTPLUG=n), but given the discussion about whether we
+> should even bother with __devinit any more, I think I'll hold off on
+> these for now.  If we were to get rid of __devinit, these would all
+> have to revert to being normal text.
 
-So far I've run a total of ~28 TB of data over seventy minutes
-or so through 12 machines running this version of the patch;
-still no hint of trouble, still great performance.
+Agreed, and I've only recently (after posting this series) became aware
+of James Bottomley's thoughts about __devinit so lets skip these changes
+within the series.  I don't want to start a lot of unnecessary churn if
+we end up just dropping __devinit altogether.
 
-Tested-by: Jim Schutt <jaschut@sandia.gov>
+It's the last patch in the series that is of the most interest - trying
+to solve PCI's "final" quirks with respect to hot-plug events and the
+asymmetry I ended up discovering while working that issue.  Wish we
+would have received some feedback from others about that.
 
-Thanks!
+Thanks,
+ Myron
 
--- Jim
+Thanks,
+ Myron
+> 
+> >  {
+> >        if (dev->bus->number == 0 &&
+> >            (dev->devfn == PCI_DEVFN(1, 0) ||
+> >
+
 
