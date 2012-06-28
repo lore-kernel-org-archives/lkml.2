@@ -1,47 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab2F1BHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 21:07:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37711 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756901Ab2F1BHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 21:07:01 -0400
-Date: Wed, 27 Jun 2012 18:06:59 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Minchan Kim <minchan@kernel.org>
-cc: Rik van Riel <riel@redhat.com>, Jim Schutt <jaschut@sandia.gov>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
-Subject: Re: excessive CPU utilization by isolate_freepages?
-In-Reply-To: <4FEBAC42.3030800@kernel.org>
-Message-ID: <alpine.DEB.2.00.1206271803280.10830@chino.kir.corp.google.com>
-References: <4FEB8237.6030402@sandia.gov> <4FEB9E73.5040709@kernel.org> <4FEBA520.4030205@redhat.com> <alpine.DEB.2.00.1206271745170.9552@chino.kir.corp.google.com> <4FEBAC42.3030800@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932426Ab2F1BHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 21:07:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21821 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932129Ab2F1BFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 21:05:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="159020300"
+From: Alex Shi <alex.shi@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        rostedt@goodmis.org, fweisbec@gmail.com
+Cc: jeremy@goop.org, alex.shi@intel.com, luto@mit.edu, yinghai@kernel.org,
+        riel@redhat.com, avi@redhat.com, len.brown@intel.com, tj@kernel.org,
+        akpm@linux-foundation.org, cl@gentwo.org, borislav.petkov@amd.com,
+        ak@linux.intel.com, jbeulich@suse.com, eric.dumazet@gmail.com,
+        akinobu.mita@gmail.com, vapier@gentoo.org, cpw@sgi.com,
+        steiner@sgi.com, viro@zeniv.linux.org.uk,
+        kamezawa.hiroyu@jp.fujitsu.com, rientjes@google.com,
+        aarcange@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v10 3/9] x86/tlb: fall back to flush all when meet a THP large page
+Date: Thu, 28 Jun 2012 09:02:18 +0800
+Message-Id: <1340845344-27557-4-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1340845344-27557-1-git-send-email-alex.shi@intel.com>
+References: <1340845344-27557-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012, Minchan Kim wrote:
+We don't need to flush large pages by PAGE_SIZE step, that just waste
+time. and actually, large page don't need 'invlpg' optimizing according
+to our micro benchmark. So, just flush whole TLB is enough for them.
 
-> >>> > > https://lkml.org/lkml/2012/6/21/30
-> >> > 
-> > Not sure if Jim is using memcg; if not, then this won't be helpful.
-> > 
-> 
-> 
-> It doesn't related to memcg.
-> if compaction_alloc can't find suitable migration target, it returns NULL.
-> Then, migrate_pages should be exit.
-> 
+The following result is tested on a 2CPU * 4cores * 2HT NHM EP machine,
+with THP 'always' setting.
 
-If isolate_freepages() is going to fail, then this zone should have been 
-skipped when checking for compaction_suitable().  In Jim's perf output, 
-compaction_suitable() returns COMPACT_CONTINUE for a transparent hugepage.  
-Why is zone_watermark_ok(zone, 0 low_wmark + 1024, 0, 0) succeeding if 
-isolate_freepages() is going to fail?
+Multi-thread testing, '-t' paramter is thread number:
+                       without this patch 	with this patch
+./mprotect -t 1         14ns                       13ns
+./mprotect -t 2         13ns                       13ns
+./mprotect -t 4         12ns                       11ns
+./mprotect -t 8         14ns                       10ns
+./mprotect -t 16        28ns                       28ns
+./mprotect -t 32        54ns                       52ns
+./mprotect -t 128       200ns                      200ns
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ arch/x86/mm/tlb.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 3b91c98..184a02a 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -318,12 +318,42 @@ void flush_tlb_mm(struct mm_struct *mm)
+ 
+ #define FLUSHALL_BAR	16
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++static inline unsigned long has_large_page(struct mm_struct *mm,
++				 unsigned long start, unsigned long end)
++{
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++	unsigned long addr = ALIGN(start, HPAGE_SIZE);
++	for (; addr < end; addr += HPAGE_SIZE) {
++		pgd = pgd_offset(mm, addr);
++		if (likely(!pgd_none(*pgd))) {
++			pud = pud_offset(pgd, addr);
++			if (likely(!pud_none(*pud))) {
++				pmd = pmd_offset(pud, addr);
++				if (likely(!pmd_none(*pmd)))
++					if (pmd_large(*pmd))
++						return addr;
++			}
++		}
++	}
++	return 0;
++}
++#else
++static inline unsigned long has_large_page(struct mm_struct *mm,
++				 unsigned long start, unsigned long end)
++{
++	return 0;
++}
++#endif
+ void flush_tlb_range(struct vm_area_struct *vma,
+ 				   unsigned long start, unsigned long end)
+ {
+ 	struct mm_struct *mm;
+ 
+ 	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
++flush_all:
+ 		flush_tlb_mm(vma->vm_mm);
+ 		return;
+ 	}
+@@ -346,6 +376,10 @@ void flush_tlb_range(struct vm_area_struct *vma,
+ 			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
+ 				local_flush_tlb();
+ 			else {
++				if (has_large_page(mm, start, end)) {
++					preempt_enable();
++					goto flush_all;
++				}
+ 				for (addr = start; addr < end;
+ 						addr += PAGE_SIZE)
+ 					__flush_tlb_single(addr);
+-- 
+1.7.5.4
+
