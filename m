@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab2F1C7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 22:59:46 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:55192 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758121Ab2F1C4Z (ORCPT
+	id S932482Ab2F1C7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 22:59:44 -0400
+Received: from mail-gg0-f202.google.com ([209.85.161.202]:56479 "EHLO
+	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758122Ab2F1C4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jun 2012 22:56:25 -0400
-Subject: [PATCH 07/16] sched: aggregate total task_group load
+Subject: [PATCH 13/16] sched: update_cfs_shares at period edge
 To: linux-kernel@vger.kernel.org
 From: Paul Turner <pjt@google.com>
 Cc: Venki Pallipadi <venki@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
@@ -20,8 +20,8 @@ Cc: Venki Pallipadi <venki@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Morten Rasmussen <Morten.Rasmussen@arm.com>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Wed, 27 Jun 2012 19:24:14 -0700
-Message-ID: <20120628022414.30496.32293.stgit@kitami.mtv.corp.google.com>
+Date: Wed, 27 Jun 2012 19:24:15 -0700
+Message-ID: <20120628022415.30496.13993.stgit@kitami.mtv.corp.google.com>
 In-Reply-To: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
 References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -32,94 +32,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maintain a global running sum of the average load seen on each cfs_rq belonging
-to each task group so that it may be used in calculating an appropriate
-shares:weight distribution.
+Now that our measurement intervals are small (~1ms) we can amortize the posting
+of update_shares() to be about each period overflow.  This is a large cost
+saving for frequently switching tasks.
 
 Signed-off-by: Paul Turner <pjt@google.com>
 Signed-off-by: Ben Segall <bsegall@google.com>
 ---
- kernel/sched/debug.c |    4 ++++
- kernel/sched/fair.c  |   22 ++++++++++++++++++++++
- kernel/sched/sched.h |    4 ++++
- 3 files changed, 30 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |   18 ++++++++++--------
+ 1 files changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 2aa60cf..9268fb7 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -233,6 +233,10 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 			cfs_rq->runnable_load_avg);
- 	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
- 			cfs_rq->blocked_load_avg);
-+	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
-+			atomic64_read(&cfs_rq->tg->load_avg));
-+	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
-+			cfs_rq->tg_load_contrib);
- #endif
- 
- 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ea3d4f5..fbb9686 100644
+index dd1ef8a..f67842f 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1101,6 +1101,26 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
- 	return decays;
- }
- 
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
-+						 int force_update)
-+{
-+	struct task_group *tg = cfs_rq->tg;
-+	s64 tg_contrib;
-+
-+	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
-+	tg_contrib -= cfs_rq->tg_load_contrib;
-+
-+	if (force_update || abs64(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
-+		atomic64_add(tg_contrib, &tg->load_avg);
-+		cfs_rq->tg_load_contrib += tg_contrib;
-+	}
-+}
-+#else
-+static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
-+						 int force_update) {}
-+#endif
-+
- /* Compute the current contribution to load_avg by se, return any delta */
- static long __update_entity_load_avg_contrib(struct sched_entity *se)
- {
-@@ -1171,6 +1191,8 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- 		atomic64_add(decays, &cfs_rq->decay_counter);
- 		cfs_rq->last_decay = now;
+@@ -1169,6 +1169,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
  	}
-+
-+	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
+ 
+ 	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
++	update_cfs_shares(cfs_rq);
  }
  
  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index ca1003d..4d3b3ad 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -112,6 +112,7 @@ struct task_group {
- 	unsigned long shares;
+@@ -1379,9 +1380,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
+-	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
+ 	account_entity_enqueue(cfs_rq, se);
+-	update_cfs_shares(cfs_rq);
++	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
  
- 	atomic_t load_weight;
-+	atomic64_t load_avg;
- #endif
+ 	if (flags & ENQUEUE_WAKEUP) {
+ 		place_entity(cfs_rq, se, 0);
+@@ -1454,7 +1454,6 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
+-	dequeue_entity_load_avg(cfs_rq, se, flags & DEQUEUE_SLEEP);
  
- #ifdef CONFIG_RT_GROUP_SCHED
-@@ -232,6 +233,9 @@ struct cfs_rq {
- 	u64 runnable_load_avg, blocked_load_avg;
- 	atomic64_t decay_counter, removed_load;
- 	u64 last_decay;
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+	u64 tg_load_contrib;
-+#endif
- #endif
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
+ 	update_stats_dequeue(cfs_rq, se);
+ 	if (flags & DEQUEUE_SLEEP) {
+@@ -1474,8 +1473,8 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 
+ 	if (se != cfs_rq->curr)
+ 		__dequeue_entity(cfs_rq, se);
+-	se->on_rq = 0;
+ 	account_entity_dequeue(cfs_rq, se);
++	dequeue_entity_load_avg(cfs_rq, se, flags & DEQUEUE_SLEEP);
+ 
+ 	/*
+ 	 * Normalize the entity after updating the min_vruntime because the
+@@ -1489,7 +1488,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 	return_cfs_rq_runtime(cfs_rq);
+ 
+ 	update_min_vruntime(cfs_rq);
+-	update_cfs_shares(cfs_rq);
++	se->on_rq = 0;
+ }
+ 
+ /*
+@@ -2501,8 +2500,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 		if (cfs_rq_throttled(cfs_rq))
+ 			break;
+ 
+-		update_cfs_shares(cfs_rq);
+ 		update_entity_load_avg(se, 1);
++		update_cfs_rq_blocked_load(cfs_rq, 0);
+ 	}
+ 
+ 	if (!se) {
+@@ -2562,8 +2561,8 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 		if (cfs_rq_throttled(cfs_rq))
+ 			break;
+ 
+-		update_cfs_shares(cfs_rq);
+ 		update_entity_load_avg(se, 1);
++		update_cfs_rq_blocked_load(cfs_rq, 0);
+ 	}
+ 
+ 	if (!se) {
+@@ -5775,8 +5774,11 @@ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
+ 		se = tg->se[i];
+ 		/* Propagate contribution to hierarchy */
+ 		raw_spin_lock_irqsave(&rq->lock, flags);
+-		for_each_sched_entity(se)
++		for_each_sched_entity(se) {
+ 			update_cfs_shares(group_cfs_rq(se));
++			/* update contribution to parent */
++			update_entity_load_avg(se, 1);
++		}
+ 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 	}
+ 
 
 
