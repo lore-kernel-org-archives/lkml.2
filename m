@@ -1,42 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab2F1Jb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 05:31:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55111 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753165Ab2F1Jb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 05:31:28 -0400
-Message-ID: <4FEC246B.7070800@suse.cz>
-Date: Thu, 28 Jun 2012 11:31:23 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S932756Ab2F1Jb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 05:31:57 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:42206 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932562Ab2F1Jb4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 05:31:56 -0400
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kbuild@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net, Chris Zankel <chris@zankel.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Remove useless wrappers of asm-generic/rmap.h
-References: <1340306497.1773.61.camel@x61.thuisdomein>
-In-Reply-To: <1340306497.1773.61.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Thu, 28 Jun 2012 15:01:53 +0530
+Message-ID: <CADysL2b9bTqAZ6f48nGThosYn5mTGiSNFgKLyLROVk4XeDZDCg@mail.gmail.com>
+Subject: [PATCH v3 0/2] OMAP:IOMMU:flush L1 and L2 caches
+From: "Gupta, Ramesh" <grgupta@ti.com>
+To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, tony@atomide.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.6.2012 21:21, Paul Bolle wrote:
-> xtensa has a header (in its include/asm directory) that is a thin
-> wrapper around asm-generic/rmap.h. This wrapper is useless, since that
-> header doesn't exist. It is also unused (no file includes asm/rmap.h).
-> 
-> openrisc generates a similar header at build time (using a generic-y
-> entry in include/asm/Kbuild). This generated header is useless and
-> unused too.
-> 
-> Remove this header and this generic-y entry.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>From a5dc6e2ebee40b4f6cf51c1ec3c67476ffb8efc3 Mon Sep 17 00:00:00 2001
+From: Ramesh Gupta G <grgupta@ti.com>
+Date: Thu, 28 Jun 2012 11:53:54 +0530
+Subject: [PATCH v3 0/2] OMAP:IOMMU:flush L1 and L2 caches
 
-Applied to kbuild.git#trivial.
+This patch series is the next version to
+- add a new cache maintenance api to support non-coherent iommu drivers.
+- flush both L1 and L2 caches from OMAP iommu whenever the page table
+  memory is updated.
 
-Michal
+Changes since the previous patch set
+- Renamed the new api to reflect the purpose.
+- Fixed the kernel compilation issues by adding the
+  new api support for all the ARM versions.
+- Validated the changes on the Pandaboard.
+- Compile tested the kernel for all other ARM configurations.
+
+The implementation of the new api is based on
+the approach[1] discussed.
+
+[1]http://marc.info/?l=linux-kernel&m=131316512713815&w=2
+
+Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
+
+Ramesh Gupta G (2):
+  ARM: new cache maintenance api for iommu
+  OMAP:IOMMU:flush L1 and L2 caches
+
+ arch/arm/include/asm/cacheflush.h |   26 ++++++++++++++++++++++++++
+ arch/arm/include/asm/glue-cache.h |    1 +
+ arch/arm/mm/cache-fa.S            |   15 +++++++++++++++
+ arch/arm/mm/cache-v3.S            |   14 +++++++++++++-
+ arch/arm/mm/cache-v4.S            |   15 +++++++++++++++
+ arch/arm/mm/cache-v4wb.S          |   21 +++++++++++++++++++++
+ arch/arm/mm/cache-v4wt.S          |   17 +++++++++++++++++
+ arch/arm/mm/cache-v6.S            |   20 ++++++++++++++++++++
+ arch/arm/mm/cache-v7.S            |   21 +++++++++++++++++++++
+ arch/arm/mm/proc-arm1020.S        |   22 ++++++++++++++++++++++
+ arch/arm/mm/proc-arm1020e.S       |   20 ++++++++++++++++++++
+ arch/arm/mm/proc-arm1022.S        |   20 ++++++++++++++++++++
+ arch/arm/mm/proc-arm1026.S        |   20 ++++++++++++++++++++
+ arch/arm/mm/proc-arm920.S         |   17 +++++++++++++++++
+ arch/arm/mm/proc-arm922.S         |   17 +++++++++++++++++
+ arch/arm/mm/proc-arm925.S         |   22 ++++++++++++++++++++++
+ arch/arm/mm/proc-arm926.S         |   22 ++++++++++++++++++++++
+ arch/arm/mm/proc-arm940.S         |   26 ++++++++++++++++++++++++++
+ arch/arm/mm/proc-arm946.S         |   24 ++++++++++++++++++++++++
+ arch/arm/mm/proc-feroceon.S       |   30 ++++++++++++++++++++++++++++++
+ arch/arm/mm/proc-macros.S         |    1 +
+ arch/arm/mm/proc-mohawk.S         |   18 ++++++++++++++++++
+ arch/arm/mm/proc-xsc3.S           |   17 +++++++++++++++++
+ arch/arm/mm/proc-xscale.S         |   19 +++++++++++++++++++
+ drivers/iommu/omap-iommu.c        |   26 +++++++++-----------------
+ 25 files changed, 453 insertions(+), 18 deletions(-)
+
+
+-- 
+regards
+Ramesh Gupta G
