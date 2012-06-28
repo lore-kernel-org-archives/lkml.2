@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab2F1BSn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 21:18:43 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60639 "EHLO
+	id S1754543Ab2F1BUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 21:20:33 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64433 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab2F1BSm (ORCPT
+	with ESMTP id S1750806Ab2F1BUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 21:18:42 -0400
-X-AuditID: 9c930179-b7cceae000004195-bd-4febb0efb96c
-Message-ID: <4FEBB0FA.2070203@kernel.org>
-Date: Thu, 28 Jun 2012 10:18:50 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 27 Jun 2012 21:20:32 -0400
+X-AuditID: 9c930179-b7cceae000004195-c5-4febb15bbe1b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Avi Kivity <avi@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, kvm@vger.kernel.org,
+        dsahern@gmail.com
+Subject: Re: [PATCH 2/4] KVM: Use __print_hex() for kvm_emulate_insn tracepoint
+References: <1340757701-10711-1-git-send-email-namhyung@kernel.org>
+	<1340757701-10711-2-git-send-email-namhyung@kernel.org>
+	<1340801375.16702.10.camel@gandalf.stny.rr.com>
+	<4FEB0288.5080106@redhat.com>
+	<1340803224.16702.12.camel@gandalf.stny.rr.com>
+Date: Thu, 28 Jun 2012 10:16:36 +0900
+In-Reply-To: <1340803224.16702.12.camel@gandalf.stny.rr.com> (Steven Rostedt's
+	message of "Wed, 27 Jun 2012 09:20:24 -0400")
+Message-ID: <87bok4z157.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel,gmane.comp.file-systems.ceph.devel
-To: David Rientjes <rientjes@google.com>
-CC: Rik van Riel <riel@redhat.com>, Jim Schutt <jaschut@sandia.gov>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
-Subject: Re: excessive CPU utilization by isolate_freepages?
-References: <4FEB8237.6030402@sandia.gov> <4FEB9E73.5040709@kernel.org> <4FEBA520.4030205@redhat.com> <alpine.DEB.2.00.1206271745170.9552@chino.kir.corp.google.com> <4FEBAC42.3030800@kernel.org> <alpine.DEB.2.00.1206271803280.10830@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1206271803280.10830@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 10:06 AM, David Rientjes wrote:
+[CC'ing David]
 
-> On Thu, 28 Jun 2012, Minchan Kim wrote:
-> 
->>>>>>> https://lkml.org/lkml/2012/6/21/30
->>>>>
->>> Not sure if Jim is using memcg; if not, then this won't be helpful.
->>>
->>
->>
->> It doesn't related to memcg.
->> if compaction_alloc can't find suitable migration target, it returns NULL.
->> Then, migrate_pages should be exit.
->>
-> 
-> If isolate_freepages() is going to fail, then this zone should have been 
-> skipped when checking for compaction_suitable().  In Jim's perf output, 
-> compaction_suitable() returns COMPACT_CONTINUE for a transparent hugepage.  
-> Why is zone_watermark_ok(zone, 0 low_wmark + 1024, 0, 0) succeeding if 
-> isolate_freepages() is going to fail?
-> 
+Hi, Steve
+
+On Wed, 27 Jun 2012 09:20:24 -0400, Steven Rostedt wrote:
+> On Wed, 2012-06-27 at 15:54 +0300, Avi Kivity wrote:
+>
+>> Acked-by: Avi Kivity <avi@redhat.com>
+>
+> Thanks Avi!
+>
+
+Can you give me your ack's too (for this and other ones in the series)?
+And if you ok, I can route this and future changes (from anybody) on
+libtraceevent through my tree.
 
 
-zone_watermark_ok doesn't consider migratetype but suitable_migrate_target
-does consider one.
+>> 
+>> Some time ago we discussed moving the trace-cmd plugins to /lib/modules,
+>> which would make this trace display as "mov %edx,(%eax)" instead of "89
+>> 10", even for non-trace-cmd users.  Was there any movement on this?
+>> 
+>
+> As a matter of fact ;-)  The trace-cmd libparsevent library has now been
+> moved to tools/lib/libtraceevent, in which perf now uses. It is just a
+> matter of time till perf gets the use of the trace-cmd plugins. We just
+> need to figure out the logistics.
+>
+> Maybe make a tools/event_plugins ?
+>
+> Or something to that affect?
+>
 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+tools/lib/traceevent/plugins ?
 
-
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Namhyung
