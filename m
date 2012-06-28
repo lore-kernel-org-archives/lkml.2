@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab2F1Pl1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 11:41:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59660 "EHLO
+	id S1755565Ab2F1PmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 11:42:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59679 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab2F1PlY (ORCPT
+	with ESMTP id S1755340Ab2F1PmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 11:41:24 -0400
-Date: Thu, 28 Jun 2012 08:41:08 -0700
+	Thu, 28 Jun 2012 11:42:11 -0400
+Date: Thu, 28 Jun 2012 08:42:00 -0700
 From: tip-bot for Alex Shi <alex.shi@intel.com>
-Message-ID: <tip-3df3212f9722c7e45c723b9ea231a04ba4dbc47c@git.kernel.org>
+Message-ID: <tip-597e1c3580b7cfd95bb0f3167e2b297bf8a5a3ae@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         alex.shi@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, alex.shi@intel.com
-In-Reply-To: <1340845344-27557-6-git-send-email-alex.shi@intel.com>
-References: <1340845344-27557-6-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1340845344-27557-7-git-send-email-alex.shi@intel.com>
+References: <1340845344-27557-7-git-send-email-alex.shi@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/tlb: add tlb_flushall_shift knob into debugfs
-Git-Commit-ID: 3df3212f9722c7e45c723b9ea231a04ba4dbc47c
+Subject: [tip:x86/mm] mm/mmu_gather:
+  enable tlb flush range in generic mmu_gather
+Git-Commit-ID: 597e1c3580b7cfd95bb0f3167e2b297bf8a5a3ae
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,130 +28,90 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 28 Jun 2012 08:41:14 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 28 Jun 2012 08:42:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3df3212f9722c7e45c723b9ea231a04ba4dbc47c
-Gitweb:     http://git.kernel.org/tip/3df3212f9722c7e45c723b9ea231a04ba4dbc47c
+Commit-ID:  597e1c3580b7cfd95bb0f3167e2b297bf8a5a3ae
+Gitweb:     http://git.kernel.org/tip/597e1c3580b7cfd95bb0f3167e2b297bf8a5a3ae
 Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Thu, 28 Jun 2012 09:02:20 +0800
+AuthorDate: Thu, 28 Jun 2012 09:02:21 +0800
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 27 Jun 2012 19:29:10 -0700
+CommitDate: Wed, 27 Jun 2012 19:29:11 -0700
 
-x86/tlb: add tlb_flushall_shift knob into debugfs
+mm/mmu_gather: enable tlb flush range in generic mmu_gather
 
-kernel will replace cr3 rewrite with invlpg when
-  tlb_flush_entries <= active_tlb_entries / 2^tlb_flushall_factor
-if tlb_flushall_factor is -1, kernel won't do this replacement.
+This patch enabled the tlb flush range support in generic mmu layer.
 
-User can modify its value according to specific CPU/applications.
+Most of arch has self tlb flush range support, like ARM/IA64 etc.
+X86 arch has no this support in hardware yet. But another instruction
+'invlpg' can implement this function in some degree. So, enable this
+feather in generic layer for x86 now. and maybe useful for other archs
+in further.
 
-Thanks for Borislav providing the help message of
-CONFIG_DEBUG_TLBFLUSH.
+Generic mmu_gather struct is protected by micro
+HAVE_GENERIC_MMU_GATHER. Other archs that has flush range supported
+own self mmu_gather struct. So, now this change is safe for them.
+
+In future we may unify this struct and related functions on multiple
+archs.
+
+Thanks for Peter Zijlstra time and time reminder for multiple
+architecture code safe!
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
-Link: http://lkml.kernel.org/r/1340845344-27557-6-git-send-email-alex.shi@intel.com
+Link: http://lkml.kernel.org/r/1340845344-27557-7-git-send-email-alex.shi@intel.com
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/Kconfig.debug |   19 +++++++++++++++++
- arch/x86/mm/tlb.c      |   51 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 70 insertions(+), 0 deletions(-)
+ include/asm-generic/tlb.h |    2 ++
+ mm/memory.c               |    9 +++++++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index e46c214..b322f12 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -129,6 +129,25 @@ config DOUBLEFAULT
- 	  option saves about 4k and might cause you much additional grey
- 	  hair.
+diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+index 75e888b..ed6642a 100644
+--- a/include/asm-generic/tlb.h
++++ b/include/asm-generic/tlb.h
+@@ -86,6 +86,8 @@ struct mmu_gather {
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	struct mmu_table_batch	*batch;
+ #endif
++	unsigned long		start;
++	unsigned long		end;
+ 	unsigned int		need_flush : 1,	/* Did free PTEs */
+ 				fast_mode  : 1; /* No batching   */
  
-+config DEBUG_TLBFLUSH
-+	bool "Set upper limit of TLB entries to flush one-by-one"
-+	depends on DEBUG_KERNEL && (X86_64 || X86_INVLPG)
-+	---help---
-+
-+	X86-only for now.
-+
-+	This option allows the user to tune the amount of TLB entries the
-+	kernel flushes one-by-one instead of doing a full TLB flush. In
-+	certain situations, the former is cheaper. This is controlled by the
-+	tlb_flushall_shift knob under /sys/kernel/debug/x86. If you set it
-+	to -1, the code flushes the whole TLB unconditionally. Otherwise,
-+	for positive values of it, the kernel will use single TLB entry
-+	invalidating instructions according to the following formula:
-+
-+	flush_entries <= active_tlb_entries / 2^tlb_flushall_shift
-+
-+	If in doubt, say "N".
-+
- config IOMMU_DEBUG
- 	bool "Enable IOMMU debugging"
- 	depends on GART_IOMMU && DEBUG_KERNEL
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 2939f2f..5911f61 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -12,6 +12,7 @@
- #include <asm/cache.h>
- #include <asm/apic.h>
- #include <asm/uv/uv.h>
-+#include <linux/debugfs.h>
+diff --git a/mm/memory.c b/mm/memory.c
+index 1b7dc66..32c9943 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -206,6 +206,8 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm)
+ 	tlb->mm = mm;
  
- DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
- 			= { &init_mm, 0, };
-@@ -430,3 +431,53 @@ void flush_tlb_all(void)
+ 	tlb->fullmm     = fullmm;
++	tlb->start	= -1UL;
++	tlb->end	= 0;
+ 	tlb->need_flush = 0;
+ 	tlb->fast_mode  = (num_possible_cpus() == 1);
+ 	tlb->local.next = NULL;
+@@ -248,6 +250,8 @@ void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long e
  {
- 	on_each_cpu(do_flush_tlb_all, NULL, 1);
- }
+ 	struct mmu_gather_batch *batch, *next;
+ 
++	tlb->start = start;
++	tlb->end   = end;
+ 	tlb_flush_mmu(tlb);
+ 
+ 	/* keep the page table cache within bounds */
+@@ -1204,6 +1208,11 @@ again:
+ 	 */
+ 	if (force_flush) {
+ 		force_flush = 0;
 +
-+#ifdef CONFIG_DEBUG_TLBFLUSH
-+static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
-+			     size_t count, loff_t *ppos)
-+{
-+	char buf[32];
-+	unsigned int len;
-+
-+	len = sprintf(buf, "%hd\n", tlb_flushall_shift);
-+	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
-+}
-+
-+static ssize_t tlbflush_write_file(struct file *file,
-+		 const char __user *user_buf, size_t count, loff_t *ppos)
-+{
-+	char buf[32];
-+	ssize_t len;
-+	s8 shift;
-+
-+	len = min(count, sizeof(buf) - 1);
-+	if (copy_from_user(buf, user_buf, len))
-+		return -EFAULT;
-+
-+	buf[len] = '\0';
-+	if (kstrtos8(buf, 0, &shift))
-+		return -EINVAL;
-+
-+	if (shift > 64)
-+		return -EINVAL;
-+
-+	tlb_flushall_shift = shift;
-+	return count;
-+}
-+
-+static const struct file_operations fops_tlbflush = {
-+	.read = tlbflush_read_file,
-+	.write = tlbflush_write_file,
-+	.llseek = default_llseek,
-+};
-+
-+static int __cpuinit create_tlb_flushall_shift(void)
-+{
-+	if (cpu_has_invlpg) {
-+		debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
-+			arch_debugfs_dir, NULL, &fops_tlbflush);
-+	}
-+	return 0;
-+}
-+late_initcall(create_tlb_flushall_shift);
++#ifdef HAVE_GENERIC_MMU_GATHER
++		tlb->start = addr;
++		tlb->end = end;
 +#endif
+ 		tlb_flush_mmu(tlb);
+ 		if (addr != end)
+ 			goto again;
