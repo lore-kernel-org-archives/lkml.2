@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab2F1M6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:58:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3536 "EHLO mx1.redhat.com"
+	id S1753529Ab2F1NDu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:03:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54100 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754988Ab2F1M6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:58:03 -0400
+	id S1755563Ab2F1M6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:58:07 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,43 +27,41 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 21/40] autonuma: avoid CFS select_task_rq_fair to return -1
-Date: Thu, 28 Jun 2012 14:56:01 +0200
-Message-Id: <1340888180-15355-22-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 25/40] autonuma: follow_page check for pte_numa/pmd_numa
+Date: Thu, 28 Jun 2012 14:56:05 +0200
+Message-Id: <1340888180-15355-26-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix to avoid -1 retval.
-
-Includes fixes from Hillf Danton <dhillf@gmail.com>.
+Without this, follow_page wouldn't trigger the NUMA hinting faults.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/sched/fair.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ mm/memory.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c099cc6..fa96810 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2789,6 +2789,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 		if (new_cpu == -1 || new_cpu == cpu) {
- 			/* Now try balancing at a lower domain level of cpu */
- 			sd = sd->child;
-+			if (new_cpu < 0)
-+				/* Return prev_cpu is find_idlest_cpu failed */
-+				new_cpu = prev_cpu;
- 			continue;
- 		}
+diff --git a/mm/memory.c b/mm/memory.c
+index 2e9cab2..78b6acc 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1491,7 +1491,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 		goto no_page_table;
  
-@@ -2807,6 +2810,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- unlock:
- 	rcu_read_unlock();
+ 	pmd = pmd_offset(pud, address);
+-	if (pmd_none(*pmd))
++	if (pmd_none(*pmd) || pmd_numa(*pmd))
+ 		goto no_page_table;
+ 	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
+ 		BUG_ON(flags & FOLL_GET);
+@@ -1525,7 +1525,7 @@ split_fallthrough:
+ 	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
  
-+	BUG_ON(new_cpu < 0);
- 	return new_cpu;
- }
- #endif /* CONFIG_SMP */
+ 	pte = *ptep;
+-	if (!pte_present(pte))
++	if (!pte_present(pte) || pte_numa(pte))
+ 		goto no_page;
+ 	if ((flags & FOLL_WRITE) && !pte_write(pte))
+ 		goto unlock;
