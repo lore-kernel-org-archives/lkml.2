@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab2F1M5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:57:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14468 "EHLO mx1.redhat.com"
+	id S1755022Ab2F1M5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:57:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31527 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150Ab2F1M5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:57:24 -0400
+	id S1754020Ab2F1M5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:57:41 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,71 +27,42 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 20/40] autonuma: alloc/free/init mm_autonuma
-Date: Thu, 28 Jun 2012 14:56:00 +0200
-Message-Id: <1340888180-15355-21-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 33/40] autonuma: link mm/autonuma.o and kernel/sched/numa.o
+Date: Thu, 28 Jun 2012 14:56:13 +0200
+Message-Id: <1340888180-15355-34-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where the mm_autonuma structure is being handled. Just like
-sched_autonuma, this is only allocated at runtime if the hardware the
-kernel is running on has been detected as NUMA. On not NUMA hardware
-the memory cost is reduced to one pointer per mm.
-
-To get rid of the pointer in the each mm, the kernel can be compiled
-with CONFIG_AUTONUMA=n.
+Link the AutoNUMA core and scheduler object files in the kernel if
+CONFIG_AUTONUMA=y.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/fork.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ kernel/sched/Makefile |    1 +
+ mm/Makefile           |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 0adbe09..3e5a0d9 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -527,6 +527,8 @@ static void mm_init_aio(struct mm_struct *mm)
- 
- static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- {
-+	if (unlikely(alloc_mm_autonuma(mm)))
-+		goto out_free_mm;
- 	atomic_set(&mm->mm_users, 1);
- 	atomic_set(&mm->mm_count, 1);
- 	init_rwsem(&mm->mmap_sem);
-@@ -549,6 +551,8 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- 		return mm;
- 	}
- 
-+	free_mm_autonuma(mm);
-+out_free_mm:
- 	free_mm(mm);
- 	return NULL;
- }
-@@ -598,6 +602,7 @@ void __mmdrop(struct mm_struct *mm)
- 	destroy_context(mm);
- 	mmu_notifier_mm_destroy(mm);
- 	check_mm(mm);
-+	free_mm_autonuma(mm);
- 	free_mm(mm);
- }
- EXPORT_SYMBOL_GPL(__mmdrop);
-@@ -880,6 +885,7 @@ fail_nocontext:
- 	 * If init_new_context() failed, we cannot use mmput() to free the mm
- 	 * because it calls destroy_context()
- 	 */
-+	free_mm_autonuma(mm);
- 	mm_free_pgd(mm);
- 	free_mm(mm);
- 	return NULL;
-@@ -1702,6 +1708,7 @@ void __init proc_caches_init(void)
- 	mm_cachep = kmem_cache_create("mm_struct",
- 			sizeof(struct mm_struct), ARCH_MIN_MMSTRUCT_ALIGN,
- 			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_NOTRACK, NULL);
-+	mm_autonuma_init();
- 	vm_area_cachep = KMEM_CACHE(vm_area_struct, SLAB_PANIC);
- 	mmap_init();
- 	nsproxy_cache_init();
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index 173ea52..783a840 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -16,3 +16,4 @@ obj-$(CONFIG_SMP) += cpupri.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
+ obj-$(CONFIG_SCHED_DEBUG) += debug.o
++obj-$(CONFIG_AUTONUMA) += numa.o
+diff --git a/mm/Makefile b/mm/Makefile
+index 2e2fbbe..15900fd 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -33,6 +33,7 @@ obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
+ obj-$(CONFIG_HAS_DMA)	+= dmapool.o
+ obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
+ obj-$(CONFIG_NUMA) 	+= mempolicy.o
++obj-$(CONFIG_AUTONUMA) 	+= autonuma.o
+ obj-$(CONFIG_SPARSEMEM)	+= sparse.o
+ obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
+ obj-$(CONFIG_SLOB) += slob.o
