@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab2F1Vbu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 17:31:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38907 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab2F1Vbt convert rfc822-to-8bit (ORCPT
+	id S1755458Ab2F1Vfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 17:35:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41233 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab2F1Vfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 17:31:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdZJwocwwFUeVte+NTN83LRaiBvis9nHWV0KUj9htsDoQg@mail.gmail.com>
-References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
-	<1340232467-6023-12-git-send-email-john.stultz@linaro.org>
-	<CACRpkdZJwocwwFUeVte+NTN83LRaiBvis9nHWV0KUj9htsDoQg@mail.gmail.com>
-Date: Thu, 28 Jun 2012 14:31:47 -0700
-Message-ID: <CAMP5XgceDFLrk3a1yfPHiap56Nvc2XOyvmS9yOrJ9ULVYLbGeQ@mail.gmail.com>
-Subject: Re: [PATCH 11/15] ARM: etm: Check arch version and disable data
- tracing for ptm
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 28 Jun 2012 17:35:51 -0400
+Date: Thu, 28 Jun 2012 14:35:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mel@csn.ul.ie>, jaschut@sandia.gov, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where it
+ left
+Message-Id: <20120628143546.d02d13f9.akpm@linux-foundation.org>
+In-Reply-To: <4FECCB89.2050400@redhat.com>
+References: <20120628135520.0c48b066@annuminas.surriel.com>
+	<20120628135940.2c26ada9.akpm@linux-foundation.org>
+	<4FECCB89.2050400@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 9:07 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Jun 21, 2012 at 12:47 AM, John Stultz <john.stultz@linaro.org> wrote:
->
->> +#define ETMR_ID                        0x1e4
->> +#define ETMIDR_VERSION(x)      (((x) >> 4) & 0xff)
->> +#define ETMIDR_VERSION_PFT_1_0 0x30
->
-> NAK don't reinvent this stuff.
->
-> From <linux/amba/bus.h>
->
-> Use these macros on the periphid:
-> #define amba_config(d)  AMBA_CONFIG_BITS((d)->periphid)
-> #define amba_rev(d)     AMBA_REV_BITS((d)->periphid)
-> #define amba_manf(d)    AMBA_MANF_BITS((d)->periphid)
-> #define amba_part(d)    AMBA_PART_BITS((d)->periphid)
->
+On Thu, 28 Jun 2012 17:24:25 -0400
+Rik van Riel <riel@redhat.com> wrote:
 
-Those values do not come from the same register. The revision is
-duplicated there, but I did not find the major and minor etm version
-which is what I'm looking at. Also, if these values are set in the
-amba_device before calling amba_device_register the hardware registers
-are not read at all and the information could be from an older
-hardware rev than what you are currently running on.
+> 
+> >> @@ -463,6 +474,8 @@ static void isolate_freepages(struct zone *zone,
+> >>   		 */
+> >>   		if (isolated)
+> >>   			high_pfn = max(high_pfn, pfn);
+> >> +		if (cc->order>  0)
+> >> +			zone->compact_cached_free_pfn = high_pfn;
+> >
+> > Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
+> > assume so, if lots of code in other places is correct but it's
+> > unobvious from reading this function.
+> 
+> Reading the code a few more times, I believe that it is
+> indeed aligned to pageblock size.
 
-> I thin amba_rev() is the one you're looking for (not sure).
->
-> So here:
->
->> @@ -724,6 +724,9 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
->
->> +       if (etmccr & ETMCCR_ETMIDR_PRESENT) {
->> +               etmidr = etm_readl(t, t->etm_regs_count, ETMR_ID);
->> +               etm_version = ETMIDR_VERSION(etmidr);
->
-> etm_version = amba_rev(dev);
->
-> etc.
->
-> Yours,
-> Linus Walleij
+I'll slip this into -next for a while.
 
+--- a/mm/compaction.c~isolate_freepages-check-that-high_pfn-is-aligned-as-expected
++++ a/mm/compaction.c
+@@ -456,6 +456,7 @@ static void isolate_freepages(struct zon
+ 		}
+ 		spin_unlock_irqrestore(&zone->lock, flags);
+ 
++		WARN_ON_ONCE(high_pfn & (pageblock_nr_pages - 1));
+ 		/*
+ 		 * Record the highest PFN we isolated pages from. When next
+ 		 * looking for free pages, the search will restart here as
+_
 
+> >> --- a/mm/internal.h
+> >> +++ b/mm/internal.h
+> >> @@ -118,8 +118,10 @@ struct compact_control {
+> >>   	unsigned long nr_freepages;	/* Number of isolated free pages */
+> >>   	unsigned long nr_migratepages;	/* Number of pages to migrate */
+> >>   	unsigned long free_pfn;		/* isolate_freepages search base */
+> >> +	unsigned long start_free_pfn;	/* where we started the search */
+> >>   	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+> >>   	bool sync;			/* Synchronous migration */
+> >> +	bool wrapped;			/* Last round for order>0 compaction */
+> >
+> > This comment is incomprehensible :(
+> 
+> Agreed.  I'm not sure how to properly describe that variable
+> in 30 or so characters :)
+> 
+> It denotes whether the current invocation of compaction,
+> called with order > 0, has had free_pfn and migrate_pfn
+> meet, resulting in free_pfn being reset to the top of
+> the zone.
+> 
+> Now, how to describe that briefly?
 
--- 
-Arve Hjønnevåg
+Use a multi-line comment above the definition ;)
