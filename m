@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab2F1Oxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 10:53:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44242 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2F1Oxg (ORCPT
+	id S1754344Ab2F1Oym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 10:54:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59775 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab2F1Oyk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 10:53:36 -0400
-Message-ID: <4FEC6F7E.2030905@gmail.com>
-Date: Thu, 28 Jun 2012 08:51:42 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, psuriset@linux.vnet.ibm.com,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] perf kvm: fix segfault with default guest arguments
-References: <1340599286-89757-1-git-send-email-dsahern@gmail.com> <20120628144418.GG4038@infradead.org>
-In-Reply-To: <20120628144418.GG4038@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Jun 2012 10:54:40 -0400
+Message-ID: <1340895238.28750.49.camel@twins>
+Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Thu, 28 Jun 2012 16:53:58 +0200
+In-Reply-To: <1340888180-15355-14-git-send-email-aarcange@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+	 <1340888180-15355-14-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/28/12 8:44 AM, Arnaldo Carvalho de Melo wrote:
-> Em Sun, Jun 24, 2012 at 10:41:26PM -0600, David Ahern escreveu:
->> File generated with:
->> $ perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms
->>      --guestmodules=/tmp/guest-modules record -a
->>
->> The report command:
->> $ perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms
->>      --guestmodules=/tmp/guest-modules report
->>
->> dies with a SEGFAULT:
->> Program received signal SIGSEGV, Segmentation fault.
->> 0x000000000046dd7b in machine__mmap_name (self=0x0, bf=0x7fffffffbd20 "q\021", size=4096) at util/map.c:715
->> 715			snprintf(bf, size, "[%s.%d]", "guest.kernel.kallsyms", self->pid);
->>
->> (gdb) bt
->> 0  0x000000000046dd7b in machine__mmap_name (self=0x0, bf=0x7fffffffbd20 "q\021", size=4096) at util/map.c:715
->> 1  0x0000000000444161 in perf_event__process_kernel_mmap (tool=0x7fffffffdd80, event=0x7ffff7fb4120, machine=0x0) at util/event.c:562
->
-> I think that this should be handled at perf_event__process_kernel_mmap,
-> i.e. tools can conceivably handle this situation in their specific
-> handlers.
->
->>   @@ -976,6 +976,8 @@ static int perf_session_deliver_event(struct perf_session *session,
->>   		}
->>   		return tool->sample(tool, event, sample, evsel, machine);
->>   	case PERF_RECORD_MMAP:
->> +		if (machine == NULL)
->> +			return 0;
->>   		return tool->mmap(tool, event, sample, machine);
->>
-> - Arnaldo
->
+On Thu, 2012-06-28 at 14:55 +0200, Andrea Arcangeli wrote:
+> +#ifdef __ia64__
+> +#error "NOTE: tlb_migrate_finish won't run here"
+> +#endif 
 
-Ok. Doing it in perf_session_deliver_event makes it consistent with the 
-SAMPLE case.
+https://lkml.org/lkml/2012/5/29/359
 
-David
+Its an optional thing, not running it isn't fatal at all.
+
+Also, ia64 has CONFIG_NUMA so all this code had better run on it.
+
+That said, I've also already told you to stop using such forceful
+migration, that simply doesn't make any sense, numa balancing isn't that
+critical.
+
+Unless you're going to listen to feedback I give you, I'm going to
+completely stop reading your patches, I don't give a rats arse you work
+for the same company anymore.
+
+You're impossible to work with.
