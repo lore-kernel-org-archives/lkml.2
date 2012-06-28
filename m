@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab2F1M2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:28:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753515Ab2F1M2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:28:17 -0400
-Date: Thu, 28 Jun 2012 08:27:25 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 10/12] nfs: enable swap on NFS
-Message-ID: <20120628082725.33b71097@corrin.poochiereds.net>
-In-Reply-To: <1340375468-22509-11-git-send-email-mgorman@suse.de>
-References: <1340375468-22509-1-git-send-email-mgorman@suse.de>
-	<1340375468-22509-11-git-send-email-mgorman@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755257Ab2F1M2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:28:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49732 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754385Ab2F1M2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:28:33 -0400
+Date: Thu, 28 Jun 2012 13:28:31 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        swarren@nvidia.com, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: snd_dmaengine: add common api for
+ pcm_mmap
+Message-ID: <20120628122830.GJ28922@opensource.wolfsonmicro.com>
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
+ <4FEC3B70.5030902@metafoo.de>
+ <s5hobo3zl79.wl%tiwai@suse.de>
+ <20120628121816.GB21029@sirena.org.uk>
+ <4FEC4E62.3020101@metafoo.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x0KprKst+ZOYEj2z"
+Content-Disposition: inline
+In-Reply-To: <4FEC4E62.3020101@metafoo.de>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jun 2012 15:31:06 +0100
-Mel Gorman <mgorman@suse.de> wrote:
 
-> Implement the new swapfile a_ops for NFS and hook up ->direct_IO. This
-> will set the NFS socket to SOCK_MEMALLOC and run socket reconnect
-> under PF_MEMALLOC as well as reset SOCK_MEMALLOC before engaging the
-> protocol ->connect() method.
-> 
-> PF_MEMALLOC should allow the allocation of struct socket and related
-> objects and the early (re)setting of SOCK_MEMALLOC should allow us
-> to receive the packets required for the TCP connection buildup.
-> 
-> [dfeng@redhat.com: Fix handling of multiple swap files]
-> [a.p.zijlstra@chello.nl: Original patch]
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
->  fs/nfs/Kconfig              |    8 +++++
->  fs/nfs/direct.c             |   82 ++++++++++++++++++++++++++++---------------
->  fs/nfs/file.c               |   22 ++++++++++--
->  include/linux/nfs_fs.h      |    4 +--
->  include/linux/sunrpc/xprt.h |    3 ++
->  net/sunrpc/Kconfig          |    5 +++
->  net/sunrpc/clnt.c           |    2 ++
->  net/sunrpc/sched.c          |    7 ++--
->  net/sunrpc/xprtsock.c       |   53 ++++++++++++++++++++++++++++
->  9 files changed, 152 insertions(+), 34 deletions(-)
-> 
+--x0KprKst+ZOYEj2z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[...snip...]
+On Thu, Jun 28, 2012 at 02:30:26PM +0200, Lars-Peter Clausen wrote:
+> On 06/28/2012 02:18 PM, Mark Brown wrote:
 
-> @@ -2108,11 +2156,15 @@ static void xs_tcp_setup_socket(struct work_struct *work)
->  		container_of(work, struct sock_xprt, connect_worker.work);
->  	struct socket *sock = transport->sock;
->  	struct rpc_xprt *xprt = &transport->xprt;
-> +	unsigned long pflags = current->flags;
->  	int status = -EIO;
->  
->  	if (xprt->shutdown)
->  		goto out;
->  
-> +	if (xprt->swapper)
-> +		current->flags |= PF_MEMALLOC;
-> +
->  	if (!sock) {
->  		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
->  		sock = xs_create_sock(xprt, transport,
-> @@ -2174,6 +2226,7 @@ out_eagain:
->  out:
->  	xprt_clear_connecting(xprt);
->  	xprt_wake_pending_tasks(xprt, status);
-> +	tsk_restore_flags(current, pflags, PF_MEMALLOC);
->  }
->  
->  /**
+> > Oh, dear - this means we don't actually have a generic API at all.  Is
+> > there any effort being made to make this generally available?
 
-Apologies if this is fixed in another patch and I didn't see it...
+> Yes there is, and in fact in next/master there is generic
+> dma_mmap_writecombine. I'm not quite sure how it behaves on non ARM archs
+> though. But in theory it should fallback to a normal coherent mapping. Marek
+> did a lot of work on this, I've put him on Cc.
 
-There's a place in the above function that returns without going
-through "out:". I think you also want to tsk_restore_flags() in that
-spot too.
+OK, that's not so bad.  Where is this code, can we merge it into ALSA?
+If not it's probably best to punt until after the merge window.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+--x0KprKst+ZOYEj2z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP7E3lAAoJEBus8iNuMP3dFk8P/1KXEXgMFvv/gOq420U6HbdH
+hzPvm0f1xnfLWkrbUEarbfXiFjShJ0xF2dIerxkuq0gqtN+zgX6g12pUfNfAyCy7
+rzrd0nLfZj51Q+uLuVdsgl68ewOOQPofGU+PRAmXU80AczVUonaSI/hlEVHTzCzD
+x9QwjLBSCaoakJdnGGtMZfhcaXOyRGZHMfB5sH5nPRKSObsKFDrk6t3NWRL3Zkq7
+fJvB/wHHo8fvJQxIKharLLX86QSJHf3MCCeNw2djcItR7+CFGHoZDRb96y6oAAdA
+9/wZqho2kh/Y1GVu4sGO4hzpIO8z4Bh/JghApvBAy2/bKi9TgtYsvpvnZTPPa7Yu
+ud13p7npOg6ySGyORie+UKh4wXyY6Kco8nteqMYOmChZz3EgdfeeKzjNrDX45jM/
+itFLqTfPwMUuz2DTAJlqvtMMp5EOUsZRvc+2eBv+PGolXvkebqKZG39K67MqB9B3
+o18gQEgLgwYmZKRSTuxQPyCUbJEOLb460hASYwfcjs1lDp8w2cAb+7k4W2s9Ube3
+XUP5G0mPWAva5fefRhKOfzmk2yj2++B6crsgHhv2Wfs3onCv6yIKnhkyQFsQySVg
+kO7cRWGpY1cTcus64LgPMzc5FpHBeid5bB+HQ3PDGgeOlxoBYQWCW7yEwvAc2Hf7
+nEazcyjs4fm3bC1OtPHS
+=2Wgx
+-----END PGP SIGNATURE-----
+
+--x0KprKst+ZOYEj2z--
