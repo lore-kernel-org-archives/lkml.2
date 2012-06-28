@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab2F1QKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:10:46 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34471 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab2F1QKp convert rfc822-to-8bit (ORCPT
+	id S1755577Ab2F1QLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:11:19 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:60242 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2F1QLS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:10:45 -0400
+	Thu, 28 Jun 2012 12:11:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <1340232467-6023-15-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1340232467-6023-16-git-send-email-john.stultz@linaro.org>
 References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
-	<1340232467-6023-15-git-send-email-john.stultz@linaro.org>
-Date: Thu, 28 Jun 2012 18:10:44 +0200
-Message-ID: <CACRpkdb3zYrQ8QuzCUyUtqU9HeHGh_9FincKZSOBywxnAyaZ+g@mail.gmail.com>
-Subject: Re: [PATCH 14/15] ARM: etm: Add sysfs entry to disable branch_output flag
+	<1340232467-6023-16-git-send-email-john.stultz@linaro.org>
+Date: Thu, 28 Jun 2012 18:11:17 +0200
+Message-ID: <CACRpkdb7yY3szPq+M2Xy3cccnR_dVRCmh3G8wXSAf2YROuiwOw@mail.gmail.com>
+Subject: Re: [PATCH 15/15] ARM: etm: Add sysfs entry to enable return stack if supported
 From: Linus Walleij <linus.walleij@linaro.org>
 To: John Stultz <john.stultz@linaro.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -31,7 +31,7 @@ On Thu, Jun 21, 2012 at 12:47 AM, John Stultz <john.stultz@linaro.org> wrote:
 
 > From: Arve Hjønnevåg <arve@android.com>
 >
-> Add sysfs entry to disable branch_output flag
+> Add sysfs entry to enable return stack if supported
 >
 > CC: Russell King <linux@arm.linux.org.uk>
 > CC: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -40,7 +40,7 @@ On Thu, Jun 21, 2012 at 12:47 AM, John Stultz <john.stultz@linaro.org> wrote:
 > Signed-off-by: Arve Hjønnevåg <arve@android.com>
 > Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-Suggest move to debugfs.
+Suggest moveall to debugfs.
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Yours,
