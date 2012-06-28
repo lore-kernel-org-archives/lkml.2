@@ -1,315 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab2F1FBH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 01:01:07 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:48907 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab2F1FBF (ORCPT
+	id S1751805Ab2F1FGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 01:06:43 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37774 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab2F1FGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 01:01:05 -0400
-From: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org,
-        Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
-Subject: [PATCH 5/5] Staging: comedi: usbduxsigma: Syntax issue fixes
-Date: Thu, 28 Jun 2012 02:01:00 -0300
-Message-Id: <1340859660-28813-1-git-send-email-sebastianbenvenuti@gmail.com>
-X-Mailer: git-send-email 1.7.11.1
+	Thu, 28 Jun 2012 01:06:41 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FEBE646.5090801@jp.fujitsu.com>
+Date: Thu, 28 Jun 2012 14:06:14 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH 2/12] memory-hogplug : check memory offline in offline_pages
+References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9DB1.7010303@jp.fujitsu.com> <4FEAC916.7030506@cn.fujitsu.com>
+In-Reply-To: <4FEAC916.7030506@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed "many quoted string split across lines" issues,
-replaced "printk(KERN_ERR" for "pr_err("
-and replaced "printk(KERN_INFO" for "pr_info("
+Hi Wen,
 
-Signed-off-by: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
----
- drivers/staging/comedi/drivers/usbduxsigma.c | 68 ++++++++++++++--------------
- 1 file changed, 34 insertions(+), 34 deletions(-)
+2012/06/27 17:49, Wen Congyang wrote:
+> At 06/27/2012 01:44 PM, Yasuaki Ishimatsu Wrote:
+>> When offline_pages() is called to offlined memory, the function fails since
+>> all memory has been offlined. In this case, the function should succeed.
+>> The patch adds the check function into offline_pages().
+> 
+> You miss such case: some pages are online, while some pages are offline.
+> offline_pages() will fail too in such case.
 
-diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-index 465afbd..37541c1 100644
---- a/drivers/staging/comedi/drivers/usbduxsigma.c
-+++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-@@ -1069,7 +1069,7 @@ static int send_dux_commands(struct usbduxsub *this_usbduxsub, int cmd_type)
- 
- 	this_usbduxsub->dux_commands[0] = cmd_type;
- #ifdef NOISY_DUX_DEBUGBUG
--	printk(KERN_DEBUG "comedi%d: usbdux: dux_commands: ",
-+	pr_debug("comedi%d: usbdux: dux_commands: ",
- 	       this_usbduxsub->comedidev->minor);
- 	for (result = 0; result < SIZEOFDUXBUFFER; result++)
- 		printk(" %02x", this_usbduxsub->dux_commands[result]);
-@@ -1081,8 +1081,8 @@ static int send_dux_commands(struct usbduxsub *this_usbduxsub, int cmd_type)
- 			      this_usbduxsub->dux_commands, SIZEOFDUXBUFFER,
- 			      &nsent, BULK_TIMEOUT);
- 	if (result < 0)
--		dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
--			"could not transmit dux_command to the usb-device, "
-+		dev_err(&this_usbduxsub->interface->dev, "comedi%d: " \
-+			"could not transmit dux_command to the usb-device, " \
- 			"err=%d\n", this_usbduxsub->comedidev->minor, result);
- 
- 	return result;
-@@ -1101,9 +1101,9 @@ static int receive_dux_commands(struct usbduxsub *this_usbduxsub, int command)
- 				      this_usbduxsub->insnBuffer, SIZEINSNBUF,
- 				      &nrec, BULK_TIMEOUT);
- 		if (result < 0) {
--			dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
--				"insn: USB error %d "
--				"while receiving DUX command"
-+			dev_err(&this_usbduxsub->interface->dev, "comedi%d: " \
-+				"insn: USB error %d " \
-+				"while receiving DUX command" \
- 				"\n", this_usbduxsub->comedidev->minor,
- 				result);
- 			return result;
-@@ -1113,7 +1113,7 @@ static int receive_dux_commands(struct usbduxsub *this_usbduxsub, int command)
- 	}
- 	/* this is only reached if the data has been requested a couple of
- 	 * times */
--	dev_err(&this_usbduxsub->interface->dev, "comedi%d: insn: "
-+	dev_err(&this_usbduxsub->interface->dev, "comedi%d: insn: " \
- 		"wrong data returned from firmware: want %d, got %d.\n",
- 		this_usbduxsub->comedidev->minor, command,
- 		this_usbduxsub->insnBuffer[0]);
-@@ -1189,7 +1189,7 @@ static int usbdux_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		return -ENODEV;
- 	}
- 	if (this_usbduxsub->ai_cmd_running) {
--		dev_err(&this_usbduxsub->interface->dev, "comedi%d: "
-+		dev_err(&this_usbduxsub->interface->dev, "comedi%d: " \
- 			"ai_cmd not possible. Another ai_cmd is running.\n",
- 			dev->minor);
- 		up(&this_usbduxsub->sem);
-@@ -1251,8 +1251,8 @@ static int usbdux_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		this_usbduxsub->ai_timer = cmd->scan_begin_arg / 1000000;
- 	}
- 	if (this_usbduxsub->ai_timer < 1) {
--		dev_err(&this_usbduxsub->interface->dev, "comedi%d: ai_cmd: "
--			"timer=%d, scan_begin_arg=%d. "
-+		dev_err(&this_usbduxsub->interface->dev, "comedi%d: ai_cmd: " \
-+			"timer=%d, scan_begin_arg=%d. " \
- 			"Not properly tested by cmdtest?\n", dev->minor,
- 			this_usbduxsub->ai_timer, cmd->scan_begin_arg);
- 		up(&this_usbduxsub->sem);
-@@ -1319,7 +1319,7 @@ static int usbdux_ai_insn_read(struct comedi_device *dev,
- 	}
- 	if (this_usbduxsub->ai_cmd_running) {
- 		dev_err(&this_usbduxsub->interface->dev,
--			"comedi%d: ai_insn_read not possible. "
-+			"comedi%d: ai_insn_read not possible. " \
- 			"Async Command is running.\n", dev->minor);
- 		up(&this_usbduxsub->sem);
- 		return 0;
-@@ -1383,7 +1383,7 @@ static int usbdux_getstatusinfo(struct comedi_device *dev, int chan)
- 
- 	if (this_usbduxsub->ai_cmd_running) {
- 		dev_err(&this_usbduxsub->interface->dev,
--			"comedi%d: status read not possible. "
-+			"comedi%d: status read not possible. " \
- 			"Async Command is running.\n", dev->minor);
- 		return 0;
- 	}
-@@ -1488,7 +1488,7 @@ static int usbdux_ao_insn_write(struct comedi_device *dev,
- 	}
- 	if (this_usbduxsub->ao_cmd_running) {
- 		dev_err(&this_usbduxsub->interface->dev,
--			"comedi%d: ao_insn_write: "
-+			"comedi%d: ao_insn_write: " \
- 			"ERROR: asynchronous ao_cmd is running\n", dev->minor);
- 		up(&this_usbduxsub->sem);
- 		return 0;
-@@ -1543,7 +1543,7 @@ static int usbdux_ao_inttrig(struct comedi_device *dev,
- 		ret = usbduxsub_submit_OutURBs(this_usbduxsub);
- 		if (ret < 0) {
- 			dev_err(&this_usbduxsub->interface->dev,
--				"comedi%d: usbdux_ao_inttrig: submitURB: "
-+				"comedi%d: usbdux_ao_inttrig: submitURB: " \
- 				"err=%d\n", dev->minor, ret);
- 			this_usbduxsub->ao_cmd_running = 0;
- 			goto out;
-@@ -1683,7 +1683,7 @@ static int usbdux_ao_cmdtest(struct comedi_device *dev,
- 		}
- 	}
- 
--	dev_dbg(&this_usbduxsub->interface->dev, "comedi%d: err=%d, "
-+	dev_dbg(&this_usbduxsub->interface->dev, "comedi%d: err=%d, " \
- 		"scan_begin_src=%d, scan_begin_arg=%d, convert_src=%d, "
- 		"convert_arg=%d\n", dev->minor, err, cmd->scan_begin_src,
- 		cmd->scan_begin_arg, cmd->convert_src, cmd->convert_arg);
-@@ -2349,7 +2349,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	int index;
- 	int ret;
- 
--	dev_dbg(dev, "comedi_: usbdux_: "
-+	dev_dbg(dev, "comedi_: usbdux_: " \
- 		"finding a free structure for the usb-device\n");
- 
- 	down(&start_stop_sem);
-@@ -2368,7 +2368,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 		up(&start_stop_sem);
- 		return -EMFILE;
- 	}
--	dev_dbg(dev, "comedi_: usbdux: "
-+	dev_dbg(dev, "comedi_: usbdux: " \
- 		"usbduxsub[%d] is ready to connect to comedi.\n", index);
- 
- 	sema_init(&(usbduxsub[index].sem), 1);
-@@ -2392,7 +2392,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	/* create space for the commands of the DA converter */
- 	usbduxsub[index].dac_commands = kzalloc(NUMOUTCHANNELS, GFP_KERNEL);
- 	if (!usbduxsub[index].dac_commands) {
--		dev_err(dev, "comedi_: usbduxsigma: "
-+		dev_err(dev, "comedi_: usbduxsigma: " \
- 			"error alloc space for dac commands\n");
- 		tidy_up(&(usbduxsub[index]));
- 		up(&start_stop_sem);
-@@ -2401,7 +2401,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	/* create space for the commands going to the usb device */
- 	usbduxsub[index].dux_commands = kzalloc(SIZEOFDUXBUFFER, GFP_KERNEL);
- 	if (!usbduxsub[index].dux_commands) {
--		dev_err(dev, "comedi_: usbduxsigma: "
-+		dev_err(dev, "comedi_: usbduxsigma: " \
- 			"error alloc space for dux commands\n");
- 		tidy_up(&(usbduxsub[index]));
- 		up(&start_stop_sem);
-@@ -2410,7 +2410,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	/* create space for the in buffer and set it to zero */
- 	usbduxsub[index].inBuffer = kzalloc(SIZEINBUF, GFP_KERNEL);
- 	if (!(usbduxsub[index].inBuffer)) {
--		dev_err(dev, "comedi_: usbduxsigma: "
-+		dev_err(dev, "comedi_: usbduxsigma: " \
- 			"could not alloc space for inBuffer\n");
- 		tidy_up(&(usbduxsub[index]));
- 		up(&start_stop_sem);
-@@ -2419,7 +2419,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	/* create space of the instruction buffer */
- 	usbduxsub[index].insnBuffer = kzalloc(SIZEINSNBUF, GFP_KERNEL);
- 	if (!(usbduxsub[index].insnBuffer)) {
--		dev_err(dev, "comedi_: usbduxsigma: "
-+		dev_err(dev, "comedi_: usbduxsigma: " \
- 			"could not alloc space for insnBuffer\n");
- 		tidy_up(&(usbduxsub[index]));
- 		up(&start_stop_sem);
-@@ -2428,7 +2428,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	/* create space for the outbuffer */
- 	usbduxsub[index].outBuffer = kzalloc(SIZEOUTBUF, GFP_KERNEL);
- 	if (!(usbduxsub[index].outBuffer)) {
--		dev_err(dev, "comedi_: usbduxsigma: "
-+		dev_err(dev, "comedi_: usbduxsigma: " \
- 			"could not alloc space for outBuffer\n");
- 		tidy_up(&(usbduxsub[index]));
- 		up(&start_stop_sem);
-@@ -2438,7 +2438,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	i = usb_set_interface(usbduxsub[index].usbdev,
- 			      usbduxsub[index].ifnum, 3);
- 	if (i < 0) {
--		dev_err(dev, "comedi_: usbduxsigma%d: "
-+		dev_err(dev, "comedi_: usbduxsigma%d: " \
- 			"could not set alternate setting 3 in high speed.\n",
- 			index);
- 		tidy_up(&(usbduxsub[index]));
-@@ -2454,7 +2454,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	    kzalloc(sizeof(struct urb *) * usbduxsub[index].numOfInBuffers,
- 		    GFP_KERNEL);
- 	if (!(usbduxsub[index].urbIn)) {
--		dev_err(dev, "comedi_: usbduxsigma: "
-+		dev_err(dev, "comedi_: usbduxsigma: " \
- 			"Could not alloc. urbIn array\n");
- 		tidy_up(&(usbduxsub[index]));
- 		up(&start_stop_sem);
-@@ -2464,7 +2464,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 		/* one frame: 1ms */
- 		usbduxsub[index].urbIn[i] = usb_alloc_urb(1, GFP_KERNEL);
- 		if (usbduxsub[index].urbIn[i] == NULL) {
--			dev_err(dev, "comedi_: usbduxsigma%d: "
-+			dev_err(dev, "comedi_: usbduxsigma%d: " \
- 				"Could not alloc. urb(%d)\n", index, i);
- 			tidy_up(&(usbduxsub[index]));
- 			up(&start_stop_sem);
-@@ -2480,7 +2480,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 		usbduxsub[index].urbIn[i]->transfer_buffer =
- 		    kzalloc(SIZEINBUF, GFP_KERNEL);
- 		if (!(usbduxsub[index].urbIn[i]->transfer_buffer)) {
--			dev_err(dev, "comedi_: usbduxsigma%d: "
-+			dev_err(dev, "comedi_: usbduxsigma%d: " \
- 				"could not alloc. transb.\n", index);
- 			tidy_up(&(usbduxsub[index]));
- 			up(&start_stop_sem);
-@@ -2504,7 +2504,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 	    kzalloc(sizeof(struct urb *) * usbduxsub[index].numOfOutBuffers,
- 		    GFP_KERNEL);
- 	if (!(usbduxsub[index].urbOut)) {
--		dev_err(dev, "comedi_: usbduxsigma: "
-+		dev_err(dev, "comedi_: usbduxsigma: " \
- 			"Could not alloc. urbOut array\n");
- 		tidy_up(&(usbduxsub[index]));
- 		up(&start_stop_sem);
-@@ -2514,7 +2514,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 		/* one frame: 1ms */
- 		usbduxsub[index].urbOut[i] = usb_alloc_urb(1, GFP_KERNEL);
- 		if (usbduxsub[index].urbOut[i] == NULL) {
--			dev_err(dev, "comedi_: usbduxsigma%d: "
-+			dev_err(dev, "comedi_: usbduxsigma%d: " \
- 				"Could not alloc. urb(%d)\n", index, i);
- 			tidy_up(&(usbduxsub[index]));
- 			up(&start_stop_sem);
-@@ -2530,7 +2530,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 		usbduxsub[index].urbOut[i]->transfer_buffer =
- 		    kzalloc(SIZEOUTBUF, GFP_KERNEL);
- 		if (!(usbduxsub[index].urbOut[i]->transfer_buffer)) {
--			dev_err(dev, "comedi_: usbduxsigma%d: "
-+			dev_err(dev, "comedi_: usbduxsigma%d: " \
- 				"could not alloc. transb.\n", index);
- 			tidy_up(&(usbduxsub[index]));
- 			up(&start_stop_sem);
-@@ -2558,7 +2558,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 		usbduxsub[index].sizePwmBuf = 512;
- 		usbduxsub[index].urbPwm = usb_alloc_urb(0, GFP_KERNEL);
- 		if (usbduxsub[index].urbPwm == NULL) {
--			dev_err(dev, "comedi_: usbduxsigma%d: "
-+			dev_err(dev, "comedi_: usbduxsigma%d: " \
- 				"Could not alloc. pwm urb\n", index);
- 			tidy_up(&(usbduxsub[index]));
- 			up(&start_stop_sem);
-@@ -2567,7 +2567,7 @@ static int usbduxsigma_probe(struct usb_interface *uinterf,
- 		usbduxsub[index].urbPwm->transfer_buffer =
- 		    kzalloc(usbduxsub[index].sizePwmBuf, GFP_KERNEL);
- 		if (!(usbduxsub[index].urbPwm->transfer_buffer)) {
--			dev_err(dev, "comedi_: usbduxsigma%d: "
-+			dev_err(dev, "comedi_: usbduxsigma%d: " \
- 				"could not alloc. transb. for pwm\n", index);
- 			tidy_up(&(usbduxsub[index]));
- 			up(&start_stop_sem);
-@@ -2660,7 +2660,7 @@ static int usbduxsigma_attach(struct comedi_device *dev,
- 	}
- 
- 	if (index < 0) {
--		printk(KERN_ERR "comedi%d: usbduxsigma: error: attach failed,"
-+		pr_err("comedi%d: usbduxsigma: error: attach failed," \
- 		       "dev not connected to the usb bus.\n", dev->minor);
- 		up(&start_stop_sem);
- 		return -ENODEV;
-@@ -2792,7 +2792,7 @@ static int usbduxsigma_attach(struct comedi_device *dev,
- 	offset = usbdux_getstatusinfo(dev, 0);
- 	if (offset < 0)
- 		dev_err(&udev->interface->dev,
--			"Communication to USBDUXSIGMA failed!"
-+			"Communication to USBDUXSIGMA failed!" \
- 			"Check firmware and cabling.");
- 
- 	dev_info(&udev->interface->dev,
-@@ -2845,7 +2845,7 @@ static struct usb_driver usbduxsigma_driver = {
- /* registering the usb-system _and_ the comedi-driver */
- static int __init init_usbduxsigma(void)
- {
--	printk(KERN_INFO KBUILD_MODNAME ": "
-+	pr_info(KBUILD_MODNAME ": "
- 	       DRIVER_VERSION ":" DRIVER_DESC "\n");
- 	usb_register(&usbduxsigma_driver);
- 	comedi_driver_register(&driver_usbduxsigma);
--- 
-1.7.11.1
+You are right. But current code fails, when the function is called to offline
+memory. In this case, the function should succeed. So the patch confirms
+whether the memory was offlined or not. And if memory has already been
+offlined, offline_pages return 0.
+
+Thanks,
+Yasuaki Ishimatsu
+
+> 
+> Thanks
+> Wen Congyang
+> 
+>>
+>> CC: Len Brown <len.brown@intel.com>
+>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> CC: Paul Mackerras <paulus@samba.org>
+>> CC: Christoph Lameter <cl@linux.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> ---
+>>   drivers/base/memory.c  |   20 ++++++++++++++++++++
+>>   include/linux/memory.h |    1 +
+>>   mm/memory_hotplug.c    |    5 +++++
+>>   3 files changed, 26 insertions(+)
+>>
+>> Index: linux-3.5-rc4/drivers/base/memory.c
+>> ===================================================================
+>> --- linux-3.5-rc4.orig/drivers/base/memory.c	2012-06-26 13:28:16.726211752 +0900
+>> +++ linux-3.5-rc4/drivers/base/memory.c	2012-06-26 13:34:22.423639904 +0900
+>> @@ -70,6 +70,26 @@ void unregister_memory_isolate_notifier(
+>>   }
+>>   EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+>>
+>> +bool memory_is_offline(unsigned long start_pfn, unsigned long end_pfn)
+>> +{
+>> +	struct memory_block *mem;
+>> +	struct mem_section *section;
+>> +	unsigned long pfn, section_nr;
+>> +
+>> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+>> +		section_nr = pfn_to_section_nr(pfn);
+>> +		section = __nr_to_section(section_nr);
+>> +		mem = find_memory_block(section);
+>> +		if (!mem)
+>> +			continue;
+>> +		if (mem->state == MEM_OFFLINE)
+>> +			continue;
+>> +		return false;
+>> +	}
+>> +
+>> +	return true;
+>> +}
+>> +
+>>   /*
+>>    * register_memory - Setup a sysfs device for a memory block
+>>    */
+>> Index: linux-3.5-rc4/include/linux/memory.h
+>> ===================================================================
+>> --- linux-3.5-rc4.orig/include/linux/memory.h	2012-06-25 04:53:04.000000000 +0900
+>> +++ linux-3.5-rc4/include/linux/memory.h	2012-06-26 13:34:22.424639891 +0900
+>> @@ -120,6 +120,7 @@ extern int memory_isolate_notify(unsigne
+>>   extern struct memory_block *find_memory_block_hinted(struct mem_section *,
+>>   							struct memory_block *);
+>>   extern struct memory_block *find_memory_block(struct mem_section *);
+>> +extern bool memory_is_offline(unsigned long start_pfn, unsigned long end_pfn);
+>>   #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
+>>   enum mem_add_context { BOOT, HOTPLUG };
+>>   #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+>> Index: linux-3.5-rc4/mm/memory_hotplug.c
+>> ===================================================================
+>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-26 13:28:16.743211538 +0900
+>> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-26 13:48:38.264940468 +0900
+>> @@ -887,6 +887,11 @@ static int __ref offline_pages(unsigned
+>>
+>>   	lock_memory_hotplug();
+>>
+>> +	if (memory_is_offline(start_pfn, end_pfn)) {
+>> +		ret = 0;
+>> +		goto out;
+>> +	}
+>> +
+>>   	zone = page_zone(pfn_to_page(start_pfn));
+>>   	node = zone_to_nid(zone);
+>>   	nr_pages = end_pfn - start_pfn;
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
 
