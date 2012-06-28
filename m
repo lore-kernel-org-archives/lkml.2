@@ -1,78 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab2F1GIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 02:08:50 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42818 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932559Ab2F1GIm (ORCPT
+	id S932612Ab2F1GJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 02:09:06 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:47862 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932588Ab2F1GIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 02:08:42 -0400
-X-AuditID: 9c93016f-b7c85ae00000559e-ea-4febf4e7187a
-From: "Kim, Jong-Sung" <neidhard.kim@lge.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Cc: "'Minchan Kim'" <minchan@kernel.org>, "'Nicolas Pitre'" <nico@linaro.org>,
-        "'Catalin Marinas'" <catalin.marinas@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "'Chanho Min'" <chanho.min@lge.com>, <linux-mm@kvack.org>
-References: <1338880312-17561-1-git-send-email-minchan@kernel.org> <025701cd457e$d5065410$7f12fc30$@lge.com> <20120627191801.GD25319@n2100.arm.linux.org.uk>
-In-Reply-To: <20120627191801.GD25319@n2100.arm.linux.org.uk>
-Subject: RE: [PATCH] [RESEND] arm: limit memblock base address for	early_pte_alloc
-Date: Thu, 28 Jun 2012 15:08:39 +0900
-Message-ID: <00e901cd54f4$76773650$6365a2f0$@lge.com>
+	Thu, 28 Jun 2012 02:08:48 -0400
+X-AuditID: 0ac90646-9b4c8ba000003485-a4-4febf4ede662
+X-AuditID: 0ac90646-9b4c8ba000003485-a4-4febf4ede662
+From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+Subject: [RFC PATCH 15/18] KVM: vmx: Add definitions PIN_BASED_PREEMPTION_TIMER
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 28 Jun 2012 15:08:37 +0900
+Message-ID: <20120628060837.19298.3263.stgit@localhost.localdomain>
+In-Reply-To: <20120628060719.19298.43879.stgit@localhost.localdomain>
+References: <20120628060719.19298.43879.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQLyw5u255N8mX4sZ4V+/prpc6IPugIAV1CoATUkNV+UqpvyoA==
-Content-Language: ko
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: Thursday, June 28, 2012 4:18 AM
-> On Fri, Jun 08, 2012 at 10:58:50PM +0900, Kim, Jong-Sung wrote:
-> >
-> > May I suggest another simple approach? The first continuous couples of
-> > sections are always safely section-mapped inside alloc_init_section
-> funtion.
-> > So, by limiting memblock_alloc to the end of the first continuous
-> > couples of sections at the start of map_lowmem, map_lowmem can safely
-> > memblock_alloc & memset even if we have one or more section-unaligned
-> > memory regions. The limit can be extended back to arm_lowmem_limit after
-> the map_lowmem is done.
-> 
-> No.  What if the first block of memory is not large enough to handle all
-the
-> allocations?
-> 
-Thank you for your comment, Russell. I sent a modified patch not to limit to
-the first memory memblock_region as a reply to Dave's message.
+Add some definitions to use PIN_BASED_PREEMPTION_TIMER.
 
-> I think the real problem is folk trying to reserve small amounts.  I have
-> said all reservations must be aligned to 1MB.
->
-Ok, now I know your thought about arm_memblock_steal(). Then, how about
-adding a simple aligning to prevent the possible problem just like me:
+When PIN_BASED_PREEMPTION_TIMER is enabled, the guest will exit
+with reason=EXIT_REASON_PREEMPTION_TIMER when the counter specified in
+VMX_PREEMPTION_TIMER_VALUE becomes 0.
+This patch also adds a dummy handler for EXIT_REASON_PREEMPTION_TIMER,
+which just goes back to VM execution soon.
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index f54d592..d0daf0d 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -324,6 +324,8 @@ phys_addr_t __init arm_memblock_steal(phys_addr_t size,
-phys
+These are currently intended only to be used with avoid entering the
+guest on a slave CPU when vmx_prevent_run(vcpu, 1) is called.
+
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+
+ arch/x86/include/asm/vmx.h |    3 +++
+ arch/x86/kvm/trace.h       |    1 +
+ arch/x86/kvm/vmx.c         |    7 +++++++
+ 3 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
+index 31f180c..5ff43b1 100644
+--- a/arch/x86/include/asm/vmx.h
++++ b/arch/x86/include/asm/vmx.h
+@@ -65,6 +65,7 @@
+ #define PIN_BASED_EXT_INTR_MASK                 0x00000001
+ #define PIN_BASED_NMI_EXITING                   0x00000008
+ #define PIN_BASED_VIRTUAL_NMIS                  0x00000020
++#define PIN_BASED_PREEMPTION_TIMER              0x00000040
  
-        BUG_ON(!arm_memblock_steal_permitted);
+ #define VM_EXIT_SAVE_DEBUG_CONTROLS             0x00000002
+ #define VM_EXIT_HOST_ADDR_SPACE_SIZE            0x00000200
+@@ -195,6 +196,7 @@ enum vmcs_field {
+ 	GUEST_INTERRUPTIBILITY_INFO     = 0x00004824,
+ 	GUEST_ACTIVITY_STATE            = 0X00004826,
+ 	GUEST_SYSENTER_CS               = 0x0000482A,
++	VMX_PREEMPTION_TIMER_VALUE      = 0x0000482E,
+ 	HOST_IA32_SYSENTER_CS           = 0x00004c00,
+ 	CR0_GUEST_HOST_MASK             = 0x00006000,
+ 	CR4_GUEST_HOST_MASK             = 0x00006002,
+@@ -279,6 +281,7 @@ enum vmcs_field {
+ #define EXIT_REASON_APIC_ACCESS         44
+ #define EXIT_REASON_EPT_VIOLATION       48
+ #define EXIT_REASON_EPT_MISCONFIG       49
++#define EXIT_REASON_PREEMPTION_TIMER	52
+ #define EXIT_REASON_WBINVD		54
+ #define EXIT_REASON_XSETBV		55
  
-+       size = ALIGN(size, SECTION_SIZE);
+diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+index 911d264..28b4df8 100644
+--- a/arch/x86/kvm/trace.h
++++ b/arch/x86/kvm/trace.h
+@@ -218,6 +218,7 @@ TRACE_EVENT(kvm_apic,
+ 	{ EXIT_REASON_APIC_ACCESS,		"APIC_ACCESS" }, \
+ 	{ EXIT_REASON_EPT_VIOLATION,		"EPT_VIOLATION" }, \
+ 	{ EXIT_REASON_EPT_MISCONFIG,		"EPT_MISCONFIG" }, \
++	{ EXIT_REASON_PREEMPTION_TIMER,		"PREEMPTION_TIMER" }, \
+ 	{ EXIT_REASON_WBINVD,			"WBINVD" }
+ 
+ #define SVM_EXIT_REASONS \
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 3aea448..2c987d1 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4347,6 +4347,12 @@ static int handle_external_interrupt(struct kvm_vcpu *vcpu)
+ 	return 1;
+ }
+ 
++static int handle_preemption_timer(struct kvm_vcpu *vcpu)
++{
++	/* Nothing */
++	return 1;
++}
 +
-        phys = memblock_alloc(size, align);
-        memblock_free(phys, size);
-        memblock_remove(phys, size);
-
-or, leaving a few comments about the restriction kindly..?
-
+ static int handle_triple_fault(struct kvm_vcpu *vcpu)
+ {
+ 	vcpu->run->exit_reason = KVM_EXIT_SHUTDOWN;
+@@ -5645,6 +5651,7 @@ static int (*kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
+ 	[EXIT_REASON_VMON]                    = handle_vmon,
+ 	[EXIT_REASON_TPR_BELOW_THRESHOLD]     = handle_tpr_below_threshold,
+ 	[EXIT_REASON_APIC_ACCESS]             = handle_apic_access,
++	[EXIT_REASON_PREEMPTION_TIMER]        = handle_preemption_timer,
+ 	[EXIT_REASON_WBINVD]                  = handle_wbinvd,
+ 	[EXIT_REASON_XSETBV]                  = handle_xsetbv,
+ 	[EXIT_REASON_TASK_SWITCH]             = handle_task_switch,
 
 
