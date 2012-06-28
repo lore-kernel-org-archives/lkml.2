@@ -1,85 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932677Ab2F1JEB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 05:04:01 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:38466 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab2F1JD7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 05:03:59 -0400
-Date: Thu, 28 Jun 2012 11:03:16 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
-Message-ID: <20120628110316.0f53a1ef@BR9GNB5Z>
-In-Reply-To: <20120628083857.GD12447@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
-	<20120627050858.23698.44118.stgit@bling.home>
-	<20120627162430.3477d0f6@BR9GNB5Z>
-	<20120628083857.GD12447@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757336Ab2F1JES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 05:04:18 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:47915 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932524Ab2F1JEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 05:04:13 -0400
+Message-ID: <4FEC1D63.6000903@parallels.com>
+Date: Thu, 28 Jun 2012 13:01:23 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kir Kolyshkin <kir@parallels.com>
+Subject: Re: Fork bomb limitation in memcg WAS: Re: [PATCH 00/11] kmem controller
+ for memcg: stripped down version
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org> <4FEAD260.4000603@parallels.com> <alpine.DEB.2.00.1206271233080.22162@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1206271233080.22162@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12062809-5024-0000-0000-0000030E8540
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012 11:38:57 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> On Wed, Jun 27, 2012 at 04:24:30PM +0200, Cornelia Huck wrote:
-> > On Tue, 26 Jun 2012 23:09:04 -0600
-> > Alex Williamson <alex.williamson@redhat.com> wrote:
-> > 
-> > > Prune this down to just the struct kvm_irqfd so we can avoid
-> > > changing function definition for every flag or field we use.
-> > > 
-> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > 
-> > I'm currently trying to find a way to make irqfd workable for s390
-> > which will likely include using a new field in kvm_irqfd, so I'd like
-> > to have this change (and I also think it makes the code nicer to read).
-> > So:
-> > 
-> > Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+On 06/27/2012 11:38 PM, David Rientjes wrote:
+> On Wed, 27 Jun 2012, Glauber Costa wrote:
 > 
-> Unfortunately it looks like we are not sanitizing kvm_irqfd
-> at all so we won't be able to use the padding :(
-> We'll need a new ioctl instead.
+>> fork bombs are a way bad behaved processes interfere with the rest of
+>> the system. In here, I propose fork bomb stopping as a natural
+>> consequence of the fact that the amount of kernel memory can be limited,
+>> and each process uses 1 or 2 pages for the stack, that are freed when the
+>> process goes away.
+>>
+> 
+> The obvious disadvantage is that if you use the full-featured kmem 
+> controller that builds upon this patchset, then you're limiting the about 
+> of all kmem, not just the stack that this particular set limits.  I hope 
+> you're not proposing it to go upstream before full support for the kmem 
+> controller is added so that users who use it only to protect again 
+> forkbombs soon realize that's no longer possible if your applications do 
+> any substantial slab allocations, particularly anything that does a lot of 
+> I/O.
+
+Point by point:
+
+1) This is not a disadvantage. The whole point of implementing it as
+kmem, not as a "fork controller" or anything in the like, was our
+understanding that people should not be "protecting against a x number
+of processes". Because this is unnatural. All you have is total of
+kernel memory, because that's what the interface gives you. If you can
+overuse memory, you can't fork bomb. But that's a consequence.
+
+I'll grant that maybe it was a mistake of mine to try to sell it this
+way here, because it may give the wrong idea. In this case I welcome
+your comment because it will allow me to be more careful in future
+communications. But this was just me trying to show off the feature.
+
+2) No admin should never, ever tune the system to a particular kmem
+limit value. And again, this is the whole point of not limiting "number
+of processes". I agree that adding slab tracking will raise kernel
+memory consumption by a reasonable amount. But reality is that even if
+this controller is totally stable, that not only can, but will happen.
+
+Unlike user memory, where whoever writes the application control its
+behavior (forget about the libraries for a moment), users never really
+control the internals of the kernel. If you ever rely on the fact that
+you are currently using X Gb of kmem, and that should be enough, your
+setup will break when the data structure grows - as they do - when the
+kernel memory consumption rises naturally by algorithms - as it does,
+and so on.
+
+3) Agreeing that of course, preventing disruption if we can help it is
+good, this feature is not only marked experimental, but default of. This
+was done precisely not to disrupt the amount of *user* memory used,
+where I actually think it makes a lot of sense ("My application
+allocates 4G, that's what I'll give it!"). Even if support is compiled
+in, it won't be until you start limiting it that anything will happen.
+Kernel Memory won't even be tracked until then. And I also understand
+that our use case here may be quite unique: We want the kernel memory
+limit to be way lower than the user limit (like 20 % - but that's still
+a percentage, not a tune!). When I discussed this around with other
+people, the vast majority of them wanted to set kmem = umem. Which
+basically means "user memory is the limit, but we want the kernel memory
+to be accounted as well".
+
+So yes, although I understand your point - but not fully agree, I would
+like to get it merged as is. I don't believe adding slab memory later
+will be disruptive, in the same way I didn't believe adding stack later
+- in my original slab tracking patch - would be. As I originally stated,
+this would allow me to greatly simplify the slab tracking patches, since
+we'll be able to focus on that only, instead of a gigantic patch that
+does a lot.
+
+Other people have interest in this, so this would allow them to start
+building on it as well. That said, I won't oppose adding more code if
+you suggest so to make sure people rely less on the accidental fact that
+we're only tracking a part of what we will, even if they shouldn't.
+
+ - It's already experimental
+ - It's already default off.
+ - I could add a warn message first time it is set.
+ - I could add a boot option.
+
+Or anything like this.
+
+Last, but not least, note that it is totally within my interests to
+merge the slab tracking as fast as we can. it'll be a matter of going
+back to it, and agreeing in the final form.
+
+> 
+> In other words, if I want to run netperf in a memcg with the full-featured 
+> kmem controller enabled, then its kmem limit must be high enough so that 
+> it doesn't degrade performance that any limitation on stack allocations 
+> would be too high to effectively stop forkbombs.
 > 
 
-How about something like this as parameter for the new ioctl?
+That is a user setup problem. As I explained before, That's exactly what
+we want to discourage by exposing "kernel memory" instead of a
+particular tunable.
 
-struct kvm_irqfd2 {
-	__u32 fd;
-	__u32 flags;  /* for things like deassign */
-	__u64 type;   /* determines the payload */
-	union {
-		/* type traditional */
-		struct {
-			__u32 gsi;
-		} trad;
-		/* type s390 */
-		struct {
-			__u32 int_type;
-			__u32 parm;
-			__u64 parm64;
-		} s390;
-		__u8 pad[20];
-	};
-}
+As it is, I agree, it will stop fork bombs but will take a lot more time
+for it than it should. But this only makes it analogous to the
+evolutionary precursors to the human eye: It's not perfect, but will
+achieve something that may be already of great value for a class of
+users. Improvements are certain to follow.
 
-This could be combined with an arch or a per-kvm callback to keep the
-generic code clean of architecture dependencies.
-
-Cornelia
+Thank you David!
 
