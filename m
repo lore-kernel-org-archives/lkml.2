@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab2F1NIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:08:35 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:36595 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab2F1NI3 (ORCPT
+	id S1755258Ab2F1NIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:08:46 -0400
+Received: from mail-gg0-f202.google.com ([209.85.161.202]:61500 "EHLO
+	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755122Ab2F1NIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 09:08:29 -0400
+	Thu, 28 Jun 2012 09:08:41 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>,
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 10/23 v6] Input: atmel_mxt_ts - return errors from i2c layer
-Date: Thu, 28 Jun 2012 21:08:11 +0800
-Message-Id: <1340888904-15620-11-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 20/23 v6] Input: atmel_mxt_ts - refactor reportid checking in mxt_interrupt
+Date: Thu, 28 Jun 2012 21:08:21 +0800
+Message-Id: <1340888904-15620-21-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
 References: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
@@ -25,80 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c layer can report a variety of errors, including -ENXIO for an i2c
-NAK.  Instead of treating them all as -EIO, pass the actual i2c layer
-error up to the caller.
-
-However, still report as -EIO the unlikely case that a transaction was
-partially completed, and no error message was returned from i2c_*().
+This small refactor is in preparation for checking more report types
+in the mxt_interrupt message processing loop.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   28 ++++++++++++++++++++--------
- 1 files changed, 20 insertions(+), 8 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index ee37b0b..a68b227 100644
+index 48f3637..a9e0b54 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -396,6 +396,7 @@ static int __mxt_read_reg(struct i2c_client *client,
- {
- 	struct i2c_msg xfer[2];
- 	u8 buf[2];
-+	int ret;
- 
- 	buf[0] = reg & 0xff;
- 	buf[1] = (reg >> 8) & 0xff;
-@@ -412,12 +413,17 @@ static int __mxt_read_reg(struct i2c_client *client,
- 	xfer[1].len = len;
- 	xfer[1].buf = val;
- 
--	if (i2c_transfer(client->adapter, xfer, 2) != 2) {
--		dev_err(&client->dev, "%s: i2c transfer failed\n", __func__);
--		return -EIO;
-+	ret = i2c_transfer(client->adapter, xfer, 2);
-+	if (ret == 2) {
-+		ret = 0;
-+	} else {
-+		if (ret >= 0)
-+			ret = -EIO;
-+		dev_err(&client->dev, "%s: i2c transfer failed (%d)\n",
-+			__func__, ret);
- 	}
- 
--	return 0;
-+	return ret;
+@@ -554,6 +554,12 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 	input_sync(input_dev);
  }
  
- static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
-@@ -428,17 +434,23 @@ static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
- static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
++static bool mxt_is_T9_message(struct mxt_data *data, struct mxt_message *msg)
++{
++	u8 id = msg->reportid;
++	return (id >= data->T9_reportid_min && id <= data->T9_reportid_max);
++}
++
+ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
  {
- 	u8 buf[3];
-+	int ret;
+ 	struct mxt_data *data = dev_id;
+@@ -561,8 +567,6 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 	struct device *dev = &data->client->dev;
+ 	int id;
+ 	u8 reportid;
+-	u8 max_reportid;
+-	u8 min_reportid;
  
- 	buf[0] = reg & 0xff;
- 	buf[1] = (reg >> 8) & 0xff;
- 	buf[2] = val;
+ 	do {
+ 		if (mxt_read_message(data, &message)) {
+@@ -572,11 +576,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
  
--	if (i2c_master_send(client, buf, 3) != 3) {
--		dev_err(&client->dev, "%s: i2c send failed\n", __func__);
--		return -EIO;
-+	ret = i2c_master_send(client, buf, 3);
-+	if (ret == 3) {
-+		ret = 0;
-+	} else {
-+		if (ret >= 0)
-+			ret = -EIO;
-+		dev_err(&client->dev, "%s: i2c send failed (%d)\n",
-+			__func__, ret);
- 	}
+ 		reportid = message.reportid;
  
--	return 0;
-+	return ret;
- }
+-		max_reportid = data->T9_reportid_max;
+-		min_reportid = data->T9_reportid_min;
+-		id = reportid - min_reportid;
++		id = reportid - data->T9_reportid_min;
  
- static int mxt_read_object_table(struct i2c_client *client,
+-		if (reportid >= min_reportid && reportid <= max_reportid)
++		if (mxt_is_T9_message(data, &message))
+ 			mxt_input_touchevent(data, &message, id);
+ 		else
+ 			mxt_dump_message(dev, &message);
 -- 
 1.7.7.3
 
