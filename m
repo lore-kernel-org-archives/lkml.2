@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab2F1QHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:07:51 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:55840 "EHLO
+	id S1755715Ab2F1QIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:08:53 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:51443 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790Ab2F1QHt convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752788Ab2F1QIw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:07:49 -0400
+	Thu, 28 Jun 2012 12:08:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <1340232467-6023-12-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1340232467-6023-13-git-send-email-john.stultz@linaro.org>
 References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
-	<1340232467-6023-12-git-send-email-john.stultz@linaro.org>
-Date: Thu, 28 Jun 2012 18:07:48 +0200
-Message-ID: <CACRpkdZJwocwwFUeVte+NTN83LRaiBvis9nHWV0KUj9htsDoQg@mail.gmail.com>
-Subject: Re: [PATCH 11/15] ARM: etm: Check arch version and disable data
- tracing for ptm
+	<1340232467-6023-13-git-send-email-john.stultz@linaro.org>
+Date: Thu, 28 Jun 2012 18:08:51 +0200
+Message-ID: <CACRpkdZMkjBtQ2i04-+F8QLoQBmveGqDutpVDfdyRj0BFGKm3A@mail.gmail.com>
+Subject: Re: [PATCH 12/15] ARM: etm: Add sysfs entry to enable timestamps if supported
 From: Linus Walleij <linus.walleij@linaro.org>
 To: John Stultz <john.stultz@linaro.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -30,33 +29,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, Jun 21, 2012 at 12:47 AM, John Stultz <john.stultz@linaro.org> wrote:
 
-> +#define ETMR_ID                        0x1e4
-> +#define ETMIDR_VERSION(x)      (((x) >> 4) & 0xff)
-> +#define ETMIDR_VERSION_PFT_1_0 0x30
+> From: Arve Hjønnevåg <arve@android.com>
+>
+> Add sysfs entry to enable timestamps if supported
+>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+> CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> Signed-off-by: Arve Hjønnevåg <arve@android.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-NAK don't reinvent this stuff.
-
->From <linux/amba/bus.h>
-
-Use these macros on the periphid:
-#define amba_config(d)  AMBA_CONFIG_BITS((d)->periphid)
-#define amba_rev(d)     AMBA_REV_BITS((d)->periphid)
-#define amba_manf(d)    AMBA_MANF_BITS((d)->periphid)
-#define amba_part(d)    AMBA_PART_BITS((d)->periphid)
-
-I thin amba_rev() is the one you're looking for (not sure).
-
-So here:
-
-> @@ -724,6 +724,9 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
-
-> +       if (etmccr & ETMCCR_ETMIDR_PRESENT) {
-> +               etmidr = etm_readl(t, t->etm_regs_count, ETMR_ID);
-> +               etm_version = ETMIDR_VERSION(etmidr);
-
-etm_version = amba_rev(dev);
-
-etc.
+After proper changes to previous patch:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Yours,
 Linus Walleij
