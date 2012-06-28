@@ -1,191 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab2F1Idd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 04:33:33 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:55681 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756426Ab2F1Id2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 04:33:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6755"; a="205458329"
-From: Yaniv Gardi <ygardi@codeaurora.org>
-To: linux-mmc@vger.kernel.org
-Cc: ygardi@codeaurora.org, merez@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH RESEND v7 2/2] mmc: card: Adding support for sanitize in eMMC 4.5
-Date: Thu, 28 Jun 2012 11:32:46 +0300
-Message-Id: <1340872367-16206-3-git-send-email-ygardi@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1340872367-16206-1-git-send-email-ygardi@codeaurora.org>
-References: <1340872367-16206-1-git-send-email-ygardi@codeaurora.org>
+	id S932507Ab2F1Id7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 04:33:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:48603 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932436Ab2F1Idx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 04:33:53 -0400
+X-IronPort-AV: E=Sophos;i="4.77,490,1336320000"; 
+   d="scan'208";a="5282558"
+Message-ID: <4FEC17F8.1000405@cn.fujitsu.com>
+Date: Thu, 28 Jun 2012 16:38:16 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH 4/12] memory-hotplug : remove /sys/firmware/memmap/X
+ sysfs
+References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9E5F.4070205@jp.fujitsu.com> <4FEBFA8D.5040607@cn.fujitsu.com> <4FEC10CB.3060403@jp.fujitsu.com>
+In-Reply-To: <4FEC10CB.3060403@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/28 16:33:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/28 16:34:00,
+	Serialize complete at 2012/06/28 16:34:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This feature delete the unmap memory region of the eMMC card,
-by writing to a specific register in the EXT_CSD
-unmap region is the memory region that were previously deleted
-(by erase, trim or discard operation)
+At 06/28/2012 04:07 PM, Yasuaki Ishimatsu Wrote:
+> Hi Wen,
+> 
+> 2012/06/28 15:32, Wen Congyang wrote:
+>> At 06/27/2012 01:47 PM, Yasuaki Ishimatsu Wrote:
+>>> When (hot)adding memory into system, /sys/firmware/memmap/X/{end,
+>>> start, type}
+>>> sysfs files are created. But there is no code to remove these files.
+>>> The patch
+>>> implements the function to remove them.
+>>>
+>>> Note : The code does not free firmware_map_entry since there is no
+>>> way to free
+>>>         memory which is allocated by bootmem.
+>>>
+>>> CC: Len Brown <len.brown@intel.com>
+>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>> CC: Paul Mackerras <paulus@samba.org>
+>>> CC: Christoph Lameter <cl@linux.com>
+>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>
+>>> ---
+>>>   drivers/firmware/memmap.c    |   71
+>>> +++++++++++++++++++++++++++++++++++++++++++
+>>>   include/linux/firmware-map.h |    6 +++
+>>>   mm/memory_hotplug.c          |    6 +++
+>>>   3 files changed, 82 insertions(+), 1 deletion(-)
+>>>
+>>> Index: linux-3.5-rc4/mm/memory_hotplug.c
+>>> ===================================================================
+>>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c    2012-06-26
+>>> 13:37:30.546288901 +0900
+>>> +++ linux-3.5-rc4/mm/memory_hotplug.c    2012-06-26
+>>> 13:44:37.069955820 +0900
+>>> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
+>>>
+>>>   int remove_memory(int nid, u64 start, u64 size)
+>>>   {
+>>> -    return -EBUSY;
+>>> +    lock_memory_hotplug();
+>>> +    /* remove memmap entry */
+>>> +    firmware_map_remove(start, start + size, "System RAM");
+>>> +    unlock_memory_hotplug();
+>>> +    return 0;
+>>>
+>>>   }
+>>>   EXPORT_SYMBOL_GPL(remove_memory);
+>>> Index: linux-3.5-rc4/include/linux/firmware-map.h
+>>> ===================================================================
+>>> --- linux-3.5-rc4.orig/include/linux/firmware-map.h    2012-06-25
+>>> 04:53:04.000000000 +0900
+>>> +++ linux-3.5-rc4/include/linux/firmware-map.h    2012-06-26
+>>> 13:44:37.070955807 +0900
+>>> @@ -25,6 +25,7 @@
+>>>
+>>>   int firmware_map_add_early(u64 start, u64 end, const char *type);
+>>>   int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
+>>> +int firmware_map_remove(u64 start, u64 end, const char *type);
+>>>
+>>>   #else /* CONFIG_FIRMWARE_MEMMAP */
+>>>
+>>> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
+>>>       return 0;
+>>>   }
+>>>
+>>> +static inline int firmware_map_remove(u64 start, u64 end, const char
+>>> *type)
+>>> +{
+>>> +    return 0;
+>>> +}
+>>> +
+>>>   #endif /* CONFIG_FIRMWARE_MEMMAP */
+>>>
+>>>   #endif /* _LINUX_FIRMWARE_MAP_H */
+>>> Index: linux-3.5-rc4/drivers/firmware/memmap.c
+>>> ===================================================================
+>>> --- linux-3.5-rc4.orig/drivers/firmware/memmap.c    2012-06-25
+>>> 04:53:04.000000000 +0900
+>>> +++ linux-3.5-rc4/drivers/firmware/memmap.c    2012-06-26
+>>> 13:47:17.606948898 +0900
+>>> @@ -123,6 +123,16 @@ static int firmware_map_add_entry(u64 st
+>>>       return 0;
+>>>   }
+>>>
+>>> +/**
+>>> + * firmware_map_remove_entry() - Does the real work to remove a
+>>> firmware
+>>> + * memmap entry.
+>>> + * @entry: removed entry.
+>>> + **/
+>>> +static inline void firmware_map_remove_entry(struct
+>>> firmware_map_entry *entry)
+>>> +{
+>>> +    list_del(&entry->list);
+>>> +}
+>>> +
+>>>   /*
+>>>    * Add memmap entry on sysfs
+>>>    */
+>>> @@ -144,6 +154,31 @@ static int add_sysfs_fw_map_entry(struct
+>>>       return 0;
+>>>   }
+>>>
+>>> +/*
+>>> + * Remove memmap entry on sysfs
+>>> + */
+>>> +static inline void remove_sysfs_fw_map_entry(struct
+>>> firmware_map_entry *entry)
+>>> +{
+>>> +    kobject_del(&entry->kobj);
+>>> +}
+>>> +
+>>> +/*
+>>> + * Search memmap entry
+>>> + */
+>>> +
+>>> +struct firmware_map_entry * __meminit
+>>> +find_firmware_map_entry(u64 start, u64 end, const char *type)
+>>> +{
+>>> +    struct firmware_map_entry *entry;
+>>> +
+>>> +    list_for_each_entry(entry, &map_entries, list)
+>>> +        if ((entry->start == start) && (entry->end == end) &&
+>>> +            (!strcmp(entry->type, type)))
+>>> +            return entry;
+>>> +
+>>> +    return NULL;
+>>> +}
+>>> +
+>>>   /**
+>>>    * firmware_map_add_hotplug() - Adds a firmware mapping entry when
+>>> we do
+>>>    * memory hotplug.
+>>> @@ -196,6 +231,42 @@ int __init firmware_map_add_early(u64 st
+>>>       return firmware_map_add_entry(start, end, type, entry);
+>>>   }
+>>>
+>>> +void release_firmware_map_entry(struct firmware_map_entry *entry)
+>>> +{
+>>> +    /*
+>>> +     * FIXME : There is no idea.
+>>> +     *         How to free the entry which allocated bootmem?
+>>> +     */
+>>> +}
+>>> +
+>>> +/**
+>>> + * firmware_map_remove() - remove a firmware mapping entry
+>>> + * @start: Start of the memory range.
+>>> + * @end:   End of the memory range (inclusive).
+>>> + * @type:  Type of the memory range.
+>>> + *
+>>> + * removes a firmware mapping entry.
+>>> + *
+>>> + * Returns 0 on success, or -EINVAL if no entry.
+>>> + **/
+>>> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
+>>> +{
+>>> +    struct firmware_map_entry *entry;
+>>> +
+>>> +    entry = find_firmware_map_entry(start, end, type);
+>>
+>> Hmm, we cannot find the entry easily, because the end can be:
+>> 1. start + size
+>> 2. start + size - 1
+>>
+>> So, We should fix this bug first.
+> 
+> This is not a bug.
+> 
+> start and size arguments of firmware_map_remove() include
+> acpi_memory_info->{start_addr, length}. And when creating a
+> firmware_map_entry,
+> the entry is created by acpi_memory_info->{start_addr, length}. So I don't
+> think that we need care your comment.
 
-Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+If the memory device is hotpluged before the os starts, and the memory
+map is included in e820 map, the entry will be created by firmware_map_add_early().
 
----
- drivers/mmc/card/block.c |   72 +++++++++++++++++++++++++++++++++-------------
- drivers/mmc/card/queue.c |   10 ++++++-
- include/linux/mmc/host.h |    1 +
- 3 files changed, 62 insertions(+), 21 deletions(-)
+The function firmware_map_add_early() is called by e820_reserve_resources():
+=====================
+	for (i = 0; i < e820_saved.nr_map; i++) {
+		struct e820entry *entry = &e820_saved.map[i];
+		firmware_map_add_early(entry->addr,
+			entry->addr + entry->size - 1,
+			e820_type_to_string(entry->type));
+	}
+=====================
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index dd2d374..139971e 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -874,10 +874,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- {
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
--	unsigned int from, nr, arg, trim_arg, erase_arg;
-+	unsigned int from, nr, arg;
- 	int err = 0, type = MMC_BLK_SECDISCARD;
- 
--	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-+	if (!(mmc_can_secure_erase_trim(card))) {
- 		err = -EOPNOTSUPP;
- 		goto out;
- 	}
-@@ -885,23 +885,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- 	from = blk_rq_pos(req);
- 	nr = blk_rq_sectors(req);
- 
--	/* The sanitize operation is supported at v4.5 only */
--	if (mmc_can_sanitize(card)) {
--		erase_arg = MMC_ERASE_ARG;
--		trim_arg = MMC_TRIM_ARG;
--	} else {
--		erase_arg = MMC_SECURE_ERASE_ARG;
--		trim_arg = MMC_SECURE_TRIM1_ARG;
--	}
--
--	if (mmc_erase_group_aligned(card, from, nr))
--		arg = erase_arg;
--	else if (mmc_can_trim(card))
--		arg = trim_arg;
--	else {
--		err = -EINVAL;
--		goto out;
--	}
-+	if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
-+		arg = MMC_SECURE_TRIM1_ARG;
-+	else
-+		arg = MMC_SECURE_ERASE_ARG;
- retry:
- 	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
- 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-@@ -953,6 +940,46 @@ out:
- 	return err ? 0 : 1;
- }
- 
-+static int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
-+				      struct request *req)
-+{
-+	struct mmc_blk_data *md = mq->data;
-+	struct mmc_card *card = md->queue.card;
-+	int err = 0;
-+
-+	BUG_ON(!card);
-+	BUG_ON(!card->host);
-+
-+	if (!(mmc_can_sanitize(card) &&
-+	     (card->host->caps2 & MMC_CAP2_SANITIZE))) {
-+			pr_warning("%s: %s - SANITIZE is not supported\n",
-+				   mmc_hostname(card->host), __func__);
-+			err = -EOPNOTSUPP;
-+			goto out;
-+	}
-+
-+	pr_debug("%s: %s - SANITIZE IN PROGRESS...\n",
-+		mmc_hostname(card->host), __func__);
-+
-+	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+					 EXT_CSD_SANITIZE_START, 1, 0);
-+
-+	if (err)
-+		pr_err("%s: %s - mmc_switch() with "
-+		       "EXT_CSD_SANITIZE_START failed. err=%d\n",
-+		       mmc_hostname(card->host), __func__, err);
-+
-+	pr_debug("%s: %s - SANITIZE COMPLETED\n", mmc_hostname(card->host),
-+					     __func__);
-+
-+out:
-+	spin_lock_irq(&md->lock);
-+	__blk_end_request(req, err, blk_rq_bytes(req));
-+	spin_unlock_irq(&md->lock);
-+
-+	return err ? 0 : 1;
-+}
-+
- static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
- {
- 	struct mmc_blk_data *md = mq->data;
-@@ -1437,7 +1464,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 		goto out;
- 	}
- 
--	if (req && req->cmd_flags & REQ_DISCARD) {
-+	if (req && req->cmd_flags & REQ_SANITIZE) {
-+		/* complete ongoing async transfer before issuing sanitize */
-+		if (card->host && card->host->areq)
-+			mmc_blk_issue_rw_rq(mq, NULL);
-+		ret = mmc_blk_issue_sanitize_rq(mq, req);
-+	} else if (req && req->cmd_flags & REQ_DISCARD) {
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index e360a97..4f3250e 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -145,10 +145,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
- 	/* granularity must not be greater than max. discard */
- 	if (card->pref_erase > max_discard)
- 		q->limits.discard_granularity = 0;
--	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
-+	if (mmc_can_secure_erase_trim(card))
- 		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
- }
- 
-+static void mmc_queue_setup_sanitize(struct request_queue *q)
-+{
-+	queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, q);
-+}
-+
- /**
-  * mmc_init_queue - initialise a queue structure.
-  * @mq: mmc queue
-@@ -184,6 +189,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 	if (mmc_can_erase(card))
- 		mmc_queue_setup_discard(mq->queue, card);
- 
-+	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
-+		mmc_queue_setup_sanitize(mq->queue);
-+
- #ifdef CONFIG_MMC_BLOCK_BOUNCE
- 	if (host->max_segs == 1) {
- 		unsigned int bouncesz;
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 0707d22..be2b89f 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -238,6 +238,7 @@ struct mmc_host {
- #define MMC_CAP2_BROKEN_VOLTAGE	(1 << 7)	/* Use the broken voltage */
- #define MMC_CAP2_DETECT_ON_ERR	(1 << 8)	/* On I/O err check card removal */
- #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
-+#define MMC_CAP2_SANITIZE	(1 << 10)		/* Support Sanitize */
- 
- 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
- 	unsigned int        power_notify_type;
--- 
-1.7.6
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+Note: the end is addr + size - 1, not addr + size.
+
+In such case, you cannot find the entry.
+
+Thanks
+Wen Congyang
+
+> 
+>>
+>>> +    if (!entry)
+>>> +        return -EINVAL;
+>>> +
+>>> +    /* remove the memmap entry */
+>>> +    remove_sysfs_fw_map_entry(entry);
+>>> +
+>>> +    firmware_map_remove_entry(entry);
+>>> +
+>>> +    release_firmware_map_entry(entry);
+>>
+>> I guess you want to free the memory in the above function. But I think
+>> it is
+>> not a good idea to free it here. We should free it when the
+>> entry->kobj's kref
+>> is decreased to 0.
+> 
+> Thanks.
+> I'll update your comment at next version.
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+>>
+>> Thanks
+>> Wen Congyang
+>>
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>>   /*
+>>>    * Sysfs functions
+>>> -------------------------------------------------------------
+>>>    */
+>>>
+>>> -- 
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>> -- 
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+> 
+> 
+> 
+> 
+
