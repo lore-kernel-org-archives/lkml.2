@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab2F1IdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 04:33:25 -0400
+	id S932431Ab2F1Idd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 04:33:33 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:55681 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab2F1IdV (ORCPT
+	with ESMTP id S1756426Ab2F1Id2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 04:33:21 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6755"; a="205458295"
+	Thu, 28 Jun 2012 04:33:28 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6755"; a="205458329"
 From: Yaniv Gardi <ygardi@codeaurora.org>
 To: linux-mmc@vger.kernel.org
 Cc: ygardi@codeaurora.org, merez@codeaurora.org, linux-arm-msm@vger.kernel.org,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH RESEND v7 1/2] block: ioctl support for sanitize in eMMC 4.5
-Date: Thu, 28 Jun 2012 11:32:45 +0300
-Message-Id: <1340872367-16206-2-git-send-email-ygardi@codeaurora.org>
+Subject: [PATCH RESEND v7 2/2] mmc: card: Adding support for sanitize in eMMC 4.5
+Date: Thu, 28 Jun 2012 11:32:46 +0300
+Message-Id: <1340872367-16206-3-git-send-email-ygardi@codeaurora.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1340872367-16206-1-git-send-email-ygardi@codeaurora.org>
 References: <1340872367-16206-1-git-send-email-ygardi@codeaurora.org>
@@ -22,271 +22,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a new ioctl to support sanitize operation in eMMC
-cards version 4.5.
-The sanitize ioctl support helps performing this operation
-via user application.
+This feature delete the unmap memory region of the eMMC card,
+by writing to a specific register in the EXT_CSD
+unmap region is the memory region that were previously deleted
+(by erase, trim or discard operation)
 
 Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
 
 ---
- block/blk-core.c          |   15 ++++++++++--
- block/blk-lib.c           |   51 +++++++++++++++++++++++++++++++++++++++++++++
- block/blk-merge.c         |    4 +++
- block/elevator.c          |    2 +-
- block/ioctl.c             |    9 ++++++++
- include/linux/blk_types.h |    5 +++-
- include/linux/blkdev.h    |    3 ++
- include/linux/fs.h        |    1 +
- kernel/trace/blktrace.c   |    2 +
- 9 files changed, 87 insertions(+), 5 deletions(-)
+ drivers/mmc/card/block.c |   72 +++++++++++++++++++++++++++++++++-------------
+ drivers/mmc/card/queue.c |   10 ++++++-
+ include/linux/mmc/host.h |    1 +
+ 3 files changed, 62 insertions(+), 21 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 3c923a7..4a56102b 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1641,7 +1641,7 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
- 
--	if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
-+	if (unlikely(!(bio->bi_rw & (REQ_DISCARD | REQ_SANITIZE)) &&
- 		     nr_sectors > queue_max_hw_sectors(q))) {
- 		printk(KERN_ERR "bio too big device %s (%u > %u)\n",
- 		       bdevname(bio->bi_bdev, b),
-@@ -1689,6 +1689,14 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
- 
-+	if ((bio->bi_rw & REQ_SANITIZE) &&
-+	    (!blk_queue_sanitize(q))) {
-+		pr_info("%s - got a SANITIZE request but the queue "
-+		       "doesn't support sanitize requests", __func__);
-+		err = -EOPNOTSUPP;
-+		goto end_io;
-+	}
-+
- 	if (blk_throtl_bio(q, bio))
- 		return false;	/* throttled, will be resubmitted later */
- 
-@@ -1794,7 +1802,8 @@ void submit_bio(int rw, struct bio *bio)
- 	 * If it's a regular read/write or a barrier with data attached,
- 	 * go through the normal accounting stuff before submission.
- 	 */
--	if (bio_has_data(bio) && !(rw & REQ_DISCARD)) {
-+	if (bio_has_data(bio) &&
-+	    (!(rw & (REQ_DISCARD | REQ_SANITIZE)))) {
- 		if (rw & WRITE) {
- 			count_vm_events(PGPGOUT, count);
- 		} else {
-@@ -1840,7 +1849,7 @@ EXPORT_SYMBOL(submit_bio);
-  */
- int blk_rq_check_limits(struct request_queue *q, struct request *rq)
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index dd2d374..139971e 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -874,10 +874,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
  {
--	if (rq->cmd_flags & REQ_DISCARD)
-+	if (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))
- 		return 0;
+ 	struct mmc_blk_data *md = mq->data;
+ 	struct mmc_card *card = md->queue.card;
+-	unsigned int from, nr, arg, trim_arg, erase_arg;
++	unsigned int from, nr, arg;
+ 	int err = 0, type = MMC_BLK_SECDISCARD;
  
- 	if (blk_rq_sectors(rq) > queue_max_sectors(q) ||
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 2b461b4..280d63e 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -115,6 +115,57 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- EXPORT_SYMBOL(blkdev_issue_discard);
+-	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
++	if (!(mmc_can_secure_erase_trim(card))) {
+ 		err = -EOPNOTSUPP;
+ 		goto out;
+ 	}
+@@ -885,23 +885,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
+ 	from = blk_rq_pos(req);
+ 	nr = blk_rq_sectors(req);
  
- /**
-+ * blkdev_issue_sanitize - queue a sanitize request
-+ * @bdev:	blockdev to issue sanitize for
-+ * @gfp_mask:	memory allocation flags (for bio_alloc)
-+ *
-+ * Description:
-+ *    Issue a sanitize request for the specified block device
-+ */
-+int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask)
-+{
-+	DECLARE_COMPLETION_ONSTACK(wait);
-+	struct request_queue *q = bdev_get_queue(bdev);
-+	int type = REQ_WRITE | REQ_SANITIZE;
-+	struct bio_batch bb;
-+	struct bio *bio;
-+	int ret = 0;
-+
-+	if (!q)
-+		return -ENXIO;
-+
-+	if (!blk_queue_sanitize(q)) {
-+		pr_err("%s - card doesn't support sanitize", __func__);
-+		return -EOPNOTSUPP;
-+	}
-+
-+	bio = bio_alloc(gfp_mask, 1);
-+	if (!bio)
-+		return -ENOMEM;
-+
-+	atomic_set(&bb.done, 1);
-+	bb.flags = 1 << BIO_UPTODATE;
-+	bb.wait = &wait;
-+
-+	bio->bi_end_io = bio_batch_end_io;
-+	bio->bi_bdev = bdev;
-+	bio->bi_private = &bb;
-+
-+	atomic_inc(&bb.done);
-+	submit_bio(type, bio);
-+
-+	/* Wait for bios in-flight */
-+	if (!atomic_dec_and_test(&bb.done))
-+		wait_for_completion(&wait);
-+
-+	if (!test_bit(BIO_UPTODATE, &bb.flags))
-+		ret = -EIO;
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(blkdev_issue_sanitize);
-+
-+/**
-  * blkdev_issue_zeroout - generate number of zero filed write bios
-  * @bdev:	blockdev to issue
-  * @sector:	start sector
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 160035f..7e24772 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -477,6 +477,10 @@ bool blk_rq_merge_ok(struct request *rq, struct bio *bio)
- 	if (!rq_mergeable(rq))
- 		return false;
- 
-+	/* don't merge file system requests and sanitize requests */
-+	if ((req->cmd_flags & REQ_SANITIZE) != (next->cmd_flags & REQ_SANITIZE))
-+		return false;
-+
- 	/* don't merge file system requests and discard requests */
- 	if ((bio->bi_rw & REQ_DISCARD) != (rq->bio->bi_rw & REQ_DISCARD))
- 		return false;
-diff --git a/block/elevator.c b/block/elevator.c
-index 6a55d41..91f1de1 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -563,7 +563,7 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
- 		/* barriers are scheduling boundary, update end_sector */
- 		if (rq->cmd_type == REQ_TYPE_FS ||
--		    (rq->cmd_flags & REQ_DISCARD)) {
-+		    (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))) {
- 			q->end_sector = rq_end_sector(rq);
- 			q->boundary_rq = rq;
- 		}
-diff --git a/block/ioctl.c b/block/ioctl.c
-index ba15b2d..dd76ba0 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -132,6 +132,11 @@ static int blk_ioctl_discard(struct block_device *bdev, uint64_t start,
- 	return blkdev_issue_discard(bdev, start, len, GFP_KERNEL, flags);
+-	/* The sanitize operation is supported at v4.5 only */
+-	if (mmc_can_sanitize(card)) {
+-		erase_arg = MMC_ERASE_ARG;
+-		trim_arg = MMC_TRIM_ARG;
+-	} else {
+-		erase_arg = MMC_SECURE_ERASE_ARG;
+-		trim_arg = MMC_SECURE_TRIM1_ARG;
+-	}
+-
+-	if (mmc_erase_group_aligned(card, from, nr))
+-		arg = erase_arg;
+-	else if (mmc_can_trim(card))
+-		arg = trim_arg;
+-	else {
+-		err = -EINVAL;
+-		goto out;
+-	}
++	if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
++		arg = MMC_SECURE_TRIM1_ARG;
++	else
++		arg = MMC_SECURE_ERASE_ARG;
+ retry:
+ 	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
+ 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+@@ -953,6 +940,46 @@ out:
+ 	return err ? 0 : 1;
  }
  
-+static int blk_ioctl_sanitize(struct block_device *bdev)
++static int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
++				      struct request *req)
 +{
-+	return blkdev_issue_sanitize(bdev, GFP_KERNEL);
++	struct mmc_blk_data *md = mq->data;
++	struct mmc_card *card = md->queue.card;
++	int err = 0;
++
++	BUG_ON(!card);
++	BUG_ON(!card->host);
++
++	if (!(mmc_can_sanitize(card) &&
++	     (card->host->caps2 & MMC_CAP2_SANITIZE))) {
++			pr_warning("%s: %s - SANITIZE is not supported\n",
++				   mmc_hostname(card->host), __func__);
++			err = -EOPNOTSUPP;
++			goto out;
++	}
++
++	pr_debug("%s: %s - SANITIZE IN PROGRESS...\n",
++		mmc_hostname(card->host), __func__);
++
++	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
++					 EXT_CSD_SANITIZE_START, 1, 0);
++
++	if (err)
++		pr_err("%s: %s - mmc_switch() with "
++		       "EXT_CSD_SANITIZE_START failed. err=%d\n",
++		       mmc_hostname(card->host), __func__, err);
++
++	pr_debug("%s: %s - SANITIZE COMPLETED\n", mmc_hostname(card->host),
++					     __func__);
++
++out:
++	spin_lock_irq(&md->lock);
++	__blk_end_request(req, err, blk_rq_bytes(req));
++	spin_unlock_irq(&md->lock);
++
++	return err ? 0 : 1;
 +}
 +
- static int put_ushort(unsigned long arg, unsigned short val)
+ static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
  {
- 	return put_user(val, (unsigned short __user *)arg);
-@@ -234,6 +239,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 		set_device_ro(bdev, n);
- 		return 0;
+ 	struct mmc_blk_data *md = mq->data;
+@@ -1437,7 +1464,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+ 		goto out;
+ 	}
  
-+	case BLKSANITIZE:
-+		ret = blk_ioctl_sanitize(bdev);
-+		break;
+-	if (req && req->cmd_flags & REQ_DISCARD) {
++	if (req && req->cmd_flags & REQ_SANITIZE) {
++		/* complete ongoing async transfer before issuing sanitize */
++		if (card->host && card->host->areq)
++			mmc_blk_issue_rw_rq(mq, NULL);
++		ret = mmc_blk_issue_sanitize_rq(mq, req);
++	} else if (req && req->cmd_flags & REQ_DISCARD) {
+ 		/* complete ongoing async transfer before issuing discard */
+ 		if (card->host->areq)
+ 			mmc_blk_issue_rw_rq(mq, NULL);
+diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+index e360a97..4f3250e 100644
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -145,10 +145,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
+ 	/* granularity must not be greater than max. discard */
+ 	if (card->pref_erase > max_discard)
+ 		q->limits.discard_granularity = 0;
+-	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
++	if (mmc_can_secure_erase_trim(card))
+ 		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
+ }
+ 
++static void mmc_queue_setup_sanitize(struct request_queue *q)
++{
++	queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, q);
++}
 +
- 	case BLKDISCARD:
- 	case BLKSECDISCARD: {
- 		uint64_t range[2];
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 0edb65d..e58e0db 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -160,6 +160,7 @@ enum rq_flag_bits {
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
-+	__REQ_SANITIZE,		/* sanitize */
- 	__REQ_NR_BITS,		/* stops here */
- };
+ /**
+  * mmc_init_queue - initialise a queue structure.
+  * @mq: mmc queue
+@@ -184,6 +189,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+ 	if (mmc_can_erase(card))
+ 		mmc_queue_setup_discard(mq->queue, card);
  
-@@ -171,13 +172,15 @@ enum rq_flag_bits {
- #define REQ_META		(1 << __REQ_META)
- #define REQ_PRIO		(1 << __REQ_PRIO)
- #define REQ_DISCARD		(1 << __REQ_DISCARD)
-+#define REQ_SANITIZE		(1 << __REQ_SANITIZE)
- #define REQ_NOIDLE		(1 << __REQ_NOIDLE)
++	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
++		mmc_queue_setup_sanitize(mq->queue);
++
+ #ifdef CONFIG_MMC_BLOCK_BOUNCE
+ 	if (host->max_segs == 1) {
+ 		unsigned int bouncesz;
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 0707d22..be2b89f 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -238,6 +238,7 @@ struct mmc_host {
+ #define MMC_CAP2_BROKEN_VOLTAGE	(1 << 7)	/* Use the broken voltage */
+ #define MMC_CAP2_DETECT_ON_ERR	(1 << 8)	/* On I/O err check card removal */
+ #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
++#define MMC_CAP2_SANITIZE	(1 << 10)		/* Support Sanitize */
  
- #define REQ_FAILFAST_MASK \
- 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
- #define REQ_COMMON_MASK \
- 	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_PRIO | \
--	 REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
-+	 REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE | \
-+	 REQ_SANITIZE)
- #define REQ_CLONE_MASK		REQ_COMMON_MASK
- 
- #define REQ_RAHEAD		(1 << __REQ_RAHEAD)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index ba43f40..1db6c91 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -438,6 +438,7 @@ struct request_queue {
- #define QUEUE_FLAG_ADD_RANDOM  16	/* Contributes to random pool */
- #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
- #define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
-+#define QUEUE_FLAG_SANITIZE    19	/* supports SANITIZE */
- 
- #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
- 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
-@@ -518,6 +519,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
- #define blk_queue_stackable(q)	\
- 	test_bit(QUEUE_FLAG_STACKABLE, &(q)->queue_flags)
- #define blk_queue_discard(q)	test_bit(QUEUE_FLAG_DISCARD, &(q)->queue_flags)
-+#define blk_queue_sanitize(q)	test_bit(QUEUE_FLAG_SANITIZE, &(q)->queue_flags)
- #define blk_queue_secdiscard(q)	(blk_queue_discard(q) && \
- 	test_bit(QUEUE_FLAG_SECDISCARD, &(q)->queue_flags))
- 
-@@ -971,6 +973,7 @@ static inline struct request *blk_map_queue_find_tag(struct blk_queue_tag *bqt,
- extern int blkdev_issue_flush(struct block_device *, gfp_t, sector_t *);
- extern int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags);
-+extern int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask);
- extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			sector_t nr_sects, gfp_t gfp_mask);
- static inline int sb_issue_discard(struct super_block *sb, sector_t block,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b0a6d44..167c450 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -333,6 +333,7 @@ struct inodes_stat_t {
- #define BLKDISCARDZEROES _IO(0x12,124)
- #define BLKSECDISCARD _IO(0x12,125)
- #define BLKROTATIONAL _IO(0x12,126)
-+#define BLKSANITIZE _IO(0x12, 127)
- 
- #define BMAP_IOCTL 1		/* obsolete - kept for compatibility */
- #define FIBMAP	   _IO(0x00,1)	/* bmap access */
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index c0bd030..06f7940 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -1788,6 +1788,8 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
- 		rwbs[i++] = 'W';
- 	else if (rw & REQ_DISCARD)
- 		rwbs[i++] = 'D';
-+	else if (rw & REQ_SANITIZE)
-+		rwbs[i++] = 'Z';
- 	else if (bytes)
- 		rwbs[i++] = 'R';
- 	else
+ 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+ 	unsigned int        power_notify_type;
 -- 
 1.7.6
 -- 
