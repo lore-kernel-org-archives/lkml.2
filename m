@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab2F1Mk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:40:59 -0400
-Received: from smtp-out-130.synserver.de ([212.40.185.130]:1033 "EHLO
-	smtp-out-120.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752046Ab2F1Mk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:40:58 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 28483
-Message-ID: <4FEC51BB.2040504@metafoo.de>
-Date: Thu, 28 Jun 2012 14:44:43 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1754339Ab2F1Mlj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:41:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13209 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299Ab2F1Mli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:41:38 -0400
+Message-ID: <4FEC50FD.6030402@redhat.com>
+Date: Thu, 28 Jun 2012 15:41:33 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] ASoC: snd_dmaengine: add common api for pcm_mmap
-References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com> <20120628105148.GD28922@opensource.wolfsonmicro.com> <4FEC468A.3080607@nvidia.com>
-In-Reply-To: <4FEC468A.3080607@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+References: <20120627044758.23698.249.stgit@bling.home>  <20120627050937.23698.68442.stgit@bling.home>  <20120627093427.GE17507@redhat.com> <1340831986.1207.250.camel@bling.home>
+In-Reply-To: <1340831986.1207.250.camel@bling.home>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 01:56 PM, Laxman Dewangan wrote:
-> On Thursday 28 June 2012 04:21 PM, Mark Brown wrote:
->> * PGP Signed by an unknown key
->>
->> On Thu, Jun 28, 2012 at 12:31:26PM +0530, Laxman Dewangan wrote:
->>> The pcm mmap for the substream dma buffer is done using the
->>> dma_mmap_writecombine().
->>> Some of the chip sound driver like Spear, Tegra, Davinci,
->>> ep93xx,snd_imx, snd_mxs, NUC900, OMAP, Samsung are doing this
->>> mapping locally.
->>> Add api in the snd dmaengine driver so that different client of
->>> snd dmaengine can use this rather than implementing locally.
->> OK, but I'd expect this to come along with one or more patches
->> converting at least some of the users to the new API...
+On 06/28/2012 12:19 AM, Alex Williamson wrote:
+>> > @@ -302,6 +385,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+>> >  {
+>> >  	struct _irqfd *irqfd, *tmp;
+>> >  	struct eventfd_ctx *eventfd;
+>> > +	bool is_level = (args->flags & KVM_IRQFD_FLAG_LEVEL) != 0;
+>> 
+>> != 0 is not needed here I think.
 > 
-> This is effort towards moving the Tegra pcm driver for dmangine based dma
-> driver inplace of legacy dma driver for Tegra which have private API.
-> 
-> Currently, following 4 pcm driver can use this API directly keeping that
-> they already using the generic snd dmaengine pcm driver.
-> ep93xx,
-> spear,
-> fsl,
-> mxs.
-> And Tegra will be next.
-> 
-> Other driver which can use this API are davinci, OMAP, samsung but because
-> they are not using the snd_dmaengine_pcm driver's api as of now so not be
-> very much useful for them.
+> Strictly, no it's not.  I just prefer to set bools from bools and I
+> think Avi has commented on using !! before.
 
-Btw. all these drivers basically use the same code for buffer preallocation.
-Since how the buffer is mmaped is related to how it is allocated it might be
-worth to factor this out at the same time as well.
+I prefer the naked version too, but != 0 is acceptable.
+-- 
+error compiling committee.c: too many arguments to function
 
-- Lars
+
