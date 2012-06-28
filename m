@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab2F1MI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:08:58 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:50267 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941Ab2F1MIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:08:55 -0400
-Date: Thu, 28 Jun 2012 14:08:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [RFC 09/23] x86_64: Store userspace rsp in system_call fastpath
-Message-ID: <20120628120846.GA28527@somewhere>
-References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
- <1340120894-9465-10-git-send-email-jolsa@redhat.com>
+	id S1754319Ab2F1MJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:09:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36431 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752765Ab2F1MJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:09:48 -0400
+Date: Thu, 28 Jun 2012 15:09:49 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
+Message-ID: <20120628120948.GA13567@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+ <20120627050858.23698.44118.stgit@bling.home>
+ <20120627162430.3477d0f6@BR9GNB5Z>
+ <20120628083857.GD12447@redhat.com>
+ <20120628110316.0f53a1ef@BR9GNB5Z>
+ <20120628093442.GH12447@redhat.com>
+ <20120628140041.10354331@BR9GNB5Z>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340120894-9465-10-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120628140041.10354331@BR9GNB5Z>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 05:48:00PM +0200, Jiri Olsa wrote:
-> hi,
-> I'd need help with this change.. basically it works, but I guess
-> I could alter the FIXUP_TOP_OF_STACK macro as well, so the rsp is
-> not initialized twice in slowpath.
+On Thu, Jun 28, 2012 at 02:00:41PM +0200, Cornelia Huck wrote:
+> On Thu, 28 Jun 2012 12:34:43 +0300
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> But it seems quite complex.. so not really sure at the moment ;)
+> > On Thu, Jun 28, 2012 at 11:03:16AM +0200, Cornelia Huck wrote:
 > 
-> ideas?
+> > > How about something like this as parameter for the new ioctl?
+> > > 
+> > > struct kvm_irqfd2 {
+> > > 	__u32 fd;
+> > > 	__u32 flags;  /* for things like deassign */
+> > > 	__u64 type;   /* determines the payload */
+> > > 	union {
+> > > 		/* type traditional */
+> > > 		struct {
+> > > 			__u32 gsi;
+> > > 		} trad;
+> > > 		/* type s390 */
+> > > 		struct {
+> > > 			__u32 int_type;
+> > > 			__u32 parm;
+> > > 			__u64 parm64;
+> > > 		} s390;
+> > > 		__u8 pad[20];
+> > > 	};
+> > > }
+> > > 
+> > > This could be combined with an arch or a per-kvm callback to keep the
+> > > generic code clean of architecture dependencies.
+> > > 
+> > > Cornelia
+> > 
+> > Looks a bit weird - shouldn't all this be part of gsi routing?
+> > But no idea really, I don't see the big picture here.
+> > 
 > 
-> thanks,
-> jirka
-> 
-> ---
-> Storing the userspace rsp into the pt_regs struct for the
-> system_call fastpath (syscall instruction handler).
-> 
-> Following part of the pt_regs is allocated on stack:
-> (via KERNEL_STACK_OFFSET)
-> 
->     unsigned long ip;
->     unsigned long cs;
->     unsigned long flags;
->     unsigned long sp;
->     unsigned long ss;
-> 
-> but only ip is actually saved for fastpath.
-> 
-> For perf post unwind we need at least ip and sp to be able to
-> start the unwind, so storing the old_rsp value to the sp.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Roland McGrath <roland@hack.frob.com>
-> ---
->  arch/x86/kernel/entry_64.S |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 111f6bb..0444917 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -516,6 +516,11 @@ GLOBAL(system_call_after_swapgs)
->  	SAVE_ARGS 8,0
->  	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
->  	movq  %rcx,RIP-ARGOFFSET(%rsp)
-> +#ifdef CONFIG_PERF_EVENTS
-> +	/* We need rsp in fast path for perf post unwind. */
-> +	movq  PER_CPU_VAR(old_rsp), %rcx
-> +	movq  %rcx,RSP-ARGOFFSET(%rsp)
-> +#endif
+> Well, on s390 we don't have anything like "gsi routing" (I'm not even
+> really sure what that is).
 
-Another solution is to set/unset some TIF flag in perf_event_sched_in/out
-such that we take the syscall slow path (tracesys) which records every non-scratch
-registers. I can see that old_rsp is not saved in pt_regs by SAVE_REST so this may be
-something to add in tracesys.
+I really mean kvm_irq_routing. This has options for
+irqchip, msi, I guess we can add more.
 
-This way we don't bloat the syscall fastpath with a feature only used by some
-developers.
 
->  	CFI_REL_OFFSET rip,RIP-ARGOFFSET
->  	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
->  	jnz tracesys
-> -- 
-> 1.7.7.6
+> My understanding is the following:
 > 
+> - Basically, we want to notify the guest for a virtqueue.
+> - For this, we want to inject an interrupt for the associated device.
+> - On x86, this means raising an interrupt on an interrupt line, as
+>   specified by some kind of number.
+
+Not just that: for MSI we pass in data encoding priority
+destination etc.
+
+> - On s390, we need some more information to (a) identify the device and
+>   (b) additional information that needs to be transmitted for an
+>   interrupt (device specific). (This is what basically goes into struct
+>   kvm_s390_interrupt, which I reproduced in the s390 part.)
+> 
+> Cornelia
+
+Is this b mostly static or does it change for each interrupt?
