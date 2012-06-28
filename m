@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab2F1QFD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:05:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29549 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755414Ab2F1QFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:05:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="159287543"
-From: Feng Tang <feng.tang@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <ak@linux.intel.com>, Feng Tang <feng.tang@intel.com>
-Subject: [PATCH] perf, x86: Enabled PEBS event to be exported in a raw format
-Date: Fri, 29 Jun 2012 00:00:50 +0800
-Message-Id: <1340899250-26803-1-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755364Ab2F1QG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:06:29 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35210 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab2F1QG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 12:06:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FEC16EF.40408@jp.fujitsu.com>
+References: <4FACDED0.3020400@jp.fujitsu.com>
+	<20120621202043.GD4642@google.com>
+	<4FE3ADDD.9060908@jp.fujitsu.com>
+	<20120627175818.GM15811@google.com>
+	<4FEC16EF.40408@jp.fujitsu.com>
+Date: Thu, 28 Jun 2012 09:06:25 -0700
+X-Google-Sender-Auth: dLK8HKw7xWgPEHGkzG2W62juCRM
+Message-ID: <CAOS58YNuSMjDB00UgOPjGCSFcRx-gjvMrW+e4uW0ug8WMsuFSw@mail.gmail.com>
+Subject: Re: [PATCH v3][0/6] memcg: prevent -ENOMEM in pre_destroy()
+From: Tejun Heo <tj@kernel.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hello, KAME.
 
-Add support for reporting PEBS records in a raw format that can
-be then parsed by perf script.
+On Thu, Jun 28, 2012 at 1:33 AM, Kamezawa Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> Ooh, once memcg drops the __DEPRECATED_clear_css_refs, cgroup_rmdir()
+>> will mark the cgroup dead before start calling pre_destroy() and none
+>> of the above will happen.
+>>
+>
+> Hm, threads which touches memcg should hold memcg's reference count rather
+> than css.
+> Right ? IIUC, one of reason is a reference from kswapd etc...hm. I'll check
+> it.
 
-This is roughly similar to the existing AMD IBS support.
+Not sure I'm following. I meant that css_tryget() will always fail
+once pre_destroy() calls being for the cgroup, so no new child or
+reference can be created for it after that point.
 
-This is mainly for advanced users and to experiment with
-new usages. Widespread PEBS usages are expected to get higher
-level interfaces over time, like the existing "precise ip" support.
+Thanks.
 
-[Small fix of adding "data.raw = &raw;", thanks to Andi, with this
-patch I can test my perf script with pebs samples. - Feng]
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 026373e..04d3ba9 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -552,6 +552,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	struct pebs_record_core *pebs = __pebs;
- 	struct perf_sample_data data;
- 	struct pt_regs regs;
-+	struct perf_raw_record raw;
- 
- 	if (!intel_pmu_save_and_restart(event))
- 		return;
-@@ -578,6 +579,12 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	else
- 		regs.flags &= ~PERF_EFLAGS_EXACT;
- 
-+	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
-+		raw.size = x86_pmu.pebs_record_size;
-+		raw.data = __pebs;
-+		data.raw = &raw;
-+	}
-+
- 	if (has_branch_stack(event))
- 		data.br_stack = &cpuc->lbr_stack;
- 
 -- 
-1.7.1
-
+tejun
