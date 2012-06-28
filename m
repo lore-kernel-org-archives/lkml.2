@@ -1,238 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab2F1ONf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 10:13:35 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:50333 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab2F1ONe (ORCPT
+	id S1752282Ab2F1OOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 10:14:53 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38998 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab2F1OOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 10:13:34 -0400
-Date: Thu, 28 Jun 2012 17:13:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org
-Subject: move_rev.pl: tool for reviewing patches that move functions
-Message-ID: <20120628141310.GL5333@mwanda>
+	Thu, 28 Jun 2012 10:14:52 -0400
+Date: Thu, 28 Jun 2012 10:06:59 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] kvm, Add x86_hyper_kvm to complete
+ detect_hypervisor_platform check
+Message-ID: <20120628140659.GC8956@phenom.dumpdata.com>
+References: <1340833338-15485-1-git-send-email-prarit@redhat.com>
+ <20120628012419.GA8956@phenom.dumpdata.com>
+ <4FEC3BE3.8050802@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="qDbXVdCdHGoSgWSk"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4FEC3BE3.8050802@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 28, 2012 at 07:11:31AM -0400, Prarit Bhargava wrote:
+> 
+> 
+> On 06/27/2012 09:24 PM, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Jun 27, 2012 at 05:42:18PM -0400, Prarit Bhargava wrote:
+> >> While debugging I noticed that unlike all the other hypervisor code in the
+> >> kernel, kvm does not have an entry for x86_hyper which is used in
+> >> detect_hypervisor_platform(), and results in a nice message about the
+> >> hypervisor being used.  This is only really a stub function and it makes
+> >> kvm more consistent with the other hypervisors (and it makes debugging
+> >> a little easier).
+> >>
+> >> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> >> Cc: Avi Kivity <avi@redhat.com>
+> >> Cc: Gleb Natapov <gleb@redhat.com>
+> >> Cc: Alex Williamson <alex.williamson@redhat.com>
+> >> ---
+> >>  arch/x86/include/asm/hypervisor.h |    1 +
+> >>  arch/x86/kernel/cpu/hypervisor.c  |    1 +
+> >>  arch/x86/kernel/kvm.c             |    6 ++++++
+> >>  3 files changed, 8 insertions(+)
+> >>
+> >> diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
+> >> index 7a15153..b518c75 100644
+> >> --- a/arch/x86/include/asm/hypervisor.h
+> >> +++ b/arch/x86/include/asm/hypervisor.h
+> >> @@ -49,6 +49,7 @@ extern const struct hypervisor_x86 *x86_hyper;
+> >>  extern const struct hypervisor_x86 x86_hyper_vmware;
+> >>  extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
+> >>  extern const struct hypervisor_x86 x86_hyper_xen_hvm;
+> >> +extern const struct hypervisor_x86 x86_hyper_kvm;
+> >>  
+> >>  static inline bool hypervisor_x2apic_available(void)
+> >>  {
+> >> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+> >> index 755f64f..6d6dd7a 100644
+> >> --- a/arch/x86/kernel/cpu/hypervisor.c
+> >> +++ b/arch/x86/kernel/cpu/hypervisor.c
+> >> @@ -37,6 +37,7 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
+> >>  #endif
+> >>  	&x86_hyper_vmware,
+> >>  	&x86_hyper_ms_hyperv,
+> >> +	&x86_hyper_kvm,
+> >>  };
+> >>  
+> >>  const struct hypervisor_x86 *x86_hyper;
+> >> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> >> index e554e5a..0a38b68 100644
+> >> --- a/arch/x86/kernel/kvm.c
+> >> +++ b/arch/x86/kernel/kvm.c
+> >> @@ -39,6 +39,7 @@
+> >>  #include <asm/desc.h>
+> >>  #include <asm/tlbflush.h>
+> >>  #include <asm/idle.h>
+> >> +#include <asm/hypervisor.h>
+> >>  
+> >>  static int kvmapf = 1;
+> >>  
+> >> @@ -432,6 +433,11 @@ void __init kvm_guest_init(void)
+> >>  #endif
+> >>  }
+> >>  
+> >> +const struct hypervisor_x86 x86_hyper_kvm __refconst = {
+> >> +	.name			= "KVM",
+> >> +};
+> >> +EXPORT_SYMBOL(x86_hyper_kvm);
+> > 
+> > EXPORT_SYMBOL_GPL version. ?
+> 
+> Hey Konrad, thanks for the review.
 
---qDbXVdCdHGoSgWSk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sure thing.
+> 
+> The other hypervisor_x86 structs are only EXPORT_SYMBOL, so I maintained that
+> convention here.
 
-We get a lot of patches in staging that move shift functions around
-without changing the code.  For example:
-http://marc.info/?l=linux-driver-devel&m=134075825327894&q=raw
-
-I've written a perl script to help review them.  If you take that
-example diff then it looks like this:
-
-$ cat patch.txt | diffstat
- cb_pcidas.c |  494 ++++++++++++++++++++++++++----------------------------------
-  1 file changed, 219 insertions(+), 275 deletions(-)
-$ cat patch.txt | ./move_rev.pl | diffstat
- cb_pcidas.c |   63 ------------------------------------------------------------
-  1 file changed, 63 deletions(-)
-$
-
-63 lines of deleted code is much quicker to review.  :)
-
-The script is attached.
-
-regards,
-dan carpenter
-
---qDbXVdCdHGoSgWSk
-Content-Type: text/x-perl; charset=us-ascii
-Content-Disposition: attachment; filename="move_rev.pl"
-
-#!/usr/bin/perl
-
-use strict;
-use File::Temp qw/ tempdir /;
-use File::Path qw/ rmtree /;
-use File::Compare qw/ compare /;
-
-sub print_file($$)
-{
-    my $prefix = shift;
-    my $file = shift;
-
-    open FILE, "<", $file;
-    while (<FILE>) {
-        print $prefix . $_;
-    }
-    close FILE;
-}
-
-my $olddir = tempdir();
-my $newdir = tempdir();
-
-my @input;
-while (<>) {
-   push @input, $_;
-}
-
-my ($nr_old, $nr_new);
-
-#
-# Break out the blocks into separate files
-#
-my $block;
-my ($old, $new);
-foreach (@input) {
-    my $line = $_;
-
-    if ($line =~ /^(---|\+\+\+)/ ||
-       !($line =~ /^[+-]/) ||
-       ($old && $line =~ /^[+]/) ||
-       ($new && $line =~ /^[-]/)) {
-        $block = "";
-        $old = 0;
-        $new = 0;
-        next;
-    }
-
-    if ($line =~ /^[-]{$/) {
-        $block = "{";
-        $old = 1;
-        next;
-    }
-    if ($line =~ /^[+]{$/) {
-        $block = "{";
-        $new = 1;
-        next;
-    }
-
-    $line =~ s/^[+-]//;
-
-    $block = $block . $line;
-
-    if ($line =~ /^}$/) {
-        if ($old) {
-            $nr_old++;
-            open OUT, ">", "$olddir/$nr_old";
-            print OUT "$block";
-            close OUT;
-        } else {
-            $nr_new++;
-            open OUT, ">", "$newdir/$nr_new";
-            print OUT "$block";
-            close OUT;
-        }
-        $block = "";
-        $old = 0;
-        $new = 0;
-        next;
-    }
-}
-
-#
-# Find any blocks which are exactly the same
-#
-for (my $i = 1; $i <= $nr_old; $i++) {
-    for (my $j = 1; $j <= $nr_new; $j++) {
-        if (compare("$olddir/$i", "$newdir/$j") == 0) {
-            open OUT, ">", "$olddir/$i";
-            print OUT "- MOVED {$i}\n";
-            close OUT;
-
-            open OUT, ">", "$newdir/$j";
-            print OUT "+ MOVED {$j}\n";
-            close OUT;
-        }
-    }
-}
-
-#
-# Find any blocks which are partly the same
-#
-for (my $i = 1; $i <= $nr_old; $i++) {
-    for (my $j = 1; $j <= $nr_new; $j++) {
-        my $lines = `cat $olddir/$i | wc -l`;
-        my $after = `diff $olddir/$i $newdir/$j | grep '^<' | wc -l`;
-        my $percent;
-
-        $lines =~ s/\n//;
-        $after =~ s/\n//;
-        $percent = $after/$lines;
-
-        if ($percent >= .7) {
-            next;
-        }
-
-        my $diff = `diff -u $olddir/$i $newdir/$j | tail -n +3`;
-
-        open OUT, ">", "$olddir/$i";
-        print OUT "- MOVED {$i}\n";
-        close OUT;
-
-        open OUT, ">", "$newdir/$j";
-        print OUT "+ MOVED {$j} <- begin\n";
-        print OUT $diff;
-        print OUT "+ MOVED {$j} -> end\n";
-        close OUT;
-    }
-}
-
-#
-# Print out the diff...
-#
-$nr_old = $nr_new = 0;
-$old = $new = 0;
-foreach (@input) {
-    my $line = $_;
-
-    if ($line =~ /^(---|\+\+\+)/ ||
-       !($line =~ /^[+-]/) ||
-       ($old && $line =~ /^[+]/) ||
-       ($new && $line =~ /^[-]/)) {
-        print $block;
-        print $line;
-        $block = "";
-        $old = 0;
-        $new = 0;
-        next;
-    }
-
-    if ($line =~ /^[-]{$/) {
-        print $block;
-        $block = $line;
-        $old = 1;
-        next;
-    }
-    if ($line =~ /^[+]{$/) {
-        print $block;
-        $block = $line;
-        $new = 1;
-        next;
-    }
-
-    $block = $block . $line;
-
-    if ($line =~ /^[+-]}$/) {
-        if ($old) {
-            $nr_old++;
-            print_file("-", "$olddir/$nr_old");
-        } else {
-            $nr_new++;
-            print_file("+", "$newdir/$nr_new");
-        }
-        $block = "";
-        $old = 0;
-        $new = 0;
-        next;
-    }
-}
-
-rmtree($olddir);
-rmtree($newdir);
-
---qDbXVdCdHGoSgWSk--
+Go for _GPL. Not sure why they were the non-GPL version but there is no need
+for non-GPL version.
