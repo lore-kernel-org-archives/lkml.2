@@ -1,170 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab2F1I06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 04:26:58 -0400
-Received: from david.siemens.de ([192.35.17.14]:21348 "EHLO david.siemens.de"
+	id S1756539Ab2F1I32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 04:29:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32416 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983Ab2F1I0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 04:26:55 -0400
-Message-ID: <4FEC153B.6040300@siemens.com>
-Date: Thu, 28 Jun 2012 10:26:35 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752847Ab2F1I3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 04:29:23 -0400
+Date: Thu, 28 Jun 2012 11:29:23 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120628082923.GA12447@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+ <20120627050937.23698.68442.stgit@bling.home>
+ <20120627095137.GH17507@redhat.com>
+ <1340830749.1207.236.camel@bling.home>
+ <20120627211413.GE27746@redhat.com>
+ <1340832499.1207.255.camel@bling.home>
+ <20120627222852.GA27885@redhat.com>
+ <1340855572.1207.300.camel@bling.home>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 5/6 v5] deal with guest panicked event accoring to -onpanic
- parameter
-References: <4FEAAE6E.7070302@cn.fujitsu.com> <4FEAAFFF.40401@cn.fujitsu.com> <4FEB1B06.4050309@siemens.com> <4FEBB044.1000306@cn.fujitsu.com>
-In-Reply-To: <4FEBB044.1000306@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340855572.1207.300.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-28 03:15, Wen Congyang wrote:
-> At 06/27/2012 10:39 PM, Jan Kiszka Wrote:
->> On 2012-06-27 09:02, Wen Congyang wrote:
->>> When the guest is panicked, it will write 0x1 to the port KVM_PV_PORT.
->>> So if qemu reads 0x1 from this port, we can do the folloing three
->>> things according to the parameter -onpanic:
->>> 1. emit QEVENT_GUEST_PANICKED only
->>> 2. emit QEVENT_GUEST_PANICKED and pause the guest
->>> 3. emit QEVENT_GUEST_PANICKED and poweroff the guest
->>> 4. emit QEVENT_GUEST_PANICKED and reset the guest
->>>
->>> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
->>> application does not receive this event(the management may not
->>> run when the event is emitted), the management won't know the
->>> guest is panicked.
->>>
->>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>> ---
->>>  kvm-all.c       |  101 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>  kvm-stub.c      |    9 +++++
->>>  kvm.h           |    3 ++
->>>  qemu-options.hx |   15 ++++++++
->>>  vl.c            |   10 +++++
->>>  5 files changed, 138 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/kvm-all.c b/kvm-all.c
->>> index f8e4328..9494dd2 100644
->>> --- a/kvm-all.c
->>> +++ b/kvm-all.c
->>> @@ -19,6 +19,8 @@
->>>  #include <stdarg.h>
->>>  
->>>  #include <linux/kvm.h>
->>> +#include <linux/kvm_para.h>
->>> +#include <asm/kvm_para.h>
->>>  
->>>  #include "qemu-common.h"
->>>  #include "qemu-barrier.h"
->>> @@ -32,6 +34,9 @@
->>>  #include "bswap.h"
->>>  #include "memory.h"
->>>  #include "exec-memory.h"
->>> +#include "iorange.h"
->>> +#include "qemu-objects.h"
->>> +#include "monitor.h"
->>>  
->>>  /* This check must be after config-host.h is included */
->>>  #ifdef CONFIG_EVENTFD
->>> @@ -1931,3 +1936,99 @@ int kvm_on_sigbus(int code, void *addr)
->>>  {
->>>      return kvm_arch_on_sigbus(code, addr);
->>>  }
->>> +
->>> +/* Possible values for action parameter. */
->>> +#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
->>> +#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
->>> +#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
->>> +#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
->>> +
->>> +static int panicked_action = PANICKED_REPORT;
->>> +
->>> +static void kvm_pv_port_read(IORange *iorange, uint64_t offset, unsigned width,
->>> +                             uint64_t *data)
->>> +{
->>> +    *data = (1 << KVM_PV_FEATURE_PANICKED);
->>> +}
->>> +
->>> +static void panicked_mon_event(const char *action)
->>> +{
->>> +    QObject *data;
->>> +
->>> +    data = qobject_from_jsonf("{ 'action': %s }", action);
->>> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
->>> +    qobject_decref(data);
->>> +}
->>> +
->>> +static void panicked_perform_action(void)
->>> +{
->>> +    switch (panicked_action) {
->>> +    case PANICKED_REPORT:
->>> +        panicked_mon_event("report");
->>> +        break;
->>> +
->>> +    case PANICKED_PAUSE:
->>> +        panicked_mon_event("pause");
->>> +        vm_stop(RUN_STATE_GUEST_PANICKED);
->>> +        break;
->>> +
->>> +    case PANICKED_POWEROFF:
->>> +        panicked_mon_event("poweroff");
->>> +        exit(0);
->>> +        break;
->>> +    case PANICKED_RESET:
->>> +        panicked_mon_event("reset");
->>> +        qemu_system_reset_request();
->>> +        break;
->>> +    }
->>> +}
->>> +
->>> +static void kvm_pv_port_write(IORange *iorange, uint64_t offset, unsigned width,
->>> +                              uint64_t data)
->>> +{
->>> +    if (data == KVM_PV_PANICKED) {
->>> +        panicked_perform_action();
->>> +    }
->>> +}
->>> +
->>> +static void kvm_pv_port_destructor(IORange *iorange)
->>> +{
->>> +    g_free(iorange);
->>> +}
->>> +
->>> +static IORangeOps pv_io_range_ops = {
->>> +    .read = kvm_pv_port_read,
->>> +    .write = kvm_pv_port_write,
->>> +    .destructor = kvm_pv_port_destructor,
->>> +};
->>> +
->>> +#if defined(KVM_PV_PORT)
->>> +void kvm_pv_port_init(void)
->>> +{
->>> +    IORange *pv_io_range = g_malloc(sizeof(IORange));
->>> +
->>> +    iorange_init(pv_io_range, &pv_io_range_ops, KVM_PV_PORT, 1);
->>> +    ioport_register(pv_io_range);
->>
->> This modeling is still not ok. We don't open-code ports anymore, we
->> introduce devices. And this doesn't belong inro generic code as it is
+On Wed, Jun 27, 2012 at 09:52:52PM -0600, Alex Williamson wrote:
+> On Thu, 2012-06-28 at 01:28 +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jun 27, 2012 at 03:28:19PM -0600, Alex Williamson wrote:
+> > > On Thu, 2012-06-28 at 00:14 +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, Jun 27, 2012 at 02:59:09PM -0600, Alex Williamson wrote:
+> > > > > On Wed, 2012-06-27 at 12:51 +0300, Michael S. Tsirkin wrote:
+> > > > > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > > > > > > In order to inject an interrupt from an external source using an
+> > > > > > > irqfd, we need to allocate a new irq_source_id.  This allows us to
+> > > > > > > assert and (later) de-assert an interrupt line independently from
+> > > > > > > users of KVM_IRQ_LINE and avoid lost interrupts.
+> > > > > > > 
+> > > > > > > We also add what may appear like a bit of excessive infrastructure
+> > > > > > > around an object for storing this irq_source_id.  However, notice
+> > > > > > > that we only provide a way to assert the interrupt here.  A follow-on
+> > > > > > > interface will make use of the same irq_source_id to allow de-assert.
+> > > > > > > 
+> > > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > > > ---
+> > > > > > > 
+> > > > > > >  Documentation/virtual/kvm/api.txt |    5 ++
+> > > > > > >  arch/x86/kvm/x86.c                |    1 
+> > > > > > >  include/linux/kvm.h               |    3 +
+> > > > > > >  virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
+> > > > > > >  4 files changed, 99 insertions(+), 5 deletions(-)
+> > > > > > > 
+> > > > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > > > > > > index ea9edce..b216709 100644
+> > > > > > > --- a/Documentation/virtual/kvm/api.txt
+> > > > > > > +++ b/Documentation/virtual/kvm/api.txt
+> > > > > > > @@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
+> > > > > > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+> > > > > > >  and kvm_irqfd.gsi.
+> > > > > > >  
+> > > > > > > +With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
+> > > > > > > +the requested irqfd.  This is necessary to share level triggered
+> > > > > > > +interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+> > > > > > > +with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+> > > > > > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> > > > > > 
+> > > > > > Note that if my patch removing auto-deassert gets accepted,
+> > > > > > this is not needed at all: we can just look at the GSI
+> > > > > > to see if it's level or edge.
+> > > > > 
+> > > > > I'm not sure this is a good idea.  I know from vfio that I'm injecting a
+> > > > > level interrupt regardless of how the guest has the pic/ioapic
+> > > > > programmed at the time I'm calling this ioctl.  Peeking across address
+> > > > > spaces to get to the right pin on the right pic/ioapic and see how it's
+> > > > > currently programmed seems fragile.  Thanks,
+> > > > > 
+> > > > > Alex
+> > > > 
+> > > > Fragile? If you set eventfd as LEVEL but GSI is really edge then
+> > > > it all explodes, right? So why give users the option to shoot
+> > > > themselves in the foot?
+> > > 
+> > > If the guest has the ioapic rte set to edge at the time I call KVM_IRQFD
+> > > to register my level interrupt then it all explodes, right?  I'd rather
+> > > let the user shoot themselves than play Russian roulette with the guest.
+> > > Am I misunderstanding what you mean by looking that the GSI to see if
+> > > it's level or edge?
+> > 
+> > Not sure.
+> > I simply mean this: if eventfd is bound to irqfd, set level from irqfd
+> > and clear from eventfd ack notifier.
 > 
-> Do you mean introducing a new device instead of I/O port?
+> Are you simply saying assert (kvm_set_irq(,,,1)) from irqfd trigger and
+> de-assert (kvm_set_irq(,,,0)) from eventfd ack notifier (aka KVM_EOIFD)?
 
-I mean encapsulating the I/O registration (PIO or MMIO) in a QOM device
-and building that device only for target archs that supports it. Already
-pointed you to examples in hw/kvm/.
+Yes.
 
-Jan
+> > There's no need for a special IRQ_LEVEL for this.
+> 
+> That ignores the whole problem of when do we need to allocate a new
+> irq_source_id and when do we inject using KVM_USERSPACE_IRQ_SOURCE_ID.
+> We've already discussed that a level triggered, externally fired
+> interrupt must use a separate source ID from Qemu userspace.  Therefore
+> when you say "look at the GSI to see if it's level or edge", I assume
+> you mean trace the gsi back to the pic/ioapic pin and look at the
+> trigger mode.  That trigger mode is configured by the guest, so that
+> means that at the point in time when we call KVM_IRQFD we make a
+> determination based on how the _guest_ has programmed the ioapic.  That
+> may not match the interrupt we expect to inject.  On the other hand, the
+> user calling KVM_IRQFD absolutely knows the type of interrupt provided
+> by their device.  I think we need a flag regardless of whether your
+> patch is accepted.  We may be able to share the inject handler if it is
+> accepted, but it doesn't change the user API.  Thanks,
+> 
+> Alex
+
+This has merit, I am just looking for a way out
+without adding LEVEL flag which seems to duplicate
+what guest does, especially now it turns out
+we can't add new flags to IRQFD.
+
+How about this: allocate source id when eventfd is mapped?
 
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+MST
