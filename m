@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2F1M6Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:58:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38911 "EHLO mx1.redhat.com"
+	id S1755813Ab2F1M6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:58:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31181 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755616Ab2F1M6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:58:09 -0400
+	id S1755730Ab2F1M61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:58:27 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,83 +27,43 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 09/40] autonuma: introduce kthread_bind_node()
-Date: Thu, 28 Jun 2012 14:55:49 +0200
-Message-Id: <1340888180-15355-10-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 15/40] autonuma: knuma_migrated per NUMA node queues
+Date: Thu, 28 Jun 2012 14:55:55 +0200
+Message-Id: <1340888180-15355-16-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function makes it easy to bind the per-node knuma_migrated
-threads to their respective NUMA nodes. Those threads take memory from
-the other nodes (in round robin with a incoming queue for each remote
-node) and they move that memory to their local node.
+This implements the knuma_migrated queues. The pages are added to
+these queues through the NUMA hinting page faults (memory follow CPU
+algorithm with false sharing evaluation) and knuma_migrated then is
+waken with a certain hysteresis to migrate the memory in round robin
+from all remote nodes to its local node.
+
+The head that belongs to the local node that knuma_migrated runs on,
+for now must be empty and it's not being used.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/kthread.h |    1 +
- include/linux/sched.h   |    2 +-
- kernel/kthread.c        |   23 +++++++++++++++++++++++
- 3 files changed, 25 insertions(+), 1 deletions(-)
+ include/linux/mmzone.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-index 0714b24..e733f97 100644
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -33,6 +33,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- })
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 2427706..d53b26a 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -697,6 +697,12 @@ typedef struct pglist_data {
+ 	struct task_struct *kswapd;
+ 	int kswapd_max_order;
+ 	enum zone_type classzone_idx;
++#ifdef CONFIG_AUTONUMA
++	spinlock_t autonuma_lock;
++	struct list_head autonuma_migrate_head[MAX_NUMNODES];
++	unsigned long autonuma_nr_migrate_pages;
++	wait_queue_head_t autonuma_knuma_migrated_wait;
++#endif
+ } pg_data_t;
  
- void kthread_bind(struct task_struct *k, unsigned int cpu);
-+void kthread_bind_node(struct task_struct *p, int nid);
- int kthread_stop(struct task_struct *k);
- int kthread_should_stop(void);
- bool kthread_freezable_should_stop(bool *was_frozen);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4059c0f..699324c 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1792,7 +1792,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
- #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
- #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
--#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
-+#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpus */
- #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
- #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
- #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 3d3de63..48b36f9 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -234,6 +234,29 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
- EXPORT_SYMBOL(kthread_bind);
- 
- /**
-+ * kthread_bind_node - bind a just-created kthread to the CPUs of a node.
-+ * @p: thread created by kthread_create().
-+ * @nid: node (might not be online, must be possible) for @k to run on.
-+ *
-+ * Description: This function is equivalent to set_cpus_allowed(),
-+ * except that @nid doesn't need to be online, and the thread must be
-+ * stopped (i.e., just returned from kthread_create()).
-+ */
-+void kthread_bind_node(struct task_struct *p, int nid)
-+{
-+	/* Must have done schedule() in kthread() before we set_task_cpu */
-+	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
-+	/* It's safe because the task is inactive. */
-+	do_set_cpus_allowed(p, cpumask_of_node(nid));
-+	p->flags |= PF_THREAD_BOUND;
-+}
-+EXPORT_SYMBOL(kthread_bind_node);
-+
-+/**
-  * kthread_stop - stop a thread created by kthread_create().
-  * @k: thread created by kthread_create().
-  *
+ #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
