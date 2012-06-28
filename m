@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab2F1IfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 04:35:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46154 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab2F1IfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 04:35:03 -0400
-Date: Thu, 28 Jun 2012 01:34:54 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        joe.jin@oracle.com
-Subject: Re: [V4]fix ocfs2 aio/dio writing process hang
-Message-ID: <20120628083454.GF18502@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Junxiao Bi <junxiao.bi@oracle.com>,
-	ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
-	akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-	joe.jin@oracle.com
-References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
+	id S932600Ab2F1Ifs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 04:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932303Ab2F1Ifp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 04:35:45 -0400
+Date: Thu, 28 Jun 2012 11:35:41 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120628083541.GN6533@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+ <20120627050937.23698.68442.stgit@bling.home>
+ <20120627152624.GC21393@redhat.com>
+ <1340834658.1207.261.camel@bling.home>
+ <20120627223128.GB27885@redhat.com>
+ <20120628063431.GI6533@redhat.com>
+ <20120628083435.GC12447@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120628083435.GC12447@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, do you want me to pull these through the ocfs2 tree, or are you
-sending them along yourself?
-
-Joel
-
-On Wed, Jun 27, 2012 at 05:09:53PM +0800, Junxiao Bi wrote:
+On Thu, Jun 28, 2012 at 11:34:35AM +0300, Michael S. Tsirkin wrote:
+> On Thu, Jun 28, 2012 at 09:34:31AM +0300, Gleb Natapov wrote:
+> > On Thu, Jun 28, 2012 at 01:31:29AM +0300, Michael S. Tsirkin wrote:
+> > > On Wed, Jun 27, 2012 at 04:04:18PM -0600, Alex Williamson wrote:
+> > > > On Wed, 2012-06-27 at 18:26 +0300, Michael S. Tsirkin wrote:
+> > > > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > > > > > @@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
+> > > > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > >  }
+> > > > > >  
+> > > > > > +static void
+> > > > > > +irqfd_inject_level(struct work_struct *work)
+> > > > > > +{
+> > > > > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > > > > +
+> > > > > > +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > > > > > +}
+> > > > > > +
+> > > > > >  /*
+> > > > > >   * Race-free decouple logic (ordering is critical)
+> > > > > >   */
+> > > > > 
+> > > > > 
+> > > > > Why is it safe to ignore return value here?
+> > > > > needs a comment.
+> > > > 
+> > > > Well, it seems like you and Gleb came to the conclusion that it's safe,
+> > > > but I can really follow from the list thread.  Can you explain and I'll
+> > > > add a comment?  Thanks,
+> > > > 
+> > > > Alex
+> > > 
+> > > We merely talked about edge interrupts.
+> > > 
+> > In fact it would have been nice to return -EBUSY when write() to level
+> > irqfd is coalesced.
 > 
-> V4 changes:
-> add Acked-by: Joel Becker <jlbec@evilplan.org>
+> Possibly nice but not really practical.
 > 
-> V3 changes:
-> - add Cc: stable@vger.kernel.org in the patch header to align with stable rules
-> - add Acked-by: Jeff Moyer <jmoyer@redhat.com>
-> 
-> V2 changes:
-> - update the patch header of the first patch to make it more clear.
-> 
-> 
-> This patch list fixes an issue about ocfs2 aio/dio write process hang.
-> The call trace is like this:
-> @  cat /proc/15913/stack
-> @ [<ffffffffa06e1085>] ocfs2_aiodio_wait+0x85/0xc0 [ocfs2]
-> @ [<ffffffffa06e3e39>] ocfs2_file_aio_write+0x99/0xa0 [ocfs2]
-> @ [<ffffffff811ace97>] aio_rw_vect_retry+0x87/0x150
-> @ [<ffffffff811aebd1>] aio_run_iocb+0x71/0x170
-> @ [<ffffffff811af59b>] io_submit_one+0x1ab/0x280
-> @ [<ffffffff811af77c>] do_io_submit+0x10c/0x1c0
-> @ [<ffffffff811af840>] sys_io_submit+0x10/0x20
-> @ [<ffffffff81509b42>] system_call_fastpath+0x16/0x1b
-> @ [<ffffffffffffffff>] 0xffffffffffffffff
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+What do you mean by that? Impossible to implement or not useful?
 
--- 
-
- Joel's Second Law:
-
-	If a code change requires additional user setup, it is wrong.
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+--
+			Gleb.
