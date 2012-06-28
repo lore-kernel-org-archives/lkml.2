@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab2F1QYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:24:08 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53255 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab2F1QYF (ORCPT
+	id S1755744Ab2F1QYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:24:54 -0400
+Received: from mail-yw0-f42.google.com ([209.85.213.42]:63593 "EHLO
+	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375Ab2F1QYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:24:05 -0400
-Message-ID: <4FEC84BD.6030304@linux.vnet.ibm.com>
-Date: Thu, 28 Jun 2012 21:52:21 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 28 Jun 2012 12:24:53 -0400
+Date: Thu, 28 Jun 2012 13:24:48 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] tools lib traceevent: Replace malloc_or_die to plain
+ malloc in alloc_event()
+Message-ID: <20120628162448.GC6475@infradead.org>
+References: <1339396133-9839-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Andrew Jones <drjones@redhat.com>
-CC: Rik van Riel <riel@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, chegu vinod <chegu_vinod@hp.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] kvm: handle last_boosted_vcpu = 0 case
-References: <168f205d-d65f-4864-99c8-363b12818a9b@zmail17.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <168f205d-d65f-4864-99c8-363b12818a9b@zmail17.collab.prod.int.phx2.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12062816-4790-0000-0000-000003738B9D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339396133-9839-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 09:30 PM, Andrew Jones wrote:
->
->
-> ----- Original Message -----
->> In summary, current PV has huge benefit on non-PLE machine.
->>
->> On PLE machine, the results become very sensitive to load, type of
->> workload and SPIN_THRESHOLD. Also PLE interference has significant
->> effect on them. But still it has slight edge over non PV.
->>
->
-> Hi Raghu,
->
-> sorry for my slow response. I'm on vacation right now (until the
-> 9th of July) and I have limited access to mail.
+Em Mon, Jun 11, 2012 at 03:28:53PM +0900, Namhyung Kim escreveu:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Because the only caller of the alloc_event()
+> (pevent_parse_event) checks return value properly,
+> it can be changed to use plain malloc.
 
-Ok. Happy Vacation :)
+Thanks, applied to perf/core.
 
-Also, thanks for
-> continuing the benchmarking. Question, when you compare PLE vs.
-> non-PLE, are you using different machines (one with and one
-> without), or are you disabling its use by loading the kvm module
-> with the ple_gap=0 modparam as I did?
-
-Yes, I am doing the same when I say with PLE disabled and comparing the
-benchmarks (i.e loading kvm module with ple_gap=0).
-
-But older non-PLE results were on a different machine altogether. (I
-had limited access to PLE machine).
-
-
+- Arnaldo
