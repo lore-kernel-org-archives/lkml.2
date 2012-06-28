@@ -1,323 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab2F1Czd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 22:55:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15985 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab2F1Czc (ORCPT
+	id S932292Ab2F1C4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 22:56:30 -0400
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:50447 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758113Ab2F1C4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 22:55:32 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=EvKSwpK77UAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VHRhf7ZKJIMguAfPpN4A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340852129.16702.73.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Wed, 27 Jun 2012 22:55:29 -0400
-In-Reply-To: <1340869133.876.10.camel@mop>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
-	 <20120625150722.8cd4f45d.akpm@linux-foundation.org>
-	 <20120625235531.GB3652@kroah.com>
-	 <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
-	 <20120626002307.GA4389@kroah.com>
-	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
-	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
-	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
-	 <1340726856.977.6.camel@mop>
-	 <1340810038.16702.16.camel@gandalf.stny.rr.com>
-	 <1340810283.16702.19.camel@gandalf.stny.rr.com>
-	 <CAPXgP121+zA_p4x9VdSMWtu-SqqqiNC51CKkYKY4YkAL+QsQ4g@mail.gmail.com>
-	 <1340869133.876.10.camel@mop>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
+	Wed, 27 Jun 2012 22:56:25 -0400
+Subject: [PATCH 01/16] sched: track the runnable average on a per-task entitiy
+	basis
+To: linux-kernel@vger.kernel.org
+From: Paul Turner <pjt@google.com>
+Cc: Venki Pallipadi <venki@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Date: Wed, 27 Jun 2012 19:24:14 -0700
+Message-ID: <20120628022414.30496.98256.stgit@kitami.mtv.corp.google.com>
+In-Reply-To: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
+References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 09:38 +0200, Kay Sievers wrote:
+Instead of tracking averaging the load parented by a cfs_rq, we can track
+entity load directly.  With the load for a given cfs_Rq then being the sum of
+its children.
 
-> +static void cont_flush(void)
-> +{
-> +	if (cont.flushed)
-> +		return;
-> +	if (cont.len == 0)
-> +		return;
-> +
-> +	log_store(cont.facility, cont.level, LOG_NOCONS, cont.ts_nsec,
-> +		  NULL, 0, cont.buf, cont.len);
-> +
-> +	cont.flushed = true;
-> +}
-> +
-> +static bool cont_add(int facility, int level, const char *text, size_t len)
-> +{
-> +	if (cont.len && cont.flushed)
-> +		return false;
-> +
-> +	if (cont.len + len > sizeof(cont.buf)) {
-> +		cont_flush();
-> +		return false;
-> +	}
-> +
-> +	if (!cont.len) {
-> +		cont.facility = facility;
-> +		cont.level = level;
-> +		cont.owner = current;
-> +		cont.ts_nsec = local_clock();
-> +		cont.cons = 0;
-> +		cont.flushed = false;
-> +	}
-> +
-> +	memcpy(cont.buf + cont.len, text, len);
-> +	cont.len += len;
-> +	return true;
-> +}
-> +
-> +static size_t cont_print_text(char *text, size_t size)
-> +{
-> +	size_t textlen = 0;
-> +	size_t len;
-> +
-> +	if (cont.cons == 0) {
-> +		textlen += print_time(cont.ts_nsec, text);
-> +		size -= textlen;
-> +	}
-> +
-> +	len = cont.len - cont.cons;
-> +	if (len > 0) {
-> +		if (len+1 > size)
-> +			len = size-1;
-> +		memcpy(text + textlen, cont.buf + cont.cons, len);
-> +		textlen += len;
-> +		cont.cons = cont.len;
-> +	}
-> +
-> +	if (cont.flushed) {
-> +		text[textlen++] = '\n';
-> +		/* got everything, release buffer */
-> +		cont.len = 0;
-> +	}
-> +	return textlen;
-> +}
-> +
->  asmlinkage int vprintk_emit(int facility, int level,
->  			    const char *dict, size_t dictlen,
->  			    const char *fmt, va_list args)
->  {
->  	static int recursion_bug;
-> -	static char cont_buf[LOG_LINE_MAX];
-> -	static size_t cont_len;
-> -	static int cont_level;
-> -	static struct task_struct *cont_task;
->  	static char textbuf[LOG_LINE_MAX];
->  	char *text = textbuf;
->  	size_t text_len;
-> @@ -1348,7 +1442,8 @@ asmlinkage int vprintk_emit(int facility, int level,
->  		recursion_bug = 0;
->  		printed_len += strlen(recursion_msg);
->  		/* emit KERN_CRIT message */
-> -		log_store(0, 2, NULL, 0, recursion_msg, printed_len);
-> +		log_store(0, 2, LOG_DEFAULT, 0,
-> +			  NULL, 0, recursion_msg, printed_len);
->  	}
->  
->  	/*
-> @@ -1386,55 +1481,38 @@ asmlinkage int vprintk_emit(int facility, int level,
->  	}
->  
->  	if (!newline) {
-> -		if (cont_len && (prefix || cont_task != current)) {
-> -			/*
-> -			 * Flush earlier buffer, which is either from a
-> -			 * different thread, or when we got a new prefix.
-> -			 */
-> -			log_store(facility, cont_level, NULL, 0, cont_buf, cont_len);
-> -			cont_len = 0;
-> -		}
-> -
-> -		if (!cont_len) {
-> -			cont_level = level;
-> -			cont_task = current;
-> -		}
-> +		/*
-> +		 * Flush the conflicting buffer. An earlier newline was missing,
-> +		 * or another task also prints continuation lines.
-> +		 */
-> +		if (cont.len && (prefix || cont.owner != current))
-> +			cont_flush();
->  
-> -		/* buffer or append to earlier buffer from the same thread */
-> -		if (cont_len + text_len > sizeof(cont_buf))
-> -			text_len = sizeof(cont_buf) - cont_len;
-> -		memcpy(cont_buf + cont_len, text, text_len);
-> -		cont_len += text_len;
-> +		/* buffer line if possible, otherwise store it right away */
-> +		if (!cont_add(facility, level, text, text_len))
-> +			log_store(facility, level, LOG_DEFAULT, 0,
-> +				  dict, dictlen, text, text_len);
->  	} else {
-> -		if (cont_len && cont_task == current) {
-> -			if (prefix) {
-> -				/*
-> -				 * New prefix from the same thread; flush. We
-> -				 * either got no earlier newline, or we race
-> -				 * with an interrupt.
-> -				 */
-> -				log_store(facility, cont_level,
-> -					  NULL, 0, cont_buf, cont_len);
-> -				cont_len = 0;
-> -			}
-> +		bool stored = false;
->  
-> -			/* append to the earlier buffer and flush */
-> -			if (cont_len + text_len > sizeof(cont_buf))
-> -				text_len = sizeof(cont_buf) - cont_len;
-> -			memcpy(cont_buf + cont_len, text, text_len);
-> -			cont_len += text_len;
-> -			log_store(facility, cont_level,
-> -				  NULL, 0, cont_buf, cont_len);
-> -			cont_len = 0;
-> -			cont_task = NULL;
-> -			printed_len = cont_len;
-> -		} else {
-> -			/* ordinary single and terminated line */
-> -			log_store(facility, level,
-> -				  dict, dictlen, text, text_len);
-> -			printed_len = text_len;
-> +		/*
-> +		 * Flush the conflicting buffer. An earlier newline was missing,
-> +		 * or we race with a continuation line from an interrupt.
-> +		 */
-> +		if (cont.len && prefix && cont.owner == current)
-> +			cont_flush();
-> +
-> +		/* Merge with our buffer if possible; flush it in any case */
-> +		if (cont.len && cont.owner == current) {
-> +			stored = cont_add(facility, level, text, text_len);
-> +			cont_flush();
->  		}
+To do this we represent the historical contribution to runnable average within each
+trailing 1024us of execution as the coefficients of a geometric series.
 
+We can express this for a given task t as:
+  runnable_sum(t) = \Sum u_i * y^i ,
+  load(t) = weight_t * runnable_sum(t) / (\Sum 1024 * y^i)
 
-I wonder if it would be better to do the following for the above two
-ifs:
+Where: u_i is the usage in the last i`th 1024us period (approximately 1ms) ~ms
+and y is chosen such that y^k = 1/2.  We currently choose k to be 32 which
+roughly translates to about a sched period.
 
-	if (cont.len && cont.owner == current) {
-		if (!prefix)
-			stored = cont_add(facility, level, text, text_len);
-		cont_flush();
-	}
+Signed-off-by: Paul Turner <pjt@google.com>
+---
+ include/linux/sched.h |    8 +++
+ kernel/sched/debug.c  |    4 ++
+ kernel/sched/fair.c   |  128 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 140 insertions(+), 0 deletions(-)
 
-If the prefix was true, then the cont.flush would be set when cont_add()
-is called, and the first thing that cont_add() does:
-
-	if (cont.len && cont.flushed)
-		return false;
-
-which would always be true (returning false) if prefix was set.
-
-And the second cont_flush() is a nop due to it doing:
-
-	if (cont.flushed)
-		return;
-
--- Steve
-
-
-> +
-> +		if (!stored)
-> +			log_store(facility, level, LOG_DEFAULT, 0,
-> +				  dict, dictlen, text, text_len);
->  	}
-> +	printed_len += text_len;
->  
->  	/*
->  	 * Try to acquire and then immediately release the console semaphore.
-> @@ -1521,11 +1599,18 @@ EXPORT_SYMBOL(printk);
->  #else
->  
->  #define LOG_LINE_MAX 0
-> +static struct cont {
-> +	size_t len;
-> +	size_t cons;
-> +	u8 level;
-> +	bool flushed:1;
-> +} cont;
->  static struct log *log_from_idx(u32 idx) { return NULL; }
->  static u32 log_next(u32 idx) { return 0; }
->  static void call_console_drivers(int level, const char *text, size_t len) {}
->  static size_t msg_print_text(const struct log *msg, bool syslog,
->  			     char *buf, size_t size) { return 0; }
-> +static size_t cont_print_text(char *text, size_t size) { return 0; }
->  
->  #endif /* CONFIG_PRINTK */
->  
-> @@ -1817,6 +1902,7 @@ static u32 console_idx;
->   */
->  void console_unlock(void)
->  {
-> +	static char text[LOG_LINE_MAX];
->  	static u64 seen_seq;
->  	unsigned long flags;
->  	bool wake_klogd = false;
-> @@ -1829,10 +1915,23 @@ void console_unlock(void)
->  
->  	console_may_schedule = 0;
->  
-> +	/* flush buffered message fragment immediately to console */
-> +	raw_spin_lock_irqsave(&logbuf_lock, flags);
-> +	if (cont.len && (cont.cons < cont.len || cont.flushed)) {
-> +		size_t len;
-> +
-> +		len = cont_print_text(text, sizeof(text));
-> +		raw_spin_unlock(&logbuf_lock);
-> +		stop_critical_timings();
-> +		call_console_drivers(cont.level, text, len);
-> +		start_critical_timings();
-> +		local_irq_restore(flags);
-> +	} else
-> +		raw_spin_unlock_irqrestore(&logbuf_lock, flags);
-> +
->  again:
->  	for (;;) {
->  		struct log *msg;
-> -		static char text[LOG_LINE_MAX];
->  		size_t len;
->  		int level;
->  
-> @@ -1847,13 +1946,22 @@ again:
->  			console_seq = log_first_seq;
->  			console_idx = log_first_idx;
->  		}
-> -
-> +skip:
->  		if (console_seq == log_next_seq)
->  			break;
->  
->  		msg = log_from_idx(console_idx);
-> -		level = msg->level & 7;
-> +		if (msg->flags & LOG_NOCONS) {
-> +			/*
-> +			 * Skip record we have buffered and already printed
-> +			 * directly to the console when we received it.
-> +			 */
-> +			console_idx = log_next(console_idx);
-> +			console_seq++;
-> +			goto skip;
-> +		}
->  
-> +		level = msg->level;
->  		len = msg_print_text(msg, false, text, sizeof(text));
->  
->  		console_idx = log_next(console_idx);
-> 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 9dced2e..5bf5c79 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1136,6 +1136,11 @@ struct load_weight {
+ 	unsigned long weight, inv_weight;
+ };
+ 
++struct sched_avg {
++	u32 runnable_avg_sum, runnable_avg_period;
++	u64 last_runnable_update;
++};
++
+ #ifdef CONFIG_SCHEDSTATS
+ struct sched_statistics {
+ 	u64			wait_start;
+@@ -1196,6 +1201,9 @@ struct sched_entity {
+ 	/* rq "owned" by this entity/group: */
+ 	struct cfs_rq		*my_q;
+ #endif
++#ifdef CONFIG_SMP
++	struct sched_avg	avg;
++#endif
+ };
+ 
+ struct sched_rt_entity {
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index c09a4e7..cd5ef23 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -85,6 +85,10 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
+ 	P(se->statistics.wait_count);
+ #endif
+ 	P(se->load.weight);
++#ifdef CONFIG_SMP
++	P(se->avg.runnable_avg_sum);
++	P(se->avg.runnable_avg_period);
++#endif
+ #undef PN
+ #undef P
+ }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 3704ad3..864a122 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -976,6 +976,125 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+ }
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
++#ifdef CONFIG_SMP
++/*
++ * Approximate:
++ *   val * y^n,    where y^32 ~= 0.5 (~1 scheduling period)
++ */
++static __always_inline u64 decay_load(u64 val, int n)
++{
++	for (; n && val; n--) {
++		val *= 4008;
++		val >>= 12;
++	}
++
++	return val;
++}
++
++/* We can represent the historical contribution to runnable average as the
++ * coefficients of a geometric series.  To do this we sub-divide our runnable
++ * history into segments of approximately 1ms (1024us); label the segment that
++ * occurred N-ms ago p_N, with p_0 corresponding to the current period, e.g.
++ *
++ * [<- 1024us ->|<- 1024us ->|<- 1024us ->| ...
++ *      p0            p1           p1
++ *     (now)       (~1ms ago)  (~2ms ago)
++ *
++ * Let u_i denote the fraction of p_i that the entity was runnable.
++ *
++ * We then designate the fractions u_i as our co-efficients, yielding the
++ * following representation of historical load:
++ *   u_0 + u_1*y + u_2*y^2 + u_3*y^3 + ...
++ *
++ * We choose y based on the with of a reasonably scheduling period, fixing:
++ *   y^32 = 0.5
++ *
++ * This means that the contribution to load ~32ms ago (u_32) will be weighted
++ * approximately half as much as the contribution to load within the last ms
++ * (u_0).
++ *
++ * When a period "rolls over" and we have new u_0`, multiplying the previous
++ * sum again by y is sufficient to update:
++ *   load_avg = u_0` + y*(u_0 + u_1*y + u_2*y^2 + ... )
++ *            = u_0 + u_1*y + u_2*y^2 + ... [re-labeling u_i --> u_{i+1]
++ */
++static __always_inline int __update_entity_runnable_avg(u64 now,
++							struct sched_avg *sa,
++							int runnable)
++{
++	u64 delta;
++	int delta_w, decayed = 0;
++
++	delta = now - sa->last_runnable_update;
++	/*
++	 * This should only happen when time goes backwards, which it
++	 * unfortunately does during sched clock init when we swap over to TSC.
++	 */
++	if ((s64)delta < 0) {
++		sa->last_runnable_update = now;
++		return 0;
++	}
++
++	/*
++	 * Use 1024ns as the unit of measurement since it's a reasonable
++	 * approximation of 1us and fast to compute.
++	 */
++	delta >>= 10;
++	if (!delta)
++		return 0;
++	sa->last_runnable_update = now;
++
++	/* delta_w is the amount already accumulated against our next period */
++	delta_w = sa->runnable_avg_period % 1024;
++	if (delta + delta_w >= 1024) {
++		/* period roll-over */
++		decayed = 1;
++
++		/*
++		 * Now that we know we're crossing a period boundary, figure
++		 * out how much from delta we need to complete the current
++		 * period and accrue it.
++		 */
++		delta_w = 1024 - delta_w;
++		BUG_ON(delta_w > delta);
++		do {
++			if (runnable)
++				sa->runnable_avg_sum += delta_w;
++			sa->runnable_avg_period += delta_w;
++
++			/*
++			 * Remainder of delta initiates a new period, roll over
++			 * the previous.
++			 */
++			sa->runnable_avg_sum =
++				decay_load(sa->runnable_avg_sum, 1);
++			sa->runnable_avg_period =
++				decay_load(sa->runnable_avg_period, 1);
++
++			delta -= delta_w;
++			/* New period is empty */
++			delta_w = 1024;
++		} while (delta >= 1024);
++	}
++
++	/* Remainder of delta accrued against u_0` */
++	if (runnable)
++		sa->runnable_avg_sum += delta;
++	sa->runnable_avg_period += delta;
++
++	return decayed;
++}
++
++/* Update a sched_entity's runnable average */
++static inline void update_entity_load_avg(struct sched_entity *se)
++{
++	__update_entity_runnable_avg(rq_of(cfs_rq_of(se))->clock_task, &se->avg,
++				     se->on_rq);
++}
++#else
++static inline void update_entity_load_avg(struct sched_entity *se) {}
++#endif
++
+ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
+ #ifdef CONFIG_SCHEDSTATS
+@@ -1102,6 +1221,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 	 */
+ 	update_curr(cfs_rq);
+ 	update_cfs_load(cfs_rq, 0);
++	update_entity_load_avg(se);
+ 	account_entity_enqueue(cfs_rq, se);
+ 	update_cfs_shares(cfs_rq);
+ 
+@@ -1176,6 +1296,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
++	update_entity_load_avg(se);
+ 
+ 	update_stats_dequeue(cfs_rq, se);
+ 	if (flags & DEQUEUE_SLEEP) {
+@@ -1345,6 +1466,8 @@ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
+ 		update_stats_wait_start(cfs_rq, prev);
+ 		/* Put 'current' back into the tree. */
+ 		__enqueue_entity(cfs_rq, prev);
++		/* in !on_rq case, update occurred at dequeue */
++		update_entity_load_avg(prev);
+ 	}
+ 	cfs_rq->curr = NULL;
+ }
+@@ -1358,6 +1481,11 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+ 	update_curr(cfs_rq);
+ 
+ 	/*
++	 * Ensure that runnable average is periodically updated.
++	 */
++	update_entity_load_avg(curr);
++
++	/*
+ 	 * Update share accounting for long-running entities.
+ 	 */
+ 	update_entity_shares_tick(cfs_rq);
 
 
