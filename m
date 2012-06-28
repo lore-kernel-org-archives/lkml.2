@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab2F1Oym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 10:54:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59775 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab2F1Oyk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 10:54:40 -0400
-Message-ID: <1340895238.28750.49.camel@twins>
-Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Thu, 28 Jun 2012 16:53:58 +0200
-In-Reply-To: <1340888180-15355-14-git-send-email-aarcange@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
-	 <1340888180-15355-14-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754987Ab2F1OzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 10:55:04 -0400
+Received: from tundra.namei.org ([65.99.196.166]:33741 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752874Ab2F1OzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 10:55:01 -0400
+Date: Fri, 29 Jun 2012 00:54:55 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Chad Williamson <chad@dahc.us>
+cc: wad@chromium.org, james.l.morris@oracle.com, keescook@chromium.org,
+        eparis@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] samples: seccomp: add .gitignore for untracked
+ executables
+In-Reply-To: <1340789620-15762-1-git-send-email-chad@dahc.us>
+Message-ID: <alpine.LRH.2.02.1206290054440.30878@tundra.namei.org>
+References: <1340789620-15762-1-git-send-email-chad@dahc.us>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 14:55 +0200, Andrea Arcangeli wrote:
-> +#ifdef __ia64__
-> +#error "NOTE: tlb_migrate_finish won't run here"
-> +#endif 
+On Wed, 27 Jun 2012, Chad Williamson wrote:
 
-https://lkml.org/lkml/2012/5/29/359
+> git status should be clean following make allmodconfig && make. Add
+> a .gitignore file to the samples/seccomp directory to ignore binaries
+> produced there.
+> 
+> Signed-off-by: Chad Williamson <chad@dahc.us>
 
-Its an optional thing, not running it isn't fatal at all.
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
 
-Also, ia64 has CONFIG_NUMA so all this code had better run on it.
 
-That said, I've also already told you to stop using such forceful
-migration, that simply doesn't make any sense, numa balancing isn't that
-critical.
-
-Unless you're going to listen to feedback I give you, I'm going to
-completely stop reading your patches, I don't give a rats arse you work
-for the same company anymore.
-
-You're impossible to work with.
