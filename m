@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab2F1MXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:23:03 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:54995 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751473Ab2F1MXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:23:02 -0400
-Date: Thu, 28 Jun 2012 13:23:00 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1206281322001.10648@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754402Ab2F1M0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:26:42 -0400
+Received: from smtp-out-130.synserver.de ([212.40.185.130]:1060 "EHLO
+	smtp-out-120.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751473Ab2F1M0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:26:41 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 6438
+Message-ID: <4FEC4E62.3020101@metafoo.de>
+Date: Thu, 28 Jun 2012 14:30:26 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        swarren@nvidia.com, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: snd_dmaengine: add common api for
+ pcm_mmap
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com> <4FEC3B70.5030902@metafoo.de> <s5hobo3zl79.wl%tiwai@suse.de> <20120628121816.GB21029@sirena.org.uk>
+In-Reply-To: <20120628121816.GB21029@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/28/2012 02:18 PM, Mark Brown wrote:
+> On Thu, Jun 28, 2012 at 02:15:38PM +0200, Takashi Iwai wrote:
+>> Lars-Peter Clausen wrote:
+> 
+>>> to the ALSA core. Now that there is a generic dma_mmap_writecombine it may
+>>> make sense to integrate this with snd_pcm_lib_default_mmap.
+> 
+>> Agreed.
+> 
+>> Also, it must be portable.  So far, only ARM has
+>> dma_mmap_writecombine(), thus the build on other arch would fail as
+>> is.
+> 
+> Oh, dear - this means we don't actually have a generic API at all.  Is
+> there any effort being made to make this generally available?
 
-Hi Linus,
+Yes there is, and in fact in next/master there is generic
+dma_mmap_writecombine. I'm not quite sure how it behaves on non ARM archs
+though. But in theory it should fallback to a normal coherent mapping. Marek
+did a lot of work on this, I've put him on Cc.
 
-Nearly all intel, one missing license header in nouveau, nothing majorly
-earth shattering.
-
-Dave.
-
-
-The following changes since commit d1346a6cbabf6d377d753f1adc16cb0b305830cc:
-
-  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2012-06-26 11:26:50 -0700)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 2266b058d3ab9dfc545305d68e754ad9c9a639a0:
-
-  Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes (2012-06-27 19:56:20 +0100)
-
-----------------------------------------------------------------
-
-Daniel Vetter (2):
-      drm/i915: rip out the PM_IIR WARN
-      Revert "drm/i915: allow PCH PWM override on IVB"
-
-Dave Airlie (2):
-      drm/nouveau: add license header to prime.
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-
-Takashi Iwai (1):
-      drm/i915: Fix eDP blank screen after S3 resume on HP desktops
-
- drivers/gpu/drm/i915/i915_irq.c         |    1 -
- drivers/gpu/drm/i915/i915_suspend.c     |    5 ++++-
- drivers/gpu/drm/i915/intel_display.c    |   16 ----------------
- drivers/gpu/drm/nouveau/nouveau_prime.c |   23 +++++++++++++++++++++++
- 4 files changed, 27 insertions(+), 18 deletions(-)
+- Lars
