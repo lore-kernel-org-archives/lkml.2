@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab2F1MpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:45:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5586 "EHLO mga14.intel.com"
+	id S1754240Ab2F1Mur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:50:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab2F1MpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:45:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="116927892"
-Date: Thu, 28 Jun 2012 14:56:12 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Dave Jones <davej@redhat.com>,
-        David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org,
-        aloisio.almeida@openbossa.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH] net: nfc: fix panic in accept()
-Message-ID: <20120628125612.GG4846@sortiz-mobl>
-References: <1339425693.6001.2268.camel@edumazet-glaptop>
- <20120611145700.GY22557@sortiz-mobl>
- <1339426778.6001.2312.camel@edumazet-glaptop>
- <20120611152007.GZ22557@sortiz-mobl>
- <1339433810.4999.65.camel@lappy>
- <20120611172545.GA1776@redhat.com>
- <CA+1xoqcwr-5dzHvqkt9x0-xj9EFAywVfva=asbHXvX-LSBWqdA@mail.gmail.com>
- <1340639612.10893.84.camel@edumazet-glaptop>
- <20120625171532.GB16275@sortiz-mobl>
- <CA+1xoqfy21wOh2myV0D6iBDqoZ3YmkwNZwKBVXLU75zePOGi4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqfy21wOh2myV0D6iBDqoZ3YmkwNZwKBVXLU75zePOGi4w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751617Ab2F1Mup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:50:45 -0400
+Date: Thu, 28 Jun 2012 08:49:52 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 10/12] nfs: enable swap on NFS
+Message-ID: <20120628084952.6526f801@corrin.poochiereds.net>
+In-Reply-To: <20120628123734.GH8271@suse.de>
+References: <1340375468-22509-1-git-send-email-mgorman@suse.de>
+	<1340375468-22509-11-git-send-email-mgorman@suse.de>
+	<20120628082725.33b71097@corrin.poochiereds.net>
+	<20120628123734.GH8271@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sasha,
+On Thu, 28 Jun 2012 13:37:34 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-On Thu, Jun 28, 2012 at 02:11:38PM +0200, Sasha Levin wrote:
-> Hi Samuel,
+> On Thu, Jun 28, 2012 at 08:27:25AM -0400, Jeff Layton wrote:
+> > > <SNIP>
+> > > @@ -2108,11 +2156,15 @@ static void xs_tcp_setup_socket(struct work_struct *work)
+> > >  		container_of(work, struct sock_xprt, connect_worker.work);
+> > >  	struct socket *sock = transport->sock;
+> > >  	struct rpc_xprt *xprt = &transport->xprt;
+> > > +	unsigned long pflags = current->flags;
+> > >  	int status = -EIO;
+> > >  
+> > >  	if (xprt->shutdown)
+> > >  		goto out;
+> > >  
+> > > +	if (xprt->swapper)
+> > > +		current->flags |= PF_MEMALLOC;
+> > > +
+> > >  	if (!sock) {
+> > >  		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
+> > >  		sock = xs_create_sock(xprt, transport,
+> > > @@ -2174,6 +2226,7 @@ out_eagain:
+> > >  out:
+> > >  	xprt_clear_connecting(xprt);
+> > >  	xprt_wake_pending_tasks(xprt, status);
+> > > +	tsk_restore_flags(current, pflags, PF_MEMALLOC);
+> > >  }
+> > >  
+> > >  /**
+> > 
+> > Apologies if this is fixed in another patch and I didn't see it...
+> > 
 > 
-> On Mon, Jun 25, 2012 at 7:15 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > Hi Eric,
-> >
-> > On Mon, Jun 25, 2012 at 05:53:32PM +0200, Eric Dumazet wrote:
-> >> From: Eric Dumazet <edumazet@google.com>
-> >>
-> >> Sasha Levin reported following panic :
-> > I applied a similar patch, more consistent with the rest of the NFC socket
-> > code, still with you as the author. See here:
-> >
-> > http://git.kernel.org/?p=linux/kernel/git/sameo/nfc-3.0.git;a=commit;h=631c301f20558525a641fadffc0126affd3dc4a4
+> No apologies necessary. Even if it was fixed in another patch, it would
+> still be wrong for bisection reasons and for being rude to reviewers.
 > 
-> Could this tree be included in -next please?
-No, wireless-next is already included in -next. The above patch is making its
-way upstream, it's in the wireless.git tree and should hit davem's net tree
-soon.
+> > There's a place in the above function that returns without going
+> > through "out:". I think you also want to tsk_restore_flags() in that
+> > spot too.
+> > 
+> 
+> You're right. The case that it would trigger would be some corner case
+> but very nicely spotted.
+> 
+> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+> index b84df34..3d58b92 100644
+> --- a/net/sunrpc/xprtsock.c
+> +++ b/net/sunrpc/xprtsock.c
+> @@ -2214,6 +2214,7 @@ static void xs_tcp_setup_socket(struct work_struct *work)
+>  	case -EINPROGRESS:
+>  	case -EALREADY:
+>  		xprt_clear_connecting(xprt);
+> +		tsk_restore_flags(current, pflags, PF_MEMALLOC);
+>  		return;
+>  	case -EINVAL:
+>  		/* Happens, for instance, if the user specified a link
+
+That looks correct.
+
+Actually it's not obvious in this function, but it turns out that this
+is the common case. xs_tcp_finish_connecting calls kernel_connect with
+O_NONBLOCK set, and that almost always immediately returns with
+-EINPROGRESS.
 
 Cheers,
-Samuel.
-
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Jeff Layton <jlayton@redhat.com>
