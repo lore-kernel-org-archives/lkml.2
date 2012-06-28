@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab2F1KvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 06:51:10 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53756 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab2F1KvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 06:51:09 -0400
-Message-ID: <1340880651.20977.83.camel@pasglop>
-Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-Cc: linuxppc-dev@lists.ozlabs.org, scottwood@freescale.com,
-        linux-kernel@vger.kernel.org, leoli@freescale.com
-Date: Thu, 28 Jun 2012 20:50:51 +1000
-In-Reply-To: <20120628033815.GA11387@localhost.localdomain>
-References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com>
-	 <1340748634.3732.27.camel@pasglop>
-	 <20120627102138.GB10476@localhost.localdomain>
-	 <1340797732.3732.46.camel@pasglop>
-	 <20120628033815.GA11387@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752941Ab2F1Kvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 06:51:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35984 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750817Ab2F1Kvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 06:51:51 -0400
+Date: Thu, 28 Jun 2012 11:51:48 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: perex@perex.cz, tiwai@suse.de, lrg@ti.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, swarren@nvidia.com
+Subject: Re: [PATCH] ASoC: snd_dmaengine: add common api for pcm_mmap
+Message-ID: <20120628105148.GD28922@opensource.wolfsonmicro.com>
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="48TaNjbzBVislYPb"
+Content-Disposition: inline
+In-Reply-To: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 11:38 +0800, Zhao Chenhui wrote:
-> 
-> 
-> The bootloader have done a timebase sync. If we do not need KEXEC or
-> HOTPLUG_CPU feature, it is unnecessary to do it again at boot time of
-> kernel. I only compile the timebase sync routines
-> when users enable KEXEC or HOTPLUG_CPU. 
 
-Still, how much are you really saving ? Is it worth the added mess and
-loss of test coverage ?
+--48TaNjbzBVislYPb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-We have too many conditional stuff like that already.
+On Thu, Jun 28, 2012 at 12:31:26PM +0530, Laxman Dewangan wrote:
+> The pcm mmap for the substream dma buffer is done using the
+> dma_mmap_writecombine().
+> Some of the chip sound driver like Spear, Tegra, Davinci,
+> ep93xx,snd_imx, snd_mxs, NUC900, OMAP, Samsung are doing this
+> mapping locally.
+> Add api in the snd dmaengine driver so that different client of
+> snd dmaengine can use this rather than implementing locally.
 
-Cheers,
-Ben.
+OK, but I'd expect this to come along with one or more patches
+converting at least some of the users to the new API...
 
+--48TaNjbzBVislYPb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP7DcKAAoJEBus8iNuMP3d+osQAIvuuvCUKlZ1Vd4zES6f6LbA
+YDCXj05mH/leRfNHq3DU19M+jKyP+GZ81NXfpq76BpcjLf0ieTECyOUc7lKs6Ivw
+EGb3GMRV+TnBZaTUlQTLc4UR2F/AVvOgAoLSqaL9fM0eLm2w95HyECt1vGsSX4A6
+FxDswxf5tDGxoMjZsOdv6EOzYOSiqM+f+HPegmiyGFs/ghlNKuDKupgvN3JwHs3j
+F4fcDm7ARELKHCCKxHzAfC40oAfXUdF4iZbHMm1BBzTAQIRY0UW1s6SNdZMNdiLs
+ylaV7aNVvXhanM69MIQ5iJsXftsdQ8c8J0hr2L6JJCV8DxAqV23mo9q/jEq/MOeJ
+yeAB0PDbdn/VXCuuv8e6RVBpftsdwN9Xmzx+4HlMcaKyyJ7Ci63jzP/iM7lIvg4q
+4EKP8ox1inSCQpWTJ8TWqH0imjARrwcHHL3q1nbV60kgd9aUSAEYnQxF3IeSHo1M
+DCUlqGt4FShXvXY9NmAt/a+uHko6BhFe9mcuaqCP1UIqCC2Pjpumn6WnfMIoEzxC
+cHuQq2HPXmqYdX9AzmaLAPHWQqD7msc1vtlFRjGyWDF78aQdm1Eu0IgrLCdZwXK/
+/GV5Cv6R8nHuBS/ibN/KbWejk6SX68orPYJnOMos7shVhFjkzQM48FD4J+TrLNsU
+/PH9ZFKm0jDoj501PqZQ
+=task
+-----END PGP SIGNATURE-----
+
+--48TaNjbzBVislYPb--
