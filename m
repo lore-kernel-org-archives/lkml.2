@@ -1,50 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab2F1VTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 17:19:43 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:58593 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab2F1VTk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 17:19:40 -0400
-Date: Thu, 28 Jun 2012 22:19:36 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Corentin Chary <corentin.chary@gmail.com>
-Subject: Re: [PATCH] backlight: add support for disabling backlights via
- sysfs
-Message-ID: <20120628211936.GA14286@srcf.ucam.org>
-References: <1340910426-13269-1-git-send-email-seth.forshee@canonical.com>
- <20120628191043.GA9777@srcf.ucam.org>
- <20120628193017.GA29456@thinkpad-t410>
- <20120628193652.GB10945@srcf.ucam.org>
- <20120628211600.GB29456@thinkpad-t410>
+	id S1755258Ab2F1VZD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 17:25:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754527Ab2F1VZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 17:25:01 -0400
+Message-ID: <4FECCB89.2050400@redhat.com>
+Date: Thu, 28 Jun 2012 17:24:25 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120628211600.GB29456@thinkpad-t410>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mel@csn.ul.ie>, jaschut@sandia.gov, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where
+ it left
+References: <20120628135520.0c48b066@annuminas.surriel.com> <20120628135940.2c26ada9.akpm@linux-foundation.org>
+In-Reply-To: <20120628135940.2c26ada9.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 04:16:00PM -0500, Seth Forshee wrote:
+On 06/28/2012 04:59 PM, Andrew Morton wrote:
+> On Thu, 28 Jun 2012 13:55:20 -0400
+> Rik van Riel<riel@redhat.com>  wrote:
+>
+>> Order>  0 compaction stops when enough free pages of the correct
+>> page order have been coalesced. When doing subsequent higher order
+>> allocations, it is possible for compaction to be invoked many times.
+>>
+>> However, the compaction code always starts out looking for things to
+>> compact at the start of the zone, and for free pages to compact things
+>> to at the end of the zone.
+>>
+>> This can cause quadratic behaviour, with isolate_freepages starting
+>> at the end of the zone each time, even though previous invocations
+>> of the compaction code already filled up all free memory on that end
+>> of the zone.
+>>
+>> This can cause isolate_freepages to take enormous amounts of CPU
+>> with certain workloads on larger memory systems.
+>>
+>> The obvious solution is to have isolate_freepages remember where
+>> it left off last time, and continue at that point the next time
+>> it gets invoked for an order>  0 compaction. This could cause
+>> compaction to fail if cc->free_pfn and cc->migrate_pfn are close
+>> together initially, in that case we restart from the end of the
+>> zone and try once more.
+>>
+>> Forced full (order == -1) compactions are left alone.
+>
+> Is there a quality of service impact here?  Newly-compactable pages
+> at lower pfns than compact_cached_free_pfn will now get missed, leading
+> to a form of fragmentation?
 
-> What I still don't understand is your reason for preferring
-> driver-specific interfaces for disabling backlights to a single generic
-> interface. Are you afraid that allowing it to be done from userspace
-> will make it too easy, and as a result quirks will be applied without
-> attempting to fix the problem (i.e. the quriking should go through a
-> kernel dev to ensure someone tries to fix the problem is made before
-> applying a quirk)?
+The compaction side of the zone always starts at the
+very beginning of the zone.  I believe we can get
+away with this, because skipping a whole transparent
+hugepage or non-movable block is 512 times faster than
+scanning an entire block for target pages in
+isolate_freepages.
 
-Yup, that. We'll just end up with three billion forum posts telling 
-people to add a line to a text file and nobody will ever fix the real 
-problem.
+>> @@ -463,6 +474,8 @@ static void isolate_freepages(struct zone *zone,
+>>   		 */
+>>   		if (isolated)
+>>   			high_pfn = max(high_pfn, pfn);
+>> +		if (cc->order>  0)
+>> +			zone->compact_cached_free_pfn = high_pfn;
+>
+> Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
+> assume so, if lots of code in other places is correct but it's
+> unobvious from reading this function.
+
+Reading the code a few more times, I believe that it is
+indeed aligned to pageblock size.
+
+>> --- a/mm/internal.h
+>> +++ b/mm/internal.h
+>> @@ -118,8 +118,10 @@ struct compact_control {
+>>   	unsigned long nr_freepages;	/* Number of isolated free pages */
+>>   	unsigned long nr_migratepages;	/* Number of pages to migrate */
+>>   	unsigned long free_pfn;		/* isolate_freepages search base */
+>> +	unsigned long start_free_pfn;	/* where we started the search */
+>>   	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+>>   	bool sync;			/* Synchronous migration */
+>> +	bool wrapped;			/* Last round for order>0 compaction */
+>
+> This comment is incomprehensible :(
+
+Agreed.  I'm not sure how to properly describe that variable
+in 30 or so characters :)
+
+It denotes whether the current invocation of compaction,
+called with order > 0, has had free_pfn and migrate_pfn
+meet, resulting in free_pfn being reset to the top of
+the zone.
+
+Now, how to describe that briefly?
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+All rights reversed
