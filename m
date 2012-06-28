@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab2F1Sak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 14:30:40 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33050 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754557Ab2F1Sai convert rfc822-to-8bit (ORCPT
+	id S1755922Ab2F1Sbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 14:31:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46524 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab2F1Sbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 14:30:38 -0400
-Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
-Mime-Version: 1.0 (Apple Message framework v1278)
+	Thu, 28 Jun 2012 14:31:50 -0400
+Date: Thu, 28 Jun 2012 11:31:45 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
+        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+Message-ID: <20120628183145.GE22641@google.com>
+References: <2a1a74bf-fbb5-4a6e-b958-44fff8debff2@zmail13.collab.prod.int.phx2.redhat.com>
+ <34bb8049-8007-496c-8ffb-11118c587124@zmail13.collab.prod.int.phx2.redhat.com>
+ <20120627154827.GA4420@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1206271256120.22162@chino.kir.corp.google.com>
+ <20120627200926.GR15811@google.com>
+ <alpine.DEB.2.00.1206271316070.22162@chino.kir.corp.google.com>
+ <20120627202430.GS15811@google.com>
+ <4FEBD7C0.7090906@jp.fujitsu.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1340880651.20977.83.camel@pasglop>
-Date: Thu, 28 Jun 2012 13:30:26 -0500
-Cc: "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        Scott Wood <scottwood@freescale.com>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Li Yang <leoli@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D2BA086B-6EB3-4853-B901-FA37DCCDC134@kernel.crashing.org>
-References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com> <1340748634.3732.27.camel@pasglop> <20120627102138.GB10476@localhost.localdomain> <1340797732.3732.46.camel@pasglop> <20120628033815.GA11387@localhost.localdomain> <1340880651.20977.83.camel@pasglop>
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-X-Mailer: Apple Mail (2.1278)
+Content-Disposition: inline
+In-Reply-To: <4FEBD7C0.7090906@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, KAME.
 
-On Jun 28, 2012, at 5:50 AM, Benjamin Herrenschmidt wrote:
-
-> On Thu, 2012-06-28 at 11:38 +0800, Zhao Chenhui wrote:
->> 
->> 
->> The bootloader have done a timebase sync. If we do not need KEXEC or
->> HOTPLUG_CPU feature, it is unnecessary to do it again at boot time of
->> kernel. I only compile the timebase sync routines
->> when users enable KEXEC or HOTPLUG_CPU. 
+On Thu, Jun 28, 2012 at 01:04:16PM +0900, Kamezawa Hiroyuki wrote:
+> >I still wish it's folded into CONFIG_MEMCG and conditionalized just on
+> >CONFIG_SWAP tho.
+> >
 > 
-> Still, how much are you really saving ? Is it worth the added mess and
-> loss of test coverage ?
+> In old days, memsw controller was not very stable. So, we devided the config.
+> And, it makes size of memory for swap-device double (adds 2bytes per swapent.)
+> That is the problem.
+
+I see.  Do you think it's now reasonable to drop the separate config
+option?  Having memcg enabled but swap unaccounted sounds half-broken
+to me.
+
+> IIRC...at that time, we made decision, cgroup has no feature to
+> 'create files dynamically'. Then, we made it in static, decision was done
+> at compile time and ignores "do_swap_account".
 > 
-> We have too many conditional stuff like that already.
-> 
-> Cheers,
-> Ben.
-> 
+> Now, IIUC, we have the feature. So, it's may be a time to create the file
+> with regard to "do_swap_account", making decision at boot time.
 
-I'd also be interested to know how long it actually takes to do time base sync this way.  Since you are freezing the timers for some period how long does it really take between the freeze/unfreeze in mpc85xx_give_timebase()
+Heh, yeah, maybe I'm confused about how it happened.  Anyways, let's
+get it fixed.
 
-+	mpc85xx_timebase_freeze(1);
-...
-+	mpc85xx_timebase_freeze(0);
+Thanks!
 
-You can use ATBL/U as a way to see # of cycles taken.
-
-- k
+-- 
+tejun
