@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab2F1GHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 02:07:55 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:47679 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932372Ab2F1GHu (ORCPT
+	id S932469Ab2F1GH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 02:07:59 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:37386 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932372Ab2F1GHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 02:07:50 -0400
-X-AuditID: b753bd60-982efba000000f6c-c7-4febf4b408ba
-X-AuditID: b753bd60-982efba000000f6c-c7-4febf4b408ba
+	Thu, 28 Jun 2012 02:07:55 -0400
+X-AuditID: b753bd60-996f1ba000000f6c-f1-4febf4b9db76
+X-AuditID: b753bd60-996f1ba000000f6c-f1-4febf4b9db76
 From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Subject: [RFC PATCH 04/18] KVM: Replace local_irq_disable/enable with
- local_irq_save/restore
+Subject: [RFC PATCH 05/18] KVM: Enable/Disable virtualization on slave CPUs
+ are activated/dying
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         yrl.pp-manager.tt@hitachi.com,
@@ -19,8 +19,8 @@ Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 28 Jun 2012 15:07:40 +0900
-Message-ID: <20120628060740.19298.69063.stgit@localhost.localdomain>
+Date: Thu, 28 Jun 2012 15:07:45 +0900
+Message-ID: <20120628060745.19298.9699.stgit@localhost.localdomain>
 In-Reply-To: <20120628060719.19298.43879.stgit@localhost.localdomain>
 References: <20120628060719.19298.43879.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -32,9 +32,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace local_irq_disable/enable with local_irq_save/restore in the path
-where is executed on slave CPUs. This is required because irqs are disabled
-while the guest is running on the slave CPUs.
+Enable virtualization when slave CPUs are activated, and disable when
+the CPUs are dying using slave CPU notifier call chain.
+
+In x86, TSC kHz must also be initialized by tsc_khz_changed when the
+new slave CPUs are activated.
 
 Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
 Cc: Avi Kivity <avi@redhat.com>
@@ -44,182 +46,198 @@ Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
 
- arch/x86/kvm/mmu.c |   20 ++++++++++++--------
- arch/x86/kvm/vmx.c |    5 +++--
- arch/x86/kvm/x86.c |    7 ++++---
- arch/x86/mm/gup.c  |    7 ++++---
- 4 files changed, 23 insertions(+), 16 deletions(-)
+ arch/x86/kvm/x86.c  |   20 ++++++++++++++++++++
+ virt/kvm/kvm_main.c |   38 ++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 56 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index be3cea4..6139e1d 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -549,13 +549,14 @@ static u64 mmu_spte_get_lockless(u64 *sptep)
- 	return __get_spte_lockless(sptep);
- }
- 
--static void walk_shadow_page_lockless_begin(struct kvm_vcpu *vcpu)
-+static void walk_shadow_page_lockless_begin(struct kvm_vcpu *vcpu,
-+					    unsigned long *flags)
- {
- 	/*
- 	 * Prevent page table teardown by making any free-er wait during
- 	 * kvm_flush_remote_tlbs() IPI to all active vcpus.
- 	 */
--	local_irq_disable();
-+	local_irq_save(*flags);
- 	vcpu->mode = READING_SHADOW_PAGE_TABLES;
- 	/*
- 	 * Make sure a following spte read is not reordered ahead of the write
-@@ -564,7 +565,8 @@ static void walk_shadow_page_lockless_begin(struct kvm_vcpu *vcpu)
- 	smp_mb();
- }
- 
--static void walk_shadow_page_lockless_end(struct kvm_vcpu *vcpu)
-+static void walk_shadow_page_lockless_end(struct kvm_vcpu *vcpu,
-+					  unsigned long *flags)
- {
- 	/*
- 	 * Make sure the write to vcpu->mode is not reordered in front of
-@@ -573,7 +575,7 @@ static void walk_shadow_page_lockless_end(struct kvm_vcpu *vcpu)
- 	 */
- 	smp_mb();
- 	vcpu->mode = OUTSIDE_GUEST_MODE;
--	local_irq_enable();
-+	local_irq_restore(*flags);
- }
- 
- static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
-@@ -2959,12 +2961,13 @@ static u64 walk_shadow_page_get_mmio_spte(struct kvm_vcpu *vcpu, u64 addr)
- {
- 	struct kvm_shadow_walk_iterator iterator;
- 	u64 spte = 0ull;
-+	unsigned long flags;
- 
--	walk_shadow_page_lockless_begin(vcpu);
-+	walk_shadow_page_lockless_begin(vcpu, &flags);
- 	for_each_shadow_entry_lockless(vcpu, addr, iterator, spte)
- 		if (!is_shadow_present_pte(spte))
- 			break;
--	walk_shadow_page_lockless_end(vcpu);
-+	walk_shadow_page_lockless_end(vcpu, &flags);
- 
- 	return spte;
- }
-@@ -4043,15 +4046,16 @@ int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4])
- 	struct kvm_shadow_walk_iterator iterator;
- 	u64 spte;
- 	int nr_sptes = 0;
-+	unsigned long flags;
- 
--	walk_shadow_page_lockless_begin(vcpu);
-+	walk_shadow_page_lockless_begin(vcpu, &flags);
- 	for_each_shadow_entry_lockless(vcpu, addr, iterator, spte) {
- 		sptes[iterator.level-1] = spte;
- 		nr_sptes++;
- 		if (!is_shadow_present_pte(spte))
- 			break;
- 	}
--	walk_shadow_page_lockless_end(vcpu);
-+	walk_shadow_page_lockless_end(vcpu, &flags);
- 
- 	return nr_sptes;
- }
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 32eb588..6ea77e4 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1516,12 +1516,13 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 	if (vmx->loaded_vmcs->cpu != cpu) {
- 		struct desc_ptr *gdt = &__get_cpu_var(host_gdt);
- 		unsigned long sysenter_esp;
-+		unsigned long flags;
- 
- 		kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
--		local_irq_disable();
-+		local_irq_save(flags);
- 		list_add(&vmx->loaded_vmcs->loaded_vmcss_on_cpu_link,
- 			 &per_cpu(loaded_vmcss_on_cpu, cpu));
--		local_irq_enable();
-+		local_irq_restore(flags);
- 
- 		/*
- 		 * Linux uses per-cpu TSS and GDT, so set these when switching
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index be6d549..4a69c66 100644
+index 4a69c66..9bb2f8f2 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -5229,6 +5229,7 @@ static void process_nmi(struct kvm_vcpu *vcpu)
- static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+@@ -61,6 +61,7 @@
+ #include <asm/xcr.h>
+ #include <asm/pvclock.h>
+ #include <asm/div64.h>
++#include <asm/cpu.h>
+ 
+ #define MAX_IO_MSRS 256
+ #define KVM_MAX_MCE_BANKS 32
+@@ -4769,9 +4770,15 @@ static int kvmclock_cpu_notifier(struct notifier_block *nfb,
+ 	switch (action) {
+ 		case CPU_ONLINE:
+ 		case CPU_DOWN_FAILED:
++#ifdef CONFIG_SLAVE_CPU
++		case CPU_SLAVE_UP:
++#endif
+ 			smp_call_function_single(cpu, tsc_khz_changed, NULL, 1);
+ 			break;
+ 		case CPU_DOWN_PREPARE:
++#ifdef CONFIG_SLAVE_CPU
++		case CPU_SLAVE_DYING:
++#endif
+ 			smp_call_function_single(cpu, tsc_bad, NULL, 1);
+ 			break;
+ 	}
+@@ -4783,12 +4790,20 @@ static struct notifier_block kvmclock_cpu_notifier_block = {
+ 	.priority = -INT_MAX
+ };
+ 
++static struct notifier_block kvmclock_slave_cpu_notifier_block = {
++	.notifier_call  = kvmclock_cpu_notifier,
++	.priority = -INT_MAX
++};
++
+ static void kvm_timer_init(void)
  {
- 	int r;
-+	unsigned long flags;
- 	bool req_int_win = !irqchip_in_kernel(vcpu->kvm) &&
- 		vcpu->run->request_interrupt_window;
- 	bool req_immediate_exit = 0;
-@@ -5314,13 +5315,13 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 	 */
- 	smp_mb();
+ 	int cpu;
  
--	local_irq_disable();
-+	local_irq_save(flags);
+ 	max_tsc_khz = tsc_khz;
+ 	register_hotcpu_notifier(&kvmclock_cpu_notifier_block);
++#ifdef CONFIG_SLAVE_CPU
++	register_slave_cpu_notifier(&kvmclock_slave_cpu_notifier_block);
++#endif
+ 	if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC)) {
+ #ifdef CONFIG_CPU_FREQ
+ 		struct cpufreq_policy policy;
+@@ -4805,6 +4820,8 @@ static void kvm_timer_init(void)
+ 	pr_debug("kvm: max_tsc_khz = %ld\n", max_tsc_khz);
+ 	for_each_online_cpu(cpu)
+ 		smp_call_function_single(cpu, tsc_khz_changed, NULL, 1);
++	for_each_slave_cpu(cpu)
++		smp_call_function_single(cpu, tsc_khz_changed, NULL, 1);
+ }
  
- 	if (vcpu->mode == EXITING_GUEST_MODE || vcpu->requests
- 	    || need_resched() || signal_pending(current)) {
- 		vcpu->mode = OUTSIDE_GUEST_MODE;
- 		smp_wmb();
--		local_irq_enable();
-+		local_irq_restore(flags);
- 		preempt_enable();
- 		kvm_x86_ops->cancel_injection(vcpu);
- 		r = 1;
-@@ -5359,7 +5360,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+ static DEFINE_PER_CPU(struct kvm_vcpu *, current_vcpu);
+@@ -4930,6 +4947,9 @@ void kvm_arch_exit(void)
+ 		cpufreq_unregister_notifier(&kvmclock_cpufreq_notifier_block,
+ 					    CPUFREQ_TRANSITION_NOTIFIER);
+ 	unregister_hotcpu_notifier(&kvmclock_cpu_notifier_block);
++#ifdef CONFIG_SLAVE_CPU
++	unregister_slave_cpu_notifier(&kvmclock_slave_cpu_notifier_block);
++#endif
+ 	kvm_x86_ops = NULL;
+ 	kvm_mmu_module_exit();
+ }
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 7e14068..f5890f0 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -54,6 +54,9 @@
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
++#ifdef CONFIG_X86
++#include <asm/cpu.h>
++#endif
  
- 	vcpu->mode = OUTSIDE_GUEST_MODE;
- 	smp_wmb();
--	local_irq_enable();
-+	local_irq_restore(flags);
+ #include "coalesced_mmio.h"
+ #include "async_pf.h"
+@@ -2323,11 +2326,17 @@ static void hardware_disable(void *junk)
  
- 	++vcpu->stat.exits;
+ static void hardware_disable_all_nolock(void)
+ {
++	int cpu;
++
+ 	BUG_ON(!kvm_usage_count);
  
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-index dd74e46..6679525 100644
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -315,6 +315,7 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 	struct mm_struct *mm = current->mm;
- 	unsigned long addr, len, end;
- 	unsigned long next;
-+	unsigned long flags;
- 	pgd_t *pgdp;
- 	int nr = 0;
+ 	kvm_usage_count--;
+-	if (!kvm_usage_count)
++	if (!kvm_usage_count) {
+ 		on_each_cpu(hardware_disable_nolock, NULL, 1);
++		for_each_slave_cpu(cpu)
++			smp_call_function_single(cpu, hardware_disable_nolock,
++						 NULL, 1);
++	}
+ }
  
-@@ -349,7 +350,7 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 	 * (which we do on x86, with the above PAE exception), we can follow the
- 	 * address down to the the page and take a ref on it.
- 	 */
--	local_irq_disable();
-+	local_irq_save(flags);
- 	pgdp = pgd_offset(mm, addr);
- 	do {
- 		pgd_t pgd = *pgdp;
-@@ -360,7 +361,7 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 		if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
- 			goto slow;
- 	} while (pgdp++, addr = next, addr != end);
--	local_irq_enable();
-+	local_irq_restore(flags);
+ static void hardware_disable_all(void)
+@@ -2340,6 +2349,7 @@ static void hardware_disable_all(void)
+ static int hardware_enable_all(void)
+ {
+ 	int r = 0;
++	int cpu;
  
- 	VM_BUG_ON(nr != (end - start) >> PAGE_SHIFT);
- 	return nr;
-@@ -369,7 +370,7 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 		int ret;
+ 	raw_spin_lock(&kvm_lock);
  
- slow:
--		local_irq_enable();
-+		local_irq_restore(flags);
- slow_irqon:
- 		/* Try to get the remaining pages with get_user_pages */
- 		start += nr << PAGE_SHIFT;
+@@ -2347,6 +2357,9 @@ static int hardware_enable_all(void)
+ 	if (kvm_usage_count == 1) {
+ 		atomic_set(&hardware_enable_failed, 0);
+ 		on_each_cpu(hardware_enable_nolock, NULL, 1);
++		for_each_slave_cpu(cpu)
++			smp_call_function_single(cpu, hardware_enable_nolock,
++						 NULL, 1);
+ 
+ 		if (atomic_read(&hardware_enable_failed)) {
+ 			hardware_disable_all_nolock();
+@@ -2370,11 +2383,17 @@ static int kvm_cpu_hotplug(struct notifier_block *notifier, unsigned long val,
+ 	val &= ~CPU_TASKS_FROZEN;
+ 	switch (val) {
+ 	case CPU_DYING:
++#ifdef CONFIG_SLAVE_CPU
++	case CPU_SLAVE_DYING:
++#endif
+ 		printk(KERN_INFO "kvm: disabling virtualization on CPU%d\n",
+ 		       cpu);
+ 		hardware_disable(NULL);
+ 		break;
+ 	case CPU_STARTING:
++#ifdef CONFIG_SLAVE_CPU
++	case CPU_SLAVE_UP:
++#endif
+ 		printk(KERN_INFO "kvm: enabling virtualization on CPU%d\n",
+ 		       cpu);
+ 		hardware_enable(NULL);
+@@ -2592,6 +2611,12 @@ static struct notifier_block kvm_cpu_notifier = {
+ 	.notifier_call = kvm_cpu_hotplug,
+ };
+ 
++#ifdef CONFIG_SLAVE_CPU
++static struct notifier_block kvm_slave_cpu_notifier = {
++	.notifier_call = kvm_cpu_hotplug,
++};
++#endif
++
+ static int vm_stat_get(void *_offset, u64 *val)
+ {
+ 	unsigned offset = (long)_offset;
+@@ -2755,7 +2780,7 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
+ 	if (r < 0)
+ 		goto out_free_0a;
+ 
+-	for_each_online_cpu(cpu) {
++	for_each_cpu(cpu, cpu_online_or_slave_mask) {
+ 		smp_call_function_single(cpu,
+ 				kvm_arch_check_processor_compat,
+ 				&r, 1);
+@@ -2766,6 +2791,9 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
+ 	r = register_cpu_notifier(&kvm_cpu_notifier);
+ 	if (r)
+ 		goto out_free_2;
++#ifdef CONFIG_SLAVE_CPU
++	register_slave_cpu_notifier(&kvm_slave_cpu_notifier);
++#endif
+ 	register_reboot_notifier(&kvm_reboot_notifier);
+ 
+ 	/* A kmem cache lets us meet the alignment requirements of fx_save. */
+@@ -2813,6 +2841,9 @@ out_free:
+ 	kmem_cache_destroy(kvm_vcpu_cache);
+ out_free_3:
+ 	unregister_reboot_notifier(&kvm_reboot_notifier);
++#ifdef CONFIG_SLAVE_CPU
++	unregister_slave_cpu_notifier(&kvm_slave_cpu_notifier);
++#endif
+ 	unregister_cpu_notifier(&kvm_cpu_notifier);
+ out_free_2:
+ out_free_1:
+@@ -2840,6 +2871,9 @@ void kvm_exit(void)
+ 	kvm_async_pf_deinit();
+ 	unregister_syscore_ops(&kvm_syscore_ops);
+ 	unregister_reboot_notifier(&kvm_reboot_notifier);
++#ifdef CONFIG_SLAVE_CPU
++	unregister_slave_cpu_notifier(&kvm_slave_cpu_notifier);
++#endif
+ 	unregister_cpu_notifier(&kvm_cpu_notifier);
+ 	on_each_cpu(hardware_disable_nolock, NULL, 1);
+ 	kvm_arch_hardware_unsetup();
 
 
