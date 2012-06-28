@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2F1M5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:57:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63427 "EHLO mx1.redhat.com"
+	id S1755485Ab2F1M6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:58:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19605 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357Ab2F1M5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:57:49 -0400
+	id S1754757Ab2F1M55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:57:57 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,56 +27,41 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 17/40] autonuma: autonuma_enter/exit
-Date: Thu, 28 Jun 2012 14:55:57 +0200
-Message-Id: <1340888180-15355-18-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 03/40] autonuma: export is_vma_temporary_stack() even if CONFIG_TRANSPARENT_HUGEPAGE=n
+Date: Thu, 28 Jun 2012 14:55:43 +0200
+Message-Id: <1340888180-15355-4-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first gear in the whole AutoNUMA algorithm is knuma_scand. If
-knuma_scand doesn't run AutoNUMA is a full bypass. If knuma_scand is
-stopped, soon all other AutoNUMA gears will settle down too.
+is_vma_temporary_stack() is needed by mm/autonuma.c too, and without
+this the build breaks with CONFIG_TRANSPARENT_HUGEPAGE=n.
 
-knuma_scand is the daemon that sets the pmd_numa and pte_numa and
-allows the NUMA hinting page faults to start and then all other
-actions follows as a reaction to that.
-
-knuma_scand scans a list of "mm" and this is where we register and
-unregister the "mm" into AutoNUMA for knuma_scand to scan them.
-
+Reported-by: Petr Holasek <pholasek@redhat.com>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/fork.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ include/linux/huge_mm.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 5fcfa70..d3c064c 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -70,6 +70,7 @@
- #include <linux/khugepaged.h>
- #include <linux/signalfd.h>
- #include <linux/uprobes.h>
-+#include <linux/autonuma.h>
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 4c59b11..ad4e2e0 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -54,13 +54,13 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+ #define HPAGE_PMD_ORDER (HPAGE_PMD_SHIFT-PAGE_SHIFT)
+ #define HPAGE_PMD_NR (1<<HPAGE_PMD_ORDER)
  
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-@@ -540,6 +541,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- 	if (likely(!mm_alloc_pgd(mm))) {
- 		mm->def_flags = 0;
- 		mmu_notifier_mm_init(mm);
-+		autonuma_enter(mm);
- 		return mm;
- 	}
++extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
++
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ #define HPAGE_PMD_SHIFT HPAGE_SHIFT
+ #define HPAGE_PMD_MASK HPAGE_MASK
+ #define HPAGE_PMD_SIZE HPAGE_SIZE
  
-@@ -608,6 +610,7 @@ void mmput(struct mm_struct *mm)
- 		exit_aio(mm);
- 		ksm_exit(mm);
- 		khugepaged_exit(mm); /* must run before exit_mmap */
-+		autonuma_exit(mm); /* must run before exit_mmap */
- 		exit_mmap(mm);
- 		set_mm_exe_file(mm, NULL);
- 		if (!list_empty(&mm->mmlist)) {
+-extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+-
+ #define transparent_hugepage_enabled(__vma)				\
+ 	((transparent_hugepage_flags &					\
+ 	  (1<<TRANSPARENT_HUGEPAGE_FLAG) ||				\
