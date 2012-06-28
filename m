@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab2F1KBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 06:01:52 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:37494 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab2F1KBv (ORCPT
+	id S932869Ab2F1KEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 06:04:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50287 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932544Ab2F1KEW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 06:01:51 -0400
-Subject: Re: UEFI Secure boot using qemu-kvm
-From: joeyli <jlee@suse.com>
-To: JBottomley@Parallels.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jun 2012 18:01:08 +0800
-Message-ID: <1340877668.6196.143.camel@linux-s257.site>
+	Thu, 28 Jun 2012 06:04:22 -0400
+Message-ID: <1340877845.28750.5.camel@twins>
+Subject: Re: [PATCH] scripts/get_maintainer.pl: Add tested-by signature
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 28 Jun 2012 12:04:05 +0200
+In-Reply-To: <20120620143959.394b9930.akpm@linux-foundation.org>
+References: <1340193105-10734-1-git-send-email-aletes.xgr@gmail.com>
+	 <1340209526.29885.14.camel@joe2Laptop>
+	 <20120620143959.394b9930.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James, 
+On Wed, 2012-06-20 at 14:39 -0700, Andrew Morton wrote:
+> Bug-spotted-by:
+> Cause-discovered-by:
+> Cautiously-acked-by:
+> Checked-by:
+> Committed-by:
+> Compile-Tested-by:
+> Compile-tested-by:
+> Confirmed-by:
+> Debugged-and-tested-by: 
 
-On Wed, Jun 27, 2012 at 06:34:05PM +0100, James Bottomley wrote:
+You missed my favourite:
 
-> The purpose of this email is to widen the pool of people who are playing
-> with UEFI Secure boot.  The Linux Foundation Technical Advisory Board
-> have been looking into this because it turns out to be rather difficult
-> to lay your hands on real UEFI Secure Boot enabled hardware.
- 
+Commit 84599f8a59 carries:
 
-I am following your approach to reproduce your UEFI environment with
-qemu-kvm. After run qemu-system-x86_64 the kvm launched and go to UEFI
-shell success. So far so good!
+  Chucked-on-by: Thomas Gleixner <tglx@linutronix.de>
 
-But, I got a problem is the keyboard layout is not US keyboard, So I
-need build a mapping table for reference when key-in any letter:
-
-[		e
-/		x
-s		i
-enter		t
-down		enter
-page up		down
-...
-
-
-Did you meet this issue on your side? 
-
-
-Thanks a lot!
-Joey Lee
-
+[ although I must admit to it being a typo, in actual fact Thomas
+  wanted to chuckle.. ]
