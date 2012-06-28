@@ -1,185 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab2F1DB1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 23:01:27 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58360 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297Ab2F1DBY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 23:01:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FEBC8EE.7040207@jp.fujitsu.com>
-Date: Thu, 28 Jun 2012 12:01:02 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1758165Ab2F1DEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 23:04:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754206Ab2F1DET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 23:04:19 -0400
+Date: Wed, 27 Jun 2012 23:04:09 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Alasdair G. Kergon" <agk@redhat.com>
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@vger.kernel.org, dm-devel@redhat.com
+Subject: Crash when IO is being submitted and block size is changed
+Message-ID: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>, <rientjes@google.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH 1/12] memory-hotplug : rename remove_memory to offline_memory
-References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9D5C.1080508@jp.fujitsu.com> <4FEAB2E1.3090200@cn.fujitsu.com> <4FEAC891.7030808@cn.fujitsu.com>
-In-Reply-To: <4FEAC891.7030808@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David and Wen,
+Hi
 
-Thank you for reviewing my patch.
+The kernel crashes when IO is being submitted to a block device and block 
+size of that device is changed simultaneously.
 
-2012/06/27 17:47, Wen Congyang wrote:
-> At 06/27/2012 03:14 PM, Wen Congyang Wrote:
->> At 06/27/2012 01:42 PM, Yasuaki Ishimatsu Wrote:
->>> remove_memory() does not remove memory but just offlines memory. The patch
->>> changes name of it to offline_memory().
->>
->> There are 3 functions in the kernel:
->> 1. add_memory()
->> 2. online_pages()
->> 3. remove_memory()
->>
->> So I think offline_pages() is better than offline_memory().
-> 
-> There is already a function named offline_pages(). So we
-> should call offline_pages() instead of remove_memory() in
-> memory_block_action(), and there is no need to rename
-> remove_memory().
+To reproduce the crash, apply this patch:
 
-As Wen says, Linux has 4 functions for memory hotplug already.
-In my recognition, these functions are prepared for following purpose.
+--- linux-3.4.3-fast.orig/fs/block_dev.c 2012-06-27 20:24:07.000000000 +0200
++++ linux-3.4.3-fast/fs/block_dev.c 2012-06-27 20:28:34.000000000 +0200
+@@ -28,6 +28,7 @@
+ #include <linux/log2.h>
+ #include <linux/cleancache.h>
+ #include <asm/uaccess.h> 
++#include <linux/delay.h>
+ #include "internal.h"
+ struct bdev_inode {
+@@ -203,6 +204,7 @@ blkdev_get_blocks(struct inode *inode, s
+ 
+ 	bh->b_bdev = I_BDEV(inode);
+ 	bh->b_blocknr = iblock;
++	msleep(1000);
+ 	bh->b_size = max_blocks << inode->i_blkbits;
+ 	if (max_blocks)
+ 		set_buffer_mapped(bh);
 
-1. add_memory     : add physical memory
-2. online_pages   : online logical memory
-3. remove_memory  : offline logical memory
-4. offline_pages  : offline logical memory
-
-add_memory() is used for adding physical memory. I think remove_memory()
-would rather be used for removing physical memory than be used for removing
-logical memory. So I renamed remove_memory() to offline_memory().
-How do you think?
-
-Regards,
-Yasuaki Ishimatsu
-
-> 
-> Thanks
-> Wen Congyang
-> 
->>
->> Thanks
->> Wen Congyang
->>>
->>> CC: Len Brown <len.brown@intel.com>
->>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>> CC: Paul Mackerras <paulus@samba.org>
->>> CC: Christoph Lameter <cl@linux.com>
->>> Cc: Minchan Kim <minchan.kim@gmail.com>
->>> CC: Andrew Morton <akpm@linux-foundation.org>
->>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>> CC: Wen Congyang <wency@cn.fujitsu.com>
->>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>
->>> ---
->>>   drivers/acpi/acpi_memhotplug.c |    2 +-
->>>   drivers/base/memory.c          |    4 ++--
->>>   include/linux/memory_hotplug.h |    2 +-
->>>   mm/memory_hotplug.c            |    6 +++---
->>>   4 files changed, 7 insertions(+), 7 deletions(-)
->>>
->>> Index: linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c
->>> ===================================================================
->>> --- linux-3.5-rc4.orig/drivers/acpi/acpi_memhotplug.c	2012-06-25 04:53:04.000000000 +0900
->>> +++ linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c	2012-06-26 13:48:38.263940481 +0900
->>> @@ -318,7 +318,7 @@ static int acpi_memory_disable_device(st
->>>   	 */
->>>   	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->>>   		if (info->enabled) {
->>> -			result = remove_memory(info->start_addr, info->length);
->>> +			result = offline_memory(info->start_addr, info->length);
->>>   			if (result)
->>>   				return result;
->>>   		}
->>> Index: linux-3.5-rc4/drivers/base/memory.c
->>> ===================================================================
->>> --- linux-3.5-rc4.orig/drivers/base/memory.c	2012-06-25 04:53:04.000000000 +0900
->>> +++ linux-3.5-rc4/drivers/base/memory.c	2012-06-26 13:48:46.072842803 +0900
->>> @@ -266,8 +266,8 @@ memory_block_action(unsigned long phys_i
->>>   			break;
->>>   		case MEM_OFFLINE:
->>>   			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
->>> -			ret = remove_memory(start_paddr,
->>> -					    nr_pages << PAGE_SHIFT);
->>> +			ret = offline_memory(start_paddr,
->>> +					     nr_pages << PAGE_SHIFT);
->>>   			break;
->>>   		default:
->>>   			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
->>> Index: linux-3.5-rc4/mm/memory_hotplug.c
->>> ===================================================================
->>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-25 04:53:04.000000000 +0900
->>> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-26 13:48:46.072842803 +0900
->>> @@ -990,7 +990,7 @@ out:
->>>   	return ret;
->>>   }
->>>
->>> -int remove_memory(u64 start, u64 size)
->>> +int offline_memory(u64 start, u64 size)
->>>   {
->>>   	unsigned long start_pfn, end_pfn;
->>>
->>> @@ -999,9 +999,9 @@ int remove_memory(u64 start, u64 size)
->>>   	return offline_pages(start_pfn, end_pfn, 120 * HZ);
->>>   }
->>>   #else
->>> -int remove_memory(u64 start, u64 size)
->>> +int offline_memory(u64 start, u64 size)
->>>   {
->>>   	return -EINVAL;
->>>   }
->>>   #endif /* CONFIG_MEMORY_HOTREMOVE */
->>> -EXPORT_SYMBOL_GPL(remove_memory);
->>> +EXPORT_SYMBOL_GPL(offline_memory);
->>> Index: linux-3.5-rc4/include/linux/memory_hotplug.h
->>> ===================================================================
->>> --- linux-3.5-rc4.orig/include/linux/memory_hotplug.h	2012-06-25 04:53:04.000000000 +0900
->>> +++ linux-3.5-rc4/include/linux/memory_hotplug.h	2012-06-26 13:48:38.264940468 +0900
->>> @@ -233,7 +233,7 @@ static inline int is_mem_section_removab
->>>   extern int mem_online_node(int nid);
->>>   extern int add_memory(int nid, u64 start, u64 size);
->>>   extern int arch_add_memory(int nid, u64 start, u64 size);
->>> -extern int remove_memory(u64 start, u64 size);
->>> +extern int offline_memory(u64 start, u64 size);
->>>   extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
->>>   								int nr_pages);
->>>   extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
->>>
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Use some device with 4k blocksize, for example a ramdisk.
+Run "dd if=/dev/ram0 of=/dev/null bs=4k count=1 iflag=direct"
+While it is sleeping in the msleep function, run "blockdev --setbsz 2048 
+/dev/ram0" on the other console.
+You get a BUG at fs/direct-io.c:1013 - BUG_ON(this_chunk_bytes == 0);
 
 
+One may ask "why would anyone do this - submit I/O and change block size 
+simultaneously?" - the problem is that udev and lvm can scan and read all 
+block devices anytime - so anytime you change block device size, there may 
+be some i/o to that device in flight and the crash may happen. That BUG 
+actually happened in production environment because of lvm scanning block 
+devices and some other software changing block size at the same time.
 
+
+I would like to know, what is your opinion on fixing this crash? There are 
+several possibilities:
+
+* we could potentially read i_blkbits once, store it in the direct i/o 
+structure and never read it again - direct i/o could be maybe modified for 
+this (it reads i_blkbits only at a few places). But what about non-direct 
+i/o? Non-direct i/o is reading i_blkbits much more often and the code was 
+obviously written without consideration that it may change - for block 
+devices, i_blkbits is essentially a random value that can change anytime 
+you read it and the code of block_read_full_page, __block_write_begin, 
+__block_write_full_page and others doesn't seem to take it into account.
+
+* put some rw-lock arond all I/Os on block device. The rw-lock would be 
+taken for read on all I/O paths and it would be taken for write when 
+changing the block device size. The downside would be a possible 
+performance hit of the rw-lock. The rw-lock could be made per-cpu to avoid 
+cache line bouncing (take the rw-lock belonging to the current cpu for 
+read; for write take all cpus' locks).
+
+* allow changing block size only if the device is open only once and the 
+process is singlethreaded? (so there couldn't be any outstanding I/Os). I 
+don't know if this could be tested reliably... Another question: what to 
+do if the device is open multiple times?
+
+Do you have any other ideas what to do with it?
+
+Mikulas
