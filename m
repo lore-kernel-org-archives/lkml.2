@@ -1,138 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab2F1Pov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 11:44:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59733 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755467Ab2F1Pot (ORCPT
+	id S1755694Ab2F1Pr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 11:47:59 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:43384 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab2F1Pr6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 11:44:49 -0400
-Date: Thu, 28 Jun 2012 08:44:38 -0700
-From: tip-bot for Alex Shi <alex.shi@intel.com>
-Message-ID: <tip-effee4b9b3b0aa5770bcd98de5f672b05b27703c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        alex.shi@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, alex.shi@intel.com
-In-Reply-To: <1340845344-27557-10-git-send-email-alex.shi@intel.com>
-References: <1340845344-27557-10-git-send-email-alex.shi@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/tlb: do flush_tlb_kernel_range by 'invlpg'
-Git-Commit-ID: effee4b9b3b0aa5770bcd98de5f672b05b27703c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 28 Jun 2012 11:47:58 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 28 Jun 2012 08:44:43 -0700 (PDT)
+In-Reply-To: <1340232467-6023-2-git-send-email-john.stultz@linaro.org>
+References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
+	<1340232467-6023-2-git-send-email-john.stultz@linaro.org>
+Date: Thu, 28 Jun 2012 17:47:57 +0200
+Message-ID: <CACRpkdYaOLi7Xrt0MsB1onXCUbb91ZaqngFmFGf3eitrL4Qakg@mail.gmail.com>
+Subject: Re: [PATCH 01/15] ARM: etm: Don't require clock control
+From: Linus Walleij <linus.walleij@linaro.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  effee4b9b3b0aa5770bcd98de5f672b05b27703c
-Gitweb:     http://git.kernel.org/tip/effee4b9b3b0aa5770bcd98de5f672b05b27703c
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Thu, 28 Jun 2012 09:02:24 +0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 27 Jun 2012 19:29:14 -0700
+On Thu, Jun 21, 2012 at 12:47 AM, John Stultz <john.stultz@linaro.org> wrote:
 
-x86/tlb: do flush_tlb_kernel_range by 'invlpg'
+> -       clk_enable(t->emu_clk);
+> +       else
+> +               clk_enable(t->emu_clk);
 
-This patch do flush_tlb_kernel_range by 'invlpg'. The performance pay
-and gain was analyzed in previous patch
-(x86/flush_tlb: try flush_tlb_single one by one in flush_tlb_range).
+Take this opportunity to use clk_prepare_enable();
 
-In the testing: http://lkml.org/lkml/2012/6/21/10
+>        etb_unlock(t);
+>        t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
+> @@ -403,8 +402,10 @@ static int etb_remove(struct amba_device *dev)
+>        iounmap(t->etb_regs);
+>        t->etb_regs = NULL;
+>
+> -       clk_disable(t->emu_clk);
+> -       clk_put(t->emu_clk);
+> +       if (!IS_ERR(t->emu_clk)) {
+> +               clk_disable(t->emu_clk);
 
-The pay is mostly covered by long kernel path, but the gain is still
-quite clear, memory access in user APP can increase 30+% when kernel
-execute this funtion.
+And clk_disable_uprepare() here.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Link: http://lkml.kernel.org/r/1340845344-27557-10-git-send-email-alex.shi@intel.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/tlbflush.h |   13 +++++++------
- arch/x86/mm/tlb.c               |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 6 deletions(-)
+> +               clk_put(t->emu_clk);
+> +       }
 
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index 621b959..b5a27bd 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -123,6 +123,12 @@ static inline void reset_lazy_tlbstate(void)
- {
- }
- 
-+static inline void flush_tlb_kernel_range(unsigned long start,
-+					  unsigned long end)
-+{
-+	flush_tlb_all();
-+}
-+
- #else  /* SMP */
- 
- #include <asm/smp.h>
-@@ -139,6 +145,7 @@ extern void flush_tlb_current_task(void);
- extern void flush_tlb_page(struct vm_area_struct *, unsigned long);
- extern void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 				unsigned long end, unsigned long vmflag);
-+extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
- 
- #define flush_tlb()	flush_tlb_current_task()
- 
-@@ -168,10 +175,4 @@ static inline void reset_lazy_tlbstate(void)
- 	native_flush_tlb_others(mask, mm, start, end)
- #endif
- 
--static inline void flush_tlb_kernel_range(unsigned long start,
--					  unsigned long end)
--{
--	flush_tlb_all();
--}
--
- #endif /* _ASM_X86_TLBFLUSH_H */
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 2b5f506..613cd83 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -264,6 +264,36 @@ void flush_tlb_all(void)
- 	on_each_cpu(do_flush_tlb_all, NULL, 1);
- }
- 
-+static void do_kernel_range_flush(void *info)
-+{
-+	struct flush_tlb_info *f = info;
-+	unsigned long addr;
-+
-+	/* flush range by one by one 'invlpg' */
-+	for (addr = f->flush_start; addr < f->flush_end; addr += PAGE_SIZE)
-+		__flush_tlb_single(addr);
-+}
-+
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	unsigned act_entries;
-+	struct flush_tlb_info info;
-+
-+	/* In modern CPU, last level tlb used for both data/ins */
-+	act_entries = tlb_lld_4k[ENTRIES];
-+
-+	/* Balance as user space task's flush, a bit conservative */
-+	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1 ||
-+		(end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
-+
-+		on_each_cpu(do_flush_tlb_all, NULL, 1);
-+	else {
-+		info.flush_start = start;
-+		info.flush_end = end;
-+		on_each_cpu(do_kernel_range_flush, &info, 1);
-+	}
-+}
-+
- #ifdef CONFIG_DEBUG_TLBFLUSH
- static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
- 			     size_t count, loff_t *ppos)
+After that it's
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
