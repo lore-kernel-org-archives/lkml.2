@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab2F1R0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 13:26:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41729 "EHLO mx1.redhat.com"
+	id S1755250Ab2F1R0e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 13:26:34 -0400
+Received: from david.siemens.de ([192.35.17.14]:30618 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab2F1R0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 13:26:10 -0400
-Message-ID: <4FEC9392.2090904@redhat.com>
-Date: Thu, 28 Jun 2012 13:25:38 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751567Ab2F1R0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 13:26:32 -0400
+Message-ID: <4FEC93BD.2070809@siemens.com>
+Date: Thu, 28 Jun 2012 19:26:21 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Jim Schutt <jaschut@sandia.gov>
-CC: linux-mm@kvack.org, akpm@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm] mm: have order>0 compaction start off where it left
-References: <20120627233742.53225fc7@annuminas.surriel.com> <4FEC9181.9060000@sandia.gov>
-In-Reply-To: <4FEC9181.9060000@sandia.gov>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Avi Kivity <avi@redhat.com>
+CC: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 00/18] KVM: x86: CPU isolation and direct interrupts
+ handling by guests
+References: <20120628060719.19298.43879.stgit@localhost.localdomain> <4FEC8D31.3070406@redhat.com>
+In-Reply-To: <4FEC8D31.3070406@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 01:16 PM, Jim Schutt wrote:
->
-> On 06/27/2012 09:37 PM, Rik van Riel wrote:
->> Order> 0 compaction stops when enough free pages of the correct
->> page order have been coalesced. When doing subsequent higher order
->> allocations, it is possible for compaction to be invoked many times.
+On 2012-06-28 18:58, Avi Kivity wrote:
+> On 06/28/2012 09:07 AM, Tomoki Sekiyama wrote:
+>> Hello,
 >>
->> However, the compaction code always starts out looking for things to
->> compact at the start of the zone, and for free pages to compact things
->> to at the end of the zone.
+>> This RFC patch series provides facility to dedicate CPUs to KVM guests
+>> and enable the guests to handle interrupts from passed-through PCI devices
+>> directly (without VM exit and relay by the host).
 >>
->> This can cause quadratic behaviour, with isolate_freepages starting
->> at the end of the zone each time, even though previous invocations
->> of the compaction code already filled up all free memory on that end
->> of the zone.
+>> With this feature, we can improve throughput and response time of the device
+>> and the host's CPU usage by reducing the overhead of interrupt handling.
+>> This is good for the application using very high throughput/frequent
+>> interrupt device (e.g. 10GbE NIC).
+>> CPU-intensive high performance applications and real-time applicatoins
+>> also gets benefit from CPU isolation feature, which reduces VM exit and
+>> scheduling delay.
 >>
->> This can cause isolate_freepages to take enormous amounts of CPU
->> with certain workloads on larger memory systems.
+>> Current implementation is still just PoC and have many limitations, but
+>> submitted for RFC. Any comments are appreciated.
 >>
->> The obvious solution is to have isolate_freepages remember where
->> it left off last time, and continue at that point the next time
->> it gets invoked for an order> 0 compaction. This could cause
->> compaction to fail if cc->free_pfn and cc->migrate_pfn are close
->> together initially, in that case we restart from the end of the
->> zone and try once more.
+>> * Overview
+>> Intel and AMD CPUs have a feature to handle interrupts by guests without
+>> VM Exit. However, because it cannot switch VM Exit based on IRQ vectors,
+>> interrupts to both the host and the guest will be routed to guests.
 >>
->> Forced full (order == -1) compactions are left alone.
+>> To avoid mixture of host and guest interrupts, in this patch, some of CPUs
+>> are cut off from the host and dedicated to the guests. In addition, IRQ
+>> affinity of the passed-through devices are set to the guest CPUs only.
 >>
->> Reported-by: Jim Schutt<jaschut@sandia.gov>
->> Signed-off-by: Rik van Riel<riel@redhat.com>
->
-> Tested-by: Jim Schutt<jaschut@sandia.gov>
->
-> Please let me know if you further refine this patch
-> and would like me to test it with my workload.
+>> For IPI from the host to the guest, we use NMIs, that is an only interrupts
+>> having another VM Exit flag.
+>>
+>> * Benefits
+>> This feature provides benefits of virtualization to areas where high
+>> performance and low latency are required, such as HPC and trading,
+>> and so on. It also useful for consolidation in large scale systems with
+>> many CPU cores and PCI devices passed-through or with SR-IOV.
+>> For the future, it may be used to keep the guests running even if the host
+>> is crashed (but that would need additional features like memory isolation).
+>>
+>> * Limitations
+>> Current implementation is experimental, unstable, and has a lot of limitations.
+>>  - SMP guests don't work correctly
+>>  - Only Linux guest is supported
+>>  - Only Intel VT-x is supported
+>>  - Only MSI and MSI-X pass-through; no ISA interrupts support
+>>  - Non passed-through PCI devices (including virtio) are slower
+>>  - Kernel space PIT emulation does not work
+>>  - Needs a lot of cleanups
+>>
+> 
+> This is both impressive and scary.  What is the target scenario here?
+> Partitioning?  I don't see this working for generic consolidation.
+> 
 
-Mel pointed out a serious problem with the way wrapping
-cc->free_pfn back to the top of the zone is handled.
+>From my POV, partitioning - including hard realtime partitions - would
+provide some use cases. But, as far as I saw, there are still major
+restrictions in this approach, e.g. that you can't return to userspace
+on the slave core. Or even execute the in-kernel device models on that core.
 
-I will send you a new patch once I have a fix for that.
+I think we need something based on the no-hz work on the long run, ie.
+the ability to run a single VCPU thread of the userland hypervisor on a
+single core with zero rescheduling and unrelated interruptions - as far
+as the guest load scenario allows this (we have some here).
 
-> So far I've run a total of ~20 TB of data over fifty minutes
-> or so through 12 machines running this patch; no hint of
-> trouble, great performance.
->
-> Without this patch I would typically start having trouble
-> after just a few minutes of this load.
+Well, and we need proper hardware support for direct IRQ injection on x86...
 
-Good to hear that!
-
-Thank you for testing last night's version.
+Jan
 
 -- 
-All rights reversed
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
