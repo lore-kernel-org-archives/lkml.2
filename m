@@ -1,115 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab2F1PNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 11:13:25 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:10270 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab2F1PNX (ORCPT
+	id S1755360Ab2F1PPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 11:15:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33966 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab2F1PPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 11:13:23 -0400
-Message-ID: <4FEC7487.9020909@hp.com>
-Date: Thu, 28 Jun 2012 08:13:11 -0700
-From: Don Morris <don.morris@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 28 Jun 2012 11:15:32 -0400
+Date: Thu, 28 Jun 2012 10:15:28 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Arun Raghavan <arun.raghavan@collabora.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apple-gmux: Correctly depend on apple_bl for building
+Message-ID: <20120628151528.GD15308@thinkpad-t410>
+Mail-Followup-To: Arun Raghavan <arun.raghavan@collabora.co.uk>,
+	Matthew Garrett <mjg@redhat.com>,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1340879796-30262-1-git-send-email-arun.raghavan@collabora.co.uk>
+ <20120628132058.GA15308@thinkpad-t410>
+ <1340889815.4994.4.camel@localhost>
+ <20120628134806.GB15308@thinkpad-t410>
+ <1340891471.4994.10.camel@localhost>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 05/40] autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-6-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-6-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340891471.4994.10.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 05:55 AM, Andrea Arcangeli wrote:
-> We will set these bitflags only when the pmd and pte is non present.
+On Thu, Jun 28, 2012 at 07:21:11PM +0530, Arun Raghavan wrote:
+> I missed the stubs, so the patch should probably just be adding this
+> line:
 > 
+> depends on APPLE_BACKLIGHT = n || APPLE_BACKLIGHT
+> 
+> but that conflicts with the 'select BACKLIGHT_CLASS_DEVICE' (a recursive
+> dependency is detected).
 
-Just a couple grammar nitpicks.
+Sigh. We have a similar situation with acpi_video, which undoubtedly
+also affects some other drivers as well.
 
-> They work like PROT_NONE but they identify a request for the numa
-> hinting page fault to trigger.
-> 
-> Because we want to be able to set these bitflag in any established pte
+This is the best I've been able to come up with.
 
-these bitflags
+   depends on BACKLIGHT_CLASS_DEVICE
+   depends on BACKLIGHT_APPLE=n || BACKLIGHT_APPLE
+   depends on ACPI_VIDEO=n || ACPI_VIDEO
 
-> or pmd (while clearing the present bit at the same time) without
-> losing information, these bitflags must never be set when the pte and
-> pmd are present.
-> 
-> For _PAGE_NUMA_PTE the pte bitflag used is _PAGE_PSE, which cannot be
-> set on ptes and it also fits in between _PAGE_FILE and _PAGE_PROTNONE
-> which avoids having to alter the swp entries format.
-> 
-> For _PAGE_NUMA_PMD, we use a reserved bitflag. pmds never contain
-> swap_entries but if in the future we'll swap transparent hugepages, we
-> must keep in mind not to use the _PAGE_UNUSED2 bitflag in the swap
-> entry format and to start the swap entry offset above it.
-> 
-> PAGE_UNUSED2 is used by Xen but only on ptes established by ioremap,
-> but it's never used on pmds so there's no risk of collision with Xen.
+This at least keeps it from being built-in if it's going to be linking
+against symbols provided by a module. I'm definitely open to other
+suggestions though.
 
-Maybe "but only on ptes established by ioremap, never on pmds so
-there's no risk of collision with Xen." ? The extra "but" just
-doesn't flow in the original.
-
-Don Morris
-
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  arch/x86/include/asm/pgtable_types.h |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-> index b74cac9..6e2d954 100644
-> --- a/arch/x86/include/asm/pgtable_types.h
-> +++ b/arch/x86/include/asm/pgtable_types.h
-> @@ -71,6 +71,17 @@
->  #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
->  #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
->  
-> +/*
-> + * Cannot be set on pte. The fact it's in between _PAGE_FILE and
-> + * _PAGE_PROTNONE avoids having to alter the swp entries.
-> + */
-> +#define _PAGE_NUMA_PTE	_PAGE_PSE
-> +/*
-> + * Cannot be set on pmd, if transparent hugepages will be swapped out
-> + * the swap entry offset must start above it.
-> + */
-> +#define _PAGE_NUMA_PMD	_PAGE_UNUSED2
-> +
->  #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
->  			 _PAGE_ACCESSED | _PAGE_DIRTY)
->  #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> .
-> 
+Seth
 
