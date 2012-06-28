@@ -1,125 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab2F1MIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:08:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60643 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752452Ab2F1MIg (ORCPT
+	id S1754992Ab2F1MI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:08:58 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50267 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab2F1MIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:08:36 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/2] extcon: arizona: Update cable reporting calls and split headset
-Date: Thu, 28 Jun 2012 13:08:30 +0100
-Message-Id: <1340885311-12368-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Thu, 28 Jun 2012 08:08:55 -0400
+Date: Thu, 28 Jun 2012 14:08:49 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: Re: [RFC 09/23] x86_64: Store userspace rsp in system_call fastpath
+Message-ID: <20120628120846.GA28527@somewhere>
+References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
+ <1340120894-9465-10-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340120894-9465-10-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use extcon_set_state_ for performance and split the headset into separate
-headphone and microphone reports as this is more idiomatic.
+On Tue, Jun 19, 2012 at 05:48:00PM +0200, Jiri Olsa wrote:
+> hi,
+> I'd need help with this change.. basically it works, but I guess
+> I could alter the FIXUP_TOP_OF_STACK macro as well, so the rsp is
+> not initialized twice in slowpath.
+> 
+> But it seems quite complex.. so not really sure at the moment ;)
+> 
+> ideas?
+> 
+> thanks,
+> jirka
+> 
+> ---
+> Storing the userspace rsp into the pt_regs struct for the
+> system_call fastpath (syscall instruction handler).
+> 
+> Following part of the pt_regs is allocated on stack:
+> (via KERNEL_STACK_OFFSET)
+> 
+>     unsigned long ip;
+>     unsigned long cs;
+>     unsigned long flags;
+>     unsigned long sp;
+>     unsigned long ss;
+> 
+> but only ip is actually saved for fastpath.
+> 
+> For perf post unwind we need at least ip and sp to be able to
+> start the unwind, so storing the old_rsp value to the sp.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Roland McGrath <roland@hack.frob.com>
+> ---
+>  arch/x86/kernel/entry_64.S |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index 111f6bb..0444917 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -516,6 +516,11 @@ GLOBAL(system_call_after_swapgs)
+>  	SAVE_ARGS 8,0
+>  	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
+>  	movq  %rcx,RIP-ARGOFFSET(%rsp)
+> +#ifdef CONFIG_PERF_EVENTS
+> +	/* We need rsp in fast path for perf post unwind. */
+> +	movq  PER_CPU_VAR(old_rsp), %rcx
+> +	movq  %rcx,RSP-ARGOFFSET(%rsp)
+> +#endif
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/extcon/extcon-arizona.c |   41 ++++++++++++++++++---------------------
- 1 file changed, 19 insertions(+), 22 deletions(-)
+Another solution is to set/unset some TIF flag in perf_event_sched_in/out
+such that we take the syscall slow path (tracesys) which records every non-scratch
+registers. I can see that old_rsp is not saved in pt_regs by SAVE_REST so this may be
+something to add in tracesys.
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index b068bc9..0626754 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -54,22 +54,17 @@ static const struct arizona_micd_config micd_default_modes[] = {
- 	{ 0,                  2 << ARIZONA_MICD_BIAS_SRC_SHIFT, 1 },
- };
- 
--#define ARIZONA_CABLE_MECHANICAL "Mechanical"
--#define ARIZONA_CABLE_HEADPHONE  "Headphone"
--#define ARIZONA_CABLE_HEADSET    "Headset"
-+#define ARIZONA_CABLE_MECHANICAL 0
-+#define ARIZONA_CABLE_MICROPHONE 1
-+#define ARIZONA_CABLE_HEADPHONE  2
- 
- static const char *arizona_cable[] = {
--	ARIZONA_CABLE_MECHANICAL,
--	ARIZONA_CABLE_HEADSET,
--	ARIZONA_CABLE_HEADPHONE,
-+	"Mechanical",
-+	"Microphone",
-+	"Headphone",
- 	NULL,
- };
- 
--static const u32 arizona_exclusions[] = {
--	0x6,   /* Headphone and headset */
--	0,
--};
--
- static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
- {
- 	struct arizona *arizona = info->arizona;
-@@ -174,8 +169,11 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- 
- 	/* If we got a high impedence we should have a headset, report it. */
- 	if (info->detecting && (val & 0x400)) {
--		ret = extcon_set_cable_state(&info->edev,
--					     ARIZONA_CABLE_HEADSET, true);
-+		ret = extcon_update_state(&info->edev,
-+					  1 << ARIZONA_CABLE_MICROPHONE |
-+					  1 << ARIZONA_CABLE_HEADPHONE,
-+					  1 << ARIZONA_CABLE_MICROPHONE |
-+					  1 << ARIZONA_CABLE_HEADPHONE);
- 
- 		if (ret != 0)
- 			dev_err(arizona->dev, "Headset report failed: %d\n",
-@@ -198,9 +196,9 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- 		if (info->jack_flips >= info->micd_num_modes) {
- 			dev_dbg(arizona->dev, "Detected headphone\n");
- 			info->detecting = false;
--			ret = extcon_set_cable_state(&info->edev,
--						     ARIZONA_CABLE_HEADPHONE,
--						     true);
-+			ret = extcon_set_cable_state_(&info->edev,
-+						      ARIZONA_CABLE_HEADPHONE,
-+						      true);
- 			if (ret != 0)
- 				dev_err(arizona->dev,
- 					"Headphone report failed: %d\n",
-@@ -231,9 +229,9 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- 			info->detecting = false;
- 			arizona_stop_mic(info);
- 
--			ret = extcon_set_cable_state(&info->edev,
--						     ARIZONA_CABLE_HEADPHONE,
--						     true);
-+			ret = extcon_set_cable_state_(&info->edev,
-+						      ARIZONA_CABLE_HEADPHONE,
-+						      true);
- 			if (ret != 0)
- 				dev_err(arizona->dev,
- 					"Headphone report failed: %d\n",
-@@ -275,8 +273,8 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
- 
- 	if (val & ARIZONA_JD1_STS) {
- 		dev_dbg(arizona->dev, "Detected jack\n");
--		ret = extcon_set_cable_state(&info->edev,
--					     ARIZONA_CABLE_MECHANICAL, true);
-+		ret = extcon_set_cable_state_(&info->edev,
-+					      ARIZONA_CABLE_MECHANICAL, true);
- 
- 		if (ret != 0)
- 			dev_err(arizona->dev, "Mechanical report failed: %d\n",
-@@ -347,7 +345,6 @@ static int __devinit arizona_extcon_probe(struct platform_device *pdev)
- 
- 	info->edev.name = "Headset Jack";
- 	info->edev.supported_cable = arizona_cable;
--	info->edev.mutually_exclusive = arizona_exclusions;
- 
- 	ret = extcon_dev_register(&info->edev, arizona->dev);
- 	if (ret < 0) {
--- 
-1.7.10
+This way we don't bloat the syscall fastpath with a feature only used by some
+developers.
 
+>  	CFI_REL_OFFSET rip,RIP-ARGOFFSET
+>  	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+>  	jnz tracesys
+> -- 
+> 1.7.7.6
+> 
