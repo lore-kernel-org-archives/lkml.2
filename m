@@ -1,118 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab2F1Qz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:55:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755288Ab2F1Qz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:55:27 -0400
-Date: Thu, 28 Jun 2012 19:55:30 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120628165530.GA14382@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
- <20120627050952.23698.37235.stgit@bling.home>
- <20120627135811.GE6533@redhat.com>
- <1340807344.1207.207.camel@bling.home>
- <20120627145135.GF6533@redhat.com>
- <1340855744.1207.303.camel@bling.home>
- <20120628131140.GB13724@redhat.com>
- <20120628140804.GE2596@redhat.com>
+	id S1755891Ab2F1Qz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:55:59 -0400
+Received: from ausc60pc101.us.dell.com ([143.166.85.206]:23997 "EHLO
+	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390Ab2F1Qz6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 12:55:58 -0400
+X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jun 2012 12:55:58 EDT
+X-Loopcount0: from 10.170.28.39
+From: <Srinivas_G_Gowda@Dell.com>
+To: <tcminyard@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <openipmi@mvista.com>
+Date: Thu, 28 Jun 2012 09:45:28 -0700
+Subject: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
+Thread-Topic: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
+Thread-Index: Ac1VTXpsfWKE7MhDQvyYCZzyqN6iWw==
+Message-ID: <4FEC8A28.4070806@dell.com>
+References: <4FEC8931.5020001@dell.com>
+In-Reply-To: <4FEC8931.5020001@dell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131
+ Thunderbird/10.0
+x-forwarded-message-id: <4FEC8931.5020001@dell.com>
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120628140804.GE2596@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 05:08:04PM +0300, Gleb Natapov wrote:
-> On Thu, Jun 28, 2012 at 04:11:40PM +0300, Michael S. Tsirkin wrote:
-> > On Wed, Jun 27, 2012 at 09:55:44PM -0600, Alex Williamson wrote:
-> > > On Wed, 2012-06-27 at 17:51 +0300, Gleb Natapov wrote:
-> > > > On Wed, Jun 27, 2012 at 08:29:04AM -0600, Alex Williamson wrote:
-> > > > > On Wed, 2012-06-27 at 16:58 +0300, Gleb Natapov wrote:
-> > > > > > On Tue, Jun 26, 2012 at 11:10:08PM -0600, Alex Williamson wrote:
-> > > > > > > This new ioctl enables an eventfd to be triggered when an EOI is
-> > > > > > > written for a specified irqchip pin.  By default this is a simple
-> > > > > > > notification, but we can also tie the eoifd to a level irqfd, which
-> > > > > > > enables the irqchip pin to be automatically de-asserted on EOI.
-> > > > > > > This mode is particularly useful for device-assignment applications
-> > > > > > > where the unmask and notify triggers a hardware unmask.  The default
-> > > > > > > mode is most applicable to simple notify with no side-effects for
-> > > > > > > userspace usage, such as Qemu.
-> > > > > > > 
-> > > > > > > Here we make use of the reference counting of the _irq_source
-> > > > > > > object allowing us to share it with an irqfd and cleanup regardless
-> > > > > > > of the release order.
-> > > > > > > 
-> > > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > > > > ---
-> > > > > > > 
-> > > > > > >  Documentation/virtual/kvm/api.txt |   24 +++++
-> > > > > > >  arch/x86/kvm/x86.c                |    1 
-> > > > > > >  include/linux/kvm.h               |   14 +++
-> > > > > > >  include/linux/kvm_host.h          |   13 +++
-> > > > > > >  virt/kvm/eventfd.c                |  189 +++++++++++++++++++++++++++++++++++++
-> > > > > > >  virt/kvm/kvm_main.c               |   11 ++
-> > > > > > >  6 files changed, 250 insertions(+), 2 deletions(-)
-> > > > > > > 
-> > > > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > > > > > > index b216709..87a2558 100644
-> > > > > > > --- a/Documentation/virtual/kvm/api.txt
-> > > > > > > +++ b/Documentation/virtual/kvm/api.txt
-> > > > > > > @@ -1987,6 +1987,30 @@ interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
-> > > > > > >  with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
-> > > > > > >  KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
-> > > > > > >  
-> > > > > > > +4.77 KVM_EOIFD
-> > > > > > > +
-> > > > > > > +Capability: KVM_CAP_EOIFD
-> > > > > > > +Architectures: x86
-> > > > > > > +Type: vm ioctl
-> > > > > > > +Parameters: struct kvm_eoifd (in)
-> > > > > > > +Returns: 0 on success, -1 on error
-> > > > > > > +
-> > > > > > > +KVM_EOIFD allows userspace to receive EOI notification through an
-> > > > > > > +eventfd for level triggered irqchip interrupts.  Behavior for edge
-> > > > > > > +triggered interrupts is undefined.  kvm_eoifd.fd specifies the eventfd
-> > > > > > Lets make it defined. EOI notification can be used by userspace to fix
-> > > > > > time drift due to lost interrupts. But than userspace needs to know
-> > > > > > which vcpu did EOI.
-> > > > > 
-> > > > > Hmm, do we need an additional flag and field in kvm_eoifd to filter by
-> > > > > vCPU then?
-> > > > > 
-> > > > This will be enough for a use case I am aware of. Don't know if this
-> > > > interface is generic enough for all possible use cases.
-> > > 
-> > > That's generally a hard prediction to make ;)  We currently don't pass a
-> > > kvm_vcpu anywhere close to the irq ack notifier.  The ioapic path could
-> > > be relatively trivial, but the pic path is a bit further disconnected.
-> > > If we had that plumbing, a KVM_CAP plus vcpu filter flag and specifying
-> > > the vcpu using some of the padding space seems like it's sufficient.
-> > > I'll drop mention of level-only from the description, but the plumbing
-> > > and vcpu filtering can be a follow-on.  Thanks,
-> > > 
-> > > Alex
-> > 
-> > If we don't implement what's needed for timedrift to be fixed,
-> > then IMO it's better to simply require an IRQFD for EOIFD for now,
-> > and limit this to level. Otherwise when we actually try to implement
-> > we might find issues.
-> > 
-> > Another reason to explicitly say EOI is not supported for edge is that
-> > EOI might not get invoked at all with PV EOI.
-> > 
-> Good point, but easily addressable by disabling PV EOI for a GSI that
-> has EOI notifier registered.
 
-This patch doesn't do this though, so it will need a separate
-patch and a separate capability.
+functions that will send the Set System Info command
+and its corresponding handler
 
-> --
-> 			Gleb.
+Signed-off-by: Srinivas Gowda G <Srinivas_G_Gowda@Dell.com>
+---
+ drivers/char/ipmi/ipmi_msghandler.c |   73 +++++++++++++++++++++++++++++++++++
+ include/linux/ipmi_msgdefs.h        |    1 +
+ 2 files changed, 74 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
+index d0abb3a..b1a98b5 100644
+--- a/drivers/char/ipmi/ipmi_msghandler.c
++++ b/drivers/char/ipmi/ipmi_msghandler.c
+@@ -2709,6 +2709,79 @@ get_guid(ipmi_smi_t intf)
+ 	intf->null_user_handler = NULL;
+ }
+ 
++static int 
++send_set_os_name_cmd(ipmi_smi_t intf)
++{
++	unsigned char param_select;
++	unsigned char set_selector;
++	unsigned char string_encode;
++	unsigned char str_len;
++	unsigned char data[9];
++
++	struct kernel_ipmi_msg            msg;
++	struct ipmi_system_interface_addr si;
++
++	si.addr_type = IPMI_SYSTEM_INTERFACE_ADDR_TYPE;
++	si.channel = IPMI_BMC_CHANNEL;
++	si.lun = 0;
++	
++	param_select  = 4;	/* parameter number for volatile OS name */
++	set_selector  = 0;	/* set selector, block 0 */
++	string_encode = 0;	/* ASCII Encoding */
++	str_len = 5;		/* length of ASCII string - "Linux" */
++	
++	data[0] = param_select;
++	data[1] = set_selector;
++	data[2] = string_encode;
++	data[3] = str_len;
++	data[4] = 'L';
++	data[5] = 'i';
++	data[6] = 'n';
++	data[7] = 'u';
++	data[8] = 'x';
++
++	msg.netfn = IPMI_NETFN_APP_REQUEST;
++	msg.cmd = IPMI_SET_SYSTEM_INFO;
++	msg.data = data;
++	msg.data_len = 9;
++	return i_ipmi_request(NULL,
++			      intf,
++			      (struct ipmi_addr *) &si,
++			      0,
++			      &msg,
++			      intf,
++			      NULL,
++			      NULL,
++			      0,
++			      intf->channels[0].address,
++			      intf->channels[0].lun,
++			      -1, 0);
++}
++
++/*
++ * msg handler for Set_System_Info cmd - set OS name 
++ */
++static void
++set_os_name_handler(ipmi_smi_t intf, struct ipmi_recv_msg *msg)
++{
++	if ((msg->addr.addr_type != IPMI_SYSTEM_INTERFACE_ADDR_TYPE)
++	    || (msg->msg.netfn != IPMI_NETFN_APP_RESPONSE)
++	    || (msg->msg.cmd != IPMI_SET_SYSTEM_INFO))
++		/* Not for me */
++		return;
++
++	if (msg->msg.data[0] != 0) 
++		/* Error  setting OS name as Linux in BMC. */
++		printk(KERN_WARNING PFX 
++			"Failed to set OS name as Linux: 0x%X\n", msg->msg.data[0]);
++	else
++		printk(KERN_INFO PFX 
++			"OS Name successfully set as Linux\n");		
++
++	os_name_set = 1;
++	wake_up(&intf->waitq);
++}
++
+ /*
+  *   Set the Operating System Name as "Linux" in BMC 
+  *   using "Set System Info" command.
+diff --git a/include/linux/ipmi_msgdefs.h b/include/linux/ipmi_msgdefs.h
+index df97e6e..b5ea664 100644
+--- a/include/linux/ipmi_msgdefs.h
++++ b/include/linux/ipmi_msgdefs.h
+@@ -57,6 +57,7 @@
+ #define IPMI_GET_BMC_GLOBAL_ENABLES_CMD	0x2f
+ #define IPMI_READ_EVENT_MSG_BUFFER_CMD	0x35
+ #define IPMI_GET_CHANNEL_INFO_CMD	0x42
++#define IPMI_SET_SYSTEM_INFO		0x58
+ 
+ /* Bit for BMC global enables. */
+ #define IPMI_BMC_RCV_MSG_INTR     0x01
+-- 
+1.7.1
+
+
+Thanks,
+G
