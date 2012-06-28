@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab2F1QAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:00:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20820 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab2F1QAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:00:51 -0400
-Date: Thu, 28 Jun 2012 17:00:46 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Don Morris <don.morris@hp.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 05/40] autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
-Message-ID: <20120628150046.GA6676@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-6-git-send-email-aarcange@redhat.com>
- <4FEC7487.9020909@hp.com>
+	id S1755132Ab2F1QBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:01:16 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34505 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2F1QBO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 12:01:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FEC7487.9020909@hp.com>
+In-Reply-To: <1340232467-6023-10-git-send-email-john.stultz@linaro.org>
+References: <1340232467-6023-1-git-send-email-john.stultz@linaro.org>
+	<1340232467-6023-10-git-send-email-john.stultz@linaro.org>
+Date: Thu, 28 Jun 2012 18:01:13 +0200
+Message-ID: <CACRpkdY2CSMuDSv6Cj4J8YkLfagK31DEhWiupth9zFSpu1QNLA@mail.gmail.com>
+Subject: Re: [PATCH 09/15] ARM: etm: Power down etm(s) when tracing is not enabled
+From: Linus Walleij <linus.walleij@linaro.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Don,
+On Thu, Jun 21, 2012 at 12:47 AM, John Stultz <john.stultz@linaro.org> wrote:
 
-On Thu, Jun 28, 2012 at 08:13:11AM -0700, Don Morris wrote:
-> On 06/28/2012 05:55 AM, Andrea Arcangeli wrote:
-> > We will set these bitflags only when the pmd and pte is non present.
-> > 
-> 
-> Just a couple grammar nitpicks.
-> 
-> > They work like PROT_NONE but they identify a request for the numa
-> > hinting page fault to trigger.
-> > 
-> > Because we want to be able to set these bitflag in any established pte
-> 
-> these bitflags
-> 
-> > or pmd (while clearing the present bit at the same time) without
-> > losing information, these bitflags must never be set when the pte and
-> > pmd are present.
-> > 
-> > For _PAGE_NUMA_PTE the pte bitflag used is _PAGE_PSE, which cannot be
-> > set on ptes and it also fits in between _PAGE_FILE and _PAGE_PROTNONE
-> > which avoids having to alter the swp entries format.
-> > 
-> > For _PAGE_NUMA_PMD, we use a reserved bitflag. pmds never contain
-> > swap_entries but if in the future we'll swap transparent hugepages, we
-> > must keep in mind not to use the _PAGE_UNUSED2 bitflag in the swap
-> > entry format and to start the swap entry offset above it.
-> > 
-> > PAGE_UNUSED2 is used by Xen but only on ptes established by ioremap,
-> > but it's never used on pmds so there's no risk of collision with Xen.
-> 
-> Maybe "but only on ptes established by ioremap, never on pmds so
-> there's no risk of collision with Xen." ? The extra "but" just
-> doesn't flow in the original.
+> From: Arve Hjønnevåg <arve@android.com>
+>
+> Without this change a saw an 18% increase in idle power consumption
+> on one deivce when trace support is compiled into the kernel. Now
+> I see the same increase only when tracing.
+>
+> CC: Russell King <linux@arm.linux.org.uk>
+> CC: Paul Gortmaker <paul.gortmaker@windriver.com>
+> CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+> Signed-off-by: Arve Hjønnevåg <arve@android.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-Agreed and applied, thanks!
-Andrea
+We can't have this no.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
