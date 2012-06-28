@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919Ab2F1K7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 06:59:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44116 "EHLO mga02.intel.com"
+	id S1754398Ab2F1K7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 06:59:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18859 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754168Ab2F1K57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 06:57:59 -0400
+	id S1754028Ab2F1K55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 06:57:57 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="159175684"
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="186037090"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rui.zhang@intel.com,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rui.zhang@intel.com,
         dmitry.torokhov@gmail.com, eric.piel@tremplin-utc.net, mjg@redhat.com,
         ike.pan@canonical.com, herton@canonical.com,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 10/12] topstar-laptop: convert to module_acpi_driver()
-Date: Thu, 28 Jun 2012 13:59:29 +0300
-Message-Id: <1340881171-14811-11-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH 07/12] Input: atlas_btns - convert to module_acpi_driver()
+Date: Thu, 28 Jun 2012 13:59:26 +0300
+Message-Id: <1340881171-14811-8-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -28,42 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/platform/x86/topstar-laptop.c |   22 +---------------------
- 1 file changed, 1 insertion(+), 21 deletions(-)
+ drivers/input/misc/atlas_btns.c |   17 +----------------
+ 1 file changed, 1 insertion(+), 16 deletions(-)
 
-diff --git a/drivers/platform/x86/topstar-laptop.c b/drivers/platform/x86/topstar-laptop.c
-index d528daa..d727bfe 100644
---- a/drivers/platform/x86/topstar-laptop.c
-+++ b/drivers/platform/x86/topstar-laptop.c
-@@ -186,27 +186,7 @@ static struct acpi_driver acpi_topstar_driver = {
- 		.notify = acpi_topstar_notify,
+diff --git a/drivers/input/misc/atlas_btns.c b/drivers/input/misc/atlas_btns.c
+index 601f737..26f1313 100644
+--- a/drivers/input/misc/atlas_btns.c
++++ b/drivers/input/misc/atlas_btns.c
+@@ -151,22 +151,7 @@ static struct acpi_driver atlas_acpi_driver = {
+ 		.remove	= atlas_acpi_button_remove,
  	},
  };
 -
--static int __init topstar_laptop_init(void)
+-static int __init atlas_acpi_init(void)
 -{
--	int ret;
+-	if (acpi_disabled)
+-		return -ENODEV;
 -
--	ret = acpi_bus_register_driver(&acpi_topstar_driver);
--	if (ret < 0)
--		return ret;
--
--	pr_info("ACPI extras driver loaded\n");
--
--	return 0;
+-	return acpi_bus_register_driver(&atlas_acpi_driver);
 -}
 -
--static void __exit topstar_laptop_exit(void)
+-static void __exit atlas_acpi_exit(void)
 -{
--	acpi_bus_unregister_driver(&acpi_topstar_driver);
+-	acpi_bus_unregister_driver(&atlas_acpi_driver);
 -}
 -
--module_init(topstar_laptop_init);
--module_exit(topstar_laptop_exit);
-+module_acpi_driver(acpi_topstar_driver);
+-module_init(atlas_acpi_init);
+-module_exit(atlas_acpi_exit);
++module_acpi_driver(atlas_acpi_driver);
  
- MODULE_AUTHOR("Herton Ronaldo Krzesinski");
- MODULE_DESCRIPTION("Topstar Laptop ACPI Extras driver");
+ MODULE_AUTHOR("Jaya Kumar");
+ MODULE_LICENSE("GPL");
 -- 
 1.7.10
 
