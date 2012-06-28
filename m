@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758206Ab2F1Dw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 23:52:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38588 "EHLO mx1.redhat.com"
+	id S1758246Ab2F1Dzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 23:55:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55319 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757941Ab2F1Dw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 23:52:56 -0400
-Message-ID: <1340855572.1207.300.camel@bling.home>
-Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+	id S1757672Ab2F1Dzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 23:55:46 -0400
+Message-ID: <1340855744.1207.303.camel@bling.home>
+Subject: Re: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
 From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Date: Wed, 27 Jun 2012 21:52:52 -0600
-In-Reply-To: <20120627222852.GA27885@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: avi@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Wed, 27 Jun 2012 21:55:44 -0600
+In-Reply-To: <20120627145135.GF6533@redhat.com>
 References: <20120627044758.23698.249.stgit@bling.home>
-	 <20120627050937.23698.68442.stgit@bling.home>
-	 <20120627095137.GH17507@redhat.com> <1340830749.1207.236.camel@bling.home>
-	 <20120627211413.GE27746@redhat.com> <1340832499.1207.255.camel@bling.home>
-	 <20120627222852.GA27885@redhat.com>
+	 <20120627050952.23698.37235.stgit@bling.home>
+	 <20120627135811.GE6533@redhat.com> <1340807344.1207.207.camel@bling.home>
+	 <20120627145135.GF6533@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -26,90 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 01:28 +0300, Michael S. Tsirkin wrote:
-> On Wed, Jun 27, 2012 at 03:28:19PM -0600, Alex Williamson wrote:
-> > On Thu, 2012-06-28 at 00:14 +0300, Michael S. Tsirkin wrote:
-> > > On Wed, Jun 27, 2012 at 02:59:09PM -0600, Alex Williamson wrote:
-> > > > On Wed, 2012-06-27 at 12:51 +0300, Michael S. Tsirkin wrote:
-> > > > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
-> > > > > > In order to inject an interrupt from an external source using an
-> > > > > > irqfd, we need to allocate a new irq_source_id.  This allows us to
-> > > > > > assert and (later) de-assert an interrupt line independently from
-> > > > > > users of KVM_IRQ_LINE and avoid lost interrupts.
-> > > > > > 
-> > > > > > We also add what may appear like a bit of excessive infrastructure
-> > > > > > around an object for storing this irq_source_id.  However, notice
-> > > > > > that we only provide a way to assert the interrupt here.  A follow-on
-> > > > > > interface will make use of the same irq_source_id to allow de-assert.
-> > > > > > 
-> > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > > > ---
-> > > > > > 
-> > > > > >  Documentation/virtual/kvm/api.txt |    5 ++
-> > > > > >  arch/x86/kvm/x86.c                |    1 
-> > > > > >  include/linux/kvm.h               |    3 +
-> > > > > >  virt/kvm/eventfd.c                |   95 +++++++++++++++++++++++++++++++++++--
-> > > > > >  4 files changed, 99 insertions(+), 5 deletions(-)
-> > > > > > 
-> > > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > > > > > index ea9edce..b216709 100644
-> > > > > > --- a/Documentation/virtual/kvm/api.txt
-> > > > > > +++ b/Documentation/virtual/kvm/api.txt
-> > > > > > @@ -1981,6 +1981,11 @@ the guest using the specified gsi pin.  The irqfd is removed using
-> > > > > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
-> > > > > >  and kvm_irqfd.gsi.
-> > > > > >  
-> > > > > > +With KVM_IRQFD_FLAG_LEVEL KVM_IRQFD allocates a new IRQ source ID for
-> > > > > > +the requested irqfd.  This is necessary to share level triggered
-> > > > > > +interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
-> > > > > > +with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
-> > > > > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
-> > > > > 
-> > > > > Note that if my patch removing auto-deassert gets accepted,
-> > > > > this is not needed at all: we can just look at the GSI
-> > > > > to see if it's level or edge.
+On Wed, 2012-06-27 at 17:51 +0300, Gleb Natapov wrote:
+> On Wed, Jun 27, 2012 at 08:29:04AM -0600, Alex Williamson wrote:
+> > On Wed, 2012-06-27 at 16:58 +0300, Gleb Natapov wrote:
+> > > On Tue, Jun 26, 2012 at 11:10:08PM -0600, Alex Williamson wrote:
+> > > > This new ioctl enables an eventfd to be triggered when an EOI is
+> > > > written for a specified irqchip pin.  By default this is a simple
+> > > > notification, but we can also tie the eoifd to a level irqfd, which
+> > > > enables the irqchip pin to be automatically de-asserted on EOI.
+> > > > This mode is particularly useful for device-assignment applications
+> > > > where the unmask and notify triggers a hardware unmask.  The default
+> > > > mode is most applicable to simple notify with no side-effects for
+> > > > userspace usage, such as Qemu.
 > > > > 
-> > > > I'm not sure this is a good idea.  I know from vfio that I'm injecting a
-> > > > level interrupt regardless of how the guest has the pic/ioapic
-> > > > programmed at the time I'm calling this ioctl.  Peeking across address
-> > > > spaces to get to the right pin on the right pic/ioapic and see how it's
-> > > > currently programmed seems fragile.  Thanks,
+> > > > Here we make use of the reference counting of the _irq_source
+> > > > object allowing us to share it with an irqfd and cleanup regardless
+> > > > of the release order.
 > > > > 
-> > > > Alex
-> > > 
-> > > Fragile? If you set eventfd as LEVEL but GSI is really edge then
-> > > it all explodes, right? So why give users the option to shoot
-> > > themselves in the foot?
+> > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > ---
+> > > > 
+> > > >  Documentation/virtual/kvm/api.txt |   24 +++++
+> > > >  arch/x86/kvm/x86.c                |    1 
+> > > >  include/linux/kvm.h               |   14 +++
+> > > >  include/linux/kvm_host.h          |   13 +++
+> > > >  virt/kvm/eventfd.c                |  189 +++++++++++++++++++++++++++++++++++++
+> > > >  virt/kvm/kvm_main.c               |   11 ++
+> > > >  6 files changed, 250 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > > > index b216709..87a2558 100644
+> > > > --- a/Documentation/virtual/kvm/api.txt
+> > > > +++ b/Documentation/virtual/kvm/api.txt
+> > > > @@ -1987,6 +1987,30 @@ interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+> > > >  with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+> > > >  KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> > > >  
+> > > > +4.77 KVM_EOIFD
+> > > > +
+> > > > +Capability: KVM_CAP_EOIFD
+> > > > +Architectures: x86
+> > > > +Type: vm ioctl
+> > > > +Parameters: struct kvm_eoifd (in)
+> > > > +Returns: 0 on success, -1 on error
+> > > > +
+> > > > +KVM_EOIFD allows userspace to receive EOI notification through an
+> > > > +eventfd for level triggered irqchip interrupts.  Behavior for edge
+> > > > +triggered interrupts is undefined.  kvm_eoifd.fd specifies the eventfd
+> > > Lets make it defined. EOI notification can be used by userspace to fix
+> > > time drift due to lost interrupts. But than userspace needs to know
+> > > which vcpu did EOI.
 > > 
-> > If the guest has the ioapic rte set to edge at the time I call KVM_IRQFD
-> > to register my level interrupt then it all explodes, right?  I'd rather
-> > let the user shoot themselves than play Russian roulette with the guest.
-> > Am I misunderstanding what you mean by looking that the GSI to see if
-> > it's level or edge?
-> 
-> Not sure.
-> I simply mean this: if eventfd is bound to irqfd, set level from irqfd
-> and clear from eventfd ack notifier.
+> > Hmm, do we need an additional flag and field in kvm_eoifd to filter by
+> > vCPU then?
+> > 
+> This will be enough for a use case I am aware of. Don't know if this
+> interface is generic enough for all possible use cases.
 
-Are you simply saying assert (kvm_set_irq(,,,1)) from irqfd trigger and
-de-assert (kvm_set_irq(,,,0)) from eventfd ack notifier (aka KVM_EOIFD)?
-
-> There's no need for a special IRQ_LEVEL for this.
-
-That ignores the whole problem of when do we need to allocate a new
-irq_source_id and when do we inject using KVM_USERSPACE_IRQ_SOURCE_ID.
-We've already discussed that a level triggered, externally fired
-interrupt must use a separate source ID from Qemu userspace.  Therefore
-when you say "look at the GSI to see if it's level or edge", I assume
-you mean trace the gsi back to the pic/ioapic pin and look at the
-trigger mode.  That trigger mode is configured by the guest, so that
-means that at the point in time when we call KVM_IRQFD we make a
-determination based on how the _guest_ has programmed the ioapic.  That
-may not match the interrupt we expect to inject.  On the other hand, the
-user calling KVM_IRQFD absolutely knows the type of interrupt provided
-by their device.  I think we need a flag regardless of whether your
-patch is accepted.  We may be able to share the inject handler if it is
-accepted, but it doesn't change the user API.  Thanks,
+That's generally a hard prediction to make ;)  We currently don't pass a
+kvm_vcpu anywhere close to the irq ack notifier.  The ioapic path could
+be relatively trivial, but the pic path is a bit further disconnected.
+If we had that plumbing, a KVM_CAP plus vcpu filter flag and specifying
+the vcpu using some of the padding space seems like it's sufficient.
+I'll drop mention of level-only from the description, but the plumbing
+and vcpu filtering can be a follow-on.  Thanks,
 
 Alex
 
