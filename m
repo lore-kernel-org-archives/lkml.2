@@ -1,94 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2F1TNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 15:13:47 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63698 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab2F1TNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 15:13:46 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 28 Jun 2012 12:14:02 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.5-rc5
-Message-ID: <20120628191402.GA20318@roeck-us.net>
+	id S1752632Ab2F1TSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 15:18:45 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:45047 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751399Ab2F1TSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 15:18:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, lenb@kernel.org
+Subject: Re: [PATCH v2] acpi: intel_idle : break dependency between modules
+Date: Thu, 28 Jun 2012 21:24:09 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: trenn@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
+        deepthi@linux.vnet.ibm.com, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-pm@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+References: <201206271506.29034.trenn@suse.de> <1340873202-2476-1-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1340873202-2476-1-git-send-email-daniel.lezcano@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206282124.09857.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, June 28, 2012, Daniel Lezcano wrote:
+> When the system is booted with some cpus offline, the idle
+> driver is not initialized. When a cpu is set online, the
+> acpi code call the intel idle init function. Unfortunately
+> this code introduce a dependency between intel_idle and acpi.
+> 
+> This patch is intended to remove this dependency by using the
+> notifier of intel_idle. This patch has the benefit of
+> encapsulating the intel_idle driver and remove some exported
+> functions.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This one looks good to me too.
 
-Hi Linus,
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Please pull hwmon fixes for Linux 3.5-rc5 from signed tag:
+Len, are you going to take it?
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+Rafael
 
-Thanks,
-Guenter
-------
 
-The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
+> ---
+>  drivers/acpi/processor_driver.c |    7 ------
+>  drivers/idle/intel_idle.c       |   41 +++++++++++++++++++++++++-------------
+>  include/linux/cpuidle.h         |    7 ------
+>  3 files changed, 27 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> index 0734086..8648b29 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -427,18 +427,11 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+>  		 * Initialize missing things
+>  		 */
+>  		if (pr->flags.need_hotplug_init) {
+> -			struct cpuidle_driver *idle_driver =
+> -				cpuidle_get_driver();
+> -
+>  			printk(KERN_INFO "Will online and init hotplugged "
+>  			       "CPU: %d\n", pr->id);
+>  			WARN(acpi_processor_start(pr), "Failed to start CPU:"
+>  				" %d\n", pr->id);
+>  			pr->flags.need_hotplug_init = 0;
+> -			if (idle_driver && !strcmp(idle_driver->name,
+> -						   "intel_idle")) {
+> -				intel_idle_cpu_init(pr->id);
+> -			}
+>  		/* Normal CPU soft online event */
+>  		} else {
+>  			acpi_processor_ppc_has_changed(pr, 0);
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index d0f59c3..fe95d54 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -96,6 +96,7 @@ static const struct idle_cpu *icpu;
+>  static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
+>  static int intel_idle(struct cpuidle_device *dev,
+>  			struct cpuidle_driver *drv, int index);
+> +static int intel_idle_cpu_init(int cpu);
+>  
+>  static struct cpuidle_state *cpuidle_state_table;
+>  
+> @@ -302,22 +303,35 @@ static void __setup_broadcast_timer(void *arg)
+>  	clockevents_notify(reason, &cpu);
+>  }
+>  
+> -static int setup_broadcast_cpuhp_notify(struct notifier_block *n,
+> -		unsigned long action, void *hcpu)
+> +static int cpu_hotplug_notify(struct notifier_block *n,
+> +			      unsigned long action, void *hcpu)
+>  {
+>  	int hotcpu = (unsigned long)hcpu;
+> +	struct cpuidle_device *dev;
+>  
+>  	switch (action & 0xf) {
+>  	case CPU_ONLINE:
+> -		smp_call_function_single(hotcpu, __setup_broadcast_timer,
+> -			(void *)true, 1);
+> +
+> +		if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
+> +			smp_call_function_single(hotcpu, __setup_broadcast_timer,
+> +						 (void *)true, 1);
+> +
+> +		/*
+> +		 * Some systems can hotplug a cpu at runtime after
+> +		 * the kernel has booted, we have to initialize the
+> +		 * driver in this case
+> +		 */
+> +		dev = per_cpu_ptr(intel_idle_cpuidle_devices, hotcpu);
+> +		if (!dev->registered)
+> +			intel_idle_cpu_init(hotcpu);
+> +
+>  		break;
+>  	}
+>  	return NOTIFY_OK;
+>  }
+>  
+> -static struct notifier_block setup_broadcast_notifier = {
+> -	.notifier_call = setup_broadcast_cpuhp_notify,
+> +static struct notifier_block cpu_hotplug_notifier = {
+> +	.notifier_call = cpu_hotplug_notify,
+>  };
+>  
+>  static void auto_demotion_disable(void *dummy)
+> @@ -405,10 +419,10 @@ static int intel_idle_probe(void)
+>  
+>  	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
+>  		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+> -	else {
+> +	else
+>  		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
+> -		register_cpu_notifier(&setup_broadcast_notifier);
+> -	}
+> +
+> +	register_cpu_notifier(&cpu_hotplug_notifier);
+>  
+>  	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+>  		" model 0x%X\n", boot_cpu_data.x86_model);
+> @@ -494,7 +508,7 @@ static int intel_idle_cpuidle_driver_init(void)
+>   * allocate, initialize, register cpuidle_devices
+>   * @cpu: cpu/core to initialize
+>   */
+> -int intel_idle_cpu_init(int cpu)
+> +static int intel_idle_cpu_init(int cpu)
+>  {
+>  	int cstate;
+>  	struct cpuidle_device *dev;
+> @@ -539,7 +553,6 @@ int intel_idle_cpu_init(int cpu)
+>  
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(intel_idle_cpu_init);
+>  
+>  static int __init intel_idle_init(void)
+>  {
+> @@ -581,10 +594,10 @@ static void __exit intel_idle_exit(void)
+>  	intel_idle_cpuidle_devices_uninit();
+>  	cpuidle_unregister_driver(&intel_idle_driver);
+>  
+> -	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE) {
+> +
+> +	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
+>  		on_each_cpu(__setup_broadcast_timer, (void *)false, 1);
+> -		unregister_cpu_notifier(&setup_broadcast_notifier);
+> -	}
+> +	unregister_cpu_notifier(&cpu_hotplug_notifier);
+>  
+>  	return;
+>  }
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 5ab7183..66d7e0d 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -213,14 +213,7 @@ struct cpuidle_governor {
+>  extern int cpuidle_register_governor(struct cpuidle_governor *gov);
+>  extern void cpuidle_unregister_governor(struct cpuidle_governor *gov);
+>  
+> -#ifdef CONFIG_INTEL_IDLE
+> -extern int intel_idle_cpu_init(int cpu);
+>  #else
+> -static inline int intel_idle_cpu_init(int cpu) { return -1; }
+> -#endif
+> -
+> -#else
+> -static inline int intel_idle_cpu_init(int cpu) { return -1; }
+>  
+>  static inline int cpuidle_register_governor(struct cpuidle_governor *gov)
+>  {return 0;}
+> 
 
-  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-for you to fetch changes up to bb9a80e5719abae235c7e9c7391a3a17b64a217b:
-
-  hwmon: Update my e-mail address (2012-06-25 06:46:24 -0700)
-
-----------------------------------------------------------------
-hwmon changes for 3.5-rc5:
-
-e-mail address updates
-
-----------------------------------------------------------------
-Guenter Roeck (1):
-      hwmon: Update my e-mail address
-
-Jesper Juhl (1):
-      hwmon: (applesmc) correct email address for Jesper Juhl
-
- drivers/hwmon/applesmc.c    |    2 +-
- drivers/hwmon/jc42.c        |    2 +-
- drivers/hwmon/lineage-pem.c |    2 +-
- drivers/hwmon/ltc4261.c     |    2 +-
- drivers/hwmon/max16065.c    |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP7Kz6AAoJEMsfJm/On5mBbDUP/10aXshFegLaqq/Q/6MJcy4d
-Nxi2ebiZ86IepcxxT8eUAIFt06GgJojzMdrY8OLx2UPYswMTDAiwCcfRRgiDhqzg
-a0PxaSBuNsuBgHhxSc+uVWzMRE1kGgCl08Vjm2/FU5gls3y+15g7WF61hvszdJ5C
-goKffxaFMjDJK5FsqYvfmXG78RcUzMvi0Vu9S7frVGZVaumpRWgKNUVHHCuAcggC
-W/tCZvmGSmaAW4SGFttA4IzzfqeM9vwQzTWdt3QXCW90As2mK64mQwoMhCFqpIKe
-+e3tnuyrTZjHX3kcFQL5DZOUkZzM7/H8gfGsNPvUd8lD+6w70biZnhDRBr0vjs2N
-vRDEQaTqJWobIuDM+rXWAKc/1RVL+2JOqBBrA0xlFEhlA9LUJzcjq4kDfJV7HTQ3
-G0LxycbtwX+0MTGmo1q9gzrP0X9n02zD1y4YnrXT+2xt4o+ExyMU51RQRldTnQ0I
-IUXqyNDlGG70UGP/KmAAs/V5psCyFCdl+DEjcYaw/UEVuUb5SmeVPCFqyzlm8my9
-QhfP5UTu+Kjfrdspdam0lRpEPiu/X0dy7fqQiyJ9KbGjsz9rAvr5+WI2TnPgvJsr
-7TZQc+GPySxplFMFzl1yKbg2INPJpl0W75AmNUKSGPKLdk5WHCE6e2TF7X3T/pjS
-vjxbkAQ1At1nw8/9TppG
-=kh3/
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
