@@ -1,173 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab2F1K6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 06:58:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54144 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411Ab2F1K6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 06:58:38 -0400
-From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
-        akpm@linux-foundation.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH 2/7] memcg: remove MEMCG_NR_FILE_MAPPED
-Date: Thu, 28 Jun 2012 18:58:31 +0800
-Message-Id: <1340881111-5576-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
-References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+	id S1754716Ab2F1K7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 06:59:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4462 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752897Ab2F1K57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 06:57:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="163917005"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rui.zhang@intel.com,
+        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        dmitry.torokhov@gmail.com, eric.piel@tremplin-utc.net, mjg@redhat.com,
+        ike.pan@canonical.com, herton@canonical.com,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH 09/12] ideapad: convert to module_acpi_driver()
+Date: Thu, 28 Jun 2012 13:59:28 +0300
+Message-Id: <1340881171-14811-10-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sha Zhengju <handai.szj@taobao.com>
-
-While accounting memcg page stat, it's not worth to use MEMCG_NR_FILE_MAPPED
-as an extra layer of indirection because of the complexity and presumed
-performance overhead. We can use MEM_CGROUP_STAT_FILE_MAPPED directly.
-
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- include/linux/memcontrol.h |   25 +++++++++++++++++--------
- mm/memcontrol.c            |   24 +-----------------------
- mm/rmap.c                  |    4 ++--
- 3 files changed, 20 insertions(+), 33 deletions(-)
+ drivers/platform/x86/ideapad-laptop.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 83e7ba9..20b0f2d 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -27,9 +27,18 @@ struct page_cgroup;
- struct page;
- struct mm_struct;
- 
--/* Stats that can be updated by kernel. */
--enum mem_cgroup_page_stat_item {
--	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
-+/*
-+ * Statistics for memory cgroup.
-+ */
-+enum mem_cgroup_stat_index {
-+	/*
-+	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
-+	 */
-+	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
-+	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
-+	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
-+	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
-+	MEM_CGROUP_STAT_NSTATS,
+diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+index 4f20f8d..b469654 100644
+--- a/drivers/platform/x86/ideapad-laptop.c
++++ b/drivers/platform/x86/ideapad-laptop.c
+@@ -813,20 +813,8 @@ static struct acpi_driver ideapad_acpi_driver = {
+ 	.ops.notify = ideapad_acpi_notify,
+ 	.owner = THIS_MODULE,
  };
- 
- struct mem_cgroup_reclaim_cookie {
-@@ -164,17 +173,17 @@ static inline void mem_cgroup_end_update_page_stat(struct page *page,
- }
- 
- void mem_cgroup_update_page_stat(struct page *page,
--				 enum mem_cgroup_page_stat_item idx,
-+				 enum mem_cgroup_stat_index idx,
- 				 int val);
- 
- static inline void mem_cgroup_inc_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- 	mem_cgroup_update_page_stat(page, idx, 1);
- }
- 
- static inline void mem_cgroup_dec_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- 	mem_cgroup_update_page_stat(page, idx, -1);
- }
-@@ -349,12 +358,12 @@ static inline void mem_cgroup_end_update_page_stat(struct page *page,
- }
- 
- static inline void mem_cgroup_inc_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- }
- 
- static inline void mem_cgroup_dec_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- }
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a2677e0..ebed1ca 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -77,20 +77,6 @@ static int really_do_swap_account __initdata = 0;
- #endif
- 
- 
--/*
-- * Statistics for memory cgroup.
-- */
--enum mem_cgroup_stat_index {
--	/*
--	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
--	 */
--	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
--	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
--	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
--	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
--	MEM_CGROUP_STAT_NSTATS,
--};
 -
- static const char * const mem_cgroup_stat_names[] = {
- 	"cache",
- 	"rss",
-@@ -1926,7 +1912,7 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
- }
- 
- void mem_cgroup_update_page_stat(struct page *page,
--				 enum mem_cgroup_page_stat_item idx, int val)
-+				 enum mem_cgroup_stat_index idx, int val)
- {
- 	struct mem_cgroup *memcg;
- 	struct page_cgroup *pc = lookup_page_cgroup(page);
-@@ -1939,14 +1925,6 @@ void mem_cgroup_update_page_stat(struct page *page,
- 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
- 		return;
- 
--	switch (idx) {
--	case MEMCG_NR_FILE_MAPPED:
--		idx = MEM_CGROUP_STAT_FILE_MAPPED;
--		break;
--	default:
--		BUG();
--	}
+-static int __init ideapad_acpi_module_init(void)
+-{
+-	return acpi_bus_register_driver(&ideapad_acpi_driver);
+-}
 -
- 	this_cpu_add(memcg->stat->count[idx], val);
- }
+-static void __exit ideapad_acpi_module_exit(void)
+-{
+-	acpi_bus_unregister_driver(&ideapad_acpi_driver);
+-}
++module_acpi_driver(ideapad_acpi_driver);
  
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 2144160..d6b93df 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1148,7 +1148,7 @@ void page_add_file_rmap(struct page *page)
- 	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
- 	if (atomic_inc_and_test(&page->_mapcount)) {
- 		__inc_zone_page_state(page, NR_FILE_MAPPED);
--		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED);
-+		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
- 	}
- 	mem_cgroup_end_update_page_stat(page, &locked, &flags);
- }
-@@ -1202,7 +1202,7 @@ void page_remove_rmap(struct page *page)
- 					      NR_ANON_TRANSPARENT_HUGEPAGES);
- 	} else {
- 		__dec_zone_page_state(page, NR_FILE_MAPPED);
--		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
-+		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
- 	}
- 	/*
- 	 * It would be tidy to reset the PageAnon mapping here,
+ MODULE_AUTHOR("David Woodhouse <dwmw2@infradead.org>");
+ MODULE_DESCRIPTION("IdeaPad ACPI Extras");
+ MODULE_LICENSE("GPL");
+-
+-module_init(ideapad_acpi_module_init);
+-module_exit(ideapad_acpi_module_exit);
 -- 
-1.7.1
+1.7.10
 
