@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2F1Mhl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:37:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36032 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab2F1Mhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:37:39 -0400
-Date: Thu, 28 Jun 2012 13:37:34 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: Re: [PATCH 10/12] nfs: enable swap on NFS
-Message-ID: <20120628123734.GH8271@suse.de>
-References: <1340375468-22509-1-git-send-email-mgorman@suse.de>
- <1340375468-22509-11-git-send-email-mgorman@suse.de>
- <20120628082725.33b71097@corrin.poochiereds.net>
+	id S1754385Ab2F1Mia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:38:30 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1477 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab2F1Mi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:38:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 28 Jun 2012 05:35:19 -0700
+Message-ID: <4FEC4FA9.20004@nvidia.com>
+Date: Thu, 28 Jun 2012 18:05:53 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120628082725.33b71097@corrin.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lrg@ti.com" <lrg@ti.com>, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: snd_dmaengine: add common api for
+ pcm_mmap
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com> <4FEC3B70.5030902@metafoo.de> <s5hobo3zl79.wl%tiwai@suse.de> <20120628121816.GB21029@sirena.org.uk> <4FEC4E62.3020101@metafoo.de> <20120628122830.GJ28922@opensource.wolfsonmicro.com>
+In-Reply-To: <20120628122830.GJ28922@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 08:27:25AM -0400, Jeff Layton wrote:
-> > <SNIP>
-> > @@ -2108,11 +2156,15 @@ static void xs_tcp_setup_socket(struct work_struct *work)
-> >  		container_of(work, struct sock_xprt, connect_worker.work);
-> >  	struct socket *sock = transport->sock;
-> >  	struct rpc_xprt *xprt = &transport->xprt;
-> > +	unsigned long pflags = current->flags;
-> >  	int status = -EIO;
-> >  
-> >  	if (xprt->shutdown)
-> >  		goto out;
-> >  
-> > +	if (xprt->swapper)
-> > +		current->flags |= PF_MEMALLOC;
-> > +
-> >  	if (!sock) {
-> >  		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
-> >  		sock = xs_create_sock(xprt, transport,
-> > @@ -2174,6 +2226,7 @@ out_eagain:
-> >  out:
-> >  	xprt_clear_connecting(xprt);
-> >  	xprt_wake_pending_tasks(xprt, status);
-> > +	tsk_restore_flags(current, pflags, PF_MEMALLOC);
-> >  }
-> >  
-> >  /**
-> 
-> Apologies if this is fixed in another patch and I didn't see it...
-> 
+On Thursday 28 June 2012 05:58 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Thu, Jun 28, 2012 at 02:30:26PM +0200, Lars-Peter Clausen wrote:
+>> On 06/28/2012 02:18 PM, Mark Brown wrote:
+>>> Oh, dear - this means we don't actually have a generic API at all.  Is
+>>> there any effort being made to make this generally available?
+>> Yes there is, and in fact in next/master there is generic
+>> dma_mmap_writecombine. I'm not quite sure how it behaves on non ARM archs
+>> though. But in theory it should fallback to a normal coherent mapping. Marek
+>> did a lot of work on this, I've put him on Cc.
 
-No apologies necessary. Even if it was fixed in another patch, it would
-still be wrong for bisection reasons and for being rude to reviewers.
-
-> There's a place in the above function that returns without going
-> through "out:". I think you also want to tsk_restore_flags() in that
-> spot too.
-> 
-
-You're right. The case that it would trigger would be some corner case
-but very nicely spotted.
-
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index b84df34..3d58b92 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -2214,6 +2214,7 @@ static void xs_tcp_setup_socket(struct work_struct *work)
- 	case -EINPROGRESS:
- 	case -EALREADY:
- 		xprt_clear_connecting(xprt);
-+		tsk_restore_flags(current, pflags, PF_MEMALLOC);
- 		return;
- 	case -EINVAL:
- 		/* Happens, for instance, if the user specified a link
+So can we put the function snd_pcm_lib_writecombine_mmap() in the 
+pcm_native.c and only export this api for ARM i.e.  under macro  #ifdef 
+CONFIG_ARM so that ARM based SOCs like Tegra/epa3xx/mxs/spear can 
+directly use that one?
+Or, wait for this common API until all ARCH support it?
