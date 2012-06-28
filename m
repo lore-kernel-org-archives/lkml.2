@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab2F1Nv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:51:26 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:40810 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab2F1NvZ (ORCPT
+	id S1754224Ab2F1Nw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:52:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37676 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab2F1Nwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 09:51:25 -0400
-Message-ID: <1340891471.4994.10.camel@localhost>
-Subject: Re: [PATCH] apple-gmux: Correctly depend on apple_bl for building
-From: Arun Raghavan <arun.raghavan@collabora.co.uk>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 28 Jun 2012 19:21:11 +0530
-In-Reply-To: <20120628134806.GB15308@thinkpad-t410>
-References: <1340879796-30262-1-git-send-email-arun.raghavan@collabora.co.uk>
-	 <20120628132058.GA15308@thinkpad-t410> <1340889815.4994.4.camel@localhost>
-	 <20120628134806.GB15308@thinkpad-t410>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Jun 2012 09:52:54 -0400
+Date: Thu, 28 Jun 2012 16:52:39 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        <Heinz.Egger@linutronix.de>, thomas.wucher@linutronix.de,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com, linux-mtd@lists.infradead.org
+Subject: [PATCH] ubi: fastmap: Remove 'ubi' parameter of 'destroy_ai()'
+Message-ID: <20120628165239.52cffc64@pixies.home.jungo.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 08:48 -0500, Seth Forshee wrote:
-> On Thu, Jun 28, 2012 at 06:53:35PM +0530, Arun Raghavan wrote:
-> > On Thu, 2012-06-28 at 08:20 -0500, Seth Forshee wrote:
-> > > On Thu, Jun 28, 2012 at 04:06:36PM +0530, Arun Raghavan wrote:
-> > > > apple_bl_register/unregister() are unconditionally used now, so we need
-> > > > to make sure that apple_bl is selected appropriately (built-in/module)
-> > > > if apple-gmux is being built.
-> > > 
-> > > apple_bl.h provides stubs for these functions when apple_bl is not
-> > > built, so this shouldn't be necessary. Are you encoutering a situation
-> > > that causes build problems?
-> > 
-> > Yes, I am. With CONFIG_BACKLIGHT_APPLE=m and CONFIG_APPLE_GMUX=y, I see
-> > the following error:
-> > 
-> >   LD      init/built-in.o
-> > drivers/built-in.o: In function `gmux_probe':
-> > apple-gmux.c:(.devinit.text+0xa769): undefined reference to `apple_bl_unregister'
-> > drivers/built-in.o: In function `gmux_remove':
-> > apple-gmux.c:(.devexit.text+0x46d): undefined reference to `apple_bl_register'
-> 
-> Yuck. In that case I don't think your patch probably goes far enough to
-> fix your situation.
-> 
-> As far as I know select isn't recursive, i.e. it won't select the
-> dependencies of the thing you select. 
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 
-I missed the stubs, so the patch should probably just be adding this
-line:
+The 'ubi' argument of 'destroy_ai' was added during fastmap development,
+but it is no longer used.
 
-depends on APPLE_BACKLIGHT = n || APPLE_BACKLIGHT
+Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+---
+Applies to linux-ubi.git fastmap
 
-but that conflicts with the 'select BACKLIGHT_CLASS_DEVICE' (a recursive
-dependency is detected).
-
--- Arun
-
+diff --git a/drivers/mtd/ubi/attach.c b/drivers/mtd/ubi/attach.c
+index 3d9be42..019fbd3 100644
+--- a/drivers/mtd/ubi/attach.c
++++ b/drivers/mtd/ubi/attach.c
+@@ -97,7 +97,7 @@
+  * it that way, or re-structure all the code. :-)
+  */
+ static int self_check_ai(struct ubi_device *ubi, struct ubi_attach_info *ai);
+-static void destroy_ai(struct ubi_device *ubi, struct ubi_attach_info *ai);
++static void destroy_ai(struct ubi_attach_info *ai);
+ 
+ /* Temporary variables used during scanning */
+ static struct ubi_ec_hdr *ech;
+@@ -1219,7 +1219,7 @@ out_vidh:
+ out_ech:
+ 	kfree(ech);
+ out_ai:
+-	destroy_ai(ubi, ai);
++	destroy_ai(ai);
+ 	return err;
+ }
+ 
+@@ -1280,7 +1280,7 @@ int ubi_attach(struct ubi_device *ubi, int force_scan)
+ 		 */
+ 		err = ubi_scan_fastmap(ubi, ai);
+ 		if (err > 0) {
+-			destroy_ai(ubi, ai);
++			destroy_ai(ai);
+ 			ai = alloc_ai();
+ 			if (!ai)
+ 				return -ENOMEM;
+@@ -1334,10 +1334,10 @@ int ubi_attach(struct ubi_device *ubi, int force_scan)
+ 		}
+ 
+ 		self_check_eba(ubi, ai, scan_ai);
+-		destroy_ai(ubi, scan_ai);
++		destroy_ai(scan_ai);
+ 	}
+ 
+-	destroy_ai(ubi, ai);
++	destroy_ai(ai);
+ 	return 0;
+ 
+ out_wl:
+@@ -1346,7 +1346,7 @@ out_vtbl:
+ 	ubi_free_internal_volumes(ubi);
+ 	vfree(ubi->vtbl);
+ out_ai:
+-	destroy_ai(ubi, ai);
++	destroy_ai(ai);
+ 	return err;
+ }
+ 
+@@ -1385,10 +1385,9 @@ static void destroy_av(struct ubi_attach_info *ai, struct ubi_ainf_volume *av)
+ 
+ /**
+  * destroy_ai - destroy attaching information.
+- * @ubi: UBI device object
+  * @ai: attaching information
+  */
+-static void destroy_ai(struct ubi_device *ubi, struct ubi_attach_info *ai)
++static void destroy_ai(struct ubi_attach_info *ai)
+ {
+ 	struct ubi_ainf_peb *aeb, *aeb_tmp;
+ 	struct ubi_ainf_volume *av;
