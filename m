@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab2F1KVd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 06:21:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33138 "EHLO mail.skyhub.de"
+	id S932942Ab2F1KWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 06:22:48 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:34454 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932466Ab2F1KVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 06:21:32 -0400
-Date: Thu, 28 Jun 2012 12:21:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Thomas Sattler <sattler@med.uni-frankfurt.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: BUG: scheduling while atomic: chcpu/6197/0x00000002
-Message-ID: <20120628102139.GA21682@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Thomas Sattler <sattler@med.uni-frankfurt.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Ingo Molnar <mingo@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Steven Rostedt <rostedt@goodmis.org>
-References: <4FDF00CB.7090703@med.uni-frankfurt.de>
- <4FDF201E.2090408@med.uni-frankfurt.de>
- <4FE19494.6000303@med.uni-frankfurt.de>
- <4FE86067.9010408@med.uni-frankfurt.de>
- <4FEAF165.9090008@med.uni-frankfurt.de>
- <20120627174649.GA28137@x1.osrc.amd.com>
- <4FEBF277.90704@med.uni-frankfurt.de>
- <20120628064213.GC450@x1.osrc.amd.com>
- <4FEC22E8.5030707@med.uni-frankfurt.de>
+	id S932865Ab2F1KWr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 06:22:47 -0400
+References: <1340877668.6196.143.camel@linux-s257.site>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1340877668.6196.143.camel@linux-s257.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FEC22E8.5030707@med.uni-frankfurt.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Subject: Re: UEFI Secure boot using qemu-kvm
+From: James Bottomley <James.Bottomley@parallels.com>
+Date: Thu, 28 Jun 2012 11:22:04 +0100
+To: joeyli <jlee@suse.com>, <JBottomley@parallels.com>
+CC: <linux-kernel@vger.kernel.org>
+Message-ID: <d9f6fbce-f07a-4347-bce5-8fb20971944b@email.android.com>
+X-Originating-IP: [178.101.12.6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 11:24:56AM +0200, Thomas Sattler wrote:
-> > Any chance you could try a non-rt kernel,
+
+
+joeyli <jlee@suse.com> wrote:
+
+>Hi James, 
+>
+>On Wed, Jun 27, 2012 at 06:34:05PM +0100, James Bottomley wrote:
+>
+>> The purpose of this email is to widen the pool of people who are
+>playing
+>> with UEFI Secure boot.  The Linux Foundation Technical Advisory Board
+>> have been looking into this because it turns out to be rather
+>difficult
+>> to lay your hands on real UEFI Secure Boot enabled hardware.
 > 
-> Earlier in this thread I wrote, that 3.4.[23] are
-> in fact unaffected. Only 3.4.[234]-rt1[0123] show
-> this BUG in dmesg.
-> 
-> > to rule out an -rt issue?
-> 
-> Steven Rostedt wrote (w/o CC:LKML) that he believes
-> CPU hotplug is still an issue with -rt. So, are you
-> still interested to follow the "amd on intel" thing?
+>
+>I am following your approach to reproduce your UEFI environment with
+>qemu-kvm. After run qemu-system-x86_64 the kvm launched and go to UEFI
+>shell success. So far so good!
+>
+>But, I got a problem is the keyboard layout is not US keyboard, So I
+>need build a mapping table for reference when key-in any letter:
+>
+>[		e
+>/		x
+>s		i
+>enter		t
+>down		enter
+>page up		down
+>...
+>
+>
+>Did you meet this issue on your side? 
 
-I don't think it is an "amd on intel" issue - it is probably the
-stack trace dumping code wrongly finding the init_amd symbol due to
-CPU_SUP_AMD bring compiled in or so...
+Well no. I've got a US keyboard. You probably need the keymap directory from qemu-kvm. 
 
-Rather, it looks like the issue is what Steve said.
+The best thing is probably to copy all the qemu files to a new directory and then copy in the qemu-ovmf ones (assuming standard qemu-kvm works for you).
 
-> > Also, looks like your cpu can do 64-bit. Can you
-> > try a 64-bit kernel?
-> 
-> Yes, it's a 32-bit userland on 64-bit hardware. So
-> far I didn't compile 64-bit kernels on 32-bit user-
-> land but in case you're still interested in the
-> result, I'll give it a try.
-
-Well, if you have a 64-bit cpu, you could consider running a 64-bit
-kernel for many reasons. The most important one being that 64-bit code
-is enjoying orders of magnitude more testing because the world has moved
-to 64-bit already. -rt included.
-
+James
 -- 
-Regards/Gruss,
-Boris.
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
