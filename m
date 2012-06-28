@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab2F1Kud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 06:50:33 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:50156 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab2F1Kuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 06:50:32 -0400
-Subject: Re: UEFI Secure boot using qemu-kvm
-From: joeyli <jlee@suse.com>
-To: James Bottomley <James.Bottomley@parallels.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <d9f6fbce-f07a-4347-bce5-8fb20971944b@email.android.com>
-References: <1340877668.6196.143.camel@linux-s257.site>
-	 <d9f6fbce-f07a-4347-bce5-8fb20971944b@email.android.com>
+	id S1752765Ab2F1KvK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 06:51:10 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53756 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750817Ab2F1KvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 06:51:09 -0400
+Message-ID: <1340880651.20977.83.camel@pasglop>
+Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+Cc: linuxppc-dev@lists.ozlabs.org, scottwood@freescale.com,
+        linux-kernel@vger.kernel.org, leoli@freescale.com
+Date: Thu, 28 Jun 2012 20:50:51 +1000
+In-Reply-To: <20120628033815.GA11387@localhost.localdomain>
+References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com>
+	 <1340748634.3732.27.camel@pasglop>
+	 <20120627102138.GB10476@localhost.localdomain>
+	 <1340797732.3732.46.camel@pasglop>
+	 <20120628033815.GA11387@localhost.localdomain>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jun 2012 18:49:57 +0800
-Message-ID: <1340880597.6196.158.camel@linux-s257.site>
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 四，2012-06-28 於 11:22 +0100，James Bottomley 提到：
+On Thu, 2012-06-28 at 11:38 +0800, Zhao Chenhui wrote:
 > 
-> joeyli <jlee@suse.com> wrote:
 > 
-> >Hi James, 
-> >
-> >On Wed, Jun 27, 2012 at 06:34:05PM +0100, James Bottomley wrote:
-> >
-> >> The purpose of this email is to widen the pool of people who are
-> >playing
-> >> with UEFI Secure boot.  The Linux Foundation Technical Advisory Board
-> >> have been looking into this because it turns out to be rather
-> >difficult
-> >> to lay your hands on real UEFI Secure Boot enabled hardware.
-> > 
-> >
-> >I am following your approach to reproduce your UEFI environment with
-> >qemu-kvm. After run qemu-system-x86_64 the kvm launched and go to UEFI
-> >shell success. So far so good!
-> >
-> >But, I got a problem is the keyboard layout is not US keyboard, So I
-> >need build a mapping table for reference when key-in any letter:
-> >
-> >[		e
-> >/		x
-> >s		i
-> >enter		t
-> >down		enter
-> >page up		down
-> >...
-> >
-> >
-> >Did you meet this issue on your side? 
-> 
-> Well no. I've got a US keyboard. You probably need the keymap directory from qemu-kvm. 
-> 
-> The best thing is probably to copy all the qemu files to a new directory and then copy in the qemu-ovmf ones (assuming standard qemu-kvm works for you).
-> 
-> James
+> The bootloader have done a timebase sync. If we do not need KEXEC or
+> HOTPLUG_CPU feature, it is unnecessary to do it again at boot time of
+> kernel. I only compile the timebase sync routines
+> when users enable KEXEC or HOTPLUG_CPU. 
 
-Yes, I just found the problem happen on using SSH login to the machine
-that have qemu-kvm and launch it with UEFI shell.
-If I direct launch kvm on the machine, everything is OK!
+Still, how much are you really saving ? Is it worth the added mess and
+loss of test coverage ?
 
-I already import your PK.cer and KEK.cer and run
-HelloWorld.efi/HelloWorld-signed.efi to verify the secure boot success.
+We have too many conditional stuff like that already.
 
-When running non-signed file, shell show up:
-	Error reported: Access Denied
-
-Thanks a lot for your document and RPMs on OBS, it's really useful to me
-for verify secure boot.
-
-
-Regards
-Joey Lee 
+Cheers,
+Ben.
 
 
