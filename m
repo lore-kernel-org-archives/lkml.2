@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab2F1NCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:02:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50691 "EHLO mx1.redhat.com"
+	id S1752111Ab2F1NCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:02:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25817 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755788Ab2F1M6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:58:31 -0400
+	id S1752537Ab2F1NCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 09:02:38 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,90 +27,52 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 11/40] autonuma: define the autonuma flags
-Date: Thu, 28 Jun 2012 14:55:51 +0200
-Message-Id: <1340888180-15355-12-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 34/40] autonuma: add CONFIG_AUTONUMA and CONFIG_AUTONUMA_DEFAULT_ENABLED
+Date: Thu, 28 Jun 2012 14:56:14 +0200
+Message-Id: <1340888180-15355-35-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These flags are the ones tweaked through sysfs, they control the
-behavior of autonuma, from enabling disabling it, to selecting various
-runtime options.
+Add the config options to allow building the kernel with AutoNUMA.
+
+If CONFIG_AUTONUMA_DEFAULT_ENABLED is "=y", then
+/sys/kernel/mm/autonuma/enabled will be equal to 1, and AutoNUMA will
+be enabled automatically at boot.
+
+CONFIG_AUTONUMA currently depends on X86, because no other arch
+implements the pte/pmd_numa yet and selecting =y would result in a
+failed build, but this shall be relaxed in the future. Porting
+AutoNUMA to other archs should be pretty simple.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/autonuma_flags.h |   62 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 62 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/autonuma_flags.h
+ mm/Kconfig |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/autonuma_flags.h b/include/linux/autonuma_flags.h
-new file mode 100644
-index 0000000..5e29a75
---- /dev/null
-+++ b/include/linux/autonuma_flags.h
-@@ -0,0 +1,62 @@
-+#ifndef _LINUX_AUTONUMA_FLAGS_H
-+#define _LINUX_AUTONUMA_FLAGS_H
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 82fed4e..330dd51 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -207,6 +207,19 @@ config MIGRATION
+ 	  pages as migration can relocate pages to satisfy a huge page
+ 	  allocation instead of reclaiming.
+ 
++config AUTONUMA
++	bool "Auto NUMA"
++	select MIGRATION
++	depends on NUMA && X86
++	help
++	  Automatic NUMA CPU scheduling and memory migration.
 +
-+enum autonuma_flag {
-+	AUTONUMA_FLAG,
-+	AUTONUMA_IMPOSSIBLE_FLAG,
-+	AUTONUMA_DEBUG_FLAG,
-+	AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
-+	AUTONUMA_SCHED_CLONE_RESET_FLAG,
-+	AUTONUMA_SCHED_FORK_RESET_FLAG,
-+	AUTONUMA_SCAN_PMD_FLAG,
-+	AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
-+	AUTONUMA_MIGRATE_DEFER_FLAG,
-+};
++config AUTONUMA_DEFAULT_ENABLED
++	bool "Auto NUMA default enabled"
++	depends on AUTONUMA
++	help
++	  Automatic NUMA CPU scheduling and memory migration enabled at boot.
 +
-+extern unsigned long autonuma_flags;
-+
-+static inline bool autonuma_enabled(void)
-+{
-+	return !!test_bit(AUTONUMA_FLAG, &autonuma_flags);
-+}
-+
-+static inline bool autonuma_debug(void)
-+{
-+	return !!test_bit(AUTONUMA_DEBUG_FLAG, &autonuma_flags);
-+}
-+
-+static inline bool autonuma_sched_load_balance_strict(void)
-+{
-+	return !!test_bit(AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
-+			  &autonuma_flags);
-+}
-+
-+static inline bool autonuma_sched_clone_reset(void)
-+{
-+	return !!test_bit(AUTONUMA_SCHED_CLONE_RESET_FLAG,
-+			  &autonuma_flags);
-+}
-+
-+static inline bool autonuma_sched_fork_reset(void)
-+{
-+	return !!test_bit(AUTONUMA_SCHED_FORK_RESET_FLAG,
-+			  &autonuma_flags);
-+}
-+
-+static inline bool autonuma_scan_pmd(void)
-+{
-+	return !!test_bit(AUTONUMA_SCAN_PMD_FLAG, &autonuma_flags);
-+}
-+
-+static inline bool autonuma_scan_use_working_set(void)
-+{
-+	return !!test_bit(AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
-+			  &autonuma_flags);
-+}
-+
-+static inline bool autonuma_migrate_defer(void)
-+{
-+	return !!test_bit(AUTONUMA_MIGRATE_DEFER_FLAG, &autonuma_flags);
-+}
-+
-+#endif /* _LINUX_AUTONUMA_FLAGS_H */
+ config PHYS_ADDR_T_64BIT
+ 	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
+ 
