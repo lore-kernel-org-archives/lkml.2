@@ -1,188 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab2F1S22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 14:28:28 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:60455 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754557Ab2F1S20 (ORCPT
+	id S1755730Ab2F1SaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 14:30:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49069 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab2F1SaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 14:28:26 -0400
-Date: Thu, 28 Jun 2012 11:28:00 -0700
-From: Mike Turquette <mturquette@ti.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-Cc: swarren@wwwdotorg.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux@arm.linux.org.uk, ccross@android.com, olof@lixom.net
-Subject: Re: [PATCH 4/6] ARM: tegra: Add clk_tegra structure and helper
- functions
-Message-ID: <20120628182759.GA28424@gmail.com>
-References: <1340879846-12900-1-git-send-email-pgaikwad@nvidia.com>
- <1340879846-12900-5-git-send-email-pgaikwad@nvidia.com>
+	Thu, 28 Jun 2012 14:30:04 -0400
+Date: Thu, 28 Jun 2012 11:29:34 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, Zhouping Liu <zliu@redhat.com>,
+        linux-mm@kvack.org, Li Zefan <lizefan@huawei.com>,
+        CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+Message-ID: <20120628182934.GD22641@google.com>
+References: <2a1a74bf-fbb5-4a6e-b958-44fff8debff2@zmail13.collab.prod.int.phx2.redhat.com>
+ <34bb8049-8007-496c-8ffb-11118c587124@zmail13.collab.prod.int.phx2.redhat.com>
+ <20120627154827.GA4420@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1206271256120.22162@chino.kir.corp.google.com>
+ <20120628123611.GA16042@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340879846-12900-5-git-send-email-pgaikwad@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120628123611.GA16042@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20120628-16:07, Prashant Gaikwad wrote:
-> Add Tegra platform specific clock structure clk_tegra and
-> some helper functions for generic clock framework.
-> 
-> struct clk_tegra is the single strcture used for all types of
-> clocks. reset and cfg_ex ops moved to clk_tegra from clk_ops.
-> 
-> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+Hello, Michal.
 
-Hi Prashant,
+On Thu, Jun 28, 2012 at 02:36:11PM +0200, Michal Hocko wrote:
+> @@ -2726,6 +2726,9 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+>  	int err, ret = 0;
+>  
+>  	for (cft = cfts; cft->name[0] != '\0'; cft++) {
+> +		if (subsys->cftype_enabled && !subsys->cftype_enabled(cft->name))
+> +			continue;
+> +
+>  		if (is_add)
+>  			err = cgroup_add_file(cgrp, subsys, cft);
+>  		else
 
-I'm happy to see Tegra getting ported over to the common clk framework.
+I hope we could avoid this dynamic decision.  That was one of the main
+reasons behind doing the cftype thing.  It's better to be able to
+"declare" these kind of things rather than being able to implement
+fully flexible dynamic logic.  Too much flexibility often doesn't
+achieve much while being a hindrance to evolution of code base (trying
+to improve / simplify X - ooh... there's this single wacko corner case
+YYY here which is really different from all other users).
 
-<snip>
-> +void tegra_clk_add(struct clk *clk)
-> +{
-> +	struct clk_tegra *c = to_clk_tegra(__clk_get_hw(clk));
-> +
-> +	mutex_lock(&clock_list_lock);
-> +	list_add(&c->node, &clocks);
-> +	mutex_unlock(&clock_list_lock);
-> +}
-> +
-> +struct clk *tegra_get_clock_by_name(const char *name)
-> +{
-> +	struct clk_tegra *c;
-> +	struct clk *ret = NULL;
-> +	mutex_lock(&clock_list_lock);
-> +	list_for_each_entry(c, &clocks, node) {
-> +		if (strcmp(__clk_get_name(c->hw.clk), name) == 0) {
-> +			ret = c->hw.clk;
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&clock_list_lock);
-> +	return ret;
-> +}
-> +
+really_do_swap_account can't change once booted, right?  Why not just
+separate out memsw cfts into a separate array and call
+cgroup_add_cftypes() from init path?  Can't we do that from
+enable_swap_cgroup()?
 
-Are you planning to continue using an internal list of struct clk_tegra?
-OMAP had a similar list for the legacy clock framework but that was
-since removed and now lookups are done solely through clkdev.
+Thanks.
 
-<snip>
-> +void tegra_periph_reset_deassert(struct clk *c)
-> +{
-> +	struct clk_tegra *clk = to_clk_tegra(__clk_get_hw(c));
-> +	BUG_ON(!clk->reset);
-> +	clk->reset(__clk_get_hw(c), false);
-> +}
-> +EXPORT_SYMBOL(tegra_periph_reset_deassert);
-> +
-> +void tegra_periph_reset_assert(struct clk *c)
-> +{
-> +	struct clk_tegra *clk = to_clk_tegra(__clk_get_hw(c));
-> +	BUG_ON(!clk->reset);
-> +	clk->reset(__clk_get_hw(c), true);
-> +}
-> +EXPORT_SYMBOL(tegra_periph_reset_assert);
-> +
-> +/* Several extended clock configuration bits (e.g., clock routing, clock
-> + * phase control) are included in PLL and peripheral clock source
-> + * registers. */
-> +int tegra_clk_cfg_ex(struct clk *c, enum tegra_clk_ex_param p, u32 setting)
-> +{
-> +	int ret = 0;
-> +	struct clk_tegra *clk = to_clk_tegra(__clk_get_hw(c));
-> +
-> +	if (!clk->clk_cfg_ex) {
-> +		ret = -ENOSYS;
-> +		goto out;
-> +	}
-> +	ret = clk->clk_cfg_ex(__clk_get_hw(c), p, setting);
-> +
-> +out:
-> +	return ret;
-> +}
-
-We had some discussions in the past on your clock reset and external
-line request operations which you've had to put into struct clk_tegra.
-
-Do you need to expose those ops to code in drivers/*?  I consider that a
-reasonable litmus test to start considering if something should be moved
-into the generic clk.h api.
-
-<snip>
-> +enum clk_state {
-> +	UNINITIALIZED = 0,
-> +	ON,
-> +	OFF,
-> +};
-
-How is clk_state used?  Might it be helpful to you if that was in the
-generic code in drivers/clk/clk.c?
-
-<snip>
-> +struct clk_tegra {
-> +	/* node for master clocks list */
-> +	struct list_head	node;	/* node for list of all clocks */
-> +	struct clk_lookup	lookup;
-> +	struct clk_hw		hw;
-> +
-> +	bool			set;
-> +	unsigned long		fixed_rate;
-> +	unsigned long		max_rate;
-> +	unsigned long		min_rate;
-> +	u32			flags;
-> +	const char		*name;
-> +
-> +	enum clk_state		state;
-> +	u32			div;
-> +	u32			mul;
-> +
-> +	u32				reg;
-> +	u32				reg_shift;
-> +
-> +	struct list_head		shared_bus_list;
-> +
-> +	union {
-> +		struct {
-> +			unsigned int			clk_num;
-> +		} periph;
-> +		struct {
-> +			unsigned long			input_min;
-> +			unsigned long			input_max;
-> +			unsigned long			cf_min;
-> +			unsigned long			cf_max;
-> +			unsigned long			vco_min;
-> +			unsigned long			vco_max;
-> +			const struct clk_pll_freq_table	*freq_table;
-> +			int				lock_delay;
-> +			unsigned long			fixed_rate;
-> +		} pll;
-> +		struct {
-> +			u32				sel;
-> +			u32				reg_mask;
-> +		} mux;
-> +		struct {
-> +			struct clk			*main;
-> +			struct clk			*backup;
-> +		} cpu;
-> +		struct {
-> +			struct list_head		node;
-> +			bool				enabled;
-> +			unsigned long			rate;
-> +		} shared_bus_user;
-> +	} u;
-> +
-> +	void (*reset)(struct clk_hw *, bool);
-> +	int (*clk_cfg_ex)(struct clk_hw *, enum tegra_clk_ex_param, u32);
-> +};
-
-I know this is an initial effort but I hope in time that struct
-clk_tegra can be broken up into separate clk types.  It would be even
-better if some of the Tegra clocks code be converted over to the common
-clk types in drivers/clk/clk-*.c
-
-Regards,
-Mike
+-- 
+tejun
