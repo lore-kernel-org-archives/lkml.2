@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab2F1M0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:26:42 -0400
-Received: from smtp-out-130.synserver.de ([212.40.185.130]:1060 "EHLO
-	smtp-out-120.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751473Ab2F1M0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:26:41 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 6438
-Message-ID: <4FEC4E62.3020101@metafoo.de>
-Date: Thu, 28 Jun 2012 14:30:26 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>, lrg@ti.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [alsa-devel] [PATCH] ASoC: snd_dmaengine: add common api for
- pcm_mmap
-References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com> <4FEC3B70.5030902@metafoo.de> <s5hobo3zl79.wl%tiwai@suse.de> <20120628121816.GB21029@sirena.org.uk>
-In-Reply-To: <20120628121816.GB21029@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754993Ab2F1M2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:28:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753515Ab2F1M2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:28:17 -0400
+Date: Thu, 28 Jun 2012 08:27:25 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 10/12] nfs: enable swap on NFS
+Message-ID: <20120628082725.33b71097@corrin.poochiereds.net>
+In-Reply-To: <1340375468-22509-11-git-send-email-mgorman@suse.de>
+References: <1340375468-22509-1-git-send-email-mgorman@suse.de>
+	<1340375468-22509-11-git-send-email-mgorman@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 02:18 PM, Mark Brown wrote:
-> On Thu, Jun 28, 2012 at 02:15:38PM +0200, Takashi Iwai wrote:
->> Lars-Peter Clausen wrote:
-> 
->>> to the ALSA core. Now that there is a generic dma_mmap_writecombine it may
->>> make sense to integrate this with snd_pcm_lib_default_mmap.
-> 
->> Agreed.
-> 
->> Also, it must be portable.  So far, only ARM has
->> dma_mmap_writecombine(), thus the build on other arch would fail as
->> is.
-> 
-> Oh, dear - this means we don't actually have a generic API at all.  Is
-> there any effort being made to make this generally available?
+On Fri, 22 Jun 2012 15:31:06 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-Yes there is, and in fact in next/master there is generic
-dma_mmap_writecombine. I'm not quite sure how it behaves on non ARM archs
-though. But in theory it should fallback to a normal coherent mapping. Marek
-did a lot of work on this, I've put him on Cc.
+> Implement the new swapfile a_ops for NFS and hook up ->direct_IO. This
+> will set the NFS socket to SOCK_MEMALLOC and run socket reconnect
+> under PF_MEMALLOC as well as reset SOCK_MEMALLOC before engaging the
+> protocol ->connect() method.
+> 
+> PF_MEMALLOC should allow the allocation of struct socket and related
+> objects and the early (re)setting of SOCK_MEMALLOC should allow us
+> to receive the packets required for the TCP connection buildup.
+> 
+> [dfeng@redhat.com: Fix handling of multiple swap files]
+> [a.p.zijlstra@chello.nl: Original patch]
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> ---
+>  fs/nfs/Kconfig              |    8 +++++
+>  fs/nfs/direct.c             |   82 ++++++++++++++++++++++++++++---------------
+>  fs/nfs/file.c               |   22 ++++++++++--
+>  include/linux/nfs_fs.h      |    4 +--
+>  include/linux/sunrpc/xprt.h |    3 ++
+>  net/sunrpc/Kconfig          |    5 +++
+>  net/sunrpc/clnt.c           |    2 ++
+>  net/sunrpc/sched.c          |    7 ++--
+>  net/sunrpc/xprtsock.c       |   53 ++++++++++++++++++++++++++++
+>  9 files changed, 152 insertions(+), 34 deletions(-)
+> 
 
-- Lars
+[...snip...]
+
+> @@ -2108,11 +2156,15 @@ static void xs_tcp_setup_socket(struct work_struct *work)
+>  		container_of(work, struct sock_xprt, connect_worker.work);
+>  	struct socket *sock = transport->sock;
+>  	struct rpc_xprt *xprt = &transport->xprt;
+> +	unsigned long pflags = current->flags;
+>  	int status = -EIO;
+>  
+>  	if (xprt->shutdown)
+>  		goto out;
+>  
+> +	if (xprt->swapper)
+> +		current->flags |= PF_MEMALLOC;
+> +
+>  	if (!sock) {
+>  		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
+>  		sock = xs_create_sock(xprt, transport,
+> @@ -2174,6 +2226,7 @@ out_eagain:
+>  out:
+>  	xprt_clear_connecting(xprt);
+>  	xprt_wake_pending_tasks(xprt, status);
+> +	tsk_restore_flags(current, pflags, PF_MEMALLOC);
+>  }
+>  
+>  /**
+
+Apologies if this is fixed in another patch and I didn't see it...
+
+There's a place in the above function that returns without going
+through "out:". I think you also want to tsk_restore_flags() in that
+spot too.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
