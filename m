@@ -1,76 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab2F1XTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 19:19:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60557 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab2F1XTL (ORCPT
+	id S1753375Ab2F1X0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 19:26:46 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59035 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab2F1X0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 19:19:11 -0400
-Date: Thu, 28 Jun 2012 16:19:03 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rui.zhang@intel.com, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, eric.piel@tremplin-utc.net, mjg@redhat.com,
-        ike.pan@canonical.com, herton@canonical.com
-Subject: Re: [PATCH 07/12] Input: atlas_btns - convert to module_acpi_driver()
-Message-ID: <20120628231902.GA21687@core.coreip.homeip.net>
-References: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com>
- <1340881171-14811-8-git-send-email-mika.westerberg@linux.intel.com>
+	Thu, 28 Jun 2012 19:26:45 -0400
+X-AuditID: 9c93016f-b7c85ae00000559e-ad-4fece832cee1
+Message-ID: <4FECE844.2050803@kernel.org>
+Date: Fri, 29 Jun 2012 08:27:00 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340881171-14811-8-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rik van Riel <riel@redhat.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        jaschut@sandia.gov, kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where
+ it left
+References: <20120628135520.0c48b066@annuminas.surriel.com>
+In-Reply-To: <20120628135520.0c48b066@annuminas.surriel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 01:59:26PM +0300, Mika Westerberg wrote:
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Hi Rik,
 
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Thanks for quick great work!
+I have some nitpick below.
 
-Please feel free to merge with the rest of the series.
+On 06/29/2012 02:55 AM, Rik van Riel wrote:
 
-Thanks!
-
+> Order > 0 compaction stops when enough free pages of the correct
+> page order have been coalesced. When doing subsequent higher order
+> allocations, it is possible for compaction to be invoked many times.
+> 
+> However, the compaction code always starts out looking for things to
+> compact at the start of the zone, and for free pages to compact things
+> to at the end of the zone.
+> 
+> This can cause quadratic behaviour, with isolate_freepages starting
+> at the end of the zone each time, even though previous invocations
+> of the compaction code already filled up all free memory on that end
+> of the zone.
+> 
+> This can cause isolate_freepages to take enormous amounts of CPU
+> with certain workloads on larger memory systems.
+> 
+> The obvious solution is to have isolate_freepages remember where
+> it left off last time, and continue at that point the next time
+> it gets invoked for an order > 0 compaction. This could cause
+> compaction to fail if cc->free_pfn and cc->migrate_pfn are close
+> together initially, in that case we restart from the end of the
+> zone and try once more.
+> 
+> Forced full (order == -1) compactions are left alone.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Reported-by: Jim Schutt <jaschut@sandia.gov>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 > ---
->  drivers/input/misc/atlas_btns.c |   17 +----------------
->  1 file changed, 1 insertion(+), 16 deletions(-)
+> v2: implement Mel's suggestions, handling wrap-around etc
 > 
-> diff --git a/drivers/input/misc/atlas_btns.c b/drivers/input/misc/atlas_btns.c
-> index 601f737..26f1313 100644
-> --- a/drivers/input/misc/atlas_btns.c
-> +++ b/drivers/input/misc/atlas_btns.c
-> @@ -151,22 +151,7 @@ static struct acpi_driver atlas_acpi_driver = {
->  		.remove	= atlas_acpi_button_remove,
->  	},
->  };
-> -
-> -static int __init atlas_acpi_init(void)
-> -{
-> -	if (acpi_disabled)
-> -		return -ENODEV;
-> -
-> -	return acpi_bus_register_driver(&atlas_acpi_driver);
-> -}
-> -
-> -static void __exit atlas_acpi_exit(void)
-> -{
-> -	acpi_bus_unregister_driver(&atlas_acpi_driver);
-> -}
-> -
-> -module_init(atlas_acpi_init);
-> -module_exit(atlas_acpi_exit);
-> +module_acpi_driver(atlas_acpi_driver);
+>  include/linux/mmzone.h |    4 ++++
+>  mm/compaction.c        |   48 ++++++++++++++++++++++++++++++++++++++++++++----
+>  mm/internal.h          |    2 ++
+>  mm/page_alloc.c        |    5 +++++
+>  4 files changed, 55 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 2427706..e629594 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -369,6 +369,10 @@ struct zone {
+>  	 */
+>  	spinlock_t		lock;
+>  	int                     all_unreclaimable; /* All pages pinned */
+> +#if defined CONFIG_COMPACTION || defined CONFIG_CMA
+> +	/* pfn where the last order > 0 compaction isolated free pages */
+
+
+How about using  "partial compaction" word instead of (order > 0)?
+
+> +	unsigned long		compact_cached_free_pfn;
+> +#endif
+>  #ifdef CONFIG_MEMORY_HOTPLUG
+>  	/* see spanned/present_pages for more description */
+>  	seqlock_t		span_seqlock;
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 7ea259d..2668b77 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -422,6 +422,17 @@ static void isolate_freepages(struct zone *zone,
+>  					pfn -= pageblock_nr_pages) {
+>  		unsigned long isolated;
 >  
->  MODULE_AUTHOR("Jaya Kumar");
->  MODULE_LICENSE("GPL");
-> -- 
-> 1.7.10
+> +		/*
+> +		 * Skip ahead if another thread is compacting in the area
+> +		 * simultaneously. If we wrapped around, we can only skip
+> +		 * ahead if zone->compact_cached_free_pfn also wrapped to
+> +		 * above our starting point.
+> +		 */
+> +		if (cc->order > 0 && (!cc->wrapped ||
+
+
+So if (partial_compaction(cc) && ... ) or if (!full_compaction(cc) &&  ...)
+
+> +				      zone->compact_cached_free_pfn >
+> +				      cc->start_free_pfn))
+> +			pfn = min(pfn, zone->compact_cached_free_pfn);
+
+
+The pfn can be where migrate_pfn below?
+I mean we need this?
+
+if (pfn <= low_pfn)
+	goto out;
+
+Otherwise, we can steal free pages made by migration just.
+
+> +
+>  		if (!pfn_valid(pfn))
+>  			continue;
+>  
+> @@ -463,6 +474,8 @@ static void isolate_freepages(struct zone *zone,
+>  		 */
+>  		if (isolated)
+>  			high_pfn = max(high_pfn, pfn);
+> +		if (cc->order > 0)
+> +			zone->compact_cached_free_pfn = high_pfn;
+
+
+Why do we cache high_pfn instead of pfn?
+If we can't isolate any page, compact_cached_free_pfn would become low_pfn.
+I expect it's not what you want.
+
+>  	}
+>  
+>  	/* split_free_page does not map the pages */
+> @@ -565,8 +578,27 @@ static int compact_finished(struct zone *zone,
+>  	if (fatal_signal_pending(current))
+>  		return COMPACT_PARTIAL;
+>  
+> -	/* Compaction run completes if the migrate and free scanner meet */
+> -	if (cc->free_pfn <= cc->migrate_pfn)
+> +	/*
+> +	 * A full (order == -1) compaction run starts at the beginning and
+> +	 * end of a zone; it completes when the migrate and free scanner meet. 
+> +	 * A partial (order > 0) compaction can start with the free scanner
+> +	 * at a random point in the zone, and may have to restart.
+> +	 */
+> +	if (cc->free_pfn <= cc->migrate_pfn) {
+> +		if (cc->order > 0 && !cc->wrapped) {
+> +			/* We started partway through; restart at the end. */
+> +			unsigned long free_pfn;
+> +			free_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> +			free_pfn &= ~(pageblock_nr_pages-1);
+> +			zone->compact_cached_free_pfn = free_pfn;
+> +			cc->wrapped = 1;
+> +			return COMPACT_CONTINUE;
+> +		}
+> +		return COMPACT_COMPLETE;
+> +	}
+> +
+> +	/* We wrapped around and ended up where we started. */
+> +	if (cc->wrapped && cc->free_pfn <= cc->start_free_pfn)
+>  		return COMPACT_COMPLETE;
+>  
+>  	/*
+> @@ -664,8 +696,16 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  
+>  	/* Setup to move all movable pages to the end of the zone */
+>  	cc->migrate_pfn = zone->zone_start_pfn;
+> -	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
+> -	cc->free_pfn &= ~(pageblock_nr_pages-1);
+> +
+> +	if (cc->order > 0) {
+> +		/* Incremental compaction. Start where the last one stopped. */
+> +		cc->free_pfn = zone->compact_cached_free_pfn;
+> +		cc->start_free_pfn = cc->free_pfn;
+> +	} else {
+> +		/* Order == -1 starts at the end of the zone. */
+> +		cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
+> +		cc->free_pfn &= ~(pageblock_nr_pages-1);
+> +	}
+>  
+>  	migrate_prep_local();
+>  
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 2ba87fb..0b72461 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -118,8 +118,10 @@ struct compact_control {
+>  	unsigned long nr_freepages;	/* Number of isolated free pages */
+>  	unsigned long nr_migratepages;	/* Number of pages to migrate */
+>  	unsigned long free_pfn;		/* isolate_freepages search base */
+> +	unsigned long start_free_pfn;	/* where we started the search */
+
+
+For me, free_pfn and start_free_pfn are rather confusing.
+I hope we can add more detail comment for free_pfn and start_free_pfn.
+For start_free_pfn,
+/* Where incremental compaction starts the search */
+
+For free_pfn,
+/* the highest PFN we isolated pages from */
+
+>  	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+>  	bool sync;			/* Synchronous migration */
+> +	bool wrapped;			/* Last round for order>0 compaction */
+>  
+>  	int order;			/* order a direct compactor needs */
+>  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 4403009..c353a61 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -4394,6 +4394,11 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+>  
+>  		zone->spanned_pages = size;
+>  		zone->present_pages = realsize;
+> +#if defined CONFIG_COMPACTION || defined CONFIG_CMA
+> +		zone->compact_cached_free_pfn = zone->zone_start_pfn +
+> +						zone->spanned_pages;
+> +		zone->compact_cached_free_pfn &= ~(pageblock_nr_pages-1);
+> +#endif
+>  #ifdef CONFIG_NUMA
+>  		zone->node = nid;
+>  		zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
 > 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
 
 -- 
-Dmitry
+Kind regards,
+Minchan Kim
