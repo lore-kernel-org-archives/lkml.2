@@ -1,123 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab2F1EwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 00:52:07 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:49642 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab2F1EwD (ORCPT
+	id S1752160Ab2F1Ewj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 00:52:39 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56754 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab2F1Ewh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 00:52:03 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Alessandro Rubini <rubini@cvml.unipv.it>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-Cc: Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 1/2] Input: synaptics - print firmware ID and board number at init
-Date: Thu, 28 Jun 2012 12:51:56 +0800
-Message-Id: <1340859117-19654-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 28 Jun 2012 00:52:37 -0400
+Message-ID: <4FEBE2FF.3010105@us.ibm.com>
+Date: Wed, 27 Jun 2012 21:52:15 -0700
+From: Sridhar Samudrala <sri@us.ibm.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jason Wang <jasowang@redhat.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, habanero@linux.vnet.ibm.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        krkumar2@in.ibm.com, tahm@linux.vnet.ibm.com, akong@redhat.com,
+        davem@davemloft.net, shemminger@vyatta.com, mashirle@us.ibm.com
+Subject: Re: [net-next RFC V3 PATCH 4/6] tuntap: multiqueue support
+References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120625061018.6765.76633.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120625082553.GC18229@redhat.com> <4FE92F99.6020402@redhat.com> <20120626104250.GC13108@redhat.com> <4FEA972E.9010104@redhat.com> <20120627084431.GC15406@redhat.com> <4FEBC936.3080001@redhat.com>
+In-Reply-To: <4FEBC936.3080001@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12062804-1780-0000-0000-000006E1D459
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000283; HX=3.00000190; KW=3.00000007;
+ PH=3.00000001; SC=3.00000004; SDB=6.00151877; UDB=6.00034406; UTC=2012-06-28
+ 04:52:36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Read the Firmware ID and Board Number from a synaptics device at init
-and display them in the system log.
+On 6/27/2012 8:02 PM, Jason Wang wrote:
+> On 06/27/2012 04:44 PM, Michael S. Tsirkin wrote:
+>> On Wed, Jun 27, 2012 at 01:16:30PM +0800, Jason Wang wrote:
+>>> On 06/26/2012 06:42 PM, Michael S. Tsirkin wrote:
+>>>> On Tue, Jun 26, 2012 at 11:42:17AM +0800, Jason Wang wrote:
+>>>>> On 06/25/2012 04:25 PM, Michael S. Tsirkin wrote:
+>>>>>> On Mon, Jun 25, 2012 at 02:10:18PM +0800, Jason Wang wrote:
+>>>>>>> This patch adds multiqueue support for tap device. This is done 
+>>>>>>> by abstracting
+>>>>>>> each queue as a file/socket and allowing multiple sockets to be 
+>>>>>>> attached to the
+>>>>>>> tuntap device (an array of tun_file were stored in the 
+>>>>>>> tun_struct). Userspace
+>>>>>>> could write and read from those files to do the parallel packet
+>>>>>>> sending/receiving.
+>>>>>>>
+>>>>>>> Unlike the previous single queue implementation, the socket and 
+>>>>>>> device were
+>>>>>>> loosely coupled, each of them were allowed to go away first. In 
+>>>>>>> order to let the
+>>>>>>> tx path lockless, netif_tx_loch_bh() is replaced by 
+>>>>>>> RCU/NETIF_F_LLTX to
+>>>>>>> synchronize between data path and system call.
+>>>>>> Don't use LLTX/RCU. It's not worth it.
+>>>>>> Use something like netif_set_real_num_tx_queues.
+>>>>>>
+>>>>>>> The tx queue selecting is first based on the recorded rxq index 
+>>>>>>> of an skb, it
+>>>>>>> there's no such one, then choosing based on rx hashing 
+>>>>>>> (skb_get_rxhash()).
+>>>>>>>
+>>>>>>> Signed-off-by: Jason Wang<jasowang@redhat.com>
+>>>>>> Interestingly macvtap switched to hashing first:
+>>>>>> ef0002b577b52941fb147128f30bd1ecfdd3ff6d
+>>>>>> (the commit log is corrupted but see what it
+>>>>>> does in the patch).
+>>>>>> Any idea why?
+>>>>> Yes, so tap should be changed to behave same as macvtap. I remember
+>>>>> the reason we do that is to make sure the packet of a single flow to
+>>>>> be queued to a fixed socket/virtqueues. As 10g cards like ixgbe
+>>>>> choose the rx queue for a flow based on the last tx queue where the
+>>>>> packets of that flow comes. So if we are using recored rx queue in
+>>>>> macvtap, the queue index of a flow would change as vhost thread
+>>>>> moves amongs processors.
+>>>> Hmm. OTOH if you override this, if TX is sent from VCPU0, RX might 
+>>>> land
+>>>> on VCPU1 in the guest, which is not good, right?
+>>> Yes, but better than making the rx moves between vcpus when we use
+>>> recorded rx queue.
+>> Why isn't this a problem with native TCP?
+>> I think what happens is one of the following:
+>> - moving between CPUs is more expensive with tun
+>>    because it can queue so much data on xmit
+>> - scheduler makes very bad decisions about VCPUs
+>>    bouncing them around all the time
+>
+> For usual native TCP/host process, as it reads and writes tcp sockets, 
+> so it make make sense to move rx to the porcessor where the process 
+> moves. But vhost does not do tcp stuffs and ixgbe would still move rx 
+> when vhost process moves, and we can't even make sure the vhost 
+> process that handling rx is running on processor that handle rx 
+> interrupt.
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/mouse/synaptics.c |   38 ++++++++++++++++++++++++++++++++++++--
- drivers/input/mouse/synaptics.h |    3 +++
- 2 files changed, 39 insertions(+), 2 deletions(-)
+We also saw this behavior with the default ixgbe configuration. If vhost 
+is pinned to a CPU all
+packets for that VM are received on a single RX queue.
+So even if the VM is doing multiple TCP_RR sessions, packets for all the 
+flows are received
+on a single RX queue. Without pinning, vhost moves around and so does 
+the packets across
+the RX queues.
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index c778f27..81685c1 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -139,6 +139,35 @@ static int synaptics_model_id(struct psmouse *psmouse)
- }
- 
- /*
-+ * Read the board id from the touchpad
-+ * The board id is encoded in the "QUERY MODES" response
-+ */
-+static int synaptics_board_id(struct psmouse *psmouse)
-+{
-+	struct synaptics_data *priv = psmouse->private;
-+	unsigned char bid[3];
-+
-+	if (synaptics_send_cmd(psmouse, SYN_QUE_MODES, bid))
-+		return -1;
-+	priv->board_id = (((unsigned)bid[0] & 0xfc) << 6) | (unsigned)bid[1];
-+	return 0;
-+}
-+
-+/*
-+ * Read the firmware id from the touchpad
-+ */
-+static int synaptics_firmware_id(struct psmouse *psmouse)
-+{
-+	struct synaptics_data *priv = psmouse->private;
-+	unsigned char fwid[3];
-+
-+	if (synaptics_send_cmd(psmouse, SYN_QUE_FIRMWARE_ID, fwid))
-+		return -1;
-+	priv->firmware_id = (fwid[0] << 16) | (fwid[1] << 8) | fwid[2];
-+	return 0;
-+}
-+
-+/*
-  * Read the capability-bits from the touchpad
-  * see also the SYN_CAP_* macros
-  */
-@@ -261,6 +290,10 @@ static int synaptics_query_hardware(struct psmouse *psmouse)
- 		return -1;
- 	if (synaptics_model_id(psmouse))
- 		return -1;
-+	if (synaptics_firmware_id(psmouse))
-+		return -1;
-+	if (synaptics_board_id(psmouse))
-+		return -1;
- 	if (synaptics_capability(psmouse))
- 		return -1;
- 	if (synaptics_resolution(psmouse))
-@@ -1434,11 +1467,12 @@ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
- 	priv->pkt_type = SYN_MODEL_NEWABS(priv->model_id) ? SYN_NEWABS : SYN_OLDABS;
- 
- 	psmouse_info(psmouse,
--		     "Touchpad model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx/%#lx\n",
-+		     "Touchpad model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx/%#lx, board id: %lu, fw id: %lu\n",
- 		     SYN_ID_MODEL(priv->identity),
- 		     SYN_ID_MAJOR(priv->identity), SYN_ID_MINOR(priv->identity),
- 		     priv->model_id,
--		     priv->capabilities, priv->ext_cap, priv->ext_cap_0c);
-+		     priv->capabilities, priv->ext_cap, priv->ext_cap_0c,
-+		     priv->board_id, priv->firmware_id);
- 
- 	set_input_params(psmouse->dev, priv);
- 
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index fd26ccc..e594af0 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -18,6 +18,7 @@
- #define SYN_QUE_SERIAL_NUMBER_SUFFIX	0x07
- #define SYN_QUE_RESOLUTION		0x08
- #define SYN_QUE_EXT_CAPAB		0x09
-+#define SYN_QUE_FIRMWARE_ID		0x0a
- #define SYN_QUE_EXT_CAPAB_0C		0x0c
- #define SYN_QUE_EXT_MAX_COORDS		0x0d
- #define SYN_QUE_EXT_MIN_COORDS		0x0f
-@@ -148,6 +149,8 @@ struct synaptics_hw_state {
- struct synaptics_data {
- 	/* Data read from the touchpad */
- 	unsigned long int model_id;		/* Model-ID */
-+	unsigned long int firmware_id;		/* Firmware-ID */
-+	unsigned long int board_id;		/* Board-ID */
- 	unsigned long int capabilities;		/* Capabilities */
- 	unsigned long int ext_cap;		/* Extended Capabilities */
- 	unsigned long int ext_cap_0c;		/* Ext Caps from 0x0c query */
--- 
-1.7.7.3
+I think
+         ethtool -K ethX ntuple on
+will disable this behavior and it should be possible to program the flow 
+director using ethtool -U.
+This way we can split the packets across the host NIC RX queues based on 
+the flows, but it is not
+clear if this would help with the current model of single vhost per device.
+With per-cpu vhost,  each RX queue can be handled by the matching vhost, 
+but if we have only
+1 queue in the VMs virtio-net device, that could become the bottleneck.
+Multi-queue virtio-net should help here, but we need the same number of 
+queues in VM's virtio-net
+device as the host's NIC so that each vhost can handle the corresponding 
+virtio queue.
+But if the VM has only 2 vcpus, i think it is not efficient to have 8 
+virtio-net queues.(to match a host
+with 8 physical cpus and 8 RX queues in the NIC).
+
+Thanks
+Sridhar
+
+>
+>> Could we isolate which it is? Does the problem
+>> still happen if you pin VCPUs to host cpus?
+>> If not it's the queue depth.
+>
+> It may not help as tun does not record the vcpu/queue that send the 
+> stream, so it can't transmit the packets back the same vcpu/queue.
+>>> Flow steering is needed to make sure the tx and
+>>> rx on the same vcpu.
+>> That involves IPI between processes, so it might be
+>> very expensive for kvm.
+>>
+>>>>> But during test tun/tap, one interesting thing I find is that even
+>>>>> ixgbe has recorded the queue index during rx, it seems be lost when
+>>>>> tap tries to transmit skbs to userspace.
+>>>> dev_pick_tx does this I think but ndo_select_queue
+>>>> should be able to get it without trouble.
+>>>>
+>>>>
 
