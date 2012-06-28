@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2F1Q1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:27:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43002 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab2F1Q1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:27:08 -0400
+	id S1755376Ab2F1Q2D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:28:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8808 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751888Ab2F1Q2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 12:28:01 -0400
+Message-ID: <4FEC860B.3090605@redhat.com>
+Date: Thu, 28 Jun 2012 19:27:55 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <1340900356.28750.72.camel@twins>
-References: <1340899250-26803-1-git-send-email-feng.tang@intel.com>
-	<1340899974.28750.66.camel@twins>
-	<CABPqkBSKQ1r_XvKZX5d59Jx3CJ8WoXsO1JJ4KfSiMng4EbH3tA@mail.gmail.com>
-	<1340900356.28750.72.camel@twins>
-Date: Thu, 28 Jun 2012 18:27:06 +0200
-Message-ID: <CABPqkBQ6Ot8fQLtMCbAiPFWPhajaGB-HEsYmLYRY8_Xee8sBNg@mail.gmail.com>
-Subject: Re: [PATCH] perf, x86: Enabled PEBS event to be exported in a raw format
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Feng Tang <feng.tang@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
+        mst@redhat.com
+Subject: Re: [PATCH 4/4][RFC] kvm: eoi_eventfd
+References: <20120622220040.9858.43665.stgit@bling.home>  <20120622221626.9858.33817.stgit@bling.home> <4FE70E99.90609@redhat.com> <1340550156.14120.53.camel@bling.home>
+In-Reply-To: <1340550156.14120.53.camel@bling.home>
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My patchset does not cover the general PEBS case (not LL). However, I
-think we can leverage
-the machine state captured by PEBS by adding a simple patch on top of
-Jiri's sample regs
-patchset. I have experimented with that last week. One interesting
-measurement you can make
-on SNB once you have that is : value profiling. That means sampling
-the values of function
-arguments. I think we can fit this into perf report.
+On 06/24/2012 06:02 PM, Alex Williamson wrote:
+> On Sun, 2012-06-24 at 15:56 +0300, Avi Kivity wrote:
+>> On 06/23/2012 01:16 AM, Alex Williamson wrote:
+>> > I think we're probably also going to need something like this.
+>> > When running in non-accelerated qemu, we're going to have to
+>> > create some kind of EOI notifier for drivers.  VFIO can make
+>> > additional improvements when running on KVM so it will probably
+>> > make use of the KVM_IRQFD_LEVEL_EOI interface, but we don't
+>> > want to have a generic EOI notifier in qemu that just stops
+>> > working when kvm-ioapic is enabled.
+>> 
+>> Why?
+> 
+> Hmm, I must be missing something or not describing it correctly, because
+> it seems obvious.  
 
-My problem with the script approach is that you may end up
-re-inventing a lot of the infrastructure
-already in perf in terms of histograming and sorting. I think scripts
-are good for dumping
-the raw data or very simply analysis. Now I recognize that they are
-handy to implement
-mahcine specific decoding of the samples.
+I have not exhausted this quarter's quota of stupid questions yet.
 
-On Thu, Jun 28, 2012 at 6:19 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2012-06-28 at 18:15 +0200, Stephane Eranian wrote:
->> I will cover some useful use cases with my PEBS-LL patchset + perf
->> support.
->>
-> OK, I'll wait for those then.
+> If we create a dependency in qemu of needing to know
+> when an eoi occurs and notifier a driver and have no way to fulfill that
+> dependency when running on kvm... that'd be bad, right?  I don't want to
+> assume that every consumer of such an interface would prefer to make use
+> of an irqfd.  Not sure if that answers your question though.  Thanks,
+
+I meant, what scenario do you have in mind where we want the EOI
+notifier while running with kvm-irqchip enabled?  Perhaps I phrased my
+question a bit too tersely.
+
+-- 
+error compiling committee.c: too many arguments to function
+
+
