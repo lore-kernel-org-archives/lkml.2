@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab2F1Ngv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:36:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34559 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab2F1Ngt (ORCPT
+	id S1753549Ab2F1Nil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:38:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46168 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645Ab2F1Nij convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 09:36:49 -0400
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <xtfeng@gmail.com>,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [RFC PATCH net-next] ipvs: add missing lock in ip_vs_ftp_init_conn()
-Date: Thu, 28 Jun 2012 21:36:27 +0800
-Message-Id: <1340890587-8169-1-git-send-email-xtfeng@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Thu, 28 Jun 2012 09:38:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="171110192"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Jan Beulich <JBeulich@suse.com>, "Auld, Will" <will.auld@intel.com>
+CC: "Raj, Ashok" <ashok.raj@intel.com>,
+        "Dugger, Donald D" <donald.d.dugger@intel.com>,
+        "Shan, Haitao" <haitao.shan@intel.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "Li, Susie" <susie.li@intel.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keir Fraser <keir@xen.org>
+Subject: RE: [xen vMCE RFC V0.2] xen vMCE design
+Thread-Topic: [xen vMCE RFC V0.2] xen vMCE design
+Thread-Index: AQHNVRQt1l9vq4iTRyWE8p2SJy8j95cPtZ2g
+Date: Thu, 28 Jun 2012 13:38:36 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC8292335264914@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233525D395@SHSMSX101.ccr.corp.intel.com>
+ <4FEB236C020000780008C392@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com>
+ <4FEC3B4A020000780008C673@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335263D6C@SHSMSX101.ccr.corp.intel.com>
+ <4FEC463E020000780008C6A7@nat28.tlf.novell.com>
+In-Reply-To: <4FEC463E020000780008C6A7@nat28.tlf.novell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We met a kernel panic in 2.6.32.43 kernel:
+Jan Beulich wrote:
+>>>> On 28.06.12 at 11:40, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
+>> So I would like to push new vMCE as quickly as possible. What's the
+>> timeline of vMCE developing that xen 4.2 could accept?
+> 
+> Weeks ago, really. See
+> http://lists.xen.org/archives/html/xen-devel/2012-06/msg01619.html
+> and follow-ups - we'd really only consider getting the save/restore 
+> interface into forward compatible shape as acceptable.
+> 
+>> I wonder if we could make major
+>> components of vMCE done before xen 4.2 timeline, and leave the
+>> surrounding features and the corner cases done later?
+> 
+> Unfortunately it's likely going to be even less. However, if split
+> that way, chances are things could go into e.g. 4.2.1.
+> 
+> Jan
 
-[2680191.848044] IPVS: ip_vs_conn_hash(): request for already hashed, called from run_timer_softirq+0x175/0x1d0
-<snip>
-[2680311.849009] general protection fault: 0000 [#1] SMP
-[2680311.853001] RIP: 0010:[<ffffffff815f155c>]  [<ffffffff815f155c>] ip_vs_conn_expire+0xdc/0x2f0
-[2680311.853001] RSP: 0018:ffff880028303e70  EFLAGS: 00010202
-[2680311.853001] RAX: dead000000200200 RBX: ffff8801aad00b80 RCX: 0000000000001d90
-[2680311.853001] RDX: dead000000100100 RSI: 000000004fd59800 RDI: ffff8801aad00c08
-<snip>
-[2680311.853001] Call Trace:
-[2680311.853001]  <IRQ>
-[2680311.853001]  [<ffffffff815f1480>] ? ip_vs_conn_expire+0x0/0x2f0
-[2680311.853001]  [<ffffffff8104e2a5>] run_timer_softirq+0x175/0x1d0
-[2680311.853001]  [<ffffffff81021a48>] ? lapic_next_event+0x18/0x20
-[2680311.853001]  [<ffffffff81049a13>] __do_softirq+0xb3/0x150
-[2680311.853001]  [<ffffffff8100cc5c>] call_softirq+0x1c/0x30
-[2680311.853001]  [<ffffffff8100ea9a>] do_softirq+0x4a/0x80
-[2680311.853001]  [<ffffffff81049957>] irq_exit+0x77/0x80
-[2680311.853001]  [<ffffffff81021f2c>] smp_apic_timer_interrupt+0x6c/0xa0
-[2680311.853001]  [<ffffffff8100c633>] apic_timer_interrupt+0x13/0x20
-[2680311.853001]  <EOI>
-[2680311.853001]  [<ffffffff81013b52>] ? mwait_idle+0x52/0x70
-[2680311.853001]  [<ffffffff8100a7b0>] ? enter_idle+0x20/0x30
-[2680311.853001]  [<ffffffff8100ac62>] ? cpu_idle+0x52/0x80
-[2680311.853001]  [<ffffffff816d504d>] ? start_secondary+0x19d/0x280
+So let's look at current vMCE status first:
+1). functionally it work abnormally for guest (but tolerated by some guest like linux/solaris);
+2). before xen 4.1 it blocks migration when migrate from big bank to small bank platform;
 
-rax and rdx is LIST_POISON1 and LIST_POISON2, so kernel is list_del() on an already deleted
-connection and result the general protect fault.
+We may try some middle steps, minimal adjusting for xen 4.2 release (to avoid futher compatible issue at xen 4.2.1, 4.3, ...):
+1). we don't handle vMCE function bugs, only make sure migration works OK;
+2). update vMCE interface to a middle clean status:
+    * remove MCG_CTL (otherwise we have to add this useless MSR at new vMCE);
+    * stick all 1's to MCi_CTL (avoid semantic difference);
+    * for MCG_CAP, clear MCG_CTL_P, limit to 2 banks (otherwise dirty code have to be added at new vMCE);
 
-The "request for already hashed" warning, told us someone might change the connection flags
-incorrectly, like described in commit aea9d711, it changes the connection flags, but doesn't
-put the connection back to the list. So ip_vs_conn_hash() throw a warning and return.
-Later, when ip_vs_conn_expire fire again, ip_vs_conn_unhash() will find the HASHED connection
-and list_del() it, then kernel panic happened.
+Thoughts?
 
-After code review, the only chance that kernel change connection flag without protection is
-in ip_vs_ftp_init_conn().
-
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: Wensong Zhang <wensong@linux-vs.org>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net> 
----
- net/netfilter/ipvs/ip_vs_ftp.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/net/netfilter/ipvs/ip_vs_ftp.c b/net/netfilter/ipvs/ip_vs_ftp.c
-index b20b29c..c2bc264 100644
---- a/net/netfilter/ipvs/ip_vs_ftp.c
-+++ b/net/netfilter/ipvs/ip_vs_ftp.c
-@@ -65,8 +65,10 @@ static int ip_vs_ftp_pasv;
- static int
- ip_vs_ftp_init_conn(struct ip_vs_app *app, struct ip_vs_conn *cp)
- {
-+	spin_lock(&cp->lock);
- 	/* We use connection tracking for the command connection */
- 	cp->flags |= IP_VS_CONN_F_NFCT;
-+	spin_unlock(&cp->lock);
- 	return 0;
- }
- 
--- 
-1.7.1
-
+Thanks,
+Jinsong
