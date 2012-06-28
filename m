@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2F1M7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:59:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7068 "EHLO mx1.redhat.com"
+	id S1756120Ab2F1M7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:59:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1370 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755415Ab2F1M7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:59:08 -0400
+	id S1755415Ab2F1M7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:59:16 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,74 +27,91 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 12/40] autonuma: core autonuma.h header
-Date: Thu, 28 Jun 2012 14:55:52 +0200
-Message-Id: <1340888180-15355-13-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 19/40] autonuma: alloc/free/init sched_autonuma
+Date: Thu, 28 Jun 2012 14:55:59 +0200
+Message-Id: <1340888180-15355-20-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the generic autonuma.h header that defines the generic
-AutoNUMA specific functions like autonuma_setup_new_exec,
-autonuma_split_huge_page, numa_hinting_fault, etc...
+This is where the dynamically allocated sched_autonuma structure is
+being handled.
 
-As usual functions like numa_hinting_fault that only matter for builds
-with CONFIG_AUTONUMA=y are defined unconditionally, but they are only
-linked into the kernel if CONFIG_AUTONUMA=n. Their call sites are
-optimized away at build time (or kernel won't link).
+The reason for keeping this outside of the task_struct besides not
+using too much kernel stack, is to only allocate it on NUMA
+hardware. So the not NUMA hardware only pays the memory of a pointer
+in the kernel stack (which remains NULL at all times in that case).
+
+If the kernel is compiled with CONFIG_AUTONUMA=n, not even the pointer
+is allocated on the kernel stack of course.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/autonuma.h |   41 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 41 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/autonuma.h
+ kernel/fork.c |   24 ++++++++++++++----------
+ 1 files changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/autonuma.h b/include/linux/autonuma.h
-new file mode 100644
-index 0000000..85ca5eb
---- /dev/null
-+++ b/include/linux/autonuma.h
-@@ -0,0 +1,41 @@
-+#ifndef _LINUX_AUTONUMA_H
-+#define _LINUX_AUTONUMA_H
+diff --git a/kernel/fork.c b/kernel/fork.c
+index d3c064c..0adbe09 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -206,6 +206,7 @@ static void account_kernel_stack(struct thread_info *ti, int account)
+ void free_task(struct task_struct *tsk)
+ {
+ 	account_kernel_stack(tsk->stack, -1);
++	free_task_autonuma(tsk);
+ 	free_thread_info(tsk->stack);
+ 	rt_mutex_debug_task_free(tsk);
+ 	ftrace_graph_exit_task(tsk);
+@@ -260,6 +261,8 @@ void __init fork_init(unsigned long mempages)
+ 	/* do the arch specific task caches init */
+ 	arch_task_cache_init();
+ 
++	task_autonuma_init();
 +
-+#ifdef CONFIG_AUTONUMA
+ 	/*
+ 	 * The default maximum number of threads is set to a safe
+ 	 * value: the thread structures can take up at most half
+@@ -292,21 +295,21 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+ 	struct thread_info *ti;
+ 	unsigned long *stackend;
+ 	int node = tsk_fork_get_node(orig);
+-	int err;
+ 
+ 	tsk = alloc_task_struct_node(node);
+-	if (!tsk)
++	if (unlikely(!tsk))
+ 		return NULL;
+ 
+ 	ti = alloc_thread_info_node(tsk, node);
+-	if (!ti) {
+-		free_task_struct(tsk);
+-		return NULL;
+-	}
++	if (unlikely(!ti))
++		goto out_task_struct;
+ 
+-	err = arch_dup_task_struct(tsk, orig);
+-	if (err)
+-		goto out;
++	if (unlikely(arch_dup_task_struct(tsk, orig)))
++		goto out_thread_info;
 +
-+#include <linux/autonuma_flags.h>
-+
-+extern void autonuma_enter(struct mm_struct *mm);
-+extern void autonuma_exit(struct mm_struct *mm);
-+extern void __autonuma_migrate_page_remove(struct page *page);
-+extern void autonuma_migrate_split_huge_page(struct page *page,
-+					     struct page *page_tail);
-+extern void autonuma_setup_new_exec(struct task_struct *p);
-+
-+static inline void autonuma_migrate_page_remove(struct page *page)
-+{
-+	if (ACCESS_ONCE(page->autonuma_migrate_nid) >= 0)
-+		__autonuma_migrate_page_remove(page);
-+}
-+
-+#define autonuma_printk(format, args...) \
-+	if (autonuma_debug()) printk(format, ##args)
-+
-+#else /* CONFIG_AUTONUMA */
-+
-+static inline void autonuma_enter(struct mm_struct *mm) {}
-+static inline void autonuma_exit(struct mm_struct *mm) {}
-+static inline void autonuma_migrate_page_remove(struct page *page) {}
-+static inline void autonuma_migrate_split_huge_page(struct page *page,
-+						    struct page *page_tail) {}
-+static inline void autonuma_setup_new_exec(struct task_struct *p) {}
-+
-+#endif /* CONFIG_AUTONUMA */
-+
-+extern pte_t __pte_numa_fixup(struct mm_struct *mm, struct vm_area_struct *vma,
-+			      unsigned long addr, pte_t pte, pte_t *ptep);
-+extern void __pmd_numa_fixup(struct mm_struct *mm, unsigned long addr,
-+			     pmd_t *pmd);
-+extern void numa_hinting_fault(struct page *page, int numpages);
-+
-+#endif /* _LINUX_AUTONUMA_H */
++	if (unlikely(alloc_task_autonuma(tsk, orig, node)))
++		/* free_thread_info() undoes arch_dup_task_struct() too */
++		goto out_thread_info;
+ 
+ 	tsk->stack = ti;
+ 
+@@ -334,8 +337,9 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+ 
+ 	return tsk;
+ 
+-out:
++out_thread_info:
+ 	free_thread_info(ti);
++out_task_struct:
+ 	free_task_struct(tsk);
+ 	return NULL;
+ }
