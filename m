@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab2F1CSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 22:18:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2853 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756724Ab2F1CSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 22:18:35 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=sNxammv2Ed8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=NnH59IVBnbGMm2AN_tYA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340849913.16702.59.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/4] KVM: Use __print_hex() for kvm_emulate_insn
- tracepoint
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Avi Kivity <avi@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, kvm@vger.kernel.org,
-        dsahern@gmail.com
-Date: Wed, 27 Jun 2012 22:18:33 -0400
-In-Reply-To: <87y5n8xklm.fsf@sejong.aot.lge.com>
-References: <1340757701-10711-1-git-send-email-namhyung@kernel.org>
-	 <1340757701-10711-2-git-send-email-namhyung@kernel.org>
-	 <1340801375.16702.10.camel@gandalf.stny.rr.com>
-	 <4FEB0288.5080106@redhat.com>
-	 <1340803224.16702.12.camel@gandalf.stny.rr.com>
-	 <87bok4z157.fsf@sejong.aot.lge.com>
-	 <1340848364.16702.56.camel@gandalf.stny.rr.com>
-	 <87y5n8xklm.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932296Ab2F1CW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 22:22:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49622 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932236Ab2F1CWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 22:22:25 -0400
+Date: Wed, 27 Jun 2012 22:22:18 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: big allocation failure during tracing init.
+Message-ID: <20120628022218.GA30698@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120622193650.GA20098@redhat.com>
+ <1340844763.16702.54.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340844763.16702.54.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 10:59 +0900, Namhyung Kim wrote:
+On Wed, Jun 27, 2012 at 08:52:43PM -0400, Steven Rostedt wrote:
+ > On Fri, 2012-06-22 at 15:36 -0400, Dave Jones wrote:
+ > 
+ > > I guess the problem is on kernels built with CONFIG_MAXCPUS, struct trace_iterator
+ > > can be pretty large due to this embedded in it..
+ > > 
+ > > 	struct ring_buffer_iter *buffer_iter[NR_CPUS];
+ > > 
+ > > Any thoughts on how to change that to a smaller dynamic data structure,
+ > > without adding too much overhead to tracing ? (I'm assuming a linked-list walk
+ > > for eg would be excessive?)
+ > > 
+ > 
+ > Does this patch fix it for you?
 
-> Ok, thanks. But how about other ones? Did you add all of 4 into you
-> queue?
+I'm not sure what I did to trigger the allocation failure last time,
+but I'll run with this for a while, and see if anything falls out.
 
-Ah, no I didn't. I actually would like Arnaldo to do that.
+thanks!
 
-Arnaldo,
-
-Can you pull patches 1,3 & 4 into your repo, and add my:
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
-Thanks!
-
--- Steve
-
-
+	Dave
