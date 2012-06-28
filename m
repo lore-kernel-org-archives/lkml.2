@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab2F1JUp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 05:20:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64692 "EHLO mga09.intel.com"
+	id S1758147Ab2F1JUm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 05:20:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35329 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752330Ab2F1JTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 05:19:50 -0400
+	id S1756799Ab2F1JTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 05:19:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="159147507"
+   d="scan'208";a="159147526"
 From: Feng Tang <feng.tang@intel.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
         Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
 Cc: Robert Richter <robert.richter@amd.com>, Andi Kleen <andi@firstfloor.org>,
         Stephane Eranian <eranian@google.com>, Feng Tang <feng.tang@intel.com>,
-        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v4 1/5] perf script: Add general python handler to process non-tracepoint events
-Date: Thu, 28 Jun 2012 17:15:30 +0800
-Message-Id: <1340874934-25661-2-git-send-email-feng.tang@intel.com>
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH v4 3/5] perf script/python: Pass event/thread/dso name and symbol info to event handler in python
+Date: Thu, 28 Jun 2012 17:15:32 +0800
+Message-Id: <1340874934-25661-4-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1340874934-25661-1-git-send-email-feng.tang@intel.com>
 References: <1340874934-25661-1-git-send-email-feng.tang@intel.com>
@@ -27,124 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch just follows Robert Richter's idea and the commit 37a058ea0
-	"perf script: Add generic perl handler to process events"
-to similarly add a python handler for general events other than tracepoints.
-
-For non-tracepoint events, this patch will try to find a function named
-"process_event" in the python script, and pass the event attribute,
-perf_sample, raw_data in format of raw string. And the python script can
-use "struct" module's unpack function to disasemble the needed info and process.
+Also as suggested by Arnaldo, pack all these parameters to a dictionary,
+which is more expandable for adding new parameters while keeping the
+compatibility for old scripts.
 
 Signed-off-by: Feng Tang <feng.tang@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Robert Richter <robert.richter@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Stephane Eranian <eranian@google.com>
-http://lkml.kernel.org/r/1339999839-14007-2-git-send-email-feng.tang@intel.com
-[ committer note: Fixed up wrt da37896, i.e. pevent parm in script event handlers ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../util/scripting-engines/trace-event-python.c    |   71 ++++++++++++++++++--
- 1 files changed, 65 insertions(+), 6 deletions(-)
+ .../util/scripting-engines/trace-event-python.c    |   35 ++++++++++++++++---
+ 1 files changed, 29 insertions(+), 6 deletions(-)
 
 diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index a8ca2f8..3fae022 100644
+index 0be4ec0..b20d633 100644
 --- a/tools/perf/util/scripting-engines/trace-event-python.c
 +++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -31,6 +31,7 @@
- #include "../event.h"
- #include "../thread.h"
- #include "../trace-event.h"
-+#include "../evsel.h"
- 
- PyMODINIT_FUNC initperf_trace_context(void);
- 
-@@ -210,12 +211,12 @@ struct event_format *find_cache_event(struct pevent *pevent, int type)
- 	return event;
- }
- 
--static void python_process_event(union perf_event *perf_event __unused,
--				 struct pevent *pevent,
--				 struct perf_sample *sample,
--				 struct perf_evsel *evsel __unused,
--				 struct machine *machine __unused,
--				 struct thread *thread)
-+static void python_process_tracepoint(union perf_event *perf_event __unused,
-+				      struct pevent *pevent,
-+				      struct perf_sample *sample,
-+				      struct perf_evsel *evsel __unused,
-+				      struct machine *machine __unused,
-+				      struct thread *thread)
+@@ -340,15 +340,23 @@ static void python_process_general_event(union perf_event *perf_event __unused,
+ 					 struct machine *machine __unused,
+ 					 struct addr_location *al __unused)
  {
- 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
- 	static char handler_name[256];
-@@ -331,6 +332,64 @@ static void python_process_event(union perf_event *perf_event __unused,
+-	PyObject *handler, *retval, *t;
++	PyObject *handler, *retval, *t, *dict;
+ 	static char handler_name[64];
+ 	unsigned n = 0;
+-	void *data = sample->raw_data;
++	struct thread *thread = al->thread;
+ 
++	/*
++	 * Use the MAX_FIELDS to make the function expandable, though
++	 * currently there is only one itme for the tuple.
++	 */
+ 	t = PyTuple_New(MAX_FIELDS);
+ 	if (!t)
+ 		Py_FatalError("couldn't create Python tuple");
+ 
++	dict = PyDict_New();
++	if (!dict)
++		Py_FatalError("couldn't create Python dictionary");
++
+ 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
+ 
+ 	handler = PyDict_GetItemString(main_dict, handler_name);
+@@ -357,11 +365,25 @@ static void python_process_general_event(union perf_event *perf_event __unused,
+ 		goto exit;
+ 	}
+ 
+-	/* Pass 4 parameters: event_attr, perf_sample, raw data, thread name */
+-	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)&evsel->attr, sizeof(evsel->attr)));
+-	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)sample, sizeof(*sample)));
+-	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(data, sample->raw_size));
++	PyDict_SetItemString(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
++	PyDict_SetItemString(dict, "attr", PyString_FromStringAndSize(
++			(const char *)&evsel->attr, sizeof(evsel->attr)));
++	PyDict_SetItemString(dict, "sample", PyString_FromStringAndSize(
++			(const char *)sample, sizeof(*sample)));
++	PyDict_SetItemString(dict, "raw_buf", PyString_FromStringAndSize(
++			(const char *)sample->raw_data, sample->raw_size));
++	PyDict_SetItemString(dict, "comm",
++			PyString_FromString(thread->comm));
++	if (al->map) {
++		PyDict_SetItemString(dict, "dso",
++			PyString_FromString(al->map->dso->name));
++	}
++	if (al->sym) {
++		PyDict_SetItemString(dict, "symbol",
++			PyString_FromString(al->sym->name));
++	}
+ 
++	PyTuple_SetItem(t, n++, dict);
+ 	if (_PyTuple_Resize(&t, n) == -1)
+ 		Py_FatalError("error resizing Python tuple");
+ 
+@@ -369,6 +391,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
+ 	if (retval == NULL)
+ 		handler_call_die(handler_name);
+ exit:
++	Py_DECREF(dict);
  	Py_DECREF(t);
  }
  
-+static void python_process_general_event(union perf_event *perf_event __unused,
-+					 struct pevent *pevent,
-+					 struct perf_sample *sample,
-+					 struct perf_evsel *evsel,
-+					 struct machine *machine __unused,
-+					 struct thread *thread __unused)
-+{
-+	PyObject *handler, *retval, *t;
-+	static char handler_name[64];
-+	unsigned n = 0;
-+	void *data = sample->raw_data;
-+
-+	t = PyTuple_New(MAX_FIELDS);
-+	if (!t)
-+		Py_FatalError("couldn't create Python tuple");
-+
-+	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
-+
-+	handler = PyDict_GetItemString(main_dict, handler_name);
-+	if (handler && !PyCallable_Check(handler)) {
-+		handler = NULL;
-+		goto exit;
-+	}
-+
-+	/* Pass 3 parameters: event_attr, perf_sample, raw data */
-+	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)&evsel->attr, sizeof(evsel->attr)));
-+	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)sample, sizeof(*sample)));
-+	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(data, sample->raw_size));
-+
-+	if (_PyTuple_Resize(&t, n) == -1)
-+		Py_FatalError("error resizing Python tuple");
-+
-+	retval = PyObject_CallObject(handler, t);
-+	if (retval == NULL)
-+		handler_call_die(handler_name);
-+exit:
-+	Py_DECREF(t);
-+}
-+
-+static void python_process_event(union perf_event *perf_event,
-+				 struct pevent *pevent,
-+				 struct perf_sample *sample,
-+				 struct perf_evsel *evsel,
-+				 struct machine *machine,
-+				 struct thread *thread)
-+{
-+	switch (evsel->attr.type) {
-+	case PERF_TYPE_TRACEPOINT:
-+		python_process_tracepoint(perf_event, pevent, sample, evsel,
-+					  machine, thread);
-+		break;
-+	/* Reserve for future process_hw/sw/raw APIs */
-+	default:
-+		python_process_general_event(perf_event, pevent, sample, evsel,
-+					     machine, thread);
-+	}
-+}
-+
- static int run_start_sub(void)
- {
- 	PyObject *handler, *retval;
 -- 
 1.7.1
 
