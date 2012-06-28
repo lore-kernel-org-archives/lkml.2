@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751021Ab2F1EE2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 00:04:28 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:36074 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab2F1EE0 (ORCPT
+	id S1751187Ab2F1EGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 00:06:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42584 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab2F1EGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 00:04:26 -0400
-From: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org,
-        Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
-Subject: [PATCH] Staging: comedi: drivers: usbduxfast: changed "printk(KERN_INFO ..." for "pr_info(..."
-Date: Thu, 28 Jun 2012 01:04:20 -0300
-Message-Id: <1340856260-18093-1-git-send-email-sebastianbenvenuti@gmail.com>
-X-Mailer: git-send-email 1.7.11.1
+	Thu, 28 Jun 2012 00:06:35 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FEBD7C0.7090906@jp.fujitsu.com>
+Date: Thu, 28 Jun 2012 13:04:16 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
+        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+References: <2a1a74bf-fbb5-4a6e-b958-44fff8debff2@zmail13.collab.prod.int.phx2.redhat.com> <34bb8049-8007-496c-8ffb-11118c587124@zmail13.collab.prod.int.phx2.redhat.com> <20120627154827.GA4420@tiehlicka.suse.cz> <alpine.DEB.2.00.1206271256120.22162@chino.kir.corp.google.com> <20120627200926.GR15811@google.com> <alpine.DEB.2.00.1206271316070.22162@chino.kir.corp.google.com> <20120627202430.GS15811@google.com>
+In-Reply-To: <20120627202430.GS15811@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-changed 3 instances of printk(KERN_INFO for the prefered pr_info(
+(2012/06/28 5:24), Tejun Heo wrote:
+> Hello,
+>
+> On Wed, Jun 27, 2012 at 01:21:27PM -0700, David Rientjes wrote:
+>> Well it also has a prerequisite that memcg doesn't have: CONFIG_SWAP, so
+>
+> Right.
+>
+>> even if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is folded into
+>> CONFIG_CGROUP_MEM_RES_CTLR, then these should still depend on CONFIG_SWAP
+>> since configuring them would imply there is some limit to be enforced.
+>>
+>> But to answer your question:
+>>
+>>     text	   data	    bss	    dec	    hex	filename
+>>    25777	   3644	   4128	  33549	   830d	memcontrol.o.swap_disabled
+>>    27294	   4476	   4128	  35898	   8c3a	memcontrol.o.swap_enabled
+>
+> I still wish it's folded into CONFIG_MEMCG and conditionalized just on
+> CONFIG_SWAP tho.
+>
 
-Signed-off-by: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
----
- drivers/staging/comedi/drivers/usbduxfast.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+In old days, memsw controller was not very stable. So, we devided the config.
+And, it makes size of memory for swap-device double (adds 2bytes per swapent.)
+That is the problem.
 
-diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-index 7b1d21a..c37371c 100644
---- a/drivers/staging/comedi/drivers/usbduxfast.c
-+++ b/drivers/staging/comedi/drivers/usbduxfast.c
-@@ -1589,7 +1589,7 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
- 		return ret;
- 	}
- 
--	printk(KERN_INFO "comedi_: usbduxfast%d has been successfully "
-+	pr_info("comedi_: usbduxfast%d has been successfully "
- 	       "initialized.\n", index);
- 	/* success */
- 	return 0;
-@@ -1684,7 +1684,7 @@ static int usbduxfast_attach(struct comedi_device *dev,
- 		return ret;
- 	}
- 
--	printk(KERN_INFO "comedi%d: usbduxfast: usb-device %d is attached to "
-+	pr_info("comedi%d: usbduxfast: usb-device %d is attached to "
- 	       "comedi.\n", dev->minor, index);
- 	/* private structure is also simply the usb-structure */
- 	dev->private = usbduxfastsub + index;
-@@ -1720,7 +1720,7 @@ static int usbduxfast_attach(struct comedi_device *dev,
- 
- 	up(&(usbduxfastsub[index].sem));
- 	up(&start_stop_sem);
--	printk(KERN_INFO "comedi%d: successfully attached to usbduxfast.\n",
-+	pr_info("comedi%d: successfully attached to usbduxfast.\n",
- 	       dev->minor);
- 
- 	return 0;
--- 
-1.7.11.1
+>> Is it really too painful to not create these files when
+>> CONFIG_CGROUP_MEM_RES_CTLR_SWAP is disabled?  If so, can we at least allow
+>> them to be opened but return -EINVAL if memory.memsw.limit_in_bytes is
+>> written?
+>
+> Not at all, that was the first version anyway, which (IIRC) KAME
+> didn't like and suggested always creating those files.  KAME, what do
+> you think?
+>
+
+IIRC...at that time, we made decision, cgroup has no feature to
+'create files dynamically'. Then, we made it in static, decision was done
+at compile time and ignores "do_swap_account".
+
+Now, IIUC, we have the feature. So, it's may be a time to create the file
+with regard to "do_swap_account", making decision at boot time.
+
+
+Thanks,
+-Kame
+
+
 
