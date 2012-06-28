@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab2F1NLo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:11:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64282 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab2F1NLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 09:11:41 -0400
-Date: Thu, 28 Jun 2012 16:11:40 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, avi@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120628131140.GB13724@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
- <20120627050952.23698.37235.stgit@bling.home>
- <20120627135811.GE6533@redhat.com>
- <1340807344.1207.207.camel@bling.home>
- <20120627145135.GF6533@redhat.com>
- <1340855744.1207.303.camel@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340855744.1207.303.camel@bling.home>
+	id S1755788Ab2F1NM3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:12:29 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:47959 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486Ab2F1NIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 09:08:30 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, Yufeng Shen <miletus@chromium.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 08/23 v6] Input: atmel_mxt_ts - print less overhead when dumping objects
+Date: Thu, 28 Jun 2012 21:08:09 +0800
+Message-Id: <1340888904-15620-9-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
+References: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 09:55:44PM -0600, Alex Williamson wrote:
-> On Wed, 2012-06-27 at 17:51 +0300, Gleb Natapov wrote:
-> > On Wed, Jun 27, 2012 at 08:29:04AM -0600, Alex Williamson wrote:
-> > > On Wed, 2012-06-27 at 16:58 +0300, Gleb Natapov wrote:
-> > > > On Tue, Jun 26, 2012 at 11:10:08PM -0600, Alex Williamson wrote:
-> > > > > This new ioctl enables an eventfd to be triggered when an EOI is
-> > > > > written for a specified irqchip pin.  By default this is a simple
-> > > > > notification, but we can also tie the eoifd to a level irqfd, which
-> > > > > enables the irqchip pin to be automatically de-asserted on EOI.
-> > > > > This mode is particularly useful for device-assignment applications
-> > > > > where the unmask and notify triggers a hardware unmask.  The default
-> > > > > mode is most applicable to simple notify with no side-effects for
-> > > > > userspace usage, such as Qemu.
-> > > > > 
-> > > > > Here we make use of the reference counting of the _irq_source
-> > > > > object allowing us to share it with an irqfd and cleanup regardless
-> > > > > of the release order.
-> > > > > 
-> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > > ---
-> > > > > 
-> > > > >  Documentation/virtual/kvm/api.txt |   24 +++++
-> > > > >  arch/x86/kvm/x86.c                |    1 
-> > > > >  include/linux/kvm.h               |   14 +++
-> > > > >  include/linux/kvm_host.h          |   13 +++
-> > > > >  virt/kvm/eventfd.c                |  189 +++++++++++++++++++++++++++++++++++++
-> > > > >  virt/kvm/kvm_main.c               |   11 ++
-> > > > >  6 files changed, 250 insertions(+), 2 deletions(-)
-> > > > > 
-> > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > > > > index b216709..87a2558 100644
-> > > > > --- a/Documentation/virtual/kvm/api.txt
-> > > > > +++ b/Documentation/virtual/kvm/api.txt
-> > > > > @@ -1987,6 +1987,30 @@ interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
-> > > > >  with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
-> > > > >  KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
-> > > > >  
-> > > > > +4.77 KVM_EOIFD
-> > > > > +
-> > > > > +Capability: KVM_CAP_EOIFD
-> > > > > +Architectures: x86
-> > > > > +Type: vm ioctl
-> > > > > +Parameters: struct kvm_eoifd (in)
-> > > > > +Returns: 0 on success, -1 on error
-> > > > > +
-> > > > > +KVM_EOIFD allows userspace to receive EOI notification through an
-> > > > > +eventfd for level triggered irqchip interrupts.  Behavior for edge
-> > > > > +triggered interrupts is undefined.  kvm_eoifd.fd specifies the eventfd
-> > > > Lets make it defined. EOI notification can be used by userspace to fix
-> > > > time drift due to lost interrupts. But than userspace needs to know
-> > > > which vcpu did EOI.
-> > > 
-> > > Hmm, do we need an additional flag and field in kvm_eoifd to filter by
-> > > vCPU then?
-> > > 
-> > This will be enough for a use case I am aware of. Don't know if this
-> > interface is generic enough for all possible use cases.
-> 
-> That's generally a hard prediction to make ;)  We currently don't pass a
-> kvm_vcpu anywhere close to the irq ack notifier.  The ioapic path could
-> be relatively trivial, but the pic path is a bit further disconnected.
-> If we had that plumbing, a KVM_CAP plus vcpu filter flag and specifying
-> the vcpu using some of the padding space seems like it's sufficient.
-> I'll drop mention of level-only from the description, but the plumbing
-> and vcpu filtering can be a follow-on.  Thanks,
-> 
-> Alex
+Conserve limited (PAGE_SIZE) sysfs output buffer space by only showing
+readable objects and not printing the object's index, which is not useful
+to userspace.
 
-If we don't implement what's needed for timedrift to be fixed,
-then IMO it's better to simply require an IRQFD for EOIFD for now,
-and limit this to level. Otherwise when we actually try to implement
-we might find issues.
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-Another reason to explicitly say EOI is not supported for edge is that
-EOI might not get invoked at all with PV EOI.
-
-
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 94dd1d1..c8cfd7b 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -897,15 +897,11 @@ static ssize_t mxt_object_show(struct device *dev,
+ 	for (i = 0; i < data->info.object_num; i++) {
+ 		object = data->object_table + i;
+ 
+-		count += scnprintf(buf + count, PAGE_SIZE - count,
+-				"Object[%d] (Type %d)\n",
+-				i + 1, object->type);
+-
+-		if (!mxt_object_readable(object->type)) {
+-			count += scnprintf(buf + count, PAGE_SIZE - count,
+-					"\n");
++		if (!mxt_object_readable(object->type))
+ 			continue;
+-		}
++
++		count += scnprintf(buf + count, PAGE_SIZE - count,
++				"T%u:\n", object->type);
+ 
+ 		error = __mxt_read_reg(data->client, object->start_address,
+ 				object->size + 1, obuf);
 -- 
-MST
+1.7.7.3
+
